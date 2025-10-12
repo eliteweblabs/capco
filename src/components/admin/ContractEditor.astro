@@ -85,6 +85,10 @@ const projectId = project.id;
   let isDirty = false;
   let contractHtml = "";
 
+  // Make contractEditor and project globally accessible for modal actions
+  window.contractEditor = contractEditor;
+  window.contractProject = project;
+
   // Use the template loaded from file system (passed from frontmatter)
 
   async function fetchExistingContractOrTemplate(reset = false) {
@@ -205,7 +209,13 @@ const projectId = project.id;
             ["clean"],
           ],
         },
+        placeholder: "Enter contract content...",
+        readOnly: false,
       });
+
+      // Update global reference
+      window.contractEditor = contractEditor;
+
       console.log("✅ [CONTRACT-EDITOR] Quill editor created successfully");
     } catch (error) {
       console.error("❌ [CONTRACT-EDITOR] Error creating editor:", error);
@@ -242,19 +252,69 @@ const projectId = project.id;
 
     if (loadBtn) {
       loadBtn.addEventListener("click", async () => {
-        if (confirm("This will replace the current content with the default template. Continue?")) {
-          try {
-            // Use Quill's proper method to load HTML content
+        // use custom global confirm like delete project
+        if (window.showModal) {
+          window.showModal(
+            "warning",
+            "Reset to Template",
+            "This will replace the current content with the default template. This action cannot be undone.",
+            6000000, // 6000 seconds timeout
+            [
+              {
+                label: "Cancel",
+                variant: "anchor",
+                fullWidth: true,
+                action: () => {},
+              },
+              {
+                label: "Reset to Template",
+                variant: "danger",
+                fullWidth: true,
+                action: () => {
+                  // Reset to template logic
+                  try {
+                    // Use the project's contract HTML as template
+                    const projectData = window.contractProject;
+                    const templateContent =
+                      projectData?.contractData?.html ||
+                      `<!-- Default Contract Template -->
+<div class="contract-container">
+  <h1>Fire Protection System Contract</h1>
+  <p>This is the default contract template...</p>
+</div>`;
 
-            const delta = contractEditor.clipboard.convert(
-              await fetchExistingContractOrTemplate(true)
-            );
-            contractEditor.setContents(delta);
-            isDirty = true;
-            console.log("✅ [CONTRACT-EDITOR] Template loaded successfully");
-          } catch (error) {
-            console.error("❌ [CONTRACT-EDITOR] Error loading template:", error);
-          }
+                    // Add small delay to ensure editor is ready
+                    setTimeout(() => {
+                      const editor = window.contractEditor;
+                      if (editor && editor.root) {
+                        try {
+                          // Clear existing content first
+                          editor.setText("");
+
+                          // Use Quill's proper method to set content
+                          const delta = editor.clipboard.convert(templateContent);
+                          editor.setContents(delta);
+                          console.log("Template loaded successfully");
+                        } catch (error) {
+                          console.error("Error setting template content:", error);
+                          // Fallback to direct HTML if Quill method fails
+                          try {
+                            editor.root.innerHTML = templateContent;
+                          } catch (fallbackError) {
+                            console.error("Fallback method also failed:", fallbackError);
+                          }
+                        }
+                      } else {
+                        console.error("Contract editor not found or not ready");
+                      }
+                    }, 200);
+                  } catch (error) {
+                    console.error("Error loading template:", error);
+                  }
+                },
+              },
+            ]
+          );
         }
       });
       console.log("✅ [CONTRACT-EDITOR] Event listener attached to load button");
@@ -327,7 +387,7 @@ const projectId = project.id;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId: projectId,
-          contractHtml: contractHtml,
+          contractData: { contractHtml: contractHtml },
         }),
       });
 

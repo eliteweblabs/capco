@@ -2,6 +2,8 @@
 // File Manager Component with Checkout System - EXTENSIVE DEBUGGING
 // A complete file management solution with checkout/assignment capabilities
 
+import Tooltip from "../common/Tooltip.astro";
+
 interface Props {
   projectId: number;
   currentUser: any;
@@ -371,7 +373,7 @@ const canDeleteFiles =
 
           <!-- Accordion Toggle Button -->
           <button
-            class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300 p-4"
+            class="hidden text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300 p-4"
             data-accordion-target="#accordion-${id}"
             aria-expanded="${open}"
             aria-controls="accordion-${id}"
@@ -499,33 +501,40 @@ const canDeleteFiles =
             <span class="text-lg font-medium ${globalPrimaryTextClasses} truncate">
               ${getDisplayFileName(file)}
             </span>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
-              ${statusBadge}
-            </span>
+            
           </div>
           <p class="text-sm truncate ${globalSecondaryTextClasses}">
             ${formatFileSize(file.fileSize)} • Uploaded ${new Date(file.uploadedAt).toLocaleDateString()} at ${new Date(file.uploadedAt).toLocaleTimeString()}${file.uploaded_by_name ? ` • by ${file.uploaded_by_name}` : ""}
           </p>
         </div>
+     
       </div>
     `;
 
     // Create action buttons
     const actionButtons = `
-      <div class="flex-col items-center space-x-2" onclick="event.stopPropagation()">
+      <div class="flex items-center space-x-2 absolute top-0 right-0 bg-white dark:bg-gray-800 rounded-lg p-2" onclick="event.stopPropagation()">
         <!-- Download/Checkout button -->
+       
+          <div class="relative group">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
+              ${statusBadge}
+            </span>
+          </div>
+
+        <!-- Preview button -->
         <div class="relative group">
+           
           <button 
             class="${isCheckedOut ? "text-gray-300 cursor-not-allowed" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"}"
             onclick="${isCheckedOut ? "" : `downloadFile('${file.publicUrl || ""}', '${file.fileName}', ${file.id})`}"
-            title="${isCheckedOut ? "File checked out" : canCheckoutFiles ? "Download & Check Out File" : "Download File"}"
             ${isCheckedOut || !file.publicUrl ? "disabled" : ""}
           >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
           </button>
-
+          
           <!-- Custom tooltip -->
           <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
             ${isCheckedOut ? "File checked out" : canCheckoutFiles ? "Download & Check Out File" : "Download File"}

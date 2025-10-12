@@ -187,13 +187,36 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
 
   console.log("🔧 [MEDIA-VERSIONING] Final path:", fullPath);
 
-  // Upload to Supabase Storage
-  const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-    .from(bucket)
-    .upload(fullPath, fileBuffer, {
-      contentType: contentType,
-      upsert: false,
-    });
+  // Upload to Supabase Storage with retry logic
+  let uploadData, uploadError;
+  let retryCount = 0;
+  const maxRetries = 3;
+
+  while (retryCount < maxRetries) {
+    try {
+      const result = await supabaseAdmin.storage.from(bucket).upload(fullPath, fileBuffer, {
+        contentType: contentType,
+        upsert: false,
+      });
+
+      uploadData = result.data;
+      uploadError = result.error;
+
+      if (!uploadError) break;
+
+      retryCount++;
+      if (retryCount < maxRetries) {
+        console.warn(`🔧 [MEDIA-VERSIONING] Upload attempt ${retryCount} failed, retrying...`);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+      }
+    } catch (error) {
+      console.error(`🔧 [MEDIA-VERSIONING] Upload attempt ${retryCount + 1} failed:`, error);
+      retryCount++;
+      if (retryCount < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+  }
 
   if (uploadError) {
     console.error("🔧 [MEDIA-VERSIONING] Upload error:", uploadError);

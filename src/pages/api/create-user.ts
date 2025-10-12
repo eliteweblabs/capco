@@ -445,11 +445,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // 8. Log the user creation
     console.log("📝 [CREATE-USER] Logging user creation...");
     try {
-      await SimpleProjectLogger.addLogEntry(
-        0, // System log
-        "userRegistration",
-        "New user created",
-        {
+      await SimpleProjectLogger.addLogEntry(0, // System log
+        "userRegistration", "New user created", {
           userId: authData.user.id,
           firstName,
           lastName,
@@ -458,8 +455,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           phone: phone || null,
           smsAlerts,
           mobileCarrier: mobileCarrier || null,
-        }
-      );
+         currentUser: currentUser });
       console.log("✅ [CREATE-USER] User creation logged successfully");
     } catch (logError) {
       console.error("❌ [CREATE-USER] Error logging user creation:", logError);
