@@ -61,10 +61,101 @@ function createN8NProxy() {
                 const { done, value } = await reader.read();
                 if (done) break;
                 responseBody += Buffer.from(value).toString();
-                res.write(value);
               }
-              console.log(`🔄 [N8N-PROXY] N8N response body:`, responseBody);
-              res.end();
+
+              // Check if this is HTML and inject bypass script
+              const contentType = response.headers.get("content-type") || "";
+              if (contentType.includes("text/html") && responseBody.includes("<!DOCTYPE html>")) {
+                console.log("🔧 [N8N-PROXY] Injecting auto-bypass script into HTML response");
+
+                const bypassScript = `
+<script>
+(function() {
+  // Check for URL parameter bypass
+  const urlParams = new URLSearchParams(window.location.search);
+  const bypassParam = urlParams.get('bypass') || urlParams.get('dev') || urlParams.get('skip');
+  
+  if (bypassParam) {
+    console.log('🚀 URL parameter bypass detected for N8N, auto-bypassing...');
+    bypassWarning();
+    return;
+  }
+  
+  // Auto-bypass LocalTunnel warning page
+  function detectWarningPage() {
+    return document.title.includes('localtunnel') || 
+           document.body.textContent.includes('bypass-tunnel-reminder') ||
+           document.body.textContent.includes('tunnel password') ||
+           document.body.textContent.includes('To bypass this page') ||
+           document.body.textContent.includes('You are about to visit') ||
+           document.querySelector('body').innerHTML.includes('bypass-tunnel-reminder') ||
+           document.querySelector('body').innerHTML.includes('loca.lt');
+  }
+  
+  function bypassWarning() {
+    console.log('🚀 Auto-bypassing LocalTunnel warning for N8N...');
+    
+    fetch(window.location.href, {
+      method: 'GET',
+      headers: {
+        'bypass-tunnel-reminder': 'true',
+        'User-Agent': 'Mozilla/5.0 (compatible; DevTunnel/1.0)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      credentials: 'include',
+      cache: 'no-cache'
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.text();
+      }
+      throw new Error('Response not ok: ' + response.status);
+    })
+    .then(html => {
+      document.open();
+      document.write(html);
+      document.close();
+      console.log('✅ N8N Auto-bypass successful');
+    })
+    .catch(err => {
+      console.error('❌ N8N Auto-bypass failed:', err);
+    });
+  }
+  
+  // Check immediately and on DOM ready
+  if (detectWarningPage()) {
+    bypassWarning();
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (detectWarningPage()) {
+        bypassWarning();
+      }
+    });
+  }
+  
+  setTimeout(() => {
+    if (detectWarningPage()) {
+      bypassWarning();
+    }
+  }, 500);
+})();
+</script>`;
+
+                const modifiedHtml = responseBody.replace("</head>", `${bypassScript}</head>`);
+                res.end(modifiedHtml);
+              } else {
+                console.log(
+                  `🔄 [N8N-PROXY] N8N response body:`,
+                  responseBody.substring(0, 200) + "..."
+                );
+                res.end(responseBody);
+              }
             } catch (err) {
               console.error("❌ [N8N-PROXY] Stream error:", err);
               res.end();

@@ -44,6 +44,16 @@ function createProxyServer() {
           const bypassScript = `
 <script>
 (function() {
+  // Check for URL parameter bypass
+  const urlParams = new URLSearchParams(window.location.search);
+  const bypassParam = urlParams.get('bypass') || urlParams.get('dev') || urlParams.get('skip');
+  
+  if (bypassParam) {
+    console.log('🚀 URL parameter bypass detected, auto-bypassing...');
+    bypassWarning();
+    return;
+  }
+  
   // Auto-bypass LocalTunnel warning page with multiple strategies
   function detectWarningPage() {
     return document.title.includes('localtunnel') || 
