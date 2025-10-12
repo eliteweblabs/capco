@@ -270,44 +270,99 @@ const projectId = project.id;
                 label: "Reset to Template",
                 variant: "danger",
                 fullWidth: true,
-                action: () => {
+                action: async () => {
                   // Reset to template logic
                   try {
-                    // Use the project's contract HTML as template
-                    const projectData = window.contractProject;
-                    const templateContent =
-                      projectData?.contractData?.html ||
-                      `<!-- Default Contract Template -->
+                    // Reset to default template (clear existing contract data)
+                    console.log("Resetting to default template...");
+
+                    // Fetch the default template from the server
+                    try {
+                      const templateResponse = await fetch(
+                        `/api/pdf/assemble?templateId=contract&projectId=${projectId}`
+                      );
+                      if (templateResponse.ok) {
+                        const templateContent = await templateResponse.text();
+                        console.log("Template fetched from server:", templateContent);
+
+                        // Load the template into the editor
+                        loadTemplateIntoEditor(templateContent);
+                      } else {
+                        console.error("Failed to fetch template from server");
+                        // Fallback to hardcoded template
+                        const fallbackTemplate = `<!-- Default Contract Template -->
 <div class="contract-container">
   <h1>Fire Protection System Contract</h1>
   <p>This is the default contract template...</p>
 </div>`;
-
-                    // Add small delay to ensure editor is ready
-                    setTimeout(() => {
-                      const editor = window.contractEditor;
-                      if (editor && editor.root) {
-                        try {
-                          // Clear existing content first
-                          editor.setText("");
-
-                          // Use Quill's proper method to set content
-                          const delta = editor.clipboard.convert(templateContent);
-                          editor.setContents(delta);
-                          console.log("Template loaded successfully");
-                        } catch (error) {
-                          console.error("Error setting template content:", error);
-                          // Fallback to direct HTML if Quill method fails
-                          try {
-                            editor.root.innerHTML = templateContent;
-                          } catch (fallbackError) {
-                            console.error("Fallback method also failed:", fallbackError);
-                          }
-                        }
-                      } else {
-                        console.error("Contract editor not found or not ready");
+                        loadTemplateIntoEditor(fallbackTemplate);
                       }
-                    }, 200);
+                    } catch (error) {
+                      console.error("Error fetching template:", error);
+                      // Fallback to hardcoded template
+                      const fallbackTemplate = `<!-- Default Contract Template -->
+<div class="contract-container">
+  <h1>Fire Protection System Contract</h1>
+  <p>This is the default contract template...</p>
+</div>`;
+                      loadTemplateIntoEditor(fallbackTemplate);
+                    }
+
+                    function loadTemplateIntoEditor(templateContent) {
+                      // Add small delay to ensure editor is ready
+                      setTimeout(() => {
+                        const editor = window.contractEditor;
+                        console.log("Editor found:", !!editor);
+                        console.log("Editor root:", !!editor?.root);
+
+                        if (editor && editor.root) {
+                          try {
+                            // Clear existing content first
+                            console.log("Clearing editor content...");
+                            editor.setText("");
+
+                            // Use Quill's proper method to set content
+                            console.log("Converting template to delta...");
+                            const delta = editor.clipboard.convert(templateContent);
+                            console.log("Delta created:", delta);
+
+                            console.log("Setting editor contents...");
+                            editor.setContents(delta);
+                            console.log("Template loaded successfully");
+
+                            // Also clear the contract data from the database
+                            console.log("Clearing contract data from database...");
+                            fetch("/api/save-project-contract", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                projectId: projectId,
+                                contractData: { contractHtml: templateContent },
+                              }),
+                            })
+                              .then((response) => response.json())
+                              .then((data) => {
+                                console.log("Contract data cleared and reset:", data);
+                              })
+                              .catch((error) => {
+                                console.error("Error clearing contract data:", error);
+                              });
+                          } catch (error) {
+                            console.error("Error setting template content:", error);
+                            // Fallback to direct HTML if Quill method fails
+                            try {
+                              console.log("Trying fallback method...");
+                              editor.root.innerHTML = templateContent;
+                              console.log("Fallback method succeeded");
+                            } catch (fallbackError) {
+                              console.error("Fallback method also failed:", fallbackError);
+                            }
+                          }
+                        } else {
+                          console.error("Contract editor not found or not ready");
+                        }
+                      }, 200);
+                    }
                   } catch (error) {
                     console.error("Error loading template:", error);
                   }
@@ -402,7 +457,7 @@ const projectId = project.id;
 
       if (data.success) {
         isDirty = false;
-        showNotification("Contract saved successfully", "success");
+        window.showModal("success", "Contract saved successfully", "", 2500);
 
         // Refresh the contract data from the server
         console.log("🔄 [CONTRACT-EDITOR] Contract saved, refreshing contract data...");
@@ -412,7 +467,7 @@ const projectId = project.id;
       }
     } catch (error) {
       console.error("Error saving contract:", error);
-      showNotification("Error saving contract: " + error.message, "error");
+      window.showModal("error", "error", "Error saving contract: " + error.message);
     } finally {
       saveBtn.textContent = originalText;
       saveBtn.disabled = false;
