@@ -4,26 +4,30 @@ import type { APIRoute } from "astro";
 export const GET: APIRoute = async ({ request }) => {
   console.log("🔍 [TWILIO-GET] GET request received");
   console.log("🔍 [TWILIO-GET] URL:", request.url);
-  console.log("🔍 [TWILIO-GET] Query params:", Object.fromEntries(new URL(request.url).searchParams.entries()));
-  
+  console.log(
+    "🔍 [TWILIO-GET] Query params:",
+    Object.fromEntries(new URL(request.url).searchParams.entries())
+  );
+
   // Extract call information from query parameters
   const callSid = new URL(request.url).searchParams.get("CallSid");
   const from = new URL(request.url).searchParams.get("From");
   const to = new URL(request.url).searchParams.get("To");
   const callStatus = new URL(request.url).searchParams.get("CallStatus");
-  
+
   console.log("🔍 [TWILIO-GET] Call details:", {
     callSid,
     from,
     to,
     callStatus,
   });
-  
+
   // Forward to n8n webhook for Claude → ElevenLabs processing
   if (callSid && from && to) {
     try {
-      const n8nWebhookUrl = import.meta.env.N8N_WEBHOOK_URL || "https://your-n8n-instance.com/webhook/voice-ai";
-      
+      const n8nWebhookUrl =
+        import.meta.env.N8N_WEBHOOK_URL || "https://your-n8n-instance.com/webhook/voice-ai";
+
       const n8nPayload = {
         callSid,
         from,
@@ -33,9 +37,9 @@ export const GET: APIRoute = async ({ request }) => {
         source: "twilio-get",
         webhookData: Object.fromEntries(new URL(request.url).searchParams.entries()),
       };
-      
+
       console.log("🔍 [TWILIO-GET] Forwarding to n8n:", n8nWebhookUrl);
-      
+
       // Forward to n8n (fire and forget for now)
       fetch(n8nWebhookUrl, {
         method: "POST",
@@ -51,7 +55,7 @@ export const GET: APIRoute = async ({ request }) => {
       console.error("❌ [TWILIO-GET] Error forwarding to n8n:", error);
     }
   }
-  
+
   // Return TwiML response
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?>
