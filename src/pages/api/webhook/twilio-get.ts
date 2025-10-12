@@ -38,7 +38,12 @@ export const GET: APIRoute = async ({ request }) => {
     // Forward to n8n webhook for Claude → ElevenLabs processing
     try {
       // Use the N8N tunnel URL
-      const n8nWebhookUrl = "http://localhost:5678/webhook/incoming-call";
+      // Use environment-based N8N URL
+      const n8nWebhookUrl =
+        import.meta.env.N8N_WEBHOOK_URL ||
+        (import.meta.env.PROD
+          ? "https://your-domain.com:5678/webhook/incoming-call"
+          : "http://localhost:5678/webhook/incoming-call");
       console.log(`🔍 [TWILIO-GET-${requestId}] Starting N8N integration...`);
 
       const n8nPayload = {
