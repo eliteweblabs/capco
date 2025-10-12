@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <title>LocalTunnel Bypass</title>
+  </head>
+  <body>
+    <h2>LocalTunnel Bypass Bookmarklet</h2>
+
+    <p>Drag this link to your bookmarks bar to bypass LocalTunnel warnings:</p>
+
+    <a
+      href="javascript:(function(){
+        const currentUrl = window.location.href;
+        if (currentUrl.includes('loca.lt')) {
+            fetch(currentUrl, {
+                headers: {'bypass-tunnel-reminder': 'true'},
+                credentials: 'include'
+            })
+            .then(response => response.text())
+            .then(html => {
+                document.open();
+                document.write(html);
+                document.close();
+            })
+            .catch(err => console.error('Bypass failed:', err));
+        } else {
+            alert('This bookmarklet only works on loca.lt domains');
+        }
+    })();"
+      style="
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        display: inline-block;
+      "
+    >
+      🚀 Bypass LocalTunnel
+    </a>
+
+    <h3>Alternative: Browser Extension</h3>
+    <p>Install "ModHeader" extension and add this rule:</p>
+    <ul>
+      <li><strong>Header name:</strong> bypass-tunnel-reminder</li>
+      <li><strong>Header value:</strong> true</li>
+      <li><strong>URL pattern:</strong> *.loca.lt</li>
+    </ul>
+
+    <h3>Manual Method</h3>
+    <p>Open browser console and run:</p>
+    <pre style="background: #f5f5f5; padding: 10px; border-radius: 3px">
+fetch(window.location.href, {
+    headers: {'bypass-tunnel-reminder': 'true'},
+    credentials: 'include'
+}).then(r => r.text()).then(html => {
+    document.open();
+    document.write(html);
+    document.close();
+});
+    </pre>
+  </body>
+</html>
