@@ -7,3 +7,5 @@ flowbite
 twilio
 supabase
 no magic.links
+
+plausible analytics self hosted

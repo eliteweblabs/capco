@@ -124,6 +124,13 @@ export const navigation = (
       pageType: "backend",
       isPrimary: currentUrl.startsWith("/users"),
     },
+    {
+      label: "Analytics",
+      href: "/analytics",
+      roles: ["Admin"],
+      pageType: "backend",
+      isPrimary: currentUrl.startsWith("/analytics"),
+    },
   ];
 
   // Dropdown menus are now integrated into navItems array above

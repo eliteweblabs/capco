@@ -1,12 +1,28 @@
 {
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "DOCKERFILE"
-  },
-  "deploy": {
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 100,
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
-  }
+  "name": "n8n-workflows",
+  "services": [
+    {
+      "name": "n8n",
+      "image": "n8nio/n8n:latest",
+      "ports": ["5678"],
+      "environment": {
+        "N8N_BASIC_AUTH_ACTIVE": "true",
+        "N8N_BASIC_AUTH_USER": "admin",
+        "N8N_BASIC_AUTH_PASSWORD": "your_secure_password_here",
+        "N8N_HOST": "n8n-workflows.railway.app",
+        "N8N_PORT": "5678",
+        "N8N_PROTOCOL": "https",
+        "WEBHOOK_URL": "https://n8n-workflows.railway.app",
+        "N8N_METRICS": "true",
+        "N8N_LOG_LEVEL": "info"
+      },
+      "volumes": [
+        {
+          "name": "n8n_data",
+          "mountPath": "/home/node/.n8n"
+        }
+      ],
+      "command": "n8n start"
+    }
+  ]
 }
