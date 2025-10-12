@@ -26,7 +26,7 @@ export const GET: APIRoute = async ({ request }) => {
   if (callSid && from && to) {
     try {
       const n8nWebhookUrl =
-        import.meta.env.N8N_WEBHOOK_URL || "https://your-n8n-instance.com/webhook/voice-ai";
+        import.meta.env.N8N_WEBHOOK_URL || "http://localhost:5678/webhook/voice-ai";
 
       const n8nPayload = {
         callSid,
@@ -40,23 +40,48 @@ export const GET: APIRoute = async ({ request }) => {
 
       console.log("🔍 [TWILIO-GET] Forwarding to n8n:", n8nWebhookUrl);
 
-      // Forward to n8n (fire and forget for now)
-      fetch(n8nWebhookUrl, {
+      // Wait for N8N response and use it for TwiML
+      const n8nResponse = await fetch(n8nWebhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.N8N_WEBHOOK_TOKEN || ""}`,
         },
         body: JSON.stringify(n8nPayload),
-      }).catch((err) => {
-        console.error("❌ [TWILIO-GET] Failed to forward to n8n:", err);
       });
+
+      if (n8nResponse.ok) {
+        const n8nData = await n8nResponse.json();
+        console.log("✅ [TWILIO-GET] N8N response:", n8nData);
+
+        // Use N8N's processed response for TwiML
+        const aiMessage =
+          n8nData.message ||
+          n8nData.response ||
+          "Hello! This is your AI assistant. How can I help you today?";
+
+        return new Response(
+          `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="alice">${aiMessage}</Say>
+  <Record maxLength="30" action="${import.meta.env.SITE_URL}/api/webhook/twilio-recording" method="POST" />
+</Response>`,
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "text/xml",
+            },
+          }
+        );
+      } else {
+        console.error("❌ [TWILIO-GET] N8N response failed:", n8nResponse.status);
+      }
     } catch (error) {
       console.error("❌ [TWILIO-GET] Error forwarding to n8n:", error);
     }
   }
 
-  // Return TwiML response
+  // Fallback TwiML response if N8N fails
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
