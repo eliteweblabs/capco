@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ request }) => {
       try {
         const n8nWebhookUrl =
           import.meta.env.N8N_WEBHOOK_URL ||
-          "https://your-n8n-instance.com/webhook/voice-recording";
+          "http://localhost:5678/webhook/voice-recording";
 
         const n8nPayload = {
           recordingUrl,
