@@ -50,7 +50,36 @@ function createProxyServer() {
   
   if (bypassParam) {
     console.log('🚀 URL parameter bypass detected, auto-bypassing...');
-    bypassWarning();
+    // Immediately bypass without waiting for page detection
+    fetch(window.location.href, {
+      method: 'GET',
+      headers: {
+        'bypass-tunnel-reminder': 'true',
+        'User-Agent': 'Mozilla/5.0 (compatible; DevTunnel/1.0)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      credentials: 'include',
+      cache: 'no-cache'
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.text();
+      }
+      throw new Error('Response not ok: ' + response.status);
+    })
+    .then(html => {
+      document.open();
+      document.write(html);
+      document.close();
+      console.log('✅ URL parameter bypass successful');
+    })
+    .catch(err => {
+      console.error('❌ URL parameter bypass failed:', err);
+    });
     return;
   }
   
