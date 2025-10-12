@@ -24,7 +24,7 @@ export const GET: APIRoute = async ({ request }) => {
     });
 
     // Test N8N integration
-    const n8nWebhookUrl = "http://localhost:5678/webhook/incoming-call";
+    const n8nWebhookUrl = "https://primary-production-8fa7.up.railway.app/webhook/incoming-call";
     console.log(`🔍 [TWILIO-GET-TEST-${requestId}] Testing N8N integration...`);
     console.log(`🔍 [TWILIO-GET-TEST-${requestId}] N8N URL:`, n8nWebhookUrl);
 
