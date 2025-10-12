@@ -119,11 +119,6 @@ if (id) {
   return Astro.redirect("/dashboard");
 }
 
-// Safety check - if no project was found, redirect to dashboard
-if (!project) {
-  return Astro.redirect("/dashboard");
-}
-
 const currentStatusInt = project?.status;
 let currentStatusName;
 
@@ -174,39 +169,39 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 }
 
 // Fetch client data for staff selection
-let staffOptions: any[] = [];
-if (currentRole === "Admin" || currentRole === "Staff") {
-  try {
-    // Use the clients API to get only clients
-    const clientResponse = await fetch(`${Astro.url.origin}/api/clients`);
+// let staffOptions: any[] = [];
+// if (currentRole === "Admin" || currentRole === "Staff") {
+//   try {
+//     // Use the clients API to get only clients
+//     const clientResponse = await fetch(`${Astro.url.origin}/api/clients`);
 
-    if (clientResponse.ok) {
-      const clientData = await clientResponse.json();
-      if (clientData.success && clientData.clients) {
-        staffOptions = [
-          { value: "", label: "Unassigned" },
-          ...clientData.clients.map((client: any) => ({
-            value: client.id || "",
-            label:
-              client.companyName ||
-              `${client.firstName || ""} ${client.lastName || ""}`.trim() ||
-              "Unknown Client",
-          })),
-        ];
-      }
-    } else {
-      console.error(
-        "Failed to fetch client data:",
-        clientResponse.status,
-        clientResponse.statusText
-      );
-      staffOptions = [{ value: "", label: "Unassigned" }];
-    }
-  } catch (error) {
-    console.error("Failed to fetch client data:", error);
-    staffOptions = [{ value: "", label: "Unassigned" }];
-  }
-}
+//     if (clientResponse.ok) {
+//       const clientData = await clientResponse.json();
+//       if (clientData.success && clientData.clients) {
+//         staffOptions = [
+//           { value: "", label: "Unassigned" },
+//           ...clientData.clients.map((client: any) => ({
+//             value: client.id || "",
+//             label:
+//               client.companyName ||
+//               `${client.firstName || ""} ${client.lastName || ""}`.trim() ||
+//               "Unknown Client",
+//           })),
+//         ];
+//       }
+//     } else {
+//       console.error(
+//         "Failed to fetch client data:",
+//         clientResponse.status,
+//         clientResponse.statusText
+//       );
+//       staffOptions = [{ value: "", label: "Unassigned" }];
+//     }
+//   } catch (error) {
+//     console.error("Failed to fetch client data:", error);
+//     staffOptions = [{ value: "", label: "Unassigned" }];
+//   }
+// }
 
 // console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
 ---
@@ -249,7 +244,6 @@ if (currentRole === "Admin" || currentRole === "Staff") {
     {project}
     statusesOptions={statusOptions}
     currentStatusTab={currentStatusTab || undefined}
-    {staffOptions}
     {globalSecondaryTextClasses}
     {globalPrimaryTextClasses}
     {globalInputClasses}

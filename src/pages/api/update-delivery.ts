@@ -876,18 +876,13 @@ async function sendBrowserNotification(
     // Log browser notification delivery
     try {
       if (context.project?.id) {
-        await SimpleProjectLogger.addLogEntry(
-          context.project.id,
-          "browserNotificationSent",
-          `Browser push notification sent - Title: ${preferences.browserNotificationTitle || context.emailSubject}`,
-          {
+        await SimpleProjectLogger.addLogEntry(context.project.id, "browserNotificationSent", `Browser push notification sent - Title: ${preferences.browserNotificationTitle || context.emailSubject}`, {
             method: "browser",
             title: preferences.browserNotificationTitle || context.emailSubject,
             body: preferences.browserNotificationBody || context.emailContent,
             icon: preferences.browserNotificationIcon || "/favicon.png",
             url: context.buttonLink,
-          }
-        );
+           currentUser: currentUser });
       } else {
         console.log("🔔 [BROWSER-NOTIFICATION] Browser notification sent (no project context):", {
           method: "browser",
@@ -995,19 +990,14 @@ async function sendInternalNotification(
     // Log internal notification delivery
     try {
       if (context.project?.id) {
-        await SimpleProjectLogger.addLogEntry(
-          context.project.id,
-          "internalNotificationSent",
-          `Internal notification sent to ${userIds.length} users - Title: ${context.emailSubject}`,
-          {
+        await SimpleProjectLogger.addLogEntry(context.project.id, "internalNotificationSent", `Internal notification sent to ${userIds.length} users - Title: ${context.emailSubject}`, {
             method: "internal",
             userIds: userIds,
             notificationCount: notifications.length,
             title: context.emailSubject,
             type: preferences.internalNotificationType || "info",
             priority: preferences.internalNotificationPriority || "normal",
-          }
-        );
+           currentUser: currentUser });
       } else {
         console.log("🔔 [INTERNAL-NOTIFICATION] Internal notification sent (no project context):", {
           method: "internal",
@@ -1071,18 +1061,13 @@ async function sendSMSNotification(
     // Log SMS notification delivery
     try {
       if (context.project?.id) {
-        await SimpleProjectLogger.addLogEntry(
-          context.project.id,
-          "smsNotificationSent",
-          `SMS notification queued for ${context.usersToNotify.length} users - Provider: ${preferences.smsProvider || "twilio"}`,
-          {
+        await SimpleProjectLogger.addLogEntry(context.project.id, "smsNotificationSent", `SMS notification queued for ${context.usersToNotify.length} users - Provider: ${preferences.smsProvider || "twilio"}`, {
             method: "sms",
             users: context.usersToNotify,
             provider: preferences.smsProvider || "twilio",
             message: context.emailContent,
             queuedAt: new Date().toISOString(),
-          }
-        );
+           currentUser: currentUser });
       } else {
         console.log("🔔 [SMS-NOTIFICATION] SMS notification queued (no project context):", {
           method: "sms",
@@ -1132,11 +1117,7 @@ async function sendAllNotifications(
     // Log all notifications delivery
     try {
       if (context.project?.id) {
-        await SimpleProjectLogger.addLogEntry(
-          context.project.id,
-          "allNotificationsSent",
-          `All notification types sent - ${successCount}/3 successful - Title: ${context.emailSubject}`,
-          {
+        await SimpleProjectLogger.addLogEntry(context.project.id, "allNotificationsSent", `All notification types sent - ${successCount}/3 successful - Title: ${context.emailSubject}`, {
             method: "all",
             successCount: successCount,
             totalTypes: 3,
@@ -1145,7 +1126,7 @@ async function sendAllNotifications(
               type: ["browser", "internal", "sms"][index],
               success: result.status === "fulfilled" && result.value.success,
               error: result.status === "rejected" ? result.reason : null,
-            })),
+             currentUser: currentUser })),
           }
         );
       } else {

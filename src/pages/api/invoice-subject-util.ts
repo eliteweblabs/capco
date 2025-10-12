@@ -187,14 +187,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Log the subject creation/update
-    await SimpleProjectLogger.addLogEntry(
-      0, // System log for subject management
+    await SimpleProjectLogger.addLogEntry(0, // System log for subject management
       "projectUpdated", // Use existing log type
       isNewSubject
         ? `New subject created: ${subjectRecord.title}`
-        : `Subject usage updated: ${subjectRecord.title}`,
-      { subject: subjectRecord.title, category: subjectRecord.category }
-    );
+        : `Subject usage updated: ${subjectRecord.title}`, { subject: subjectRecord.title, category: subjectRecord.category  currentUser: currentUser });
 
     console.log("📝 [UPDATE-SUBJECT] Subject processed successfully:", {
       id: subjectRecord.id,
