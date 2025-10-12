@@ -97,7 +97,7 @@ async function generateContractPDF(
     project,
     profile,
     signature,
-    signedAt,
+    signedAt || new Date().toISOString(),
     baseUrl
   );
 
@@ -309,7 +309,7 @@ async function generateContractPDFContent(
 
     const { data: projectWithContract, error: contractError } = await supabase
       .from("projects")
-      .select("contract_html")
+      .select("contractData")
       .eq("id", project.id)
       .single();
 
@@ -318,7 +318,7 @@ async function generateContractPDFContent(
       throw new Error("Failed to fetch contract content");
     }
 
-    let contractHTML = projectWithContract?.contract_html;
+    let contractHTML = projectWithContract?.contractData?.html;
 
     console.log("📄 [GENERATE-CONTRACT-PDF] Contract content check:", {
       hasContractHtml: !!contractHTML,

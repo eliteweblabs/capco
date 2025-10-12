@@ -142,7 +142,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
     // Log the successful registration
     await SimpleProjectLogger.addLogEntry(0, "userRegistration", "User registration successful", {
       email: email?.replace(/@.*$/, "@***"),
-    });
+     currentUser: currentUser });
 
     // Sign in the user after successful registration
     const { data: signInData, error: signInError } = await supabase!.auth.signInWithPassword({
@@ -210,12 +210,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
   } catch (error) {
     // Log the error
     console.error("🔐 [REGISTER] Critical error during registration:", error);
-    await SimpleProjectLogger.addLogEntry(
-      0,
-      "userRegistration",
-      "Critical registration error",
-      { error: error instanceof Error ? error.message : "Unknown error" }
-    );
+    await SimpleProjectLogger.addLogEntry(0, "userRegistration", "Critical registration error", { error: error instanceof Error ? error.message : "Unknown error"  currentUser: currentUser });
 
     return new Response(
       JSON.stringify({

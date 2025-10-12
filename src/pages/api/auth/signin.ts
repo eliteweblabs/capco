@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
           0, // System log
           "error",
           `OAuth ${provider} failed: ${error.message}`,
-          { provider, error: error.message }
+          { provider, error: error.message, currentUser: currentUser }
         );
       } catch (logError) {
         console.error("Error logging failed OAuth login:", logError);
@@ -55,7 +55,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         0, // System log
         "userLogin",
         `User logged in via OAuth ${provider} ${email || "oauth_user"}`,
-        { provider, initiated: true }
+        { provider, initiated: true, currentUser: currentUser }
       );
     } catch (logError) {
       console.error("Error logging OAuth login initiation:", logError);
@@ -80,7 +80,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         0, // System log
         "error",
         `Password login failed: ${error.message} | ${email || "unknown"}`,
-        { error: error.message, email: email || "unknown" }
+        { error: error.message, email: email || "unknown", currentUser: currentUser }
       );
     } catch (logError) {
       console.error("Error logging failed login:", logError);
@@ -103,6 +103,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         userAgent: request.headers.get("user-agent"),
         ip: request.headers.get("x-forwarded-for") || "unknown",
         email: data.user.email || email,
+        currentUser: currentUser,
       }
     );
   } catch (logError) {

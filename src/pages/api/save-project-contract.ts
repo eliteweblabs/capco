@@ -19,7 +19,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { projectId, contractHtml } = body;
+    const { projectId, contractData } = body;
 
     if (!projectId) {
       return createErrorResponse("Project ID is required", 400);
@@ -31,13 +31,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Update project with contract HTML
     console.log("💾 [SAVE-PROJECT-CONTRACT] Saving contract for project:", projectId);
-    console.log("💾 [SAVE-PROJECT-CONTRACT] Contract HTML length:", contractHtml?.length || 0);
+    console.log(
+      "💾 [SAVE-PROJECT-CONTRACT] Contract HTML length:",
+      contractData?.contractHtml?.length || 0
+    );
 
     const { data: updatedProject, error } = await supabase
       .from("projects")
-      .update({ contract_html: contractHtml })
+      .update({ contractData: { html: contractData.contractHtml } })
       .eq("id", projectId)
-      .select("id, title, contract_html")
+      .select("id, title, contractData")
       .single();
 
     if (error) {
@@ -63,7 +66,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // Convert HTML to PDF buffer
       const { convertHtmlToPdf } = await import("./pdf/save-document");
-      const pdfBuffer = await convertHtmlToPdf(contractHtml);
+      const pdfBuffer = await convertHtmlToPdf(contractData.contractHtml);
 
       // Save as media document
       const mediaFile = await saveMedia({
@@ -84,8 +87,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         {
           projectId: updatedProject.id,
           title: updatedProject.title,
-          contractHtml: updatedProject.contract_html,
-          hasCustomContract: !!updatedProject.contract_html,
+          contractHtml: updatedProject.contractData?.html,
+          hasCustomContract: !!updatedProject.contractData?.html,
           documentId: mediaFile.id,
           documentName: documentName,
           documentUrl: mediaFile.publicUrl,
@@ -99,8 +102,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         {
           projectId: updatedProject.id,
           title: updatedProject.title,
-          contractHtml: updatedProject.contract_html,
-          hasCustomContract: !!updatedProject.contract_html,
+          contractHtml: updatedProject.contractData?.html,
+          hasCustomContract: !!updatedProject.contractData?.html,
           documentError: "Failed to create PDF document",
         },
         "Project contract saved successfully (PDF document creation failed)"

@@ -68,7 +68,7 @@ export class SimpleProjectLogger {
     type: LogType,
     message: string,
     metadata?: any,
-    cookies?: string
+    cookies?: any
   ): Promise<boolean> {
     try {
       // console.log("📝 [SIMPLE-LOGGER] Adding log entry:", {
@@ -111,9 +111,15 @@ export class SimpleProjectLogger {
         };
         console.log("📝 [SIMPLE-LOGGER] Using system project for logging:", project);
       }
-      // Only check auth if cookies are provided
+      // Always try to get current user from cookies or metadata
       let currentUser = null;
-      if (cookies) {
+
+      // First, try to get user from metadata if provided
+      if (metadata?.currentUser) {
+        currentUser = metadata.currentUser;
+      }
+      // Then try cookies if provided
+      else if (cookies) {
         try {
           const authResult = await checkAuth(cookies);
           currentUser = authResult.currentUser;

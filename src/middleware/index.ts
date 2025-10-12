@@ -10,6 +10,7 @@ import { supabase } from "../lib/supabase";
 setupConsoleInterceptor();
 
 const protectedRoutes = ["/dashboard(|/)", "/project/**"];
+const devBypassRoutes = ["/analytics", "/dashboard"];
 const redirectRoutes = ["/signin(|/)", "/register(|/)"];
 const protectedAPIRoutes = [
   "/api/guestbook(|/)",
@@ -26,8 +27,24 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
     return next();
   }
 
+  // Handle Cloudflare cookie domain issues
+  if (
+    url.pathname.includes(".png") ||
+    url.pathname.includes(".jpg") ||
+    url.pathname.includes(".jpeg") ||
+    url.pathname.includes(".gif")
+  ) {
+    // Skip middleware for image requests to avoid cookie issues
+    return next();
+  }
+
   // Skip middleware for auth callback routes to avoid interference with PKCE flow
   if (micromatch.isMatch(url.pathname, authCallbackRoutes)) {
+    return next();
+  }
+
+  // Skip middleware for dev bypass routes (development only)
+  if (micromatch.isMatch(url.pathname, devBypassRoutes)) {
     return next();
   }
 

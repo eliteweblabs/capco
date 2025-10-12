@@ -1,134 +1,48 @@
 ---
 interface Props {
-  content: string;
-  id: string;
-  placement?: "top" | "bottom" | "left" | "right";
-  trigger?: "hover" | "click";
-  style?: "light" | "dark" | "auto";
-  animation?: "duration-300" | "duration-500" | "duration-700";
-  arrow?: boolean;
-  class?: string;
-  variant?: "button" | "link";
-  href?: string;
+  text: string;
+  position?: "top" | "bottom" | "left" | "right";
+  className?: string;
+  tooltipClass?: string;
+  disabled?: boolean;
 }
 
-const {
-  id,
-  content,
-  placement = "top",
-  trigger = "hover",
-  style = "light",
-  animation = "duration-300",
-  arrow = true,
-  class: className = "",
-  variant = "button",
-  href,
-} = Astro.props;
+const { text, position = "top", className = "", tooltipClass = "", disabled = false } = Astro.props;
 
-// Generate unique ID for this tooltip
-const tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`;
-
-// Placement classes
-const placementClasses = {
+// Position classes
+const positionClasses = {
   top: "bottom-full left-1/2 transform -translate-x-1/2 mb-2",
   bottom: "top-full left-1/2 transform -translate-x-1/2 mt-2",
   left: "right-full top-1/2 transform -translate-y-1/2 mr-2",
   right: "left-full top-1/2 transform -translate-y-1/2 ml-2",
 };
 
-// Style classes
-const styleClasses = {
-  light: "bg-gray-100 text-gray-900 border border-gray-200 shadow-lg",
-  dark: "bg-gray-900 text-white",
-  auto: "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 dark:border dark:border-gray-200",
+// Arrow classes
+const arrowClasses = {
+  top: "absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900",
+  bottom:
+    "absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900",
+  left: "absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-900",
+  right:
+    "absolute right-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900",
 };
 ---
 
-<div class={`relative inline-block ${className}`}>
-  {
-    variant === "link" ? (
-      <a
-        id={id}
-        href={href}
-        class="tooltip-trigger focus:outline-none"
-        data-tooltip-id={tooltipId}
-        data-tooltip-trigger={trigger}
-      >
-        <slot />
-      </a>
-    ) : (
-      <button
-        id={id}
-        class="tooltip-trigger focus:outline-none"
-        data-tooltip-id={tooltipId}
-        data-tooltip-trigger={trigger}
-      >
-        <slot />
-      </button>
-    )
-  }
+<div class={`relative group ${className}`}>
+  <slot />
 
+  <!-- Tooltip -->
   <div
-    id={tooltipId}
-    role="tooltip"
-    class={`invisible absolute z-10 rounded-lg px-3 py-2 text-sm font-medium opacity-0 shadow-sm transition-opacity ${animation} ${placementClasses[placement]} ${styleClasses[style]}`}
+    class={`
+    absolute ${positionClasses[position]} 
+    px-3 py-2 bg-gray-900 text-white text-sm rounded-lg 
+    opacity-0 group-hover:opacity-100 transition-opacity duration-200 
+    pointer-events-none whitespace-nowrap z-50
+    ${tooltipClass}
+    ${disabled ? "hidden" : ""}
+  `}
   >
-    {content}
-    {
-      arrow && (
-        <div
-          class={`absolute h-2 w-2 rotate-45 transform ${
-            placement === "top"
-              ? "left-1/2 top-full -translate-x-1/2 -translate-y-1/2"
-              : placement === "bottom"
-                ? "bottom-full left-1/2 -translate-x-1/2 translate-y-1/2"
-                : placement === "left"
-                  ? "left-full top-1/2 -translate-x-1/2 -translate-y-1/2"
-                  : "right-full top-1/2 -translate-y-1/2 translate-x-1/2"
-          } ${
-            style === "light"
-              ? "border-b border-r border-gray-200 bg-gray-100"
-              : style === "dark"
-                ? "bg-gray-900"
-                : "bg-gray-900 dark:border-b dark:border-r dark:border-gray-200 dark:bg-gray-100"
-          }`}
-        />
-      )
-    }
+    {text}
+    <div class={arrowClasses[position]}></div>
   </div>
 </div>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Simple tooltip implementation
-    const triggers = document.querySelectorAll(".tooltip-trigger");
-
-    triggers.forEach((trigger) => {
-      const tooltipId = trigger.getAttribute("data-tooltip-id") || "";
-      const tooltipTrigger = trigger.getAttribute("data-tooltip-trigger");
-      const tooltip = document.getElementById(tooltipId);
-
-      if (!tooltip) return;
-
-      if (tooltipTrigger === "hover") {
-        trigger.addEventListener("mouseenter", () => {
-          tooltip.classList.remove("invisible", "opacity-0");
-          tooltip.classList.add("visible", "opacity-100");
-        });
-
-        trigger.addEventListener("mouseleave", () => {
-          tooltip.classList.add("invisible", "opacity-0");
-          tooltip.classList.remove("visible", "opacity-100");
-        });
-      } else if (tooltipTrigger === "click") {
-        trigger.addEventListener("click", (e) => {
-          e.preventDefault();
-          tooltip.classList.toggle("invisible");
-          tooltip.classList.toggle("opacity-0");
-          tooltip.classList.toggle("visible");
-          tooltip.classList.toggle("opacity-100");
-        });
-      }
-    });
-  });
-</script>

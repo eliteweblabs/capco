@@ -328,7 +328,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             parseInt(projectId),
             "fileUploaded",
             `File uploaded: ${file.name}`,
-            { fileName: file.name }
+            {
+              fileName: file.name,
+              currentUser: currentUser,
+            }
           );
         } catch (logError) {
           console.error("Error logging file upload:", logError);
