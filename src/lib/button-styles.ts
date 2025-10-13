@@ -59,7 +59,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     selected:
       "bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
     anchor:
-      "text-black dark:text-white hover:text-primary dark:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 hover:shadow-none opacity-100 disabled",
+      "text-gray-800 dark:text-gray-200 hover:text-primary dark:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 hover:shadow-none opacity-100 disabled transition-all duration-200",
   };
 
   // Build the complete class string
