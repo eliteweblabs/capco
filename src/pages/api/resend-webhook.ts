@@ -210,7 +210,6 @@ async function handleEmailOpened(data: any, baseUrl?: string) {
         body: JSON.stringify({
           currentProject: project,
           status: nextStatus,
-          currentUser: currentUser,
         }),
         signal: controller.signal,
       });

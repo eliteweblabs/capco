@@ -75,7 +75,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         fileType: "application/pdf",
         projectId: projectId,
         targetLocation: "documents",
-        currentUser: currentUser,
         title: `Contract - ${updatedProject.title}`,
         description: `Signed contract document for project: ${updatedProject.title}`,
         customVersionNumber: 1,

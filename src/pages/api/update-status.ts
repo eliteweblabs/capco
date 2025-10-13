@@ -108,7 +108,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           newStatus,
           changedBy: currentUser?.email || "Unknown",
           timestamp: new Date().toISOString(),
-          currentUser: currentUser,
         }
       );
 
