@@ -294,7 +294,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // 7. Send emails (both user and admin notifications)
     console.log("📧 [CREATE-USER] Preparing email notifications...");
     const displayName = companyName?.trim() || `${firstName.trim()} ${lastName.trim()}`;
-    console.log("📧 [CREATE-USER] Display name:", displayName);
+    console.log(
+      "📧 [CREATE-USER] Display name:",
+      displayName,
+      "email:",
+      email,
+      "firstName:",
+      firstName,
+      "lastName:",
+      lastName,
+      "companyName:",
+      companyName,
+      "phone:",
+      phone,
+      "smsAlerts:",
+      smsAlerts,
+      "mobileCarrier:",
+      mobileCarrier,
+      "role:",
+      role
+    );
 
     // Get email templates from database
     let userEmailContent = "";
@@ -302,7 +321,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get user email template
     console.log("📧 [CREATE-USER] Fetching email template for role:", role);
-    const { data: userTemplate } = await supabase
+    const { data: userTemplate } = await supabaseAdmin
       .from("globalOptions")
       .select("value")
       .eq("key", role === "Client" ? "welcomeClientEmailContent" : "welcomeStaffEmailContent")
