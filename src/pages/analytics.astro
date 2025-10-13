@@ -91,25 +91,46 @@ const currentRole = currentUser?.profile?.role || "Client";
             allow="fullscreen"
           >
           </iframe>
-          
+
           <!-- Fallback content for browsers that block iframes -->
-          <div id="analytics-fallback" class="flex flex-col items-center justify-center h-[800px] bg-gray-50 dark:bg-gray-700 rounded-lg p-8" style="display: none;">
+          <div
+            id="analytics-fallback"
+            class="flex flex-col items-center justify-center h-[800px] bg-gray-50 dark:bg-gray-700 rounded-lg p-8"
+            style="display: none;"
+          >
             <div class="text-center">
-              <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              <svg
+                class="mx-auto h-12 w-12 text-gray-400 mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                ></path>
               </svg>
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Analytics Dashboard</h3>
+              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                Analytics Dashboard
+              </h3>
               <p class="text-gray-600 dark:text-gray-400 mb-4">
                 Your browser is blocking the embedded analytics dashboard for security reasons.
               </p>
               <a
                 href="https://plausible-analytics-ce-production-6fd8.up.railway.app/capcofire.com"
-                target="_blank" 
-                rel="noopener noreferrer" 
+                target="_blank"
+                rel="noopener noreferrer"
                 class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  ></path>
                 </svg>
                 Open Analytics Dashboard
               </a>
@@ -253,19 +274,21 @@ const currentRole = currentUser?.profile?.role || "Client";
     (window as any).plausible =
       (window as any).plausible ||
       function () {
-      // @ts-ignore
-      ((window as any).plausible.q = (window as any).plausible.q || []).push(arguments);
+        // @ts-ignore
+        ((window as any).plausible.q = (window as any).plausible.q || []).push(arguments);
       };
 
     // Handle iframe blocking
     function showFallback() {
       console.log("Analytics iframe blocked by browser security");
-      const iframe = document.querySelector('iframe[src*="plausible-analytics"]') as HTMLIFrameElement;
+      const iframe = document.querySelector(
+        'iframe[src*="plausible-analytics"]'
+      ) as HTMLIFrameElement;
       if (iframe) {
-        iframe.style.display = 'none';
-        const fallback = document.getElementById('analytics-fallback');
+        iframe.style.display = "none";
+        const fallback = document.getElementById("analytics-fallback");
         if (fallback) {
-          (fallback as HTMLElement).style.display = 'block';
+          (fallback as HTMLElement).style.display = "block";
         }
       }
     }
@@ -287,14 +310,19 @@ const currentRole = currentUser?.profile?.role || "Client";
         setTimeout(() => {
           try {
             const iframeElement = iframe as HTMLIFrameElement;
-            const iframeDoc = iframeElement.contentDocument || iframeElement.contentWindow?.document;
-            if (!iframeDoc || iframeDoc.body.innerHTML.includes('blocked') || iframeDoc.body.innerHTML.includes('X-Frame-Options')) {
-              console.log('Analytics iframe appears to be blocked by X-Frame-Options');
+            const iframeDoc =
+              iframeElement.contentDocument || iframeElement.contentWindow?.document;
+            if (
+              !iframeDoc ||
+              iframeDoc.body.innerHTML.includes("blocked") ||
+              iframeDoc.body.innerHTML.includes("X-Frame-Options")
+            ) {
+              console.log("Analytics iframe appears to be blocked by X-Frame-Options");
               showFallback();
             }
           } catch (e) {
             // Cross-origin or other issues, show fallback
-            console.log('Cannot access iframe content, showing fallback');
+            console.log("Cannot access iframe content, showing fallback");
             showFallback();
           }
         }, 2000);
@@ -303,7 +331,7 @@ const currentRole = currentUser?.profile?.role || "Client";
         setTimeout(() => {
           const iframeElement = iframe as HTMLIFrameElement;
           if (iframeElement.offsetHeight === 0 || iframeElement.offsetWidth === 0) {
-            console.log('Analytics iframe has zero dimensions, likely blocked');
+            console.log("Analytics iframe has zero dimensions, likely blocked");
             showFallback();
           }
         }, 1000);
