@@ -165,34 +165,15 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     console.log("🔍 [PROJECT-STATUSES-API] Is admin or staff:", isAdminOrStaff);
 
     // Get admin and staff emails using reusable API
-    const adminStaffResponse = await fetch(`${getApiBaseUrl()}/api/get-user-emails-by-role`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roles: ["Admin", "Staff"] }),
-    });
-
-    // console.log("🔍 [PROJECT-STATUSES-API] Admin/Staff response:", adminStaffResponse);
-
-    let adminStaffEmails: any[] = [];
-    let adminStaffUsers: any[] = [];
-    if (adminStaffResponse.ok) {
-      const adminStaffData = await adminStaffResponse.json();
-      // console.log("📊 [PROJECT-STATUSES-API] Admin/Staff data:", adminStaffData);
-      adminStaffEmails = adminStaffData.emails || [];
-      adminStaffUsers = adminStaffData.staffUsers || [];
-      // console.log("📊 [PROJECT-STATUSES-API] Admin/Staff emails:", adminStaffEmails);
-      // console.log("📊 [PROJECT-STATUSES-API] Admin/Staff users:", adminStaffUsers);
-    } else {
-      console.error("📊 [UPDATE-STATUS] Failed to fetch admin/staff emails");
-    }
+    // No longer need to fetch admin/staff emails here since we pass role names directly
+    // and let update-delivery API handle the role resolution
 
     statusesData.forEach((status: any) => {
       const statusCode = status.statusCode;
       if (statusCode) {
-        const usersToNotify = adminStaffUsers
-          .filter((user: any) => status.emailToRoles?.includes(user.role))
-          .map((user: any) => user.email)
-          .filter((email: string) => email); // Remove any undefined emails
+        // Pass role names instead of trying to resolve to emails here
+        // Let update-delivery API handle the role resolution
+        const usersToNotify = status.emailToRoles || ["admin", "staff"];
 
         simplifiedStatuses[statusCode] = {
           admin: {
@@ -441,10 +422,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     statusesData.forEach((status: any) => {
       const statusCode = status.statusCode;
       if (statusCode) {
-        const usersToNotify = adminStaffUsers
-          .filter((user: any) => status.emailToRoles?.includes(user.role))
-          .map((user: any) => user.email)
-          .filter((email: string) => email); // Remove any undefined emails
+        // Pass role names instead of trying to resolve to emails here
+        // Let update-delivery API handle the role resolution
+        const usersToNotify = status.emailToRoles || ["admin", "staff"];
 
         simplifiedStatuses[statusCode] = {
           admin: {

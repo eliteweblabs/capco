@@ -14,7 +14,8 @@ export interface ButtonStyleConfig {
     | "loading"
     | "disabled"
     | "selected"
-    | "anchor";
+    | "anchor"
+    | "tab";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   fullWidth?: boolean;
   className?: string;
@@ -25,7 +26,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
 
   // Base classes for all buttons
   const baseClasses =
-    "relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    "relative inline-flex items-center justify-center font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   // Size classes
   const sizeClasses = {
@@ -39,27 +40,28 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
   // Variant classes using global color system
   const variantClasses = {
     primary:
-      "border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl",
+      "rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl",
     secondary:
-      "border-2 border-neutral-300 text-neutral-700 hover:text-white dark:border-neutral-600 dark:text-neutral-300 hover:bg-primary-500 dark:hover:bg-primary-500",
+      "rounded-full border-2 border-neutral-300 text-neutral-700 hover:text-white dark:border-neutral-600 dark:text-neutral-300 hover:bg-primary-500 dark:hover:bg-primary-500",
     success:
-      "bg-success-500 text-white hover:bg-success-600 dark:bg-success-500 dark:hover:bg-success-600 shadow-lg hover:shadow-xl",
+      "rounded-full bg-success-500 text-white hover:bg-success-600 dark:bg-success-500 dark:hover:bg-success-600 shadow-lg hover:shadow-xl",
     warning:
       "bg-warning-500 text-white hover:bg-warning-600 dark:bg-warning-500 dark:hover:bg-warning-600 shadow-lg hover:shadow-xl",
     danger:
-      "bg-danger-500 text-white hover:bg-danger-600 dark:bg-danger-500 dark:hover:bg-danger-600 shadow-lg hover:shadow-xl",
+      "rounded-full bg-danger-500 text-white hover:bg-danger-600 dark:bg-danger-500 dark:hover:bg-danger-600 shadow-lg hover:shadow-xl",
     outline:
-      "border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-400 dark:hover:text-white",
+      "rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-400 dark:hover:text-white",
     ghost:
-      "text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
+      "rounded-full text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
     link: "text-primary-500 underline hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300",
     loading: "bg-primary-500 text-white cursor-not-allowed opacity-75 dark:bg-primary-500",
     disabled:
-      "bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-60 dark:bg-neutral-800 dark:text-neutral-500 dark:border-neutral-700 disabled",
+      "rounded-full bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-60 dark:bg-neutral-800 dark:text-neutral-500 dark:border-neutral-700 disabled",
     selected:
-      "bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
+      "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
     anchor:
       "text-gray-800 dark:text-gray-200 hover:text-primary dark:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 hover:shadow-none opacity-100 transition-all duration-200",
+    tab: "tab-button pill-nav-item",
   };
 
   // Build the complete class string
