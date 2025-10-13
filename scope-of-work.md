@@ -9,3 +9,10 @@ supabase
 no magic.links
 
 plausible analytics self hosted
+
+✅ SAFE FOR TESTING:
+@eliteweblabs.com - Your catchall domain (perfect for testing) g
+
+use partials if they exist (accordions, buttons)
+
+user roles are Capitalized
