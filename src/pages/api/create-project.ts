@@ -449,7 +449,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         project.address ? project.address : "New Project was created",
         {
           ...projectData,
-          currentUser: currentUser,
         }
       );
     } catch (logError) {

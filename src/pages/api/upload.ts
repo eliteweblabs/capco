@@ -330,7 +330,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             `File uploaded: ${file.name}`,
             {
               fileName: file.name,
-              currentUser: currentUser,
             }
           );
         } catch (logError) {
