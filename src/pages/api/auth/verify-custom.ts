@@ -212,9 +212,9 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     }
 
     console.log(
-      "🔐 [VERIFY-CUSTOM] Custom magic link verification complete, redirecting to Supabase magic link"
+      "🔐 [VERIFY-CUSTOM] Custom magic link verification complete, redirecting to dashboard"
     );
-    return redirect(magicLinkUrl);
+    return redirect(finalUrl.toString());
   } catch (error) {
     console.error("🔐 [VERIFY-CUSTOM] Unexpected error in custom magic link verification:", error);
     return redirect("/login?error=verification_error");

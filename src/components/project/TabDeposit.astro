@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import BoxIcon from "../common/BoxIcon.astro";
 import PaymentForm from "./PaymentForm.astro";
 import Alert from "../partials/Alert.astro";
+import PaymentsManager from "./PaymentsManager.astro";
 
 interface Props {
   project?: any;
@@ -160,6 +161,20 @@ const statusAlert = getStatusAlert();
 
 <div id="content-deposit" class="tab-content p-4 bg-white dark:bg-gray-800 relative">
   {statusAlert && <Alert type="info" title={statusAlert} />}
+
+  {
+    currentRole !== "Client" && (
+      <PaymentsManager
+        invoiceId={invoiceId && invoiceId !== "0" ? parseInt(invoiceId) : null}
+        amount={totalAmount / 2}
+        currency="usd"
+        paymentType="deposit"
+        project={project}
+        currentUser={currentUser}
+        statusData={statusData}
+      />
+    )
+  }
 
   {
     projectStatus >= 50 && currentRole === "Client" && (
