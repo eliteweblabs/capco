@@ -325,6 +325,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("🔍 [PROJECT-STATUSES-API] POST method called!");
   try {
     // Check authentication and get user role
+    const { currentUser } = await checkAuth(cookies);
+    if (!currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database not available" }), {
@@ -364,14 +371,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Always get current user from authentication check
-    const { currentUser } = await checkAuth(cookies);
-    if (!currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    // User is already authenticated from the check above
 
     // Determine user role for status display
     const isAdminOrStaff =
