@@ -1,5 +1,5 @@
 ---
-import Layout from "../../layouts/Layout.astro";
+import App from "../../components/common/App.astro";
 import Button from "../../components/common/Button.astro";
 import BoxIcon from "../../components/common/BoxIcon.astro";
 
@@ -34,7 +34,7 @@ const sampleProjects = [
 const calComUrl = "https://calcom-web-app-production-fe0b.up.railway.app";
 ---
 
-<Layout title="Cal.com Integration Demo">
+<App title="Cal.com Integration Demo">
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="container mx-auto px-4 py-8">
       <!-- Header -->
@@ -219,7 +219,7 @@ const calComUrl = "https://calcom-web-app-production-fe0b.up.railway.app";
       </div>
     </div>
   </div>
-</Layout>
+</App>
 
 <script>
   // Demo functionality for Cal.com integration
@@ -228,7 +228,7 @@ const calComUrl = "https://calcom-web-app-production-fe0b.up.railway.app";
     let eventsCreated = 0;
 
     // Create Cal.com event for project
-    function createCalEvent(projectId, projectTitle, startDate) {
+    function createCalEvent(projectId: string, projectTitle: string, startDate: string) {
       console.log("Creating Cal.com event for project:", projectTitle);
 
       // Simulate API call to Cal.com
@@ -243,7 +243,10 @@ const calComUrl = "https://calcom-web-app-production-fe0b.up.railway.app";
       // In a real implementation, this would call the Cal.com API
       setTimeout(() => {
         eventsCreated++;
-        document.getElementById("events-count").textContent = eventsCreated;
+        const eventsCountEl = document.getElementById("events-count");
+        if (eventsCountEl) {
+          eventsCountEl.textContent = eventsCreated.toString();
+        }
 
         // Show success message
         showNotification(`✅ Created Cal.com event for "${projectTitle}"`, "success");
@@ -251,7 +254,7 @@ const calComUrl = "https://calcom-web-app-production-fe0b.up.railway.app";
     }
 
     // Schedule meeting with client
-    function scheduleMeeting(projectId, projectTitle) {
+    function scheduleMeeting(projectId: string, projectTitle: string) {
       console.log("Opening Cal.com booking page for:", projectTitle);
 
       // Open Cal.com booking page in new tab
@@ -262,7 +265,7 @@ const calComUrl = "https://calcom-web-app-production-fe0b.up.railway.app";
     }
 
     // Show notification
-    function showNotification(message, type = "info") {
+    function showNotification(message: string, type: string = "info") {
       const notification = document.createElement("div");
       notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
         type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"
@@ -277,39 +280,52 @@ const calComUrl = "https://calcom-web-app-production-fe0b.up.railway.app";
 
     // Event listeners
     document.querySelectorAll(".create-cal-event-btn").forEach((btn) => {
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", function (this: HTMLElement) {
         const projectId = this.dataset.projectId;
         const projectTitle = this.dataset.projectTitle;
         const startDate = this.dataset.startDate;
-        createCalEvent(projectId, projectTitle, startDate);
+        if (projectId && projectTitle && startDate) {
+          createCalEvent(projectId, projectTitle, startDate);
+        }
       });
     });
 
     document.querySelectorAll(".schedule-meeting-btn").forEach((btn) => {
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", function (this: HTMLElement) {
         const projectId = this.dataset.projectId;
         const projectTitle = this.dataset.projectTitle;
-        scheduleMeeting(projectId, projectTitle);
+        if (projectId && projectTitle) {
+          scheduleMeeting(projectId, projectTitle);
+        }
       });
     });
 
-    document.getElementById("create-sample-events").addEventListener("click", function () {
-      document.querySelectorAll(".create-cal-event-btn").forEach((btn) => {
-        btn.click();
+    const createSampleEventsBtn = document.getElementById("create-sample-events");
+    if (createSampleEventsBtn) {
+      createSampleEventsBtn.addEventListener("click", function () {
+        document.querySelectorAll(".create-cal-event-btn").forEach((btn) => {
+          (btn as HTMLElement).click();
+        });
       });
-    });
+    }
 
-    document.getElementById("open-cal-dashboard").addEventListener("click", function () {
-      window.open(calComUrl, "_blank");
-    });
+    const openCalDashboardBtn = document.getElementById("open-cal-dashboard");
+    if (openCalDashboardBtn) {
+      openCalDashboardBtn.addEventListener("click", function () {
+        window.open(calComUrl, "_blank");
+      });
+    }
 
-    document.getElementById("test-webhook").addEventListener("click", function () {
-      showNotification("🔗 Testing webhook integration...", "info");
+    const testWebhookBtn = document.getElementById("test-webhook");
+    if (testWebhookBtn) {
+      testWebhookBtn.addEventListener("click", function () {
+        showNotification("🔗 Testing webhook integration...", "info");
 
-      // Simulate webhook test
-      setTimeout(() => {
-        showNotification("✅ Webhook integration test successful!", "success");
-      }, 2000);
-    });
+        // Simulate webhook test
+        setTimeout(() => {
+          showNotification("✅ Webhook integration test successful!", "success");
+        }, 2000);
+      });
+    }
   });
 </script>

@@ -16,3 +16,5 @@ plausible analytics self hosted
 use partials if they exist (accordions, buttons)
 
 user roles are Capitalized
+
+App.astro is the wrapper for every page, not Layout.astro
