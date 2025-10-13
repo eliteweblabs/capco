@@ -668,10 +668,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
     async addRowButton(tbody) {
       console.log("🔍 [PROPOSAL-MANAGER] addRowButton called, creating Add Line Item button");
-      const addRowBtn = document.createElement("tr");
-      addRowBtn.innerHTML = `
-        <td colspan="6" class="px-4 py-3 text-center border-t border-gray-200 dark:border-gray-600">
-      </td>`;
 
       // use the button partial to create the button
       const button = await window.createButtonPartial({
@@ -700,7 +696,13 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       //   </td>
       // `;
       // addRowBtn.id = "add-row-btn";
-      tbody.appendChild(addRowBtn.querySelector("td").appendChild(button));
+
+      const addRowBtn = document.createElement("tr");
+      addRowBtn.innerHTML = `
+        <td colspan="6" class="px-4 py-3 text-center border-t border-gray-200 dark:border-gray-600">${button}</td>
+      </td>`;
+
+      tbody.appendChild(addRowBtn);
     }
 
     async updateLineItem(index, field, value) {
@@ -902,7 +904,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         button.setAttribute("data-state", "confirm");
         button.title = "Click again to confirm deletion";
         button.className =
-          "p-1 text-orange-600 hover:text-orange-800 hover:bg-orange-100 rounded transition-colors delete-btn";
+          "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn pulse";
 
         // Auto-revert after 3 seconds
         setTimeout(() => {
@@ -928,7 +930,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       button.setAttribute("data-state", "trash");
       button.title = "Delete line item";
       button.className =
-        "p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn";
+        "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn pulse";
     }
 
     deleteProposalRow(index) {
