@@ -748,26 +748,31 @@ const debugData = {
 
       (window as any).sendEmail = async function (emailData: any, currentUser: any) {
         try {
+          console.log("📧 [SEND-EMAIL] Received email data:", emailData);
+
           // Transform the email data to match the update-delivery API structure
           const transformedData = {
-            usersToNotify: emailData.usersToNotify, // TODO: Get actual user emails
-            method: emailData.method || "email", // Use method instead of emailType
+            usersToNotify: emailData.usersToNotify || [],
+            method: emailData.method || "email",
             emailSubject: emailData.emailSubject || "Project Update",
-            emailContent: emailData.emailContent || JSON.stringify(emailData),
+            emailContent: emailData.emailContent || "Project status has been updated",
             buttonLink: emailData.buttonLink,
             buttonText: emailData.buttonText,
-            project: {}, // TODO: Pass actual project data
-            currentUser: currentUser, // TODO: Pass actual current user
+            project: emailData.project || {},
+            currentUser: currentUser,
           };
 
-          console.log("📧 [SEND-EMAIL] Sending email with data:", transformedData);
+          console.log("📧 [SEND-EMAIL] Sending email with transformed data:", transformedData);
 
           const response = await fetch("/api/update-delivery", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(transformedData),
           });
-          return await response.json();
+
+          const result = await response.json();
+          console.log("📧 [SEND-EMAIL] Email response:", result);
+          return result;
         } catch (error: any) {
           console.error("Global sendEmail error:", error);
           return { success: false, error: error.message };
