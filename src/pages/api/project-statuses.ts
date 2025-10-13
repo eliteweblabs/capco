@@ -324,6 +324,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log("🔍 [PROJECT-STATUSES-API] POST method called!");
   try {
+    // Check authentication and get user role
+
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database not available" }), {
         status: 500,
@@ -362,8 +364,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Authentication will be handled at the single point of truth (logging function)
-    // No need to pass currentUser around - it will be determined where needed
+    // Always get current user from authentication check
+    const { currentUser } = await checkAuth(cookies);
+    if (!currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Determine user role for status display
+    const isAdminOrStaff =
+      currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "Staff";
 
     // Fetch all project statuses from database
     const { data: statusesData, error: statusesError } = await supabaseAdmin
