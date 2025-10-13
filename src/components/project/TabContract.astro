@@ -13,6 +13,7 @@ interface Props {
   currentUser?: any;
   statusData?: any;
   statusAlert?: string;
+  clientName?: string;
 }
 
 const {
@@ -25,6 +26,7 @@ const {
   globalPrimaryTextClasses,
   globalInputClasses,
   statusData,
+  clientName,
 } = Astro.props;
 
 const projectId = project.id;
@@ -59,10 +61,10 @@ function getStatusAlert() {
           ? "Contract has been signed."
           : null;
   } else {
-    return Number(projectStatus) < 45
-      ? "Client has not been sent the contract, they need to accept the proposal first."
+    return Number(projectStatus) <= 45
+      ? `${clientName} has not been allowed to view the contract, they need to accept the proposal first.`
       : Number(projectStatus) === 45
-        ? "Here's the default contract, edit it, save it, send it, fuck off."
+        ? `${clientName} can view / sign this contract currently.`
         : Number(projectStatus) > 45
           ? "Contract has been signed and is ready to begin work."
           : null;
