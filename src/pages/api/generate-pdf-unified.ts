@@ -256,26 +256,31 @@ async function generateGeneralPDF(
     }
   }
 
-  // Return PDF as blob - convert to proper format for Response
-  let bufferData: any;
-  let bufferLength: number;
+  // Get the HTML content for preview
+  const htmlContent = await page.content();
 
-  if (pdfBuffer.buffer instanceof Buffer) {
-    bufferData = pdfBuffer.buffer;
-    bufferLength = (pdfBuffer.buffer as Buffer).length;
-  } else {
-    bufferData = pdfBuffer;
-    bufferLength = (pdfBuffer as Uint8Array).length;
-  }
+  // Close browser
+  await browser.close();
 
-  return new Response(bufferData, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="project-agreement-${projectData?.projectId || "document"}.pdf"`,
-      "Content-Length": bufferLength.toString(),
-    },
-  });
+  // Return JSON response with HTML content for preview
+  return new Response(
+    JSON.stringify({
+      success: true,
+      document: {
+        id: `preview_${Date.now()}`,
+        name: `project-agreement-${projectData?.projectId || "document"}`,
+        htmlContent: htmlContent,
+        templateId: templateUrl,
+        projectId: projectData?.projectId,
+      },
+    }),
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 }
 
 async function generateContractPDFContent(

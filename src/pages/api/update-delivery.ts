@@ -388,7 +388,99 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           // Replace template variables for regular emails
 
           // ===== BUTTON LINK HANDLING =====
-          const finalButtonLink = buttonLink || `${baseUrl}/dashboard`;
+          let finalButtonLink = buttonLink;
+
+          if (method === "magicLink") {
+            // Generate magic links for authentication emails
+            console.log("🔗 [EMAIL-DELIVERY] Generating magic link for authentication");
+            console.log("🔗 [EMAIL-DELIVERY] Magic link method detected:", {
+              method,
+              userEmail,
+              buttonLink,
+            });
+            try {
+              // Ensure buttonLink is properly formatted (starts with /)
+              const cleanButtonLink = buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`;
+              const redirectUrl = `${baseUrl}${cleanButtonLink}`;
+
+              console.log("🔗 [EMAIL-DELIVERY] Magic link configuration:", {
+                buttonLink,
+                cleanButtonLink,
+                redirectUrl,
+                baseUrl,
+              });
+
+              // Generate a custom magic link token that won't be prefetched
+              console.log("📧 [EMAIL-DELIVERY] Generating custom magic link token...");
+
+              // Create a unique token that we'll store and verify
+              const customToken = crypto.randomUUID();
+              const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+              console.log("📧 [EMAIL-DELIVERY] Custom token generated:", {
+                token: customToken,
+                expiry: tokenExpiry.toISOString(),
+                email: userEmail,
+              });
+
+              // Store the token in the database for verification
+              try {
+                const { error: insertError } = await supabaseAdmin.from("magicLinkTokens").insert({
+                  token: customToken,
+                  email: userEmail,
+                  expiresAt: tokenExpiry.toISOString(),
+                  redirectTo: cleanButtonLink,
+                  createdAt: new Date().toISOString(),
+                });
+
+                if (insertError) {
+                  console.error("📧 [EMAIL-DELIVERY] Error storing magic link token:", insertError);
+                  // Fallback to regular URL
+                  finalButtonLink = cleanButtonLink;
+                } else {
+                  console.log("📧 [EMAIL-DELIVERY] Magic link token stored successfully");
+
+                  // Create the custom magic link that goes directly to verify-custom
+                  finalButtonLink = `${baseUrl}/api/auth/verify-custom?token=${customToken}&email=${encodeURIComponent(userEmail)}&redirect=${encodeURIComponent(cleanButtonLink)}`;
+                  console.log("📧 [EMAIL-DELIVERY] Created custom magic link:", {
+                    finalButtonLink,
+                    cleanButtonLink,
+                    userEmail,
+                    baseUrl,
+                    customToken,
+                  });
+                }
+              } catch (error) {
+                console.error("📧 [EMAIL-DELIVERY] Error creating custom magic link:", error);
+                finalButtonLink = cleanButtonLink;
+              }
+
+              console.log("🔗 [EMAIL-DELIVERY] Final magic link URL:", finalButtonLink);
+            } catch (error) {
+              console.error("📧 [EMAIL-DELIVERY] Error generating magic link:", error);
+              // Fallback to regular URL if magic link generation fails
+              finalButtonLink = cleanButtonLink;
+              console.log(
+                "🔗 [EMAIL-DELIVERY] Magic link generation failed, using fallback:",
+                finalButtonLink
+              );
+            }
+          } else if (buttonLink && !buttonLink.startsWith("http")) {
+            // For non-magic-link emails, convert relative URLs to absolute URLs
+            finalButtonLink = `${baseUrl}${buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`}`;
+            console.log("🔗 [EMAIL-DELIVERY] Non-magic-link email, using regular URL:", {
+              method,
+              finalButtonLink,
+              buttonLink,
+            });
+          } else if (!buttonLink) {
+            // No button link provided, use default dashboard
+            finalButtonLink = `${baseUrl}/dashboard`;
+            console.log(
+              "🔗 [EMAIL-DELIVERY] No button link provided, using default dashboard:",
+              finalButtonLink
+            );
+          }
 
           // ===== TEMPLATE REPLACEMENT =====
           const finalButtonText = buttonText || "Access Your Dashboard";
