@@ -818,14 +818,6 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace ASCII_CHECKBOX placeholders
-  const beforeReplaceCheckbox = result;
-  result = result.replace(/\{\{\s*ASCII_CHECKBOX\s*\}\}/g, "☐");
-  if (result !== beforeReplaceCheckbox) {
-    placeholderApplied = true;
-    addBoldTags = false;
-  }
-
   // Process PROJECT_LINK placeholders
   if (result && projectLink) {
     const beforeReplace = result;
@@ -851,6 +843,15 @@ export function replacePlaceholders(
       return `<br><br><a href="${fullUrl}" class="relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-5 py-2.5 text-sm border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl">${displayText}</a>`;
     });
     if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+
+    // utils
+    // Replace ASCII_CHECKBOX placeholders
+    const beforeReplaceCheckbox = result;
+    result = result.replace(/\{\{\s*ASCII_CHECKBOX\s*\}\}/g, "☐");
+    if (result !== beforeReplaceCheckbox) {
       placeholderApplied = true;
       addBoldTags = false;
     }
