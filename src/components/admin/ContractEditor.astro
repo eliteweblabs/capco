@@ -9,33 +9,30 @@ interface Props {
 }
 
 import DigitalSignature from "../project/DigitalSignature.astro";
-
+import StickyActions from "../project/StickyActions.astro";
+import Button from "../common/Button.astro";
 const { project, title, editMode, projectStatus, statusData, currentUser } = Astro.props;
 const projectId = project.id;
 ---
 
 {
+  editMode && (
+    <StickyActions columns="2">
+      <>
+        <Button id="load-template-btn" variant="secondary">
+          Reset to Template
+        </Button>
+        <Button id="save-contract-btn" variant="success">
+          Save Contract
+        </Button>
+      </>
+    </StickyActions>
+  )
+}
+
+{
   editMode ? (
     <div id="contract-editor-container" class="space-y-4">
-      <div class="sticky bottom-0 flex items-center justify-between bg-gray-100 dark:bg-gray-800">
-        <div class="flex gap-2">
-          <button
-            id="load-template-btn"
-            type="button"
-            class="rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-          >
-            Reset to Template
-          </button>
-          <button
-            id="save-contract-btn"
-            type="button"
-            class="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Save Contract
-          </button>
-        </div>
-      </div>
-
       {/* <!-- WYSIWYG Editor --> */}
       <div class="rounded-lg border border-gray-300 dark:border-gray-600">
         <div
