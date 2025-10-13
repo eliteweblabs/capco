@@ -8,10 +8,8 @@ import { getApiBaseUrl } from "../../lib/url-utils";
 import { FORM_FIELDS, getFormField } from "../../lib/form-utils";
 import { getCarrierGateway } from "../../lib/sms-utils";
 import { validateEmail } from "../../lib/ux-utils";
-import {
-  routeUsersByNotificationPreference,
-  sendSMSNotification,
-} from "../../lib/notification-router";
+// Removed routeUsersByNotificationPreference and sendSMSNotification imports
+// All notification routing is now handled by update-delivery API
 
 /**
  * Generates a secure password with mixed case, numbers, and special characters
@@ -364,99 +362,49 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     adminEmailContent += `A new user account has been created successfully:<br><br>`;
     adminEmailContent += emailFooterContent;
 
-    // Check SMS preferences for the new user
-    const { smsUsers, emailUsers } = await routeUsersByNotificationPreference([email]);
-
-    // Send SMS if user has SMS alerts enabled
-    if (smsUsers.length > 0) {
-      console.log("📱 [CREATE-USER] Sending SMS welcome to user with SMS alerts");
-      await sendSMSNotification(
-        smsUsers,
-        `Welcome to CAPCo Fire Protection Systems → ${displayName}`,
-        userEmailContent
-      );
-    }
-
-    // Send email to users without SMS alerts (or as fallback)
-    if (emailUsers.length > 0) {
-      console.log("📧 [CREATE-USER] Sending welcome email to user...");
-      try {
-        const userEmailResponse = await fetch(`${getApiBaseUrl()}/api/update-delivery`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            method: "magicLink",
-            trackLinks: false,
-            usersToNotify: emailUsers,
-            emailSubject: `Welcome to CAPCo Fire Protection Systems → ${displayName}`,
-            emailContent: userEmailContent,
-            buttonText: "Access Your Dashboard",
-            buttonLink: "/dashboard",
-          }),
-        });
-
-        if (!userEmailResponse.ok) {
-          console.error("❌ [CREATE-USER] Failed to send welcome email to user");
-        } else {
-          console.log("✅ [CREATE-USER] Welcome email sent successfully");
-        }
-      } catch (emailError) {
-        console.error("❌ [CREATE-USER] Error sending welcome email:", emailError);
-      }
-    }
-
-    // Send notification email to admins
-    console.log("📧 [CREATE-USER] Sending admin notifications...");
+    // Send welcome email to the newly created user via update-delivery (centralized routing)
+    console.log("📧 [CREATE-USER] Sending welcome email to user via update-delivery...");
     try {
-      const adminResponse = await fetch(`${getApiBaseUrl()}/api/get-user-emails-by-role`, {
+      const userEmailResponse = await fetch(`${getApiBaseUrl()}/api/update-delivery`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roles: ["Admin", "Staff"] }),
+        body: JSON.stringify({
+          method: "magicLink",
+          trackLinks: false,
+          usersToNotify: [email], // Send to the newly created user
+          emailSubject: `Welcome to CAPCo Fire Protection Systems → ${displayName}`,
+          emailContent: userEmailContent,
+          buttonText: "Access Your Dashboard",
+          buttonLink: "/dashboard",
+        }),
       });
 
-      const adminUsers = await adminResponse.json();
-      console.log("📧 [CREATE-USER] Found admin users:", adminUsers.staffUsers?.length || 0);
-
-      if (adminUsers.staffUsers && adminUsers.staffUsers.length > 0) {
-        // Check SMS preferences for admin users
-        const { smsUsers: adminSmsUsers, emailUsers: adminEmailUsers } =
-          await routeUsersByNotificationPreference(adminUsers.emails);
-
-        // Send SMS to admin users with SMS alerts
-        if (adminSmsUsers.length > 0) {
-          console.log(
-            "📱 [CREATE-USER] Sending SMS to admin users with SMS alerts:",
-            adminSmsUsers
-          );
-          await sendSMSNotification(
-            adminSmsUsers,
-            `New User → ${displayName} → ${role}`,
-            adminEmailContent
-          );
-        }
-
-        // Send email/internal notifications to admin users without SMS alerts
-        if (adminEmailUsers.length > 0) {
-          console.log("📧 [CREATE-USER] Sending notification to admin users:", adminEmailUsers);
-          await fetch(`${getApiBaseUrl()}/api/update-delivery`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              method: "magicLink",
-              usersToNotify: adminEmailUsers, // Emails for email delivery
-              userIdsToNotify: adminUsers.userIds.filter((id: string, index: number) =>
-                adminEmailUsers.includes(adminUsers.emails[index])
-              ), // Filter user IDs to match email users
-              emailSubject: `New User → ${displayName} → ${role}`,
-              emailContent: adminEmailContent,
-              buttonText: "View Users",
-              buttonLink: "/admin/users",
-              trackLinks: false,
-            }),
-          });
-        }
-        console.log("✅ [CREATE-USER] Admin notifications sent");
+      if (!userEmailResponse.ok) {
+        console.error("❌ [CREATE-USER] Failed to send welcome email to user");
+      } else {
+        console.log("✅ [CREATE-USER] Welcome email sent successfully via update-delivery");
       }
+    } catch (emailError) {
+      console.error("❌ [CREATE-USER] Error sending welcome email:", emailError);
+    }
+
+    // Send notification to admins via update-delivery (centralized notification routing)
+    console.log("📧 [CREATE-USER] Sending admin notifications via update-delivery...");
+    try {
+      await fetch(`${getApiBaseUrl()}/api/update-delivery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          method: "magicLink",
+          usersToNotify: ["admin", "staff"], // Let update-delivery resolve roles to emails
+          emailSubject: `New User → ${displayName} → ${role}`,
+          emailContent: adminEmailContent,
+          buttonText: "View Users",
+          buttonLink: "/admin/users",
+          trackLinks: false,
+        }),
+      });
+      console.log("✅ [CREATE-USER] Admin notifications sent via update-delivery");
     } catch (adminError) {
       console.error("❌ [CREATE-USER] Error sending admin notifications:", adminError);
     }
