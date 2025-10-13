@@ -87,7 +87,8 @@ const currentRole = currentUser?.profile?.role || "Client";
             title="Plausible Analytics Dashboard"
             loading="lazy"
             onerror="showFallback()"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+            referrerpolicy="no-referrer-when-downgrade"
+            allow="fullscreen"
           >
           </iframe>
           
@@ -296,7 +297,16 @@ const currentRole = currentUser?.profile?.role || "Client";
             console.log('Cannot access iframe content, showing fallback');
             showFallback();
           }
-        }, 3000);
+        }, 2000);
+
+        // Additional check for X-Frame-Options blocking
+        setTimeout(() => {
+          const iframeElement = iframe as HTMLIFrameElement;
+          if (iframeElement.offsetHeight === 0 || iframeElement.offsetWidth === 0) {
+            console.log('Analytics iframe has zero dimensions, likely blocked');
+            showFallback();
+          }
+        }, 1000);
       }
     });
   </script>
