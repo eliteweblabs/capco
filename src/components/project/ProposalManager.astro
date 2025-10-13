@@ -656,7 +656,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         "🔍 [PROPOSAL-MANAGER] Checking projectStatus for Add Line Item button:",
         projectStatus
       );
-      if (projectStatus === 20 && document.querySelector("#add-row-btn") === null) {
+      if (projectStatus === 20 && !document.querySelector("#add-row-btn")) {
         console.log("🔍 [PROPOSAL-MANAGER] Adding Add Line Item button");
         this.addRowButton(tbody);
       } else {
@@ -680,22 +680,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         fullWidth: true,
         onclick: "window.proposalManager?.addProposalRow()",
       });
-
-      // addRowBtn.innerHTML = `
-      //   <td colspan="5" class="px-4 py-3 text-center border-t border-gray-200 dark:border-gray-600">
-      //     <button id="add-row-btn"
-      //       type="button"
-      //       onclick="window.proposalManager?.addProposalRow()"
-      //       class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
-      //     >
-      //       <svg class="mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      //         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-      //       </svg>
-      //       Add Line Item
-      //     </button>
-      //   </td>
-      // `;
-      // addRowBtn.id = "add-row-btn";
 
       const addRowBtn = document.createElement("tr");
       addRowBtn.innerHTML = `
@@ -1353,6 +1337,12 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   async function initializeProposalManager(project, projectStatus, currentUser) {
     console.log("🔧 [PROPOSAL-MANAGER] Initializing ProposalManager for project:", project.id);
 
+    // Check if ProposalManager is already initialized to prevent double loading
+    if (window.proposalManager) {
+      console.log("⚠️ [PROPOSAL-MANAGER] ProposalManager already exists, skipping initialization");
+      return;
+    }
+
     // Create the proposal manager instance with invoice data
     window.proposalManager = new ProposalManager(project, currentUser, invoiceId, existingInvoice);
 
@@ -1429,6 +1419,13 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   window.updateRowTotalDirect = updateRowTotalDirect;
 
   document.addEventListener("DOMContentLoaded", async () => {
+    // Prevent double initialization
+    if (window.proposalManagerInitialized) {
+      console.log("⚠️ [PROPOSAL-MANAGER] Already initialized, skipping DOMContentLoaded");
+      return;
+    }
+    window.proposalManagerInitialized = true;
+
     // Get component data from the global variables set by define:vars
     // Set project data on window object for global access
     window.project = project;
@@ -2410,18 +2407,19 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
                   hiddenInput.value = newSubject;
                   hideDropdown();
                   window.showModal(
+                    "success",
                     "Success",
                     data.isNew ? "New subject created!" : "Subject selected!",
-                    "success"
+                    2000
                   );
                   loadSubjects("");
                 } else {
                   console.error("Failed to create subject:", data.error);
-                  window.showModal("error", "Error", "Failed to create subject");
+                  window.showModal("error", "Error", "Failed to create subject", 2000);
                 }
               } catch (error) {
                 console.error("Error creating subject:", error);
-                window.showModal("error", "Error", "Failed to create subject");
+                window.showModal("error", "Error", "Failed to create subject", 2000);
               }
             }
           });
