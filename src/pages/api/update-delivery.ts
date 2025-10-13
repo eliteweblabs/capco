@@ -398,11 +398,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
               userEmail,
               buttonLink,
             });
-            try {
-              // Ensure buttonLink is properly formatted (starts with /)
-              const cleanButtonLink = buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`;
-              const redirectUrl = `${baseUrl}${cleanButtonLink}`;
 
+            // Ensure buttonLink is properly formatted (starts with /)
+            const cleanButtonLink = buttonLink.startsWith("/") ? buttonLink : `/${buttonLink}`;
+            const redirectUrl = `${baseUrl}${cleanButtonLink}`;
+
+            try {
               console.log("🔗 [EMAIL-DELIVERY] Magic link configuration:", {
                 buttonLink,
                 cleanButtonLink,
