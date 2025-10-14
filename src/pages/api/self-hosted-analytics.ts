@@ -47,15 +47,16 @@ async function fetchSelfHostedAnalytics(period: string) {
   const PLAUSIBLE_API_KEY = import.meta.env.PLAUSIBLE_API_KEY;
 
   if (!PLAUSIBLE_API_KEY) {
+    console.log("🔍 No Plausible API key found, using mock data");
     // Return mock data for development
     return {
       provider: "self-hosted-plausible",
       period,
       data: {
-        pageviews: Math.floor(Math.random() * 1000) + 500,
-        visitors: Math.floor(Math.random() * 200) + 100,
-        bounce_rate: Math.floor(Math.random() * 30) + 20,
-        visit_duration: Math.floor(Math.random() * 120) + 30,
+        pageviews: Math.floor(Math.random() * 500) + 250,
+        visitors: Math.floor(Math.random() * 100) + 50,
+        bounce_rate: Math.floor(Math.random() * 20) + 15,
+        visit_duration: Math.floor(Math.random() * 60) + 45,
         top_pages: [
           { page: "/", visitors: Math.floor(Math.random() * 100) + 50 },
           { page: "/dashboard", visitors: Math.floor(Math.random() * 50) + 25 },
