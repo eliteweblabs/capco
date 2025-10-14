@@ -66,6 +66,15 @@ export interface PlaceholderData {
 }
 
 /**
+ * Get nested value from object using dot notation
+ */
+function getNestedValue(obj: any, path: string): any {
+  return path.split(".").reduce((current, key) => {
+    return current && current[key] !== undefined ? current[key] : null;
+  }, obj);
+}
+
+/**
  * Replace placeholders in a message string
  */
 
@@ -82,6 +91,43 @@ export function replacePlaceholders(
   let result = message;
   let placeholderApplied = false;
 
+  // === DYNAMIC PLACEHOLDER REPLACEMENT ===
+  // Find all {{placeholder}} instances and try to resolve them dynamically
+  const placeholderRegex = /\{\{\s*([^}]+)\s*\}\}/g;
+  const matches = [...message.matchAll(placeholderRegex)];
+
+  for (const match of matches) {
+    const fullPlaceholder = match[0]; // e.g., "{{project.authorProfile.firstName}}"
+    const placeholderPath = match[1].trim(); // e.g., "project.authorProfile.firstName"
+
+    let value = null;
+
+    // Try to resolve the placeholder using dot notation
+    if (data && placeholderPath.startsWith("project.")) {
+      const path = placeholderPath.replace("project.", "");
+      value = getNestedValue(data.project, path);
+    } else if (data && placeholderPath.startsWith("statusData.")) {
+      const path = placeholderPath.replace("statusData.", "");
+      value = getNestedValue(data.statusData, path);
+    } else if (placeholderPath.startsWith("global.")) {
+      const path = placeholderPath.replace("global.", "");
+      value = getNestedValue(globalCompanyData(), path);
+    }
+
+    // If we found a value, replace it
+    if (value !== null && value !== undefined) {
+      const beforeReplace = result;
+      result = result.replace(fullPlaceholder, value.toString());
+      if (result !== beforeReplace) {
+        placeholderApplied = true;
+        console.log(`✅ [PLACEHOLDER-UTILS] Dynamic replacement: ${fullPlaceholder} -> ${value}`);
+      }
+    } else {
+      console.log(`⚠️ [PLACEHOLDER-UTILS] Could not resolve: ${fullPlaceholder}`);
+    }
+  }
+
+  // === LEGACY PLACEHOLDER REPLACEMENT ===
   // Extract data from project object and additional data
   const projectId = data?.project?.id;
   const baseUrl = import.meta.env.SITE_URL || process.env.SITE_URL;
@@ -132,6 +178,9 @@ export function replacePlaceholders(
   const registrationNumber = "48388";
   const professionalName = "Jason Kahan";
 
+  // check the data for matching structure from placeholders..
+
+  // Replace REGISTRATION_EXPIRATION_DATE placeholders
   if (registrationExpirationDate) {
     const beforeReplace = result;
     result = result.replace(/\{\{REGISTRATION_EXPIRATION_DATE\}\}/g, registrationExpirationDate);
