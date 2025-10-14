@@ -11,7 +11,7 @@ const LOCAL_PORT = 4321;
 function startTunnel() {
   console.log("🚀 Starting LocalTunnel...");
 
-  const tunnel = spawn("lt", ["--port", LOCAL_PORT.toString(), "--subdomain", TUNNEL_SUBDOMAIN], {
+  const tunnel = spawn("lt", ["--port", "4322", "--subdomain", TUNNEL_SUBDOMAIN], {
     stdio: ["pipe", "pipe", "pipe"],
   });
 
