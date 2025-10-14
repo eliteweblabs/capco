@@ -514,3 +514,120 @@ const statusData = await statusResponse.json();
     }
   }
 </style>
+
+<script>
+  // Request push notification permission
+  (window as any).requestPushNotificationPermission = function () {
+    // Check if we're on mobile Safari
+    const isMobileSafari =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+    console.log("🔔 [APP] Mobile Safari detected:", isMobileSafari);
+
+    if (isMobileSafari) {
+      console.log(
+        "🔔 [APP] Mobile Safari detected - push notifications work when installed as PWA"
+      );
+      console.log("🔔 [APP] Install as PWA (Add to Home Screen) for full notification support");
+
+      // Check if running as PWA
+      const isStandalone =
+        (window as any).matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+      console.log("🔔 [APP] Running as PWA:", isStandalone);
+
+      if (!isStandalone) {
+        console.log("💡 [APP] Install as PWA for better notification support");
+        return;
+      }
+    }
+
+    // Only request if user hasn't been prompted yet
+    if ("Notification" in window && Notification.permission === "default") {
+      console.log("🔔 [APP] Requesting notification permission...");
+      // Request permission immediately in user interaction context
+      Notification.requestPermission().then((permission) => {
+        console.log("🔔 [APP] Permission result:", permission);
+        if (permission === "granted") {
+          console.log("🔔 Push notifications enabled for authenticated user!");
+          // Show a subtle notification
+          if ((window as any).showModal) {
+            (window as any).showModal(
+              "info",
+              "Notifications Enabled",
+              "You'll receive push notifications for project updates!",
+              3000
+            );
+          }
+        } else {
+          console.log("🔔 Push notifications declined by user");
+        }
+      });
+    } else {
+      console.log("🔔 [APP] Not requesting permission - already handled or not available");
+    }
+  };
+
+  // Reset notification permissions for debugging
+  (window as any).resetNotifications = function () {
+    console.log("🔄 [APP] Resetting notification permissions...");
+
+    // Check if we're on mobile Safari
+    const isMobileSafari =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+
+    if (isMobileSafari) {
+      console.log(
+        "📱 [APP] Mobile Safari detected - push notifications work when installed as PWA"
+      );
+      console.log("💡 [APP] Install as PWA (Add to Home Screen) for full notification support");
+
+      // Check if running as PWA
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+      console.log("🔔 [APP] Running as PWA:", isStandalone);
+
+      if (!isStandalone) {
+        console.log("💡 [APP] Install as PWA for better notification support");
+        return;
+      }
+    }
+
+    console.log(
+      "🔄 [APP] Current permission:",
+      "Notification" in window ? Notification.permission : "Not available"
+    );
+
+    // Clear any stored permission state
+    localStorage.removeItem("notification-permission-requested");
+    sessionStorage.removeItem("notification-permission-requested");
+
+    // Force a new permission request
+    if ("Notification" in window) {
+      Notification.requestPermission().then((permission) => {
+        console.log("🔄 [APP] Reset permission result:", permission);
+        if (permission === "granted") {
+          console.log("✅ Notifications re-enabled!");
+        } else {
+          console.log("❌ Notifications still denied");
+        }
+      });
+    }
+  };
+
+  // Request notification permission on first user interaction
+  let permissionRequested = false;
+  const requestPermissionOnInteraction = () => {
+    if (!permissionRequested) {
+      permissionRequested = true;
+      (window as any).requestPushNotificationPermission();
+      // Remove listeners after first interaction
+      document.removeEventListener("click", requestPermissionOnInteraction);
+      document.removeEventListener("touchstart", requestPermissionOnInteraction);
+    }
+  };
+
+  // Listen for first user interaction
+  document.addEventListener("click", requestPermissionOnInteraction);
+  document.addEventListener("touchstart", requestPermissionOnInteraction);
+</script>
