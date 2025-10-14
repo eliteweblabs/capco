@@ -41,7 +41,9 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
 // Self-hosted Plausible Analytics integration
 async function fetchSelfHostedAnalytics(period: string) {
-  const PLAUSIBLE_URL = import.meta.env.PLAUSIBLE_URL || "http://localhost:8000";
+  const PLAUSIBLE_URL =
+    import.meta.env.PLAUSIBLE_URL ||
+    "https://plausible-analytics-ce-production-6fd8.up.railway.app";
   const PLAUSIBLE_API_KEY = import.meta.env.PLAUSIBLE_API_KEY;
 
   if (!PLAUSIBLE_API_KEY) {
