@@ -312,13 +312,15 @@ if (currentRole !== "Admin") {
         }
       } catch (error) {
         console.error("Analytics API error:", error);
-        showAnalyticsError(error.message || "Failed to load analytics data");
+        showAnalyticsError(
+          error instanceof Error ? error.message : "Failed to load analytics data"
+        );
       } finally {
         if (loadingEl) loadingEl.classList.add("hidden");
       }
     }
 
-    function displayAnalyticsData(data) {
+    function displayAnalyticsData(data: any) {
       const contentEl = document.getElementById("analytics-content");
       if (!contentEl) return;
 
@@ -410,7 +412,7 @@ if (currentRole !== "Admin") {
       contentEl.classList.remove("hidden");
     }
 
-    function showAnalyticsError(message) {
+    function showAnalyticsError(message: string) {
       const errorEl = document.getElementById("analytics-error");
       const errorMessageEl = document.getElementById("error-message");
 
