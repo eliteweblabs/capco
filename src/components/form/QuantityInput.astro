@@ -1,0 +1,128 @@
+---
+// Enable this component to work as both regular component and partial
+export const partial = true;
+import LucideIcon from "../common/LucideIcon.astro";
+// Button component for standardized button styling throughout the project
+export interface Props {
+  label?: string;
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  value?: string;
+  disabled?: boolean;
+  class?: string;
+  id?: string;
+  name?: string;
+  dataAttributes?: Record<string, string>;
+  style?: string;
+  placeholder?: string;
+  helperText?: string;
+}
+
+// Check if this is being used as a partial (X-headers present) or regular component
+
+const disabled =
+  Astro.props.disabled || Astro.request.headers.get("x-button-disabled") === "true" || false;
+const helperText =
+  Astro.props.helperText ||
+  Astro.request.headers.get("x-button-helper-text") ||
+  "Please select a 5 digit number from 0 to 9.";
+const id = Astro.props.id || Astro.request.headers.get("x-button-id") || undefined;
+const label = Astro.props.label || Astro.request.headers.get("x-button-label") || "Quantity";
+const name = Astro.props.name || Astro.request.headers.get("x-button-name") || undefined;
+const placeholder =
+  Astro.props.placeholder || Astro.request.headers.get("x-button-placeholder") || "999";
+const size = Astro.props.size || Astro.request.headers.get("x-button-size") || "md";
+const style = Astro.props.style || Astro.request.headers.get("x-button-style") || "";
+const value = Astro.props.value || Astro.request.headers.get("x-button-value") || undefined;
+// Handle data attributes from both props and headers
+
+const isPartial =
+  Astro.request.headers.has("x-button-variant") || Astro.request.headers.has("x-button-text");
+let dataAttributes = Astro.props.dataAttributes || {};
+if (isPartial) {
+  for (const [key, value] of Astro.request.headers.entries()) {
+    if (key.startsWith("x-button-data-")) {
+      const dataKey = key.replace("x-button-data-", "").replace(/-/g, "-");
+      dataAttributes[`data-${dataKey}`] = value;
+    }
+  }
+}
+
+// Use shared button styling logic
+// const buttonClasses = getButtonClasses({
+//   variant: variant as any,
+//   size: size as any,
+//   fullWidth,
+//   className,
+// });
+
+// Build data attributes object - don't add the data- prefix as it's already in the keys
+const dataAttrs = dataAttributes;
+
+// Add selected classes data attribute if provided
+
+// Determine if this should be a link or button
+---
+
+<label for="quantity-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+  >{label}</label
+>
+<div class="relative flex items-center max-w-[8rem]">
+  <button
+    type="button"
+    id="decrement-button"
+    data-input-counter-decrement="quantity-input"
+    class="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 hover:bg-gray-200 border border-gray-300 rounded-s-lg p-3 h-11 focus:ring-gray-100 dark:focus:ring-gray-700 focus:ring-2 focus:outline-none"
+  >
+    <svg
+      class="w-3 h-3 text-gray-900 dark:text-white"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 18 2"
+    >
+      <path
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M1 1h16"></path>
+    </svg>
+  </button>
+  <input
+    type="text"
+    {id}
+    {name}
+    {value}
+    {disabled}
+    {...dataAttributes}
+    data-input-counter
+    aria-describedby="helper-text-explanation"
+    class="bg-gray-50 border-x-0 border-gray-300 h-11 text-center text-gray-900 text-sm focus:ring-blue-500 focus:border-blue-500 block w-full py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+    {placeholder}
+    required
+  />
+  <button
+    type="button"
+    id="increment-button"
+    data-input-counter-increment="quantity-input"
+    class="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 hover:bg-gray-200 border border-gray-300 rounded-e-lg p-3 h-11 focus:ring-gray-100 dark:focus:ring-gray-700 focus:ring-2 focus:outline-none"
+  >
+    <svg
+      class="w-3 h-3 text-gray-900 dark:text-white"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 18 18"
+    >
+      <path
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M9 1v16M1 9h16"></path>
+    </svg>
+  </button>
+</div>
+<p id="helper-text-explanation" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+  {helperText}
+</p>
