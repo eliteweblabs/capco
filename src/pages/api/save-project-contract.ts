@@ -14,8 +14,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Check permissions - only Admin and Staff can save contracts
     const userRole = currentUser.profile?.role?.toLowerCase();
+    console.log("🔍 [SAVE-PROJECT-CONTRACT] User role check:", {
+      originalRole: currentUser.profile?.role,
+      lowerCaseRole: userRole,
+      isAdmin: userRole === "admin",
+      isStaff: userRole === "staff",
+      hasAccess: userRole === "admin" || userRole === "staff",
+    });
+
     if (userRole !== "admin" && userRole !== "staff") {
-      return createErrorResponse("Access denied", 403);
+      console.log("❌ [SAVE-PROJECT-CONTRACT] Access denied for role:", userRole);
+      return createErrorResponse("Access denied - only Admin and Staff can save contracts", 403);
     }
 
     const body = await request.json();
