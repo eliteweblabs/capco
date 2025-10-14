@@ -73,7 +73,7 @@ export interface FormActionConfig {
   id: string;
   type: "submit" | "button";
   label: string;
-  icon?: string; // BoxIcons class name
+  icon?: string;
   cssClass: string;
   action?: string; // Function name or action identifier
   tab?: string; // Tab to navigate to when button is clicked
@@ -155,7 +155,7 @@ export function getFilteredFormActions(
         return {
           ...action,
           label: "Create Project",
-          icon: "bx-plus", // Change icon to plus for create
+          icon: "plus", // Change icon to plus for create
         };
       }
       return action;
@@ -171,7 +171,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     id: "save-project",
     type: "submit",
     label: "Save Project",
-    icon: "bx-save",
+    icon: "save",
     variant: "primary",
     cssClass:
       "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
@@ -187,7 +187,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     id: "delete-project",
     type: "button",
     label: "Delete Project",
-    icon: "bx-trash",
+    icon: "trash-2",
     variant: "danger",
     cssClass:
       "flex-1 w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
@@ -637,7 +637,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     type: "action",
     elementType: "submit",
     label: "Save Project",
-    icon: "bx-save",
+    icon: "save",
     variant: "primary",
     cssClass:
       "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
@@ -653,7 +653,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     type: "action",
     elementType: "submit",
     label: "Save Project",
-    icon: "bx-save",
+    icon: "save",
     variant: "primary",
     cssClass:
       "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
@@ -670,7 +670,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     type: "action",
     elementType: "button",
     label: "Delete Project",
-    icon: "bx-trash",
+    icon: "trash-2",
     variant: "danger",
     cssClass:
       "flex-1 w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
@@ -685,7 +685,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   //   type: "action",
   //   elementType: "button",
   //   label: "Build Proposal",
-  //   icon: "bx-file-pdf",
+  //   icon: "file-text",
   //   tab: "proposal",
   //   variant: "success",
   //   cssClass:
@@ -725,7 +725,7 @@ export function getFilteredUnifiedFormElements(
           return {
             ...element,
             label: "Create Project",
-            icon: "bx-plus", // Change icon to plus for create
+            icon: "plus", // Change icon to plus for create
           };
         }
         return element;

@@ -192,7 +192,7 @@ export const navigation = (
               }"
             >
               ${item.label}
-              <i class="bx bx-chevron-down ml-1 h-4 w-4"></i>
+              <i data-lucide="chevron-down" class="ml-1 h-4 w-4"></i>
             </a>
             <div class="invisible absolute left-0 mt-2 w-64 rounded-lg border border-border-light  opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100 dark:border-border-dark dark:bg-gray-800">
               <div class="py-1">

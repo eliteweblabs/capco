@@ -49,14 +49,10 @@ const {
   customStyle,
   style,
   dataAttributes = {},
-
   ...rest
 } = Astro.props;
 
-const prefix = "bx";
-const iconClass = `${prefix} ${prefix}-${name}`;
-
-// Style variant classes - matching Button component exactly
+// Style variant classes - matching BoxIcon component exactly
 const styleClasses = {
   primary: "text-primary-500 dark:text-primary-400",
   secondary: "text-neutral-500 dark:text-neutral-400",
@@ -75,13 +71,13 @@ const styleClasses = {
     "text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300",
 };
 
-// Size classes
+// Size classes - mapping to Tailwind classes
 const sizeClasses = {
-  xs: "bx-xs",
-  sm: "bx-sm",
-  md: "bx-md",
-  lg: "bx-lg",
-  xl: "bx-xl",
+  xs: "w-3 h-3",
+  sm: "w-4 h-4",
+  md: "w-5 h-5",
+  lg: "w-6 h-6",
+  xl: "w-8 h-8",
 };
 
 // Background color classes
@@ -110,11 +106,39 @@ const shapeClasses = {
   square: "rounded-none",
 };
 
+// Convert kebab-case to PascalCase for Lucide icons
+const convertToPascalCase = (str: string) => {
+  return str
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join("");
+};
+
+// Map common icon names to correct Lucide names
+const iconNameMapping: Record<string, string> = {
+  FileBlank: "File",
+  CommentDots: "MessageCircle",
+  MessageDots: "MessageCircle",
+  MessageRoundedDots: "MessageCircle",
+  MessageSquareDots: "MessageSquare",
+  UserPlus: "UserPlus",
+  CheckSquare: "CheckSquare",
+  BarChart3: "BarChart3",
+  MessageSquare: "MessageSquare",
+  User: "User",
+  Check: "Check",
+  Shield: "Shield",
+  Send: "Send",
+  Zap: "Zap",
+};
+
+const pascalCaseName = convertToPascalCase(name);
+const iconName = iconNameMapping[pascalCaseName] || pascalCaseName;
 const finalIconStyle = style || customStyle || (color !== "currentColor" ? `color: ${color};` : "");
 ---
 
 <i
-  class={iconClass}
+  data-lucide={iconName}
   style={finalIconStyle}
   class:list={[
     className,
@@ -128,3 +152,5 @@ const finalIconStyle = style || customStyle || (color !== "currentColor" ? `colo
   {...rest}
 >
 </i>
+
+<!-- Lucide icons are initialized globally in App.astro -->
