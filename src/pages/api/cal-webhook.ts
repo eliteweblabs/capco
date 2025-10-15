@@ -144,7 +144,7 @@ export const POST: APIRoute = async ({ request }) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [CAL-WEBHOOK] Error processing webhook:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error", details: String(error) }),
@@ -203,7 +203,7 @@ async function createBookingNotification(appointment: any, eventType: string) {
         `✅ [CAL-WEBHOOK] Created ${notifications.length} notifications for ${eventType}`
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [CAL-WEBHOOK] Error in createBookingNotification:", error);
   }
 }

@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [WEBHOOK] Error:", error);
 
     return new Response(

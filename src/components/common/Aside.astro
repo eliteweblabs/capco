@@ -14,10 +14,17 @@ interface Props {
   project: any;
   primaryTextClasses: string;
   secondaryTextClasses: string;
+  projects: any[];
 }
 
-const { currentUser, project, globalInputClasses, primaryTextClasses, secondaryTextClasses } =
-  Astro.props;
+const {
+  currentUser,
+  project,
+  globalInputClasses,
+  primaryTextClasses,
+  secondaryTextClasses,
+  projects,
+} = Astro.props;
 const currentRole = currentUser?.profile?.role;
 if (!currentUser || currentRole === "Client") {
   return null;
@@ -72,7 +79,7 @@ if (!currentUser || currentRole === "Client") {
 
       <li>
         <a
-          href="/admin/global-discussions"
+          href="/admin/discussions"
           class="hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2"
           data-sidebar-collapse-item=""
         >
@@ -110,7 +117,7 @@ if (!currentUser || currentRole === "Client") {
         currentRole !== "Client" && (
           <li>
             <a
-              href="/admin/global-discussions"
+              href="/admin/calendar"
               class="hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2"
               data-sidebar-collapse-item=""
             >
@@ -152,10 +159,28 @@ if (!currentUser || currentRole === "Client") {
               class="hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2"
               data-sidebar-collapse-item=""
             >
+              <svg
+                class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v15a1 1 0 0 0 1 1h15M8 16l2.5-5.5 3 3L17.273 7 20 9.667"
+                />
+              </svg>
+
               {/* aria-controls="dropdown-users"
           data-collapse-toggle="dropdown-users" */}
 
-              <svg
+              {/* <svg
                 class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
                 aria-hidden="true"
                 xmlns="http://www.w3.org/2000/svg"
@@ -169,7 +194,7 @@ if (!currentUser || currentRole === "Client") {
                   d="M8 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2 9a4 4 0 0 0-4 4v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1a4 4 0 0 0-4-4H6Zm7.25-2.095c.478-.86.75-1.85.75-2.905a5.973 5.973 0 0 0-.75-2.906 4 4 0 1 1 0 5.811ZM15.466 20c.34-.588.535-1.271.535-2v-1a5.978 5.978 0 0 0-1.528-4H18a4 4 0 0 1 4 4v1a2 2 0 0 1-2 2h-4.535Z"
                   clip-rule="evenodd"
                 />
-              </svg>
+              </svg> */}
 
               <span
                 data-sidebar-collapse-hide=""
@@ -183,7 +208,11 @@ if (!currentUser || currentRole === "Client") {
         )
       }
 
-      {currentRole !== "Client" && <AssignedProjects currentUser={currentUser} />}
+      {
+        currentRole !== "Client" && (
+          <AssignedProjects currentUser={currentUser} projects={projects} />
+        )
+      }
 
       {
         currentRole === "Admin" && (
@@ -206,8 +235,9 @@ if (!currentUser || currentRole === "Client") {
                 viewBox="0 0 24 24"
               >
                 <path
-                  d="M3 6C3 4.89688 3.89688 4 5 4H13C14.1031 4 15 4.89688 15 6V10.2063C12.6906 10.8594 11 12.9812 11 15.5C11 17.3469 11.9094 18.9781 13.3031 19.9781C13.2031 19.9937 13.1031 20 13 20H5C3.89688 20 3 19.1031 3 18V6ZM5 8.5C5 8.775 5.225 9 5.5 9H12.5C12.775 9 13 8.775 13 8.5C13 8.225 12.775 8 12.5 8H5.5C5.225 8 5 8.225 5 8.5ZM5.5 11C5.225 11 5 11.225 5 11.5C5 11.775 5.225 12 5.5 12H10.5C10.775 12 11 11.775 11 11.5C11 11.225 10.775 11 10.5 11H5.5ZM5.5 14C5.225 14 5 14.225 5 14.5C5 14.775 5.225 15 5.5 15H8.5C8.775 15 9 14.775 9 14.5C9 14.225 8.775 14 8.5 14H5.5ZM12 15.5C12 14.3065 12.4741 13.1619 13.318 12.318C14.1619 11.4741 15.3065 11 16.5 11C17.6935 11 18.8381 11.4741 19.682 12.318C20.5259 13.1619 21 14.3065 21 15.5C21 16.6935 20.5259 17.8381 19.682 18.682C18.8381 19.5259 17.6935 20 16.5 20C15.3065 20 14.1619 19.5259 13.318 18.682C12.4741 17.8381 12 16.6935 12 15.5ZM17.8969 14.1469L16 16.0437L15.1031 15.1469C14.9094 14.9531 14.5906 14.9531 14.3969 15.1469C14.2031 15.3406 14.2031 15.6594 14.3969 15.8531L15.6469 17.1031C15.8406 17.2969 16.1594 17.2969 16.3531 17.1031L18.6031 14.8531C18.7969 14.6594 18.7969 14.3406 18.6031 14.1469C18.4094 13.9531 18.0906 13.9531 17.8969 14.1469Z"
-                  fill="currentColor"
+                  fill-rule="evenodd"
+                  d="M8.64 4.737A7.97 7.97 0 0 1 12 4a7.997 7.997 0 0 1 6.933 4.006h-.738c-.65 0-1.177.25-1.177.9 0 .33 0 2.04-2.026 2.008-1.972 0-1.972-1.732-1.972-2.008 0-1.429-.787-1.65-1.752-1.923-.374-.105-.774-.218-1.166-.411-1.004-.497-1.347-1.183-1.461-1.835ZM6 4a10.06 10.06 0 0 0-2.812 3.27A9.956 9.956 0 0 0 2 12c0 5.289 4.106 9.619 9.304 9.976l.054.004a10.12 10.12 0 0 0 1.155.007h.002a10.024 10.024 0 0 0 1.5-.19 9.925 9.925 0 0 0 2.259-.754 10.041 10.041 0 0 0 4.987-5.263A9.917 9.917 0 0 0 22 12a10.025 10.025 0 0 0-.315-2.5A10.001 10.001 0 0 0 12 2a9.964 9.964 0 0 0-6 2Zm13.372 11.113a2.575 2.575 0 0 0-.75-.112h-.217A3.405 3.405 0 0 0 15 18.405v1.014a8.027 8.027 0 0 0 4.372-4.307ZM12.114 20H12A8 8 0 0 1 5.1 7.95c.95.541 1.421 1.537 1.835 2.415.209.441.403.853.637 1.162.54.712 1.063 1.019 1.591 1.328.52.305 1.047.613 1.6 1.316 1.44 1.825 1.419 4.366 1.35 5.828Z"
+                  clip-rule="evenodd"
                 />
               </svg>
 
@@ -424,10 +454,3 @@ if (!currentUser || currentRole === "Client") {
     </div>
   </div>
 </aside>
-
-<style>
-  #sidebar [aria-expanded="true"] svg[data-sidebar-collapse-hide] {
-    transform: rotate(90deg);
-    transition: transform 0.3s ease-in-out;
-  }
-</style>

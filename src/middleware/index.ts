@@ -13,10 +13,14 @@ const protectedRoutes = ["/dashboard(|/)", "/project/**"];
 const devBypassRoutes = ["/analytics", "/dashboard"];
 const redirectRoutes = ["/signin(|/)", "/register(|/)"];
 const protectedAPIRoutes = [
-  "/api/guestbook(|/)",
-  "/api/create-project",
-  "/api/project/**",
-  "/api/project/delete",
+  "/api/projects/new",
+  "/api/projects/upsert",
+  "/api/projects/**",
+  "/api/projects/delete",
+  "/api/payments/**",
+  "/api/payments/get",
+  "/api/payments/upsert",
+  "/api/payments/delete",
   "/api/upload",
 ];
 const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify"];

@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
@@ -6,52 +7,23 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
   try {
     console.log("Delete project API called");
 
-    // Check if Supabase is configured
-    if (!supabase) {
-      console.error("Database not configured - supabase client not available");
-      return new Response(JSON.stringify({ error: "Database not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Get current user from cookies for authentication
-    const accessToken = cookies.get("sb-access-token")?.value;
-    const refreshToken = cookies.get("sb-refresh-token")?.value;
-
-    console.log("Access token:", accessToken ? "Present" : "Missing");
-    console.log("Refresh token:", refreshToken ? "Present" : "Missing");
-
-    if (!accessToken || !refreshToken) {
-      console.error("Not authenticated - missing tokens");
-      return new Response(JSON.stringify({ error: "Not authenticated. Please log in." }), {
+    // Check authentication using standardized method
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Set up session with regular supabase client
-    console.log("Setting up session...");
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
-
-    if (authError || !user) {
-      console.error("Authentication failed:", authError);
-      return new Response(
-        JSON.stringify({ error: "Authentication failed. Please log in again." }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    // Check if Supabase is configured
+    if (!supabase) {
+      console.error("Database not configured");
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
-
-    console.log("User authenticated:", user.id);
 
     // Get the request body
     let requestBody;
@@ -108,11 +80,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // console.log("Project found:", project);
 
     // Check user's role and permissions
-    // console.log("Looking up user profile:", user.id);
+    // console.log("Looking up user profile:", currentUser.id);
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", currentUser.id)
       .single();
 
     if (profileError) {
@@ -124,7 +96,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // console.log("User role:", profile?.role);
     // console.log("Is admin:", canDelete);
     // console.log("Project author:", project.authorId);
-    // console.log("Current user:", user.id);
+    // console.log("Current user:", currentUser.id);
 
     if (!canDelete) {
       console.error("Unauthorized to delete this project");

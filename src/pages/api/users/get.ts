@@ -90,11 +90,17 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Build query for multiple users
-    let query = supabase.from("profiles").select("*");
+    let query = supabase!.from("profiles").select("*");
 
     // Apply filters
     if (filters.role) {
-      query = query.eq("role", filters.role);
+      // Handle multiple roles (comma-separated)
+      if (filters.role.includes(",")) {
+        const roles = filters.role.split(",").map(r => r.trim());
+        query = query.in("role", roles);
+      } else {
+        query = query.eq("role", filters.role);
+      }
     }
 
     if (filters.search) {
@@ -108,7 +114,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     query = query.order(filters.sortBy, { ascending });
 
     // Apply pagination
-    query = query.range(filters.offset, filters.offset + filters.limit - 1);
+    query = query.range(filters.offset || 0, filters.offset || 0 + filters.limit || 20 - 1);
 
     // Get total count if requested
     let totalCount = null;
@@ -134,14 +140,14 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    const hasMore = users.length === filters.limit;
+    const hasMore = users.length === filters.limit || 20;
 
     return new Response(
       JSON.stringify({
         data: users || [],
         pagination: {
-          limit: filters.limit,
-          offset: filters.offset,
+          limit: filters.limit || 20,
+          offset: filters.offset || 0,
           total: totalCount,
           hasMore,
         },
@@ -154,7 +160,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [USERS-GET] Unexpected error:", error);
     return new Response(
       JSON.stringify({

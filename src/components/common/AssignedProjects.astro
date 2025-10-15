@@ -2,7 +2,7 @@
 // User center component for header
 import LucideIcon from "./LucideIcon.astro";
 
-const { currentUser } = Astro.props;
+const { currentUser, projects } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 if (currentRole === "Client") {
@@ -11,113 +11,102 @@ if (currentRole === "Client") {
 let assignedProjectsCount = 0;
 let assignedProjects: any[] = [];
 
-if (currentRole === "Staff" || currentRole === "Admin") {
-  // console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
-  const baseUrl = Astro.url.origin;
-  const fullUrl = `${baseUrl}/api/get-project?assignedToId=${currentUser.id}`;
-  // console.log("🏗️ [APP] Full URL:", fullUrl);
-  try {
-    const response = await fetch(fullUrl);
-    if (response.ok) {
-      const data = await response.json();
-      // console.log("🏗️ [APP] Assigned projects:", data);
-      assignedProjects = data.projects || [];
-      assignedProjectsCount = data.projects.length || 0;
-    }
-  } catch (error) {
-    console.error("Error fetching assigned projects:", error);
-  }
-} else if (currentRole === "Client") {
-  const baseUrl = Astro.url.origin;
-  const fullUrl = `${baseUrl}/api/get-project?authorId=${currentUser.id}`;
-  // console.log("🏗️ [APP] Full URL:", fullUrl);
-  try {
-    const response = await fetch(fullUrl);
-    if (response.ok) {
-      const data = await response.json();
-      // console.log("🏗️ [APP] Assigned projects:", data);
-      assignedProjects = data.projects || [];
-      assignedProjectsCount = data.projects.length || 0;
-    }
-  } catch (error) {
-    console.error("Error fetching assigned projects:", error);
-  }
-}
+if (!projects) return null;
+
+// get the projects with assignedToId === currentUser.id
+assignedProjects = projects.filter((project: any) => project.assignedToId === currentUser.id);
+assignedProjectsCount = assignedProjects.length;
+
+// if (currentRole === "Staff" || currentRole === "Admin") {
+//   // console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
+//   const baseUrl = Astro.url.origin;
+//   const fullUrl = `${baseUrl}/api/projects/get?assignedToId=${currentUser.id}`;
+//   // console.log("🏗️ [APP] Full URL:", fullUrl);
+//   try {
+//     const response = await fetch(fullUrl);
+//     if (response.ok) {
+//       const data = await response.json();
+//       // console.log("🏗️ [APP] Assigned projects:", data);
+//       assignedProjects = data.projects || [];
+//       assignedProjectsCount = data.projects.length || 0;
+//     }
+//   } catch (error) {
+//     console.error("Error fetching assigned projects:", error);
+//   }
+// } else if (currentRole === "Client") {
+//   const baseUrl = Astro.url.origin;
+//   const fullUrl = `${baseUrl}/api/projects/get?authorId=${currentUser.id}`;
+//   // console.log("🏗️ [APP] Full URL:", fullUrl);
+//   try {
+//     const response = await fetch(fullUrl);
+//     if (response.ok) {
+//       const data = await response.json();
+//       // console.log("🏗️ [APP] Assigned projects:", data);
+//       assignedProjects = data.projects || [];
+//       assignedProjectsCount = data.projects.length || 0;
+//     }
+//   } catch (error) {
+//     console.error("Error fetching assigned projects:", error);
+//   }
+// }
 
 // Fetch projects assigned to current user
 ---
 
-<li>
-  <a
-    href="#"
-    class="hover:bg-gray-300 flex w-full align-center rounded-lg p-2 relative"
-    data-sidebar-collapse-item=""
-  >
-    {
-      /* aria-controls="dropdown-users"
-      data-collapse-toggle="dropdown-users" */
-    }
+{
+  assignedProjectsCount > 0 && (
+    <li>
+      <a
+        href="#"
+        type="button"
+        class="hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2 relative"
+        aria-controls="dropdown-assigned-projects"
+        data-collapse-toggle="dropdown-assigned-projects"
+        data-sidebar-collapse-item=""
+      >
+        <LucideIcon name="folder" variant="secondary" size="xs" id="assigned-projects-button">
+          <span class="sr-only">View assigned projects</span>
+        </LucideIcon>
 
-    <LucideIcon
-      name="folder-open"
-      variant="secondary"
-      size="xs"
-      id="assigned-projects-button"
-      dataAttributes={{
-        "data-count": assignedProjectsCount.toString(),
-      }}
-    >
-      <span class="sr-only">View assigned projects</span>
-    </LucideIcon>
+        <span
+          data-sidebar-collapse-hide=""
+          class="ml-3 flex-1 whitespace-nowrap text-left"
+          data-sidebar-collapse-hide=""
+        >
+          Assigned Projects
+        </span>
 
-    <span
-      data-sidebar-collapse-hide=""
-      class="ml-3 flex-1 whitespace-nowrap text-left"
-      data-sidebar-collapse-hide=""
-    >
-      Assigned Projects
-    </span>
+        <svg
+          class="h-4 w-4"
+          data-sidebar-collapse-hide=""
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
 
-    <span
-      class="count-bubble dark:bg-primary-dark pulse absolute -right-2 -top-2 flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white"
-      style="display: flex;">{assignedProjectsCount.toString()}</span
-    >
-  </a>
-  {
-    assignedProjectsCount > 0 ? (
-      <div class="space-y-2">
+        <span
+          class="count-bubble dark:bg-primary-dark pulse absolute -right-2 -top-2 flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white"
+          style="display: flex;"
+        >
+          {assignedProjectsCount.toString()}
+        </span>
+      </a>
+      <ul id="dropdown-assigned-projects" class="hidden space-y-2 py-2">
         {assignedProjects.slice(0, 5).map((project: any) => (
-          <a
-            href={`/project/${project.id}`}
-            class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
-          >
-            <div class="flex items-start justify-between">
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
-                  {project.title || "Untitled Project"}
-                </p>
-                <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-                  {project.address || "No address"}
-                </p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">
-                  Status: {project.status || "Unknown"}
-                </p>
-              </div>
-              <div class="ml-2 flex-shrink-0">
-                <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                  {project.commentCount || 0} comments
-                </span>
-              </div>
-            </div>
-          </a>
+          <li>
+            <a
+              href={`/project/${project.id}`}
+              class="hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2"
+              data-sidebar-collapse-subitem=""
+            >
+              {project.title || "Untitled Project"}
+            </a>
+          </li>
         ))}
-      </div>
-    ) : (
-      <div class="py-4 text-center">
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-          No projects currently assigned to you
-        </p>
-      </div>
-    )
-  }
-</li>
+      </ul>
+    </li>
+  )
+}

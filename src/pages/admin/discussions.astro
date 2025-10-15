@@ -37,6 +37,11 @@ import LucideIcon from "../../components/common/LucideIcon.astro";
 
 // Fetch projects for overview stats
 let projects: any[] = [];
+let discussionStats: any = {
+  recent_24h: 0,
+  active_users_24h: 0,
+};
+
 if (currentUser?.id) {
   try {
     const baseUrl = Astro.url.origin;
@@ -49,6 +54,26 @@ if (currentUser?.id) {
     }
   } catch (error) {
     console.error("Error fetching projects:", error);
+  }
+
+  // Fetch discussion stats server-side
+  try {
+    const baseUrl = Astro.url.origin;
+    const statsUrl = `${baseUrl}/api/discussions/stats`;
+    const statsResponse = await fetch(statsUrl, {
+      headers: {
+        Cookie: Astro.request.headers.get("cookie") || "",
+      },
+    });
+
+    if (statsResponse.ok) {
+      const statsData = await statsResponse.json();
+      if (statsData.success && statsData.stats) {
+        discussionStats = statsData.stats;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching discussion stats:", error);
   }
 }
 ---
@@ -128,8 +153,7 @@ if (currentUser?.id) {
             id="recent-discussions-header"
             class="text-lg font-semibold text-gray-900 dark:text-white"
           >
-            <span class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-            ></span>
+            {discussionStats.recent_24h}
           </p>
         </div>
       </div>
@@ -144,8 +168,7 @@ if (currentUser?.id) {
         <div class="ml-3 w-0 flex-1">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
           <p id="active-users-header" class="text-lg font-semibold text-gray-900 dark:text-white">
-            <span class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-            ></span>
+            {discussionStats.active_users_24h}
           </p>
         </div>
       </div>
@@ -181,7 +204,7 @@ if (currentUser?.id) {
 
   async function loadDiscussionStats() {
     try {
-      const response = await fetch("/api/discussions?limit=1", {
+      const response = await fetch("/api/discussions/stats", {
         credentials: "include",
       });
 
@@ -189,9 +212,21 @@ if (currentUser?.id) {
 
       if (data.success && data.stats) {
         updateStatsDisplay(data.stats);
+      } else {
+        console.error("Failed to load discussion stats:", data.error);
+        // Set fallback values
+        updateStatsDisplay({
+          recent_24h: 0,
+          active_users_24h: 0,
+        });
       }
     } catch (error) {
       console.error("Error loading discussion stats:", error);
+      // Set fallback values
+      updateStatsDisplay({
+        recent_24h: 0,
+        active_users_24h: 0,
+      });
     }
   }
 
@@ -205,5 +240,10 @@ if (currentUser?.id) {
     if (headerActiveUsersEl) {
       headerActiveUsersEl.textContent = stats.active_users_24h || 0;
     }
+
+    console.log("📊 [GLOBAL-DISCUSSIONS] Updated stats display:", {
+      recent_24h: stats.recent_24h || 0,
+      active_users_24h: stats.active_users_24h || 0,
+    });
   }
 </script>
