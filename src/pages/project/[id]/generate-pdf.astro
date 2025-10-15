@@ -17,10 +17,10 @@ console.log("🏗️ [GENERATE-PDF] API URL:", `${Astro.url.origin}/api/get-proj
 
 if (!currentUser) {
   console.error("🏗️ [GENERATE-PDF] No authenticated user, redirecting to login");
-  return Astro.redirect("/login");
+  return Astro.redirect("/auth/login");
 }
 
-import { globalCompanyData } from "../../../pages/api/global-company-data";
+import { globalCompanyData } from "../../api/global/global-company-data.ts";
 const {
   globalCompanyName,
   globalCompanySlogan,
@@ -33,7 +33,7 @@ const {
   globalCompanyLogoLight,
 } = globalCompanyData();
 
-import { globalClasses } from "../../../pages/api/global-classes";
+import { globalClasses } from "../../api/global/global-classes.ts";
 const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
   globalClasses();
 
@@ -411,7 +411,7 @@ const title = project.title || "Untitled Project";
       loadingOverlay.classList.add("flex");
 
       try {
-        const response = await fetch("/api/generate-pdf-unified", {
+        const response = await fetch("/api/pdf/generate", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -489,12 +489,13 @@ const title = project.title || "Untitled Project";
           '<i data-lucide="loader-2" class="animate-spin mr-1"></i>Generating PDF...';
 
         try {
-          const response = await fetch("/api/pdf/download", {
+          const response = await fetch("/api/files/download", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
+              type: "pdf",
               htmlContent: generatedDocument.htmlContent,
               documentName: generatedDocument.name,
             }),
@@ -562,7 +563,7 @@ const title = project.title || "Untitled Project";
       saveBtn.innerHTML = '<i data-lucide="loader-2" class="animate-spin mr-1"></i>Saving...';
 
       try {
-        const response = await fetch("/api/generate-pdf-unified", {
+        const response = await fetch("/api/pdf/generate", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

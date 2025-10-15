@@ -230,7 +230,7 @@ const canDeleteFiles =
   // Load files for the project
   async function loadProjectFiles() {
     try {
-      const url = `/api/media?projectId=${currentProjectId}&targetLocation=documents&_t=${Date.now()}`;
+      const url = `/api/files?projectId=${currentProjectId}&_t=${Date.now()}`;
 
       const response = await fetch(url, {
         cache: "no-cache",
@@ -790,20 +790,19 @@ const canDeleteFiles =
             reader.readAsDataURL(file);
           });
 
-          // Upload using media system
-          const response = await fetch("/api/media", {
+          // Upload using standardized files API
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("projectId", currentProjectId.toString());
+          formData.append("title", file.name);
+          formData.append("comments", "");
+          formData.append("isPrivate", "false");
+          formData.append("bucketName", "project-files");
+
+          const response = await fetch("/api/files/upload", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({
-              mediaData: fileData,
-              fileName: file.name,
-              fileType: file.type,
-              projectId: currentProjectId.toString(),
-              targetLocation: "documents",
-              title: file.name,
-              description: ``,
-            }),
+            body: formData,
           });
 
           if (!response.ok) {
@@ -981,7 +980,7 @@ const canDeleteFiles =
       // Create a form to submit to the download endpoint
       const form = document.createElement("form");
       form.method = "POST";
-      form.action = "/api/file/download";
+      form.action = "/api/files/download";
       form.style.display = "none";
 
       // Add URL input
@@ -1119,13 +1118,13 @@ const canDeleteFiles =
     const isPrivate = document.getElementById(`file-private-${fileId}`)?.checked || false;
 
     try {
-      const response = await fetch("/api/update-file-details", {
+      const response = await fetch("/api/files/upsert", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          fileId: fileId,
+          id: fileId,
           title: title,
           comments: comments,
           isPrivate: isPrivate,
@@ -1156,7 +1155,7 @@ const canDeleteFiles =
   // Handle file checkout operations (simplified - no modal)
   window.handleFileCheckout = async function (fileId, action) {
     try {
-      const response = await fetch("/api/file-checkout", {
+      const response = await fetch("/api/files/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1244,7 +1243,7 @@ const canDeleteFiles =
               }
 
               // Make API call to delete file
-              fetch("/api/delete-file", {
+              fetch("/api/files/delete", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -1331,7 +1330,7 @@ const canDeleteFiles =
       // }
 
       // Fetch preview content from enhanced API
-      const response = await fetch("/api/enhanced-file-preview", {
+      const response = await fetch("/api/files/preview", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

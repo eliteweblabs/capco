@@ -1,6 +1,6 @@
 ---
 // Define requireAuthRedirect
-const requireAuthRedirect = "/login";
+const requireAuthRedirect = "/auth/login";
 // Make sure to check above value before redirecting
 import { checkAuth } from "../../lib/auth";
 // Handle OAuth callback if code is present
@@ -10,7 +10,7 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
-import { globalCompanyData } from "../../pages/api/global-company-data";
+import { globalCompanyData } from "../api/global/global-company-data.ts";
 const {
   globalCompanyName,
   globalCompanySlogan,
@@ -23,7 +23,7 @@ const {
   globalCompanyLogoLight,
 } = globalCompanyData();
 
-import { globalClasses } from "../../pages/api/global-classes";
+import { globalClasses } from "../api/global/global-classes.ts";
 const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
   globalClasses();
 
@@ -167,43 +167,6 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     currentStatusProjectAction = null;
   }
 }
-
-// Fetch client data for staff selection
-// let staffOptions: any[] = [];
-// if (currentRole === "Admin" || currentRole === "Staff") {
-//   try {
-//     // Use the clients API to get only clients
-//     const clientResponse = await fetch(`${Astro.url.origin}/api/clients`);
-
-//     if (clientResponse.ok) {
-//       const clientData = await clientResponse.json();
-//       if (clientData.success && clientData.clients) {
-//         staffOptions = [
-//           { value: "", label: "Unassigned" },
-//           ...clientData.clients.map((client: any) => ({
-//             value: client.id || "",
-//             label:
-//               client.companyName ||
-//               `${client.firstName || ""} ${client.lastName || ""}`.trim() ||
-//               "Unknown Client",
-//           })),
-//         ];
-//       }
-//     } else {
-//       console.error(
-//         "Failed to fetch client data:",
-//         clientResponse.status,
-//         clientResponse.statusText
-//       );
-//       staffOptions = [{ value: "", label: "Unassigned" }];
-//     }
-//   } catch (error) {
-//     console.error("Failed to fetch client data:", error);
-//     staffOptions = [{ value: "", label: "Unassigned" }];
-//   }
-// }
-
-// console.log("🔍 [PROJECT] currentStatusName:", currentStatusName);
 ---
 
 <App

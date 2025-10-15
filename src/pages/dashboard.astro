@@ -1,5 +1,5 @@
 ---
-const requireAuthRedirect = "/login";
+const requireAuthRedirect = "/auth/login";
 import { checkAuth } from "../lib/auth";
 const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
   Astro.cookies
@@ -19,39 +19,40 @@ import "../lib/refresh-manager.ts";
 // Get auth data directly since App component handles auth requirements
 
 // console.log("🚀 [DASHBOARD] Current user:", currentUser);
-// Initialize data arrays
+// Initialize projects with lazy loading
 let projects: any[] = [];
+let projectsLoading = false;
+let projectsHasMore = true;
+let projectsOffset = 0;
+const PROJECTS_LIMIT = 20;
 
-// Fetch projects using the API endpoint that includes discussion counts
+// Fetch initial projects using the new standardized API
 if (currentUser?.id) {
   try {
     const baseUrl = Astro.url.origin;
-    let apiUrl = `${baseUrl}/api/get-project`;
+    let apiUrl = `${baseUrl}/api/project/get?limit=${PROJECTS_LIMIT}&offset=0`;
 
-    // Add assignedToId parameter for Staff role
-    // if (currentUser?.profile?.role === "Staff") {
-    //   apiUrl += `?assignedToId=${currentUser.id}`;
-    // }
-
-    // Add assignedToId parameter for Staff role
+    // Add role-based filtering
     if (currentUser?.profile?.role === "Client") {
-      apiUrl += `?authorId=${currentUser.id}`;
+      apiUrl += `&authorId=${currentUser.id}`;
+    } else if (currentUser?.profile?.role === "Staff") {
+      apiUrl += `&assignedToId=${currentUser.id}`;
     }
-    // For Admin and Client, no additional parameters needed (API handles role-based filtering)
 
-    // console.log("🏗️ [DASHBOARD] Fetching projects from API:", apiUrl);
+    console.log("🏗️ [DASHBOARD] Fetching initial projects from API:", apiUrl);
     const response = await fetch(apiUrl);
 
     if (response.ok) {
       const data = await response.json();
       projects = data.projects || [];
-      // console.log("🏗️ [DASHBOARD] Projects fetched with discussion counts:", projects.length);
-      // console.log("🏗️ [DASHBOARD] Sample project data:", {
-      //   id: projects[0]?.id,
-      //   title: projects[0]?.title,
-      //   commentCount: projects[0]?.commentCount,
-      //   incompleteDiscussions: projects[0]?.i,
-      // });
+      projectsHasMore = data.pagination?.hasMore || false;
+      projectsOffset = PROJECTS_LIMIT;
+      console.log(
+        "🏗️ [DASHBOARD] Initial projects loaded:",
+        projects.length,
+        "Has more:",
+        projectsHasMore
+      );
     } else {
       console.error(
         "🏗️ [DASHBOARD] Error fetching projects:",
@@ -213,4 +214,97 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
   // Listen for first user interaction
   document.addEventListener("click", requestPermissionOnInteraction);
   document.addEventListener("touchstart", requestPermissionOnInteraction);
+
+  // Lazy loading for projects
+  class ProjectLazyLoader {
+    private projects: any[] = [];
+    private loading = false;
+    private hasMore = true;
+    private offset = 0;
+    private readonly limit = 20;
+
+    constructor() {
+      this.projects = window.initialProjects || [];
+      this.offset = this.projects.length;
+      this.hasMore = window.initialProjectsHasMore || false;
+      this.setupScrollListener();
+    }
+
+    private setupScrollListener() {
+      const loadMoreTrigger = document.getElementById("load-more-projects");
+      if (!loadMoreTrigger) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !this.loading && this.hasMore) {
+          this.loadMore();
+        }
+      });
+
+      observer.observe(loadMoreTrigger);
+    }
+
+    private async loadMore() {
+      if (this.loading || !this.hasMore) return;
+
+      this.loading = true;
+      const loadMoreBtn = document.getElementById("load-more-projects");
+      if (loadMoreBtn) {
+        loadMoreBtn.textContent = "Loading more projects...";
+        loadMoreBtn.disabled = true;
+      }
+
+      try {
+        const baseUrl = window.location.origin;
+        let apiUrl = `${baseUrl}/api/project/get?limit=${this.limit}&offset=${this.offset}`;
+
+        // Add role-based filtering
+        const userRole = window.currentUser?.profile?.role;
+        const userId = window.currentUser?.id;
+
+        if (userRole === "Client") {
+          apiUrl += `&authorId=${userId}`;
+        } else if (userRole === "Staff") {
+          apiUrl += `&assignedToId=${userId}`;
+        }
+
+        const response = await fetch(apiUrl);
+        if (response.ok) {
+          const data = await response.json();
+          const newProjects = data.projects || [];
+
+          this.projects.push(...newProjects);
+          this.offset += newProjects.length;
+          this.hasMore = data.pagination?.hasMore || false;
+
+          // Update the projects display
+          this.updateProjectsDisplay();
+
+          console.log(
+            `🏗️ [DASHBOARD] Loaded ${newProjects.length} more projects. Total: ${this.projects.length}, Has more: ${this.hasMore}`
+          );
+        } else {
+          console.error("Failed to load more projects:", response.status);
+        }
+      } catch (error) {
+        console.error("Error loading more projects:", error);
+      } finally {
+        this.loading = false;
+        if (loadMoreBtn) {
+          loadMoreBtn.textContent = this.hasMore ? "Load More Projects" : "All Projects Loaded";
+          loadMoreBtn.disabled = !this.hasMore;
+        }
+      }
+    }
+
+    private updateProjectsDisplay() {
+      // This would update the projects display in the UI
+      // For now, we'll just log the update
+      console.log(`🏗️ [DASHBOARD] Projects updated. Total: ${this.projects.length}`);
+    }
+  }
+
+  // Initialize lazy loader when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    new ProjectLazyLoader();
+  });
 </script>

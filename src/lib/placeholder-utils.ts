@@ -9,7 +9,7 @@
  * Get the base URL from environment or current location
  */
 
-import { globalCompanyData } from "../pages/api/global-company-data";
+import { globalCompanyData } from "../pages/api/global/global-company-data";
 
 export interface PlaceholderData {
   project: {

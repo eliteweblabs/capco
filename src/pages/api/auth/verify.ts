@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
   // Check if Supabase is configured
   if (!supabase) {
     console.error("🔐 [VERIFY] Regular Supabase client not available");
-    return redirect("/login?error=verification_error");
+    return redirect("/auth/login?error=verification_error");
   }
 
   // Check if Supabase admin is configured
@@ -22,7 +22,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       supabaseUrl: import.meta.env.SUPABASE_URL ? "present" : "missing",
       serviceRoleKey: import.meta.env.SUPABASE_SERVICE_ROLE_KEY ? "present" : "missing",
     });
-    return redirect("/login?error=verification_error");
+    return redirect("/auth/login?error=verification_error");
   }
 
   // Get the verification parameters from the URL
@@ -43,7 +43,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
   if (!code && !token_hash && !token) {
     console.log("🔐 [VERIFY] No verification code, token hash, or token provided");
-    return redirect("/login?error=no_token");
+    return redirect("/auth/login?error=no_token");
   }
 
   try {
@@ -68,7 +68,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
       if (!supabaseAdmin) {
         console.error("🔐 [VERIFY] Supabase admin client not available");
-        return redirect("/login?error=verification_error");
+        return redirect("/auth/login?error=verification_error");
       }
 
       // Use the admin client to verify the magic link with email
@@ -85,7 +85,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
       if (!supabaseAdmin) {
         console.error("🔐 [VERIFY] Supabase admin client not available");
-        return redirect("/login?error=verification_error");
+        return redirect("/auth/login?error=verification_error");
       }
 
       // Use the admin client to verify the magic link with email
@@ -111,7 +111,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       });
     } else {
       console.log("🔐 [VERIFY] Invalid verification parameters");
-      return redirect("/login?error=no_token");
+      return redirect("/auth/login?error=no_token");
     }
 
     const { data, error } = verificationResult;
@@ -135,11 +135,11 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
       // Handle specific error cases
       if (error.code === "otp_expired") {
-        return redirect("/login?error=token_expired");
+        return redirect("/auth/login?error=token_expired");
       } else if (error.code === "invalid_token") {
-        return redirect("/login?error=invalid_token");
+        return redirect("/auth/login?error=invalid_token");
       } else {
-        return redirect("/login?error=verification_failed");
+        return redirect("/auth/login?error=verification_failed");
       }
     }
 
@@ -167,7 +167,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     if (!data.session) {
       console.log("🔐 [VERIFY] No session created after verification - this is the problem!");
       console.log("🔐 [VERIFY] Full verification result:", JSON.stringify(data, null, 2));
-      return redirect("/login?message=verification_success");
+      return redirect("/auth/login?message=verification_success");
     }
 
     // Check for existing session and log out if different user
@@ -233,6 +233,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     return redirect(`${redirectPath}?message=welcome`);
   } catch (error) {
     console.error("🔐 [VERIFY] Unexpected error in email verification:", error);
-    return redirect("/login?error=verification_error");
+    return redirect("/auth/login?error=verification_error");
   }
 };

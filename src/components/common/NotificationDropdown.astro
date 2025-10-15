@@ -189,8 +189,8 @@ if (!currentUser) {
       try {
         this.showLoading();
 
-        // console.log("🔍 [NOTIFICATIONS] Fetching notifications from /api/notifications?limit=5");
-        const response = await fetch("/api/notifications?limit=5");
+        // console.log("🔍 [NOTIFICATIONS] Fetching notifications from /api/notifications/get?limit=5");
+        const response = await fetch("/api/notifications/get?limit=5");
         // console.log("🔍 [NOTIFICATIONS] Response status:", response.status);
 
         const data = await response.json();
@@ -416,7 +416,7 @@ if (!currentUser) {
       if (this.viewedNotifications.size === 0) return;
 
       try {
-        const response = await fetch("/api/notifications", {
+        const response = await fetch("/api/notifications/get", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -450,7 +450,7 @@ if (!currentUser) {
       try {
         console.log("🔄 [NOTIFICATIONS] Auto-loading more notifications...");
 
-        const response = await fetch("/api/notifications", {
+        const response = await fetch("/api/notifications/get", {
           credentials: "include",
         });
 
@@ -485,7 +485,7 @@ if (!currentUser) {
 
         if (unreadIds.length === 0) return;
 
-        const response = await fetch("/api/notifications", {
+        const response = await fetch("/api/notifications/get", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ notificationIds: unreadIds }),
@@ -551,7 +551,7 @@ if (!currentUser) {
     async deleteNotification(notificationId: number) {
       console.log("🔍 [NOTIFICATIONS] deleteNotification called for ID:", notificationId);
       try {
-        const response = await fetch("/api/notifications", {
+        const response = await fetch("/api/notifications/get", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ notificationId }),

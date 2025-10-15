@@ -17,7 +17,7 @@ export async function loadNotificationCount(): Promise<number> {
   try {
     console.log("🔔 [NOTIFICATION-COUNT] Loading notification count...");
 
-    const response = await fetch("/api/notifications?limit=1", {
+    const response = await fetch("/api/notifications/get?limit=1", {
       credentials: "include",
     });
 

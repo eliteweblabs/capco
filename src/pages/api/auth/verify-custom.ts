@@ -10,12 +10,12 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
   // Check if Supabase is configured
   if (!supabase) {
     console.error("🔐 [VERIFY-CUSTOM] Regular Supabase client not available");
-    return redirect("/login?error=verification_error");
+    return redirect("/auth/login?error=verification_error");
   }
 
   if (!supabaseAdmin) {
     console.error("🔐 [VERIFY-CUSTOM] Supabase admin client not available");
-    return redirect("/login?error=verification_error");
+    return redirect("/auth/login?error=verification_error");
   }
 
   try {
@@ -32,7 +32,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     if (!token || !email) {
       console.log("🔐 [VERIFY-CUSTOM] Missing required parameters");
-      return redirect("/login?error=no_token");
+      return redirect("/auth/login?error=no_token");
     }
 
     // Check for existing session and log out if different user
@@ -102,18 +102,18 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     if (tokenError) {
       console.error("🔐 [VERIFY-CUSTOM] Token verification failed:", tokenError);
-      return redirect("/login?error=invalid_token");
+      return redirect("/auth/login?error=invalid_token");
     }
 
     if (!tokenData) {
       console.log("🔐 [VERIFY-CUSTOM] Token not found");
-      return redirect("/login?error=invalid_token");
+      return redirect("/auth/login?error=invalid_token");
     }
 
     // Check if token has already been used
     if (tokenData.usedAt) {
       console.log("🔐 [VERIFY-CUSTOM] Token has already been used:", tokenData.usedAt);
-      return redirect("/login?error=token_already_used");
+      return redirect("/auth/login?error=token_already_used");
     }
 
     // Check if token is expired
@@ -122,7 +122,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     if (now > expiresAt) {
       console.log("🔐 [VERIFY-CUSTOM] Token has expired");
-      return redirect("/login?error=token_expired");
+      return redirect("/auth/login?error=token_expired");
     }
 
     console.log("🔐 [VERIFY-CUSTOM] Token is valid, proceeding with authentication");
@@ -153,7 +153,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     if (userError || !userData.users || userData.users.length === 0) {
       console.error("🔐 [VERIFY-CUSTOM] Error getting user data:", userError);
-      return redirect("/login?error=user_not_found");
+      return redirect("/auth/login?error=user_not_found");
     }
 
     const user = userData.users[0];
@@ -217,6 +217,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     return redirect(finalUrl.toString());
   } catch (error) {
     console.error("🔐 [VERIFY-CUSTOM] Unexpected error in custom magic link verification:", error);
-    return redirect("/login?error=verification_error");
+    return redirect("/auth/login?error=verification_error");
   }
 };

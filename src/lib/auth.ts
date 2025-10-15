@@ -172,7 +172,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     }
   } else {
     // Only log if we're on a protected route where auth is expected
-    const publicPages = ["/", "/login", "/register", "/forgot-password"];
+    const publicPages = ["/", "/auth/login", "/register", "/forgot-password"];
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
 
     if (!publicPages.includes(currentPath)) {

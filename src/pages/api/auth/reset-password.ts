@@ -1,93 +1,80 @@
 import type { APIRoute } from "astro";
-import { setAuthCookies } from "../../../lib/auth-cookies";
 import { supabase } from "../../../lib/supabase";
-import { supabaseAdmin } from "../../../lib/supabase-admin";
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+/**
+ * Standardized Auth RESET PASSWORD API
+ *
+ * POST Body:
+ * - email: string
+ * - redirectTo?: string (optional redirect URL)
+ *
+ * Example:
+ * - POST /api/auth/reset-password { "email": "user@example.com" }
+ * - POST /api/auth/reset-password { "email": "user@example.com", "redirectTo": "https://app.example.com/reset" }
+ */
+
+interface ResetPasswordData {
+  email: string;
+  redirectTo?: string;
+}
+
+export const POST: APIRoute = async ({ request }) => {
   try {
-    const { password, accessToken, refreshToken } = await request.json();
+    const body = await request.json();
+    const resetData: ResetPasswordData = body;
 
-    if (!password || !accessToken) {
-      return new Response(JSON.stringify({ error: "Password and access token are required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    if (password.length < 6) {
+    if (!resetData.email?.trim()) {
       return new Response(
-        JSON.stringify({ error: "Password must be at least 6 characters long" }),
+        JSON.stringify({
+          error: "Missing required fields",
+          details: "Email is required",
+        }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    if (!supabaseAdmin || !supabase) {
-      console.error("Supabase clients not available");
-      return new Response(JSON.stringify({ error: "Server configuration error" }), {
+    console.log(`🔐 [AUTH-RESET-PASSWORD] Password reset requested for:`, resetData.email);
+
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Get user from the access token
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseAdmin.auth.getUser(accessToken);
-
-    if (userError || !user) {
-      console.error("Error getting user from token:", userError);
-      return new Response(JSON.stringify({ error: "Invalid or expired reset link" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Update the user's password using admin client
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      password: password,
+    // Send password reset email
+    const { error } = await supabase.auth.resetPasswordForEmail(resetData.email.trim(), {
+      redirectTo: resetData.redirectTo || `${import.meta.env.SITE_URL}/auth/reset-password`,
     });
 
-    if (updateError) {
-      console.error("Error updating password:", updateError);
-      return new Response(JSON.stringify({ error: "Failed to update password" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (error) {
+      console.error("❌ [AUTH-RESET-PASSWORD] Password reset failed:", error.message);
+      return new Response(
+        JSON.stringify({
+          error: "Password reset failed",
+          details: error.message,
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    // Create a fresh session using the new password
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: user.email!,
-      password: password,
-    });
-
-    if (signInError) {
-      console.error("Error creating fresh session:", signInError);
-      return new Response(JSON.stringify({ error: "Failed to create session with new password" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Profile will be automatically created by database trigger
-
-    // Set session cookies with the fresh session tokens
-    const { access_token, refresh_token } = signInData.session;
-    setAuthCookies(cookies, access_token, refresh_token);
+    console.log(`✅ [AUTH-RESET-PASSWORD] Password reset email sent successfully`);
 
     return new Response(
       JSON.stringify({
-        message: "Password updated successfully and session created",
-        user: signInData.user,
+        success: true,
+        message: "Password reset email sent successfully",
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Reset password error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("❌ [AUTH-RESET-PASSWORD] Unexpected error:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 };
