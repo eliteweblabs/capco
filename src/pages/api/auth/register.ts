@@ -1,229 +1,148 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
-import { SimpleProjectLogger } from "../../../lib/simple-logging";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 
-export const POST: APIRoute = async ({ request, redirect, cookies }) => {
-  console.log("🔐 [REGISTER] Registration API called - delegating to create-user");
+/**
+ * Standardized Auth REGISTER API
+ *
+ * POST Body:
+ * - email: string
+ * - password: string
+ * - firstName: string
+ * - lastName: string
+ * - companyName?: string
+ * - role?: string (default: "Client")
+ *
+ * Example:
+ * - POST /api/auth/register { "email": "user@example.com", "password": "password123", "firstName": "John", "lastName": "Doe" }
+ */
 
+interface RegisterData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  companyName?: string;
+  role?: string;
+}
+
+export const POST: APIRoute = async ({ request }) => {
   try {
-    // Get the form data
-    const formData = await request.formData();
-
-    // Instead of forwarding to create-user API, handle registration directly here
-    console.log("🔐 [REGISTER] Handling registration directly");
-
-    // Extract form data
-    const email = formData.get("email")?.toString();
-    const password = formData.get("password")?.toString();
-    const firstName = formData.get("firstName")?.toString();
-    const lastName = formData.get("lastName")?.toString();
-    const companyName = formData.get("companyName")?.toString();
-    const phone = formData.get("phone")?.toString();
-    const smsAlerts = formData.get("smsAlerts") === "on" || formData.get("smsAlerts") === "true";
-    const mobileCarrier = formData.get("mobileCarrier")?.toString();
-    const role = formData.get("role")?.toString() || "Client";
-
-    // Log registration attempt
-    console.log(
-      `🔐 [REGISTER] Attempting registration for email: ${email ? email.replace(/@.*$/, "@***") : "unknown"}`
-    );
+    const body = await request.json();
+    const registerData: RegisterData = body;
 
     // Validate required fields
-    if (!email || !password || !firstName || !lastName || !companyName) {
+    if (!registerData.email?.trim() || !registerData.password?.trim()) {
       return new Response(
         JSON.stringify({
-          success: false,
-          error: "Email, password, first name, last name, and company name are required",
+          error: "Missing required fields",
+          details: "Email and password are required",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Create user in Supabase Auth
-    if (!supabase) {
-      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+    if (!registerData.firstName?.trim() || !registerData.lastName?.trim()) {
+      return new Response(
+        JSON.stringify({
+          error: "Missing required fields",
+          details: "First name and last name are required",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`🔐 [AUTH-REGISTER] Attempting registration for:`, registerData.email);
+
+    if (!supabase || !supabaseAdmin) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    // Create user account
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password: password.trim(),
-      options: {
-        data: {
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          companyName: companyName?.trim() || null,
-          phone: phone?.trim() || null,
-          mobileCarrier: smsAlerts ? mobileCarrier : null,
-          smsAlerts: smsAlerts,
-          role: role,
-        },
-      },
+      email: registerData.email.trim(),
+      password: registerData.password.trim(),
     });
 
     if (authError) {
-      console.error("🔐 [REGISTER] Auth signup error:", authError);
-
-      let errorMessage = authError.message || "Failed to create user account";
-      let statusCode = 500;
-
-      // Check for duplicate email errors
-      if (
-        authError.message &&
-        (authError.message.includes("User already registered") ||
-          authError.message.includes("already been registered") ||
-          authError.message.includes("duplicate key") ||
-          authError.message.includes("already exists"))
-      ) {
-        errorMessage =
-          "A user with this email address has already been registered. Please try logging in instead.";
-        statusCode = 409;
-      }
-
+      console.error("❌ [AUTH-REGISTER] Registration failed:", authError.message);
       return new Response(
         JSON.stringify({
-          success: false,
-          error: errorMessage,
+          error: "Registration failed",
+          details: authError.message,
         }),
-        { status: statusCode, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
     if (!authData.user) {
-      console.error("🔐 [REGISTER] No user data returned from auth signup");
       return new Response(
         JSON.stringify({
-          success: false,
-          error: "User creation failed - no user data returned",
+          error: "Registration failed",
+          details: "No user returned from registration",
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Create profile in database
-    const profileData = {
-      id: authData.user.id,
-      email: email.trim().toLowerCase(),
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      companyName: companyName?.trim() || null,
-      phone: phone?.trim() || null,
-      smsAlerts: smsAlerts,
-      mobileCarrier: smsAlerts ? mobileCarrier : null,
-      role: role,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const { error: profileError } = await supabase!.from("profiles").upsert(profileData, {
-      onConflict: "id",
-      ignoreDuplicates: false,
-    });
+    // Create user profile
+    const { data: profileData, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .insert([
+        {
+          id: authData.user.id,
+          firstName: registerData.firstName.trim(),
+          lastName: registerData.lastName.trim(),
+          companyName: registerData.companyName?.trim() || "",
+          email: registerData.email.trim(),
+          role: registerData.role || "Client",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
 
     if (profileError) {
-      console.error("🔐 [REGISTER] Profile creation error:", profileError);
-      // Don't fail the entire request if profile creation fails
-    }
-
-    const result = {
-      success: true,
-      message: "User created successfully",
-      user: {
-        id: authData.user.id,
-        email: authData.user.email,
-        role: role,
-        firstName: firstName,
-        lastName: lastName,
-        companyName: companyName,
-      },
-    };
-
-    // Log the successful registration
-    await SimpleProjectLogger.addLogEntry(0, "userRegistration", "User registration successful", {
-      email: email?.replace(/@.*$/, "@***"),
-    });
-
-    // Sign in the user after successful registration
-    const { data: signInData, error: signInError } = await supabase!.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password: password.trim(),
-    });
-
-    if (signInError) {
-      console.error("🔐 [REGISTER] Failed to sign in after registration:", signInError);
-      // Return success but indicate auth needs to be completed
+      console.error("❌ [AUTH-REGISTER] Profile creation failed:", profileError.message);
+      // Note: User account was created but profile failed - this needs manual cleanup
       return new Response(
         JSON.stringify({
-          success: true,
-          message: "Account created but sign-in required",
-          redirect: "/login?message=registration_complete",
-          user: result.user,
+          error: "Profile creation failed",
+          details: "User account created but profile setup failed. Please contact support.",
         }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Set the session cookie using the signInData
-    console.log("🔐 [REGISTER] Sign in successful, session data:", {
-      hasSession: !!signInData?.session,
-      sessionId: signInData?.session?.user?.id,
-      accessToken: signInData?.session?.access_token ? "present" : "missing",
-      refreshToken: signInData?.session?.refresh_token ? "present" : "missing",
-    });
+    console.log(`✅ [AUTH-REGISTER] User registered successfully:`, authData.user.id);
 
-    if (signInData?.session) {
-      const session = signInData.session;
-      cookies.set("sb-access-token", session.access_token, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-      });
-      cookies.set("sb-refresh-token", session.refresh_token, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-      });
-    }
-
-    // Registration and sign-in successful
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Registration and sign-in successful",
-        redirect: "/project/dashboard?success=registration_success",
-        user: result.user,
-        session: signInData?.session,
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          companyName: profileData.companyName,
+          role: profileData.role,
+        },
+        message: "Registration successful",
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 201, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
-    // Log the error
-    console.error("🔐 [REGISTER] Critical error during registration:", error);
-    await SimpleProjectLogger.addLogEntry(0, "userRegistration", "Critical registration error", {
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-
+    console.error("❌ [AUTH-REGISTER] Unexpected error:", error);
     return new Response(
       JSON.stringify({
-        success: false,
-        error: "An unexpected error occurred. Please try again.",
-        errorType: "critical_error",
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 };

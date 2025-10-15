@@ -846,10 +846,10 @@ export async function downloadFile(
   projectId?: string
 ): Promise<void> {
   try {
-    const response = await fetch("/api/download-file", {
+    const response = await fetch("/api/files/download", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filePath, fileName, projectId }),
+      body: JSON.stringify({ type: "file", filePath, fileName, projectId }),
     });
 
     if (!response.ok) {

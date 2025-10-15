@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { createErrorResponse, createSuccessResponse } from "../../lib/api-optimization";
+import { createErrorResponse, createSuccessResponse } from "../../lib/_api-optimization";
 import { checkAuth } from "../../lib/auth";
 
 export const GET: APIRoute = async ({ request, cookies }) => {

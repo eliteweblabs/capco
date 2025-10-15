@@ -154,18 +154,21 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           .filter((user) => roleNames.includes(user.toLowerCase()))
           .map((user) => roleMapping[user.toLowerCase() as keyof typeof roleMapping] || user);
 
-        const roleResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
-          method: "POST",
+        // Build query parameters for multiple roles
+        const roleParams = capitalizedRoles.map((role) => `role=${role}`).join("&");
+        const userIds = usersToNotify.filter((user) => !roleNames.includes(user.toLowerCase()));
+        const userIdParams =
+          userIds.length > 0 ? `&${userIds.map((id) => `id=${id}`).join("&")}` : "";
+
+        const roleResponse = await fetch(`${baseUrl}/api/users?${roleParams}${userIdParams}`, {
+          method: "GET",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roles: capitalizedRoles,
-            userIds: usersToNotify.filter((user) => !roleNames.includes(user.toLowerCase())),
-          }),
         });
 
         if (roleResponse.ok) {
           const roleData = await roleResponse.json();
-          resolvedUsersToNotify = roleData.emails || usersToNotify;
+          const users = roleData.data || [];
+          resolvedUsersToNotify = users.map((user: any) => user.email).filter(Boolean);
           console.log("🔔 [NOTIFICATION] Resolved roles to emails:", resolvedUsersToNotify);
         } else {
           console.error("🔔 [NOTIFICATION] Failed to resolve roles, using original list");

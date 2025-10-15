@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { createErrorResponse, createSuccessResponse } from "../../lib/api-optimization";
+import { createErrorResponse, createSuccessResponse } from "../../lib/_api-optimization";
 import { checkAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { saveMedia } from "../../lib/media";
@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const fileName = `${documentName}.pdf`;
 
       // Convert HTML to PDF buffer
-      const { convertHtmlToPdf } = await import("./pdf/save-document");
+      const { convertHtmlToPdf } = await import("./pdf/upsert");
       const pdfBuffer = await convertHtmlToPdf(contractData.contractHtml);
 
       // Save as media document
@@ -87,6 +87,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         title: `Contract - ${updatedProject.title}`,
         description: `Signed contract document for project: ${updatedProject.title}`,
         customVersionNumber: 1,
+        currentUser: currentUser,
       });
 
       console.log("✅ [SAVE-PROJECT-CONTRACT] PDF document created:", mediaFile.id);

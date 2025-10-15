@@ -41,7 +41,7 @@ const {
   statusData = undefined,
 } = Astro.props;
 
-import { globalCompanyData } from "../../pages/api/global-company-data";
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
 const {
   globalCompanyName,
@@ -55,7 +55,7 @@ const {
   globalCompanyLogoLight,
 } = globalCompanyData();
 
-import { globalClasses } from "../../pages/api/global-classes";
+import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
   globalClasses();
 
@@ -68,7 +68,7 @@ const currentUrl = Astro.url.pathname;
 
 // Get navigation data
 import { navigation } from "@/pages/api/navigation";
-import { isBackendPage } from "@/pages/api/backend-page-check";
+import { isBackendPage } from "@/pages/api/utils/backend-page-check";
 const isBackend = isBackendPage(currentUrl);
 const navigationData = navigation(currentUrl, isAuth, currentRole || "Client", isBackend || false);
 const { desktopNavigationHTML, visibleNavItems } = navigationData;
@@ -850,7 +850,7 @@ const debugData = {
 
                   // Make API call to delete project
                   console.log("Sending delete request for project:", projectId);
-                  fetch(`/api/delete-project`, {
+                  fetch(`/api/project/delete`, {
                     method: "DELETE",
                     headers: {
                       "Content-Type": "application/json",
