@@ -1,0 +1,258 @@
+---
+import { checkAuth } from "../lib/auth";
+import TutorialOverlay from "../components/common/TutorialOverlay.astro";
+import LucideIcon from "../components/common/LucideIcon.astro";
+import App from "../components/common/App.astro";
+
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+---
+
+<App
+  title="Tutorial Demo - CAPCo Fire Protection"
+  description="Demonstration of the tutorial system"
+  {currentUser}
+  {session}
+  {supabase}
+  isBackend={true}
+>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <!-- Header -->
+      <header
+        data-welcome='{"step": 1, "title": "Welcome to the Demo!", "msg": "This is a demonstration of our tutorial system", "position": "bottom", "icon": "smile"}'
+        class="mb-8"
+      >
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Tutorial System Demo</h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+          Click the "Help" button in the bottom right to start the tutorial
+        </p>
+      </header>
+
+      <!-- Navigation -->
+      <nav
+        data-welcome='{"step": 2, "title": "Navigation", "msg": "Use this navigation to move between sections", "position": "bottom", "icon": "menu"}'
+        class="mb-8"
+      >
+        <div class="flex space-x-4">
+          <a href="#" class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+            Dashboard
+          </a>
+          <a
+            href="#"
+            class="rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300"
+          >
+            Projects
+          </a>
+          <a
+            href="#"
+            class="rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300"
+          >
+            Settings
+          </a>
+        </div>
+      </nav>
+
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <!-- Left Column -->
+        <div class="space-y-8 lg:col-span-2">
+          <!-- Stats Cards -->
+          <div
+            data-welcome='{"step": 3, "title": "Project Statistics", "msg": "Here you can see your project statistics at a glance", "position": "right", "icon": "bar-chart"}'
+            class="grid grid-cols-1 gap-4 md:grid-cols-3"
+          >
+            <div class="rounded-lg bg-gray-100 p-6 shadow dark:bg-gray-800">
+              <div class="flex items-center">
+                <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
+                  <LucideIcon name="folder" class="text-blue-600 dark:text-blue-400" />
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
+                  <p class="text-2xl font-bold text-gray-900 dark:text-white">12</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-lg bg-gray-100 p-6 shadow dark:bg-gray-800">
+              <div class="flex items-center">
+                <div class="rounded-lg bg-green-100 p-2 dark:bg-green-900">
+                  <LucideIcon name="check-circle" class="text-green-600 dark:text-green-400" />
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Completed</p>
+                  <p class="text-2xl font-bold text-gray-900 dark:text-white">8</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-lg bg-gray-100 p-6 shadow dark:bg-gray-800">
+              <div class="flex items-center">
+                <div class="rounded-lg bg-yellow-100 p-2 dark:bg-yellow-900">
+                  <LucideIcon name="clock" class="text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
+                  <p class="text-2xl font-bold text-gray-900 dark:text-white">4</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Projects -->
+          <div
+            data-welcome='{"step": 4, "title": "Recent Projects", "msg": "Your most recent projects are listed here", "position": "top", "icon": "list"}'
+            class="rounded-lg bg-gray-100 shadow dark:bg-gray-800"
+          >
+            <div class="border-b border-gray-200 p-6 dark:border-gray-700">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Projects</h2>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4">
+                <div
+                  class="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-700"
+                >
+                  <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white">
+                      Fire Safety Inspection
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">123 Main St, Anytown</p>
+                  </div>
+                  <span class="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800"
+                    >Completed</span
+                  >
+                </div>
+
+                <div
+                  class="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-700"
+                >
+                  <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white">
+                      Sprinkler System Design
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">456 Oak Ave, Somewhere</p>
+                  </div>
+                  <span class="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-800"
+                    >In Progress</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-8">
+          <!-- Quick Actions -->
+          <div
+            data-welcome='{"step": 5, "title": "Quick Actions", "msg": "Use these buttons for common tasks", "position": "left", "icon": "zap"}'
+            class="rounded-lg bg-gray-100 p-6 shadow dark:bg-gray-800"
+          >
+            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
+            <div class="space-y-3">
+              <button
+                data-welcome='{"step": 6, "title": "Create Project", "msg": "Click here to create a new project", "position": "left", "icon": "plus", "action": "click"}'
+                class="flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              >
+                <LucideIcon name="plus" class="mr-2" />
+                New Project
+              </button>
+
+              <button
+                class="flex w-full items-center justify-center rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300"
+              >
+                <LucideIcon name="upload" class="mr-2" />
+                Upload Files
+              </button>
+
+              <button
+                class="flex w-full items-center justify-center rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300"
+              >
+                <LucideIcon name="download" class="mr-2" />
+                Export Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div
+            data-welcome='{"step": 7, "title": "Notifications", "msg": "Stay updated with your project notifications", "position": "left", "icon": "bell"}'
+            class="rounded-lg bg-gray-100 p-6 shadow dark:bg-gray-800"
+          >
+            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
+            <div class="space-y-3">
+              <div class="flex items-start space-x-3">
+                <div class="mt-2 h-2 w-2 rounded-full bg-blue-600"></div>
+                <div>
+                  <p class="text-sm text-gray-900 dark:text-white">Project "Fire Safety" updated</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">2 hours ago</p>
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-3">
+                <div class="mt-2 h-2 w-2 rounded-full bg-green-600"></div>
+                <div>
+                  <p class="text-sm text-gray-900 dark:text-white">New file uploaded</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">4 hours ago</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer
+        data-welcome='{"step": 8, "title": "Footer", "msg": "This is the footer with additional links and information", "position": "top", "icon": "info"}'
+        class="mt-12 border-t border-gray-200 pt-8 dark:border-gray-700"
+      >
+        <div class="text-center text-gray-600 dark:text-gray-400">
+          <p>&copy; 2024 CAPCo Fire Protection. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Tutorial Overlay -->
+</App>
+
+<script>
+  // Add some interactive functionality for the demo
+  document.addEventListener("DOMContentLoaded", () => {
+    // Add click handlers for demo buttons
+    document.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", (e) => {
+        if (button.textContent?.includes("New Project")) {
+          e.preventDefault();
+          alert("Demo: This would create a new project!");
+        }
+      });
+    });
+
+    // Add hover effects
+    document.querySelectorAll("[data-welcome]").forEach((element) => {
+      element.addEventListener("mouseenter", () => {
+        (element as HTMLElement).style.transform = "scale(1.02)";
+        (element as HTMLElement).style.transition = "transform 0.2s ease";
+      });
+
+      element.addEventListener("mouseleave", () => {
+        (element as HTMLElement).style.transform = "scale(1)";
+      });
+    });
+  });
+</script>
+
+<style>
+  /* Demo-specific styles */
+  [data-welcome] {
+    transition: all 0.2s ease;
+  }
+
+  [data-welcome]:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+</style>

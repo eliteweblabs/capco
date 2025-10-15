@@ -24,21 +24,18 @@ const currentRole = currentUser?.profile?.role;
 let staffOptions: any[] = [];
 if (currentRole === "Admin" || currentRole === "Staff") {
   try {
-    const staffResponse = await fetch(`${Astro.url.origin}/api/get-user-emails-by-role`, {
-      method: "POST",
+    const staffResponse = await fetch(`${Astro.url.origin}/api/users?role=Admin&role=Staff`, {
+      method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        roles: ["Admin", "Staff"],
-      }),
     });
     if (staffResponse.ok) {
       const staffData = await staffResponse.json();
-      if (staffData.success && staffData.staffUsers) {
+      if (staffData.data) {
         staffOptions = [
           { value: "", label: "Unassigned" },
-          ...staffData.staffUsers.map((staff: any) => ({
+          ...staffData.data.map((staff: any) => ({
             value: staff.id || "",
             label:
               staff.companyName ||

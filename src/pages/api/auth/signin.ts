@@ -65,7 +65,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   }
 
   if (!email || !password) {
-    return redirect("/login?error=invalid_credentials");
+    return redirect("/auth/login?error=invalid_credentials");
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -87,7 +87,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     }
 
     // Redirect to login page with error parameter
-    return redirect("/login?error=invalid_credentials");
+    return redirect("/auth/login?error=invalid_credentials");
   }
 
   // Profile will be automatically created by database trigger

@@ -106,18 +106,18 @@ export const POST: APIRoute = async ({ request }) => {
             // Don't fail the entire request if logging fails
           }
 
-          const adminResponse = await fetch(`${baseUrl}/api/get-user-emails-by-role`, {
-            method: "POST",
+          const adminResponse = await fetch(`${baseUrl}/api/users?role=Admin`, {
+            method: "GET",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roles: ["Admin"] }),
           });
 
           let adminEmails = [];
           let adminUserIds = [];
           if (adminResponse.ok) {
             const adminData = await adminResponse.json();
-            adminEmails = adminData.emails || [];
-            adminUserIds = adminData.userIds || [];
+            const users = adminData.data || [];
+            adminEmails = users.map((user: any) => user.email).filter(Boolean);
+            adminUserIds = users.map((user: any) => user.id);
             console.log("📧 [ASSIGN-STAFF] Admin emails:", adminEmails);
             console.log("📧 [ASSIGN-STAFF] Admin user IDs:", adminUserIds);
           } else {

@@ -46,7 +46,7 @@ export interface PunchlistResponse {
 export async function fetchPunchlistData(projectId: string | number): Promise<PunchlistResponse> {
   console.log("🔍 [PUNCHLIST-UTILS] fetchPunchlistData called with projectId:", projectId);
   try {
-    const response = await fetch(`/api/get-punchlist?projectId=${projectId}`, {
+    const response = await fetch(`/api/punchlist/get?projectId=${projectId}`, {
       credentials: "include",
     });
 
