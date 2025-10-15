@@ -30,7 +30,7 @@ const PROJECTS_LIMIT = 20;
 if (currentUser?.id) {
   try {
     const baseUrl = Astro.url.origin;
-    let apiUrl = `${baseUrl}/api/project/get?limit=${PROJECTS_LIMIT}&offset=0`;
+    let apiUrl = `${baseUrl}/api/projects/get?limit=${PROJECTS_LIMIT}&offset=0`;
 
     // Add role-based filtering
     if (currentUser?.profile?.role === "Client") {
@@ -40,7 +40,11 @@ if (currentUser?.id) {
     }
 
     console.log("🏗️ [DASHBOARD] Fetching initial projects from API:", apiUrl);
-    const response = await fetch(apiUrl);
+    const response = await fetch(apiUrl, {
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    });
 
     if (response.ok) {
       const data = await response.json();
@@ -224,9 +228,9 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
     private readonly limit = 20;
 
     constructor() {
-      this.projects = window.initialProjects || [];
+      this.projects = (window as any).initialProjects || [];
       this.offset = this.projects.length;
-      this.hasMore = window.initialProjectsHasMore || false;
+      this.hasMore = (window as any).initialProjectsHasMore || false;
       this.setupScrollListener();
     }
 
@@ -247,7 +251,7 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
       if (this.loading || !this.hasMore) return;
 
       this.loading = true;
-      const loadMoreBtn = document.getElementById("load-more-projects");
+      const loadMoreBtn = document.getElementById("load-more-projects") as HTMLButtonElement;
       if (loadMoreBtn) {
         loadMoreBtn.textContent = "Loading more projects...";
         loadMoreBtn.disabled = true;
@@ -255,11 +259,11 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
 
       try {
         const baseUrl = window.location.origin;
-        let apiUrl = `${baseUrl}/api/project/get?limit=${this.limit}&offset=${this.offset}`;
+        let apiUrl = `${baseUrl}/api/projects/get?limit=${this.limit}&offset=${this.offset}`;
 
         // Add role-based filtering
-        const userRole = window.currentUser?.profile?.role;
-        const userId = window.currentUser?.id;
+        const userRole = (window as any).currentUser?.profile?.role;
+        const userId = (window as any).currentUser?.id;
 
         if (userRole === "Client") {
           apiUrl += `&authorId=${userId}`;

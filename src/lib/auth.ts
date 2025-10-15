@@ -27,22 +27,22 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   const customUserEmail = cookies.get("custom-user-email");
   const customUserId = cookies.get("custom-user-id");
 
-  console.log("🔐 [AUTH] Checking for custom session cookies:", {
-    hasToken: !!customSessionToken,
-    hasEmail: !!customUserEmail,
-    hasUserId: !!customUserId,
-  });
+  // console.log("🔐 [AUTH] Checking for custom session cookies:", {
+  //   hasToken: !!customSessionToken,
+  //   hasEmail: !!customUserEmail,
+  //   hasUserId: !!customUserId,
+  // });
 
   if (customSessionToken && customUserEmail && customUserId) {
-    console.log("🔐 [AUTH] Custom session found, creating custom user object");
-    console.log("🔐 [AUTH] Custom session details:", {
-      hasToken: !!customSessionToken,
-      hasEmail: !!customUserEmail,
-      hasUserId: !!customUserId,
-      tokenValue: customSessionToken?.value,
-      emailValue: customUserEmail?.value,
-      userIdValue: customUserId?.value,
-    });
+    // console.log("🔐 [AUTH] Custom session found, creating custom user object");
+    // console.log("🔐 [AUTH] Custom session details:", {
+    //   hasToken: !!customSessionToken,
+    //   hasEmail: !!customUserEmail,
+    //   hasUserId: !!customUserId,
+    //   tokenValue: customSessionToken?.value,
+    //   emailValue: customUserEmail?.value,
+    //   userIdValue: customUserId?.value,
+    // });
 
     // Create a custom user object for the custom session
     const customUser: ExtendedUser = {

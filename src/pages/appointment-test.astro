@@ -1,0 +1,156 @@
+---
+// Simple Appointment Test Page
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appointment Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input,
+      button {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .result {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 4px;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📅 Appointment System Test</h1>
+
+      <div class="form-group">
+        <label>Test Date:</label>
+        <input type="date" id="testDate" />
+      </div>
+
+      <button onclick="testAppointmentAvailability()">Check Availability</button>
+
+      <div class="form-group">
+        <label>Attendee Name:</label>
+        <input type="text" id="attendeeName" placeholder="John Doe" />
+      </div>
+
+      <div class="form-group">
+        <label>Email:</label>
+        <input type="email" id="attendeeEmail" placeholder="john@example.com" />
+      </div>
+
+      <button onclick="createAppointment()">Create Appointment</button>
+
+      <div id="result" class="result" style="display: none;">
+        <h3>Result:</h3>
+        <pre id="resultContent"></pre>
+      </div>
+    </div>
+
+    <script>
+      // Set default date to tomorrow
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      (document.getElementById("testDate") as HTMLInputElement).value = tomorrow
+        .toISOString()
+        .split("T")[0];
+
+      (window as any).testAppointmentAvailability = async function () {
+        const date = (document.getElementById("testDate") as HTMLInputElement).value;
+        if (!date) {
+          alert("Please select a date");
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/appointments/availability-test?date=${date}`);
+          const data = await response.json();
+          (window as any).showResult("Availability Check", data);
+        } catch (error) {
+          (window as any).showResult("Error", { error: (error as Error).message }, "error");
+        }
+      };
+
+      (window as any).createAppointment = async function () {
+        const name = (document.getElementById("attendeeName") as HTMLInputElement).value;
+        const email = (document.getElementById("attendeeEmail") as HTMLInputElement).value;
+
+        if (!name || !email) {
+          alert("Please fill in name and email");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/appointments/upsert", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              attendeeName: name,
+              attendeeEmail: email,
+              start: new Date().toISOString(),
+              end: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+              title: "Test Appointment",
+              description: "Created via test interface",
+            }),
+          });
+          const data = await response.json();
+          (window as any).showResult("Appointment Created", data, "success");
+        } catch (error) {
+          (window as any).showResult("Error", { error: (error as Error).message }, "error");
+        }
+      };
+
+      (window as any).showResult = function (title: string, data: any, type = "") {
+        const resultDiv = document.getElementById("result") as HTMLDivElement;
+        const contentDiv = document.getElementById("resultContent") as HTMLDivElement;
+
+        resultDiv.style.display = "block";
+        resultDiv.className = `result ${type}`;
+        contentDiv.textContent = `${title}:\n\n${JSON.stringify(data, null, 2)}`;
+      };
+    </script>
+  </body>
+</html>

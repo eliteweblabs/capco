@@ -40,10 +40,16 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Authentication required",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Parse query parameters
@@ -71,14 +77,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Check if requesting specific discussion
     if (filters.id) {
       const { data: discussion, error } = await supabase
-        .from("discussions")
-        .select(
-          `
-          *,
-          author:profiles!authorId(id, firstName, lastName, companyName),
-          project:projects!projectId(id, title, address)
-        `
-        )
+        .from("discussion")
+        .select("*")
         .eq("id", filters.id)
         .single();
 
@@ -99,11 +99,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Build query for multiple discussions
-    let query = supabase.from("discussions").select(`
-      *,
-      author:profiles!authorId(id, firstName, lastName, companyName),
-      project:projects!projectId(id, title, address)
-    `);
+    let query = supabase!.from("discussion").select("*");
 
     // Apply filters
     if (filters.projectId) {
@@ -123,12 +119,12 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     query = query.order(filters.sortBy, { ascending });
 
     // Apply pagination
-    query = query.range(filters.offset, filters.offset + filters.limit - 1);
+    query = query.range(filters.offset || 0, filters.offset || 0 + filters.limit || 20 - 1);
 
     // Get total count if requested
     let totalCount = null;
     if (filters.includeTotal) {
-      let countQuery = supabase.from("discussions").select("*", { count: "exact", head: true });
+      let countQuery = supabase!.from("discussion").select("*", { count: "exact", head: true });
 
       if (filters.projectId) {
         countQuery = countQuery.eq("projectId", filters.projectId);
@@ -158,14 +154,15 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    const hasMore = discussions.length === filters.limit;
+    const hasMore = discussions.length === filters.limit || 20;
 
     return new Response(
       JSON.stringify({
-        data: discussions || [],
+        success: true,
+        discussions: discussions || [],
         pagination: {
-          limit: filters.limit,
-          offset: filters.offset,
+          limit: filters.limit || 20,
+          offset: filters.offset || 0,
           total: totalCount,
           hasMore,
         },
@@ -179,10 +176,11 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [DISCUSSIONS-GET] Unexpected error:", error);
     return new Response(
       JSON.stringify({
+        success: false,
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       }),

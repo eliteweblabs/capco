@@ -112,10 +112,10 @@ export const navigation = (
     },
     {
       label: "Global Discussions",
-      href: "/admin/global-discussions",
+      href: "/admin/discussions",
       roles: ["Admin"],
       pageType: "backend",
-      isPrimary: currentUrl.startsWith("/admin/global-discussions"),
+      isPrimary: currentUrl.startsWith("/admin/discussions"),
     },
     {
       label: "Users",

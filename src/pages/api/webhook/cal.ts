@@ -123,7 +123,7 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({ success: true, message: "Webhook processed successfully" }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [CAL-WEBHOOK] Error processing webhook:", error);
     return new Response(
       JSON.stringify({
@@ -286,7 +286,7 @@ async function notifyAIAgent(eventType: string, data: any) {
     } else {
       console.error("❌ [CAL-WEBHOOK] Failed to notify AI agent:", response.status);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [CAL-WEBHOOK] Error notifying AI agent:", error);
   }
 }

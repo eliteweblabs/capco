@@ -104,7 +104,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Build query for multiple files
-    let query = supabase.from("files").select("*");
+    let query = supabase!.from("files").select("*");
 
     // Apply filters
     if (filters.projectId) {
@@ -132,12 +132,12 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     query = query.order(filters.sortBy, { ascending });
 
     // Apply pagination
-    query = query.range(filters.offset, filters.offset + filters.limit - 1);
+    query = query.range(filters.offset || 0, filters.offset || 0 + filters.limit || 20 - 1);
 
     // Get total count if requested
     let totalCount = null;
     if (filters.includeTotal) {
-      let countQuery = supabase.from("files").select("*", { count: "exact", head: true });
+      let countQuery = supabase!.from("files").select("*", { count: "exact", head: true });
 
       if (filters.projectId) {
         countQuery = countQuery.eq("projectId", filters.projectId);
@@ -173,14 +173,14 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    const hasMore = files.length === filters.limit;
+    const hasMore = files.length === filters.limit || 20;
 
     return new Response(
       JSON.stringify({
         data: files || [],
         pagination: {
-          limit: filters.limit,
-          offset: filters.offset,
+          limit: filters.limit || 20,
+          offset: filters.offset || 0,
           total: totalCount,
           hasMore,
         },
@@ -196,7 +196,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [FILES-GET] Unexpected error:", error);
     return new Response(
       JSON.stringify({

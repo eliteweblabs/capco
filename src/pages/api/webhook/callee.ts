@@ -513,7 +513,7 @@ export async function createProjectFromEmail(userId: string, projectInfo: any, u
     console.log("🏗️ [EMAIL-WEBHOOK] Project data for API:", JSON.stringify(projectData, null, 2));
 
     // Call the create-project API endpoint to ensure proper processing
-    const createProjectUrl = `${getApiBaseUrl()}/api/create-project`;
+    const createProjectUrl = `${getApiBaseUrl()}/api/projects/upsert`;
     const createProjectResponse = await fetch(createProjectUrl, {
       method: "POST",
       headers: {

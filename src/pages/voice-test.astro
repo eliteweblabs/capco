@@ -1,0 +1,206 @@
+---
+// Simple Voice Booking Test Page
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Booking Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .feature {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 4px;
+      }
+      .feature h3 {
+        margin-top: 0;
+        color: #007bff;
+      }
+      .test-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .test-section h4 {
+        margin-top: 0;
+        color: #28a745;
+      }
+      input,
+      button {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin: 5px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .result {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 4px;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎤 Voice Booking System Test</h1>
+
+      <div class="feature">
+        <h3>🤖 Vapi.ai Assistant Features</h3>
+        <p><strong>Conversational Responses:</strong></p>
+        <ul>
+          <li>"How's Tuesday the 14th? We have 2pm and 4pm available"</li>
+          <li>"I have Wednesday at 10am or Thursday at 2pm - which works better?"</li>
+          <li>"We're pretty booked this week, but I can do Monday at 3pm or Friday at 11am"</li>
+        </ul>
+      </div>
+
+      <div class="feature">
+        <h3>🔗 Available API Endpoints</h3>
+        <ul>
+          <li><code>POST /api/vapi/webhook</code> - Vapi.ai webhook handler</li>
+          <li><code>POST /api/vapi/cal-integration</code> - Cal.com integration</li>
+          <li><code>GET/POST /api/appointments/*</code> - Appointment management</li>
+        </ul>
+      </div>
+
+      <div class="test-section">
+        <h4>Test Availability Check</h4>
+        <input type="date" id="testDate" />
+        <button onclick="testConversationalResponse()">Get Conversational Response</button>
+        <p><small>This simulates what the voice assistant would say</small></p>
+      </div>
+
+      <div class="test-section">
+        <h4>Test Appointment Creation</h4>
+        <input type="text" id="testName" placeholder="Attendee Name" />
+        <input type="email" id="testEmail" placeholder="Email" />
+        <button onclick="testAppointmentCreation()">Test Appointment Creation</button>
+      </div>
+
+      <div id="result" class="result" style="display: none;">
+        <h3>Result:</h3>
+        <pre id="resultContent"></pre>
+      </div>
+    </div>
+
+    <script>
+      // Set default date to tomorrow
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      (document.getElementById("testDate") as HTMLInputElement).value = tomorrow
+        .toISOString()
+        .split("T")[0];
+
+      (window as any).testConversationalResponse = async function () {
+        const date = (document.getElementById("testDate") as HTMLInputElement).value;
+        if (!date) {
+          alert("Please select a date");
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/appointments/availability?date=${date}`);
+          const data = await response.json();
+
+          // Simulate conversational response
+          const conversationalResponse = generateConversationalResponse(data, date);
+          (window as any).showResult("Voice Assistant Response", {
+            original: data,
+            conversational: conversationalResponse,
+          });
+        } catch (error) {
+          (window as any).showResult("Error", { error: (error as Error).message }, "error");
+        }
+      };
+
+      (window as any).testAppointmentCreation = async function () {
+        const name = (document.getElementById("testName") as HTMLInputElement).value;
+        const email = (document.getElementById("testEmail") as HTMLInputElement).value;
+
+        if (!name || !email) {
+          alert("Please fill in name and email");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/appointments/upsert", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              attendeeName: name,
+              attendeeEmail: email,
+              start: new Date().toISOString(),
+              end: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+              title: "Voice Booking Test",
+              description: "Created via voice booking demo",
+            }),
+          });
+          const data = await response.json();
+          (window as any).showResult("Appointment Created", data, "success");
+        } catch (error) {
+          (window as any).showResult("Error", { error: (error as Error).message }, "error");
+        }
+      };
+
+      function generateConversationalResponse(data: any, date: any) {
+        const dateObj = new Date(date);
+        const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+        const monthDay = dateObj.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+
+        if (data.availableSlots && data.availableSlots.length > 0) {
+          const times = data.availableSlots.map((slot: any) => slot.time).join(", ");
+          return `How's ${dayName} the ${monthDay}? We have ${times} available.`;
+        } else {
+          return `I'm sorry, but ${dayName} the ${monthDay} is completely booked. How about trying a different day?`;
+        }
+      }
+
+      (window as any).showResult = function (title: string, data: any, type = "") {
+        const resultDiv = document.getElementById("result") as HTMLDivElement;
+        const contentDiv = document.getElementById("resultContent") as HTMLDivElement;
+
+        resultDiv.style.display = "block";
+        resultDiv.className = `result ${type}`;
+        contentDiv.textContent = `${title}:\n\n${JSON.stringify(data, null, 2)}`;
+      };
+    </script>
+  </body>
+</html>

@@ -365,6 +365,7 @@ const debugData = {
         {globalInputClasses}
         primaryTextClasses={globalPrimaryTextClasses}
         secondaryTextClasses={globalSecondaryTextClasses}
+        {projects}
       />
 
       <div
@@ -850,7 +851,7 @@ const debugData = {
 
                   // Make API call to delete project
                   console.log("Sending delete request for project:", projectId);
-                  fetch(`/api/project/delete`, {
+                  fetch(`/api/projects/delete`, {
                     method: "DELETE",
                     headers: {
                       "Content-Type": "application/json",
@@ -1778,6 +1779,102 @@ const debugData = {
       } else {
         initializeIcons();
       }
+    </script>
+
+    <!-- Global Image Error Handler -->
+    <script>
+      // Global error handler for broken image URLs (especially Supabase storage)
+      document.addEventListener("DOMContentLoaded", () => {
+        // Handle all img elements with error handling
+        const images = document.querySelectorAll("img");
+
+        images.forEach((img) => {
+          img.addEventListener("error", (event) => {
+            const target = event.target as HTMLImageElement;
+            const src = target.src;
+
+            // Check if it's a Supabase storage URL that's failing
+            if (src && src.includes("supabase.co/storage")) {
+              console.warn("⚠️ [IMAGE-ERROR] Supabase storage image failed to load:", src);
+
+              // Hide the broken image and show a fallback
+              target.style.display = "none";
+
+              // Create a fallback element if it doesn't exist
+              if (!target.nextElementSibling?.classList.contains("image-fallback")) {
+                const fallback = document.createElement("div");
+                fallback.className =
+                  "image-fallback bg-gray-200 flex items-center justify-center text-gray-500";
+                fallback.style.width = target.style.width || "100%";
+                fallback.style.height = target.style.height || "100%";
+                fallback.innerHTML = "📷";
+                target.parentNode?.insertBefore(fallback, target.nextSibling);
+              }
+            }
+          });
+        });
+
+        // Handle dynamically added images
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node as Element;
+                const newImages = element.querySelectorAll("img");
+                newImages.forEach((img) => {
+                  img.addEventListener("error", (event) => {
+                    const target = event.target as HTMLImageElement;
+                    const src = target.src;
+
+                    if (src && src.includes("supabase.co/storage")) {
+                      console.warn("⚠️ [IMAGE-ERROR] Supabase storage image failed to load:", src);
+                      target.style.display = "none";
+
+                      if (!target.nextElementSibling?.classList.contains("image-fallback")) {
+                        const fallback = document.createElement("div");
+                        fallback.className =
+                          "image-fallback bg-gray-200 flex items-center justify-center text-gray-500";
+                        fallback.style.width = target.style.width || "100%";
+                        fallback.style.height = target.style.height || "100%";
+                        fallback.innerHTML = "📷";
+                        target.parentNode?.insertBefore(fallback, target.nextSibling);
+                      }
+                    }
+                  });
+                });
+              }
+            });
+          });
+        });
+
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+        });
+      });
+
+      // Global error handler for unhandled promise rejections (network errors)
+      window.addEventListener("unhandledrejection", (event) => {
+        if (
+          event.reason &&
+          event.reason.message &&
+          event.reason.message.includes("ERR_CONNECTION_CLOSED")
+        ) {
+          console.warn(
+            "⚠️ [NETWORK-ERROR] Connection closed error suppressed:",
+            event.reason.message
+          );
+          event.preventDefault(); // Prevent the error from showing in console
+        }
+      });
+
+      // Global error handler for general errors
+      window.addEventListener("error", (event) => {
+        if (event.message && event.message.includes("ERR_CONNECTION_CLOSED")) {
+          console.warn("⚠️ [NETWORK-ERROR] Connection closed error suppressed:", event.message);
+          event.preventDefault(); // Prevent the error from showing in console
+        }
+      });
     </script>
 
     <!-- Plausible Analytics Script -->

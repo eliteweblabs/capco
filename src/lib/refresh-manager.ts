@@ -374,9 +374,9 @@ export class RefreshManager {
       let apiUrl: string;
 
       if (contextType === "project") {
-        apiUrl = `/api/get-project/${contextId}`;
+        apiUrl = `/api/projects/get?id=${contextId}`;
       } else if (contextType === "user") {
-        apiUrl = `/api/get-user/${contextId}`;
+        apiUrl = `/api/users/get?id=${contextId}`;
       } else {
         // For global context, we might need a different approach
         console.log(`🔄 [REFRESH-MANAGER] Global context refresh not implemented yet`);

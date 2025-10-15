@@ -10,19 +10,6 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
-import { globalCompanyData } from "../api/global/global-company-data.ts";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-  globalCompanyLogoDark,
-  globalCompanyLogoLight,
-} = globalCompanyData();
-
 import { globalClasses } from "../api/global/global-classes.ts";
 const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
   globalClasses();
@@ -81,10 +68,11 @@ let project: any = null;
 // });
 
 // Fetch single project using the API endpoint
+
 if (id) {
   try {
     const baseUrl = Astro.url.origin;
-    const apiUrl = `${baseUrl}/api/get-project?id=${id}`;
+    const apiUrl = `${baseUrl}/api/projects/get?id=${id}`;
 
     console.log("🏗️ [PROJECT] Fetching project from API:", apiUrl);
     const response = await fetch(apiUrl, {
@@ -98,8 +86,8 @@ if (id) {
     if (response.ok) {
       const data = await response.json();
       // console.log("🏗️ [PROJECT] Data:", data);
-      if (data.success) {
-        project = data.project;
+      if (data.data) {
+        project = data.data;
         console.log("✅ [PROJECT] Project loaded:", project?.title);
       } else {
         console.error("🏗️ [PROJECT] API returned error:", data.error);
@@ -179,18 +167,6 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
   isBackend={true}
   {id}
-  {globalPrimaryTextClasses}
-  {globalSecondaryTextClasses}
-  {globalInputClasses}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
-  {globalCompanyLogoDark}
-  {globalCompanyLogoLight}
 >
   <HeroProject
     title={project?.address || project?.title || "Untitled Project"}
@@ -431,7 +407,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     if (projectId) {
       try {
         // Inline discussion count loading
-        fetch(`/api/discussions?projectId=${projectId}`)
+        fetch(`/api/discussions/get?projectId=${projectId}`)
           .then((response) => response.json())
           .then((result) => {
             if (result.success && result.incompleteCount !== undefined) {

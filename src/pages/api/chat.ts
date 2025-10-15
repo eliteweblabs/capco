@@ -70,8 +70,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           userRole,
           lastSeen: new Date(),
         });
-        console.log("🔔 [CHAT-API] User joined:", { userId, userName, userRole });
-        console.log("🔔 [CHAT-API] Total active connections:", activeConnections.size);
+        // console.log("🔔 [CHAT-API] User joined:", { userId, userName, userRole });
+        // console.log("🔔 [CHAT-API] Total active connections:", activeConnections.size);
 
         if (!supabaseAdmin) {
           console.error(

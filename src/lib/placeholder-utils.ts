@@ -38,8 +38,8 @@ export interface PlaceholderData {
       image?: string;
       signedTime?: string;
       url?: string;
+      html?: string;
     };
-    contractPdfUrl?: string;
     authorProfile?: {
       companyName: string;
       email: string;
@@ -123,7 +123,7 @@ export function replacePlaceholders(
         console.log(`✅ [PLACEHOLDER-UTILS] Dynamic replacement: ${fullPlaceholder} -> ${value}`);
       }
     } else {
-      console.log(`⚠️ [PLACEHOLDER-UTILS] Could not resolve: ${fullPlaceholder}`);
+      // console.log(`⚠️ [PLACEHOLDER-UTILS] Could not resolve: ${fullPlaceholder}`);
     }
   }
 

@@ -1,6 +1,6 @@
 ---
 import Button from "../common/Button.astro";
-import LucideIcon from "../common/LucideIcon.astro";
+import UserIcon from "../common/UserIcon.astro";
 
 // Generic Slot Machine Modal Component - Reusable for any picker scenario
 
@@ -34,6 +34,8 @@ interface Props {
   icon?: string; // Optional: Icon name for the button (default: "")
   currentUser?: any; // Optional: Current user for API calls
   globalInputClasses?: string; // Optional: Global input classes
+  component?: string; // Optional: Component name for the button (default: "")
+  componentProps?: any; // Optional: Component props for the button (default: {})
   buttonVariant?:
     | "primary"
     | "secondary"
@@ -79,7 +81,9 @@ const {
   fetchOnLoad = false,
   showNotification = false,
   buttonVariant = "primary",
+  componentProps,
   project,
+  component,
   // project = {},
 } = Astro.props;
 
@@ -100,18 +104,25 @@ const selectedOption = optionsArray.find((option) => option.value === selectedVa
 const displayText = selectedOption?.label || placeholder;
 ---
 
-<!-- Slot Machine Picker Button -->
-<Button
-  {id}
-  variant={buttonVariant || "outline"}
-  class={buttonClass || ""}
-  data-refresh={name}
-  size="sm"
-  icon={icon || "chevron-down"}
-  iconPosition="right"
->
-  {displayText}
-</Button>
+{
+  component === "UserIcon" ? (
+    <a {id}>
+      <UserIcon users={[project?.assignedToProfile]} {...componentProps} />
+    </a>
+  ) : (
+    <Button
+      {id}
+      variant={buttonVariant || "outline"}
+      class={buttonClass || ""}
+      data-refresh={name}
+      size="sm"
+      icon={icon || "chevron-down"}
+      iconPosition="right"
+    >
+      {displayText}
+    </Button>
+  )
+}
 
 <!-- Hidden input to store the selected value -->
 <input

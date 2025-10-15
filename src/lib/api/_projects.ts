@@ -286,113 +286,21 @@ export async function fetchProjectById(
   }
 }
 
-export async function createProject(
-  supabaseAdmin: SupabaseClient,
-  projectData: Partial<Project>
-): Promise<Project | null> {
-  try {
-    const { data: project, error } = await supabaseAdmin
-      .from("projects")
-      .insert(projectData)
-      .select()
-      .single();
+// export async function deleteProject(
+//   supabaseAdmin: SupabaseClient,
+//   projectId: number
+// ): Promise<boolean> {
+//   try {
+//     const { error } = await supabaseAdmin.from("projects").delete().eq("id", projectId);
 
-    if (error) {
-      console.error("Error creating project:", error);
-      return null;
-    }
+//     if (error) {
+//       console.error("Error deleting project:", error);
+//       return false;
+//     }
 
-    return project;
-  } catch (error) {
-    console.error("Failed to create project:", error);
-    return null;
-  }
-}
-
-export async function updateProject(
-  supabaseAdmin: SupabaseClient,
-  projectId: number,
-  updates: Partial<Project>
-): Promise<Project | null> {
-  try {
-    const { data: project, error } = await supabaseAdmin
-      .from("projects")
-      .update(updates)
-      .eq("id", projectId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error updating project:", error);
-      return null;
-    }
-
-    return project;
-  } catch (error) {
-    console.error("Failed to update project:", error);
-    return null;
-  }
-}
-
-export async function deleteProject(
-  supabaseAdmin: SupabaseClient,
-  projectId: number
-): Promise<boolean> {
-  try {
-    const { error } = await supabaseAdmin.from("projects").delete().eq("id", projectId);
-
-    if (error) {
-      console.error("Error deleting project:", error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Failed to delete project:", error);
-    return false;
-  }
-}
-
-export function groupProjectsByStatus(
-  projects: ProjectWithStatus[]
-): Record<string, ProjectWithStatus[]> {
-  return projects.reduce(
-    (acc, project) => {
-      const statusSlug = project.statusSlug || "unknown";
-      if (!acc[statusSlug]) {
-        acc[statusSlug] = [];
-      }
-      acc[statusSlug].push(project);
-      return acc;
-    },
-    {} as Record<string, ProjectWithStatus[]>
-  );
-}
-
-export function getProjectStats(projects: Project[]): {
-  total: number;
-  byStatus: Record<number, number>;
-  recent: number;
-} {
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  const stats = {
-    total: projects.length,
-    byStatus: {} as Record<number, number>,
-    recent: 0,
-  };
-
-  projects.forEach((project) => {
-    // Count by status
-    stats.byStatus[project.status] = (stats.byStatus[project.status] || 0) + 1;
-
-    // Count recent projects
-    const projectDate = new Date(project.createdAt);
-    if (projectDate >= thirtyDaysAgo) {
-      stats.recent++;
-    }
-  });
-
-  return stats;
-}
+//     return true;
+//   } catch (error) {
+//     console.error("Failed to delete project:", error);
+//     return false;
+//   }
+// }
