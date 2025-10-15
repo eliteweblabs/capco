@@ -1,0 +1,149 @@
+---
+// Test page to verify discussion stats API
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Discussion Stats Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Discussion Stats Test</h1>
+
+      <div class="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 class="text-xl font-semibold mb-4">Stats API Test</h2>
+        <div class="flex gap-4 mb-4">
+          <button
+            onclick="testStatsAPI()"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Test Stats API
+          </button>
+          <button
+            onclick="testDebugAPI()"
+            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Test Debug API
+          </button>
+          <button
+            onclick="createTestData()"
+            class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Create Test Data
+          </button>
+        </div>
+        <div id="stats-result" class="mt-4 p-4 bg-gray-100 rounded hidden">
+          <pre id="stats-content"></pre>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Expected Callout Values</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="p-4 border rounded">
+            <h3 class="font-medium">Total Projects</h3>
+            <p class="text-2xl font-bold text-blue-600" id="total-projects">-</p>
+          </div>
+          <div class="p-4 border rounded">
+            <h3 class="font-medium">Active Projects</h3>
+            <p class="text-2xl font-bold text-green-600" id="active-projects">-</p>
+          </div>
+          <div class="p-4 border rounded">
+            <h3 class="font-medium">Discussions (24h)</h3>
+            <p class="text-2xl font-bold text-yellow-600" id="recent-discussions">-</p>
+          </div>
+          <div class="p-4 border rounded">
+            <h3 class="font-medium">Active Users</h3>
+            <p class="text-2xl font-bold text-purple-600" id="active-users">-</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      async function testStatsAPI() {
+        const resultDiv = document.getElementById("stats-result");
+        const contentDiv = document.getElementById("stats-content");
+
+        if (!resultDiv || !contentDiv) {
+          console.error("Required elements not found");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/discussions/stats", {
+            credentials: "include",
+          });
+
+          const data = await response.json();
+
+          contentDiv.textContent = JSON.stringify(data, null, 2);
+          resultDiv.classList.remove("hidden");
+
+          // Update the callout values if we got stats
+          if (data.success && data.stats) {
+            const recentEl = document.getElementById("recent-discussions");
+            const activeEl = document.getElementById("active-users");
+            if (recentEl) recentEl.textContent = data.stats.recent_24h || 0;
+            if (activeEl) activeEl.textContent = data.stats.active_users_24h || 0;
+          }
+        } catch (error) {
+          contentDiv.textContent = `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
+          resultDiv.classList.remove("hidden");
+        }
+      }
+
+      async function testDebugAPI() {
+        const resultDiv = document.getElementById("stats-result");
+        const contentDiv = document.getElementById("stats-content");
+
+        if (!resultDiv || !contentDiv) {
+          console.error("Required elements not found");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/discussions/debug", {
+            credentials: "include",
+          });
+
+          const data = await response.json();
+
+          contentDiv.textContent = JSON.stringify(data, null, 2);
+          resultDiv.classList.remove("hidden");
+        } catch (error) {
+          contentDiv.textContent = `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
+          resultDiv.classList.remove("hidden");
+        }
+      }
+
+      async function createTestData() {
+        const resultDiv = document.getElementById("stats-result");
+        const contentDiv = document.getElementById("stats-content");
+
+        if (!resultDiv || !contentDiv) {
+          console.error("Required elements not found");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/discussions/create-test-data", {
+            method: "POST",
+            credentials: "include",
+          });
+
+          const data = await response.json();
+
+          contentDiv.textContent = JSON.stringify(data, null, 2);
+          resultDiv.classList.remove("hidden");
+        } catch (error) {
+          contentDiv.textContent = `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
+          resultDiv.classList.remove("hidden");
+        }
+      }
+    </script>
+  </body>
+</html>

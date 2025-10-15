@@ -50,7 +50,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         headers: { "Content-Type": "application/json" },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [PAYMENTS-API] Exception:", error);
     return new Response(
       JSON.stringify({
@@ -93,7 +93,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         paymentReference: paymentReference || null,
         notes: notes || null,
         paymentDate: paymentDate || new Date().toISOString().split("T")[0],
-        createdBy: (await supabaseAdmin.auth.getUser()).data.user?.id,
+        createdBy: (await supabaseAdmin!.auth.getUser()).data.user?.id,
       })
       .select()
       .single();
@@ -122,7 +122,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: { "Content-Type": "application/json" },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [PAYMENTS-API] Exception:", error);
     return new Response(
       JSON.stringify({

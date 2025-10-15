@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { fetchPunchlistStats } from "../../../lib/api/_projects";
 
 /**
  * Legacy Project GET API - for backward compatibility
@@ -10,14 +11,14 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
  */
 export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
-    // Temporarily disable auth for testing
-    // const { isAuth, currentUser } = await checkAuth(cookies);
-    // if (!isAuth || !currentUser) {
-    //   return new Response(JSON.stringify({ error: "Authentication required" }), {
-    //     status: 401,
-    //     headers: { "Content-Type": "application/json" },
-    //   });
-    // }
+    // Check authentication
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     const projectId = url.searchParams.get("id");
     const authorId = url.searchParams.get("authorId");
@@ -40,14 +41,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     if (projectId) {
       const { data: project, error } = await supabaseAdmin
         .from("projects")
-        .select(
-          `
-          *,
-          author:profiles!authorId(id, firstName, lastName, companyName),
-          assignedTo:profiles!assignedToId(id, firstName, lastName, companyName),
-          projectStatuses(id, name, slug, color)
-        `
-        )
+        .select("*")
         .eq("id", projectId)
         .single();
 
@@ -58,16 +52,69 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         });
       }
 
+      // Fetch author profile data
+      let authorProfile = null;
+      if (project.author_id) {
+        const { data: authorData } = await supabaseAdmin
+          .from("profiles")
+          .select("id, firstName, lastName, companyName, email, role")
+          .eq("id", project.author_id)
+          .single();
+        authorProfile = authorData;
+      }
+
+      // Fetch assignedTo profile data
+      let assignedToProfile = null;
+      if (project.assigned_to_id) {
+        const { data: assignedToData } = await supabaseAdmin
+          .from("profiles")
+          .select("id, firstName, lastName, companyName, email, role")
+          .eq("id", project.assigned_to_id)
+          .single();
+        assignedToProfile = assignedToData;
+      }
+
+      // Fetch file count for the project
+      let fileCount = 0;
+      let projectFiles: any[] = [];
+      try {
+        const { data: filesData } = await supabaseAdmin
+          .from("files")
+          .select("id, fileName, fileType, fileSize, uploadedAt")
+          .eq("projectId", project.id);
+        fileCount = filesData?.length || 0;
+        projectFiles = filesData || [];
+      } catch (fileError) {
+        console.warn("Could not fetch files for project:", project.id, fileError);
+      }
+
+      // Get punchlist stats for single project
+      const punchlistStats = await fetchPunchlistStats(supabaseAdmin, [project.id]);
+
+      // Add profile data, file data, and punchlist data to project
+      const projectWithProfiles = {
+        ...project,
+        authorId: project.author_id, // Map snake_case to camelCase for frontend
+        assignedToId: project.assigned_to_id, // Map snake_case to camelCase for frontend
+        author: authorProfile,
+        assignedTo: assignedToProfile,
+        authorProfile: authorProfile,
+        assignedToProfile: assignedToProfile,
+        projectFiles: projectFiles,
+        fileCount: fileCount,
+        punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+      };
+
       return new Response(
         JSON.stringify({
-          data: project,
+          data: projectWithProfiles,
           pagination: { limit: 1, offset: 0, total: 1, hasMore: false },
         }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Build query for multiple projects (simplified for testing)
+    // Build query for multiple projects
     let query = supabaseAdmin
       .from("projects")
       .select("*", { count: includeTotal ? "exact" : undefined })
@@ -109,22 +156,76 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       });
     }
 
-    // Transform projects to include status information
-    const projectsWithStatus = (projects || []).map((project) => ({
-      ...project,
-      statusName: project.projectStatuses?.name,
-      statusSlug: project.projectStatuses?.slug,
-      statusColor: project.projectStatuses?.color,
-    }));
+    // Get project IDs for punchlist stats
+    const projectIds = (projects || []).map((p) => p.id);
+    const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
+
+    // Fetch profile data for all projects
+    const projectsWithProfiles = await Promise.all(
+      (projects || []).map(async (project) => {
+        // Fetch author profile data
+        let authorProfile = null;
+        if (!supabaseAdmin) {
+          return new Response(JSON.stringify({ error: "Database connection not available" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        if (project.authorId) {
+          const { data: authorData } = await supabaseAdmin
+            .from("profiles")
+            .select("id, firstName, lastName, companyName, email, role")
+            .eq("id", project.authorId)
+            .single();
+          authorProfile = authorData;
+        }
+
+        // Fetch assignedTo profile data
+        let assignedToProfile = null;
+        if (project.assignedToId) {
+          const { data: assignedToData } = await supabaseAdmin
+            .from("profiles")
+            .select("id, firstName, lastName, companyName, email, role")
+            .eq("id", project.assignedToId)
+            .single();
+          assignedToProfile = assignedToData;
+        }
+
+        // Fetch file data for the project
+        let fileCount = 0;
+        let projectFiles: any[] = [];
+        try {
+          const { data: filesData } = await supabaseAdmin
+            .from("files")
+            .select("id, fileName, fileType, fileSize, uploadedAt")
+            .eq("projectId", project.id);
+          fileCount = filesData?.length || 0;
+          projectFiles = filesData || [];
+        } catch (fileError) {
+          console.warn("Could not fetch files for project:", project.id, fileError);
+        }
+
+        return {
+          ...project,
+          author: authorProfile,
+          assignedTo: assignedToProfile,
+          authorProfile: authorProfile,
+          assignedToProfile: assignedToProfile,
+          projectFiles: projectFiles,
+          fileCount: fileCount,
+          punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+        };
+      })
+    );
 
     return new Response(
       JSON.stringify({
-        projects: projectsWithStatus,
+        projects: projectsWithProfiles,
         pagination: {
           limit,
           offset,
           total: count,
-          hasMore: projectsWithStatus.length === limit,
+          hasMore: projectsWithProfiles.length === limit,
         },
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }

@@ -24,26 +24,53 @@ const currentRole = currentUser?.profile?.role;
 let staffOptions: any[] = [];
 if (currentRole === "Admin" || currentRole === "Staff") {
   try {
-    const staffResponse = await fetch(`${Astro.url.origin}/api/users?role=Admin&role=Staff`, {
+    // Fetch Admin users
+    const adminResponse = await fetch(`${Astro.url.origin}/api/users/get?role=Admin`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        Cookie: Astro.request.headers.get("Cookie") || "",
       },
     });
+
+    // Fetch Staff users
+    const staffResponse = await fetch(`${Astro.url.origin}/api/users/get?role=Staff`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    });
+
+    let allStaff: any[] = [];
+
+    if (adminResponse.ok) {
+      const adminData = await adminResponse.json();
+      if (adminData.data) {
+        allStaff = [...allStaff, ...adminData.data];
+      }
+    }
+
     if (staffResponse.ok) {
       const staffData = await staffResponse.json();
       if (staffData.data) {
-        staffOptions = [
-          { value: "", label: "Unassigned" },
-          ...staffData.data.map((staff: any) => ({
-            value: staff.id || "",
-            label:
-              staff.companyName ||
-              `${staff.firstName || ""} ${staff.lastName || ""}`.trim() ||
-              "Unknown Staff",
-          })),
-        ];
+        allStaff = [...allStaff, ...staffData.data];
       }
+    }
+
+    if (allStaff.length > 0) {
+      staffOptions = [
+        { value: "", label: "Unassigned" },
+        ...allStaff.map((staff: any) => ({
+          value: staff.id || "",
+          label:
+            staff.companyName ||
+            `${staff.firstName || ""} ${staff.lastName || ""}`.trim() ||
+            "Unknown Staff",
+        })),
+      ];
+    } else {
+      staffOptions = [{ value: "", label: "Unassigned" }];
     }
   } catch (error) {
     console.error("Failed to fetch staff data:", error);
@@ -143,13 +170,15 @@ const dueDateOptions = createDueDateOptions();
       {
         currentRole !== "Client" && (
           <th scope="col" class="px-4 py-3 font-semibold">
-            Assigned To
+            <Tooltip text="Assigned To">
+              <LucideIcon name="user" class="" />
+            </Tooltip>
           </th>
         )
       }
 
       <th scope="col" class="px-4 py-3 font-semibold">Progress</th>
-      <th scope="col" class="px-4 py-3 font-semibold overflow-visible">
+      <th scope="col" class="px-4 py-3 font-semibold">
         <Tooltip text="Checklist">
           <svg
             class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"

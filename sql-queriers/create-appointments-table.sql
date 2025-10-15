@@ -1,153 +1,188 @@
 -- Create appointments table for Cal.com integration
 CREATE TABLE IF NOT EXISTS appointments (
-    id SERIAL PRIMARY KEY,
-    cal_id INTEGER UNIQUE, -- Cal.com appointment ID
-    cal_uid VARCHAR(255) UNIQUE, -- Cal.com UID for webhook matching
-    title VARCHAR(500) NOT NULL,
-    description TEXT,
-    start_time TIMESTAMPTZ NOT NULL,
-    end_time TIMESTAMPTZ NOT NULL,
-    time_zone VARCHAR(100) DEFAULT 'UTC',
-    attendee_email VARCHAR(255) NOT NULL,
-    attendee_name VARCHAR(255) NOT NULL,
-    location TEXT,
-    status VARCHAR(50) DEFAULT 'PENDING' CHECK (status IN ('ACCEPTED', 'PENDING', 'CANCELLED', 'REJECTED', 'CONFIRMED')),
-    event_type VARCHAR(255) DEFAULT 'General Appointment',
-    event_type_slug VARCHAR(255) DEFAULT 'general',
-    duration INTEGER DEFAULT 60, -- Duration in minutes
-    host_name VARCHAR(255) DEFAULT 'System',
-    host_email VARCHAR(255) DEFAULT 'system@example.com',
-    metadata JSONB,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+  id SERIAL PRIMARY KEY,
+  cal_uid VARCHAR(255) UNIQUE NOT NULL,
+  event_type_id INTEGER NOT NULL,
+  title VARCHAR(500) NOT NULL,
+  description TEXT,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  location VARCHAR(500),
+  status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+  organizer_id INTEGER NOT NULL,
+  organizer_name VARCHAR(255) NOT NULL,
+  organizer_email VARCHAR(255) NOT NULL,
+  attendees JSONB DEFAULT '[]',
+  responses JSONB DEFAULT '{}',
+  metadata JSONB DEFAULT '{}',
+  paid BOOLEAN DEFAULT FALSE,
+  payment_id VARCHAR(255),
+  cancellation_reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_appointments_cal_id ON appointments(cal_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_cal_uid ON appointments(cal_uid);
-CREATE INDEX IF NOT EXISTS idx_appointments_attendee_email ON appointments(attendee_email);
+CREATE INDEX IF NOT EXISTS idx_appointments_organizer_id ON appointments(organizer_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_start_time ON appointments(start_time);
 CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
-CREATE INDEX IF NOT EXISTS idx_appointments_event_type ON appointments(event_type);
+CREATE INDEX IF NOT EXISTS idx_appointments_event_type_id ON appointments(event_type_id);
 
 -- Create RLS policies
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can view their own appointments
-CREATE POLICY "Users can view their own appointments" ON appointments
-    FOR SELECT USING (attendee_email = auth.jwt() ->> 'email');
+-- Policy for organizers to see their own appointments
+CREATE POLICY "Organizers can view their own appointments" ON appointments
+  FOR SELECT USING (organizer_id = auth.uid()::integer);
 
--- Policy: Users can insert their own appointments
-CREATE POLICY "Users can insert their own appointments" ON appointments
-    FOR INSERT WITH CHECK (attendee_email = auth.jwt() ->> 'email');
-
--- Policy: Users can update their own appointments
-CREATE POLICY "Users can update their own appointments" ON appointments
-    FOR UPDATE USING (attendee_email = auth.jwt() ->> 'email');
-
--- Policy: Users can delete their own appointments
-CREATE POLICY "Users can delete their own appointments" ON appointments
-    FOR DELETE USING (attendee_email = auth.jwt() ->> 'email');
-
--- Policy: Admins can view all appointments
+-- Policy for admins to see all appointments
 CREATE POLICY "Admins can view all appointments" ON appointments
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = auth.uid() 
-            AND profiles.role IN ('Admin', 'Staff')
-        )
-    );
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM profiles 
+      WHERE profiles.id = auth.uid() 
+      AND profiles.role = 'Admin'
+    )
+  );
+
+-- Policy for staff to see appointments they're assigned to
+CREATE POLICY "Staff can view assigned appointments" ON appointments
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM profiles 
+      WHERE profiles.id = auth.uid() 
+      AND profiles.role IN ('Admin', 'Staff')
+    )
+  );
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_appointments_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
+  NEW.updated_at = NOW();
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to automatically update updated_at
+-- Create trigger for updated_at
 CREATE TRIGGER trigger_update_appointments_updated_at
-    BEFORE UPDATE ON appointments
-    FOR EACH ROW
-    EXECUTE FUNCTION update_appointments_updated_at();
+  BEFORE UPDATE ON appointments
+  FOR EACH ROW
+  EXECUTE FUNCTION update_appointments_updated_at();
 
--- Insert sample data for testing
-INSERT INTO appointments (
-    cal_id,
-    cal_uid,
-    title,
-    description,
-    start_time,
-    end_time,
-    time_zone,
-    attendee_email,
-    attendee_name,
-    location,
-    status,
-    event_type,
-    event_type_slug,
-    duration,
-    host_name,
-    host_email,
-    metadata
-) VALUES (
-    1001,
-    'sample-appointment-001',
-    'Initial Consultation',
-    'First meeting to discuss project requirements',
-    '2024-01-15 10:00:00+00',
-    '2024-01-15 11:00:00+00',
-    'UTC',
-    'client@example.com',
-    'John Doe',
-    'Conference Room A',
-    'ACCEPTED',
-    'Consultation',
-    'consultation',
-    60,
-    'Jane Smith',
-    'jane@company.com',
-    '{"source": "cal.com", "priority": "high"}'
-) ON CONFLICT (cal_id) DO NOTHING;
+-- Create function to handle appointment status changes
+CREATE OR REPLACE FUNCTION handle_appointment_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Log status changes
+  INSERT INTO appointment_logs (
+    appointment_id,
+    old_status,
+    new_status,
+    changed_at,
+    changed_by
+  ) VALUES (
+    NEW.id,
+    OLD.status,
+    NEW.status,
+    NOW(),
+    auth.uid()
+  );
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
--- Create view for AI agent to easily query appointments
-CREATE OR REPLACE VIEW ai_appointments_view AS
+-- Create appointment_logs table
+CREATE TABLE IF NOT EXISTS appointment_logs (
+  id SERIAL PRIMARY KEY,
+  appointment_id INTEGER REFERENCES appointments(id) ON DELETE CASCADE,
+  old_status VARCHAR(50),
+  new_status VARCHAR(50),
+  changed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  changed_by UUID REFERENCES auth.users(id)
+);
+
+-- Create trigger for status changes
+CREATE TRIGGER trigger_appointment_status_change
+  AFTER UPDATE OF status ON appointments
+  FOR EACH ROW
+  WHEN (OLD.status IS DISTINCT FROM NEW.status)
+  EXECUTE FUNCTION handle_appointment_status_change();
+
+-- Create view for appointment details with organizer info
+CREATE OR REPLACE VIEW appointment_details AS
 SELECT 
-    id,
-    cal_id,
-    cal_uid,
-    title,
-    description,
-    start_time,
-    end_time,
-    time_zone,
-    attendee_email,
-    attendee_name,
-    location,
-    status,
-    event_type,
-    event_type_slug,
-    duration,
-    host_name,
-    host_email,
-    metadata,
-    created_at,
-    updated_at,
-    -- Computed fields for AI agent
-    EXTRACT(EPOCH FROM (end_time - start_time))/60 as duration_minutes,
-    TO_CHAR(start_time, 'YYYY-MM-DD') as date,
-    TO_CHAR(start_time, 'HH24:MI') as time,
-    CASE 
-        WHEN start_time > NOW() THEN 'upcoming'
-        WHEN end_time < NOW() THEN 'past'
-        ELSE 'current'
-    END as appointment_status
-FROM appointments
-ORDER BY start_time DESC;
+  a.*,
+  p.first_name as organizer_first_name,
+  p.last_name as organizer_last_name,
+  p.company_name as organizer_company,
+  p.phone as organizer_phone
+FROM appointments a
+LEFT JOIN profiles p ON p.id = a.organizer_id;
 
--- Grant access to the view
-GRANT SELECT ON ai_appointments_view TO authenticated;
-GRANT SELECT ON ai_appointments_view TO anon;
+-- Grant permissions
+GRANT SELECT, INSERT, UPDATE, DELETE ON appointments TO authenticated;
+GRANT SELECT ON appointment_details TO authenticated;
+GRANT SELECT, INSERT ON appointment_logs TO authenticated;
+
+-- Create function to get appointments by date range
+CREATE OR REPLACE FUNCTION get_appointments_by_date_range(
+  start_date TIMESTAMP WITH TIME ZONE,
+  end_date TIMESTAMP WITH TIME ZONE,
+  user_id UUID DEFAULT NULL
+)
+RETURNS TABLE (
+  id INTEGER,
+  cal_uid VARCHAR(255),
+  title VARCHAR(500),
+  start_time TIMESTAMP WITH TIME ZONE,
+  end_time TIMESTAMP WITH TIME ZONE,
+  status VARCHAR(50),
+  organizer_name VARCHAR(255),
+  attendee_count INTEGER
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    a.id,
+    a.cal_uid,
+    a.title,
+    a.start_time,
+    a.end_time,
+    a.status,
+    a.organizer_name,
+    jsonb_array_length(a.attendees)::INTEGER as attendee_count
+  FROM appointments a
+  WHERE a.start_time >= start_date 
+    AND a.start_time <= end_date
+    AND (user_id IS NULL OR a.organizer_id = user_id::INTEGER)
+  ORDER BY a.start_time;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create function to get appointment statistics
+CREATE OR REPLACE FUNCTION get_appointment_stats(
+  start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW() - INTERVAL '30 days',
+  end_date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+)
+RETURNS TABLE (
+  total_appointments INTEGER,
+  confirmed_appointments INTEGER,
+  cancelled_appointments INTEGER,
+  pending_appointments INTEGER,
+  total_revenue DECIMAL
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    COUNT(*)::INTEGER as total_appointments,
+    COUNT(*) FILTER (WHERE status = 'CONFIRMED')::INTEGER as confirmed_appointments,
+    COUNT(*) FILTER (WHERE status = 'CANCELLED')::INTEGER as cancelled_appointments,
+    COUNT(*) FILTER (WHERE status = 'PENDING')::INTEGER as pending_appointments,
+    COALESCE(SUM(CASE WHEN paid THEN 1 ELSE 0 END), 0)::DECIMAL as total_revenue
+  FROM appointments
+  WHERE start_time >= start_date AND start_time <= end_date;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

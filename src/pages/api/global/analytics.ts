@@ -235,7 +235,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [GLOBAL-ANALYTICS] Unexpected error:", error);
     return new Response(
       JSON.stringify({

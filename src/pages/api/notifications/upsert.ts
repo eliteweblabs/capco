@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 interface CreateNotificationRequest {
@@ -38,8 +39,17 @@ interface CreateNotificationRequest {
  * - All Users: POST /api/notifications/upsert { allUsers: true, title, message }
  */
 
-export const POST: APIRoute = async ({ request }): Promise<Response> => {
+export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
   try {
+    // Check authentication
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const body: CreateNotificationRequest = await request.json();
     const {
       userId,

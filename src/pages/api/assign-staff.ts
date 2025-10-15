@@ -106,7 +106,7 @@ export const POST: APIRoute = async ({ request }) => {
             // Don't fail the entire request if logging fails
           }
 
-          const adminResponse = await fetch(`${baseUrl}/api/users?role=Admin`, {
+          const adminResponse = await fetch(`${baseUrl}/api/users/get?role=Admin`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });

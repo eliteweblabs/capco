@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
@@ -7,32 +8,18 @@ console.log("🚧 [DEAD-STOP-2024-12-19] get-mentionable-users.ts accessed - may
 
 export const GET: APIRoute = async ({ cookies, url }) => {
   try {
-    if (!supabase) {
-      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
-        status: 500,
+    // Check authentication using standardized method
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Set up session from cookies (same as get-staff-users.ts)
-    const accessToken = cookies.get("sb-access-token")?.value;
-    const refreshToken = cookies.get("sb-refresh-token")?.value;
-
-    if (accessToken && refreshToken) {
-      await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
-    }
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return new Response(JSON.stringify({ success: false, error: "Authentication required" }), {
-        status: 401,
+    if (!supabase) {
+      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+        status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -72,7 +59,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const { data: currentUserProfile, error: currentUserError } = await supabase
       .from("profiles")
       .select("role, email")
-      .eq("id", user.id)
+      .eq("id", currentUser.id)
       .single();
 
     if (currentUserError) {

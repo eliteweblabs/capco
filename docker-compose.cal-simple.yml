@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: calcom-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: calcom
+      POSTGRES_USER: calcom
+      POSTGRES_PASSWORD: calcom123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  calcom:
+    image: calcom/cal.com:latest
+    platform: linux/amd64
+    container_name: calcom-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    environment:
+      # Database - Use PostgreSQL
+      DATABASE_URL: "postgresql://calcom:calcom123@postgres:5432/calcom"
+      DATABASE_DIRECT_URL: "postgresql://calcom:calcom123@postgres:5432/calcom"
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: "your-secret-key-for-local-development"
+
+      # Required encryption key
+      CALENDSO_ENCRYPTION_KEY: "your-encryption-key-for-local-development-32-chars"
+
+      # App configuration
+      CALCOM_TELEMETRY_DISABLED: 1
+      NODE_ENV: production
+
+      # Disable email for local development
+      EMAIL_SERVER_HOST: ""
+      EMAIL_SERVER_PORT: ""
+      EMAIL_SERVER_USER: ""
+      EMAIL_SERVER_PASSWORD: ""
+      EMAIL_FROM: ""
+
+    volumes:
+      - calcom_data:/app/data
+
+volumes:
+  calcom_data:
+  postgres_data:

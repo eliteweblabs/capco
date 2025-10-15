@@ -117,17 +117,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // 2. Validate required fields
     console.log("🔍 [CREATE-USER] Validating required fields...");
-    if (!email || !firstName || !lastName || !companyName) {
+    if (!email || !firstName || !lastName || !role) {
       console.log("❌ [CREATE-USER] Missing required fields:", {
         email: !!email,
         firstName: !!firstName,
         lastName: !!lastName,
+        role: !!role,
         companyName: !!companyName,
       });
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Email, first name, last name, and company name are required",
+          error: "Email, first name, last name, and role are required",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
@@ -241,6 +242,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (profileError) {
       console.error("❌ [CREATE-USER] Profile creation error:", profileError);
+      console.error(
+        "❌ [CREATE-USER] Profile data that failed:",
+        JSON.stringify(profileData, null, 2)
+      );
       // Don't fail the entire request if profile creation fails
     } else {
       console.log("✅ [CREATE-USER] Profile created successfully");
@@ -297,8 +302,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Send welcome email to the newly created user via update-delivery (centralized routing)
     console.log("📧 [CREATE-USER] Sending welcome email to user via update-delivery...");
+    let apiBaseUrl;
     try {
-      const userEmailResponse = await fetch(`${getApiBaseUrl()}/api/update-delivery`, {
+      apiBaseUrl = getApiBaseUrl();
+    } catch (error) {
+      console.warn("⚠️ [CREATE-USER] SITE_URL not set, using localhost fallback");
+      apiBaseUrl = "http://localhost:4321";
+    }
+    console.log("📧 [CREATE-USER] Using API base URL:", apiBaseUrl);
+    try {
+      const userEmailResponse = await fetch(`${apiBaseUrl}/api/update-delivery`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -313,9 +326,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
       if (!userEmailResponse.ok) {
-        console.error("❌ [CREATE-USER] Failed to send welcome email to user");
+        const errorText = await userEmailResponse.text();
+        console.error(
+          "❌ [CREATE-USER] Failed to send welcome email to user:",
+          userEmailResponse.status,
+          errorText
+        );
       } else {
-        console.log("✅ [CREATE-USER] Welcome email sent successfully via update-delivery");
+        const responseData = await userEmailResponse.json();
+        console.log(
+          "✅ [CREATE-USER] Welcome email sent successfully via update-delivery:",
+          responseData
+        );
       }
     } catch (emailError) {
       console.error("❌ [CREATE-USER] Error sending welcome email:", emailError);
@@ -324,7 +346,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Send notification to admins via update-delivery (centralized notification routing)
     console.log("📧 [CREATE-USER] Sending admin notifications via update-delivery...");
     try {
-      await fetch(`${getApiBaseUrl()}/api/update-delivery`, {
+      const adminEmailResponse = await fetch(`${apiBaseUrl}/api/update-delivery`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -337,7 +359,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           trackLinks: false,
         }),
       });
-      console.log("✅ [CREATE-USER] Admin notifications sent via update-delivery");
+
+      if (!adminEmailResponse.ok) {
+        const errorText = await adminEmailResponse.text();
+        console.error(
+          "❌ [CREATE-USER] Failed to send admin notifications:",
+          adminEmailResponse.status,
+          errorText
+        );
+      } else {
+        const responseData = await adminEmailResponse.json();
+        console.log("✅ [CREATE-USER] Admin notifications sent via update-delivery:", responseData);
+      }
     } catch (adminError) {
       console.error("❌ [CREATE-USER] Error sending admin notifications:", adminError);
     }

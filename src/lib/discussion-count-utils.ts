@@ -22,7 +22,7 @@ export async function fetchDiscussionCount(
   console.log("💬 [DISCUSSION-COUNT-UTILS] fetchDiscussionCount called with projectId:", projectId);
   try {
     const response = await fetch(
-      `/api/discussions?projectId=${projectId}&completed=false&limit=1`,
+      `/api/discussions/get?projectId=${projectId}&completed=false&limit=1`,
       {
         credentials: "include",
       }

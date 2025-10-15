@@ -1,25 +1,19 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 /**
- * Appointments Availability API for AI Virtual Agent
- * 
- * Query Parameters:
- * - date: Date to check availability (ISO format, YYYY-MM-DD)
- * - timeZone: Timezone for the date (default: UTC)
- * - duration: Duration in minutes (default: 60)
- * - eventType?: string (filter by event type)
- * 
- * Examples:
- * - /api/appointments/availability?date=2024-01-15&duration=30
- * - /api/appointments/availability?date=2024-01-15&timeZone=America/New_York&duration=60
+ * Check Appointment Availability API
+ *
+ * Returns available time slots in a conversational format
+ * Perfect for Vapi.ai to suggest specific times
  */
 
-interface AvailabilityFilters {
-  date: string;
-  timeZone?: string;
-  duration?: number;
-  eventType?: string;
+interface AvailabilityRequest {
+  date?: string; // YYYY-MM-DD format
+  startDate?: string;
+  endDate?: string;
+  duration?: number; // in minutes, default 60
 }
 
 export const GET: APIRoute = async ({ url, cookies }) => {
@@ -27,120 +21,239 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
-      return new Response(
-        JSON.stringify({ error: "Authentication required" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    // Parse query parameters
-    const filters: AvailabilityFilters = {
-      date: url.searchParams.get("date") || "",
-      timeZone: url.searchParams.get("timeZone") || "UTC",
-      duration: parseInt(url.searchParams.get("duration") || "60"),
-      eventType: url.searchParams.get("eventType") || undefined,
-    };
+    const date = url.searchParams.get("date");
+    const duration = parseInt(url.searchParams.get("duration") || "60");
 
-    if (!filters.date) {
-      return new Response(
-        JSON.stringify({ error: "Date parameter is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    // Generate available time slots
+    const availableSlots = await generateAvailableSlots(date, undefined, undefined, duration);
 
-    console.log(`📅 [APPOINTMENTS-AVAILABILITY] Checking availability for:`, filters);
-
-    // Generate available time slots for the given date
-    const availableSlots = await generateAvailableSlots(filters);
+    // Format for conversational response
+    const conversationalResponse = formatAvailabilityResponse(availableSlots, date);
 
     return new Response(
       JSON.stringify({
-        date: filters.date,
-        timeZone: filters.timeZone,
-        duration: filters.duration,
+        success: true,
         availableSlots,
-        totalSlots: availableSlots.length,
-        filters: {
-          eventType: filters.eventType,
-        },
+        conversationalResponse,
+        date: date || "next few days",
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
     );
-  } catch (error) {
-    console.error("❌ [APPOINTMENTS-AVAILABILITY] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+  } catch (error: any) {
+    console.error("❌ [APPOINTMENTS-AVAILABILITY] Error:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
-// Generate available time slots for a given date
-async function generateAvailableSlots(filters: AvailabilityFilters): Promise<string[]> {
-  const slots: string[] = [];
-  
-  // Business hours (9 AM to 5 PM)
-  const startHour = 9;
-  const endHour = 17;
-  
-  // Generate time slots every 30 minutes
-  const slotInterval = 30;
-  
-  // Create date object for the requested date
-  const targetDate = new Date(filters.date);
-  if (isNaN(targetDate.getTime())) {
-    throw new Error("Invalid date format");
-  }
-  
-  // Generate slots for the day
-  for (let hour = startHour; hour < endHour; hour++) {
-    for (let minute = 0; minute < 60; minute += slotInterval) {
-      const slotTime = new Date(targetDate);
-      slotTime.setHours(hour, minute, 0, 0);
-      
-      // Check if this slot is available
-      const isAvailable = await isSlotAvailable(slotTime, filters.duration);
-      
-      if (isAvailable) {
-        slots.push(slotTime.toISOString());
+export const POST: APIRoute = async ({ request, cookies }) => {
+  try {
+    // Check authentication
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const body: AvailabilityRequest = await request.json();
+    const { date, startDate, endDate, duration = 60 } = body;
+
+    // Generate available time slots
+    const availableSlots = await generateAvailableSlots(date, startDate, endDate, duration);
+
+    // Format for conversational response
+    const conversationalResponse = formatAvailabilityResponse(availableSlots, date);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        availableSlots,
+        conversationalResponse,
+        date: date || "next few days",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
       }
+    );
+  } catch (error: any) {
+    console.error("❌ [APPOINTMENTS-AVAILABILITY] Error:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+};
+
+async function generateAvailableSlots(
+  date?: string,
+  startDate?: string,
+  endDate?: string,
+  duration: number = 60
+) {
+  // Define business hours (9 AM to 5 PM)
+  const businessStart = 9;
+  const businessEnd = 17;
+  const slotDuration = duration / 60; // Convert to hours
+
+  const availableSlots: Array<{
+    date: string;
+    time: string;
+    datetime: string;
+    available: boolean;
+  }> = [];
+
+  // If specific date provided, check that date
+  if (date) {
+    const slots = generateSlotsForDate(date, businessStart, businessEnd, slotDuration);
+    availableSlots.push(...slots);
+  } else {
+    // Generate slots for next 7 days
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(today.getDate() + i);
+      const dateStr = checkDate.toISOString().split("T")[0];
+
+      const slots = generateSlotsForDate(dateStr, businessStart, businessEnd, slotDuration);
+      availableSlots.push(...slots);
     }
   }
-  
+
+  // Check for existing appointments and mark slots as unavailable
+  const existingAppointments = await getExistingAppointments(startDate, endDate);
+
+  return availableSlots.map((slot) => ({
+    ...slot,
+    available: !isSlotBooked(slot, existingAppointments),
+  }));
+}
+
+function generateSlotsForDate(
+  date: string,
+  businessStart: number,
+  businessEnd: number,
+  slotDuration: number
+) {
+  const slots: Array<{
+    date: string;
+    time: string;
+    datetime: string;
+    available: boolean;
+  }> = [];
+
+  for (let hour = businessStart; hour < businessEnd; hour += slotDuration) {
+    const timeStr = formatTime(hour);
+    const datetime = `${date}T${timeStr}:00Z`;
+
+    slots.push({
+      date,
+      time: timeStr,
+      datetime,
+      available: true,
+    });
+  }
+
   return slots;
 }
 
-// Check if a specific time slot is available
-async function isSlotAvailable(slotTime: Date, duration: number): Promise<boolean> {
+function formatTime(hour: number): string {
+  const h = Math.floor(hour);
+  const m = Math.floor((hour - h) * 60);
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+}
+
+async function getExistingAppointments(startDate?: string, endDate?: string) {
   try {
-    // This would typically check against existing appointments
-    // For now, we'll simulate availability by excluding weekends and some random slots
-    
-    const dayOfWeek = slotTime.getDay();
-    
-    // Exclude weekends
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      return false;
+    let query = supabaseAdmin!.from("appointments").select("startTime, endTime");
+
+    if (startDate) {
+      query = query.gte("startTime", startDate);
     }
-    
-    // Exclude lunch time (12:00 PM - 1:00 PM)
-    const hour = slotTime.getHours();
-    if (hour === 12) {
-      return false;
+    if (endDate) {
+      query = query.lte("startTime", endDate);
     }
-    
-    // Simulate some random unavailability (20% chance)
-    const random = Math.random();
-    if (random < 0.2) {
-      return false;
+
+    const { data: appointments, error } = await query;
+
+    if (error) {
+      console.error("Error fetching existing appointments:", error);
+      return [];
     }
-    
-    return true;
-  } catch (error) {
-    console.error("Error checking slot availability:", error);
-    return false;
+
+    return appointments || [];
+  } catch (error: any) {
+    console.error("Error in getExistingAppointments:", error);
+    return [];
   }
+}
+
+function isSlotBooked(
+  slot: { datetime: string; time: string },
+  existingAppointments: Array<{ startTime: string; endTime: string }>
+): boolean {
+  const slotStart = new Date(slot.datetime);
+
+  return existingAppointments.some((appointment) => {
+    const apptStart = new Date(appointment.startTime);
+    const apptEnd = new Date(appointment.endTime);
+
+    return slotStart >= apptStart && slotStart < apptEnd;
+  });
+}
+
+function formatAvailabilityResponse(
+  slots: Array<{ date: string; time: string; available: boolean }>,
+  date?: string
+): string {
+  const availableSlots = slots.filter((slot) => slot.available);
+
+  if (availableSlots.length === 0) {
+    return "I'm sorry, but I don't have any available slots for that time period. Would you like me to check a different date?";
+  }
+
+  // Group slots by date
+  const slotsByDate: { [key: string]: string[] } = {};
+  availableSlots.forEach((slot) => {
+    if (!slotsByDate[slot.date]) {
+      slotsByDate[slot.date] = [];
+    }
+    slotsByDate[slot.date].push(slot.time);
+  });
+
+  // Create conversational response
+  const responses: string[] = [];
+
+  Object.entries(slotsByDate).forEach(([date, times]) => {
+    const dateObj = new Date(date);
+    const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+    const monthDay = dateObj.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+
+    if (times.length === 1) {
+      responses.push(`I have ${times[0]} available on ${dayName} the ${monthDay}`);
+    } else if (times.length === 2) {
+      responses.push(
+        `How's ${dayName} the ${monthDay}? I have ${times[0]} and ${times[1]} available`
+      );
+    } else {
+      const lastTime = times.pop();
+      const timeList = times.join(", ") + `, and ${lastTime}`;
+      responses.push(`I have several slots on ${dayName} the ${monthDay}: ${timeList}`);
+    }
+  });
+
+  return responses.join(". ") + ". Which works best for you?";
 }
