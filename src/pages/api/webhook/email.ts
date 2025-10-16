@@ -493,7 +493,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       formData.append("smsAlerts", "false");
       formData.append("role", "Client");
 
-      const createUserResponse = await fetch(`${process.env.SITE_URL}/api/user/new`, {
+      const createUserResponse = await fetch(`${process.env.SITE_URL}/api/users/upsert`, {
         method: "POST",
         body: formData,
       });
