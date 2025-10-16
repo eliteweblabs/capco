@@ -346,30 +346,50 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Send notification to admins via update-delivery (centralized notification routing)
     console.log("📧 [CREATE-USER] Sending admin notifications via update-delivery...");
     try {
-      const adminEmailResponse = await fetch(`${apiBaseUrl}/api/update-delivery`, {
-        method: "POST",
+      // First, get admin and staff emails
+      const adminStaffResponse = await fetch(`${apiBaseUrl}/api/users?role=Admin&role=Staff`, {
+        method: "GET",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          method: "magicLink",
-          usersToNotify: ["admin", "staff"], // Let update-delivery resolve roles to emails
-          emailSubject: `New User → ${displayName} → ${role}`,
-          emailContent: adminEmailContent,
-          buttonText: "View Users",
-          buttonLink: "/admin/users",
-          trackLinks: false,
-        }),
       });
 
-      if (!adminEmailResponse.ok) {
-        const errorText = await adminEmailResponse.text();
-        console.error(
-          "❌ [CREATE-USER] Failed to send admin notifications:",
-          adminEmailResponse.status,
-          errorText
-        );
+      let adminStaffEmails = [];
+      if (adminStaffResponse.ok) {
+        const adminStaffData = await adminStaffResponse.json();
+        const users = adminStaffData.data || [];
+        adminStaffEmails = users.map((user: any) => user.email).filter(Boolean);
+        console.log("📧 [CREATE-USER] Found admin/staff emails:", adminStaffEmails);
       } else {
-        const responseData = await adminEmailResponse.json();
-        console.log("✅ [CREATE-USER] Admin notifications sent via update-delivery:", responseData);
+        console.warn("⚠️ [CREATE-USER] Could not fetch admin/staff emails, skipping admin notifications");
+      }
+
+      if (adminStaffEmails.length > 0) {
+        const adminEmailResponse = await fetch(`${apiBaseUrl}/api/update-delivery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            method: "magicLink",
+            usersToNotify: adminStaffEmails, // Use actual email addresses
+            emailSubject: `New User → ${displayName} → ${role}`,
+            emailContent: adminEmailContent,
+            buttonText: "View Users",
+            buttonLink: "/admin/users",
+            trackLinks: false,
+          }),
+        });
+
+        if (!adminEmailResponse.ok) {
+          const errorText = await adminEmailResponse.text();
+          console.error(
+            "❌ [CREATE-USER] Failed to send admin notifications:",
+            adminEmailResponse.status,
+            errorText
+          );
+        } else {
+          const responseData = await adminEmailResponse.json();
+          console.log("✅ [CREATE-USER] Admin notifications sent via update-delivery:", responseData);
+        }
+      } else {
+        console.log("ℹ️ [CREATE-USER] No admin/staff users found, skipping admin notifications");
       }
     } catch (adminError) {
       console.error("❌ [CREATE-USER] Error sending admin notifications:", adminError);
