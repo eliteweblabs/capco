@@ -5,7 +5,7 @@ import { supabase } from "../../../lib/supabase";
 
 /**
  * Standardized Discussions GET API
- * 
+ *
  * Query Parameters:
  * - id: Get specific discussion by ID
  * - projectId: Filter by project ID (omit for all discussions)
@@ -17,7 +17,7 @@ import { supabase } from "../../../lib/supabase";
  * - sortBy: Sort field (default: createdAt)
  * - sortOrder: Sort direction (asc/desc, default: desc)
  * - includeTotal: Include total count (true/false, default: false)
- * 
+ *
  * Examples:
  * - /api/discussions/get - Get all discussions (Admin only)
  * - /api/discussions/get?projectId=123&internal=false - Get project discussions
@@ -196,10 +196,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Apply sorting
     const ascending = filters.sortOrder === "asc";
-    query = query.order(filters.sortBy, { ascending });
+    query = query.order(filters.sortBy || "createdAt", { ascending });
 
     // Apply pagination
-    query = query.range(filters.offset, filters.offset + filters.limit - 1);
+    query = query.range(filters.offset || 0, (filters.offset || 0) + (filters.limit || 20) - 1);
 
     // Execute query
     const { data: discussions, error } = await query;
@@ -388,9 +388,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       incompleteCount = incompleteCountResult || 0;
     }
 
-    console.log(
-      `✅ [DISCUSSIONS-GET] Returning ${enrichedDiscussions.length} discussions`
-    );
+    console.log(`✅ [DISCUSSIONS-GET] Returning ${enrichedDiscussions.length} discussions`);
 
     return new Response(
       JSON.stringify({

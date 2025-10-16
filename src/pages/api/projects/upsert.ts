@@ -203,7 +203,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
             if (!createUserResponse.ok || !createUserResult.success) {
               console.error("📝 [CREATE-PROJECT] Failed to create client:", createUserResult);
-              return createErrorResponse(createUserResult.error || "Failed to create client", createUserResponse.status);
+              return createErrorResponse(
+                createUserResult.error || "Failed to create client",
+                createUserResponse.status
+              );
             }
 
             // Use the created user's ID as the project author
@@ -352,7 +355,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
   try {
     const body = await request.json();
     console.log("🔧 [UPSERT-PROJECT] Request body:", body);
-    
+
     // If no project ID in params, check body
     const projectId = params.id || body.id;
     const isUpdate = !!projectId;

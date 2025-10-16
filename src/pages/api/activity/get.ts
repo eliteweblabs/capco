@@ -3,11 +3,11 @@ import { supabase } from "../../../lib/supabase";
 
 /**
  * Standardized Activity API
- * 
+ *
  * GET /api/activity/get
  * - Without projectId: Returns global activity feed (Admin only)
  * - With projectId: Returns project-specific activity
- * 
+ *
  * Query Parameters:
  * - projectId?: number - Optional project ID to filter activities
  * - limit?: number - Number of activities to return (default: 50)
