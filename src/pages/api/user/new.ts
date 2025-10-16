@@ -254,12 +254,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // 7. Send emails (both user and admin notifications)
     const displayName = companyName?.trim() || `${firstName.trim()} ${lastName.trim()}`;
 
-    // Track email sending status
-    let emailStatus = {
-      welcomeEmailSent: false,
-      adminNotificationSent: false,
-      emailErrors: [] as string[],
-    };
 
     // Get email templates from database
     let userEmailContent = "";
@@ -339,14 +333,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           userEmailResponse.status,
           errorText
         );
-        emailStatus.emailErrors.push(`Welcome email failed: ${errorText}`);
       } else {
         const responseData = await userEmailResponse.json();
         console.log(
           "✅ [CREATE-USER] Welcome email sent successfully via update-delivery:",
           responseData
         );
-        emailStatus.welcomeEmailSent = true;
       }
     } catch (emailError) {
       console.error("❌ [CREATE-USER] Error sending welcome email:", emailError);
@@ -359,7 +351,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          method: "magicLink",
+          method: "notification",
           usersToNotify: ["admin", "staff"], // Let update-delivery resolve roles to emails
           emailSubject: `New User → ${displayName} → ${role}`,
           emailContent: adminEmailContent,
@@ -376,18 +368,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           adminEmailResponse.status,
           errorText
         );
-        emailStatus.emailErrors.push(`Admin notification failed: ${errorText}`);
       } else {
         const responseData = await adminEmailResponse.json();
-        console.log(
-          "✅ [CREATE-USER] Admin notifications sent via update-delivery:",
-          responseData
-        );
-        emailStatus.adminNotificationSent = true;
+        console.log("✅ [CREATE-USER] Admin notifications sent via update-delivery:", responseData);
       }
     } catch (adminError) {
       console.error("❌ [CREATE-USER] Error sending admin notifications:", adminError);
-      emailStatus.emailErrors.push(`Admin notification error: ${adminError}`);
     }
 
     // 8. Log the user creation
@@ -413,33 +399,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("❌ [CREATE-USER] Error logging user creation:", logError);
     }
 
-    // 9. Return success response with email status
+    // 9. Return success response
     console.log("🎉 [CREATE-USER] User creation completed successfully!");
-
-    // Determine notification type and message based on email status
-    let notificationType = "success";
-    let notificationTitle = "User Created Successfully";
-    let notificationMessage = `<b>${displayName}</b> has been created as <b>${role}</b>.`;
-
-    if (emailStatus.emailErrors.length > 0) {
-      notificationType = "warning";
-      notificationTitle = "User Created with Email Issues";
-      notificationMessage += `<br><br><b>Email Issues:</b><br>${emailStatus.emailErrors.join("<br>")}`;
-    } else if (emailStatus.welcomeEmailSent) {
-      notificationMessage += " Welcome email sent successfully.";
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
         message: "User created successfully",
         notification: {
-          type: notificationType,
-          title: notificationTitle,
-          message: notificationMessage,
-          duration: 7000,
+          type: "success",
+          title: "User Created Successfully",
+          message: `<b>${displayName}</b> has been created as <b>${role}</b>. Welcome email sent.`,
+          duration: 5000,
         },
-        emailStatus: emailStatus,
         user: {
           id: authData.user.id,
           email: authData.user.email,
