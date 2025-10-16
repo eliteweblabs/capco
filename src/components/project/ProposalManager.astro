@@ -359,7 +359,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
         // Check if invoice already exists
         const response = await fetch(
-          `/api/proposal/get-project-invoice?projectId=${this.projectId}`
+          `/api/proposal/get?projectId=${this.projectId}`
         );
         const data = await response.json();
 
@@ -368,7 +368,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           // console.log("✅ [PROPOSAL-MANAGER] Found existing invoice:", this.invoiceId);
         } else {
           // Create new invoice
-          const createResponse = await fetch("/api/create-invoice", {
+          const createResponse = await fetch("/api/proposal/upsert", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -402,7 +402,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       }
 
       try {
-        const response = await fetch(`/api/get-invoice-details?id=${this.invoiceId}`);
+        const response = await fetch(`/api/proposal/get?id=${this.invoiceId}`);
         const data = await response.json();
 
         if (data.success && data.invoice) {
@@ -415,7 +415,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             description: item.description || "",
             quantity: item.quantity || 1,
             unitPrice: item.unitPrice || 0, // Convert unitPrice to unitPrice
-            catalog_item_id: item.catalog_item_id || null,
+            catalogItemId: item.catalogItemId || null,
           }));
 
           // Load subject from invoice
@@ -705,17 +705,17 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       console.log(`🔧 [PROPOSAL-MANAGER] Updated ${field} for item ${index}:`, value);
 
-      // If name or description changed and we have a catalog_item_id, update the catalog
+      // If name or description changed and we have a catalogItemId, update the catalog
       if (
         (field === "name" || field === "description" || field === "unitPrice") &&
-        item.catalog_item_id
+        item.catalogItemId
       ) {
         try {
-          const response = await fetch(`/api/line-items-catalog`, {
+          const response = await fetch(`/api/proposal/lineitems/get`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              id: item.catalog_item_id,
+              id: item.catalogItemId,
               name: item.name,
               description: item.description,
               unitPrice: item.unitPrice,
@@ -734,14 +734,10 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           item[field] = oldValue;
         }
       }
-      // If no catalog_item_id exists and we have a name, create a new catalog item
-      else if (
-        (field === "name" || field === "description") &&
-        !item.catalog_item_id &&
-        item.name
-      ) {
+      // If no catalogItemId exists and we have a name, create a new catalog item
+      else if ((field === "name" || field === "description") && !item.catalogItemId && item.name) {
         try {
-          const response = await fetch("/api/line-items-catalog", {
+          const response = await fetch("/api/proposal/lineitems/get", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -755,7 +751,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           const result = await response.json();
           if (result.success && result.item) {
             console.log("✅ [PROPOSAL-MANAGER] Created new catalog item:", result.item);
-            item.catalog_item_id = result.item.id;
+            item.catalogItemId = result.item.id;
           }
         } catch (error) {
           console.error("❌ [PROPOSAL-MANAGER] Error creating catalog item:", error);
@@ -843,7 +839,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       // Add to catalog first
       try {
-        const response = await fetch("/api/line-items-catalog", {
+        const response = await fetch("/api/proposal/lineitems/get", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -857,7 +853,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         const result = await response.json();
         if (result.success && result.item) {
           console.log("✅ [PROPOSAL-MANAGER] Added item to catalog:", result.item);
-          newItem.catalog_item_id = result.item.id;
+          newItem.catalogItemId = result.item.id;
         }
       } catch (error) {
         console.error("❌ [PROPOSAL-MANAGER] Error adding to catalog:", error);
@@ -1046,7 +1042,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           notes: notes,
         });
 
-        const response = await fetch("/api/proposal/update-invoice-line-items", {
+        const response = await fetch("/api/proposal/lineitems/upsert", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1085,7 +1081,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         description: item.description || "",
         unitPrice: item.unitPrice || 0, // Convert unitPrice to unitPrice for database
         quantity: item.quantity || 1,
-        catalog_item_id: item.catalog_item_id || null, // Include the ID as the key
+        catalogItemId: item.catalogItemId || null, // Include the ID as the key
       }));
 
       console.log("🔍 [PROPOSAL-MANAGER] getLineItemsDataForDatabase - result:", result);
@@ -1197,7 +1193,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
     async populateDropdownWithAllItems(dropdown) {
       try {
-        const response = await fetch("/api/line-items-catalog");
+        const response = await fetch("/api/proposal/lineitems/get");
         const data = await response.json();
 
         if (data.success && data.items) {
@@ -1221,7 +1217,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       try {
         const response = await fetch(
-          `/api/line-items-catalog?search=${encodeURIComponent(searchTerm)}`
+          `/api/proposal/lineitems/get?search=${encodeURIComponent(searchTerm)}`
         );
         const data = await response.json();
 
@@ -1312,7 +1308,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           this.cachedLineItems[rowIndex].name = item.name;
           this.cachedLineItems[rowIndex].description = item.description || "";
           this.cachedLineItems[rowIndex].unitPrice = item.unitPrice || 0;
-          this.cachedLineItems[rowIndex].catalog_item_id = item.id; // Store the ID as the key
+          this.cachedLineItems[rowIndex].catalogItemId = item.id; // Store the ID as the key
           console.log(
             "🔍 [AUTOCOMPLETE] Updated cached line item:",
             this.cachedLineItems[rowIndex]
@@ -1637,7 +1633,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     function createLineItemRow(item = {}) {
       const row = document.createElement("tr");
       row.className = "hover:bg-gray-50 dark:hover:bg-gray-700 line-item-row";
-      row.setAttribute("data-catalog-item-id", item.catalog_item_id || "");
+      row.setAttribute("data-catalog-item-id", item.catalogItemId || "");
       row.setAttribute("data-edited", "false"); // Track if row has been edited
 
       const currentTotal = (item.quantity || 0) * (item.unitPrice || 0);
@@ -1714,7 +1710,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       // Add event listeners to mark row as edited when inputs change
       const inputs = row.querySelectorAll("input");
-      // console.log(`🔍 [PROPOSAL-MANAGER] Adding edit listeners to ${inputs.length} inputs for row with catalog ID: ${item.catalog_item_id}`);
+      // console.log(`🔍 [PROPOSAL-MANAGER] Adding edit listeners to ${inputs.length} inputs for row with catalog ID: ${item.catalogItemId}`);
       inputs.forEach((input, inputIndex) => {
         input.addEventListener("input", () => {
           row.setAttribute("data-edited", "true");
@@ -1756,7 +1752,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             if (itemId) {
               // Delete from database
               try {
-                const response = await fetch("/api/delete-line-item", {
+                const response = await fetch("/api/proposal/lineitems/delete", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ itemId }),
@@ -1874,7 +1870,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       if (globalCatalogItems.length === 0) {
         console.log("🔍 [AUTOCOMPLETE] Loading catalog items from API");
         try {
-          const url = `/api/line-items-catalog?limit=50`;
+          const url = `/api/proposal/lineitems/get?limit=50`;
           const response = await fetch(url, { credentials: "include" });
           if (response.ok) {
             const result = await response.json();
@@ -2198,7 +2194,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             if (searchTerm) params.append("search", searchTerm);
             params.append("limit", "20");
 
-            const response = await fetch(`/api/invoice-subject-util?${params}`, {
+            const response = await fetch(`/api/proposal/subject/get?${params}`, {
               credentials: "include",
             });
 
@@ -2390,7 +2386,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             const newSubject = searchInput.value.trim();
             if (newSubject) {
               try {
-                const response = await fetch("/api/invoice-subject-util", {
+                const response = await fetch("/api/proposal/subject/upsert", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
