@@ -2,20 +2,32 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 
-// GET - Fetch user notifications
+/**
+ * Standardized Notifications GET API
+ * 
+ * Fetches notifications for a user with pagination and filtering
+ * 
+ * Query Parameters:
+ * - limit?: number (default: 20) - Number of notifications to return
+ * - offset?: number (default: 0) - Pagination offset
+ * - unread_only?: boolean - Only return unread notifications
+ * - userId?: string - Admin only: Get notifications for specific user
+ * 
+ * Examples:
+ * - GET /api/notifications/get - Get current user's notifications
+ * - GET /api/notifications/get?unread_only=true - Get unread notifications
+ * - GET /api/notifications/get?userId=123 (Admin only) - Get user's notifications
+ */
 export const GET: APIRoute = async ({ cookies, url }) => {
   try {
+    // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
-
-    const limit = parseInt(url.searchParams.get("limit") || "20");
-    const offset = parseInt(url.searchParams.get("offset") || "0");
-    const unreadOnly = url.searchParams.get("unread_only") === "true";
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database not configured" }), {
@@ -24,11 +36,35 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       });
     }
 
+    // Parse query parameters
+    const limit = parseInt(url.searchParams.get("limit") || "20");
+    const offset = parseInt(url.searchParams.get("offset") || "0");
+    const unreadOnly = url.searchParams.get("unread_only") === "true";
+    const requestedUserId = url.searchParams.get("userId");
+
+    // If requesting another user's notifications, check admin role
+    let targetUserId = currentUser.id;
+    if (requestedUserId && requestedUserId !== currentUser.id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (!profile || profile.role !== "Admin") {
+        return new Response(JSON.stringify({ error: "Unauthorized - Admin access required" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      targetUserId = requestedUserId;
+    }
+
     // Add timeout handling for Supabase connection issues
     const queryPromise = supabase
       .from("notifications")
       .select("*")
-      .eq("userId", currentUser.id)
+      .eq("userId", targetUserId)
       .order("createdAt", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -47,9 +83,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       result = await Promise.race([query, timeoutPromise]);
     } catch (error) {
       if (error instanceof Error && error.message === "Database connection timeout") {
-        console.warn(
-          "🔔 [NOTIFICATIONS] Database connection timeout - returning empty notifications"
-        );
+        console.warn("🔔 [NOTIFICATIONS] Database connection timeout - returning empty notifications");
         return new Response(
           JSON.stringify({
             success: true,
@@ -102,7 +136,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const { count: unreadCount } = await supabase
       .from("notifications")
       .select("*", { count: "exact", head: true })
-      .eq("userId", currentUser.id)
+      .eq("userId", targetUserId)
       .eq("viewed", false);
 
     return new Response(
@@ -120,126 +154,6 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     );
   } catch (error) {
     console.error("❌ [NOTIFICATIONS] Error in GET:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-};
-
-// POST - Mark notifications as viewed
-export const POST: APIRoute = async ({ request, cookies }) => {
-  try {
-    const { isAuth, currentUser } = await checkAuth(cookies);
-    if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const { notificationIds } = await request.json();
-
-    if (!notificationIds || !Array.isArray(notificationIds)) {
-      return new Response(JSON.stringify({ error: "Invalid notification IDs" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    if (!supabase) {
-      return new Response(JSON.stringify({ error: "Database not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const { error } = await supabase
-      .from("notifications")
-      .update({ viewed: true })
-      .in("id", notificationIds)
-      .eq("userId", currentUser.id);
-
-    if (error) {
-      console.error("❌ [NOTIFICATIONS] Error marking notifications as viewed:", error);
-      return new Response(JSON.stringify({ error: "Failed to mark notifications as viewed" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Notifications marked as viewed",
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  } catch (error) {
-    console.error("❌ [NOTIFICATIONS] Error in POST:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-};
-
-// DELETE - Delete notification
-export const DELETE: APIRoute = async ({ request, cookies }) => {
-  try {
-    const { isAuth, currentUser } = await checkAuth(cookies);
-    if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const { notificationId } = await request.json();
-
-    if (!notificationId) {
-      return new Response(JSON.stringify({ error: "Notification ID required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    if (!supabase) {
-      return new Response(JSON.stringify({ error: "Database not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const { error } = await supabase
-      .from("notifications")
-      .delete()
-      .eq("id", notificationId)
-      .eq("userId", currentUser.id);
-
-    if (error) {
-      console.error("❌ [NOTIFICATIONS] Error deleting notification:", error);
-      return new Response(JSON.stringify({ error: "Failed to delete notification" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Notification deleted",
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  } catch (error) {
-    console.error("❌ [NOTIFICATIONS] Error in DELETE:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
