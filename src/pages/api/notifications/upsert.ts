@@ -21,9 +21,9 @@ interface NotificationRequest {
 
 /**
  * Standardized Notifications UPSERT API
- * 
+ *
  * Handles creating, updating, and marking notifications as viewed
- * 
+ *
  * POST Body for Creating/Updating:
  * - userId?: string (target specific user)
  * - userEmail?: string (target user by email)
@@ -35,11 +35,11 @@ interface NotificationRequest {
  * - priority?: "low" | "normal" | "high" | "urgent" (default: "normal")
  * - actionUrl?: string
  * - actionText?: string
- * 
+ *
  * POST Body for Marking as Viewed:
  * - notificationIds: number[] (IDs to mark as viewed)
  * - viewed: boolean (true/false)
- * 
+ *
  * Examples:
  * - Individual: POST /api/notifications/upsert { userId, title, message }
  * - Group: POST /api/notifications/upsert { groupType: "admins", title, message }

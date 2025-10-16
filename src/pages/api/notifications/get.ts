@@ -4,15 +4,15 @@ import { supabase } from "../../../lib/supabase";
 
 /**
  * Standardized Notifications GET API
- * 
+ *
  * Fetches notifications for a user with pagination and filtering
- * 
+ *
  * Query Parameters:
  * - limit?: number (default: 20) - Number of notifications to return
  * - offset?: number (default: 0) - Pagination offset
  * - unread_only?: boolean - Only return unread notifications
  * - userId?: string - Admin only: Get notifications for specific user
- * 
+ *
  * Examples:
  * - GET /api/notifications/get - Get current user's notifications
  * - GET /api/notifications/get?unread_only=true - Get unread notifications
@@ -83,7 +83,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       result = await Promise.race([query, timeoutPromise]);
     } catch (error) {
       if (error instanceof Error && error.message === "Database connection timeout") {
-        console.warn("🔔 [NOTIFICATIONS] Database connection timeout - returning empty notifications");
+        console.warn(
+          "🔔 [NOTIFICATIONS] Database connection timeout - returning empty notifications"
+        );
         return new Response(
           JSON.stringify({
             success: true,

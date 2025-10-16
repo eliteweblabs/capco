@@ -5,14 +5,14 @@ import { supabase } from "../../../lib/supabase";
 
 /**
  * Standardized Auth LOGIN API
- * 
+ *
  * JSON API for programmatic login (no redirects)
  * For form-based login with redirects, use /api/auth/signin
- * 
+ *
  * POST Body:
  * - email: string
  * - password: string
- * 
+ *
  * Example:
  * - POST /api/auth/login { "email": "user@example.com", "password": "password123" }
  */
