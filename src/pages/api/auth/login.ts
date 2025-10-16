@@ -1,18 +1,23 @@
 import type { APIRoute } from "astro";
+import { setAuthCookies } from "../../../lib/auth-cookies";
+import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 
 /**
  * Standardized Auth LOGIN API
- *
+ * 
+ * JSON API for programmatic login (no redirects)
+ * For form-based login with redirects, use /api/auth/signin
+ * 
  * POST Body:
  * - email: string
  * - password: string
- *
+ * 
  * Example:
  * - POST /api/auth/login { "email": "user@example.com", "password": "password123" }
  */
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json();
     const { email, password } = body;
@@ -43,7 +48,18 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     if (error) {
-      console.error("❌ [AUTH-LOGIN] Authentication failed:", error.message);
+      // Log failed login attempt
+      try {
+        await SimpleProjectLogger.addLogEntry(
+          0, // System log
+          "error",
+          `Password login failed: ${error.message} | ${email || "unknown"}`,
+          { error: error.message, email: email || "unknown" }
+        );
+      } catch (logError) {
+        console.error("Error logging failed login:", logError);
+      }
+
       return new Response(
         JSON.stringify({
           error: "Authentication failed",
@@ -62,6 +78,27 @@ export const POST: APIRoute = async ({ request }) => {
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    // Log successful login
+    try {
+      await SimpleProjectLogger.addLogEntry(
+        0, // System log
+        "userLogin",
+        `User logged in via password ${data.user.email || email}`,
+        {
+          userId: data.user.id,
+          userAgent: request.headers.get("user-agent"),
+          ip: request.headers.get("x-forwarded-for") || "unknown",
+          email: data.user.email || email,
+        }
+      );
+    } catch (logError) {
+      console.error("Error logging successful login:", logError);
+    }
+
+    // Set auth cookies
+    const { access_token, refresh_token } = data.session;
+    setAuthCookies(cookies, access_token, refresh_token);
 
     console.log(`✅ [AUTH-LOGIN] User authenticated successfully:`, data.user.id);
 
