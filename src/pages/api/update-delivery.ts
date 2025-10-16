@@ -137,14 +137,14 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     // ===== RESOLVE ROLES TO EMAILS =====
     let roleEmails: string[] = [];
-    
+
     if (rolesToNotify.length > 0) {
       console.log("🔔 [NOTIFICATION] Resolving roles to email addresses:", rolesToNotify);
-      
+
       try {
         // Build query parameters for multiple roles
         const roleParams = rolesToNotify.map((role) => `role=${role}`).join("&");
-        
+
         const roleResponse = await fetch(`${baseUrl}/api/users/get?${roleParams}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -162,7 +162,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         console.error("🔔 [NOTIFICATION] Error resolving roles:", roleError);
       }
     }
-    
+
     // Combine direct emails and role-resolved emails
     const resolvedUsersToNotify = [...usersToNotify, ...roleEmails];
 
@@ -236,14 +236,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
-
-    // For all other methods, continue with email processing
-    console.log("🔔 [NOTIFICATION] Processing email notification for method:", method);
-
-    console.log("📧 [EMAIL-DELIVERY] Email configuration:", {
-      method,
-      trackLinks,
-    });
 
     // Simple validation
     if (
@@ -593,21 +585,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
             // Log failed email delivery
             try {
-              if (project?.id) {
-                await SimpleProjectLogger.addLogEntry(
-                  project.id,
-                  "emailFailed",
-                  `Email delivery failed to ${userEmail} - Type: ${method}, Subject: ${emailSubject}, Error: ${errorText}`,
-                  { method, emailSubject, error: errorText, status: response.status }
-                );
-              } else {
-                console.log("📧 [EMAIL-DELIVERY] Email delivery failed (no project context):", {
-                  userEmail,
-                  method,
-                  emailSubject,
-                  error: errorText,
-                });
-              }
+              await SimpleProjectLogger.addLogEntry(
+                project.id,
+                "emailFailed",
+                `Email delivery failed to ${userEmail} - Type: ${method}, Subject: ${emailSubject}, Error: ${errorText}`,
+                { method, emailSubject, error: errorText, status: response.status }
+              );
             } catch (logError) {
               console.error("📧 [EMAIL-DELIVERY] Error logging failed email delivery:", logError);
             }
@@ -618,29 +601,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
             // Log successful email delivery
             try {
-              if (project?.id) {
-                console.log("📧 [EMAIL-DELIVERY] Logging successful email to database:", {
-                  projectId: project.id,
-                  userEmail,
-                  method,
-                  emailSubject,
-                });
-
-                await SimpleProjectLogger.addLogEntry(
-                  project.id,
-                  "emailSent",
-                  `Email sent successfully to ${userEmail} - Type: ${method}, Subject: ${emailSubject}`,
-                  { method, emailSubject, responseId: responseData.id }
-                );
-                console.log("📧 [EMAIL-DELIVERY] Successfully logged individual email to database");
-              } else {
-                console.log("📧 [EMAIL-DELIVERY] Email sent successfully (no project context):", {
-                  userEmail,
-                  method,
-                  emailSubject,
-                  responseId: responseData.id,
-                });
-              }
+              await SimpleProjectLogger.addLogEntry(
+                project.id,
+                "emailSent",
+                `Email sent successfully to ${userEmail} - Type: ${method}, Subject: ${emailSubject}`,
+                { method, emailSubject, responseId: responseData.id }
+              );
             } catch (logError) {
               console.error(
                 "📧 [EMAIL-DELIVERY] Error logging successful email delivery:",
