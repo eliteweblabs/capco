@@ -23,10 +23,21 @@ A complete notification system that works independently of the email delivery sy
 
 ## API Endpoints
 
-### Create Notification
+### Get Notifications
 
-**POST** `/api/notifications/create`
+**GET** `/api/notifications/get`
 
+Query Parameters:
+- `limit` (default: 20) - Number of notifications to return
+- `offset` (default: 0) - Pagination offset
+- `unread_only` - Only return unread notifications
+- `userId` (Admin only) - Get notifications for specific user
+
+### Create/Update Notifications
+
+**POST** `/api/notifications/upsert`
+
+For creating notifications:
 ```json
 {
   "userId": "uuid", // Optional if userEmail provided
@@ -40,27 +51,35 @@ A complete notification system that works independently of the email delivery sy
 }
 ```
 
-### Fetch Notifications
+For marking as viewed:
+```json
+{
+  "notificationIds": [1, 2, 3],
+  "viewed": true
+}
+```
 
-**GET** `/api/notifications/fetch?userId=uuid&limit=50&offset=0`
+### Delete Notifications
 
-### Mark as Viewed
-
-**POST** `/api/notifications/mark-viewed`
+**DELETE** `/api/notifications/delete`
 
 ```json
 {
-  "userId": "uuid",
-  "notificationIds": [1, 2, 3]
+  "notificationId": 123
 }
 ```
+
+### Real-time Notifications
+
+**GET** `/api/notifications/stream`
+
+Server-Sent Events (SSE) endpoint for real-time notifications.
 
 ## Admin Interface
 
 Access the admin notification interface at `/admin/notifications` (Admin role required).
 
 Features:
-
 - Select multiple users from dropdown
 - Set notification type and priority
 - Add action URLs and button text
@@ -71,7 +90,7 @@ Features:
 ### Send notification to specific user by email:
 
 ```javascript
-fetch("/api/notifications/create", {
+fetch("/api/notifications/upsert", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -89,7 +108,7 @@ fetch("/api/notifications/create", {
 ### Send notification to specific user by ID:
 
 ```javascript
-fetch("/api/notifications/create", {
+fetch("/api/notifications/upsert", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -98,6 +117,19 @@ fetch("/api/notifications/create", {
     message: "Scheduled maintenance will occur tonight",
     type: "warning",
     priority: "high",
+  }),
+});
+```
+
+### Mark notifications as viewed:
+
+```javascript
+fetch("/api/notifications/upsert", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    notificationIds: [1, 2, 3],
+    viewed: true
   }),
 });
 ```
@@ -117,7 +149,7 @@ The notification system can be integrated with the email system by calling the n
 ```javascript
 // In email-delivery.ts, add this after successful email sending:
 if (internalMessages) {
-  await fetch("/api/notifications/create", {
+  await fetch("/api/notifications/upsert", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

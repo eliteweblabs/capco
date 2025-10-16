@@ -2,26 +2,29 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
-interface CreateNotificationRequest {
+interface NotificationRequest {
+  // Create/Update fields
   userId?: string;
   userEmail?: string;
   allUsers?: boolean;
   groupType?: "admins" | "staff" | "clients";
-  title: string;
-  message: string;
+  title?: string;
+  message?: string;
   type?: "info" | "success" | "warning" | "error";
   priority?: "low" | "normal" | "high" | "urgent";
   actionUrl?: string;
   actionText?: string;
+  // Mark viewed fields
+  notificationIds?: number[];
+  viewed?: boolean;
 }
 
 /**
  * Standardized Notifications UPSERT API
- *
- * Handles both creating new notifications and updating existing ones
- * Supports bulk notifications, group targeting, and individual targeting
- *
- * POST Body:
+ * 
+ * Handles creating, updating, and marking notifications as viewed
+ * 
+ * POST Body for Creating/Updating:
  * - userId?: string (target specific user)
  * - userEmail?: string (target user by email)
  * - allUsers?: boolean (send to all users)
@@ -32,13 +35,17 @@ interface CreateNotificationRequest {
  * - priority?: "low" | "normal" | "high" | "urgent" (default: "normal")
  * - actionUrl?: string
  * - actionText?: string
- *
+ * 
+ * POST Body for Marking as Viewed:
+ * - notificationIds: number[] (IDs to mark as viewed)
+ * - viewed: boolean (true/false)
+ * 
  * Examples:
  * - Individual: POST /api/notifications/upsert { userId, title, message }
  * - Group: POST /api/notifications/upsert { groupType: "admins", title, message }
  * - All Users: POST /api/notifications/upsert { allUsers: true, title, message }
+ * - Mark Viewed: POST /api/notifications/upsert { notificationIds: [1,2,3], viewed: true }
  */
-
 export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
   try {
     // Check authentication
@@ -50,7 +57,50 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       });
     }
 
-    const body: CreateNotificationRequest = await request.json();
+    if (!supabaseAdmin) {
+      console.error("Supabase admin client not initialized");
+      return new Response(JSON.stringify({ error: "Server configuration error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const body: NotificationRequest = await request.json();
+
+    // Handle marking notifications as viewed
+    if (body.notificationIds && Array.isArray(body.notificationIds)) {
+      const { data, error } = await supabaseAdmin
+        .from("notifications")
+        .update({ viewed: body.viewed ?? true })
+        .in("id", body.notificationIds)
+        .eq("userId", currentUser.id)
+        .select();
+
+      if (error) {
+        console.error("❌ [NOTIFICATIONS] Error marking notifications as viewed:", error);
+        return new Response(JSON.stringify({ error: "Failed to mark notifications as viewed" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(
+        `✅ [NOTIFICATIONS] Marked ${data?.length || 0} notifications as ${body.viewed ? "viewed" : "unviewed"} for user ${currentUser.id}`
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          updatedCount: data?.length || 0,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Handle creating/updating notifications
     const {
       userId,
       userEmail,
@@ -81,15 +131,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       );
     }
 
+    // Send to all users
     if (allUsers) {
-      if (!supabaseAdmin) {
-        console.error("Supabase admin client not initialized");
-        return new Response(JSON.stringify({ error: "Server configuration error" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      // Send notification to all users
       const { data: allUsersData, error: usersError } = await supabaseAdmin
         .from("profiles")
         .select("id");
@@ -101,7 +144,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         });
       }
 
-      // Create notifications for all users
       const notifications = allUsersData.map((user) => ({
         userId: user.id,
         title,
@@ -137,16 +179,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       );
     }
 
+    // Send to role group
     if (groupType) {
-      if (!supabaseAdmin) {
-        console.error("Supabase admin client not initialized");
-        return new Response(JSON.stringify({ error: "Server configuration error" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      // Map groupType to role
       const roleMap = {
         admins: "Admin",
         staff: "Staff",
@@ -161,7 +195,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         });
       }
 
-      // Get users by role
       const { data: groupUsersData, error: groupUsersError } = await supabaseAdmin
         .from("profiles")
         .select("id")
@@ -188,7 +221,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         );
       }
 
-      // Create notifications for group users
       const notifications = groupUsersData.map((user) => ({
         userId: user.id,
         title,
@@ -229,15 +261,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       );
     }
 
+    // Send to individual user
     let targetUserId = userId;
 
-    if (!supabaseAdmin) {
-      console.error("Supabase admin client not initialized");
-      return new Response(JSON.stringify({ error: "Server configuration error" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
     // If userEmail is provided, look up the user ID
     if (userEmail && !userId) {
       const { data: userData, error: userError } = await supabaseAdmin
@@ -294,7 +320,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       }
     );
   } catch (error) {
-    console.error("❌ [NOTIFICATIONS] Error in create notification API:", error);
+    console.error("❌ [NOTIFICATIONS] Error in notifications API:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
