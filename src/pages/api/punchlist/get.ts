@@ -134,7 +134,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       .select(
         `
         *,
-        author:profiles!punchlist_author_id_fkey(
+        author:profiles!authorId(
           id,
           companyName,
           email,
