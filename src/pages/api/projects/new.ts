@@ -274,7 +274,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             formData.append("email", email.trim());
             formData.append("role", "Client");
 
-            const createUserResponse = await fetch(`${baseUrl}/api/user/new`, {
+            const createUserResponse = await fetch(`${baseUrl}/api/users/upsert`, {
               method: "POST",
               headers: {
                 Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
@@ -501,26 +501,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Continue with basic project data if enrichment fails
     }
 
-    // Check if modal should be shown (default: true for form submissions)
-    const showModal = body.modal !== false;
-    
-    const response: any = {
-      success: true,
-      project: enrichedProject,
-    };
-    
-    // Only include notification data if modal should be shown
-    if (showModal) {
-      response.notification = {
-        type: "success",
-        title: "Project Created Successfully",
-        message: `Project <b>${enrichedProject.title || enrichedProject.address}</b> has been created successfully!`,
-        duration: 3000,
-      };
-    }
-
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify({
+        success: true,
+        project: enrichedProject,
+      }),
       {
         status: 201,
         headers: {
