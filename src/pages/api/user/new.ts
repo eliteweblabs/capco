@@ -5,7 +5,7 @@ import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../../lib/url-utils";
 // Import validateEmail from ux-utils and getCarrierGateway from sms-utils
-import { FORM_FIELDS, getFormField } from "../../../lib/form-utils";
+// import { FORM_FIELDS, getFormField } from "../../../lib/form-utils";
 import { getCarrierGateway } from "../../../lib/sms-utils";
 import { validateEmail } from "../../../lib/ux-utils";
 // Removed routeUsersByNotificationPreference and sendSMSNotification imports
@@ -400,25 +400,35 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // 9. Return success response
     console.log("🎉 [CREATE-USER] User creation completed successfully!");
+    
+    // Check if modal should be shown (default: true for form submissions)
+    const showModal = body.modal !== false;
+    
+    const response: any = {
+      success: true,
+      message: "User created successfully",
+      user: {
+        id: authData.user.id,
+        email: authData.user.email,
+        role: role,
+        firstName: firstName,
+        lastName: lastName,
+        companyName: companyName,
+      },
+    };
+    
+    // Only include notification data if modal should be shown
+    if (showModal) {
+      response.notification = {
+        type: "success",
+        title: "User Created Successfully",
+        message: `<b>${displayName}</b> has been created as <b>${role}</b>. Magic link sent to user.`,
+        duration: 2000,
+      };
+    }
+    
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: "User created successfully",
-        notification: {
-          type: "success",
-          title: "User Created Successfully",
-          message: `<b>${displayName}</b> has been created as <b>${role}</b>. Welcome email sent.`,
-          duration: 5000,
-        },
-        user: {
-          id: authData.user.id,
-          email: authData.user.email,
-          role: role,
-          firstName: firstName,
-          lastName: lastName,
-          companyName: companyName,
-        },
-      }),
+      JSON.stringify(response),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
