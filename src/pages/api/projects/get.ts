@@ -54,22 +54,22 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
       // Fetch author profile data
       let authorProfile = null;
-      if (project.author_id) {
+      if (project.authorId) {
         const { data: authorData } = await supabaseAdmin
           .from("profiles")
           .select("id, firstName, lastName, companyName, email, role")
-          .eq("id", project.author_id)
+          .eq("id", project.authorId)
           .single();
         authorProfile = authorData;
       }
 
       // Fetch assignedTo profile data
       let assignedToProfile = null;
-      if (project.assigned_to_id) {
+      if (project.assignedToId) {
         const { data: assignedToData } = await supabaseAdmin
           .from("profiles")
           .select("id, firstName, lastName, companyName, email, role")
-          .eq("id", project.assigned_to_id)
+          .eq("id", project.assignedToId)
           .single();
         assignedToProfile = assignedToData;
       }
@@ -94,8 +94,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       // Add profile data, file data, and punchlist data to project
       const projectWithProfiles = {
         ...project,
-        authorId: project.author_id, // Map snake_case to camelCase for frontend
-        assignedToId: project.assigned_to_id, // Map snake_case to camelCase for frontend
         author: authorProfile,
         assignedTo: assignedToProfile,
         authorProfile: authorProfile,
