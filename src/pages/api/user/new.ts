@@ -254,6 +254,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // 7. Send emails (both user and admin notifications)
     const displayName = companyName?.trim() || `${firstName.trim()} ${lastName.trim()}`;
 
+    // Track email sending status
+    let emailStatus = {
+      welcomeEmailSent: false,
+      adminNotificationSent: false,
+      emailErrors: [] as string[],
+    };
+
     // Get email templates from database
     let userEmailContent = "";
     let adminEmailContent = "";
@@ -332,12 +339,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           userEmailResponse.status,
           errorText
         );
+        emailStatus.emailErrors.push(`Welcome email failed: ${errorText}`);
       } else {
         const responseData = await userEmailResponse.json();
         console.log(
           "✅ [CREATE-USER] Welcome email sent successfully via update-delivery:",
           responseData
         );
+        emailStatus.welcomeEmailSent = true;
       }
     } catch (emailError) {
       console.error("❌ [CREATE-USER] Error sending welcome email:", emailError);
@@ -359,7 +368,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         adminStaffEmails = users.map((user: any) => user.email).filter(Boolean);
         console.log("📧 [CREATE-USER] Found admin/staff emails:", adminStaffEmails);
       } else {
-        console.warn("⚠️ [CREATE-USER] Could not fetch admin/staff emails, skipping admin notifications");
+        console.warn(
+          "⚠️ [CREATE-USER] Could not fetch admin/staff emails, skipping admin notifications"
+        );
       }
 
       if (adminStaffEmails.length > 0) {
@@ -384,9 +395,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             adminEmailResponse.status,
             errorText
           );
+          emailStatus.emailErrors.push(`Admin notification failed: ${errorText}`);
         } else {
           const responseData = await adminEmailResponse.json();
-          console.log("✅ [CREATE-USER] Admin notifications sent via update-delivery:", responseData);
+          console.log(
+            "✅ [CREATE-USER] Admin notifications sent via update-delivery:",
+            responseData
+          );
+          emailStatus.adminNotificationSent = true;
         }
       } else {
         console.log("ℹ️ [CREATE-USER] No admin/staff users found, skipping admin notifications");
@@ -418,20 +434,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("❌ [CREATE-USER] Error logging user creation:", logError);
     }
 
-    // 9. Return success response
+    // 9. Return success response with email status
     console.log("🎉 [CREATE-USER] User creation completed successfully!");
+    
+    // Determine notification type and message based on email status
+    let notificationType = "success";
+    let notificationTitle = "User Created Successfully";
+    let notificationMessage = `<b>${displayName}</b> has been created as <b>${role}</b>.`;
+    
+    if (emailStatus.emailErrors.length > 0) {
+      notificationType = "warning";
+      notificationTitle = "User Created with Email Issues";
+      notificationMessage += `<br><br><b>Email Issues:</b><br>${emailStatus.emailErrors.join('<br>')}`;
+    } else if (emailStatus.welcomeEmailSent) {
+      notificationMessage += " Welcome email sent successfully.";
+    }
+    
     return new Response(
       JSON.stringify({
         success: true,
         message: "User created successfully",
-        // Add notification data for client-side modal
         notification: {
-          type: "success",
-          title: "User Created Successfully",
-          message: `<b>${displayName}</b> has been created as <b>${role}</b>. They will receive a magic link to access their account.`,
-          duration: 5000,
+          type: notificationType,
+          title: notificationTitle,
+          message: notificationMessage,
+          duration: 7000,
         },
-
+        emailStatus: emailStatus,
         user: {
           id: authData.user.id,
           email: authData.user.email,
