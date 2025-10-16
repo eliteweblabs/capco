@@ -160,7 +160,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         const userIdParams =
           userIds.length > 0 ? `&${userIds.map((id) => `id=${id}`).join("&")}` : "";
 
-        const roleResponse = await fetch(`${baseUrl}/api/users?${roleParams}${userIdParams}`, {
+        const roleResponse = await fetch(`${baseUrl}/api/users/get?${roleParams}${userIdParams}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
