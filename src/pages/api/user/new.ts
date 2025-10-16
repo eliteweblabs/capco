@@ -400,13 +400,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // 9. Return success response
     console.log("🎉 [CREATE-USER] User creation completed successfully!");
-    
-    // Check if modal should be shown (default: true for form submissions)
-    const showModal = body.modal !== false;
-    
-    const response: any = {
+
+    const response = {
       success: true,
       message: "User created successfully",
+      notification: {
+        type: "success",
+        title: "User Created Successfully",
+        message: `<b>${displayName}</b> has been created as <b>${role}</b>. Magic link sent to user.`,
+        duration: 2000,
+      },
       user: {
         id: authData.user.id,
         email: authData.user.email,
@@ -416,21 +419,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         companyName: companyName,
       },
     };
-    
-    // Only include notification data if modal should be shown
-    if (showModal) {
-      response.notification = {
-        type: "success",
-        title: "User Created Successfully",
-        message: `<b>${displayName}</b> has been created as <b>${role}</b>. Magic link sent to user.`,
-        duration: 2000,
-      };
-    }
-    
-    return new Response(
-      JSON.stringify(response),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("❌ [CREATE-USER] Create user error:", error);
     return new Response(
