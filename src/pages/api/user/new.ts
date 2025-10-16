@@ -254,7 +254,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // 7. Send emails (both user and admin notifications)
     const displayName = companyName?.trim() || `${firstName.trim()} ${lastName.trim()}`;
 
-
     // Get email templates from database
     let userEmailContent = "";
     let adminEmailContent = "";
@@ -352,7 +351,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           method: "notification",
-          usersToNotify: ["admin", "staff"], // Let update-delivery resolve roles to emails
+          rolesToNotify: ["Admin", "Staff"], // Use separate roles parameter
           emailSubject: `New User → ${displayName} → ${role}`,
           emailContent: adminEmailContent,
           buttonText: "View Users",

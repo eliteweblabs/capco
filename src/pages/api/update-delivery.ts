@@ -39,7 +39,8 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 
 // TypeScript interfaces for request data structure
 interface EmailDeliveryRequest {
-  usersToNotify: string[];
+  usersToNotify?: string[]; // Email addresses
+  rolesToNotify?: string[]; // Role names (Admin, Staff, Client)
   userIdsToNotify?: string[]; // User IDs for internal notifications (more efficient)
   selectedUsers?: any[]; // Full user objects from test page for SMS logic
   method: string;
@@ -110,7 +111,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     let emailTemplate: string;
 
     const {
-      usersToNotify,
+      usersToNotify = [],
+      rolesToNotify = [],
       userIdsToNotify,
       selectedUsers,
       method = "email",
@@ -133,34 +135,17 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       projectAddress: project?.address,
     });
 
-    // ===== ROLE RESOLUTION =====
-    // Resolve role names to email addresses
-    let resolvedUsersToNotify = usersToNotify;
-    const roleNames = ["admin", "staff", "client"];
-    const hasRoleNames = usersToNotify.some((user) => roleNames.includes(user.toLowerCase()));
-
-    if (hasRoleNames) {
-      console.log("🔔 [NOTIFICATION] Resolving role names to email addresses");
-
+    // ===== RESOLVE ROLES TO EMAILS =====
+    let roleEmails: string[] = [];
+    
+    if (rolesToNotify.length > 0) {
+      console.log("🔔 [NOTIFICATION] Resolving roles to email addresses:", rolesToNotify);
+      
       try {
-        // Map lowercase role names to capitalized ones for the API
-        const roleMapping = {
-          admin: "Admin",
-          staff: "Staff",
-          client: "Client",
-        };
-
-        const capitalizedRoles = usersToNotify
-          .filter((user) => roleNames.includes(user.toLowerCase()))
-          .map((user) => roleMapping[user.toLowerCase() as keyof typeof roleMapping] || user);
-
         // Build query parameters for multiple roles
-        const roleParams = capitalizedRoles.map((role) => `role=${role}`).join("&");
-        const userIds = usersToNotify.filter((user) => !roleNames.includes(user.toLowerCase()));
-        const userIdParams =
-          userIds.length > 0 ? `&${userIds.map((id) => `id=${id}`).join("&")}` : "";
-
-        const roleResponse = await fetch(`${baseUrl}/api/users/get?${roleParams}${userIdParams}`, {
+        const roleParams = rolesToNotify.map((role) => `role=${role}`).join("&");
+        
+        const roleResponse = await fetch(`${baseUrl}/api/users/get?${roleParams}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -168,15 +153,18 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         if (roleResponse.ok) {
           const roleData = await roleResponse.json();
           const users = roleData.data || [];
-          resolvedUsersToNotify = users.map((user: any) => user.email).filter(Boolean);
-          console.log("🔔 [NOTIFICATION] Resolved roles to emails:", resolvedUsersToNotify);
+          roleEmails = users.map((user: any) => user.email).filter(Boolean);
+          console.log("🔔 [NOTIFICATION] Resolved roles to emails:", roleEmails);
         } else {
-          console.error("🔔 [NOTIFICATION] Failed to resolve roles, using original list");
+          console.error("🔔 [NOTIFICATION] Failed to resolve roles");
         }
-      } catch (error) {
-        console.error("🔔 [NOTIFICATION] Error resolving roles:", error);
+      } catch (roleError) {
+        console.error("🔔 [NOTIFICATION] Error resolving roles:", roleError);
       }
     }
+    
+    // Combine direct emails and role-resolved emails
+    const resolvedUsersToNotify = [...usersToNotify, ...roleEmails];
 
     // ===== DIRECT METHOD HANDLING =====
     console.log("🔔 [NOTIFICATION] Processing method:", method);
