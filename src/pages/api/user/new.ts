@@ -350,7 +350,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          method: "notification",
+          method: "magicLink",
           rolesToNotify: ["Admin", "Staff"], // Use separate roles parameter
           emailSubject: `New User → ${displayName} → ${role}`,
           emailContent: adminEmailContent,
