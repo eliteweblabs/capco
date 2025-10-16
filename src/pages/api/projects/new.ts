@@ -501,11 +501,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Continue with basic project data if enrichment fails
     }
 
+    // Check if modal should be shown (default: true for form submissions)
+    const showModal = body.modal !== false;
+    
+    const response: any = {
+      success: true,
+      project: enrichedProject,
+    };
+    
+    // Only include notification data if modal should be shown
+    if (showModal) {
+      response.notification = {
+        type: "success",
+        title: "Project Created Successfully",
+        message: `Project <b>${enrichedProject.title || enrichedProject.address}</b> has been created successfully!`,
+        duration: 3000,
+      };
+    }
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        project: enrichedProject,
-      }),
+      JSON.stringify(response),
       {
         status: 201,
         headers: {
