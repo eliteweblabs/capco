@@ -6,13 +6,13 @@ import { supabase } from "../../../lib/supabase";
 
 /**
  * Standardized Auth LOGOUT API
- * 
+ *
  * JSON API for programmatic logout (no redirects)
  * For form-based logout with redirects, use /api/auth/signout
- * 
+ *
  * POST Body: (optional)
  * - refreshToken?: string
- * 
+ *
  * Example:
  * - POST /api/auth/logout
  * - POST /api/auth/logout { "refreshToken": "token123" }
@@ -33,13 +33,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
       const { currentUser } = await checkAuth(cookies);
       if (currentUser?.email) {
-        await SimpleProjectLogger.logUserLogout(
-          currentUser.email,
-          {
-            userAgent: request.headers.get("user-agent"),
-            timestamp: new Date().toISOString(),
-          }
-        );
+        await SimpleProjectLogger.logUserLogout(currentUser.email, {
+          userAgent: request.headers.get("user-agent"),
+          timestamp: new Date().toISOString(),
+        });
         console.log("✅ [AUTH-LOGOUT] Logout event logged successfully");
       }
     } catch (logError) {

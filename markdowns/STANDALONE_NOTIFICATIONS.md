@@ -28,6 +28,7 @@ A complete notification system that works independently of the email delivery sy
 **GET** `/api/notifications/get`
 
 Query Parameters:
+
 - `limit` (default: 20) - Number of notifications to return
 - `offset` (default: 0) - Pagination offset
 - `unread_only` - Only return unread notifications
@@ -38,6 +39,7 @@ Query Parameters:
 **POST** `/api/notifications/upsert`
 
 For creating notifications:
+
 ```json
 {
   "userId": "uuid", // Optional if userEmail provided
@@ -52,6 +54,7 @@ For creating notifications:
 ```
 
 For marking as viewed:
+
 ```json
 {
   "notificationIds": [1, 2, 3],
@@ -80,6 +83,7 @@ Server-Sent Events (SSE) endpoint for real-time notifications.
 Access the admin notification interface at `/admin/notifications` (Admin role required).
 
 Features:
+
 - Select multiple users from dropdown
 - Set notification type and priority
 - Add action URLs and button text
@@ -129,7 +133,7 @@ fetch("/api/notifications/upsert", {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     notificationIds: [1, 2, 3],
-    viewed: true
+    viewed: true,
   }),
 });
 ```
