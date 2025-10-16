@@ -80,9 +80,9 @@ export const GET: APIRoute = async ({ cookies }) => {
       // Try snake_case
       const { data: recentUsersSnake, error: usersErrorSnake } = await supabaseAdmin
         .from("discussion")
-        .select("author_id")
+        .select("authorId")
         .gte("created_at", twentyFourHoursAgo.toISOString())
-        .not("author_id", "is", null);
+        .not("authorId", "is", null);
 
       recentUsers = recentUsersSnake;
       usersError = usersErrorSnake;
@@ -99,7 +99,7 @@ export const GET: APIRoute = async ({ cookies }) => {
 
     // Count unique active users
     const activeUsers24h = recentUsers
-      ? new Set(recentUsers.map((u) => u.authorId || u.author_id)).size
+      ? new Set(recentUsers.map((u) => u.authorId || u.authorId)).size
       : 0;
 
     // Get total unique users who have created discussions
@@ -120,8 +120,8 @@ export const GET: APIRoute = async ({ cookies }) => {
       // Try snake_case
       const { data: allUsersSnake, error: allUsersErrorSnake } = await supabaseAdmin
         .from("discussion")
-        .select("author_id")
-        .not("author_id", "is", null);
+        .select("authorId")
+        .not("authorId", "is", null);
 
       allUsers = allUsersSnake;
       allUsersError = allUsersErrorSnake;
@@ -135,7 +135,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     }
 
     const totalActiveUsers = allUsers
-      ? new Set(allUsers.map((u) => u.authorId || u.author_id)).size
+      ? new Set(allUsers.map((u) => u.authorId || u.authorId)).size
       : 0;
 
     const stats = {
