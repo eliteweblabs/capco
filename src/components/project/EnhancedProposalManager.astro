@@ -1,0 +1,553 @@
+---
+import LucideIcon from "../common/LucideIcon.astro";
+import { supabase } from "../../lib/supabase";
+import Button from "../common/Button.astro";
+
+interface Props {
+  projectId: string;
+  project: any;
+  projectStatus: number;
+  currentUser: any;
+  globalSecondaryTextClasses: string;
+  globalPrimaryTextClasses: string;
+  globalInputClasses: string;
+  statusData: any;
+  existingInvoice: any;
+  invoiceId: any;
+}
+
+const {
+  projectId,
+  project,
+  projectStatus = 0,
+  currentUser,
+  globalSecondaryTextClasses,
+  globalPrimaryTextClasses,
+  globalInputClasses,
+  statusData,
+  existingInvoice,
+  invoiceId,
+} = Astro.props;
+
+const currentRole = currentUser?.profile?.role;
+const authorProfile = project?.authorProfile;
+const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
+---
+
+{
+  (canManageProposals || (currentRole === "Client" && projectStatus > 20)) && (
+    <div id="enhanced-proposal-content" class="max-w-6xl mx-auto">
+      {/* Enhanced Header with Invoice Ninja-style design */}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                <LucideIcon name="file-text" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Professional Proposal</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Project: {project.title}</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span id="invoice-status-badge" class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                Draft
+              </span>
+              <div class="text-right">
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                  $<span id="enhanced-proposal-total">0.00</span>
+                </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">Total Amount</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Proposal Details */}
+        <div class="px-6 py-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Client Information */}
+            <div class="space-y-4">
+              <h3 class="text-sm font-medium text-gray-900 dark:text-white uppercase tracking-wide">Bill To</h3>
+              <div class="space-y-2">
+                <div class="text-sm">
+                  <div class="font-medium text-gray-900 dark:text-white">{authorProfile?.companyName || "N/A"}</div>
+                  <div class="text-gray-500 dark:text-gray-400">{project.address}</div>
+                  <div class="text-gray-500 dark:text-gray-400">{authorProfile?.phone || "N/A"}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Invoice Details */}
+            <div class="space-y-4">
+              <h3 class="text-sm font-medium text-gray-900 dark:text-white uppercase tracking-wide">Invoice Details</h3>
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500 dark:text-gray-400">Invoice #</span>
+                  <span class="font-medium text-gray-900 dark:text-white" id="invoice-number">INV-001</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500 dark:text-gray-400">Date</span>
+                  <span class="font-medium text-gray-900 dark:text-white" id="invoice-date">{new Date().toLocaleDateString()}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500 dark:text-gray-400">Due Date</span>
+                  <span class="font-medium text-gray-900 dark:text-white" id="invoice-due-date">{new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Line Items Section */}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Line Items</h3>
+            {canManageProposals && (
+              <button
+                id="add-line-item-btn"
+                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <LucideIcon name="plus" class="w-4 h-4 mr-1" />
+                Add Item
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Qty</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rate</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                {canManageProposals && <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>}
+              </tr>
+            </thead>
+            <tbody id="enhanced-line-items" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {/* Line items will be populated here */}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Totals Section */}
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700">
+          <div class="flex justify-end">
+            <div class="w-64 space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Subtotal</span>
+                <span class="font-medium text-gray-900 dark:text-white" id="subtotal">$0.00</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Tax (8.5%)</span>
+                <span class="font-medium text-gray-900 dark:text-white" id="tax-amount">$0.00</span>
+              </div>
+              <div class="border-t border-gray-200 dark:border-gray-600 pt-2">
+                <div class="flex justify-between text-lg font-semibold">
+                  <span class="text-gray-900 dark:text-white">Total</span>
+                  <span class="text-gray-900 dark:text-white" id="total-amount">$0.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Actions */}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <button
+                id="preview-invoice-btn"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <LucideIcon name="eye" class="w-4 h-4 mr-2" />
+                Preview
+              </button>
+              <button
+                id="send-invoice-btn"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                <LucideIcon name="send" class="w-4 h-4 mr-2" />
+                Send to Client
+              </button>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button
+                id="save-draft-btn"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <LucideIcon name="save" class="w-4 h-4 mr-2" />
+                Save Draft
+              </button>
+              <button
+                id="mark-paid-btn"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <LucideIcon name="check" class="w-4 h-4 mr-2" />
+                Mark as Paid
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+<script>
+  // Enhanced Proposal Manager with Invoice Ninja-style features
+  class EnhancedProposalManager {
+    constructor() {
+      this.invoiceId = null;
+      this.lineItems = [];
+      this.taxRate = 0.085; // 8.5% default tax rate
+      this.isLoading = false;
+      
+      this.init();
+    }
+
+    async init() {
+      console.log("🚀 [ENHANCED-PROPOSAL] Initializing enhanced proposal manager");
+      
+      // Set up event listeners
+      this.setupEventListeners();
+      
+      // Load existing data if invoice ID exists
+      if (window.invoiceId) {
+        this.invoiceId = window.invoiceId;
+        await this.loadInvoiceData();
+      } else {
+        // Create new invoice with default line items
+        await this.createNewInvoice();
+      }
+      
+      this.renderLineItems();
+      this.calculateTotals();
+    }
+
+    setupEventListeners() {
+      // Add line item button
+      const addBtn = document.getElementById('add-line-item-btn');
+      if (addBtn) {
+        addBtn.addEventListener('click', () => this.addLineItem());
+      }
+
+      // Save draft button
+      const saveBtn = document.getElementById('save-draft-btn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', () => this.saveDraft());
+      }
+
+      // Send invoice button
+      const sendBtn = document.getElementById('send-invoice-btn');
+      if (sendBtn) {
+        sendBtn.addEventListener('click', () => this.sendInvoice());
+      }
+
+      // Mark as paid button
+      const paidBtn = document.getElementById('mark-paid-btn');
+      if (paidBtn) {
+        paidBtn.addEventListener('click', () => this.markAsPaid());
+      }
+
+      // Preview button
+      const previewBtn = document.getElementById('preview-invoice-btn');
+      if (previewBtn) {
+        previewBtn.addEventListener('click', () => this.previewInvoice());
+      }
+    }
+
+    async createNewInvoice() {
+      try {
+        const response = await fetch('/api/proposal/upsert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            projectId: window.projectId,
+            status: 'draft',
+            subject: 'Fire Protection Services Proposal',
+            lineItems: [
+              {
+                description: 'Tier I Fire Sprinkler Design and Fire Alarm Design\n\nTier I Fire Sprinkler Design\n1. Fire Sprinkler Design\n2. Hydraulic Calculations\n3. Project Narrative\n4. NFPA 241 Plan\n\nTier I Fire Alarm Design\n1. Fire Alarm Design\n2. Fire Alarm Narrative',
+                quantity: 1,
+                unitPrice: 500.0
+              }
+            ]
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          this.invoiceId = data.invoice.id;
+          console.log("✅ [ENHANCED-PROPOSAL] Created new invoice:", this.invoiceId);
+        }
+      } catch (error) {
+        console.error("❌ [ENHANCED-PROPOSAL] Error creating invoice:", error);
+      }
+    }
+
+    async loadInvoiceData() {
+      if (!this.invoiceId) return;
+
+      try {
+        const response = await fetch(`/api/proposal/get?id=${this.invoiceId}`);
+        const data = await response.json();
+
+        if (data.success && data.invoice) {
+          const invoice = data.invoice;
+          
+          // Load line items
+          this.lineItems = (invoice.catalogLineItems || []).map(item => ({
+            description: item.description || '',
+            quantity: item.quantity || 1,
+            unitPrice: item.unitPrice || 0,
+            catalogItemId: item.catalogItemId || null
+          }));
+
+          // Update status badge
+          this.updateStatusBadge(invoice.status);
+          
+          console.log("✅ [ENHANCED-PROPOSAL] Loaded invoice data");
+        }
+      } catch (error) {
+        console.error("❌ [ENHANCED-PROPOSAL] Error loading invoice:", error);
+      }
+    }
+
+    updateStatusBadge(status) {
+      const badge = document.getElementById('invoice-status-badge');
+      if (!badge) return;
+
+      const statusConfig = {
+        'draft': { class: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', text: 'Draft' },
+        'proposal': { class: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', text: 'Sent' },
+        'paid': { class: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', text: 'Paid' }
+      };
+
+      const config = statusConfig[status] || statusConfig['draft'];
+      badge.className = `px-3 py-1 text-xs font-medium rounded-full ${config.class}`;
+      badge.textContent = config.text;
+    }
+
+    addLineItem() {
+      const newItem = {
+        description: '',
+        quantity: 1,
+        unitPrice: 0,
+        catalogItemId: null
+      };
+      
+      this.lineItems.push(newItem);
+      this.renderLineItems();
+    }
+
+    removeLineItem(index) {
+      this.lineItems.splice(index, 1);
+      this.renderLineItems();
+      this.calculateTotals();
+    }
+
+    updateLineItem(index, field, value) {
+      if (this.lineItems[index]) {
+        this.lineItems[index][field] = value;
+        this.calculateTotals();
+      }
+    }
+
+    renderLineItems() {
+      const tbody = document.getElementById('enhanced-line-items');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      this.lineItems.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+        
+        const canEdit = window.currentRole === 'Admin' || window.currentRole === 'Staff';
+        
+        row.innerHTML = `
+          <td class="px-6 py-4">
+            ${canEdit ? 
+              `<textarea class="${window.globalInputClasses} w-full resize-none" rows="3" onchange="window.enhancedProposalManager.updateLineItem(${index}, 'description', this.value)">${item.description}</textarea>` :
+              `<div class="text-sm text-gray-900 dark:text-white whitespace-pre-line">${item.description}</div>`
+            }
+          </td>
+          <td class="px-6 py-4">
+            ${canEdit ? 
+              `<input type="number" class="${window.globalInputClasses} w-20" value="${item.quantity}" onchange="window.enhancedProposalManager.updateLineItem(${index}, 'quantity', parseFloat(this.value))">` :
+              `<div class="text-sm text-gray-900 dark:text-white">${item.quantity}</div>`
+            }
+          </td>
+          <td class="px-6 py-4">
+            ${canEdit ? 
+              `<input type="number" class="${window.globalInputClasses} w-24" value="${item.unitPrice}" onchange="window.enhancedProposalManager.updateLineItem(${index}, 'unitPrice', parseFloat(this.value))">` :
+              `<div class="text-sm text-gray-900 dark:text-white">$${item.unitPrice.toFixed(2)}</div>`
+            }
+          </td>
+          <td class="px-6 py-4 text-right">
+            <div class="text-sm font-medium text-gray-900 dark:text-white">
+              $${(item.quantity * item.unitPrice).toFixed(2)}
+            </div>
+          </td>
+          ${canEdit ? `
+            <td class="px-6 py-4 text-center">
+              <button onclick="window.enhancedProposalManager.removeLineItem(${index})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                <LucideIcon name="trash-2" class="w-4 h-4" />
+              </button>
+            </td>
+          ` : ''}
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    calculateTotals() {
+      const subtotal = this.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      const taxAmount = subtotal * this.taxRate;
+      const total = subtotal + taxAmount;
+
+      // Update display
+      const subtotalEl = document.getElementById('subtotal');
+      const taxEl = document.getElementById('tax-amount');
+      const totalEl = document.getElementById('total-amount');
+      const enhancedTotalEl = document.getElementById('enhanced-proposal-total');
+
+      if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+      if (taxEl) taxEl.textContent = `$${taxAmount.toFixed(2)}`;
+      if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
+      if (enhancedTotalEl) enhancedTotalEl.textContent = total.toFixed(2);
+    }
+
+    async saveDraft() {
+      if (!this.invoiceId) return;
+
+      try {
+        const response = await fetch('/api/proposal/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          id: this.invoiceId,
+          status: 'draft',
+          lineItems: this.lineItems
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        console.log("✅ [ENHANCED-PROPOSAL] Draft saved successfully");
+        // Show success message
+        this.showNotification('Draft saved successfully', 'success');
+      }
+    } catch (error) {
+      console.error("❌ [ENHANCED-PROPOSAL] Error saving draft:", error);
+      this.showNotification('Error saving draft', 'error');
+    }
+  }
+
+  async sendInvoice() {
+    if (!this.invoiceId) return;
+
+    try {
+      // First update the invoice with line items
+      const updateResponse = await fetch('/api/proposal/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          id: this.invoiceId,
+          status: 'proposal',
+          lineItems: this.lineItems
+        })
+      });
+
+      const updateData = await updateResponse.json();
+      if (!updateData.success) {
+        throw new Error('Failed to update invoice');
+      }
+
+      // Then send the email
+      const emailResponse = await fetch('/api/email/send-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          invoiceId: this.invoiceId
+        })
+      });
+
+      const emailData = await emailResponse.json();
+      if (emailData.success) {
+        console.log("✅ [ENHANCED-PROPOSAL] Invoice sent successfully");
+        this.updateStatusBadge('proposal');
+        this.showNotification('Invoice sent to client via email', 'success');
+      } else {
+        throw new Error(emailData.error || 'Failed to send email');
+      }
+    } catch (error) {
+      console.error("❌ [ENHANCED-PROPOSAL] Error sending invoice:", error);
+      this.showNotification('Error sending invoice: ' + error.message, 'error');
+    }
+  }
+
+  async markAsPaid() {
+    if (!this.invoiceId) return;
+
+    try {
+      const response = await fetch('/api/proposal/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          id: this.invoiceId,
+          status: 'paid'
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        console.log("✅ [ENHANCED-PROPOSAL] Invoice marked as paid");
+        this.updateStatusBadge('paid');
+        this.showNotification('Invoice marked as paid', 'success');
+      }
+    } catch (error) {
+      console.error("❌ [ENHANCED-PROPOSAL] Error marking as paid:", error);
+      this.showNotification('Error marking as paid', 'error');
+    }
+  }
+
+  previewInvoice() {
+    // Open preview in new window
+    const previewUrl = `/api/pdf/preview?invoiceId=${this.invoiceId}`;
+    window.open(previewUrl, '_blank');
+  }
+
+  showNotification(message, type) {
+    // Simple notification system
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-4 py-2 rounded-md text-white z-50 ${
+      type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    }`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    window.enhancedProposalManager = new EnhancedProposalManager();
+  });
+</script>
