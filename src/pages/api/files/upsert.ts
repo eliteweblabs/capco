@@ -87,18 +87,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Prepare file data
+    // Prepare file data for update (only update fields that should be updated)
     const filePayload = {
-      projectId: fileData.projectId,
-      fileName: fileData.fileName.trim(),
-      filePath: fileData.filePath.trim(),
-      fileSize: fileData.fileSize || null,
-      mimeType: fileData.mimeType || null,
       title: fileData.title?.trim() || null,
       comments: fileData.comments?.trim() || null,
       isPrivate: fileData.isPrivate || false,
-      authorId: fileData.authorId.trim(),
-      bucketName: fileData.bucketName || "project-files",
       updatedAt: new Date().toISOString(),
     };
 

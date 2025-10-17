@@ -7,7 +7,7 @@ import {
   fetchPunchlistData,
   updatePunchlistCount,
   type PunchlistResponse,
-} from "./punchlist-utils";
+} from "./_punchlist-utils";
 
 /**
  * Load punchlist data for multiple projects and update their counts

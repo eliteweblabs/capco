@@ -143,7 +143,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // THIS IS TO THE ADMINS EMAIL
       // Send email using the email delivery API
-      const emailResponse = await fetch("/api/update-delivery", {
+      const emailResponse = await fetch("/api/delivery/update-delivery", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

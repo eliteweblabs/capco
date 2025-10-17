@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
-import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 /**
@@ -33,21 +32,98 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log(`📁 [FILES-UPLOAD] Processing file upload request`);
 
-    if (!supabase || !supabaseAdmin) {
+    if (!supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Parse multipart form data
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
-    const projectId = formData.get("projectId");
-    const title = formData.get("title") as string;
-    const comments = formData.get("comments") as string;
-    const isPrivate = formData.get("isPrivate") === "true";
-    const bucketName = (formData.get("bucketName") as string) || "project-files";
+    const contentType = request.headers.get("content-type") || "";
+    let file: File;
+    let projectId: string;
+    let title: string;
+    let comments: string;
+    let bucketName: string;
+    let targetDirectory: string;
+    let useVersioning: boolean;
+    let isPrivate: boolean;
+
+    if (contentType.includes("multipart/form-data")) {
+      // Handle multipart form data (ContactFormWithUpload)
+      const formData = await request.formData();
+      file = formData.get("file") as File;
+      projectId = formData.get("projectId") as string;
+      title = formData.get("title") as string;
+      comments = formData.get("comments") as string;
+      bucketName = (formData.get("bucketName") as string) || "project-media";
+      targetDirectory = (formData.get("targetDirectory") as string) || "general";
+      useVersioning = formData.get("useVersioning") === "true";
+      isPrivate = formData.get("isPrivate") === "true";
+    } else if (contentType.includes("application/json")) {
+      // Handle JSON with base64 data (FileManager)
+      const body = await request.json();
+      const {
+        mediaData,
+        fileName,
+        fileType,
+        projectId: bodyProjectId,
+        targetLocation,
+        bucketName: bodyBucketName,
+        title: bodyTitle,
+        description,
+      } = body;
+
+      if (!mediaData || !fileName) {
+        return new Response(
+          JSON.stringify({
+            error: "Missing required fields",
+            details: "mediaData and fileName are required for JSON uploads",
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Convert base64 to File object
+      let fileBuffer: ArrayBuffer;
+      let contentType = fileType;
+
+      if (typeof mediaData === "string" && mediaData.startsWith("data:")) {
+        console.log("📁 [FILES-UPLOAD] Processing base64 data...");
+        const [header, base64Data] = mediaData.split(",");
+        const mimeMatch = header.match(/data:([^;]+)/);
+        if (mimeMatch) {
+          contentType = mimeMatch[1];
+        }
+
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        fileBuffer = bytes.buffer;
+      } else {
+        fileBuffer = mediaData as ArrayBuffer;
+      }
+
+      // Create File object from buffer
+      file = new File([fileBuffer], fileName, { type: contentType });
+      projectId = bodyProjectId;
+      title = bodyTitle || fileName;
+      comments = description || "";
+      bucketName = bodyBucketName || "project-media";
+      targetDirectory = targetLocation || "documents";
+      useVersioning = true; // FileManager always uses versioning
+      isPrivate = false; // Will be determined by project status
+    } else {
+      return new Response(
+        JSON.stringify({
+          error: "Unsupported content type",
+          details: "Expected multipart/form-data or application/json",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     // Validate required fields
     if (!file) {
@@ -74,16 +150,83 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const fileExtension = file.name.split(".").pop() || "";
     const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
     const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${fileName}`;
-    const filePath = `projects/${projectId}/${uniqueFileName}.${fileExtension}`;
+    // Handle versioning
+    let versionNumber = 1;
+    let previousVersionId = null;
+    let isCurrentVersion = true;
+
+    if (useVersioning) {
+      // Check for existing file with same name
+      const { data: existingFiles, error: existingError } = await supabaseAdmin
+        .from("files")
+        .select("*")
+        .eq("projectId", parseInt(projectId as string))
+        .eq("fileName", file.name)
+        .eq("isCurrentVersion", true)
+        .single();
+
+      if (existingError && existingError.code !== "PGRST116") {
+        console.error("❌ [FILES-UPLOAD] Error checking existing files:", existingError);
+      }
+
+      if (existingFiles) {
+        // This is a new version of an existing file
+        versionNumber = existingFiles.versionNumber + 1;
+        previousVersionId = existingFiles.id;
+
+        // Mark the existing file as not current version
+        const { error: updateError } = await supabaseAdmin
+          .from("files")
+          .update({ isCurrentVersion: false })
+          .eq("id", existingFiles.id);
+
+        if (updateError) {
+          console.error("❌ [FILES-UPLOAD] Error updating previous version:", updateError);
+        }
+      }
+    } else {
+      // Simple version increment if file exists (for non-FileManager uploads)
+      const { data: existingFiles } = await supabaseAdmin
+        .from("files")
+        .select("*")
+        .eq("projectId", parseInt(projectId as string))
+        .eq("fileName", file.name)
+        .single();
+
+      if (existingFiles) {
+        versionNumber = (existingFiles.versionNumber || 0) + 1;
+      }
+    }
+
+    // Determine if file should be private based on project status
+    if (projectId) {
+      try {
+        const { data: projectData } = await supabaseAdmin
+          .from("projects")
+          .select("status")
+          .eq("id", parseInt(projectId as string))
+          .single();
+
+        // Files uploaded when project status < 30 should be public (not private)
+        // Files uploaded when project status >= 30 should be private by default
+        isPrivate = projectData?.status >= 30;
+      } catch (error) {
+        console.warn("Could not determine project status, defaulting to public:", error);
+      }
+    }
+
+    // Create path using getBucketAndPath logic
+    const pathPrefix = projectId ? `${projectId}/${targetDirectory}/` : `${targetDirectory}/`;
+    const filePath = `${pathPrefix}${uniqueFileName}.${fileExtension}`;
 
     console.log(`📁 [FILES-UPLOAD] Uploading file: ${file.name} to ${filePath}`);
 
-    // Upload file to Supabase Storage
+    // Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from(bucketName)
       .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
+        contentType: file.type,
+        upsert: true,
       });
 
     if (uploadError) {
@@ -108,15 +251,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       fileName: file.name,
       filePath: uploadData.path,
       fileSize: file.size,
-      mimeType: file.type,
-      title: title?.trim() || null,
+      fileType: file.type,
+      title: title?.trim() || file.name,
       comments: comments?.trim() || null,
       isPrivate: isPrivate,
       authorId: currentUser.id,
       bucketName: bucketName,
-      publicUrl: urlData.publicUrl,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      targetLocation: targetDirectory,
+      uploadedAt: new Date().toISOString(),
+      versionNumber: versionNumber,
+      previousVersionId: useVersioning ? previousVersionId : null,
+      isCurrentVersion: useVersioning ? isCurrentVersion : null,
+      status: "active",
     };
 
     const { data: dbFile, error: dbError } = await supabaseAdmin

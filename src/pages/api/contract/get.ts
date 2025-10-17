@@ -36,7 +36,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Replace placeholders in contract HTML
     const contractHtml = await replacePlaceholders(project.contractData?.html, {
-      project: project,
+      project: project as any,
     });
 
     return createSuccessResponse(

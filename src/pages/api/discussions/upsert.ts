@@ -324,7 +324,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Send admin/staff emails
         if (adminStaffEmails.length > 0) {
-          const adminEmailResponse = await fetch(`${baseUrl}/api/update-delivery`, {
+          const adminEmailResponse = await fetch(`${baseUrl}/api/delivery/update-delivery`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -347,7 +347,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Send client email if not internal
         if (!internal && clientEmail) {
-          const clientEmailResponse = await fetch(`${baseUrl}/api/update-delivery`, {
+          const clientEmailResponse = await fetch(`${baseUrl}/api/delivery/update-delivery`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
