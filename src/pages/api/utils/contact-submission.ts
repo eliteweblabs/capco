@@ -156,16 +156,18 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Send notification email to admin
     try {
-      const emailResponse = await fetch(`${new URL(request.url).origin}/api/update-delivery`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          usersToNotify: ["admin"], // Special flag for admin notifications
-          method: "email",
-          emailSubject: `New Contact Form Submission from ${firstName} ${lastName}`,
-          emailContent: `
+      const emailResponse = await fetch(
+        `${new URL(request.url).origin}/api/delivery/update-delivery`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            usersToNotify: ["admin"], // Special flag for admin notifications
+            method: "email",
+            emailSubject: `New Contact Form Submission from ${firstName} ${lastName}`,
+            emailContent: `
             <h2>New Contact Form Submission</h2>
             <p><strong>Name:</strong> ${firstName} ${lastName}</p>
             <p><strong>Email:</strong> ${email}</p>
@@ -187,9 +189,10 @@ export const POST: APIRoute = async ({ request }) => {
                 : ""
             }
           `,
-          trackLinks: true,
-        }),
-      });
+            trackLinks: true,
+          }),
+        }
+      );
 
       const emailResult = await emailResponse.json();
       if (!emailResult.success) {

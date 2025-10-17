@@ -177,7 +177,17 @@ const filteredItems = items.filter((item) => {
           // Handle string status values (project page tabs)
           // console.log(`🎯 [SLIDING-PILL] String status detected: ${paramValue} - switching to tab`);
           // Call switchTab to handle the tab content switching
-          window.switchTab(paramValue);
+          if (typeof window.switchTab === "function") {
+            window.switchTab(paramValue);
+          } else {
+            console.warn("🎯 [SLIDING-PILL] switchTab function not available yet, will retry");
+            // Retry after a short delay
+            setTimeout(() => {
+              if (typeof window.switchTab === "function") {
+                window.switchTab(paramValue);
+              }
+            }, 100);
+          }
           // Try to find button with ID "{urlParam}-{paramValue}"
           const targetButton = nav.querySelector(`#${urlParam}-${paramValue}`);
           if (targetButton) {

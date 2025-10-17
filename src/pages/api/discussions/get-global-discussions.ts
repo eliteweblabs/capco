@@ -138,16 +138,12 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         projectOwner: ownerProfile?.companyName || "Unknown",
         projectOwnerId: discussion.projects?.authorId,
         authorId: discussion.authorId,
-        author_name: authorProfile?.companyName || "Unknown User",
-        author_role: authorProfile?.role || "Unknown",
         author_avatar: authorProfile?.avatarUrl || null,
-        author_firstName: authorProfile?.firstName || null,
-        author_lastName: authorProfile?.lastName || null,
         message: discussion.message,
         internal: discussion.internal || false,
         markCompleted: discussion.markCompleted || false,
         parentId: discussion.parentId,
-        is_reply: !!discussion.parentId,
+        isReply: !!discussion.parentId,
         imageUrls: discussion.imageUrls,
         imagePaths: discussion.imagePaths,
         companyName: discussion.companyName,
@@ -176,7 +172,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const totalDiscussions = enrichedDiscussions.length;
     const internalCount = enrichedDiscussions.filter((d: any) => d.internal).length;
     const completedCount = enrichedDiscussions.filter((d: any) => d.markCompleted).length;
-    const repliesCount = enrichedDiscussions.filter((d: any) => d.is_reply).length;
+    const repliesCount = enrichedDiscussions.filter((d: any) => d.isReply).length;
 
     // Get recent (24h) count
     const now = new Date();

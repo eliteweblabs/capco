@@ -32,14 +32,24 @@ interface FileFilters {
   fileType?: string;
   isPrivate?: boolean;
   authorId?: string;
+  bucketName?: string;
+  targetLocation?: string;
+  status?: string;
+  metadata?: Record<string, any>;
   limit?: number;
   offset?: number;
   sortBy?: string;
   sortOrder?: string;
   includeTotal?: boolean;
+  // Compound filter support
+  andFilters?: Array<{
+    field: string;
+    value: any;
+    operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "like" | "ilike" | "in";
+  }>;
 }
 
-export const GET: APIRoute = async ({ url, cookies }) => {
+export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
@@ -50,8 +60,20 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    // Parse query parameters
+    console.log("📁 [FILES-GET] Processing GET request");
+    console.log("📁 [FILES-GET] URL:", url.toString());
+    console.log("📁 [FILES-GET] Search params:", Object.fromEntries(url.searchParams.entries()));
+
+    if (!supabase) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Parse URL parameters
     const filters: FileFilters = {
+      // Basic filters from URL parameters
       id: url.searchParams.get("id") || undefined,
       projectId: url.searchParams.get("projectId") || undefined,
       fileName: url.searchParams.get("fileName") || undefined,
@@ -63,11 +85,261 @@ export const GET: APIRoute = async ({ url, cookies }) => {
             ? false
             : undefined,
       authorId: url.searchParams.get("authorId") || undefined,
+      bucketName: url.searchParams.get("bucketName") || undefined,
+      targetLocation: url.searchParams.get("targetLocation") || undefined,
+      status: url.searchParams.get("status") || undefined,
+
+      // Pagination and sorting
       limit: Math.min(parseInt(url.searchParams.get("limit") || "20"), 100),
       offset: parseInt(url.searchParams.get("offset") || "0"),
       sortBy: url.searchParams.get("sortBy") || "updatedAt",
       sortOrder: url.searchParams.get("sortOrder") || "desc",
       includeTotal: url.searchParams.get("includeTotal") === "true",
+    };
+
+    console.log("📁 [FILES-GET] Parsed filters:", filters);
+
+    // Validate projectId if provided
+    if (filters.projectId) {
+      const projectIdNum = parseInt(filters.projectId);
+      if (isNaN(projectIdNum)) {
+        return new Response(
+          JSON.stringify({
+            error: "Invalid projectId",
+            details: "projectId must be a valid integer",
+            code: "INVALID_PROJECT_ID",
+            hint: "Provide a numeric project ID",
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Build query for multiple files
+    let query = supabase!.from("files").select("*");
+    console.log("📁 [FILES-GET] Starting with base query");
+
+    // Apply filters
+    if (filters.projectId) {
+      const projectIdNum = parseInt(filters.projectId);
+      query = query.eq("projectId", projectIdNum);
+      console.log("📁 [FILES-GET] Added projectId filter:", projectIdNum);
+    }
+
+    if (filters.fileName) {
+      query = query.ilike("fileName", `%${filters.fileName}%`);
+      console.log("📁 [FILES-GET] Added fileName filter:", filters.fileName);
+    }
+
+    if (filters.fileType) {
+      query = query.ilike("fileName", `%.${filters.fileType}`);
+      console.log("📁 [FILES-GET] Added fileType filter:", filters.fileType);
+    }
+
+    if (filters.isPrivate !== undefined) {
+      query = query.eq("isPrivate", filters.isPrivate);
+      console.log("📁 [FILES-GET] Added isPrivate filter:", filters.isPrivate);
+    }
+
+    if (filters.authorId) {
+      query = query.eq("authorId", filters.authorId);
+      console.log("📁 [FILES-GET] Added authorId filter:", filters.authorId);
+    }
+
+    if (filters.targetLocation) {
+      query = query.eq("targetLocation", filters.targetLocation);
+      console.log("📁 [FILES-GET] Added targetLocation filter:", filters.targetLocation);
+    }
+
+    if (filters.bucketName) {
+      query = query.eq("bucketName", filters.bucketName);
+      console.log("📁 [FILES-GET] Added bucketName filter:", filters.bucketName);
+    }
+
+    if (filters.status) {
+      query = query.eq("status", filters.status);
+      console.log("📁 [FILES-GET] Added status filter:", filters.status);
+    }
+
+    // Apply compound filters if provided
+    if (filters.andFilters && filters.andFilters.length > 0) {
+      for (const filter of filters.andFilters) {
+        switch (filter.operator) {
+          case "eq":
+            query = query.eq(filter.field, filter.value);
+            break;
+          case "neq":
+            query = query.neq(filter.field, filter.value);
+            break;
+          case "gt":
+            query = query.gt(filter.field, filter.value);
+            break;
+          case "gte":
+            query = query.gte(filter.field, filter.value);
+            break;
+          case "lt":
+            query = query.lt(filter.field, filter.value);
+            break;
+          case "lte":
+            query = query.lte(filter.field, filter.value);
+            break;
+          case "like":
+            query = query.like(filter.field, filter.value);
+            break;
+          case "ilike":
+            query = query.ilike(filter.field, filter.value);
+            break;
+          case "in":
+            query = query.in(filter.field, filter.value);
+            break;
+        }
+      }
+    }
+
+    // Apply sorting
+    query = query.order(filters.sortBy, { ascending: filters.sortOrder === "asc" });
+
+    // Apply pagination
+    query = query.range(filters.offset, filters.offset + filters.limit - 1);
+
+    // Get total count if requested
+    let totalCount = null;
+    if (filters.includeTotal) {
+      let countQuery = supabase!.from("files").select("*", { count: "exact", head: true });
+
+      if (filters.projectId) {
+        countQuery = countQuery.eq("projectId", filters.projectId);
+      }
+      if (filters.fileName) {
+        countQuery = countQuery.ilike("fileName", `%${filters.fileName}%`);
+      }
+      if (filters.fileType) {
+        countQuery = countQuery.ilike("fileName", `%.${filters.fileType}`);
+      }
+      if (filters.isPrivate !== undefined) {
+        countQuery = countQuery.eq("isPrivate", filters.isPrivate);
+      }
+      if (filters.authorId) {
+        countQuery = countQuery.eq("authorId", filters.authorId);
+      }
+      if (filters.targetLocation) {
+        countQuery = countQuery.eq("targetLocation", filters.targetLocation);
+      }
+
+      const { count } = await countQuery;
+      totalCount = count;
+    }
+
+    // Execute query
+    console.log("📁 [FILES-GET] Executing query...");
+    const { data: files, error } = await query;
+
+    if (error) {
+      console.error("❌ [FILES-GET] Database error:", error);
+      return new Response(
+        JSON.stringify({
+          error: "Database query failed",
+          details: error.message,
+          code: error.code,
+          hint: error.hint,
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`✅ [FILES-GET] Retrieved ${files?.length || 0} files`);
+    if (files && files.length > 0) {
+      console.log("📁 [FILES-GET] Sample file data:", files[0]);
+    } else {
+      console.log("📁 [FILES-GET] No files found with current filters");
+    }
+
+    // Return response
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: files || [],
+        pagination: {
+          limit: filters.limit,
+          offset: filters.offset,
+          total: totalCount,
+          hasMore: totalCount ? filters.offset + filters.limit < totalCount : null,
+        },
+        filters: {
+          projectId: filters.projectId,
+          fileName: filters.fileName,
+          fileType: filters.fileType,
+          isPrivate: filters.isPrivate,
+          authorId: filters.authorId,
+          bucketName: filters.bucketName,
+          targetLocation: filters.targetLocation,
+          status: filters.status,
+          sortBy: filters.sortBy,
+          sortOrder: filters.sortOrder,
+        },
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("❌ [FILES-GET] Unexpected error:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+};
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  try {
+    // Check authentication
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    if (!isAuth || !currentUser) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Parse request body and URL parameters
+    const url = new URL(request.url);
+    const body = await request.json().catch(() => ({}));
+
+    // Merge URL parameters and body, with body taking precedence
+    const filters: FileFilters = {
+      // Basic filters - can come from either URL or body
+      id: body.id || url.searchParams.get("id") || undefined,
+      projectId: body.projectId || url.searchParams.get("projectId") || undefined,
+      fileName: body.fileName || url.searchParams.get("fileName") || undefined,
+      fileType: body.fileType || url.searchParams.get("fileType") || undefined,
+      isPrivate:
+        body.isPrivate !== undefined
+          ? body.isPrivate
+          : url.searchParams.get("isPrivate") === "true"
+            ? true
+            : url.searchParams.get("isPrivate") === "false"
+              ? false
+              : undefined,
+      authorId: body.authorId || url.searchParams.get("authorId") || undefined,
+      bucketName: body.bucketName || url.searchParams.get("bucketName") || undefined,
+      targetLocation: body.targetLocation || url.searchParams.get("targetLocation") || undefined,
+      status: body.status || url.searchParams.get("status") || undefined,
+
+      // Pagination and sorting
+      limit: Math.min(parseInt(body.limit || url.searchParams.get("limit") || "20"), 100),
+      offset: parseInt(body.offset || url.searchParams.get("offset") || "0"),
+      sortBy: body.sortBy || url.searchParams.get("sortBy") || "updatedAt",
+      sortOrder: body.sortOrder || url.searchParams.get("sortOrder") || "desc",
+      includeTotal: body.includeTotal || url.searchParams.get("includeTotal") === "true",
+
+      // Complex filters - prefer body over URL params
+      andFilters: body.andFilters || undefined,
+      metadata: body.metadata || undefined,
     };
 
     console.log(`📁 [FILES-GET] Fetching files with filters:`, filters);
@@ -104,11 +376,41 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Build query for multiple files
+    // Build query with all needed fields
+    // Start with a simple query first
     let query = supabase!.from("files").select("*");
 
-    // Apply filters
+    // Log the table structure to help debug
+    console.log("📁 [FILES-GET] Checking table structure...");
+    const { data: tableInfo, error: tableError } = await supabase!
+      .from("files")
+      .select("*")
+      .limit(1);
+
+    if (tableError) {
+      console.error("❌ [FILES-GET] Error checking table:", tableError);
+    } else {
+      console.log(
+        "📁 [FILES-GET] Table columns:",
+        tableInfo ? Object.keys(tableInfo[0]) : "No data"
+      );
+    }
+
+    // Apply basic filters
     if (filters.projectId) {
-      query = query.eq("projectId", filters.projectId);
+      const projectIdNum = parseInt(filters.projectId);
+      if (isNaN(projectIdNum)) {
+        console.error("❌ [FILES-GET] Invalid projectId:", filters.projectId);
+        return new Response(
+          JSON.stringify({
+            error: "Invalid project ID",
+            details: "Project ID must be a number",
+            value: filters.projectId,
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      query = query.eq("projectId", projectIdNum);
     }
 
     if (filters.fileName) {
@@ -127,12 +429,68 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       query = query.eq("authorId", filters.authorId);
     }
 
+    if (filters.targetLocation) {
+      query = query.eq("targetLocation", filters.targetLocation);
+    }
+
+    if (filters.bucketName) {
+      query = query.eq("bucketName", filters.bucketName);
+    }
+
+    if (filters.status) {
+      query = query.eq("status", filters.status);
+    }
+
+    // Apply metadata filters if provided
+    if (filters.metadata) {
+      for (const [key, value] of Object.entries(filters.metadata)) {
+        query = query.eq(`metadata->>${key}`, value);
+      }
+    }
+
+    // Apply compound filters if provided
+    if (filters.andFilters?.length) {
+      for (const filter of filters.andFilters) {
+        switch (filter.operator) {
+          case "eq":
+            query = query.eq(filter.field, filter.value);
+            break;
+          case "neq":
+            query = query.neq(filter.field, filter.value);
+            break;
+          case "gt":
+            query = query.gt(filter.field, filter.value);
+            break;
+          case "gte":
+            query = query.gte(filter.field, filter.value);
+            break;
+          case "lt":
+            query = query.lt(filter.field, filter.value);
+            break;
+          case "lte":
+            query = query.lte(filter.field, filter.value);
+            break;
+          case "like":
+            query = query.like(filter.field, filter.value);
+            break;
+          case "ilike":
+            query = query.ilike(filter.field, filter.value);
+            break;
+          case "in":
+            query = query.in(filter.field, filter.value);
+            break;
+        }
+      }
+    }
+
     // Apply sorting
     const ascending = filters.sortOrder === "asc";
     query = query.order(filters.sortBy, { ascending });
 
     // Apply pagination
-    query = query.range(filters.offset || 0, filters.offset || 0 + filters.limit || 20 - 1);
+    const startRange = filters.offset || 0;
+    const endRange = startRange + (filters.limit || 20) - 1;
+    query = query.range(startRange, endRange);
 
     // Get total count if requested
     let totalCount = null;
@@ -154,30 +512,86 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       if (filters.authorId) {
         countQuery = countQuery.eq("authorId", filters.authorId);
       }
+      if (filters.targetLocation) {
+        countQuery = countQuery.eq("targetLocation", filters.targetLocation);
+      }
 
       const { count } = await countQuery;
       totalCount = count;
     }
 
     // Execute query
+    console.log("📁 [FILES-GET] Executing query with filters:", {
+      filters,
+      projectId: filters.projectId,
+      authorId: filters.authorId,
+    });
+
     const { data: files, error } = await query;
 
     if (error) {
       console.error("❌ [FILES-GET] Error fetching files:", error);
+      console.error("❌ [FILES-GET] Query details:", {
+        filters,
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
       return new Response(
         JSON.stringify({
           error: "Failed to fetch files",
           details: error.message,
+          code: error.code,
+          hint: error.hint,
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const hasMore = files.length === filters.limit || 20;
+    console.log("📁 [FILES-GET] Files fetched:", {
+      count: files?.length || 0,
+      firstFile: files?.[0],
+      filters,
+    });
+
+    // Generate signed URLs for each file
+    const filesWithUrls = await Promise.all(
+      (files || []).map(async (file) => {
+        if (!file.bucketName || !file.filePath) {
+          return { ...file, publicUrl: null };
+        }
+
+        try {
+          const { data: urlData } = await supabaseAdmin.storage
+            .from(file.bucketName)
+            .createSignedUrl(file.filePath, 3600);
+
+          // Extract nested data from the join results
+          const projectData = file.projects || {};
+          const profileData = file.profiles || {};
+
+          return {
+            ...file,
+            publicUrl: urlData?.signedUrl || null,
+            uploadedByName: profileData.companyName,
+            projectTitle: projectData.title,
+            // Remove nested objects to keep response clean
+            projects: undefined,
+            profiles: undefined,
+          };
+        } catch (urlError) {
+          console.warn(`Failed to generate signed URL for file ${file.id}:`, urlError);
+          return { ...file, publicUrl: null };
+        }
+      })
+    );
+
+    const hasMore = filesWithUrls.length === filters.limit || 20;
 
     return new Response(
       JSON.stringify({
-        data: files || [],
+        data: filesWithUrls || [],
         pagination: {
           limit: filters.limit || 20,
           offset: filters.offset || 0,
@@ -190,6 +604,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           fileType: filters.fileType,
           isPrivate: filters.isPrivate,
           authorId: filters.authorId,
+          bucketName: filters.bucketName,
+          status: filters.status,
+          metadata: filters.metadata,
+          andFilters: filters.andFilters,
           sortBy: filters.sortBy,
           sortOrder: filters.sortOrder,
         },
