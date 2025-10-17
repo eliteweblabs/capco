@@ -451,10 +451,15 @@ if (currentStatusInt && statusData[currentStatusInt]) {
       console.log("🔔 [PROJECT-PAGE] Setting initial tab:", initialTab);
     }
 
-    // Switch to the initial tab
-    if (window.switchTab) {
-      window.switchTab(initialTab);
-    }
+    // Switch to the initial tab - wait for switchTab to be defined
+    const trySwitchTab = () => {
+      if (window.switchTab) {
+        window.switchTab(initialTab);
+      } else {
+        setTimeout(trySwitchTab, 50);
+      }
+    };
+    trySwitchTab();
   });
 </script>
 

@@ -80,7 +80,7 @@ const projectId = project.id;
   // Initialize Quill editor
   let contractEditor = null;
   let isDirty = false;
-  let contractHtml = "";
+  let contractHtml = project.contractData?.html;
 
   // Make contractEditor and project globally accessible for modal actions
   window.contractEditor = contractEditor;
@@ -92,38 +92,39 @@ const projectId = project.id;
     try {
       console.log("🔄 [CONTRACT-EDITOR] Fetching existing contract from client-side...");
       console.log("🔍 [CONTRACT-EDITOR] Project ID:", projectId);
-      if (!reset) {
-        const response = await fetch(`/api/contract/get`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            projectId: projectId,
-            projectData: project,
-          }),
-        });
 
-        console.log("🔍 [CONTRACT-EDITOR] Response status:", response.status);
+      // if (!reset) {
+      //   const response = await fetch(`/api/contract/get`, {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //     body: JSON.stringify({
+      //       projectId: projectId,
+      //       projectData: project,
+      //     }),
+      //   });
 
-        const data = await response.json();
+      //   console.log("🔍 [CONTRACT-EDITOR] Response status:", response.status);
 
-        console.log("🔍 [CONTRACT-EDITOR] Client-side API response:", {
-          success: data.success,
-          hasContractHtml: !!data.data?.contractHtml,
-          contractLength: data.data?.contractHtml?.length || 0,
-          fullResponse: data,
-        });
-        console.log("✅ [CONTRACT-EDITOR] Found existing contract for project:", projectId);
-        console.log(
-          "📄 [CONTRACT-EDITOR] Contract HTML length:",
-          data.data.contractHtml?.length || 0
-        );
+      //   const data = await response.json();
 
-        if (data.success && data.data?.contractHtml) {
-          contractHtml = data.data.contractHtml;
-        }
-      }
+      //   console.log("🔍 [CONTRACT-EDITOR] Client-side API response:", {
+      //     success: data.success,
+      //     hasContractHtml: !!data.data?.contractHtml,
+      //     contractLength: data.data?.contractHtml?.length || 0,
+      //     fullResponse: data,
+      //   });
+      //   console.log("✅ [CONTRACT-EDITOR] Found existing contract for project:", projectId);
+      //   console.log(
+      //     "📄 [CONTRACT-EDITOR] Contract HTML length:",
+      //     data.data.contractHtml?.length || 0
+      //   );
+
+      //   if (data.success && data.data?.contractHtml) {
+      //     contractHtml = data.data.contractHtml;
+      //   }
+      // }
 
       if (reset || !contractHtml) {
         // Fetch template from server
@@ -430,7 +431,7 @@ const projectId = project.id;
 
       const contractHtml = contractEditor.root.innerHTML;
 
-      const response = await fetch("/api/save-project-contract", {
+      const response = await fetch("/api/contract/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

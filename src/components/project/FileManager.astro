@@ -3,7 +3,6 @@
 // A complete file management solution with checkout/assignment capabilities
 
 import Tooltip from "../common/Tooltip.astro";
-import LucideIcon from "../common/LucideIcon.astro";
 
 interface Props {
   projectId: number;
@@ -29,10 +28,14 @@ const {
 
 // Debug logging for props
 import StickyActions from "./StickyActions.astro";
+import LucideIcon from "../common/LucideIcon.astro";
 import Button from "../common/Button.astro";
 import LoadingSpinner from "../common/LoadingSpinner.astro";
 
 // Only show for Admin/Staff
+// Storage bucket configuration
+const bucket = "project-media";
+
 // Allowed file types
 const allowedFileTypes = [
   ".pdf",
@@ -108,7 +111,7 @@ const canDeleteFiles =
 
 <div id="file-manager">
   <!-- Header -->
-  <div class="hidden items-center justify-between h-64">
+  <div class="flex hidden items-center justify-between h-64">
     <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Project Files</h3>
     <div class="hidden text-sm text-gray-500 dark:text-gray-400">
       <span id="file-count">Loading...</span>
@@ -192,7 +195,7 @@ const canDeleteFiles =
           </span>
         </div>
         <div class="flex items-center space-x-2">
-          <LucideIcon name="alert-circle" class="w-8 h-8 mx-auto" />
+          <LucideIcon name="alert-circle" class="bx-lg mx-auto" />
           <p class={`${globalPrimaryTextClasses} mb-4`}>
             Keep File Names the Same to Check In File.
           </p>
@@ -215,6 +218,7 @@ const canDeleteFiles =
     globalSecondaryTextClasses,
     globalPrimaryTextClasses,
     statusData,
+    bucket,
   }}
   is:inline
 >
@@ -230,7 +234,7 @@ const canDeleteFiles =
   // Load files for the project
   async function loadProjectFiles() {
     try {
-      const url = `/api/files/get?projectId=${currentProjectId}&_t=${Date.now()}`;
+      const url = `/api/files/get?projectId=${currentProjectId}&targetLocation=documents&bucketName=${bucket}&_t=${Date.now()}`;
 
       const response = await fetch(url, {
         cache: "no-cache",
@@ -244,7 +248,7 @@ const canDeleteFiles =
       const data = await response.json();
 
       if (data.success) {
-        files = data.media || [];
+        files = data.data || [];
 
         // Debug: Check for any files with invalid URLs
         files.forEach((file, index) => {
@@ -306,7 +310,7 @@ const canDeleteFiles =
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
           </svg>
-          <p class="mt-2">No files uploaded</p>
+          <p class="mt-2">No files uploaded yet</p>
         </div>
       `;
       return;
@@ -447,8 +451,12 @@ const canDeleteFiles =
         <!-- File Description -->
         <div>
           <label for="file-comments-${file.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-<!-- eslint-disable-next-line -->
-          <textarea id="file-comments-${file.id}" class="${globalInputClasses}" rows="3" placeholder="Enter file description...">${file.comments || ""}</textarea>
+          <textarea 
+            id="file-comments-${file.id}"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            rows="3"
+            placeholder="Enter file description..."
+          >${file.comments || ""}</textarea>
         </div>
 
         ${
@@ -790,19 +798,21 @@ const canDeleteFiles =
             reader.readAsDataURL(file);
           });
 
-          // Upload using standardized files API
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("projectId", currentProjectId.toString());
-          formData.append("title", file.name);
-          formData.append("comments", "");
-          formData.append("isPrivate", "false");
-          formData.append("bucketName", "project-files");
-
+          // Upload using files system
           const response = await fetch("/api/files/upload", {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: formData,
+            body: JSON.stringify({
+              mediaData: fileData,
+              fileName: file.name,
+              fileType: file.type,
+              projectId: currentProjectId.toString(),
+              targetLocation: "documents",
+              bucketName: bucket,
+              title: file.name,
+              description: ``,
+            }),
           });
 
           if (!response.ok) {
@@ -980,7 +990,7 @@ const canDeleteFiles =
       // Create a form to submit to the download endpoint
       const form = document.createElement("form");
       form.method = "POST";
-      form.action = "/api/files/download";
+      form.action = "/api/file/download";
       form.style.display = "none";
 
       // Add URL input
@@ -1117,6 +1127,13 @@ const canDeleteFiles =
     const comments = document.getElementById(`file-comments-${fileId}`)?.value || "";
     const isPrivate = document.getElementById(`file-private-${fileId}`)?.checked || false;
 
+    // Find the file data to get required fields
+    const fileData = files.find((f) => f.id === parseInt(fileId));
+    if (!fileData) {
+      console.error("❌ [FILE-MANAGER] File not found:", fileId);
+      return;
+    }
+
     try {
       const response = await fetch("/api/files/upsert", {
         method: "POST",
@@ -1124,7 +1141,12 @@ const canDeleteFiles =
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: fileId,
+          id: parseInt(fileId),
+          projectId: fileData.projectId,
+          fileName: fileData.fileName,
+          filePath: fileData.filePath,
+          authorId: fileData.authorId,
+          bucketName: bucket,
           title: title,
           comments: comments,
           isPrivate: isPrivate,
@@ -1162,6 +1184,7 @@ const canDeleteFiles =
           action: action,
           fileId: fileId,
           userId: currentUserId,
+          bucketName: bucket,
           notes: `Auto-${action} on ${new Date().toLocaleString()}`,
         }),
       });
@@ -1252,6 +1275,7 @@ const canDeleteFiles =
                 body: JSON.stringify({
                   fileId: fileId,
                   projectId: currentProjectId,
+                  bucketName: bucket,
                 }),
               })
                 .then(async (response) => {
@@ -1339,6 +1363,7 @@ const canDeleteFiles =
           fileUrl: fileUrl,
           fileName: fileName,
           fileType: fileType,
+          bucketName: bucket,
         }),
       });
 

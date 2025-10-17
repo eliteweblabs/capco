@@ -305,7 +305,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
 
       try {
-        const userEmailResponse = await fetch(`${apiBaseUrl}/api/update-delivery`, {
+        const userEmailResponse = await fetch(`${apiBaseUrl}/api/delivery/update-delivery`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -330,7 +330,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const adminEmailContent = `A new user account has been created successfully:<br><br>${emailFooterContent}`;
 
       try {
-        const adminEmailResponse = await fetch(`${apiBaseUrl}/api/update-delivery`, {
+        const adminEmailResponse = await fetch(`${apiBaseUrl}/api/delivery/update-delivery`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
