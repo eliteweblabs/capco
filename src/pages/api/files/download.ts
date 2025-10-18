@@ -225,6 +225,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
 
       return await handleExternalURLDownload(url, filename);
+    } else if (contentType?.includes("application/x-www-form-urlencoded")) {
+      // Handle regular HTML form submissions
+      const formData = await request.formData();
+      const url = formData.get("url")?.toString();
+      const filename = formData.get("filename")?.toString();
+
+      if (!url || !filename) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: "URL and filename are required",
+          }),
+          { status: 400 }
+        );
+      }
+
+      return await handleExternalURLDownload(url, filename);
     } else {
       return new Response(
         JSON.stringify({
@@ -461,7 +478,14 @@ async function handleFileDownloadWithAuth(
   }
 
   const arrayBuffer = await fileData.arrayBuffer();
-  const downloadFileName = fileRecord.fileName || fileName;
+
+  // Sanitize filename to handle Unicode characters properly
+  const rawFileName = fileRecord.fileName || fileName;
+  const downloadFileName = rawFileName
+    .replace(/[\u00A0\u2000-\u200F\u2028-\u202F\u205F-\u206F\u3000]/g, " ") // Replace various Unicode spaces with regular space
+    .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, "_") // Keep printable ASCII and common Unicode, replace others with underscore
+    .replace(/\s+/g, " ") // Collapse multiple spaces
+    .trim(); // Remove leading/trailing spaces
 
   return new Response(arrayBuffer, {
     status: 200,
@@ -484,7 +508,13 @@ async function handleExternalURLDownload(url: string, filename: string) {
   }
 
   const fileBlob = await response.blob();
-  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9\s-_.]/g, "_");
+
+  // Better filename sanitization that handles Unicode properly
+  const sanitizedFilename = filename
+    .replace(/[\u00A0\u2000-\u200F\u2028-\u202F\u205F-\u206F\u3000]/g, " ") // Replace various Unicode spaces with regular space
+    .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, "_") // Keep printable ASCII and common Unicode, replace others with underscore
+    .replace(/\s+/g, " ") // Collapse multiple spaces
+    .trim(); // Remove leading/trailing spaces
 
   return new Response(fileBlob, {
     status: 200,

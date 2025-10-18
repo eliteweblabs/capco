@@ -1,0 +1,812 @@
+---
+// NodeEditor.astro - A complete node-based editor with demo page
+import App from "../components/common/App.astro";
+---
+
+<style>
+  /* Demo page styles */
+
+  .demo-title {
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    margin: 0;
+    padding: 0;
+  }
+
+  .demo-description {
+    color: #9ca3af;
+    margin-bottom: 2rem;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+  }
+
+  .demo-section {
+    background: #111827;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .demo-section-title {
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    margin: 0;
+    padding: 0;
+  }
+
+  .demo-instruction {
+    color: #9ca3af;
+    margin-bottom: 1rem;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Node editor styles */
+  .node-editor-wrapper {
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .node-editor-container {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    background: #0f0f0f;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #333;
+    margin: 0;
+    padding: 0;
+  }
+
+  .node-editor-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle, #333 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position:
+      0 0,
+      10px 10px;
+    cursor: grab;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .node-editor-canvas:active {
+    cursor: grabbing;
+  }
+
+  .connections-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .node-toolbar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+  }
+
+  .add-node-btn,
+  .clear-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .add-node-btn:hover,
+  .clear-btn:hover {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+
+  :global(.node-card) {
+    position: absolute;
+    min-width: 200px;
+    max-width: 300px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: move;
+    z-index: 5;
+    user-select: none;
+    transition: all 0.2s;
+    box-sizing: border-box;
+  }
+
+  :global(.node-card:hover) {
+    border-color: #555;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  :global(.node-card.selected) {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  :global(.node-card.dragging) {
+    z-index: 10;
+    transform: rotate(2deg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  :global(.node-header) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  :global(.node-icon) {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  :global(.node-title) {
+    font-weight: 600;
+    color: #fff;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+  }
+
+  :global(.node-subtitle) {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+  }
+
+  :global(.node-status) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #888;
+    margin-top: 8px;
+    margin: 0;
+    padding: 0;
+  }
+
+  :global(.status-indicator) {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+  }
+
+  :global(.node-volume) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #666;
+    margin-top: 4px;
+    margin: 0;
+    padding: 0;
+  }
+
+  :global(.connection-point) {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #3b82f6;
+    border: 2px solid #1a1a1a;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 6;
+    box-sizing: border-box;
+  }
+
+  :global(.connection-point:hover) {
+    background: #60a5fa;
+    transform: scale(1.2);
+  }
+
+  :global(.connection-point.input.top) {
+    left: 50%;
+    top: -6px;
+    transform: translateX(-50%);
+  }
+
+  :global(.connection-point.input.right) {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  :global(.connection-point.input.bottom) {
+    left: 50%;
+    bottom: -6px;
+    transform: translateX(-50%);
+  }
+
+  :global(.connection-point.input.left) {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  :global(.connection-point.output.top) {
+    left: 50%;
+    top: -6px;
+    transform: translateX(-50%);
+  }
+
+  :global(.connection-point.output.right) {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  :global(.connection-point.output.bottom) {
+    left: 50%;
+    bottom: -6px;
+    transform: translateX(-50%);
+  }
+
+  :global(.connection-point.output.left) {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  :global(.connection-line) {
+    stroke: #3b82f6;
+    stroke-width: 2;
+    fill: none;
+    stroke-dasharray: 5, 5;
+    animation: dash 1s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes dash {
+    to {
+      stroke-dashoffset: -10;
+    }
+  }
+
+  :global(.connection-arrow) {
+    fill: #3b82f6;
+    pointer-events: none;
+  }
+
+  :global(.node-card[data-type="database"] .node-icon) {
+    background: #3b82f6;
+    color: white;
+  }
+
+  :global(.node-card[data-type="analytics"] .node-icon) {
+    background: #8b5cf6;
+    color: white;
+  }
+
+  :global(.node-card[data-type="storage"] .node-icon) {
+    background: #f59e0b;
+    color: white;
+  }
+
+  :global(.node-card[data-type="default"] .node-icon) {
+    background: #6b7280;
+    color: white;
+  }
+</style>
+
+<App>
+  <div class="demo-section">
+    <div class="node-editor-wrapper">
+      <div class="node-editor-container">
+        <div class="node-editor-canvas" id="node-canvas">
+          <!-- Nodes will be dynamically added here -->
+        </div>
+
+        <!-- Connection overlay for drawing arrows -->
+        <svg class="connections-overlay" id="connections-svg">
+          <!-- Arrows will be drawn here -->
+        </svg>
+
+        <!-- Toolbar -->
+        <div class="node-toolbar">
+          <button class="add-node-btn" id="add-node-btn">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Node
+          </button>
+          <button class="clear-btn" id="clear-btn">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="3,6 5,6 21,6"></polyline>
+              <path
+                d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"
+              ></path>
+            </svg>
+            Clear All
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</App>
+
+<script>
+  class NodeEditor {
+    constructor() {
+      this.canvas = document.getElementById("node-canvas");
+      this.svg = document.getElementById("connections-svg");
+      this.nodes = new Map();
+      this.connections = [];
+      this.draggedNode = null;
+      this.dragOffset = { x: 0, y: 0 };
+      this.connecting = false;
+      this.connectionStart = null;
+      this.nodeCounter = 0;
+
+      this.init();
+    }
+
+    init() {
+      this.setupEventListeners();
+      this.addSampleNodes();
+    }
+
+    setupEventListeners() {
+      // Add node button
+      document.getElementById("add-node-btn").addEventListener("click", () => {
+        this.addNode();
+      });
+
+      // Clear button
+      document.getElementById("clear-btn").addEventListener("click", () => {
+        this.clearAll();
+      });
+
+      // Canvas events
+      this.canvas.addEventListener("mousedown", this.handleCanvasMouseDown.bind(this));
+      this.canvas.addEventListener("mousemove", this.handleCanvasMouseMove.bind(this));
+      this.canvas.addEventListener("mouseup", this.handleCanvasMouseUp.bind(this));
+    }
+
+    addSampleNodes(delay = 0) {
+      // Add some sample nodes with delay
+      setTimeout(() => {
+        this.addNode({
+          id: "analytics-1",
+          type: "analytics",
+          title: "Create Account",
+          subtitle: "plausible-analytics-ce-produc...",
+          status: "2 Minutes",
+          volume: "plausible-volume",
+          x: 100,
+          y: 100,
+        });
+      }, delay);
+
+      setTimeout(() => {
+        this.addNode({
+          id: "database-1",
+          type: "database",
+          title: "Upload Files",
+          status: "5 days ago via Docker Image",
+          volume: "postgres-volume",
+          x: 400,
+          y: 100,
+        });
+      }, delay + 500);
+
+      setTimeout(() => {
+        this.addNode({
+          id: "storage-1",
+          type: "storage",
+          title: "ClickHouse",
+          status: "5 days ago via GitHub",
+          volume: "clickhouse-volume",
+          x: 250,
+          y: 300,
+        });
+      }, delay + 1000);
+
+      // Add connections with additional delay
+      setTimeout(() => {
+        this.addConnection("analytics-1", "database-1", "right", "left");
+      }, delay + 1500);
+
+      setTimeout(() => {
+        this.addConnection("analytics-1", "storage-1", "bottom", "top");
+      }, delay + 2000);
+    }
+
+    addNode(options = {}) {
+      const nodeId = options.id || `node-${++this.nodeCounter}`;
+      const node = {
+        id: nodeId,
+        type: options.type || "default",
+        title: options.title || `Node ${this.nodeCounter}`,
+        subtitle: options.subtitle || "",
+        status: options.status || "Active",
+        volume: options.volume || "",
+        x: options.x || Math.random() * 400 + 100,
+        y: options.y || Math.random() * 300 + 100,
+      };
+
+      this.nodes.set(nodeId, node);
+      this.renderNode(node);
+      return node;
+    }
+
+    renderNode(node) {
+      const nodeElement = document.createElement("div");
+      nodeElement.className = "node-card";
+      nodeElement.dataset.nodeId = node.id;
+      nodeElement.dataset.type = node.type;
+      nodeElement.style.left = `${node.x}px`;
+      nodeElement.style.top = `${node.y}px`;
+
+      const iconMap = {
+        database: "DB",
+        analytics: "A",
+        storage: "S",
+        default: "N",
+      };
+
+      nodeElement.innerHTML = `
+        <div class="node-header">
+          <div class="node-icon">${iconMap[node.type] || "N"}</div>
+          <div>
+            <div class="node-title">${node.title}</div>
+            ${node.subtitle ? `<div class="node-subtitle">${node.subtitle}</div>` : ""}
+          </div>
+        </div>
+        <div class="node-status">
+          <div class="status-indicator"></div>
+          <span>${node.status}</span>
+        </div>
+        ${node.volume ? `<div class="node-volume">💾 ${node.volume}</div>` : ""}
+        <div class="connection-point input top"></div>
+        <div class="connection-point input right"></div>
+        <div class="connection-point input bottom"></div>
+        <div class="connection-point input left"></div>
+        <div class="connection-point output top"></div>
+        <div class="connection-point output right"></div>
+        <div class="connection-point output bottom"></div>
+        <div class="connection-point output left"></div>
+      `;
+
+      // Add drag functionality
+      nodeElement.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        this.startDrag(node, e);
+      });
+
+      // Add connection point functionality
+      nodeElement.querySelectorAll(".connection-point").forEach((point) => {
+        point.addEventListener("mousedown", (e) => {
+          e.stopPropagation();
+          const isOutput = point.classList.contains("output");
+          const side = point.classList.contains("top")
+            ? "top"
+            : point.classList.contains("right")
+              ? "right"
+              : point.classList.contains("bottom")
+                ? "bottom"
+                : "left";
+          this.startConnection(node, isOutput, side, e);
+        });
+      });
+
+      this.canvas.appendChild(nodeElement);
+    }
+
+    startDrag(node, e) {
+      this.draggedNode = node;
+      const rect = e.target.closest(".node-card").getBoundingClientRect();
+      const canvasRect = this.canvas.getBoundingClientRect();
+
+      this.dragOffset = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+
+      e.target.closest(".node-card").classList.add("dragging");
+    }
+
+    startConnection(node, isOutput, side, e) {
+      this.connecting = true;
+      this.connectionStart = { node, isOutput, side };
+      e.target.style.background = "#60a5fa";
+    }
+
+    findNearestAnchor(node, mouseX, mouseY) {
+      const anchors = [
+        { side: "top", pos: this.getConnectionPoint(node, "top") },
+        { side: "right", pos: this.getConnectionPoint(node, "right") },
+        { side: "bottom", pos: this.getConnectionPoint(node, "bottom") },
+        { side: "left", pos: this.getConnectionPoint(node, "left") },
+      ];
+
+      let nearest = anchors[0];
+      let minDistance = this.getDistance(mouseX, mouseY, anchors[0].pos.x, anchors[0].pos.y);
+
+      for (let i = 1; i < anchors.length; i++) {
+        const distance = this.getDistance(mouseX, mouseY, anchors[i].pos.x, anchors[i].pos.y);
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearest = anchors[i];
+        }
+      }
+
+      return nearest.side;
+    }
+
+    getDistance(x1, y1, x2, y2) {
+      return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    }
+
+    handleCanvasMouseMove(e) {
+      if (this.draggedNode) {
+        const canvasRect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - canvasRect.left - this.dragOffset.x;
+        const y = e.clientY - canvasRect.top - this.dragOffset.y;
+
+        this.draggedNode.x = Math.max(0, Math.min(x, this.canvas.offsetWidth - 200));
+        this.draggedNode.y = Math.max(0, Math.min(y, this.canvas.offsetHeight - 100));
+
+        const nodeElement = document.querySelector(`[data-node-id="${this.draggedNode.id}"]`);
+        nodeElement.style.left = `${this.draggedNode.x}px`;
+        nodeElement.style.top = `${this.draggedNode.y}px`;
+
+        this.updateConnections();
+      }
+
+      // Handle connection preview when connecting
+      if (this.connecting && this.connectionStart) {
+        const canvasRect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - canvasRect.left;
+        const mouseY = e.clientY - canvasRect.top;
+
+        // Find the node under the mouse
+        const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+        const nodeElement = elementUnderMouse?.closest(".node-card");
+
+        if (
+          nodeElement &&
+          nodeElement !== document.querySelector(`[data-node-id="${this.connectionStart.node.id}"]`)
+        ) {
+          const nodeId = nodeElement.dataset.nodeId;
+          const targetNode = this.nodes.get(nodeId);
+
+          if (targetNode) {
+            // Find nearest anchor on target node
+            const nearestSide = this.findNearestAnchor(targetNode, mouseX, mouseY);
+
+            // Update connection preview
+            this.updateConnectionPreview(
+              this.connectionStart.node,
+              this.connectionStart.side,
+              targetNode,
+              nearestSide
+            );
+          }
+        }
+      }
+    }
+
+    handleCanvasMouseUp(e) {
+      if (this.draggedNode) {
+        this.draggedNode = null;
+        document.querySelectorAll(".node-card").forEach((card) => {
+          card.classList.remove("dragging");
+        });
+      }
+
+      if (this.connecting && this.connectionStart) {
+        const canvasRect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - canvasRect.left;
+        const mouseY = e.clientY - canvasRect.top;
+
+        // Find the node under the mouse
+        const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+        const nodeElement = elementUnderMouse?.closest(".node-card");
+
+        if (
+          nodeElement &&
+          nodeElement !== document.querySelector(`[data-node-id="${this.connectionStart.node.id}"]`)
+        ) {
+          const nodeId = nodeElement.dataset.nodeId;
+          const targetNode = this.nodes.get(nodeId);
+
+          if (targetNode) {
+            // Find nearest anchor on target node
+            const nearestSide = this.findNearestAnchor(targetNode, mouseX, mouseY);
+
+            // Create the connection
+            this.addConnection(
+              this.connectionStart.node.id,
+              targetNode.id,
+              this.connectionStart.side,
+              nearestSide
+            );
+          }
+        }
+
+        this.connecting = false;
+        this.connectionStart = null;
+        document.querySelectorAll(".connection-point").forEach((point) => {
+          point.style.background = "#3b82f6";
+        });
+
+        // Clear preview
+        this.clearConnectionPreview();
+      }
+    }
+
+    updateConnectionPreview(fromNode, fromSide, toNode, toSide) {
+      // Clear existing preview
+      this.clearConnectionPreview();
+
+      // Create preview connection
+      const fromPos = this.getConnectionPoint(fromNode, fromSide);
+      const toPos = this.getConnectionPoint(toNode, toSide);
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const midX = (fromPos.x + toPos.x) / 2; // True middle point between anchors
+      const pathData = `M ${fromPos.x} ${fromPos.y} L ${midX} ${fromPos.y} L ${midX} ${toPos.y} L ${toPos.x} ${toPos.y}`;
+
+      path.setAttribute("d", pathData);
+      path.setAttribute("class", "connection-line");
+      path.setAttribute("style", "stroke: #60a5fa; stroke-dasharray: 3,3; opacity: 0.7;");
+
+      this.svg.appendChild(path);
+    }
+
+    clearConnectionPreview() {
+      // Remove preview connections (those with dashed style)
+      const previewLines = this.svg.querySelectorAll('path[style*="stroke-dasharray"]');
+      previewLines.forEach((line) => line.remove());
+    }
+
+    handleCanvasMouseDown(e) {
+      // Deselect all nodes
+      document.querySelectorAll(".node-card").forEach((card) => {
+        card.classList.remove("selected");
+      });
+    }
+
+    addConnection(fromNodeId, toNodeId, fromSide = "right", toSide = "left") {
+      const connection = { from: fromNodeId, to: toNodeId, fromSide, toSide };
+      this.connections.push(connection);
+      this.renderConnection(connection);
+    }
+
+    renderConnection(connection) {
+      const fromNode = this.nodes.get(connection.from);
+      const toNode = this.nodes.get(connection.to);
+
+      if (!fromNode || !toNode) return;
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const arrow = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+
+      // Calculate connection points based on sides
+      const fromPos = this.getConnectionPoint(fromNode, connection.fromSide || "right");
+      const toPos = this.getConnectionPoint(toNode, connection.toSide || "left");
+
+      // Create 90-degree bent path with bend at the middle of the anchors
+      const midX = (fromPos.x + toPos.x) / 2; // True middle point between anchors
+      const pathData = `M ${fromPos.x} ${fromPos.y} L ${midX} ${fromPos.y} L ${midX} ${toPos.y} L ${toPos.x} ${toPos.y}`;
+
+      path.setAttribute("d", pathData);
+      path.setAttribute("class", "connection-line");
+
+      // Add arrowhead at the end
+      const arrowSize = 8;
+      const arrowX = toPos.x - arrowSize;
+      const arrowY = toPos.y;
+
+      arrow.setAttribute(
+        "points",
+        `${toPos.x},${toPos.y} ${arrowX},${arrowY - arrowSize / 2} ${arrowX},${arrowY + arrowSize / 2}`
+      );
+      arrow.setAttribute("class", "connection-arrow");
+
+      this.svg.appendChild(path);
+      this.svg.appendChild(arrow);
+    }
+
+    getConnectionPoint(node, side) {
+      // Get actual node dimensions from the DOM element
+      const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
+      let nodeWidth = 200;
+      let nodeHeight = 100;
+
+      if (nodeElement) {
+        const rect = nodeElement.getBoundingClientRect();
+        const canvasRect = this.canvas.getBoundingClientRect();
+        nodeWidth = rect.width;
+        nodeHeight = rect.height;
+      }
+
+      switch (side) {
+        case "top":
+          return { x: node.x + nodeWidth / 2, y: node.y };
+        case "right":
+          return { x: node.x + nodeWidth, y: node.y + nodeHeight / 2 };
+        case "bottom":
+          return { x: node.x + nodeWidth / 2, y: node.y + nodeHeight };
+        case "left":
+          return { x: node.x, y: node.y + nodeHeight / 2 };
+        default:
+          return { x: node.x + nodeWidth, y: node.y + nodeHeight / 2 };
+      }
+    }
+
+    updateConnections() {
+      // Clear existing connections
+      this.svg.innerHTML = "";
+
+      // Re-render all connections
+      this.connections.forEach((connection) => {
+        this.renderConnection(connection);
+      });
+    }
+
+    clearAll() {
+      this.nodes.clear();
+      this.connections = [];
+      this.canvas.innerHTML = "";
+      this.svg.innerHTML = "";
+    }
+  }
+
+  // Initialize when DOM is loaded
+  document.addEventListener("DOMContentLoaded", () => {
+    new NodeEditor();
+  });
+</script>
