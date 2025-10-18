@@ -241,7 +241,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   )
 }
 
-<script>
+<script define:vars={{ projectId, invoiceId }} is:inline>
   // Enhanced Proposal Manager with Invoice Ninja-style features
   class EnhancedProposalManager {
     constructor() {
@@ -327,7 +327,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
         const data = await response.json();
         if (data.success) {
-          this.invoiceId = data.invoice.id;
+          this.invoiceId = data.data.invoice.id;
           console.log("✅ [ENHANCED-PROPOSAL] Created new invoice:", this.invoiceId);
         }
       } catch (error) {
@@ -607,8 +607,31 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     }
   }
 
-  // Initialize when DOM is ready
-  document.addEventListener("DOMContentLoaded", () => {
-    window.enhancedProposalManager = new EnhancedProposalManager();
-  });
+  // Set projectId and invoiceId on window object (from define:vars)
+  window.projectId = projectId;
+  window.invoiceId = invoiceId;
+
+  // Initialize when DOM is ready with retry mechanism
+  const initializeEnhancedProposal = () => {
+    console.log("🚀 [ENHANCED-PROPOSAL] Attempting to initialize...");
+
+    // Check if required elements exist
+    const addBtn = document.getElementById("add-line-item-btn");
+    const tbody = document.getElementById("enhanced-line-items");
+
+    if (addBtn && tbody) {
+      console.log("✅ [ENHANCED-PROPOSAL] Required elements found, initializing...");
+      window.enhancedProposalManager = new EnhancedProposalManager();
+    } else {
+      console.log("⏳ [ENHANCED-PROPOSAL] Elements not ready, retrying in 100ms...");
+      setTimeout(initializeEnhancedProposal, 100);
+    }
+  };
+
+  // Try multiple initialization methods
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeEnhancedProposal);
+  } else {
+    initializeEnhancedProposal();
+  }
 </script>

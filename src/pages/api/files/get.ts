@@ -197,10 +197,12 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     // Apply sorting
-    query = query.order(filters.sortBy, { ascending: filters.sortOrder === "asc" });
+    query = query.order(filters.sortBy || "updatedAt", {
+      ascending: (filters.sortOrder || "desc") === "asc",
+    });
 
     // Apply pagination
-    query = query.range(filters.offset, filters.offset + filters.limit - 1);
+    query = query.range(filters.offset || 0, (filters.offset || 0) + (filters.limit || 20) - 1);
 
     // Get total count if requested
     let totalCount = null;
@@ -254,16 +256,57 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       console.log("📁 [FILES-GET] No files found with current filters");
     }
 
+    // Generate signed URLs for each file
+    const filesWithUrls = await Promise.all(
+      (files || []).map(async (file) => {
+        if (!file.bucketName || !file.filePath) {
+          return { ...file, publicUrl: null };
+        }
+
+        try {
+          console.log(`🔗 [FILES-GET] Generating signed URL for file ${file.id}:`, {
+            bucketName: file.bucketName,
+            filePath: file.filePath,
+          });
+
+          const { data: urlData, error: urlError } = await supabaseAdmin!.storage
+            .from(file.bucketName)
+            .createSignedUrl(file.filePath, 3600);
+
+          if (urlError) {
+            console.error(`❌ [FILES-GET] Signed URL error for file ${file.id}:`, urlError);
+            return { ...file, publicUrl: null };
+          }
+
+          console.log(
+            `✅ [FILES-GET] Generated signed URL for file ${file.id}:`,
+            urlData?.signedUrl
+          );
+
+          return {
+            ...file,
+            publicUrl: urlData?.signedUrl || null,
+          };
+        } catch (urlError) {
+          console.error(
+            `❌ [FILES-GET] Failed to generate signed URL for file ${file.id}:`,
+            urlError
+          );
+          return { ...file, publicUrl: null };
+        }
+      })
+    );
+
     // Return response
     return new Response(
       JSON.stringify({
         success: true,
-        data: files || [],
+        data: filesWithUrls || [],
         pagination: {
-          limit: filters.limit,
-          offset: filters.offset,
+          limit: filters.limit || 20,
+          offset: filters.offset || 0,
           total: totalCount,
-          hasMore: totalCount ? filters.offset + filters.limit < totalCount : null,
+          hasMore: totalCount ? (filters.offset || 0) + (filters.limit || 20) < totalCount : null,
         },
         filters: {
           projectId: filters.projectId,
@@ -485,7 +528,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Apply sorting
     const ascending = filters.sortOrder === "asc";
-    query = query.order(filters.sortBy, { ascending });
+    query = query.order(filters.sortBy || "updatedAt", { ascending });
 
     // Apply pagination
     const startRange = filters.offset || 0;
@@ -563,9 +606,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         try {
-          const { data: urlData } = await supabaseAdmin.storage
+          console.log(`🔗 [FILES-GET] Generating signed URL for file ${file.id}:`, {
+            bucketName: file.bucketName,
+            filePath: file.filePath,
+          });
+
+          const { data: urlData, error: urlError } = await supabaseAdmin!.storage
             .from(file.bucketName)
             .createSignedUrl(file.filePath, 3600);
+
+          if (urlError) {
+            console.error(`❌ [FILES-GET] Signed URL error for file ${file.id}:`, urlError);
+            return { ...file, publicUrl: null };
+          }
+
+          console.log(
+            `✅ [FILES-GET] Generated signed URL for file ${file.id}:`,
+            urlData?.signedUrl
+          );
 
           // Extract nested data from the join results
           const projectData = file.projects || {};
@@ -581,7 +639,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             profiles: undefined,
           };
         } catch (urlError) {
-          console.warn(`Failed to generate signed URL for file ${file.id}:`, urlError);
+          console.error(
+            `❌ [FILES-GET] Failed to generate signed URL for file ${file.id}:`,
+            urlError
+          );
           return { ...file, publicUrl: null };
         }
       })

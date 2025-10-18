@@ -5,7 +5,7 @@ import { supabase } from "../../../lib/supabase";
 
 /**
  * Standardized Proposal GET API
- * 
+ *
  * Query Parameters:
  * - id: Get specific invoice by ID
  * - projectId: Get invoice by project ID
@@ -13,7 +13,7 @@ import { supabase } from "../../../lib/supabase";
  * - includeProject: Include project data (default: true)
  * - includeClient: Include client profile data (default: true)
  * - includeLineItems: Include line items (default: true)
- * 
+ *
  * Examples:
  * - /api/proposal/get?id=123
  * - /api/proposal/get?projectId=456&status=proposal
@@ -46,7 +46,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Build base query
     let query = supabase.from("invoices").select(`
-      *${includeProject ? `,
+      *${
+        includeProject
+          ? `,
       projects (
         id,
         title,
@@ -55,7 +57,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         sqFt,
         status,
         authorId
-      )` : ""}
+      )`
+          : ""
+      }
     `);
 
     // Apply filters
@@ -70,10 +74,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Get invoice(s)
-    const { data: invoices, error: invoiceError } = await (id || projectId 
-      ? query.single() 
-      : query
-    );
+    const { data: invoices, error: invoiceError } = await (id || projectId
+      ? query.single()
+      : query);
 
     if (invoiceError) {
       // Handle "no rows found" case
@@ -91,15 +94,15 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       }
 
       // Get line items if requested
-      const lineItems = includeLineItems ? (invoice.catalogLineItems || []) : [];
+      const lineItems = includeLineItems ? (invoice as any)?.lineItems || [] : [];
 
       // Get client profile if requested
       let client = null;
-      if (includeClient && invoice.projects?.authorId) {
+      if (includeClient && (invoice as any)?.project?.authorId) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("companyName, email")
-          .eq("id", invoice.projects.authorId)
+          .eq("id", (invoice as any)?.project?.authorId)
           .single();
 
         if (profile) {
@@ -113,15 +116,15 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       return createSuccessResponse({
         invoice,
         lineItems,
-        project: includeProject ? invoice.projects : undefined,
+        project: includeProject ? (invoice as any)?.project : undefined,
         client: includeClient ? client : undefined,
       });
     }
 
     // For multiple invoices
     return createSuccessResponse({
-      invoices,
-      count: invoices?.length || 0,
+      invoices: invoices as any,
+      count: (invoices as any)?.length || 0,
     });
   } catch (error) {
     console.error("❌ [PROPOSAL-GET] Unexpected error:", error);

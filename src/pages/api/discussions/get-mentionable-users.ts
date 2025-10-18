@@ -35,7 +35,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       });
     }
 
-    let projectAuthorId = null;
+    let projectAuthorId = null as string | null;
 
     // Only get project author if not global discussion
     if (!isGlobal && projectId) {
@@ -146,7 +146,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const mentionableUsers = users.map((user) => {
       return {
         id: user.id,
-        name:
+        companyName:
           user.firstName && user.lastName
             ? `${user.firstName} ${user.lastName}`
             : user.companyName || "Unknown User",

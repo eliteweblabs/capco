@@ -1,0 +1,1653 @@
+---
+import Alert from "../partials/Alert.astro";
+import LucideIcon from "../common/LucideIcon.astro";
+
+export interface Props {
+  currentUser?: any;
+  globalInputClasses?: string;
+  globalSecondaryTextClasses?: string;
+  globalPrimaryTextClasses?: string;
+}
+
+const {
+  currentUser,
+  globalInputClasses = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white",
+  globalSecondaryTextClasses = "text-gray-600 dark:text-gray-400",
+  globalPrimaryTextClasses = "text-gray-900 dark:text-white",
+} = Astro.props;
+---
+
+<div class="pdf-system-container p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">PDF System</h2>
+    <p class="text-gray-600 dark:text-gray-400">Create templates and generate professional PDFs</p>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="mb-6">
+    <div class="border-b border-gray-200 dark:border-gray-700">
+      <nav class="-mb-px flex space-x-8">
+        <button
+          id="templates-tab"
+          class="pdf-tab py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600 dark:text-blue-400"
+          data-tab="templates"
+        >
+          <LucideIcon name="file-text" class="w-4 h-4 inline mr-2" />
+          Templates
+        </button>
+        <button
+          id="generate-tab"
+          class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+          data-tab="generate"
+        >
+          <LucideIcon name="file-plus" class="w-4 h-4 inline mr-2" />
+          Generate PDF
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Templates Tab Content -->
+  <div id="templates-content" class="pdf-tab-content">
+    <div class="mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Template Management</h3>
+        <button
+          id="new-template-btn"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          <LucideIcon name="plus" class="w-4 h-4 inline mr-2" />
+          New Template
+        </button>
+      </div>
+
+      <!-- Template List -->
+      <div id="templates-list" class="space-y-4">
+        <!-- Templates will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate PDF Tab Content -->
+  <div id="generate-content" class="pdf-tab-content hidden">
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generate PDF</h3>
+
+      <!-- Template Selection -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Select Template
+        </label>
+        <select id="template-select" class={globalInputClasses}>
+          <option value="">Choose a template...</option>
+        </select>
+      </div>
+
+      <!-- Project Search -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Search User
+        </label>
+        <div class="flex space-x-2">
+          <input
+            type="text"
+            id="project-search"
+            placeholder="Search by project name, address, or client..."
+            class={globalInputClasses}
+          />
+          <button
+            id="search-projects-btn"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            <LucideIcon name="search" class="w-4 h-4 inline mr-2" />
+            Search
+          </button>
+        </div>
+      </div>
+
+      <!-- Project Results -->
+      <div id="project-results" class="mb-6">
+        <!-- Project search results will be displayed here -->
+      </div>
+
+      <!-- PDF Generation Options -->
+      <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">PDF Options</h4>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Page Size
+            </label>
+            <select id="page-size" class={globalInputClasses}>
+              <option value="8.5x11">8.5" x 11" (Letter)</option>
+              <option value="A4">A4</option>
+              <option value="A3">A3</option>
+              <option value="11x17">11" x 17" (Tabloid)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Orientation
+            </label>
+            <select id="orientation" class={globalInputClasses}>
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <div class="flex space-x-4">
+        <button
+          id="preview-pdf-btn"
+          class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          <LucideIcon name="eye" class="w-4 h-4 inline mr-2" />
+          Preview
+        </button>
+        <button
+          id="generate-pdf-btn"
+          class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          <LucideIcon name="download" class="w-4 h-4 inline mr-2" />
+          Generate PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Template Editor Modal -->
+<div id="template-editor-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+    >
+      <div
+        class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700"
+      >
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Template Editor</h3>
+        <button
+          id="close-editor-modal"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          <LucideIcon name="x" class="w-6 h-6" />
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <!-- File Upload Section -->
+        <div id="file-upload-section" class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Upload Document (Image, PDF, DOC, DOCX)
+          </label>
+          <div
+            class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center"
+          >
+            <input
+              type="file"
+              id="template-file-upload"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+              class="hidden"
+            />
+            <button
+              id="upload-file-btn"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              <LucideIcon name="upload" class="w-4 h-4 inline mr-2" />
+              Choose File
+            </button>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF
+            </p>
+          </div>
+        </div>
+
+        <!-- Template Form -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Template Name
+            </label>
+            <input
+              type="text"
+              id="template-name"
+              placeholder="Enter template name..."
+              class={globalInputClasses}
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Template Type
+            </label>
+            <select id="template-type" class={globalInputClasses}>
+              <option value="body">Body Template</option>
+              <option value="header">Header Template</option>
+              <option value="footer">Footer Template</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Template Content Editor -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Template Content
+          </label>
+          <div
+            id="template-editor"
+            class="border border-gray-300 dark:border-gray-600 rounded-md min-h-[400px]"
+          >
+            <!-- Monaco Editor will be loaded here -->
+          </div>
+        </div>
+
+        <!-- Extracted Fields -->
+        <div id="extracted-fields" class="mb-6 hidden">
+          <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Detected Fields</h4>
+          <div id="fields-list" class="space-y-2">
+            <!-- Extracted fields will be displayed here -->
+          </div>
+        </div>
+
+        <!-- Save Template -->
+        <div class="flex justify-end space-x-4">
+          <button
+            id="cancel-template-btn"
+            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            id="save-template-btn"
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            <LucideIcon name="save" class="w-4 h-4 inline mr-2" />
+            Save Template
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  console.log("🚀 [PDF-SYSTEM] Script starting...");
+
+  class PDFSystem {
+    constructor() {
+      this.currentUser = null; // Will be set when needed
+      this.selectedTemplate = null;
+      this.selectedProject = null;
+      this.templates = [];
+      this.projects = [];
+      this.editor = null;
+      this.templateNameInput = null;
+      this.templateTypeSelect = null;
+
+      this.init();
+    }
+
+    async init() {
+      console.log("🚀 [PDF-SYSTEM] Initializing PDF system");
+      this.setupEventListeners();
+      await this.loadTemplates();
+      this.setupTabNavigation();
+    }
+
+    setupEventListeners() {
+      // Tab navigation
+      document.querySelectorAll(".pdf-tab").forEach((tab) => {
+        tab.addEventListener("click", (e) => {
+          this.switchTab(e.target.dataset.tab);
+        });
+      });
+
+      // New template button
+      document.getElementById("new-template-btn")?.addEventListener("click", () => {
+        this.openTemplateEditor();
+      });
+
+      // Template editor
+      document.getElementById("close-editor-modal")?.addEventListener("click", () => {
+        this.closeTemplateEditor();
+      });
+
+      document.getElementById("upload-file-btn")?.addEventListener("click", () => {
+        document.getElementById("template-file-upload")?.click();
+      });
+
+      document.getElementById("template-file-upload")?.addEventListener("change", (e) => {
+        this.handleFileUpload(e.target.files[0]);
+      });
+
+      document.getElementById("save-template-btn")?.addEventListener("click", () => {
+        this.saveTemplate();
+      });
+
+      document.getElementById("cancel-template-btn")?.addEventListener("click", () => {
+        this.closeTemplateEditor();
+      });
+
+      // Generate PDF
+      // document.getElementById("search-projects-btn")?.addEventListener("click", () => {
+      //   this.searchProjects();
+      // });
+
+      document.getElementById("preview-pdf-btn")?.addEventListener("click", () => {
+        this.previewPDF();
+      });
+
+      document.getElementById("generate-pdf-btn")?.addEventListener("click", () => {
+        this.generatePDF();
+      });
+    }
+
+    setupTabNavigation() {
+      // Set initial tab
+      this.switchTab("templates");
+    }
+
+    switchTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll(".pdf-tab").forEach((tab) => {
+        tab.classList.remove("border-blue-500", "text-blue-600", "dark:text-blue-400");
+        tab.classList.add(
+          "border-transparent",
+          "text-gray-500",
+          "hover:text-gray-700",
+          "hover:border-gray-300",
+          "dark:text-gray-400",
+          "dark:hover:text-gray-300"
+        );
+      });
+
+      const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+      if (activeTab) {
+        activeTab.classList.remove(
+          "border-transparent",
+          "text-gray-500",
+          "hover:text-gray-700",
+          "hover:border-gray-300",
+          "dark:text-gray-400",
+          "dark:hover:text-gray-300"
+        );
+        activeTab.classList.add("border-blue-500", "text-blue-600", "dark:text-blue-400");
+      }
+
+      // Show/hide content
+      document.querySelectorAll(".pdf-tab-content").forEach((content) => {
+        content.classList.add("hidden");
+      });
+
+      const activeContent = document.getElementById(`${tabName}-content`);
+      if (activeContent) {
+        activeContent.classList.remove("hidden");
+      }
+
+      // Load content based on tab
+      if (tabName === "generate") {
+        this.loadTemplatesForGeneration();
+      }
+    }
+
+    async loadTemplates() {
+      try {
+        console.log("📄 [PDF-SYSTEM] Loading templates");
+        const response = await fetch("/api/pdf/templates/get", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          this.templates = data.data.templates || [];
+          this.renderTemplates();
+        } else {
+          console.error("❌ [PDF-SYSTEM] Error loading templates:", data.error);
+        }
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error loading templates:", error);
+      }
+    }
+
+    renderTemplates() {
+      const container = document.getElementById("templates-list");
+      if (!container) return;
+
+      if (this.templates.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+            <LucideIcon name="file-text" class="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>No templates found. Create your first template!</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = this.templates
+        .map((template) => {
+          const defaultBadge = template.isDefault
+            ? '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">Default</span>'
+            : "";
+          return `
+        <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${template.name}</h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${template.description || "No description"}</p>
+              <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <span>Type: ${template.templateType}</span>
+                <span>Size: ${template.pageSize}</span>
+                <span>Created: ${new Date(template.createdAt).toLocaleDateString()}</span>
+                ${defaultBadge}
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <button 
+                class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 edit-template-btn"
+                data-template-id="${template.id}"
+                title="Edit template"
+              >
+                <LucideIcon name="edit" class="w-4 h-4" />
+              </button>
+              <button 
+                class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 delete-template-btn"
+                data-template-id="${template.id}"
+                title="Delete template"
+              >
+                <LucideIcon name="trash-2" class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+        })
+        .join("");
+
+      // Add event listeners for template actions
+      container.querySelectorAll(".edit-template-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const templateId = e.target
+            .closest(".edit-template-btn")
+            .getAttribute("data-template-id");
+          this.editTemplate(templateId);
+        });
+      });
+
+      container.querySelectorAll(".delete-template-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const templateId = e.target
+            .closest(".delete-template-btn")
+            .getAttribute("data-template-id");
+          this.deleteTemplate(templateId);
+        });
+      });
+    }
+
+    openTemplateEditor(templateId = null) {
+      const modal = document.getElementById("template-editor-modal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        this.selectedTemplate = templateId;
+
+        if (templateId) {
+          this.loadTemplateForEdit(templateId);
+        } else {
+          this.resetTemplateForm();
+        }
+
+        // Initialize editor after modal is shown
+        setTimeout(() => {
+          this.initializeEditor();
+        }, 100);
+      }
+    }
+
+    closeTemplateEditor() {
+      const modal = document.getElementById("template-editor-modal");
+      if (modal) {
+        modal.classList.add("hidden");
+        this.selectedTemplate = null;
+        if (this.editor) {
+          this.editor.dispose();
+          this.editor = null;
+        }
+      }
+    }
+
+    async initializeEditor() {
+      // Initialize Quill WYSIWYG Editor (using contract system pattern)
+      this.templateNameInput = document.getElementById("template-name");
+      this.templateTypeSelect = document.getElementById("template-type");
+
+      console.log("🚀 [PDF-SYSTEM] Initializing Quill editor...");
+
+      // Load Quill CSS and JS dynamically (like contract system)
+      if (!document.querySelector("#quill-css-pdf")) {
+        console.log("📦 [PDF-SYSTEM] Loading Quill CSS...");
+        const quillCSS = document.createElement("link");
+        quillCSS.id = "quill-css-pdf";
+        quillCSS.rel = "stylesheet";
+        quillCSS.href = "https://cdn.quilljs.com/1.3.6/quill.snow.css";
+        document.head.appendChild(quillCSS);
+      }
+
+      if (!window.Quill) {
+        console.log("📦 [PDF-SYSTEM] Loading Quill JS...");
+        const quillJS = document.createElement("script");
+        quillJS.src = "https://cdn.quilljs.com/1.3.6/quill.min.js";
+        quillJS.onload = async () => {
+          console.log("✅ [PDF-SYSTEM] Quill JS loaded, creating editor...");
+          await this.createEditor();
+        };
+        document.head.appendChild(quillJS);
+      } else {
+        console.log("✅ [PDF-SYSTEM] Quill JS already loaded, creating editor...");
+        await this.createEditor();
+      }
+    }
+
+    async createEditor() {
+      console.log("🔧 [PDF-SYSTEM] Creating Quill editor...");
+
+      try {
+        this.editor = new window.Quill("#template-editor", {
+          theme: "snow",
+          modules: {
+            toolbar: [
+              [{ header: [1, 2, 3, 4, 5, 6, false] }],
+              ["bold", "italic", "underline", "strike"],
+              [{ color: [] }, { background: [] }],
+              [{ list: "ordered" }, { list: "bullet" }],
+              [{ indent: "-1" }, { indent: "+1" }],
+              [{ align: [] }],
+              ["link", "image"],
+              ["clean"],
+            ],
+          },
+          placeholder: "Enter your template content here...",
+          readOnly: false,
+        });
+
+        // Set the editor container style
+        const editorElement = document.getElementById("template-editor");
+        editorElement.style.height = "400px";
+        editorElement.style.border = "1px solid #374151";
+        editorElement.style.borderRadius = "0.375rem";
+
+        console.log("✅ [PDF-SYSTEM] Quill editor created successfully");
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error creating editor:", error);
+        // Fallback to textarea if Quill is not available
+        const editorDiv = document.getElementById("template-editor");
+        editorDiv.innerHTML = `
+          <textarea 
+            id="template-content-textarea" 
+            class="w-full h-96 p-4 border border-gray-300 dark:border-gray-600 rounded-md font-mono text-sm"
+            placeholder="Enter your template content here..."
+          ></textarea>
+        `;
+      }
+    }
+
+    async handleFileUpload(file) {
+      if (!file) return;
+
+      console.log("📄 [PDF-SYSTEM] Processing uploaded file:", file.name);
+
+      try {
+        // Show loading state
+        const uploadBtn = document.getElementById("upload-file-btn");
+        const originalText = uploadBtn.textContent;
+        uploadBtn.textContent = "Processing...";
+        uploadBtn.disabled = true;
+
+        // Process file directly with PDF.js
+        await this.runClientSideOCR(file);
+
+        this.showNotification("File processed successfully!", "success");
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error processing file:", error);
+        this.showNotification("Error processing file", "error");
+      } finally {
+        // Reset button
+        const uploadBtn = document.getElementById("upload-file-btn");
+        uploadBtn.textContent = "Choose File";
+        uploadBtn.disabled = false;
+      }
+    }
+
+    async processUploadedFile(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/pdf/process-file", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      return await response.json();
+    }
+
+    async displayExtractedContent(content, fields) {
+      console.log("📄 [PDF-SYSTEM] Displaying extracted content:", {
+        contentType: typeof content,
+        contentLength: content?.length,
+        contentPreview: content?.substring(0, 100),
+        fieldsCount: fields?.length,
+      });
+
+      // Check if this needs client-side OCR
+      console.log("🔍 [PDF-SYSTEM] Checking for OCR placeholders...");
+      console.log("🔍 [PDF-SYSTEM] Content value:", JSON.stringify(content));
+      console.log("🔍 [PDF-SYSTEM] Is IMAGE_OCR_PLACEHOLDER?", content === "IMAGE_OCR_PLACEHOLDER");
+      console.log("🔍 [PDF-SYSTEM] Is PDF_OCR_PLACEHOLDER?", content === "PDF_OCR_PLACEHOLDER");
+
+      if (content === "IMAGE_OCR_PLACEHOLDER") {
+        console.log("🔍 [PDF-SYSTEM] Image detected - running client-side OCR...");
+        await this.runClientSideOCR(file);
+        return;
+      }
+
+      if (content === "PDF_OCR_PLACEHOLDER") {
+        console.log("🔍 [PDF-SYSTEM] PDF detected - running client-side OCR...");
+        await this.runClientSideOCR(file);
+        return;
+      }
+
+      // Ensure content is a string
+      const safeContent = content || "";
+
+      // Set content in editor using Quill's proper method
+      if (this.editor) {
+        try {
+          // Use Quill's clipboard to properly handle HTML content (like contract system)
+          const delta = this.editor.clipboard.convert(safeContent);
+          this.editor.setContents(delta);
+          console.log("✅ [PDF-SYSTEM] Content set in Quill editor using proper method");
+        } catch (error) {
+          console.error("❌ [PDF-SYSTEM] Error setting content in editor:", error);
+          // Fallback to textarea
+          const textarea = document.getElementById("template-content-textarea");
+          if (textarea) {
+            textarea.value = safeContent;
+          }
+        }
+      } else {
+        // Try to find the textarea fallback
+        const textarea = document.getElementById("template-content-textarea");
+        if (textarea) {
+          textarea.value = safeContent;
+        } else {
+          // If editor isn't ready yet, wait a bit and try again
+          setTimeout(() => {
+            if (this.editor) {
+              try {
+                const delta = this.editor.clipboard.convert(safeContent);
+                this.editor.setContents(delta);
+              } catch (error) {
+                console.error("❌ [PDF-SYSTEM] Error setting content in delayed editor:", error);
+              }
+            } else {
+              const textarea = document.getElementById("template-content-textarea");
+              if (textarea) {
+                textarea.value = safeContent;
+              }
+            }
+          }, 200);
+        }
+      }
+
+      // Display extracted fields
+      if (fields && fields.length > 0) {
+        this.displayExtractedFields(fields);
+      }
+    }
+
+    async runClientSideOCR(file) {
+      try {
+        console.log("🔍 [PDF-SYSTEM] Starting client-side PDF processing...");
+        console.log("🔍 [PDF-SYSTEM] Processing file:", file.name);
+
+        // Use PDF.js like in New.astro
+        if (file.type === "application/pdf") {
+          await this.processPDFWithPDFJS(file);
+        } else if (file.type.startsWith("image/")) {
+          await this.processImageWithCanvas(file);
+        } else {
+          throw new Error("Unsupported file type. Please upload PDF or image files.");
+        }
+
+        this.showNotification("File processed successfully!", "success");
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Processing Error:", error);
+        this.showNotification("Processing failed: " + error.message, "error");
+      }
+    }
+
+    async processPDFWithPDFJS(file) {
+      return new Promise((resolve, reject) => {
+        const fileReader = new FileReader();
+        const self = this; // Capture the class context
+        fileReader.onload = async function (e) {
+          try {
+            const typedarray = new Uint8Array(e.target.result);
+            const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+
+            let fullText = "";
+            const numPages = pdf.numPages;
+
+            for (let i = 1; i <= numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+
+              // Enhanced text extraction with structure detection
+              const structuredText = self.extractStructuredText(textContent.items);
+              fullText += structuredText + "\n";
+            }
+
+            console.log("🔍 [PDF-SYSTEM] PDF text extracted:", fullText.length, "characters");
+
+            // Replace detected fields with placeholders
+            const textWithPlaceholders = self.replaceFieldsWithPlaceholders(fullText);
+
+            // Convert to HTML format with preserved structure and placeholders
+            const htmlContent = `
+              <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h2>Extracted PDF Content</h2>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                  ${textWithPlaceholders}
+                </div>
+              </div>
+            `;
+
+            // Set content in editor using Quill's proper method
+            if (self.editor) {
+              const delta = self.editor.clipboard.convert(htmlContent);
+              self.editor.setContents(delta);
+            } else {
+              const textarea = document.getElementById("template-content-textarea");
+              if (textarea) {
+                textarea.value = htmlContent;
+              }
+            }
+
+            // Extract fields
+            const fields = self.extractFieldsFromText(fullText);
+            if (fields && fields.length > 0) {
+              self.displayExtractedFields(fields);
+            }
+
+            resolve({ success: true, text: fullText });
+          } catch (error) {
+            console.error("❌ [PDF-SYSTEM] PDF processing error:", error);
+            reject(error);
+          }
+        };
+        fileReader.readAsArrayBuffer(file);
+      });
+    }
+
+    extractStructuredText(items) {
+      let result = "";
+      let currentList = [];
+      let inList = false;
+      let listType = null;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const text = item.str;
+        const nextItem = items[i + 1];
+
+        // Skip empty items
+        if (!text.trim()) continue;
+
+        // Detect list items (bullet points, numbers, dashes)
+        const isListItem = this.detectListItem(text, item, nextItem);
+
+        if (isListItem) {
+          if (!inList) {
+            // Start new list
+            inList = true;
+            listType = this.detectListType(text);
+            currentList = [];
+          }
+          currentList.push(text.trim());
+        } else {
+          // End current list if we were in one
+          if (inList) {
+            result += this.formatList(currentList, listType);
+            currentList = [];
+            inList = false;
+            listType = null;
+          }
+
+          // Detect headers (all caps, short lines, or specific patterns)
+          if (this.detectHeader(text, item)) {
+            result += `<h3>${text.trim()}</h3>\n`;
+          } else {
+            // Regular paragraph
+            result += `<p>${text.trim()}</p>\n`;
+          }
+        }
+      }
+
+      // Close any remaining list
+      if (inList) {
+        result += this.formatList(currentList, listType);
+      }
+
+      return result;
+    }
+
+    detectListItem(text, currentItem, nextItem) {
+      const trimmed = text.trim();
+
+      // Check for bullet points
+      if (/^[•·▪▫‣⁃]/.test(trimmed)) return true;
+
+      // Check for numbered lists (1., 2., etc.)
+      if (/^\d+\.\s/.test(trimmed)) return true;
+
+      // Check for lettered lists (a., b., etc.)
+      if (/^[a-zA-Z]\.\s/.test(trimmed)) return true;
+
+      // Check for dashes
+      if (/^[-–—]\s/.test(trimmed)) return true;
+
+      // Check for indentation (if we have position data)
+      if (currentItem.transform && nextItem && nextItem.transform) {
+        const currentX = currentItem.transform[4];
+        const nextX = nextItem.transform[4];
+        if (currentX > nextX + 20) return true; // Indented more than next item
+      }
+
+      return false;
+    }
+
+    detectListType(text) {
+      if (/^\d+\.\s/.test(text.trim())) return "ol";
+      if (/^[a-zA-Z]\.\s/.test(text.trim())) return "ol";
+      return "ul";
+    }
+
+    detectHeader(text, item) {
+      const trimmed = text.trim();
+
+      // All caps and short
+      if (trimmed === trimmed.toUpperCase() && trimmed.length < 50 && trimmed.length > 3)
+        return true;
+
+      // Common header patterns
+      if (/^(INTRODUCTION|SUMMARY|CONCLUSION|APPENDIX|REFERENCES|BIBLIOGRAPHY)/i.test(trimmed))
+        return true;
+
+      // Short lines that might be headers
+      if (trimmed.length < 30 && /^[A-Z]/.test(trimmed)) return true;
+
+      return false;
+    }
+
+    formatList(items, type) {
+      if (items.length === 0) return "";
+
+      const listItems = items
+        .map((item) => {
+          // Clean up the item text
+          const cleaned = item.replace(/^[•·▪▫‣⁃\-\d+\.\s*[a-zA-Z]\.\s*]/, "").trim();
+          return `<li>${cleaned}</li>`;
+        })
+        .join("\n");
+
+      return `<${type}>\n${listItems}\n</${type}>\n\n`;
+    }
+
+    extractStructuredTextFromString(text) {
+      // Split text into lines and process each line
+      const lines = text.split("\n");
+      let result = "";
+      let currentList = [];
+      let inList = false;
+      let listType = null;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        const nextLine = lines[i + 1]?.trim();
+
+        // Skip empty lines
+        if (!line) continue;
+
+        // Detect list items (bullet points, numbers, dashes)
+        const isListItem = this.detectListItemFromString(line);
+
+        if (isListItem) {
+          if (!inList) {
+            // Start new list
+            inList = true;
+            listType = this.detectListTypeFromString(line);
+            currentList = [];
+          }
+          currentList.push(line);
+        } else {
+          // End current list if we were in one
+          if (inList) {
+            result += this.formatList(currentList, listType);
+            currentList = [];
+            inList = false;
+            listType = null;
+          }
+
+          // Detect headers (all caps, short lines, or specific patterns)
+          if (this.detectHeaderFromString(line)) {
+            result += `<h3>${line}</h3>\n`;
+          } else {
+            // Regular paragraph
+            result += `<p>${line}</p>\n`;
+          }
+        }
+      }
+
+      // Close any remaining list
+      if (inList) {
+        result += this.formatList(currentList, listType);
+      }
+
+      return result;
+    }
+
+    detectListItemFromString(line) {
+      // Check for bullet points
+      if (/^[•·▪▫‣⁃]/.test(line)) return true;
+
+      // Check for numbered lists (1., 2., etc.)
+      if (/^\d+\.\s/.test(line)) return true;
+
+      // Check for lettered lists (a., b., etc.)
+      if (/^[a-zA-Z]\.\s/.test(line)) return true;
+
+      // Check for dashes
+      if (/^[-–—]\s/.test(line)) return true;
+
+      return false;
+    }
+
+    detectListTypeFromString(line) {
+      if (/^\d+\.\s/.test(line)) return "ol";
+      if (/^[a-zA-Z]\.\s/.test(line)) return "ol";
+      return "ul";
+    }
+
+    detectHeaderFromString(line) {
+      // All caps and short
+      if (line === line.toUpperCase() && line.length < 50 && line.length > 3) return true;
+
+      // Common header patterns
+      if (/^(INTRODUCTION|SUMMARY|CONCLUSION|APPENDIX|REFERENCES|BIBLIOGRAPHY)/i.test(line))
+        return true;
+
+      // Short lines that might be headers
+      if (line.length < 30 && /^[A-Z]/.test(line)) return true;
+
+      return false;
+    }
+
+    async processImageWithCanvas(file) {
+      return new Promise((resolve, reject) => {
+        const self = this; // Capture the class context
+
+        console.log("🔍 [PDF-SYSTEM] Processing image with OCR...");
+
+        // Show loading state
+        const loadingContent = `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>Processing Image...</h2>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
+              <p>Running OCR on: ${file.name}</p>
+              <p>Please wait while we extract text from the image...</p>
+            </div>
+          </div>
+        `;
+
+        // Set loading content
+        if (self.editor) {
+          const delta = self.editor.clipboard.convert(loadingContent);
+          self.editor.setContents(delta);
+        }
+
+        // Send to OCR.space API (like in ocr.astro and New.astro)
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("language", "eng");
+        formData.append("isOverlayRequired", "false");
+        formData.append("OCREngine", "2");
+
+        fetch("https://api.ocr.space/parse/image", {
+          method: "POST",
+          headers: {
+            apikey: "K81932338788957", // Same API key as used in ocr.astro
+          },
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("🔍 [PDF-SYSTEM] OCR API response:", data);
+
+            if (data.IsErroredOnProcessing) {
+              throw new Error(data.ErrorMessage || "OCR processing failed");
+            }
+
+            if (data.ParsedResults && data.ParsedResults[0] && data.ParsedResults[0].ParsedText) {
+              const extractedText = data.ParsedResults[0].ParsedText;
+              console.log("🔍 [PDF-SYSTEM] OCR completed. Text length:", extractedText.length);
+
+              // Apply structure detection to the extracted text
+              const structuredText = self.extractStructuredTextFromString(extractedText);
+
+              // Replace detected fields with placeholders
+              const textWithPlaceholders = self.replaceFieldsWithPlaceholders(extractedText);
+
+              // Convert to HTML format with preserved structure and placeholders
+              const htmlContent = `
+              <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h2>Extracted from Image (OCR)</h2>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                  ${textWithPlaceholders}
+                </div>
+              </div>
+            `;
+
+              // Set content in editor using Quill's proper method
+              if (self.editor) {
+                const delta = self.editor.clipboard.convert(htmlContent);
+                self.editor.setContents(delta);
+              } else {
+                const textarea = document.getElementById("template-content-textarea");
+                if (textarea) {
+                  textarea.value = htmlContent;
+                }
+              }
+
+              // Extract fields from the OCR text
+              const fields = self.extractFieldsFromText(extractedText);
+              if (fields && fields.length > 0) {
+                self.displayExtractedFields(fields);
+              }
+
+              resolve({ success: true, text: extractedText });
+            } else {
+              throw new Error("No text found in image");
+            }
+          })
+          .catch((error) => {
+            console.error("❌ [PDF-SYSTEM] OCR Error:", error);
+
+            const errorContent = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+              <h2>OCR Processing Failed</h2>
+              <div style="background: #ffebee; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #f44336;">
+                <p><strong>Error:</strong> ${error.message}</p>
+                <p>Image file: ${file.name}</p>
+              </div>
+            </div>
+          `;
+
+            if (self.editor) {
+              const delta = self.editor.clipboard.convert(errorContent);
+              self.editor.setContents(delta);
+            }
+
+            reject(error);
+          });
+      });
+    }
+
+    extractFieldsFromText(text) {
+      const fields = [];
+
+      // Email pattern
+      const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+      const emails = text.match(emailRegex);
+      if (emails) {
+        emails.forEach((email) => {
+          fields.push({ name: "Email", type: "email", value: email });
+        });
+      }
+
+      // Enhanced phone patterns
+      const phonePatterns = [
+        /(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/g, // US format
+        /(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, // International
+        /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, // Simple format
+        /\(\d{3}\)\s?\d{3}[-.\s]?\d{4}/g, // (123) 456-7890
+      ];
+
+      phonePatterns.forEach((pattern) => {
+        const phones = text.match(pattern);
+        if (phones) {
+          phones.forEach((phone) => {
+            if (!fields.some((f) => f.type === "phone" && f.value === phone)) {
+              fields.push({ name: "Phone", type: "phone", value: phone });
+            }
+          });
+        }
+      });
+
+      // Enhanced date patterns
+      const datePatterns = [
+        /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g, // MM/DD/YYYY or DD/MM/YYYY
+        /\b\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b/gi, // DD Month YYYY
+        /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}\b/gi, // Month DD, YYYY
+        /\b\d{4}[-.\/]\d{1,2}[-.\/]\d{1,2}\b/g, // YYYY-MM-DD
+        /\b\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b/gi, // Full month names
+      ];
+
+      datePatterns.forEach((pattern) => {
+        const dates = text.match(pattern);
+        if (dates) {
+          dates.forEach((date) => {
+            if (!fields.some((f) => f.type === "date" && f.value === date)) {
+              fields.push({ name: "Date", type: "date", value: date });
+            }
+          });
+        }
+      });
+
+      // Address patterns
+      const addressPatterns = [
+        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)\b/gi,
+        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)[\s,]*[A-Za-z\s]*,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/gi, // With city, state, zip
+        /\b[A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/g, // City, State ZIP
+      ];
+
+      addressPatterns.forEach((pattern) => {
+        const addresses = text.match(pattern);
+        if (addresses) {
+          addresses.forEach((address) => {
+            if (!fields.some((f) => f.type === "address" && f.value === address)) {
+              fields.push({ name: "Address", type: "address", value: address.trim() });
+            }
+          });
+        }
+      });
+
+      // ZIP/Postal codes
+      const zipRegex = /\b\d{5}(?:-\d{4})?\b/g;
+      const zips = text.match(zipRegex);
+      if (zips) {
+        zips.forEach((zip) => {
+          if (!fields.some((f) => f.type === "zip" && f.value === zip)) {
+            fields.push({ name: "ZIP Code", type: "zip", value: zip });
+          }
+        });
+      }
+
+      // Names (simple pattern - capitalized words that might be names)
+      const nameRegex = /\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g;
+      const names = text.match(nameRegex);
+      if (names) {
+        names.forEach((name) => {
+          // Filter out common false positives
+          const commonWords = [
+            "The",
+            "This",
+            "That",
+            "There",
+            "Here",
+            "Where",
+            "When",
+            "What",
+            "How",
+            "Why",
+            "Who",
+            "Which",
+          ];
+          if (!commonWords.some((word) => name.includes(word))) {
+            if (!fields.some((f) => f.type === "name" && f.value === name)) {
+              fields.push({ name: "Name", type: "name", value: name });
+            }
+          }
+        });
+      }
+
+      // URLs
+      const urlRegex = /https?:\/\/[^\s]+/g;
+      const urls = text.match(urlRegex);
+      if (urls) {
+        urls.forEach((url) => {
+          fields.push({ name: "URL", type: "url", value: url });
+        });
+      }
+
+      // Money amounts
+      const moneyRegex = /\$[\d,]+(?:\.\d{2})?/g;
+      const amounts = text.match(moneyRegex);
+      if (amounts) {
+        amounts.forEach((amount) => {
+          fields.push({ name: "Amount", type: "money", value: amount });
+        });
+      }
+
+      // Social Security Numbers
+      const ssnRegex = /\b\d{3}-?\d{2}-?\d{4}\b/g;
+      const ssns = text.match(ssnRegex);
+      if (ssns) {
+        ssns.forEach((ssn) => {
+          fields.push({ name: "SSN", type: "ssn", value: ssn });
+        });
+      }
+
+      // License plates
+      const licenseRegex = /\b[A-Z]{1,3}\s?\d{1,4}[A-Z]?\b/g;
+      const licenses = text.match(licenseRegex);
+      if (licenses) {
+        licenses.forEach((license) => {
+          fields.push({ name: "License Plate", type: "license", value: license });
+        });
+      }
+
+      return fields;
+    }
+
+    replaceFieldsWithPlaceholders(text) {
+      let result = text;
+
+      // Replace dates with {{CURRENT_DATE}}
+      const datePatterns = [
+        /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g, // MM/DD/YYYY or DD/MM/YYYY
+        /\b\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b/gi, // DD Month YYYY
+        /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}\b/gi, // Month DD, YYYY
+        /\b\d{4}[-.\/]\d{1,2}[-.\/]\d{1,2}\b/g, // YYYY-MM-DD
+        /\b\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b/gi, // Full month names
+      ];
+
+      datePatterns.forEach((pattern) => {
+        result = result.replace(pattern, "{{CURRENT_DATE}}");
+      });
+
+      // Replace phone numbers with {{CLIENT_PHONE}}
+      const phonePatterns = [
+        /(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/g, // US format
+        /(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, // International
+        /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, // Simple format
+        /\(\d{3}\)\s?\d{3}[-.\s]?\d{4}/g, // (123) 456-7890
+      ];
+
+      phonePatterns.forEach((pattern) => {
+        result = result.replace(pattern, "{{CLIENT_PHONE}}");
+      });
+
+      // Replace addresses with {{CLIENT_ADDRESS}}
+      const addressPatterns = [
+        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)\b/gi,
+        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)[\s,]*[A-Za-z\s]*,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/gi, // With city, state, zip
+        /\b[A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/g, // City, State ZIP
+      ];
+
+      addressPatterns.forEach((pattern) => {
+        result = result.replace(pattern, "{{CLIENT_ADDRESS}}");
+      });
+
+      // Replace names with {{CLIENT_NAME}}
+      const nameRegex = /\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g;
+      const commonWords = [
+        "The",
+        "This",
+        "That",
+        "There",
+        "Here",
+        "Where",
+        "When",
+        "What",
+        "How",
+        "Why",
+        "Who",
+        "Which",
+      ];
+
+      result = result.replace(nameRegex, (match) => {
+        // Filter out common false positives
+        if (!commonWords.some((word) => match.includes(word))) {
+          return "{{CLIENT_NAME}}";
+        }
+        return match;
+      });
+
+      // Replace emails with {{CLIENT_EMAIL}}
+      const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+      result = result.replace(emailRegex, "{{CLIENT_EMAIL}}");
+
+      // Replace ZIP codes with {{CLIENT_ZIP}}
+      const zipRegex = /\b\d{5}(?:-\d{4})?\b/g;
+      result = result.replace(zipRegex, "{{CLIENT_ZIP}}");
+
+      // Replace URLs with {{CLIENT_WEBSITE}}
+      const urlRegex = /https?:\/\/[^\s]+/g;
+      result = result.replace(urlRegex, "{{CLIENT_WEBSITE}}");
+
+      // Replace money amounts with {{AMOUNT}}
+      const moneyRegex = /\$[\d,]+(?:\.\d{2})?/g;
+      result = result.replace(moneyRegex, "{{AMOUNT}}");
+
+      // Replace SSN with {{CLIENT_SSN}}
+      const ssnRegex = /\b\d{3}-?\d{2}-?\d{4}\b/g;
+      result = result.replace(ssnRegex, "{{CLIENT_SSN}}");
+
+      // Replace license plates with {{CLIENT_LICENSE}}
+      const licenseRegex = /\b[A-Z]{1,3}\s?\d{1,4}[A-Z]?\b/g;
+      result = result.replace(licenseRegex, "{{CLIENT_LICENSE}}");
+
+      return result;
+    }
+
+    displayExtractedFields(fields) {
+      const container = document.getElementById("extracted-fields");
+      const fieldsList = document.getElementById("fields-list");
+
+      if (container && fieldsList) {
+        container.classList.remove("hidden");
+        fieldsList.innerHTML = fields
+          .map(
+            (field) => `
+          <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-600 rounded-md">
+            <div>
+              <span class="font-medium text-gray-900 dark:text-white">${field.name}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">(${field.type})</span>
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              ${field.value || "Not detected"}
+            </div>
+          </div>
+        `
+          )
+          .join("");
+      }
+    }
+
+    async saveTemplate() {
+      const name = this.templateNameInput?.value;
+      const type = this.templateTypeSelect?.value;
+      const content = this.editor
+        ? this.editor.root.innerHTML
+        : document.getElementById("template-content-textarea")?.value;
+
+      if (!name || !content) {
+        this.showNotification("Please fill in all required fields", "error");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/pdf/templates/upsert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            id: this.selectedTemplate,
+            name,
+            description: "",
+            content,
+            templateType: type,
+            pageSize: "8.5x11",
+          }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          this.showNotification("Template saved successfully!", "success");
+          this.closeTemplateEditor();
+          await this.loadTemplates();
+        } else {
+          this.showNotification("Error saving template: " + data.error, "error");
+        }
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error saving template:", error);
+        this.showNotification("Error saving template", "error");
+      }
+    }
+
+    async loadTemplatesForGeneration() {
+      // Load templates for the generate tab
+      await this.loadTemplates();
+
+      const select = document.getElementById("template-select");
+      if (select) {
+        select.innerHTML =
+          '<option value="">Choose a template...</option>' +
+          this.templates
+            .map(
+              (template) =>
+                `<option value="${template.id}">${template.name} (${template.templateType})</option>`
+            )
+            .join("");
+      }
+    }
+
+    async searchProjects() {
+      const query = document.getElementById("project-search")?.value;
+      if (!query) {
+        this.showNotification("Please enter a search term", "error");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/projects/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ query }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          this.projects = data.data || [];
+          this.renderProjectResults();
+        } else {
+          this.showNotification("Error searching projects: " + data.error, "error");
+        }
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error searching projects:", error);
+        this.showNotification("Error searching projects", "error");
+      }
+    }
+
+    renderProjectResults() {
+      const container = document.getElementById("project-results");
+      if (!container) return;
+
+      if (this.projects.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No projects found</p>';
+        return;
+      }
+
+      container.innerHTML = `
+        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Search Results</h4>
+        <div class="space-y-2">
+          ${this.projects
+            .map(
+              (project) => `
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+              <div>
+                <h5 class="font-medium text-gray-900 dark:text-white">${project.title}</h5>
+                <p class="text-sm text-gray-600 dark:text-gray-400">${project.address || "No address"}</p>
+              </div>
+              <button 
+                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm select-project-btn"
+                data-project-id="${project.id}"
+              >
+                Select
+              </button>
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+      `;
+
+      // Add event listeners to the select buttons
+      container.querySelectorAll(".select-project-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const projectId = e.target.getAttribute("data-project-id");
+          this.selectProject(projectId);
+        });
+      });
+    }
+
+    selectProject(projectId) {
+      this.selectedProject = projectId;
+      this.showNotification("Project selected", "success");
+    }
+
+    async previewPDF() {
+      if (!this.selectedTemplate || !this.selectedProject) {
+        this.showNotification("Please select a template and project", "error");
+        return;
+      }
+
+      // Open preview in new window
+      const previewUrl = `/api/pdf/preview?templateId=${this.selectedTemplate}&projectId=${this.selectedProject}`;
+      window.open(previewUrl, "_blank");
+    }
+
+    async generatePDF() {
+      if (!this.selectedTemplate || !this.selectedProject) {
+        this.showNotification("Please select a template and project", "error");
+        return;
+      }
+
+      try {
+        const pageSize = document.getElementById("page-size")?.value || "8.5x11";
+        const orientation = document.getElementById("orientation")?.value || "portrait";
+
+        const response = await fetch("/api/pdf/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            templateId: this.selectedTemplate,
+            projectId: this.selectedProject,
+            pageSize,
+            orientation,
+          }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          this.showNotification("PDF generated successfully!", "success");
+          // Download the PDF
+          if (data.downloadUrl) {
+            window.open(data.downloadUrl, "_blank");
+          }
+        } else {
+          this.showNotification("Error generating PDF: " + data.error, "error");
+        }
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error generating PDF:", error);
+        this.showNotification("Error generating PDF", "error");
+      }
+    }
+
+    showNotification(message, type = "info") {
+      // Simple notification system
+      const notification = document.createElement("div");
+      notification.className = `fixed top-4 right-4 p-4 rounded-md text-white z-50 ${
+        type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"
+      }`;
+      notification.textContent = message;
+
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    resetTemplateForm() {
+      if (this.templateNameInput) {
+        this.templateNameInput.value = "";
+      }
+      if (this.templateTypeSelect) {
+        this.templateTypeSelect.value = "body";
+      }
+      if (this.editor) {
+        this.editor.setText("");
+      } else {
+        const textarea = document.getElementById("template-content-textarea");
+        if (textarea) {
+          textarea.value = "";
+        }
+      }
+      document.getElementById("extracted-fields")?.classList.add("hidden");
+    }
+
+    editTemplate(templateId) {
+      console.log("📄 [PDF-SYSTEM] Editing template:", templateId);
+      this.openTemplateEditor(templateId);
+    }
+
+    async deleteTemplate(templateId) {
+      if (!confirm("Are you sure you want to delete this template?")) {
+        return;
+      }
+
+      try {
+        console.log("📄 [PDF-SYSTEM] Deleting template:", templateId);
+        const response = await fetch("/api/pdf/templates/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id: templateId }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          this.showNotification("Template deleted successfully!", "success");
+          await this.loadTemplates();
+        } else {
+          this.showNotification("Error deleting template: " + data.error, "error");
+        }
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error deleting template:", error);
+        this.showNotification("Error deleting template", "error");
+      }
+    }
+  }
+
+  // Initialize PDF System
+  document.addEventListener("DOMContentLoaded", () => {
+    window.pdfSystem = new PDFSystem();
+  });
+</script>
+
+<style>
+  .pdf-tab {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .pdf-tab:hover {
+    border-color: #d1d5db;
+  }
+
+  .pdf-tab-content {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<!-- PDF.js Scripts (like in New.astro) -->
+<script src="/js/pdf.worker.min.js" defer></script>
+<script src="/js/pdf.min.js" defer></script>
+
+<!-- Quill WYSIWYG Editor - Loaded dynamically to avoid conflicts -->
