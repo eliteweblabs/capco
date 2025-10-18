@@ -586,10 +586,34 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       }
     }
 
-    previewInvoice() {
-      // Open preview in new window
-      const previewUrl = `/api/pdf/preview?invoiceId=${this.invoiceId}`;
-      window.open(previewUrl, "_blank");
+    async previewInvoice() {
+      if (!this.invoiceId || !this.projectId) {
+        this.showNotification("Missing invoice or project information", "error");
+        return;
+      }
+
+      try {
+        // First, get the invoice data to find the template
+        const response = await fetch(`/api/proposal/get?id=${this.invoiceId}`, {
+          credentials: "include",
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          const invoice = data.data;
+          const templateId = invoice.templateId || "1"; // Default template ID
+
+          // Open preview with correct parameters
+          const previewUrl = `/api/pdf/preview?templateId=${templateId}&projectId=${this.projectId}`;
+          window.open(previewUrl, "_blank");
+        } else {
+          this.showNotification("Could not load invoice data", "error");
+        }
+      } catch (error) {
+        console.error("❌ [ENHANCED-PROPOSAL] Error previewing invoice:", error);
+        this.showNotification("Error loading preview", "error");
+      }
     }
 
     showNotification(message, type) {

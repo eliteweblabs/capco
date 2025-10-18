@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  ninja-invoice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ninja-invoice
+    ports:
+      - "8080:80"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=ninja_invoice
+      - DB_USERNAME=ninja_user
+      - DB_PASSWORD=ninja_password
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+    volumes:
+      - ninja_storage:/var/www/storage
+      - ninja_bootstrap:/var/www/bootstrap/cache
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - ninja_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: ninja_mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=ninja_invoice
+      - MYSQL_USER=ninja_user
+      - MYSQL_PASSWORD=ninja_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ninja_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ninja_redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - ninja_network
+
+volumes:
+  ninja_storage:
+  ninja_bootstrap:
+  mysql_data:
+  redis_data:
+
+networks:
+  ninja_network:
+    driver: bridge

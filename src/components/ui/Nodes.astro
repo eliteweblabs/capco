@@ -1,6 +1,5 @@
 ---
 // NodeEditor.astro - A complete node-based editor with demo page
-import App from "../components/common/App.astro";
 ---
 
 <style>
@@ -23,13 +22,6 @@ import App from "../components/common/App.astro";
     line-height: 1.5;
   }
 
-  .demo-section {
-    background: #111827;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
   .demo-section-title {
     color: white;
     font-size: 1.25rem;
@@ -50,16 +42,14 @@ import App from "../components/common/App.astro";
   .node-editor-wrapper {
     width: 100%;
     margin: 0 auto;
+    z-index: 0;
   }
 
   .node-editor-container {
     position: relative;
     width: 100%;
-    height: 600px;
-    background: #0f0f0f;
-    border-radius: 8px;
+    height: 100%;
     overflow: hidden;
-    border: 1px solid #333;
     margin: 0;
     padding: 0;
   }
@@ -68,11 +58,6 @@ import App from "../components/common/App.astro";
     position: relative;
     width: 100%;
     height: 100%;
-    background-image: radial-gradient(circle, #333 1px, transparent 1px);
-    background-size: 20px 20px;
-    background-position:
-      0 0,
-      10px 10px;
     cursor: grab;
     margin: 0;
     padding: 0;
@@ -208,24 +193,13 @@ import App from "../components/common/App.astro";
     background: #10b981;
   }
 
-  :global(.node-volume) {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: #666;
-    margin-top: 4px;
-    margin: 0;
-    padding: 0;
-  }
-
   :global(.connection-point) {
     position: absolute;
-    width: 12px;
+    /* width: 12px;
     height: 12px;
     background: #3b82f6;
     border: 2px solid #1a1a1a;
-    border-radius: 50%;
+    border-radius: 50%; */
     cursor: pointer;
     z-index: 6;
     box-sizing: border-box;
@@ -286,22 +260,64 @@ import App from "../components/common/App.astro";
 
   :global(.connection-line) {
     stroke: #3b82f6;
-    stroke-width: 2;
+    stroke-width: 3;
     fill: none;
-    stroke-dasharray: 5, 5;
-    animation: dash 1s linear infinite;
+    stroke-dasharray: 8, 4;
+    animation:
+      dash 2s linear infinite,
+      drawLine 1.5s ease-in-out forwards;
     pointer-events: none;
   }
 
   @keyframes dash {
     to {
-      stroke-dashoffset: -10;
+      stroke-dashoffset: -12;
+    }
+  }
+
+  @keyframes drawLine {
+    from {
+      stroke-dasharray: 0, 1000;
+    }
+    to {
+      stroke-dasharray: 8, 4;
     }
   }
 
   :global(.connection-arrow) {
     fill: #3b82f6;
     pointer-events: none;
+    animation:
+      arrowPulse 1.5s ease-in-out infinite,
+      drawArrow 1.5s ease-in-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes arrowPulse {
+    0%,
+    100% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+
+  @keyframes drawArrow {
+    0% {
+      opacity: 0;
+      transform: scale(0);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(0.5);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   :global(.node-card[data-type="database"] .node-icon) {
@@ -325,56 +341,52 @@ import App from "../components/common/App.astro";
   }
 </style>
 
-<App>
-  <div class="demo-section">
-    <div class="node-editor-wrapper">
-      <div class="node-editor-container">
-        <div class="node-editor-canvas" id="node-canvas">
-          <!-- Nodes will be dynamically added here -->
-        </div>
+<div class="node-editor-wrapper absolute inset-0 dot-grid">
+  <div class="node-editor-container">
+    <div class="node-editor-canvas" id="node-canvas">
+      <!-- Nodes will be dynamically added here -->
+    </div>
 
-        <!-- Connection overlay for drawing arrows -->
-        <svg class="connections-overlay" id="connections-svg">
-          <!-- Arrows will be drawn here -->
+    <!-- Connection overlay for drawing arrows -->
+    <svg class="connections-overlay" id="connections-svg">
+      <!-- Arrows will be drawn here -->
+    </svg>
+
+    <!-- Toolbar -->
+    <div class="node-toolbar hidden" style="display: none;">
+      <button class="add-node-btn" id="add-node-btn">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
-
-        <!-- Toolbar -->
-        <div class="node-toolbar">
-          <button class="add-node-btn" id="add-node-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Add Node
-          </button>
-          <button class="clear-btn" id="clear-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="3,6 5,6 21,6"></polyline>
-              <path
-                d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"
-              ></path>
-            </svg>
-            Clear All
-          </button>
-        </div>
-      </div>
+        Add Node
+      </button>
+      <button class="clear-btn" id="clear-btn">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="3,6 5,6 21,6"></polyline>
+          <path
+            d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"
+          ></path>
+        </svg>
+        Clear All
+      </button>
     </div>
   </div>
-</App>
+</div>
 
 <script>
   class NodeEditor {
@@ -388,6 +400,17 @@ import App from "../components/common/App.astro";
       this.connecting = false;
       this.connectionStart = null;
       this.nodeCounter = 0;
+
+      // Center maintenance properties
+      this.centerX = 0;
+      this.centerY = 0;
+      this.nodeSpacing = 250; // Horizontal spacing between nodes
+      this.maxVisibleNodes = 5; // Maximum nodes visible at once
+
+      // Continuous scroll properties
+      this.isScrolling = false;
+      this.scrollSpeed = 2;
+      this.scrollInterval = null;
 
       this.init();
     }
@@ -415,69 +438,317 @@ import App from "../components/common/App.astro";
     }
 
     addSampleNodes(delay = 0) {
-      // Add some sample nodes with delay
+      // Start continuous scrolling immediately
+      this.startContinuousScroll();
+
+      // Add some sample nodes with their original specific positioning
       setTimeout(() => {
         this.addNode({
-          id: "analytics-1",
-          type: "analytics",
+          id: "create-account",
+          type: "default",
           title: "Create Account",
-          subtitle: "plausible-analytics-ce-produc...",
+          subtitle: "<a href='/auth/login?register=true'>Register</a>",
           status: "2 Minutes",
-          volume: "plausible-volume",
-          x: 100,
-          y: 100,
+          x: 1200,
+          y: 50,
         });
       }, delay);
 
       setTimeout(() => {
         this.addNode({
-          id: "database-1",
-          type: "database",
-          title: "Upload Files",
-          status: "5 days ago via Docker Image",
-          volume: "postgres-volume",
-          x: 400,
-          y: 100,
+          id: "login",
+          type: "login",
+          title: "Login",
+          subtitle: "<a href='/auth/login'>Login</a>",
+          status: "2 Seconds",
+          x: 1650,
+          y: 600,
         });
       }, delay + 500);
 
       setTimeout(() => {
         this.addNode({
-          id: "storage-1",
-          type: "storage",
-          title: "ClickHouse",
-          status: "5 days ago via GitHub",
-          volume: "clickhouse-volume",
-          x: 250,
+          id: "upload-files",
+          type: "default",
+          title: "Upload Files",
+          status: "PDF, jpeg, png, autocad, revit, dwg",
+          x: 1850,
           y: 300,
         });
       }, delay + 1000);
 
-      // Add connections with additional delay
       setTimeout(() => {
-        this.addConnection("analytics-1", "database-1", "right", "left");
+        this.addNode({
+          id: "proposal",
+          type: "storage",
+          title: "Generating Proposal",
+          status: "24 hours to complete",
+          x: 2050,
+          y: 400,
+        });
       }, delay + 1500);
 
       setTimeout(() => {
-        this.addConnection("analytics-1", "storage-1", "bottom", "top");
+        this.addNode({
+          id: "approve",
+          type: "storage",
+          title: "Approve Proposal",
+          status: "24 hours to complete",
+          x: 2250,
+          y: 700,
+        });
       }, delay + 2000);
+
+      setTimeout(() => {
+        this.addNode({
+          id: "revision",
+          type: "storage",
+          title: "Request Revision",
+          status: "24 hours to complete",
+          x: 2450,
+          y: 200,
+        });
+      }, delay + 2500);
+
+      setTimeout(() => {
+        this.addNode({
+          id: "final-1",
+          type: "storage",
+          title: "Final Review",
+          status: "24 hours to complete",
+          x: 2850,
+          y: 350,
+        });
+      }, delay + 2500);
+
+      setTimeout(() => {
+        this.addNode({
+          id: "deliverable",
+          type: "client",
+          title: "Final Documents Ready",
+          status: "24 hours to complete",
+          x: 3050,
+          y: 500,
+        });
+
+        // Keep scrolling - don't stop it
+        // this.stopContinuousScroll(); // Removed to keep scrolling
+      }, delay + 3000);
+
+      setTimeout(() => {
+        this.addNode({
+          id: "final-2",
+          type: "storage",
+          title: "Blow Me Bitches Review",
+          status: "24 hours to complete",
+          x: 3650,
+          y: 200,
+        });
+
+        // Keep scrolling - don't stop it
+        // this.stopContinuousScroll(); // Removed to keep scrolling
+      }, delay + 200);
+
+      // Add connections with additional delay
+      setTimeout(() => {
+        this.addConnection("create-account", "upload-files", "right", "left");
+      }, delay + 1600);
+
+      setTimeout(() => {
+        this.addConnection("login", "upload-files", "right", "left");
+      }, delay + 2500);
+
+      setTimeout(() => {
+        this.addConnection("upload-files", "proposal", "right", "left");
+      }, delay + 1600);
+
+      setTimeout(() => {
+        this.addConnection("proposal", "approve", "right", "left");
+      }, delay + 2000);
+
+      setTimeout(() => {
+        this.addConnection("proposal", "revision", "right", "left");
+      }, delay + 2600);
+
+      setTimeout(() => {
+        this.addConnection("approval-1", "final-1", "right", "left");
+      }, delay + 3200);
     }
 
     addNode(options = {}) {
       const nodeId = options.id || `node-${++this.nodeCounter}`;
+
+      // Calculate position using center maintenance
+      const position = this.calculateNodePosition(options);
+
       const node = {
         id: nodeId,
         type: options.type || "default",
         title: options.title || `Node ${this.nodeCounter}`,
         subtitle: options.subtitle || "",
         status: options.status || "Active",
-        volume: options.volume || "",
-        x: options.x || Math.random() * 400 + 100,
-        y: options.y || Math.random() * 300 + 100,
+        x: position.x,
+        y: position.y,
       };
 
       this.nodes.set(nodeId, node);
       this.renderNode(node);
+
+      // Update center and shift existing nodes
+      this.updateCenterAndShiftNodes();
+
+      return node;
+    }
+
+    calculateNodePosition(options = {}) {
+      // If specific coordinates are provided, use them
+      if (options.x !== undefined && options.y !== undefined) {
+        return { x: options.x, y: options.y };
+      }
+
+      // Calculate canvas dimensions
+      const canvasWidth = this.canvas.offsetWidth;
+      const canvasHeight = this.canvas.offsetHeight;
+      this.centerX = canvasWidth / 2;
+      this.centerY = canvasHeight / 2;
+
+      // Always place new nodes on the right side of the screen
+      const x = canvasWidth - 200; // Right side of screen
+      const y = this.centerY + (Math.random() - 0.5) * 300; // Add vertical variation
+
+      return { x, y };
+    }
+
+    // Method to preserve individual node positioning while shifting
+    preserveNodePositions() {
+      // Store current positions of all nodes
+      const nodePositions = new Map();
+      this.nodes.forEach((node, nodeId) => {
+        nodePositions.set(nodeId, { x: node.x, y: node.y });
+      });
+      return nodePositions;
+    }
+
+    // Method to restore individual node positions
+    restoreNodePositions(nodePositions) {
+      nodePositions.forEach((position, nodeId) => {
+        const node = this.nodes.get(nodeId);
+        if (node) {
+          node.x = position.x;
+          node.y = position.y;
+
+          const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
+          if (nodeElement) {
+            nodeElement.style.left = `${node.x}px`;
+            nodeElement.style.top = `${node.y}px`;
+          }
+        }
+      });
+    }
+
+    updateCenterAndShiftNodes() {
+      // Only shift if continuous scroll is not running
+      if (!this.isScrolling) {
+        const canvasWidth = this.canvas.offsetWidth;
+        const canvasHeight = this.canvas.offsetHeight;
+        this.centerX = canvasWidth / 2;
+        this.centerY = canvasHeight / 2;
+
+        // Get all nodes as an array and sort by x position
+        const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.x - b.x);
+
+        // Only shift if we have multiple nodes
+        if (nodeArray.length > 1) {
+          const shiftAmount = this.nodeSpacing;
+          this.shiftAllNodesLeft(shiftAmount);
+        }
+      }
+    }
+
+    shiftAllNodesLeft(shiftAmount) {
+      // Apply transition to all nodes and connections
+      const allNodeElements = this.canvas.querySelectorAll(".node-card");
+      allNodeElements.forEach((element) => {
+        element.style.transition = "all 0.5s ease-in-out";
+      });
+
+      // Get all nodes sorted by x position to maintain order
+      const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.x - b.x);
+
+      // Shift each node individually to maintain their relative positions
+      nodeArray.forEach((node, index) => {
+        // Update the data structure - each node shifts by the same amount
+        node.x -= shiftAmount;
+
+        // Update the DOM element
+        const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
+        if (nodeElement) {
+          nodeElement.style.left = `${node.x}px`;
+          nodeElement.style.top = `${node.y}px`;
+        }
+      });
+
+      // Remove nodes that have scrolled off the left side
+      this.removeOffscreenNodes();
+
+      // Update connections with a slight delay to ensure smooth animation
+      setTimeout(() => {
+        this.updateConnections();
+      }, 50);
+
+      // Clean up transitions after animation
+      setTimeout(() => {
+        allNodeElements.forEach((element) => {
+          element.style.transition = "";
+        });
+      }, 500);
+    }
+
+    // Method to remove nodes that have scrolled off the left side
+    removeOffscreenNodes() {
+      const nodesToRemove = [];
+
+      this.nodes.forEach((node, nodeId) => {
+        // Remove nodes that are well off the left side of the screen
+        if (node.x < -1000) {
+          // Much larger buffer to keep nodes and arrows visible longer
+          nodesToRemove.push(nodeId);
+        }
+      });
+
+      // Remove nodes and their DOM elements
+      nodesToRemove.forEach((nodeId) => {
+        const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
+        if (nodeElement) {
+          nodeElement.remove();
+        }
+        this.nodes.delete(nodeId);
+      });
+
+      // Don't remove connections - keep arrows visible even if nodes are off-screen
+      // This ensures arrows stay visible during the timeline
+      // this.connections = this.connections.filter((connection) => {
+      //   return this.nodes.has(connection.from) && this.nodes.has(connection.to);
+      // });
+    }
+
+    // Method to add a node with center maintenance and smooth animation
+    addNodeWithCenterMaintenance(options = {}) {
+      const node = this.addNode(options);
+
+      // Add entrance animation
+      const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
+      if (nodeElement) {
+        nodeElement.style.opacity = "0";
+        nodeElement.style.transform = "scale(0.8)";
+
+        setTimeout(() => {
+          nodeElement.style.transition = "all 0.3s ease-out";
+          nodeElement.style.opacity = "1";
+          nodeElement.style.transform = "scale(1)";
+        }, 50);
+      }
+
       return node;
     }
 
@@ -508,7 +779,6 @@ import App from "../components/common/App.astro";
           <div class="status-indicator"></div>
           <span>${node.status}</span>
         </div>
-        ${node.volume ? `<div class="node-volume">💾 ${node.volume}</div>` : ""}
         <div class="connection-point input top"></div>
         <div class="connection-point input right"></div>
         <div class="connection-point input bottom"></div>
@@ -745,6 +1015,10 @@ import App from "../components/common/App.astro";
       path.setAttribute("d", pathData);
       path.setAttribute("class", "connection-line");
 
+      // Add drawing animation delay based on connection order
+      const delay = this.connections.indexOf(connection) * 200; // 200ms delay between each connection
+      path.style.animationDelay = `${delay}ms`;
+
       // Add arrowhead at the end
       const arrowSize = 8;
       const arrowX = toPos.x - arrowSize;
@@ -755,6 +1029,7 @@ import App from "../components/common/App.astro";
         `${toPos.x},${toPos.y} ${arrowX},${arrowY - arrowSize / 2} ${arrowX},${arrowY + arrowSize / 2}`
       );
       arrow.setAttribute("class", "connection-arrow");
+      arrow.style.animationDelay = `${delay + 1000}ms`; // Arrow appears after line is drawn
 
       this.svg.appendChild(path);
       this.svg.appendChild(arrow);
@@ -791,9 +1066,15 @@ import App from "../components/common/App.astro";
       // Clear existing connections
       this.svg.innerHTML = "";
 
-      // Re-render all connections
+      // Re-render all connections with updated positions
       this.connections.forEach((connection) => {
-        this.renderConnection(connection);
+        const fromNode = this.nodes.get(connection.from);
+        const toNode = this.nodes.get(connection.to);
+
+        // Only render if both nodes exist
+        if (fromNode && toNode) {
+          this.renderConnection(connection);
+        }
       });
     }
 
@@ -803,10 +1084,96 @@ import App from "../components/common/App.astro";
       this.canvas.innerHTML = "";
       this.svg.innerHTML = "";
     }
+
+    // Method to continuously add nodes to demonstrate center maintenance
+    startContinuousNodeAddition(interval = 2000) {
+      const nodeTypes = ["analytics", "database", "storage", "default"];
+      const titles = [
+        "Process Data",
+        "Analyze Results",
+        "Generate Report",
+        "Send Notification",
+        "Update Status",
+        "Validate Input",
+        "Transform Data",
+        "Export Results",
+        "Archive Files",
+      ];
+
+      const addNextNode = () => {
+        const randomType = nodeTypes[Math.floor(Math.random() * nodeTypes.length)];
+        const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+
+        this.addNodeWithCenterMaintenance({
+          type: randomType,
+          title: randomTitle,
+          status: `${Math.floor(Math.random() * 60)} minutes`,
+        });
+
+        // Schedule next node
+        setTimeout(addNextNode, interval);
+      };
+
+      // Start the process
+      setTimeout(addNextNode, interval);
+    }
+
+    // Method to stop continuous addition (if needed)
+    stopContinuousAddition() {
+      // This would require storing the timeout IDs, but for simplicity
+      // we'll just clear all nodes
+      this.clearAll();
+    }
+
+    // Start continuous smooth scrolling
+    startContinuousScroll() {
+      this.isScrolling = true;
+      this.scrollSpeed = 3; // pixels per frame - adjust this value to change speed
+      this.scrollInterval = null;
+
+      const scroll = () => {
+        if (this.isScrolling) {
+          // Move all nodes left smoothly
+          this.nodes.forEach((node, nodeId) => {
+            node.x -= this.scrollSpeed;
+
+            const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
+            if (nodeElement) {
+              nodeElement.style.left = `${node.x}px`;
+            }
+          });
+
+          // Update connections every frame to maintain arrows
+          this.updateConnections();
+
+          // Remove offscreen nodes
+          this.removeOffscreenNodes();
+
+          // Continue scrolling
+          this.scrollInterval = requestAnimationFrame(scroll);
+        }
+      };
+
+      // Start the scroll loop
+      this.scrollInterval = requestAnimationFrame(scroll);
+    }
+
+    // Stop continuous scrolling
+    stopContinuousScroll() {
+      this.isScrolling = false;
+      if (this.scrollInterval) {
+        cancelAnimationFrame(this.scrollInterval);
+        this.scrollInterval = null;
+      }
+    }
   }
 
   // Initialize when DOM is loaded
   document.addEventListener("DOMContentLoaded", () => {
-    new NodeEditor();
+    const nodeEditor = new NodeEditor();
+
+    // Optional: Start continuous node addition to demonstrate center maintenance
+    // Uncomment the line below to see the center maintenance in action
+    // nodeEditor.startContinuousNodeAddition(3000);
   });
 </script>
