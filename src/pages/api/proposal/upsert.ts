@@ -6,7 +6,7 @@ import { stripe } from "../../../lib/stripe";
 
 /**
  * Standardized Proposal UPSERT API
- * 
+ *
  * POST Body:
  * - id?: number (if updating existing invoice)
  * - projectId: number
@@ -18,7 +18,7 @@ import { stripe } from "../../../lib/stripe";
  * - taxRate?: number
  * - lineItems?: Array<{ description: string, quantity: number, unitPrice: number }>
  * - paymentIntentId?: string (for confirming payment)
- * 
+ *
  * Examples:
  * - Create: POST /api/proposal/upsert { projectId: 123 }
  * - Update: POST /api/proposal/upsert { id: 456, status: "paid" }
@@ -59,6 +59,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       proposalNotes = null,
       taxRate = 0.0,
       lineItems = null,
+      templateId = "1", // Default template ID
     } = body;
 
     // Validate required fields
@@ -115,24 +116,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       notes,
       proposalNotes,
       taxRate,
+      templateId,
       ...(id ? {} : { createdBy: currentUser.id }),
-      ...(id ? {} : { dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] }),
+      ...(id
+        ? {}
+        : { dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] }),
     };
 
     // Create or update invoice
     const { data: invoice, error: invoiceError } = await (id
-      ? supabase
-          .from("invoices")
-          .update(invoiceData)
-          .eq("id", id)
-          .select()
-          .single()
-      : supabase
-          .from("invoices")
-          .insert(invoiceData)
-          .select()
-          .single()
-    );
+      ? supabase.from("invoices").update(invoiceData).eq("id", id).select().single()
+      : supabase.from("invoices").insert(invoiceData).select().single());
 
     if (invoiceError) {
       return createErrorResponse(

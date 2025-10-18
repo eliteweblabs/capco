@@ -1,0 +1,237 @@
+---
+// Ninja Invoice Integration Component
+// Handles automatic invoice creation and iframe integration
+
+interface Props {
+  projectId: string;
+  projectData?: any;
+  currentUser?: any;
+}
+
+const { projectId, projectData, currentUser } = Astro.props;
+---
+
+<div class="ninja-invoice-integration">
+  <!-- Ninja Invoice iframe container -->
+  <div id="ninja-invoice-container" class="w-full h-screen border rounded-lg">
+    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 border-b">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Invoice Management</h3>
+      <div class="flex space-x-2">
+        <button
+          id="create-invoice-btn"
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Create Invoice
+        </button>
+        <button
+          id="refresh-invoice-btn"
+          class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+        >
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading-state" class="flex items-center justify-center h-96">
+      <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4">
+        </div>
+        <p class="text-gray-600 dark:text-gray-400">Loading Ninja Invoice...</p>
+      </div>
+    </div>
+
+    <!-- Ninja Invoice iframe -->
+    <iframe
+      id="ninja-invoice-iframe"
+      src=""
+      class="w-full h-full border-0 hidden"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+      allow="payment; microphone; camera"></iframe>
+  </div>
+</div>
+
+<script define:vars={{ projectId, projectData, currentUser }}>
+  class NinjaInvoiceIntegration {
+    constructor() {
+      this.projectId = projectId;
+      this.projectData = projectData;
+      this.currentUser = currentUser;
+      this.ninjaInvoiceUrl =
+        import.meta.env.NINJA_INVOICE_URL || "https://your-ninja-invoice-instance.com"; // Self-hosted Ninja Invoice URL
+      this.init();
+    }
+
+    init() {
+      this.setupEventListeners();
+      this.loadNinjaInvoice();
+    }
+
+    setupEventListeners() {
+      // Create invoice button
+      document.getElementById("create-invoice-btn")?.addEventListener("click", () => {
+        this.createInvoice();
+      });
+
+      // Refresh button
+      document.getElementById("refresh-invoice-btn")?.addEventListener("click", () => {
+        this.loadNinjaInvoice();
+      });
+    }
+
+    async loadNinjaInvoice() {
+      const iframe = document.getElementById("ninja-invoice-iframe");
+      const loadingState = document.getElementById("loading-state");
+
+      if (!iframe || !loadingState) return;
+
+      try {
+        // Show loading state
+        loadingState.classList.remove("hidden");
+        iframe.classList.add("hidden");
+
+        // Set iframe source to Ninja Invoice
+        iframe.src = this.ninjaInvoiceUrl;
+
+        // Handle iframe load
+        iframe.onload = () => {
+          loadingState.classList.add("hidden");
+          iframe.classList.remove("hidden");
+          console.log("✅ [NINJA-INVOICE] Iframe loaded successfully");
+        };
+
+        iframe.onerror = () => {
+          console.error("❌ [NINJA-INVOICE] Failed to load iframe");
+          this.showError("Failed to load Ninja Invoice. Please check your connection.");
+        };
+      } catch (error) {
+        console.error("❌ [NINJA-INVOICE] Error loading iframe:", error);
+        this.showError("Error loading Ninja Invoice");
+      }
+    }
+
+    async createInvoice() {
+      if (!this.projectData) {
+        this.showError("Project data not available");
+        return;
+      }
+
+      try {
+        console.log("📄 [NINJA-INVOICE] Creating invoice for project:", this.projectId);
+
+        // Prepare invoice data for Ninja Invoice
+        const invoiceData = {
+          client: {
+            name: this.projectData.authorProfile?.companyName || "Client",
+            email: this.projectData.authorProfile?.email || "",
+            phone: this.projectData.authorProfile?.phone || "",
+            address: this.projectData.address || "",
+          },
+          project: {
+            id: this.projectId,
+            title: this.projectData.title || "Fire Protection System",
+            description:
+              this.projectData.description || "Fire protection system installation and maintenance",
+            address: this.projectData.address || "",
+          },
+          lineItems: this.generateLineItems(),
+          metadata: {
+            source: "capco-fire-protection",
+            projectId: this.projectId,
+            createdBy: this.currentUser?.id || "system",
+          },
+        };
+
+        // Send data to Ninja Invoice via postMessage
+        const iframe = document.getElementById("ninja-invoice-iframe");
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage(
+            {
+              type: "CREATE_INVOICE",
+              data: invoiceData,
+            },
+            this.ninjaInvoiceUrl
+          );
+        }
+
+        this.showSuccess("Invoice creation initiated");
+      } catch (error) {
+        console.error("❌ [NINJA-INVOICE] Error creating invoice:", error);
+        this.showError("Failed to create invoice");
+      }
+    }
+
+    generateLineItems() {
+      // Generate line items based on project data
+      const lineItems = [
+        {
+          description: "Fire Protection System Design",
+          quantity: 1,
+          rate: 2500.0,
+          amount: 2500.0,
+        },
+        {
+          description: "Fire Sprinkler System Installation",
+          quantity: 1,
+          rate: 5000.0,
+          amount: 5000.0,
+        },
+        {
+          description: "Fire Alarm System Installation",
+          quantity: 1,
+          rate: 3000.0,
+          amount: 3000.0,
+        },
+        {
+          description: "System Testing and Commissioning",
+          quantity: 1,
+          rate: 1500.0,
+          amount: 1500.0,
+        },
+      ];
+
+      return lineItems;
+    }
+
+    showSuccess(message) {
+      this.showNotification(message, "success");
+    }
+
+    showError(message) {
+      this.showNotification(message, "error");
+    }
+
+    showNotification(message, type = "info") {
+      const notification = document.createElement("div");
+      notification.className = `fixed top-4 right-4 px-4 py-2 rounded-md text-white z-50 ${
+        type === "success" ? "bg-green-500" : type === "error" ? "bg-red-500" : "bg-blue-500"
+      }`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    new NinjaInvoiceIntegration();
+  });
+</script>
+
+<style>
+  .ninja-invoice-integration {
+    @apply w-full h-full;
+  }
+
+  #ninja-invoice-container {
+    @apply border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden;
+  }
+
+  #ninja-invoice-iframe {
+    @apply w-full h-full;
+    min-height: 600px;
+  }
+</style>
