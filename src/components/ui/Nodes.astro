@@ -5,46 +5,6 @@
 <style>
   /* Demo page styles */
 
-  .demo-title {
-    color: white;
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
-    margin: 0;
-    padding: 0;
-  }
-
-  .demo-description {
-    color: #9ca3af;
-    margin-bottom: 2rem;
-    margin: 0;
-    padding: 0;
-    line-height: 1.5;
-  }
-
-  .demo-section-title {
-    color: white;
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    margin: 0;
-    padding: 0;
-  }
-
-  .demo-instruction {
-    color: #9ca3af;
-    margin-bottom: 1rem;
-    margin: 0;
-    padding: 0;
-  }
-
-  /* Node editor styles */
-  .node-editor-wrapper {
-    width: 100%;
-    margin: 0 auto;
-    z-index: 0;
-  }
-
   .node-editor-container {
     position: relative;
     width: 100%;
@@ -194,15 +154,15 @@
   }
 
   :global(.connection-point) {
-    position: absolute;
-    /* width: 12px;
+    /* position: absolute;
+    width: 12px;
     height: 12px;
     background: #3b82f6;
     border: 2px solid #1a1a1a;
     border-radius: 50%; */
-    cursor: pointer;
+    /* cursor: pointer;
     z-index: 6;
-    box-sizing: border-box;
+    box-sizing: border-box; */
   }
 
   :global(.connection-point:hover) {
@@ -351,40 +311,6 @@
     <svg class="connections-overlay" id="connections-svg">
       <!-- Arrows will be drawn here -->
     </svg>
-
-    <!-- Toolbar -->
-    <div class="node-toolbar hidden" style="display: none;">
-      <button class="add-node-btn" id="add-node-btn">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        Add Node
-      </button>
-      <button class="clear-btn" id="clear-btn">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="3,6 5,6 21,6"></polyline>
-          <path
-            d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"
-          ></path>
-        </svg>
-        Clear All
-      </button>
-    </div>
   </div>
 </div>
 
@@ -422,14 +348,6 @@
 
     setupEventListeners() {
       // Add node button
-      document.getElementById("add-node-btn").addEventListener("click", () => {
-        this.addNode();
-      });
-
-      // Clear button
-      document.getElementById("clear-btn").addEventListener("click", () => {
-        this.clearAll();
-      });
 
       // Canvas events
       this.canvas.addEventListener("mousedown", this.handleCanvasMouseDown.bind(this));
@@ -437,128 +355,277 @@
       this.canvas.addEventListener("mouseup", this.handleCanvasMouseUp.bind(this));
     }
 
-    addSampleNodes(delay = 0) {
+    addSampleNodes(delay = 1500) {
       // Start continuous scrolling immediately
       this.startContinuousScroll();
+      // this.startContinuousNodeAddition();
+
+      const screenWidth = this.canvas.offsetWidth;
+      const screenHeight = this.canvas.offsetHeight;
+
+      // this.addNodeWithCenterMaintenance({
+      //     type: randomType,
+      //     title: randomTitle,
+      //     status: `${Math.floor(Math.random() * 60)} minutes`,
+      //   });
 
       // Add some sample nodes with their original specific positioning
       setTimeout(() => {
-        this.addNode({
+        this.addNodeWithCenterMaintenance({
           id: "create-account",
           type: "default",
           title: "Create Account",
           subtitle: "<a href='/auth/login?register=true'>Register</a>",
           status: "2 Minutes",
-          x: 1200,
-          y: 50,
+          x: screenWidth - 400,
+          y: screenHeight * 0.2,
         });
       }, delay);
 
       setTimeout(() => {
-        this.addNode({
+        this.addNodeWithCenterMaintenance({
           id: "login",
           type: "login",
           title: "Login",
           subtitle: "<a href='/auth/login'>Login</a>",
           status: "2 Seconds",
-          x: 1650,
-          y: 600,
+          x: screenWidth - 200,
+          y: screenHeight * 0.5,
         });
-      }, delay + 500);
+      }, delay + delay);
 
-      setTimeout(() => {
-        this.addNode({
-          id: "upload-files",
-          type: "default",
-          title: "Upload Files",
-          status: "PDF, jpeg, png, autocad, revit, dwg",
-          x: 1850,
-          y: 300,
-        });
-      }, delay + 1000);
+      setTimeout(
+        () => {
+          this.addConnection("create-account", "login", "right", "left");
+        },
+        delay + delay + 100
+      ); // After upload-files is created
 
-      setTimeout(() => {
-        this.addNode({
-          id: "proposal",
-          type: "storage",
-          title: "Generating Proposal",
-          status: "24 hours to complete",
-          x: 2050,
-          y: 400,
-        });
-      }, delay + 1500);
+      setTimeout(
+        () => {
+          this.addConnection("create-account", "login", "right", "left");
+        },
+        delay + delay + 100
+      ); // After uplo
 
-      setTimeout(() => {
-        this.addNode({
-          id: "approve",
-          type: "storage",
-          title: "Approve Proposal",
-          status: "24 hours to complete",
-          x: 2250,
-          y: 700,
-        });
-      }, delay + 2000);
+      setTimeout(
+        () => {
+          this.addNodeWithCenterMaintenance({
+            id: "upload-files",
+            type: "default",
+            title: "Upload Files",
+            status: "PDF, jpeg, png, autocad, revit, dwg",
+            x: screenWidth,
+            y: screenHeight * 0.25,
+          });
+        },
+        delay + delay + delay
+      );
 
-      setTimeout(() => {
-        this.addNode({
-          id: "revision",
-          type: "storage",
-          title: "Request Revision",
-          status: "24 hours to complete",
-          x: 2450,
-          y: 200,
-        });
-      }, delay + 2500);
+      setTimeout(
+        () => {
+          this.addConnection("login", "upload-files", "right", "left");
+        },
+        delay + delay + delay + 10
+      ); // After upload-files is created
 
-      setTimeout(() => {
-        this.addNode({
-          id: "final-1",
-          type: "storage",
-          title: "Final Review",
-          status: "24 hours to complete",
-          x: 2850,
-          y: 350,
-        });
-      }, delay + 2500);
+      setTimeout(
+        () => {
+          this.addNodeWithCenterMaintenance({
+            id: "submit-files",
+            type: "default",
+            title: "Request Review",
+            status: "2-4 hours to complete",
+            x: screenWidth,
+            y: screenHeight * 0.65,
+          });
+        },
+        delay + delay + delay + delay
+      );
 
-      setTimeout(() => {
-        this.addNode({
-          id: "deliverable",
-          type: "client",
-          title: "Final Documents Ready",
-          status: "24 hours to complete",
-          x: 3050,
-          y: 500,
-        });
+      setTimeout(
+        () => {
+          this.addConnection("upload-files", "submit-files", "right", "left");
+        },
+        delay + delay + delay + delay + 10
+      ); // After upload-files is created
 
-        // Keep scrolling - don't stop it
-        // this.stopContinuousScroll(); // Removed to keep scrolling
-      }, delay + 3000);
+      setTimeout(
+        () => {
+          this.addNodeWithCenterMaintenance({
+            id: "generate-proposal",
+            type: "storage",
+            title: "Generating Proposal",
+            status: "24 hours to complete",
+            x: screenWidth,
+            y: screenHeight * 0.5,
+          });
+        },
+        delay + delay + delay + delay + delay
+      );
+
+      setTimeout(
+        () => {
+          this.addConnection("submit-files", "generate-proposal", "right", "left");
+        },
+        delay + delay + delay + delay + delay + 10
+      ); // After upload-files is created
+
+      setTimeout(
+        () => {
+          this.addNodeWithCenterMaintenance({
+            id: "proposal-approved",
+            type: "storage",
+            title: "Approve Proposal",
+            status: "24 hours to complete",
+            x: screenWidth,
+            y: screenHeight * 0.25,
+          });
+        },
+        delay + delay + delay + delay + delay + delay
+      );
+
+      setTimeout(
+        () => {
+          this.addNodeWithCenterMaintenance({
+            id: "proposal-request-revision",
+            type: "storage",
+            title: "Request Revision",
+            status: "2-4 hours to complete",
+            x: screenWidth,
+            y: screenHeight * 0.65,
+          });
+        },
+        delay + delay + delay + delay + delay + delay
+      );
+
+      setTimeout(
+        () => {
+          this.addConnection("generate-proposal", "proposal-approved", "right", "left");
+        },
+        delay + delay + delay + delay + delay + delay + 10
+      ); // After upload-files is created
+
+      setTimeout(
+        () => {
+          this.addConnection("generate-proposal", "proposal-request-revision", "right", "left");
+        },
+        delay + delay + delay + delay + delay + delay + 10
+      ); // After upload-files is created
+
+      setTimeout(
+        () => {
+          this.addNodeWithCenterMaintenance({
+            id: "approve-revisions",
+            type: "storage",
+            title: "Approve Revisions",
+            status: "24 hours to complete",
+            x: screenWidth,
+            y: screenHeight * 0.45,
+          });
+        },
+        delay + delay + delay + delay + delay + delay + delay
+      );
+
+      setTimeout(
+        () => {
+          this.addNodeWithCenterMaintenance({
+            id: "sign-off-proposal",
+            type: "storage",
+            title: "Sign Off Proposal",
+            status: "2-4 hours to complete",
+            x: screenWidth,
+            y: screenHeight * 0.85,
+          });
+        },
+        delay + delay + delay + delay + delay + delay + delay + delay
+      );
+
+      setTimeout(
+        () => {
+          this.addConnection("approve-revisions", "sign-off-proposal", "right", "left");
+        },
+        delay + delay + delay + delay + delay + delay + delay + delay + 100
+      ); // After upload-files is created
+
+      setTimeout(
+        () => {
+          this.addConnection("proposal-request-revision", "approve-revisions", "right", "left");
+        },
+        delay + delay + delay + delay + delay + delay + delay + delay + 100
+      ); // After upload-fil
+      // es is created
+
+      setTimeout(
+        () => {
+          this.addConnection("approve-revisions", "sign-off-proposal", "right", "left");
+        },
+        delay + delay + delay + delay + delay + delay + delay + delay + 100
+      ); // After upload-fil
+      // setTimeout(() => {
+      //   this.addNodeWithCenterMaintenance({
+      //     id: "approve",
+      //     type: "storage",
+      //     title: "Approve Proposal",
+      //     status: "24 hours to complete",
+      //     x: screenWidth - 200,
+      //     y: 700,
+      //   });
+      // }, delay + 2500);
+
+      // setTimeout(() => {
+      //   this.addNodeWithCenterMaintenance({
+      //     id: "revision",
+      //     type: "storage",
+      //     title: "Request Revision",
+      //     status: "24 hours to complete",
+      //     x: screenWidth - 200,
+      //     y: 200,
+      //   });
+      // }, delay + 3800);
+
+      // setTimeout(() => {
+      //   this.addNode({
+      //     id: "final-1",
+      //     type: "storage",
+      //     title: "Final Review",
+      //     status: "24 hours to complete",
+      //     x: screenWidth - 200,
+      //     y: 350,
+      //   });
+      // }, delay + 4500);
+
+      // setTimeout(() => {
+      //   this.addNode({
+      //     id: "deliverable",
+      //     type: "client",
+      //     title: "Final Documents Ready",
+      //     status: "24 hours to complete",
+      //     x: screenWidth - 200,
+      //     y: 5500,
+      //   });
+
+      //   // Keep scrolling - don't stop it
+      //   // this.stopContinuousScroll(); // Removed to keep scrolling
+      // }, delay + 3000);
 
       // Add connections with additional delay
-      setTimeout(() => {
-        this.addConnection("create-account", "upload-files", "right", "left");
-      }, delay + 1600);
 
-      setTimeout(() => {
-        this.addConnection("login", "upload-files", "right", "left");
-      }, delay + 2500);
+      // setTimeout(() => {
+      //   this.addConnection("upload-files", "proposal", "right", "left");
+      // }, delay + 1600);
 
-      setTimeout(() => {
-        this.addConnection("upload-files", "proposal", "right", "left");
-      }, delay + 1600);
+      // setTimeout(() => {
+      //   this.addConnection("proposal", "approve", "right", "left");
+      // }, delay + 2000);
 
-      setTimeout(() => {
-        this.addConnection("proposal", "approve", "right", "left");
-      }, delay + 2000);
+      // setTimeout(() => {
+      //   this.addConnection("proposal", "revision", "right", "left");
+      // }, delay + 2600);
 
-      setTimeout(() => {
-        this.addConnection("proposal", "revision", "right", "left");
-      }, delay + 2600);
-
-      setTimeout(() => {
-        this.addConnection("approval-1", "final-1", "right", "left");
-      }, delay + 3200);
+      // setTimeout(() => {
+      //   this.addConnection("approval-1", "final-1", "right", "left");
+      // }, delay + 3200);
     }
 
     addNode(options = {}) {
@@ -581,7 +648,7 @@
       this.renderNode(node);
 
       // Update center and shift existing nodes
-      this.updateCenterAndShiftNodes();
+      // this.updateCenterAndShiftNodes();
 
       return node;
     }
@@ -632,63 +699,63 @@
       });
     }
 
-    updateCenterAndShiftNodes() {
-      // Only shift if continuous scroll is not running
-      if (!this.isScrolling) {
-        const canvasWidth = this.canvas.offsetWidth;
-        const canvasHeight = this.canvas.offsetHeight;
-        this.centerX = canvasWidth / 2;
-        this.centerY = canvasHeight / 2;
+    // updateCenterAndShiftNodes() {
+    //   // Only shift if continuous scroll is not running
+    //   if (!this.isScrolling) {
+    //     const canvasWidth = this.canvas.offsetWidth;
+    //     const canvasHeight = this.canvas.offsetHeight;
+    //     this.centerX = canvasWidth / 2;
+    //     this.centerY = canvasHeight / 2;
 
-        // Get all nodes as an array and sort by x position
-        const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.x - b.x);
+    //     // Get all nodes as an array and sort by x position
+    //     const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.x - b.x);
 
-        // Only shift if we have multiple nodes
-        if (nodeArray.length > 1) {
-          const shiftAmount = this.nodeSpacing;
-          this.shiftAllNodesLeft(shiftAmount);
-        }
-      }
-    }
+    //     // Only shift if we have multiple nodes
+    //     if (nodeArray.length > 1) {
+    //       const shiftAmount = this.nodeSpacing;
+    //       this.shiftAllNodesLeft(shiftAmount);
+    //     }
+    //   }
+    // }
 
-    shiftAllNodesLeft(shiftAmount) {
-      // Apply transition to all nodes and connections
-      const allNodeElements = this.canvas.querySelectorAll(".node-card");
-      allNodeElements.forEach((element) => {
-        element.style.transition = "all 0.5s ease-in-out";
-      });
+    // shiftAllNodesLeft(shiftAmount) {
+    //   // Apply transition to all nodes and connections
+    //   const allNodeElements = this.canvas.querySelectorAll(".node-card");
+    //   allNodeElements.forEach((element) => {
+    //     element.style.transition = "all 0.5s ease-in-out";
+    //   });
 
-      // Get all nodes sorted by x position to maintain order
-      const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.x - b.x);
+    //   // Get all nodes sorted by x position to maintain order
+    //   const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.x - b.x);
 
-      // Shift each node individually to maintain their relative positions
-      nodeArray.forEach((node, index) => {
-        // Update the data structure - each node shifts by the same amount
-        node.x -= shiftAmount;
+    //   // Shift each node individually to maintain their relative positions
+    //   nodeArray.forEach((node, index) => {
+    //     // Update the data structure - each node shifts by the same amount
+    //     node.x -= shiftAmount;
 
-        // Update the DOM element
-        const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
-        if (nodeElement) {
-          nodeElement.style.left = `${node.x}px`;
-          nodeElement.style.top = `${node.y}px`;
-        }
-      });
+    //     // Update the DOM element
+    //     const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
+    //     if (nodeElement) {
+    //       nodeElement.style.left = `${node.x}px`;
+    //       nodeElement.style.top = `${node.y}px`;
+    //     }
+    //   });
 
-      // Remove nodes that have scrolled off the left side
-      this.removeOffscreenNodes();
+    //   // Remove nodes that have scrolled off the left side
+    //   this.removeOffscreenNodes();
 
-      // Update connections with a slight delay to ensure smooth animation
-      setTimeout(() => {
-        this.updateConnections();
-      }, 50);
+    //   // Update connections with a slight delay to ensure smooth animation
+    //   setTimeout(() => {
+    //     this.updateConnections();
+    //   }, 50);
 
-      // Clean up transitions after animation
-      setTimeout(() => {
-        allNodeElements.forEach((element) => {
-          element.style.transition = "";
-        });
-      }, 500);
-    }
+    //   // Clean up transitions after animation
+    //   setTimeout(() => {
+    //     allNodeElements.forEach((element) => {
+    //       element.style.transition = "";
+    //     });
+    //   }, 500);
+    // }
 
     // Method to remove nodes that have scrolled off the left side
     removeOffscreenNodes() {
@@ -729,7 +796,7 @@
         nodeElement.style.transform = "scale(0.8)";
 
         setTimeout(() => {
-          nodeElement.style.transition = "all 0.3s ease-out";
+          nodeElement.style.transition = "opacity 0.3s ease-out, transform 0.3s ease-out";
           nodeElement.style.opacity = "1";
           nodeElement.style.transform = "scale(1)";
         }, 50);
@@ -1075,15 +1142,14 @@
     startContinuousNodeAddition(interval = 2000) {
       const nodeTypes = ["analytics", "database", "storage", "default"];
       const titles = [
-        "Process Data",
-        "Analyze Results",
-        "Generate Report",
-        "Send Notification",
-        "Update Status",
-        "Validate Input",
-        "Transform Data",
-        "Export Results",
-        "Archive Files",
+        "Login",
+        "Register",
+        "Upload Files",
+        "Generate Proposal",
+        "Approve Proposal",
+        "Request Revision",
+        "Final Review",
+        "Final Documents Ready",
       ];
 
       const addNextNode = () => {
