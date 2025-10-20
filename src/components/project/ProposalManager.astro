@@ -357,36 +357,34 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           return;
         }
 
-        // Check if invoice already exists
-        const response = await fetch(`/api/proposal/get?projectId=${this.projectId}`);
-        const data = await response.json();
-
-        if (data.success && data.invoice) {
-          this.invoiceId = parseInt(data.invoice.id);
-          // console.log("✅ [PROPOSAL-MANAGER] Found existing invoice:", this.invoiceId);
-        } else {
-          // Create new invoice
-          const createResponse = await fetch("/api/proposal/upsert", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              projectId: this.projectId,
-              projectData: {
-                title: `Proposal for ${this.project.title}`,
-                date: new Date().toISOString().split("T")[0],
-                subject: "Fire Protection System Proposal",
-                status: "proposal",
+        // Upsert invoice - create if doesn't exist, update if it does
+        const response = await fetch("/api/proposal/upsert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            projectId: this.projectId,
+            status: "draft",
+            subject: "Fire Protection System Proposal",
+            lineItems: [
+              {
+                description:
+                  "Tier I Fire Sprinkler Design and Fire Alarm Design\n\nTier I Fire Sprinkler Design\n1. Fire Sprinkler Design\n2. Hydraulic Calculations\n3. Project Narrative\n4. NFPA 241 Plan\n\nTier I Fire Alarm Design\n1. Fire Alarm Design\n2. Fire Alarm Narrative",
+                quantity: 1,
+                unitPrice: 500.0,
               },
-            }),
-          });
+            ],
+          }),
+        });
 
-          const createData = await createResponse.json();
-          if (createData.success) {
-            this.invoiceId = parseInt(createData.invoice.id);
-            // console.log("✅ [PROPOSAL-MANAGER] Created new invoice:", this.invoiceId);
-          } else {
-            console.error("❌ [PROPOSAL-MANAGER] Failed to create invoice:", createData.error);
-          }
+        const data = await response.json();
+        console.log("📝 [PROPOSAL-MANAGER] Upsert response:", data);
+
+        if (data.success) {
+          this.invoiceId = parseInt(data.data.invoice.id);
+          console.log("✅ [PROPOSAL-MANAGER] Invoice upserted:", this.invoiceId);
+        } else {
+          console.error("❌ [PROPOSAL-MANAGER] Failed to upsert invoice:", data.error);
         }
       } catch (error) {
         console.error("❌ [PROPOSAL-MANAGER] Error ensuring invoice exists:", error);

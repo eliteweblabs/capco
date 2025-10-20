@@ -241,7 +241,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   )
 }
 
-<script define:vars={{ projectId, invoiceId }} is:inline>
+<script define:vars={{ projectId, invoiceId, currentRole, globalInputClasses }} is:inline>
   // Enhanced Proposal Manager with Invoice Ninja-style features
   class EnhancedProposalManager {
     constructor() {
@@ -249,6 +249,10 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       this.lineItems = [];
       this.taxRate = 0.085; // 8.5% default tax rate
       this.isLoading = false;
+
+      // Store the current role for the component
+      this.currentRole = currentRole;
+      console.log("🔐 [ENHANCED-PROPOSAL] Current role set to:", this.currentRole);
 
       this.init();
     }
@@ -263,7 +267,15 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       if (window.invoiceId) {
         this.invoiceId = window.invoiceId;
         await this.loadInvoiceData();
+      } else if (localStorage.getItem("currentInvoiceId")) {
+        // Try to load from localStorage
+        this.invoiceId = localStorage.getItem("currentInvoiceId");
+        console.log("🔄 [ENHANCED-PROPOSAL] Loading invoice from localStorage:", this.invoiceId);
+        await this.loadInvoiceData();
       } else {
+        // Clear any existing invoice ID from localStorage
+        localStorage.removeItem("currentInvoiceId");
+
         // Create new invoice with default line items
         await this.createNewInvoice();
       }
@@ -326,9 +338,14 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         });
 
         const data = await response.json();
+        console.log("📝 [ENHANCED-PROPOSAL] Create response:", data);
+
         if (data.success) {
           this.invoiceId = data.data.invoice.id;
           console.log("✅ [ENHANCED-PROPOSAL] Created new invoice:", this.invoiceId);
+
+          // Store invoice ID in localStorage for persistence
+          localStorage.setItem("currentInvoiceId", this.invoiceId);
         }
       } catch (error) {
         console.error("❌ [ENHANCED-PROPOSAL] Error creating invoice:", error);
@@ -422,27 +439,35 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         const row = document.createElement("tr");
         row.className = "hover:bg-gray-50 dark:hover:bg-gray-700";
 
-        const canEdit = window.currentRole === "Admin" || window.currentRole === "Staff";
+        const canEdit = this.currentRole === "Admin" || this.currentRole === "Staff";
+        console.log(
+          "🔧 [ENHANCED-PROPOSAL] Rendering line item",
+          index,
+          "canEdit:",
+          canEdit,
+          "role:",
+          this.currentRole
+        );
 
         row.innerHTML = `
           <td class="px-6 py-4">
             ${
               canEdit
-                ? `<textarea class="${window.globalInputClasses} w-full resize-none" rows="3" onchange="window.enhancedProposalManager.updateLineItem(${index}, 'description', this.value)">${item.description}</textarea>`
+                ? `<textarea class="${globalInputClasses} w-full resize-none" rows="3" data-index="${index}" data-field="description">${item.description}</textarea>`
                 : `<div class="text-sm text-gray-900 dark:text-white whitespace-pre-line">${item.description}</div>`
             }
           </td>
           <td class="px-6 py-4">
             ${
               canEdit
-                ? `<input type="number" class="${window.globalInputClasses} w-20" value="${item.quantity}" onchange="window.enhancedProposalManager.updateLineItem(${index}, 'quantity', parseFloat(this.value))">`
+                ? `<input type="number" class="${globalInputClasses} w-20" value="${item.quantity}" data-index="${index}" data-field="quantity">`
                 : `<div class="text-sm text-gray-900 dark:text-white">${item.quantity}</div>`
             }
           </td>
           <td class="px-6 py-4">
             ${
               canEdit
-                ? `<input type="number" class="${window.globalInputClasses} w-24" value="${item.unitPrice}" onchange="window.enhancedProposalManager.updateLineItem(${index}, 'unitPrice', parseFloat(this.value))">`
+                ? `<input type="number" class="${globalInputClasses} w-24" value="${item.unitPrice}" data-index="${index}" data-field="unitPrice">`
                 : `<div class="text-sm text-gray-900 dark:text-white">$${item.unitPrice.toFixed(2)}</div>`
             }
           </td>
@@ -466,6 +491,38 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
         tbody.appendChild(row);
       });
+
+      // Add event listeners to all input fields
+      this.setupLineItemEventListeners();
+    }
+
+    setupLineItemEventListeners() {
+      // Add event listeners to all input and textarea elements in line items
+      const inputs = document.querySelectorAll(
+        "#enhanced-line-items input, #enhanced-line-items textarea"
+      );
+      inputs.forEach((input) => {
+        // Remove existing listeners to prevent duplicates
+        input.removeEventListener("input", this.handleLineItemChange);
+        input.removeEventListener("change", this.handleLineItemChange);
+
+        // Add new listeners
+        input.addEventListener("input", this.handleLineItemChange.bind(this));
+        input.addEventListener("change", this.handleLineItemChange.bind(this));
+      });
+    }
+
+    handleLineItemChange(event) {
+      const index = parseInt(event.target.dataset.index);
+      const field = event.target.dataset.field;
+      let value = event.target.value;
+
+      // Convert to appropriate type
+      if (field === "quantity" || field === "unitPrice") {
+        value = parseFloat(value) || 0;
+      }
+
+      this.updateLineItem(index, field, value);
     }
 
     calculateTotals() {
@@ -489,25 +546,53 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     }
 
     async saveDraft() {
-      if (!this.invoiceId) return;
+      if (!this.invoiceId) {
+        console.log("❌ [ENHANCED-PROPOSAL] No invoice ID available for saving");
+        this.showNotification("No invoice to save", "error");
+        return;
+      }
 
       try {
+        // Collect all form data
+        const formData = {
+          id: this.invoiceId,
+          status: "draft",
+          lineItems: this.lineItems,
+          // Add other fields that might be in the form
+          subject: "Fire Protection Services Proposal", // Default subject
+          notes: null, // Could be collected from a form field if it exists
+          proposalNotes: null, // Could be collected from a form field if it exists
+          taxRate: this.taxRate,
+        };
+
+        console.log("💾 [ENHANCED-PROPOSAL] Saving draft with data:", formData);
+
         const response = await fetch("/api/proposal/upsert", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({
-            id: this.invoiceId,
-            status: "draft",
-            lineItems: this.lineItems,
-          }),
+          body: JSON.stringify(formData),
         });
 
         const data = await response.json();
+        console.log("📝 [ENHANCED-PROPOSAL] Save response:", data);
+        console.log("🔍 [ENHANCED-PROPOSAL] Response structure:", {
+          success: data.success,
+          hasData: !!data.data,
+          hasInvoice: !!data.data?.invoice,
+          invoiceId: data.data?.invoice?.id,
+        });
+
         if (data.success) {
           console.log("✅ [ENHANCED-PROPOSAL] Draft saved successfully");
-          // Show success message
+
+          // Store invoice ID in localStorage for persistence
+          localStorage.setItem("currentInvoiceId", this.invoiceId);
+
           this.showNotification("Draft saved successfully", "success");
+        } else {
+          console.error("❌ [ENHANCED-PROPOSAL] Save failed:", data);
+          this.showNotification(`Save failed: ${data.error || "Unknown error"}`, "error");
         }
       } catch (error) {
         console.error("❌ [ENHANCED-PROPOSAL] Error saving draft:", error);
