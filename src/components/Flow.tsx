@@ -27,7 +27,7 @@ const CustomNode = ({ data, selected }: any) => {
   };
 
   const nodeStyles = {
-    position: "relative",
+    position: "relative" as const,
     width: "200px",
     height: "100px",
     background: "#1a1a1a",
@@ -348,6 +348,18 @@ export default function Flow() {
     setNodes(newNodes);
     setEdges(newEdges);
     setNodeCounter(newNodes.length + 1);
+
+    // Add the same nice effect as continuous addition
+    setTimeout(() => {
+      if (reactFlowInstance.current) {
+        reactFlowInstance.current.fitView({
+          padding: 0.1,
+          includeHiddenNodes: false,
+          minZoom: 0.5,
+          maxZoom: 1,
+        });
+      }
+    }, 100);
   };
 
   // Add a single node to the timeline
@@ -534,6 +546,7 @@ export default function Flow() {
           style: { stroke: "#60a5fa", strokeWidth: 2 },
         }}
         connectionLineType="smoothstep"
+        ConnectionLineType
         connectionLineStyle={{ stroke: "#60a5fa", strokeWidth: 2 }}
         snapToGrid={true}
         snapGrid={[15, 15]}
@@ -546,7 +559,7 @@ export default function Flow() {
         zoomOnPinch={true}
         panOnScroll={true}
         preventScrolling={false}
-        selectNodesOnDrag={false}
+        selectNodesOnDrag={true}
       >
         <Background />
       </ReactFlow>
