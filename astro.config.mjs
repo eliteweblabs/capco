@@ -5,6 +5,7 @@ import { defineConfig } from "astro/config";
 // @ts-check
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
+import react from "@astrojs/react";
 
 // Load environment variables
 import { loadEnv } from "vite";
@@ -23,7 +24,7 @@ export default defineConfig({
   adapter: node({
     mode: "standalone",
   }),
-  integrations: [tailwind()],
+  integrations: [tailwind(), react()],
   i18n: {
     defaultLocale: "en",
     locales: ["en", "es"],

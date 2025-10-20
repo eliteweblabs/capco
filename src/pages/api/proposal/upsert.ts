@@ -2,28 +2,7 @@ import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
-import { stripe } from "../../../lib/stripe";
-
-/**
- * Standardized Proposal UPSERT API
- *
- * POST Body:
- * - id?: number (if updating existing invoice)
- * - projectId: number
- * - status?: "draft" | "proposal" | "paid"
- * - subject?: string
- * - invoiceDate?: string
- * - notes?: string
- * - proposalNotes?: string
- * - taxRate?: number
- * - lineItems?: Array<{ description: string, quantity: number, unitPrice: number }>
- * - paymentIntentId?: string (for confirming payment)
- *
- * Examples:
- * - Create: POST /api/proposal/upsert { projectId: 123 }
- * - Update: POST /api/proposal/upsert { id: 456, status: "paid" }
- * - Confirm Payment: POST /api/proposal/upsert { id: 789, paymentIntentId: "pi_..." }
- */
+// import { stripe } from "../../../lib/stripe"; // Stripe only needed for payment processing, not proposals
 
 // Standard description for new proposals
 const STANDARD_DESCRIPTION = `Tier I Fire Sprinkler Design and Fire Alarm Design
@@ -71,41 +50,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return createErrorResponse("Database connection not available", 500);
     }
 
-    // Handle payment confirmation
-    if (id && paymentIntentId) {
-      if (!stripe) {
-        return createErrorResponse("Stripe not configured", 500);
-      }
-
-      // Verify payment intent
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      if (paymentIntent.status !== "succeeded") {
-        return createErrorResponse("Payment not successful", 400);
-      }
-
-      // Update invoice status to paid
-      const { error: updateError } = await supabase
-        .from("invoices")
-        .update({
-          status: "paid",
-          paidAt: new Date().toISOString(),
-        })
-        .eq("id", id);
-
-      if (updateError) {
-        return createErrorResponse("Failed to update invoice status", 500);
-      }
-
-      return createSuccessResponse({
-        message: "Payment confirmed and invoice updated",
-        paymentIntent: {
-          id: paymentIntent.id,
-          status: paymentIntent.status,
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-        },
-      });
-    }
+    // Note: Payment processing should be handled by a separate payment API
+    // This proposal API focuses on proposal/invoice creation and management
 
     // Prepare invoice data
     const invoiceData = {
@@ -124,15 +70,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     };
 
     // Create or update invoice
+    console.log("🔧 [PROPOSAL-UPSERT] Invoice data:", invoiceData);
     const { data: invoice, error: invoiceError } = await (id
       ? supabase.from("invoices").update(invoiceData).eq("id", id).select().single()
       : supabase.from("invoices").insert(invoiceData).select().single());
 
+    console.log("🔧 [PROPOSAL-UPSERT] Invoice result:", { invoice, invoiceError });
+
     if (invoiceError) {
-      return createErrorResponse(
-        `Failed to ${id ? "update" : "create"} invoice`,
-        500,
-        invoiceError
+      console.error("❌ [PROPOSAL-UPSERT] Database error:", invoiceError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Failed to ${id ? "update" : "create"} invoice`,
+          details: invoiceError.message,
+          code: invoiceError.code,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -153,26 +110,49 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .eq("id", invoice.id);
 
       if (updateError) {
+        console.error("❌ [PROPOSAL-UPSERT] Line items error:", updateError);
         // Rollback invoice creation if line items fail
         if (!id) {
           await supabase.from("invoices").delete().eq("id", invoice.id);
         }
-        return createErrorResponse("Failed to update line items", 500);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Failed to update line items",
+            details: updateError.message,
+            code: updateError.code,
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       }
     }
 
-    return createSuccessResponse({
+    const responseData = {
       invoice: {
         id: invoice.id,
         status: invoice.status,
       },
       message: `Invoice ${id ? "updated" : "created"} successfully`,
-    });
+    };
+
+    console.log("✅ [PROPOSAL-UPSERT] Returning success response:", responseData);
+    return createSuccessResponse(responseData);
   } catch (error) {
     console.error("❌ [PROPOSAL-UPSERT] Unexpected error:", error);
-    return createErrorResponse(
-      error instanceof Error ? error.message : "Internal server error",
-      500
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   }
 };

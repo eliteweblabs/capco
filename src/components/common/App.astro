@@ -266,78 +266,6 @@ const debugData = {
       (window as any).updateNotificationBellCount = updateNotificationBellCount;
       (window as any).loadNotificationCount = loadNotificationCount;
       (window as any).refreshNotificationCount = refreshNotificationCount;
-
-      // Global utility function to convert camelCase to Proper Case
-      (window as any).camelToProper = (str: string): string => {
-        if (!str) return "";
-
-        // Handle special cases first
-        const specialCases: { [key: string]: string } = {
-          id: "ID",
-          url: "URL",
-          api: "API",
-          sms: "SMS",
-          email: "Email",
-          phone: "Phone",
-          status: "Status",
-          project: "Project",
-          user: "User",
-          admin: "Admin",
-          client: "Client",
-          staff: "Staff",
-          role: "Role",
-          name: "Name",
-          title: "Title",
-          address: "Address",
-          created: "Created",
-          updated: "Updated",
-          completed: "Completed",
-          incomplete: "Incomplete",
-          failed: "Failed",
-          sent: "Sent",
-          received: "Received",
-          uploaded: "Uploaded",
-          downloaded: "Downloaded",
-          added: "Added",
-          changed: "Changed",
-          login: "Login",
-          logout: "Logout",
-          registration: "Registration",
-          action: "Action",
-          event: "Event",
-          error: "Error",
-          info: "Info",
-          system: "System",
-          notification: "Notification",
-          discussion: "Discussion",
-          punchlist: "Punchlist",
-          proposal: "Proposal",
-          assignment: "Assignment",
-          comment: "Comment",
-          file: "File",
-        };
-
-        // Split camelCase into words
-        const words = str
-          .replace(/([A-Z])/g, " $1")
-          .trim()
-          .split(" ");
-
-        // Convert each word to proper case
-        const properWords = words.map((word) => {
-          const lowerWord = word.toLowerCase();
-
-          // Check special cases first
-          if (specialCases[lowerWord]) {
-            return specialCases[lowerWord];
-          }
-
-          // Default: capitalize first letter
-          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-        });
-
-        return properWords.join(" ");
-      };
     </script>
 
     <!-- Set global user data for client-side components -->
@@ -409,11 +337,8 @@ const debugData = {
     />
 
     <ScrollProgressIndicator />
-
     {currentUser && <NotificationDropdown currentUser={currentUser} />}
-
     <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
-    <!-- Debug Panel (Admin Only) -->
     <DebugPanel {currentUser} {debugData} />
 
     <!-- Flowbite JavaScript -->
@@ -536,9 +461,79 @@ const debugData = {
           return this.substr(!pos || pos < 0 ? 0 : +pos, search.length) === search;
         };
         console.log("🔧 [POLYFILL] startsWith polyfill added successfully");
-      } else {
-        console.log("🔧 [POLYFILL] startsWith already available");
       }
+
+      // Global utility function to convert camelCase to Proper Case
+      (window as any).camelToProper = (str: string): string => {
+        if (!str) return "";
+
+        // Handle special cases first
+        const specialCases: { [key: string]: string } = {
+          id: "ID",
+          url: "URL",
+          api: "API",
+          sms: "SMS",
+          email: "Email",
+          phone: "Phone",
+          status: "Status",
+          project: "Project",
+          user: "User",
+          admin: "Admin",
+          client: "Client",
+          staff: "Staff",
+          role: "Role",
+          name: "Name",
+          title: "Title",
+          address: "Address",
+          created: "Created",
+          updated: "Updated",
+          completed: "Completed",
+          incomplete: "Incomplete",
+          failed: "Failed",
+          sent: "Sent",
+          received: "Received",
+          uploaded: "Uploaded",
+          downloaded: "Downloaded",
+          added: "Added",
+          changed: "Changed",
+          login: "Login",
+          logout: "Logout",
+          registration: "Registration",
+          action: "Action",
+          event: "Event",
+          error: "Error",
+          info: "Info",
+          system: "System",
+          notification: "Notification",
+          discussion: "Discussion",
+          punchlist: "Punchlist",
+          proposal: "Proposal",
+          assignment: "Assignment",
+          comment: "Comment",
+          file: "File",
+        };
+
+        // Split camelCase into words
+        const words = str
+          .replace(/([A-Z])/g, " $1")
+          .trim()
+          .split(" ");
+
+        // Convert each word to proper case
+        const properWords = words.map((word) => {
+          const lowerWord = word.toLowerCase();
+
+          // Check special cases first
+          if (specialCases[lowerWord]) {
+            return specialCases[lowerWord];
+          }
+
+          // Default: capitalize first letter
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        });
+
+        return properWords.join(" ");
+      };
 
       (window as any).hideNotification = function () {
         console.log("[FALLBACK-NOTIFICATION] Hiding notification");
@@ -595,9 +590,6 @@ const debugData = {
         }
       };
 
-      // Assign imported function to global window object
-      // @ts-ignore - Function is imported and used, but TypeScript doesn't recognize the assignment
-
       (window as any).hideOnFormFocus = function () {
         // Check if we should only hide on mobile
         if (!(window as any).isMobile()) return;
@@ -645,109 +637,6 @@ const debugData = {
         observer.observe(document.body, { childList: true, subtree: true });
       };
 
-      // Auto-focus next field on autofill detection (browser/OS only, not manual typing) - COMMENTED OUT
-      /*
-      (window as any).setupAutofillNavigation = function () {
-        const form = document.querySelector("form");
-        if (!form) return;
-
-        const inputs = Array.from(
-          form.querySelectorAll("input, textarea, select")
-        ) as HTMLInputElement[];
-
-        inputs.forEach((input, index) => {
-          let isUserTyping = false;
-          let autofillDetected = false;
-
-          // Track user typing to distinguish from autofill
-          input.addEventListener("input", () => {
-            isUserTyping = true;
-            autofillDetected = false;
-          });
-
-          input.addEventListener("keydown", () => {
-            isUserTyping = true;
-            autofillDetected = false;
-          });
-
-          // Reset typing flag after user stops
-          let typingTimeout: number;
-          input.addEventListener("input", () => {
-            clearTimeout(typingTimeout);
-            typingTimeout = window.setTimeout(() => {
-              isUserTyping = false;
-            }, 1000);
-          });
-
-          // Handle autofill detection
-          const handleAutofill = () => {
-            // Only proceed if this is actual autofill, not user typing
-            if (autofillDetected && !isUserTyping && input.value && input.value.trim() !== "") {
-              console.log(
-                "🔍 [AUTOFILL] Detected browser/OS autofill in field:",
-                input.name || input.id
-              );
-
-              // Find next input in sequence
-              const nextInput = inputs[index + 1];
-              if (nextInput && !nextInput.disabled && nextInput.type !== "hidden") {
-                console.log("🔍 [AUTOFILL] Moving to next field:", nextInput.name || nextInput.id);
-                setTimeout(() => {
-                  nextInput.focus();
-                  // Trigger input event to ensure any validation runs
-                  nextInput.dispatchEvent(new Event("input", { bubbles: true }));
-                }, 100);
-              }
-            }
-          };
-
-          // Method 1: CSS animation detection (most reliable for autofill)
-          input.addEventListener("animationstart", (e) => {
-            if (e.animationName === "onAutoFillStart") {
-              autofillDetected = true;
-              handleAutofill();
-            }
-          });
-
-          // Method 2: Focus + immediate value change (autofill signature)
-          let focusTime = 0;
-          input.addEventListener("focus", () => {
-            focusTime = Date.now();
-          });
-
-          input.addEventListener("input", () => {
-            const timeSinceFocus = Date.now() - focusTime;
-            // If value changed within 100ms of focus, likely autofill
-            if (timeSinceFocus < 100 && !isUserTyping) {
-              autofillDetected = true;
-              setTimeout(handleAutofill, 50);
-            }
-          });
-
-          // Method 3: Detect autofill by checking if input was filled without user interaction
-          let lastValue = input.value;
-          let lastUserInteraction = Date.now();
-
-          input.addEventListener("input", () => {
-            lastUserInteraction = Date.now();
-          });
-
-          // Check for autofill every 500ms (reduced frequency)
-          setInterval(() => {
-            const timeSinceInteraction = Date.now() - lastUserInteraction;
-            const valueChanged = input.value !== lastValue && input.value.trim() !== "";
-
-            // If value changed and no recent user interaction, it's likely autofill
-            if (valueChanged && timeSinceInteraction > 2000 && !isUserTyping) {
-              autofillDetected = true;
-              lastValue = input.value;
-              handleAutofill();
-            }
-          }, 500);
-        });
-      };
-      */
-
       (window as any).sendEmail = async function (emailData: any, currentUser: any) {
         try {
           console.log("📧 [SEND-EMAIL] Received email data:", emailData);
@@ -792,7 +681,6 @@ const debugData = {
         }
       };
 
-      // Delete project function
       let isDeleting = false; // Flag to prevent multiple delete operations
       (window as any).deleteProject = function (projectId: any) {
         // Prevent multiple delete operations
@@ -814,7 +702,6 @@ const debugData = {
               5000
             );
           }
-
           return;
         }
 
@@ -917,22 +804,14 @@ const debugData = {
         status: number,
         currentStatusData?: any
       ) {
-        // (window as any).showModal(
-        //   "info",
-        //   "Processing...",
-        //   "Please wait... This may take a few seconds.",
-        //   5000
-        // );
-
         try {
           // If project exists, use it; otherwise fetch it
           let currentProject = project;
           if (!currentProject) {
-            console.log("📊 [UPDATE-STATUS] No project provided, fetching full project data...");
             try {
               currentProject = await (window as any).getProject(project);
             } catch (error) {
-              console.log(
+              console.error(
                 "📊 [UPDATE-STATUS] Could not fetch project, using minimal object:",
                 error
               );
@@ -959,7 +838,6 @@ const debugData = {
         }
       };
 
-      // Global count bubble utility
       (window as any).updateCountBubble = function (
         parentElement: HTMLElement,
         count: number,
@@ -1004,12 +882,6 @@ const debugData = {
 
           // Update data attribute for accessibility
           parentElement.setAttribute("data-count", count.toString());
-
-          console.log("🔍 [COUNT-BUBBLE] Updated bubble:", {
-            count,
-            displayCount,
-            element: parentElement,
-          });
         } else {
           // Hide bubble when count is 0 (unless showZero is true)
           if (countBubble) {
