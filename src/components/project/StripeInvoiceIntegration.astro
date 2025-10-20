@@ -1,0 +1,229 @@
+---
+// Stripe Invoice Integration Component
+// Uses Stripe's built-in invoicing instead of separate Ninja Invoice
+
+interface Props {
+  projectId: string;
+  projectData?: any;
+  currentUser?: any;
+}
+
+const { projectId, projectData, currentUser } = Astro.props;
+---
+
+<div class="stripe-invoice-integration">
+  <!-- Stripe Invoice management container -->
+  <div id="stripe-invoice-container" class="w-full h-screen border rounded-lg">
+    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 border-b">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Invoice Management</h3>
+      <div class="flex space-x-2">
+        <button
+          id="create-stripe-invoice-btn"
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Create Invoice
+        </button>
+        <button
+          id="view-stripe-dashboard-btn"
+          class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+        >
+          View Dashboard
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading-state" class="flex items-center justify-center h-96">
+      <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4">
+        </div>
+        <p class="text-gray-600 dark:text-gray-400">Loading Stripe Invoicing...</p>
+      </div>
+    </div>
+
+    <!-- Stripe Dashboard iframe -->
+    <iframe
+      id="stripe-dashboard-iframe"
+      src=""
+      class="w-full h-full border-0 hidden"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+      allow="payment; microphone; camera"></iframe>
+  </div>
+</div>
+
+<script define:vars={{ projectId, projectData, currentUser }}>
+  class StripeInvoiceIntegration {
+    constructor() {
+      this.projectId = projectId;
+      this.projectData = projectData;
+      this.currentUser = currentUser;
+      this.stripeDashboardUrl = "https://dashboard.stripe.com/invoices"; // Stripe Dashboard
+      this.init();
+    }
+
+    init() {
+      this.setupEventListeners();
+      this.loadStripeDashboard();
+    }
+
+    setupEventListeners() {
+      // Create invoice button
+      document.getElementById("create-stripe-invoice-btn")?.addEventListener("click", () => {
+        this.createStripeInvoice();
+      });
+
+      // View dashboard button
+      document.getElementById("view-stripe-dashboard-btn")?.addEventListener("click", () => {
+        this.loadStripeDashboard();
+      });
+    }
+
+    async loadStripeDashboard() {
+      const iframe = document.getElementById("stripe-dashboard-iframe");
+      const loadingState = document.getElementById("loading-state");
+
+      if (!iframe || !loadingState) return;
+
+      try {
+        // Show loading state
+        loadingState.classList.remove("hidden");
+        iframe.classList.add("hidden");
+
+        // Set iframe source to Stripe Dashboard
+        iframe.src = this.stripeDashboardUrl;
+
+        // Handle iframe load
+        iframe.onload = () => {
+          loadingState.classList.add("hidden");
+          iframe.classList.remove("hidden");
+          console.log("✅ [STRIPE-INVOICE] Dashboard loaded successfully");
+        };
+
+        iframe.onerror = () => {
+          console.error("❌ [STRIPE-INVOICE] Failed to load dashboard");
+          this.showError("Failed to load Stripe Dashboard. Please check your connection.");
+        };
+      } catch (error) {
+        console.error("❌ [STRIPE-INVOICE] Error loading dashboard:", error);
+        this.showError("Error loading Stripe Dashboard");
+      }
+    }
+
+    async createStripeInvoice() {
+      if (!this.projectData) {
+        this.showError("Project data not available");
+        return;
+      }
+
+      try {
+        console.log("📄 [STRIPE-INVOICE] Creating invoice for project:", this.projectId);
+
+        // Prepare invoice data
+        const invoiceData = {
+          projectId: this.projectId,
+          clientData: {
+            name: this.projectData.authorProfile?.companyName || "Client",
+            email: this.projectData.authorProfile?.email || "",
+            phone: this.projectData.authorProfile?.phone || "",
+            address: this.projectData.address || "",
+          },
+          lineItems: this.generateLineItems(),
+        };
+
+        // Create invoice via API
+        const response = await fetch("/api/stripe/create-invoice", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(invoiceData),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          this.showSuccess("Invoice created successfully!");
+          // Open the invoice in new tab
+          if (result.data.invoiceUrl) {
+            window.open(result.data.invoiceUrl, "_blank");
+          }
+        } else {
+          this.showError("Failed to create invoice: " + result.error);
+        }
+      } catch (error) {
+        console.error("❌ [STRIPE-INVOICE] Error creating invoice:", error);
+        this.showError("Failed to create invoice");
+      }
+    }
+
+    generateLineItems() {
+      // Generate line items based on project data
+      const lineItems = [
+        {
+          description: "Fire Protection System Design",
+          quantity: 1,
+          unit_amount: 250000, // $2500.00 in cents
+        },
+        {
+          description: "Fire Sprinkler System Installation",
+          quantity: 1,
+          unit_amount: 500000, // $5000.00 in cents
+        },
+        {
+          description: "Fire Alarm System Installation",
+          quantity: 1,
+          unit_amount: 300000, // $3000.00 in cents
+        },
+        {
+          description: "System Testing and Commissioning",
+          quantity: 1,
+          unit_amount: 150000, // $1500.00 in cents
+        },
+      ];
+
+      return lineItems;
+    }
+
+    showSuccess(message) {
+      this.showNotification(message, "success");
+    }
+
+    showError(message) {
+      this.showNotification(message, "error");
+    }
+
+    showNotification(message, type = "info") {
+      const notification = document.createElement("div");
+      notification.className = `fixed top-4 right-4 px-4 py-2 rounded-md text-white z-50 ${
+        type === "success" ? "bg-green-500" : type === "error" ? "bg-red-500" : "bg-blue-500"
+      }`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    new StripeInvoiceIntegration();
+  });
+</script>
+
+<style>
+  .stripe-invoice-integration {
+    @apply w-full h-full;
+  }
+
+  #stripe-invoice-container {
+    @apply border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden;
+  }
+
+  #stripe-dashboard-iframe {
+    @apply w-full h-full;
+    min-height: 600px;
+  }
+</style>

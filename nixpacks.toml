@@ -1,0 +1,23 @@
+# Nixpacks configuration for Ninja Invoice on Railway
+# This file should be placed in the root of the Ninja Invoice repository
+
+[phases.setup]
+nixPkgs = ["php82", "composer", "php82Packages.composer"]
+
+[phases.install]
+cmds = [
+  "composer install --optimize-autoloader --no-scripts --no-interaction --ignore-platform-req=ext-zip --ignore-platform-req=ext-bcmath --ignore-platform-req=ext-gd"
+]
+
+[phases.build]
+cmds = [
+  "php artisan config:cache",
+  "php artisan route:cache",
+  "php artisan view:cache"
+]
+
+[start]
+cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
+
+[variables]
+PHP_EXTENSIONS = "zip,bcmath,gd,mbstring,pdo_mysql,redis"
