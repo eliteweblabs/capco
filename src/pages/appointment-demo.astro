@@ -1,188 +1,185 @@
 ---
 // Appointment System Demo Page
+import { checkAuth } from "../lib/auth";
+const { currentUser, isAuth } = await checkAuth(Astro.cookies);
+if (!currentUser || !isAuth) {
+  return Astro.redirect("/auth/login");
+}
+import App from "../components/common/App.astro";
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Appointment System Demo</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">📅 Appointment System Demo</h1>
+<App>
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">📅 Appointment System Demo</h1>
 
-        <!-- Available Features -->
-        <div class="grid md:grid-cols-2 gap-6 mb-8">
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">🎤 Voice Booking (Vapi.ai)</h2>
-            <p class="text-gray-600 mb-4">
-              Natural language appointment scheduling through voice calls
-            </p>
-            <div class="space-y-2 text-sm text-gray-500">
-              <div>• "How's Tuesday the 14th? We have 2pm and 4pm available"</div>
-              <div>• "I have Wednesday at 10am or Thursday at 2pm"</div>
-              <div>• Conversational availability checking</div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">📱 API Endpoints</h2>
-            <p class="text-gray-600 mb-4">Complete REST API for appointment management</p>
-            <div class="space-y-2 text-sm text-gray-500">
-              <div>• GET /api/appointments/get</div>
-              <div>• POST /api/appointments/upsert</div>
-              <div>• GET /api/appointments/availability</div>
-              <div>• DELETE /api/appointments/delete</div>
-            </div>
+      <!-- Available Features -->
+      <div class="grid md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">🎤 Voice Booking (Vapi.ai)</h2>
+          <p class="text-gray-600 mb-4">
+            Natural language appointment scheduling through voice calls
+          </p>
+          <div class="space-y-2 text-sm text-gray-500">
+            <div>• "How's Tuesday the 14th? We have 2pm and 4pm available"</div>
+            <div>• "I have Wednesday at 10am or Thursday at 2pm"</div>
+            <div>• Conversational availability checking</div>
           </div>
         </div>
 
-        <!-- Test Interface -->
         <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-xl font-semibold text-gray-800 mb-4">🧪 Test the System</h2>
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">📱 API Endpoints</h2>
+          <p class="text-gray-600 mb-4">Complete REST API for appointment management</p>
+          <div class="space-y-2 text-sm text-gray-500">
+            <div>• GET /api/appointments/get</div>
+            <div>• POST /api/appointments/upsert</div>
+            <div>• GET /api/appointments/availability</div>
+            <div>• DELETE /api/appointments/delete</div>
+          </div>
+        </div>
+      </div>
 
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Check Availability</label>
-              <div class="flex space-x-2">
-                <input
-                  type="date"
-                  id="dateInput"
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  onclick="checkAvailability()"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Check
-                </button>
-              </div>
-            </div>
+      <!-- Test Interface -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">🧪 Test the System</h2>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Create Appointment</label>
-              <div class="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  id="attendeeName"
-                  placeholder="Attendee Name"
-                  class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="email"
-                  id="attendeeEmail"
-                  placeholder="Email"
-                  class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div class="grid grid-cols-2 gap-4 mt-2">
-                <input
-                  type="datetime-local"
-                  id="startTime"
-                  class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="datetime-local"
-                  id="endTime"
-                  class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Check Availability</label>
+            <div class="flex space-x-2">
+              <input
+                type="date"
+                id="dateInput"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
               <button
-                onclick="createAppointment()"
-                class="mt-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                onclick="checkAvailability()"
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Create Appointment
+                Check
               </button>
             </div>
           </div>
-        </div>
 
-        <!-- Results -->
-        <div id="results" class="mt-6 bg-white rounded-lg shadow-md p-6 hidden">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Results</h3>
-          <pre id="resultContent" class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto"></pre>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Create Appointment</label>
+            <div class="grid grid-cols-2 gap-4">
+              <input
+                type="text"
+                id="attendeeName"
+                placeholder="Attendee Name"
+                class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="email"
+                id="attendeeEmail"
+                placeholder="Email"
+                class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <input
+                type="datetime-local"
+                id="startTime"
+                class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="datetime-local"
+                id="endTime"
+                class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button
+              onclick="createAppointment()"
+              class="mt-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              Create Appointment
+            </button>
+          </div>
         </div>
       </div>
+
+      <!-- Results -->
+      <div id="results" class="mt-6 bg-white rounded-lg shadow-md p-6 hidden">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Results</h3>
+        <pre id="resultContent" class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto"></pre>
+      </div>
     </div>
+  </div>
+</App>
+<script>
+  // Make functions globally accessible
+  (window as any).checkAvailability = async function () {
+    const date = (document.getElementById("dateInput") as HTMLInputElement).value;
+    if (!date) {
+      alert("Please select a date");
+      return;
+    }
 
-    <script>
-      // Make functions globally accessible
-      (window as any).checkAvailability = async function () {
-        const date = (document.getElementById("dateInput") as HTMLInputElement).value;
-        if (!date) {
-          alert("Please select a date");
-          return;
-        }
+    try {
+      const response = await fetch(`/api/appointments/availability?date=${date}`);
+      const data = await response.json();
+      (window as any).showResults("Availability Check", data);
+    } catch (error) {
+      (window as any).showResults("Error", { error: (error as Error).message });
+    }
+  };
 
-        try {
-          const response = await fetch(`/api/appointments/availability?date=${date}`);
-          const data = await response.json();
-          (window as any).showResults("Availability Check", data);
-        } catch (error) {
-          (window as any).showResults("Error", { error: (error as Error).message });
-        }
-      };
+  (window as any).createAppointment = async function () {
+    const attendeeName = (document.getElementById("attendeeName") as HTMLInputElement).value;
+    const attendeeEmail = (document.getElementById("attendeeEmail") as HTMLInputElement).value;
+    const startTime = (document.getElementById("startTime") as HTMLInputElement).value;
+    const endTime = (document.getElementById("endTime") as HTMLInputElement).value;
 
-      (window as any).createAppointment = async function () {
-        const attendeeName = (document.getElementById("attendeeName") as HTMLInputElement).value;
-        const attendeeEmail = (document.getElementById("attendeeEmail") as HTMLInputElement).value;
-        const startTime = (document.getElementById("startTime") as HTMLInputElement).value;
-        const endTime = (document.getElementById("endTime") as HTMLInputElement).value;
+    if (!attendeeName || !attendeeEmail || !startTime || !endTime) {
+      alert("Please fill in all fields");
+      return;
+    }
 
-        if (!attendeeName || !attendeeEmail || !startTime || !endTime) {
-          alert("Please fill in all fields");
-          return;
-        }
+    try {
+      const response = await fetch("/api/appointments/upsert", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          attendeeName,
+          attendeeEmail,
+          start: new Date(startTime).toISOString(),
+          end: new Date(endTime).toISOString(),
+          title: "Demo Appointment",
+          description: "Created via demo interface",
+        }),
+      });
+      const data = await response.json();
+      (window as any).showResults("Appointment Created", data);
+    } catch (error) {
+      (window as any).showResults("Error", { error: (error as Error).message });
+    }
+  };
 
-        try {
-          const response = await fetch("/api/appointments/upsert", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              attendeeName,
-              attendeeEmail,
-              start: new Date(startTime).toISOString(),
-              end: new Date(endTime).toISOString(),
-              title: "Demo Appointment",
-              description: "Created via demo interface",
-            }),
-          });
-          const data = await response.json();
-          (window as any).showResults("Appointment Created", data);
-        } catch (error) {
-          (window as any).showResults("Error", { error: (error as Error).message });
-        }
-      };
+  (window as any).showResults = function (title: string, data: any) {
+    (document.getElementById("results") as HTMLElement).classList.remove("hidden");
+    (document.getElementById("resultContent") as HTMLElement).textContent =
+      `${title}:\n\n${JSON.stringify(data, null, 2)}`;
+  };
 
-      (window as any).showResults = function (title: string, data: any) {
-        (document.getElementById("results") as HTMLElement).classList.remove("hidden");
-        (document.getElementById("resultContent") as HTMLElement).textContent =
-          `${title}:\n\n${JSON.stringify(data, null, 2)}`;
-      };
+  // Set default times
+  const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  (document.getElementById("dateInput") as HTMLInputElement).value = tomorrow
+    .toISOString()
+    .split("T")[0];
 
-      // Set default times
-      const now = new Date();
-      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      (document.getElementById("dateInput") as HTMLInputElement).value = tomorrow
-        .toISOString()
-        .split("T")[0];
+  const startTime = new Date(tomorrow);
+  startTime.setHours(14, 0, 0, 0);
+  const endTime = new Date(startTime);
+  endTime.setHours(15, 0, 0, 0);
 
-      const startTime = new Date(tomorrow);
-      startTime.setHours(14, 0, 0, 0);
-      const endTime = new Date(startTime);
-      endTime.setHours(15, 0, 0, 0);
-
-      (document.getElementById("startTime") as HTMLInputElement).value = startTime
-        .toISOString()
-        .slice(0, 16);
-      (document.getElementById("endTime") as HTMLInputElement).value = endTime
-        .toISOString()
-        .slice(0, 16);
-    </script>
-  </body>
-</html>
+  (document.getElementById("startTime") as HTMLInputElement).value = startTime
+    .toISOString()
+    .slice(0, 16);
+  (document.getElementById("endTime") as HTMLInputElement).value = endTime
+    .toISOString()
+    .slice(0, 16);
+</script>

@@ -6,7 +6,7 @@ const { currentUser, isBackend, debugData, globalInputClasses, tutorials } = Ast
 const currentRole = currentUser?.profile?.role;
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
-const { primaryColor, secondaryColor } = globalCompanyData();
+const { primaryColor } = globalCompanyData();
 import Button from "./Button.astro";
 import LucideIcon from "./LucideIcon.astro";
 
@@ -14,34 +14,6 @@ import LucideIcon from "./LucideIcon.astro";
 ---
 
 <div id="speed-dial" data-dial-init class="z-50 hide-when-form-focus group fixed bottom-6 end-6">
-  <vapi-widget
-    public-key="77cb0a47-2427-44ac-996d-e6ed2ca03bbf"
-    assistant-id="3ae002d5-fe9c-4870-8034-4c66a9b43b51"
-    mode="voice"
-    theme="dark"
-    base-bg-color="#000000"
-    accent-color={primaryColor}
-    cta-button-color="#000000"
-    cta-button-text-color="#ffffff"
-    border-radius="medium"
-    size="tiny"
-    position="bottom-right"
-    title="TALK WITH AI"
-    start-button-text="Start"
-    end-button-text="End Call"
-    chat-first-message="Hey, How can I help you today?"
-    chat-placeholder="Type your message..."
-    voice-show-transcript="true"
-    consent-required="true"
-    consent-title="Terms and conditions"
-    consent-content="By clicking Agree, and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as otherwise described in our Terms of Service."
-    consent-storage-key="vapi_widget_consent"></vapi-widget>
-
-  <script
-    src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js"
-    async
-    type="text/javascript"></script>
-
   <div id="speed-dial-menu" class="mb-4 flex hidden flex-col items-center space-y-2">
     {
       currentUser && (
@@ -162,54 +134,68 @@ import LucideIcon from "./LucideIcon.astro";
         Contact
       </span>
     </Button>
-
-    <!-- </button> -->
-    <!-- <button
-      type="button"
-      class="shadow-xs relative h-[52px] w-[52px]"
-    >
-      <svg
-        class="mx-auto h-5 w-5"
-        aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="currentColor"
-        viewBox="0 0 18 20"
-      >
-        <path
-          d="M5 9V4.13a2.96 2.96 0 0 0-1.293.749L.879 7.707A2.96 2.96 0 0 0 .13 9H5Zm11.066-9H9.829a2.98 2.98 0 0 0-2.122.879L7 1.584A.987.987 0 0 0 6.766 2h4.3A3.972 3.972 0 0 1 15 6v10h1.066A1.97 1.97 0 0 0 18 14V2a1.97 1.97 0 0 0-1.934-2Z"
-        ></path>
-        <path
-          d="M11.066 4H7v5a2 2 0 0 1-2 2H0v7a1.969 1.969 0 0 0 1.933 2h9.133A1.97 1.97 0 0 0 13 18V6a1.97 1.97 0 0 0-1.934-2Z"
-        ></path>
-      </svg>
-      <span class="absolute -start-14 top-1/2 mb-px block -translate-y-1/2 text-sm font-medium"
-        >Copy</span
-      >
-    </button> -->
   </div>
-  <button
-    type="button"
-    data-dial-toggle="speed-dial-menu"
-    aria-controls="speed-dial-menu"
-    aria-expanded="false"
-    class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-700 text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
-  >
-    <svg
-      class="h-5 w-5 transition-transform group-hover:rotate-45"
-      aria-hidden="true"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 18 18"
-    >
-      <path
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M9 1v16M1 9h16"></path>
-    </svg>
-    <span class="sr-only">Open actions menu</span>
-  </button>
+
+  {
+    currentUser ? (
+      <button
+        type="button"
+        data-dial-toggle="speed-dial-menu"
+        aria-controls="speed-dial-menu"
+        aria-expanded="false"
+        class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-700 text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+      >
+        <svg
+          class="h-5 w-5 transition-transform group-hover:rotate-45"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 18 18"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 1v16M1 9h16"
+          />
+        </svg>
+        <span class="sr-only">Open actions menu</span>
+      </button>
+    ) : (
+      <>
+        <vapi-widget
+          public-key="77cb0a47-2427-44ac-996d-e6ed2ca03bbf"
+          assistant-id="3ae002d5-fe9c-4870-8034-4c66a9b43b51"
+          mode="chat"
+          theme="dark"
+          base-bg-color="#000000"
+          accent-color={primaryColor}
+          cta-button-color="#000000"
+          cta-button-text-color="#ffffff"
+          border-radius="medium"
+          size="tiny"
+          position="bottom-right"
+          title="Chat With Us"
+          start-button-text="Start"
+          end-button-text="End Call"
+          chat-first-message="Hey, How can I help you today?"
+          chat-placeholder="Type your message..."
+          voice-show-transcript="true"
+          consent-required="true"
+          consent-title="Terms and conditions"
+          consent-content="By clicking Agree, and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as otherwise described in our Terms of Service."
+          consent-storage-key="vapi_widget_consent"
+        />
+
+        <script
+          src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js"
+          async
+          type="text/javascript"
+        />
+      </>
+    )
+  }
 </div>
 
 <script>

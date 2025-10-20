@@ -38,42 +38,10 @@
     z-index: 1;
   }
 
-  .node-toolbar {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    z-index: 10;
-    display: flex;
-    gap: 8px;
-  }
-
-  .add-node-btn,
-  .clear-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .add-node-btn:hover,
-  .clear-btn:hover {
-    background: #2a2a2a;
-    border-color: #444;
-  }
-
   :global(.node-card) {
     position: absolute;
     min-width: 200px;
     max-width: 300px;
-    background: #1a1a1a;
-    border: 1px solid #333;
     border-radius: 8px;
     padding: 16px;
     cursor: move;
@@ -84,8 +52,6 @@
   }
 
   :global(.node-card:hover) {
-    border-color: #555;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
   :global(.node-card.selected) {
@@ -119,7 +85,6 @@
 
   :global(.node-title) {
     font-weight: 600;
-    color: #fff;
     font-size: 14px;
     margin: 0;
     padding: 0;
@@ -128,7 +93,6 @@
 
   :global(.node-subtitle) {
     font-size: 12px;
-    color: #888;
     margin-top: 2px;
     margin: 0;
     padding: 0;
@@ -140,7 +104,6 @@
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: #888;
     margin-top: 8px;
     margin: 0;
     padding: 0;
@@ -301,7 +264,7 @@
   }
 </style>
 
-<div class="node-editor-wrapper absolute inset-0 dot-grid">
+<div class="node-editor-wrapper absolute inset-0 dot-grid z-0">
   <div class="node-editor-container">
     <div class="node-editor-canvas" id="node-canvas">
       <!-- Nodes will be dynamically added here -->
@@ -316,6 +279,22 @@
 
 <script>
   class NodeEditor {
+    canvas;
+    svg;
+    nodes;
+    connections;
+    draggedNode;
+    dragOffset;
+    connecting;
+    connectionStart;
+    nodeCounter;
+    centerX;
+    centerY;
+    nodeSpacing;
+    isScrolling;
+    scrollSpeed;
+    scrollInterval;
+
     constructor() {
       this.canvas = document.getElementById("node-canvas");
       this.svg = document.getElementById("connections-svg");
@@ -326,13 +305,10 @@
       this.connecting = false;
       this.connectionStart = null;
       this.nodeCounter = 0;
-
       // Center maintenance properties
       this.centerX = 0;
       this.centerY = 0;
       this.nodeSpacing = 250; // Horizontal spacing between nodes
-      this.maxVisibleNodes = 5; // Maximum nodes visible at once
-
       // Continuous scroll properties
       this.isScrolling = false;
       this.scrollSpeed = 2;
@@ -343,31 +319,24 @@
 
     init() {
       this.setupEventListeners();
-      this.addSampleNodes();
+      this.addCustomNodes();
     }
 
     setupEventListeners() {
       // Add node button
 
       // Canvas events
-      this.canvas.addEventListener("mousedown", this.handleCanvasMouseDown.bind(this));
-      this.canvas.addEventListener("mousemove", this.handleCanvasMouseMove.bind(this));
-      this.canvas.addEventListener("mouseup", this.handleCanvasMouseUp.bind(this));
+      this.canvas?.addEventListener("mousedown", this.handleCanvasMouseDown.bind(this));
+      this.canvas?.addEventListener("mousemove", this.handleCanvasMouseMove.bind(this));
+      this.canvas?.addEventListener("mouseup", this.handleCanvasMouseUp.bind(this));
     }
 
-    addSampleNodes(delay = 1500) {
+    addCustomNodes(delay = 1500) {
       // Start continuous scrolling immediately
       this.startContinuousScroll();
-      // this.startContinuousNodeAddition();
 
-      const screenWidth = this.canvas.offsetWidth;
-      const screenHeight = this.canvas.offsetHeight;
-
-      // this.addNodeWithCenterMaintenance({
-      //     type: randomType,
-      //     title: randomTitle,
-      //     status: `${Math.floor(Math.random() * 60)} minutes`,
-      //   });
+      const screenWidth = this.canvas?.offsetWidth || 0;
+      const screenHeight = this.canvas?.offsetHeight || 0;
 
       // Add some sample nodes with their original specific positioning
       setTimeout(() => {
@@ -562,6 +531,28 @@
         },
         delay + delay + delay + delay + delay + delay + delay + delay + 100
       ); // After upload-fil
+
+      setTimeout(
+        () => {
+          this.addNodeWithCenterMaintenance({
+            id: "final-documents",
+            type: "storage",
+            title: "Generating Final Documents",
+            status: "24 hours to complete",
+            x: screenWidth,
+            y: screenHeight * 0.25,
+          });
+        },
+        delay + delay + delay + delay + delay + delay + delay + delay + delay + delay
+      );
+
+      setTimeout(
+        () => {
+          this.addConnection("approve-revisions", "final-documents", "right", "left");
+        },
+        delay + delay + delay + delay + delay + delay + delay + delay + delay + delay + 100
+      ); // After upload-files is created
+
       // setTimeout(() => {
       //   this.addNodeWithCenterMaintenance({
       //     id: "approve",
@@ -699,64 +690,6 @@
       });
     }
 
-    // updateCenterAndShiftNodes() {
-    //   // Only shift if continuous scroll is not running
-    //   if (!this.isScrolling) {
-    //     const canvasWidth = this.canvas.offsetWidth;
-    //     const canvasHeight = this.canvas.offsetHeight;
-    //     this.centerX = canvasWidth / 2;
-    //     this.centerY = canvasHeight / 2;
-
-    //     // Get all nodes as an array and sort by x position
-    //     const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.x - b.x);
-
-    //     // Only shift if we have multiple nodes
-    //     if (nodeArray.length > 1) {
-    //       const shiftAmount = this.nodeSpacing;
-    //       this.shiftAllNodesLeft(shiftAmount);
-    //     }
-    //   }
-    // }
-
-    // shiftAllNodesLeft(shiftAmount) {
-    //   // Apply transition to all nodes and connections
-    //   const allNodeElements = this.canvas.querySelectorAll(".node-card");
-    //   allNodeElements.forEach((element) => {
-    //     element.style.transition = "all 0.5s ease-in-out";
-    //   });
-
-    //   // Get all nodes sorted by x position to maintain order
-    //   const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.x - b.x);
-
-    //   // Shift each node individually to maintain their relative positions
-    //   nodeArray.forEach((node, index) => {
-    //     // Update the data structure - each node shifts by the same amount
-    //     node.x -= shiftAmount;
-
-    //     // Update the DOM element
-    //     const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
-    //     if (nodeElement) {
-    //       nodeElement.style.left = `${node.x}px`;
-    //       nodeElement.style.top = `${node.y}px`;
-    //     }
-    //   });
-
-    //   // Remove nodes that have scrolled off the left side
-    //   this.removeOffscreenNodes();
-
-    //   // Update connections with a slight delay to ensure smooth animation
-    //   setTimeout(() => {
-    //     this.updateConnections();
-    //   }, 50);
-
-    //   // Clean up transitions after animation
-    //   setTimeout(() => {
-    //     allNodeElements.forEach((element) => {
-    //       element.style.transition = "";
-    //     });
-    //   }, 500);
-    // }
-
     // Method to remove nodes that have scrolled off the left side
     removeOffscreenNodes() {
       const nodesToRemove = [];
@@ -807,7 +740,16 @@
 
     renderNode(node) {
       const nodeElement = document.createElement("div");
-      nodeElement.className = "node-card";
+      nodeElement.classList.add(
+        "node-card",
+        "bg-gray-100",
+        "dark:bg-gray-800",
+        "border",
+        "border-gray-200",
+        "dark:border-gray-700",
+        "text-gray-900",
+        "dark:text-gray-100"
+      );
       nodeElement.dataset.nodeId = node.id;
       nodeElement.dataset.type = node.type;
       nodeElement.style.left = `${node.x}px`;

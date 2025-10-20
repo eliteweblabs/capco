@@ -1,5 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 
+// Load environment variables
+import dotenv from "dotenv";
+dotenv.config();
+
 // Import color generation utility
 import { generateColorPalette } from "./color-generator.js";
 
@@ -14,11 +18,11 @@ const fontFamilyFallback = process.env.FONT_FAMILY_FALLBACK || "sans-serif";
 const primaryColorPalette = generateColorPalette(primaryColor);
 
 // Debug: Log what color and font are being used
-// console.log("🎨 [TAILWIND] GLOBAL_COLOR_PRIMARY from env:", process.env.GLOBAL_COLOR_PRIMARY);
-// console.log("🎨 [TAILWIND] Using primary color:", primaryColor);
-// console.log("🎨 [TAILWIND] Generated palette:", primaryColorPalette);
-// console.log("🎨 [TAILWIND] FONT_FAMILY from env:", process.env.FONT_FAMILY);
-// console.log("🎨 [TAILWIND] Using font family:", fontFamily);
+console.log("🎨 [TAILWIND] GLOBAL_COLOR_PRIMARY from env:", process.env.GLOBAL_COLOR_PRIMARY);
+console.log("🎨 [TAILWIND] Using primary color:", primaryColor);
+console.log("🎨 [TAILWIND] Generated palette:", primaryColorPalette);
+console.log("🎨 [TAILWIND] FONT_FAMILY from env:", process.env.FONT_FAMILY);
+console.log("🎨 [TAILWIND] Using font family:", fontFamily);
 
 export default {
   content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
