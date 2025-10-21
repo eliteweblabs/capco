@@ -19,6 +19,40 @@ const {
 console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 ---
 
+<style>
+  /* Custom scrollbar for fields list */
+  #fields-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  #fields-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+  }
+
+  #fields-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+  }
+
+  #fields-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  /* Dark mode scrollbar */
+  .dark #fields-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .dark #fields-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .dark #fields-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+</style>
+
 <div class="pdf-system-container p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
   <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">PDF System</h2>
@@ -164,7 +198,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
 <!-- Template Editor Modal -->
 <div id="template-editor-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-  <div class="flex items-center justify-center min-h-screen p-4">
+  <div class="flex items-center justify-center min-h-screen p-4 relative">
     <div
       class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
     >
@@ -180,7 +214,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         </button>
       </div>
 
-      <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+      <div class="p-6 max-h-[calc(90vh-120px)] overflow-hidden">
         <!-- File Upload Section -->
         <div id="file-upload-section" class="mb-6">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -234,28 +268,32 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         </div>
 
         <!-- Template Content Editor -->
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Template Content
-          </label>
-          <div
-            id="template-editor"
-            class="border border-gray-300 dark:border-gray-600 rounded-md min-h-[400px]"
-          >
-            <!-- Monaco Editor will be loaded here -->
+        <!-- put the template next to the extracted fields -->
+        <div class="grid grid-cols-12 gap-4">
+          <div class="mb-6 col-span-8">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Template Content
+            </label>
+            <div
+              id="template-editor"
+              class="border border-gray-300 dark:border-gray-600 rounded-md min-h-[400px]"
+            >
+              <!-- Monaco Editor will be loaded here -->
+            </div>
           </div>
-        </div>
-
-        <!-- Extracted Fields -->
-        <div id="extracted-fields" class="mb-6 hidden">
-          <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Detected Fields</h4>
-          <div id="fields-list" class="space-y-2">
-            <!-- Extracted fields will be displayed here -->
+          <!-- Extracted Fields -->
+          <div id="extracted-fields" class="mb-6 hidden col-span-4 flex flex-col max-h-[600px]">
+            <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3 flex-shrink-0">
+              Detected Fields
+            </h4>
+            <div id="fields-list" class="space-y-2 overflow-y-auto flex-1 pr-2">
+              <!-- Extracted fields will be displayed here -->
+            </div>
           </div>
         </div>
 
         <!-- Save Template -->
-        <div class="flex justify-end space-x-4">
+        <div class="flex justify-end space-x-4 absolute bottom-0 right-0">
           <button
             id="cancel-template-btn"
             class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -1188,32 +1226,32 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       }
 
       // Names (simple pattern - capitalized words that might be names)
-      const nameRegex = /\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g;
-      const names = text.match(nameRegex);
-      if (names) {
-        names.forEach((name) => {
-          // Filter out common false positives
-          const commonWords = [
-            "The",
-            "This",
-            "That",
-            "There",
-            "Here",
-            "Where",
-            "When",
-            "What",
-            "How",
-            "Why",
-            "Who",
-            "Which",
-          ];
-          if (!commonWords.some((word) => name.includes(word))) {
-            if (!fields.some((f) => f.type === "name" && f.value === name)) {
-              fields.push({ name: "Name", type: "name", value: name });
-            }
-          }
-        });
-      }
+      // const nameRegex = /\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g;
+      // const names = text.match(nameRegex);
+      // if (names) {
+      //   names.forEach((name) => {
+      //     // Filter out common false positives
+      //     const commonWords = [
+      //       "The",
+      //       "This",
+      //       "That",
+      //       "There",
+      //       "Here",
+      //       "Where",
+      //       "When",
+      //       "What",
+      //       "How",
+      //       "Why",
+      //       "Who",
+      //       "Which",
+      //     ];
+      //     if (!commonWords.some((word) => name.includes(word))) {
+      //       if (!fields.some((f) => f.type === "name" && f.value === name)) {
+      //         fields.push({ name: "Name", type: "name", value: name });
+      //       }
+      //     }
+      //   });
+      // }
 
       // URLs
       const urlRegex = /https?:\/\/[^\s]+/g;
@@ -1256,8 +1294,16 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
     replaceFieldsWithPlaceholders(text) {
       let result = text;
+      const counters = {
+        date: 0,
+        phone: 0,
+        address: 0,
+        name: 0,
+        email: 0,
+        number: 0,
+      };
 
-      // Replace dates with {{CURRENT_DATE}}
+      // Replace dates with {{DATE_1}}, {{DATE_2}}, etc.
       const datePatterns = [
         /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g, // MM/DD/YYYY or DD/MM/YYYY
         /\b\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b/gi, // DD Month YYYY
@@ -1267,10 +1313,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       ];
 
       datePatterns.forEach((pattern) => {
-        result = result.replace(pattern, "{{CURRENT_DATE}}");
+        result = result.replace(pattern, (match) => {
+          counters.date++;
+          return `{{DATE_${counters.date}}}`;
+        });
       });
 
-      // Replace phone numbers with {{CLIENT_PHONE}}
+      // Replace phone numbers with {{PHONE_1}}, {{PHONE_2}}, etc.
       const phonePatterns = [
         /(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/g, // US format
         /(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, // International
@@ -1279,10 +1328,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       ];
 
       phonePatterns.forEach((pattern) => {
-        result = result.replace(pattern, "{{CLIENT_PHONE}}");
+        result = result.replace(pattern, (match) => {
+          counters.phone++;
+          return `{{PHONE_${counters.phone}}}`;
+        });
       });
 
-      // Replace addresses with {{CLIENT_ADDRESS}}
+      // Replace addresses with {{ADDRESS_1}}, {{ADDRESS_2}}, etc.
       const addressPatterns = [
         /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)\b/gi,
         /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)[\s,]*[A-Za-z\s]*,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/gi, // With city, state, zip
@@ -1290,10 +1342,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       ];
 
       addressPatterns.forEach((pattern) => {
-        result = result.replace(pattern, "{{CLIENT_ADDRESS}}");
+        result = result.replace(pattern, (match) => {
+          counters.address++;
+          return `{{ADDRESS_${counters.address}}}`;
+        });
       });
 
-      // Replace names with {{CLIENT_NAME}}
+      // Replace names with {{NAME_1}}, {{NAME_2}}, etc.
       const nameRegex = /\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g;
       const commonWords = [
         "The",
@@ -1313,34 +1368,25 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       result = result.replace(nameRegex, (match) => {
         // Filter out common false positives
         if (!commonWords.some((word) => match.includes(word))) {
-          return "{{CLIENT_NAME}}";
+          counters.name++;
+          return `{{NAME_${counters.name}}}`;
         }
         return match;
       });
 
-      // Replace emails with {{CLIENT_EMAIL}}
+      // Replace emails with {{EMAIL_1}}, {{EMAIL_2}}, etc.
       const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-      result = result.replace(emailRegex, "{{CLIENT_EMAIL}}");
+      result = result.replace(emailRegex, (match) => {
+        counters.email++;
+        return `{{EMAIL_${counters.email}}}`;
+      });
 
-      // Replace ZIP codes with {{CLIENT_ZIP}}
-      const zipRegex = /\b\d{5}(?:-\d{4})?\b/g;
-      result = result.replace(zipRegex, "{{CLIENT_ZIP}}");
-
-      // Replace URLs with {{CLIENT_WEBSITE}}
-      const urlRegex = /https?:\/\/[^\s]+/g;
-      result = result.replace(urlRegex, "{{CLIENT_WEBSITE}}");
-
-      // Replace money amounts with {{AMOUNT}}
+      // Replace money amounts with {{NUMBER_1}}, {{NUMBER_2}}, etc.
       const moneyRegex = /\$[\d,]+(?:\.\d{2})?/g;
-      result = result.replace(moneyRegex, "{{AMOUNT}}");
-
-      // Replace SSN with {{CLIENT_SSN}}
-      const ssnRegex = /\b\d{3}-?\d{2}-?\d{4}\b/g;
-      result = result.replace(ssnRegex, "{{CLIENT_SSN}}");
-
-      // Replace license plates with {{CLIENT_LICENSE}}
-      const licenseRegex = /\b[A-Z]{1,3}\s?\d{1,4}[A-Z]?\b/g;
-      result = result.replace(licenseRegex, "{{CLIENT_LICENSE}}");
+      result = result.replace(moneyRegex, (match) => {
+        counters.number++;
+        return `{{NUMBER_${counters.number}}}`;
+      });
 
       return result;
     }
@@ -1349,24 +1395,209 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       const container = document.getElementById("extracted-fields");
       const fieldsList = document.getElementById("fields-list");
 
+      // Add unique IDs and tracking info to fields
+      this.trackedFields = fields.map((field, index) => ({
+        id: `field_${Date.now()}_${index}`,
+        name: field.name,
+        type: field.type,
+        value: field.value,
+        originalText: field.value,
+        placeholder: `{{${field.name}}}`,
+        isReplaced: true, // Assuming fields are already replaced in the text
+        isVisible: true, // User can toggle visibility
+        position: null, // Will be updated when we find it in the document
+      }));
+
+      console.log("🔍 [PDF-SYSTEM] Tracked fields:", this.trackedFields);
+
       if (container && fieldsList) {
         container.classList.remove("hidden");
-        fieldsList.innerHTML = fields
+        fieldsList.innerHTML = this.trackedFields
           .map(
             (field) => `
-          <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-600 rounded-md">
-            <div>
-              <span class="font-medium text-gray-900 dark:text-white">${field.name}</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">(${field.type})</span>
+          <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-600 rounded-md gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors" 
+               data-field-id="${field.id}"
+               onclick="window.pdfSystem.scrollToField('${field.id}')">
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-900 dark:text-white">${field.name}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">(${field.type})</span>
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <span class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">${field.placeholder}</span>
+                <span class="text-xs text-gray-500 ml-2">Click to locate in document</span>
+              </div>
             </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-              ${field.value || "Not detected"}
+            <div class="flex items-center gap-2">
+              <button 
+                onclick="event.stopPropagation(); window.pdfSystem.revertField('${field.id}')"
+                class="px-3 py-1 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors"
+                title="Revert to original text"
+              >
+                Revert
+              </button>
+              <button 
+                onclick="event.stopPropagation(); window.pdfSystem.toggleFieldVisibility('${field.id}')"
+                class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                title="Show/hide in document"
+              >
+                ${field.isVisible ? "Hide" : "Show"}
+              </button>
+              <button 
+                onclick="event.stopPropagation(); window.pdfSystem.removeField('${field.id}')"
+                class="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                title="Remove this field detection"
+              >
+                Remove
+              </button>
             </div>
           </div>
         `
           )
           .join("");
       }
+    }
+
+    scrollToField(fieldId) {
+      const field = this.trackedFields.find((f) => f.id === fieldId);
+      if (!field) return;
+
+      console.log("📍 [PDF-SYSTEM] Scrolling to field:", field.name);
+
+      // Get the editor content
+      const editorContent = this.editor.root.innerHTML;
+
+      // Search for the placeholder in the content
+      const placeholder = field.placeholder;
+      const placeholderIndex = editorContent.indexOf(placeholder);
+
+      if (placeholderIndex === -1) {
+        console.warn("⚠️ [PDF-SYSTEM] Placeholder not found in document:", placeholder);
+        return;
+      }
+
+      // Get the Quill editor's text content to find the position
+      const text = this.editor.getText();
+      const textIndex = text.indexOf(placeholder);
+
+      if (textIndex !== -1) {
+        // Scroll to the position and select the placeholder
+        this.editor.setSelection(textIndex, placeholder.length);
+
+        // Scroll the selection into view
+        const editorElement = this.editor.root;
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+
+          // Scroll to make the selection visible with some offset
+          editorElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        // Temporarily highlight the placeholder
+        const originalFormat = this.editor.getFormat(textIndex, placeholder.length);
+        this.editor.formatText(textIndex, placeholder.length, {
+          background: "#ffeb3b",
+          color: "#000",
+        });
+
+        // Remove highlight after 2 seconds
+        setTimeout(() => {
+          this.editor.formatText(textIndex, placeholder.length, originalFormat);
+        }, 2000);
+
+        console.log("✅ [PDF-SYSTEM] Field highlighted in document");
+      }
+    }
+
+    revertField(fieldId) {
+      const field = this.trackedFields.find((f) => f.id === fieldId);
+      if (!field) return;
+
+      console.log("🔄 [PDF-SYSTEM] Reverting field:", field.name);
+
+      // Get current editor content
+      const content = this.editor.root.innerHTML;
+
+      // Replace placeholder with original text
+      const updatedContent = content.replace(
+        new RegExp(`{{${field.name}}}`, "g"),
+        field.originalText
+      );
+
+      // Update editor
+      const delta = this.editor.clipboard.convert(updatedContent);
+      this.editor.setContents(delta);
+
+      // Update field status
+      field.isReplaced = false;
+
+      console.log("✅ [PDF-SYSTEM] Field reverted to original text");
+    }
+
+    toggleFieldVisibility(fieldId) {
+      const field = this.trackedFields.find((f) => f.id === fieldId);
+      if (!field) return;
+
+      field.isVisible = !field.isVisible;
+
+      // Update the UI button
+      const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
+      if (fieldElement) {
+        const button = fieldElement.querySelector("button:nth-child(2)");
+        if (button) {
+          button.textContent = field.isVisible ? "Hide" : "Show";
+        }
+      }
+
+      // Get current editor content
+      const content = this.editor.root.innerHTML;
+
+      if (field.isVisible) {
+        // Show the field (replace with placeholder)
+        const updatedContent = content.replace(
+          new RegExp(field.originalText, "g"),
+          `{{${field.name}}}`
+        );
+        const delta = this.editor.clipboard.convert(updatedContent);
+        this.editor.setContents(delta);
+      } else {
+        // Hide the field (replace with empty or original)
+        const updatedContent = content.replace(
+          new RegExp(`{{${field.name}}}`, "g"),
+          field.originalText
+        );
+        const delta = this.editor.clipboard.convert(updatedContent);
+        this.editor.setContents(delta);
+      }
+
+      console.log(
+        `${field.isVisible ? "👁️" : "🙈"} [PDF-SYSTEM] Field visibility toggled:`,
+        field.name
+      );
+    }
+
+    removeField(fieldId) {
+      const fieldIndex = this.trackedFields.findIndex((f) => f.id === fieldId);
+      if (fieldIndex === -1) return;
+
+      const field = this.trackedFields[fieldIndex];
+      console.log("🗑️ [PDF-SYSTEM] Removing field:", field.name);
+
+      // Revert the field before removing
+      this.revertField(fieldId);
+
+      // Remove from tracked fields
+      this.trackedFields.splice(fieldIndex, 1);
+
+      // Remove from UI
+      const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
+      if (fieldElement) {
+        fieldElement.remove();
+      }
+
+      console.log("✅ [PDF-SYSTEM] Field removed");
     }
 
     async saveTemplate() {

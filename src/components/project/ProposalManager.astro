@@ -102,7 +102,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           </div>
 
           <p class={`${globalSecondaryTextClasses} text-sm`}>
-            Generated on: <span id="proposal-date" />
+            Generated on: <span id="proposal-date">{new Date().toLocaleDateString()}</span>
           </p>
         </div>
         {/* <div class="ml-4 text-right">
@@ -232,7 +232,10 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       {/* <!-- Actions --> */}
       {canManageProposals && projectStatus >= 20 && projectStatus < 50 && (
-        <StickyActions columns="1">
+        <StickyActions columns="2">
+          <Button variant="ghost" size="lg" class="w-full" icon="send" iconPosition="left">
+            Proposal Saves Automatically
+          </Button>
           <Button
             id="send-proposal-btn"
             onclick="sendProposal()"
@@ -292,6 +295,52 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   }}
   is:inline
 >
+  // Define confirmDelete utility inline to avoid race conditions
+  window.confirmDelete = function (buttonId, onConfirm, options = {}) {
+    const {
+      timeout = 3000,
+      confirmIcon = '<span class="text-lg font-bold">?</span>',
+      trashIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+      </svg>`,
+    } = options;
+
+    const button = document.getElementById(buttonId);
+    if (!button) return;
+
+    const currentState = button.getAttribute("data-state") || "trash";
+
+    if (currentState === "trash") {
+      // First click: Show confirmation icon
+      button.innerHTML = confirmIcon;
+      button.setAttribute("data-state", "confirm");
+      button.title = "Click again to confirm deletion";
+      button.className =
+        "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn pulse";
+
+      // Auto-revert after timeout
+      const timeoutId = setTimeout(() => {
+        if (button.getAttribute("data-state") === "confirm") {
+          button.innerHTML = trashIcon;
+          button.setAttribute("data-state", "trash");
+          button.title = "Delete";
+          button.className =
+            "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn";
+          button.removeAttribute("data-timeout-id");
+        }
+      }, timeout);
+
+      button.setAttribute("data-timeout-id", String(timeoutId));
+    } else if (currentState === "confirm") {
+      // Second click: Execute callback
+      const timeoutId = button.getAttribute("data-timeout-id");
+      if (timeoutId) {
+        clearTimeout(Number(timeoutId));
+      }
+      onConfirm();
+    }
+  };
+
   // Define ProposalManager class directly in the script (following working pattern from PDF uploader)
   class ProposalManager {
     constructor(project, currentUser, initialInvoiceId = null, initialExistingInvoice = null) {
@@ -328,11 +377,14 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       if (placeholder) placeholder.style.display = "none";
       if (content) content.style.display = "block";
 
+      debugger;
       // Get or create invoice ID
-      await this.ensureInvoiceExists();
-
-      // Load data from database
-      await this.loadDataFromDatabase();
+      if (this.project.invoiceId) {
+        this.invoiceId = Number(this.project.invoiceId);
+        await this.loadDataFromDatabase();
+      } else {
+        await this.ensureInvoiceExists();
+      }
 
       // Initialize proposal form with project data
       this.initializeProposalForm();
@@ -396,10 +448,13 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         // console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot load data");
         return;
       }
+      console.log("🔍 [PROPOSAL-MANAGER] Loading data from database for invoice:", this.invoiceId);
 
       try {
         const response = await fetch(`/api/proposal/get?id=${this.invoiceId}`);
         const data = await response.json();
+
+        console.log("🔍 [PROPOSAL-MANAGER] Data:", data);
 
         if (data.success && data.invoice) {
           const invoice = data.invoice;
@@ -487,8 +542,9 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
             this.cachedLineItems.length > 0 &&
             this.cachedLineItems.some((item) => item.name && item.name.trim() !== "");
 
-          // console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
+          console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
 
+          debugger;
           if (!hasValidLineItems) {
             // console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
             this.initializeDefaultLineItems();
@@ -586,18 +642,21 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     renderLineItems() {
       const tbody = document.getElementById("proposal-line-items");
 
-      if (!tbody || !this.cachedLineItems) {
+      if (!tbody) {
+        debugger;
+
         return;
       }
 
       tbody.innerHTML = "";
 
       // Render each line item
-      this.cachedLineItems.forEach((item, index) => {
+      (this.cachedLineItems || []).forEach((item, index) => {
         const row = document.createElement("tr");
         row.className = "proposal-line-item-row";
 
-        if (projectStatus === 20) {
+        console.log("🔍 [PROPOSAL-MANAGER] Project status:", this.projectStatus);
+        if (Number(this.projectStatus) === 20) {
           row.innerHTML = `
             <td class="whitespace-nowrap px-6 py-4">
               <input type="text" value="${item.name || ""}" class="${globalInputClasses} w-40 line-item-name" autocomplete="off" onchange="window.proposalManager.updateLineItem(${index}, 'name', this.value)">
@@ -617,7 +676,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
                 <button 
                   type="button"
                   id="delete-btn-${index}"
-                  onclick="window.proposalManager.confirmDelete(${index})"
+                  onclick="confirmDelete('delete-btn-${index}', () => window.proposalManager.deleteProposalRow(${index}))"
                   class="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn"
                   title="Delete line item"
                   data-state="trash"
@@ -707,9 +766,10 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         item.catalogItemId
       ) {
         try {
-          const response = await fetch(`/api/proposal/lineitems/get`, {
-            method: "PUT",
+          const response = await fetch(`/api/proposal/lineitems/upsert`, {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({
               id: item.catalogItemId,
               name: item.name,
@@ -733,7 +793,8 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       // If no catalogItemId exists and we have a name, create a new catalog item
       else if ((field === "name" || field === "description") && !item.catalogItemId && item.name) {
         try {
-          const response = await fetch("/api/proposal/lineitems/get", {
+          const response = await fetch("/api/proposal/lineitems/upsert", {
+            credentials: "include",
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -835,7 +896,8 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       // Add to catalog first
       try {
-        const response = await fetch("/api/proposal/lineitems/get", {
+        const response = await fetch("/api/proposal/lineitems/upsert", {
+          credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -847,9 +909,9 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         });
 
         const result = await response.json();
-        if (result.success && result.item) {
-          console.log("✅ [PROPOSAL-MANAGER] Added item to catalog:", result.item);
-          newItem.catalogItemId = result.item.id;
+        if (result.success && result.data && result.data.item) {
+          console.log("✅ [PROPOSAL-MANAGER] Added item to catalog:", result.data.item);
+          newItem.catalogItemId = result.data.item.id;
         }
       } catch (error) {
         console.error("❌ [PROPOSAL-MANAGER] Error adding to catalog:", error);
@@ -868,47 +930,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       // Schedule save to database
       this.scheduleSave();
-    }
-
-    confirmDelete(index) {
-      const button = document.getElementById(`delete-btn-${index}`);
-      if (!button) return;
-
-      const currentState = button.getAttribute("data-state");
-
-      if (currentState === "trash") {
-        // First click: Show question mark
-        button.innerHTML = '<span class="text-lg font-bold">?</span>';
-        button.setAttribute("data-state", "confirm");
-        button.title = "Click again to confirm deletion";
-        button.className =
-          "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn pulse";
-
-        // Auto-revert after 3 seconds
-        setTimeout(() => {
-          if (button.getAttribute("data-state") === "confirm") {
-            this.revertDeleteButton(index);
-          }
-        }, 3000);
-      } else if (currentState === "confirm") {
-        // Second click: Actually delete
-        this.deleteProposalRow(index);
-      }
-    }
-
-    revertDeleteButton(index) {
-      const button = document.getElementById(`delete-btn-${index}`);
-      if (!button) return;
-
-      button.innerHTML = `
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-        </svg>
-      `;
-      button.setAttribute("data-state", "trash");
-      button.title = "Delete line item";
-      button.className =
-        "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn pulse";
     }
 
     deleteProposalRow(index) {
@@ -935,50 +956,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     updateRowTotal(index) {
       console.log("🔍 [PROPOSAL-MANAGER] updateRowTotal called");
       updateProposalTotal();
-    }
-
-    async loadExistingInvoice(invoice) {
-      console.log("🔧 [PROPOSAL-MANAGER] Loading existing invoice:", invoice);
-
-      if (!invoice) {
-        console.log("❌ [PROPOSAL-MANAGER] No invoice data provided");
-        return;
-      }
-
-      try {
-        // Set the invoice ID
-        this.invoiceId = parseInt(invoice.id);
-        console.log("✅ [PROPOSAL-MANAGER] Set invoice ID:", this.invoiceId);
-
-        // Show the proposal content (hide placeholder)
-        const placeholder = document.getElementById("proposal-placeholder");
-        const content = document.getElementById("proposal-content");
-
-        if (placeholder) placeholder.style.display = "none";
-        if (content) content.style.display = "block";
-
-        // Load the line items from the database
-        await this.loadDataFromDatabase();
-
-        // Initialize the proposal form to show the data
-        this.initializeProposalForm();
-
-        // Initialize autocomplete functionality
-        this.initializeAutocomplete();
-
-        // Ensure totals are calculated after everything is loaded
-        setTimeout(() => {
-          updateProposalTotal();
-          console.log("🔧 [PROPOSAL-MANAGER] Updated totals after loading existing invoice");
-        }, 100);
-
-        console.log(
-          "✅ [PROPOSAL-MANAGER] Successfully loaded existing invoice and showed proposal"
-        );
-      } catch (error) {
-        console.error("❌ [PROPOSAL-MANAGER] Error loading existing invoice:", error);
-        throw error;
-      }
     }
 
     regenerateProposal() {
@@ -1039,6 +1016,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         });
 
         const response = await fetch("/api/proposal/lineitems/upsert", {
+          credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1189,11 +1167,14 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
     async populateDropdownWithAllItems(dropdown) {
       try {
-        const response = await fetch("/api/proposal/lineitems/get");
+        const response = await fetch(`/api/proposal/lineitems/get?limit=50`);
+        // const response = await fetch("/api/proposal/lineitems/get", {
+        //   credentials: "include",
+        // });
         const data = await response.json();
 
-        if (data.success && data.items) {
-          this.displaySuggestionsForRow(dropdown, data.items);
+        if (data.success && data.data && data.data.items) {
+          this.displaySuggestionsForRow(dropdown, data.data.items);
         } else {
           console.log("🔍 [AUTOCOMPLETE] No catalog items available");
           dropdown.innerHTML =
@@ -1217,8 +1198,8 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         );
         const data = await response.json();
 
-        if (data.success && data.items) {
-          const filteredItems = data.items.filter(
+        if (data.success && data.data && data.data.items) {
+          const filteredItems = data.data.items.filter(
             (item) =>
               item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
               item.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1518,23 +1499,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     // Initialize the global proposal manager
     if (project) {
       await initializeProposalManager(project, projectStatus, currentUser);
-
-      // If there's an existing invoice, load it automatically
-      // console.log("🔍 [Client] Checking if should load existing invoice:", { existingInvoice, proposalManager: !!window.proposalManager });
-      if (existingInvoice && window.proposalManager) {
-        // console.log("✅ [Client] Loading existing proposal invoice:", existingInvoice);
-        window.proposalManager
-          .loadExistingInvoice(existingInvoice)
-          .then(() => {
-            // Recalculate total after loading existing invoice to ensure interactive elements work
-            updateProposalTotal();
-          })
-          .catch((error) => {
-            console.error("❌ [Client] Error loading existing invoice:", error);
-          });
-      } else {
-        console.log("❌ [Client] Not loading existing invoice - missing data or manager");
-      }
+      // buildProposal() is called inside initializeProposalManager, which handles both new and existing invoices
     }
 
     // Make wrapper functions available globally for onclick handlers
@@ -1596,7 +1561,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     };
     window.addProposalRow = () => window.proposalManager?.addProposalRow();
     window.deleteProposalRow = (index) => window.proposalManager?.deleteProposalRow(index);
-    window.confirmDelete = (index) => window.proposalManager?.confirmDelete(index);
+    // confirmDelete is now a global utility function from ux-utils
 
     // Note: acceptProposal, addNewLineItem, and initializeSubjectEditing
     // are set up by ProposalHelper.setupGlobalFunctions() when instantiated at end of script
@@ -1749,6 +1714,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
               // Delete from database
               try {
                 const response = await fetch("/api/proposal/lineitems/delete", {
+                  credentials: "include",
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ itemId }),

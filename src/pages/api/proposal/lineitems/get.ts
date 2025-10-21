@@ -6,7 +6,7 @@ import { apiCache } from "../../../../lib/api-cache";
 
 /**
  * Standardized Line Items GET API
- * 
+ *
  * Query Parameters:
  * - invoiceId: Get line items for specific invoice
  * - id: Get specific catalog item
@@ -14,7 +14,7 @@ import { apiCache } from "../../../../lib/api-cache";
  * - search: Search catalog items
  * - category: Filter by category
  * - limit: Max items to return (default: 20)
- * 
+ *
  * Examples:
  * - /api/proposal/lineitems/get?invoiceId=123
  * - /api/proposal/lineitems/get?id=456
@@ -116,6 +116,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       return createSuccessResponse({ item });
     }
 
+    console.log("🔍 [LINEITEMS-GET] Items:", items);
     return createSuccessResponse({ items: items || [] });
   } catch (error) {
     console.error("❌ [LINEITEMS-GET] Unexpected error:", error);
