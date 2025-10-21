@@ -69,7 +69,6 @@ export default defineConfig({
       "process.env.MAILGUN_SANDBOX_DOMAIN": JSON.stringify(env.MAILGUN_SANDBOX_DOMAIN),
       "process.env.MAILGUN_WEBHOOK_SIGNING_KEY": JSON.stringify(env.MAILGUN_WEBHOOK_SIGNING_KEY),
       "process.env.GLOBAL_COLOR_PRIMARY": JSON.stringify(env.GLOBAL_COLOR_PRIMARY),
-      "process.env.GLOBAL_COLOR_PRIMARY_RGB": JSON.stringify(env.GLOBAL_COLOR_PRIMARY_RGB),
       "process.env.PUBLIC_GOOGLE_MAPS_API_KEY": JSON.stringify(env.PUBLIC_GOOGLE_MAPS_API_KEY),
       "process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY": JSON.stringify(
         env.PUBLIC_STRIPE_PUBLISHABLE_KEY

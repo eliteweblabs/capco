@@ -7,6 +7,7 @@ const {
   year,
   globalCompanyName,
   isBackendPage,
+  primaryColor,
 } = Astro.props;
 
 import Tooltip from "@/components/common/Tooltip.astro";
@@ -79,23 +80,39 @@ import Tooltip from "@/components/common/Tooltip.astro";
       />
     </div>
   </div>
-  <div class="align-center flex justify-center space-x-3">
-    <ul class="align-center flex justify-center hidden">
-      <li>
-        <a href="/privacy" class="me-6 text-gray-900 underline hover:no-underline dark:text-white"
-          >Privacy</a
-        >
-      </li>
-      <li>
-        <a href="/terms" class="me-6 text-gray-900 underline hover:no-underline dark:text-white"
-          >Terms</a
-        >
-      </li>
-      <li>
-        <a href="/cookies" class="text-gray-900 underline hover:no-underline dark:text-white"
-          >Cookies</a
-        >
-      </li>
-    </ul>
+  <div class="align-center flex justify-center space-x-3 w-8">
+    {
+      !currentUser && (
+        <div class="fixed bottom-0 -right-2 z-50">
+          <vapi-widget
+            public-key="77cb0a47-2427-44ac-996d-e6ed2ca03bbf"
+            assistant-id="3ae002d5-fe9c-4870-8034-4c66a9b43b51"
+            mode="chat"
+            theme="dark"
+            accent-color={primaryColor}
+            cta-button-color="transparent"
+            cta-button-text-color="primary-500"
+            border-radius="large"
+            size="tiny"
+            title="?"
+            start-button-text="Start"
+            end-button-text="End Call"
+            chat-first-message="Hey, How can I help you today?"
+            chat-placeholder="Type your message..."
+            voice-show-transcript="true"
+            consent-required="true"
+            consent-title="Terms and conditions"
+            consent-content="By clicking Agree, and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as otherwise described in our Terms of Service."
+            consent-storage-key="vapi_widget_consent"
+          />
+
+          <script
+            src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js"
+            async
+            type="text/javascript"
+          />
+        </div>
+      )
+    }
   </div>
 </footer>
