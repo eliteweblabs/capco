@@ -755,3 +755,90 @@ export function validateEmail(email: string): string | null {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email) ? null : "Invalid email format";
 }
+
+/**
+ * Confirmation delete interaction for buttons
+ * Click once to show "?" icon, click again to confirm deletion
+ * Auto-reverts after timeout if not confirmed
+ *
+ * @param buttonId - ID of the button element
+ * @param onConfirm - Callback function to execute on confirmation
+ * @param options - Optional configuration
+ * @returns void
+ *
+ * @example
+ * confirmDelete('delete-btn-1', () => deleteItem(1), { timeout: 3000 });
+ */
+export function confirmDelete(
+  buttonId: string,
+  onConfirm: () => void,
+  options: {
+    timeout?: number;
+    confirmIcon?: string;
+    trashIcon?: string;
+  } = {}
+): void {
+  const {
+    timeout = 3000,
+    confirmIcon = '<span class="text-lg font-bold">?</span>',
+    trashIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+    </svg>`,
+  } = options;
+
+  const button = document.getElementById(buttonId);
+  if (!button) return;
+
+  const currentState = button.getAttribute("data-state") || "trash";
+
+  if (currentState === "trash") {
+    // First click: Show confirmation icon
+    button.innerHTML = confirmIcon;
+    button.setAttribute("data-state", "confirm");
+    button.title = "Click again to confirm deletion";
+    button.className =
+      "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn pulse";
+
+    // Auto-revert after timeout
+    const timeoutId = setTimeout(() => {
+      if (button.getAttribute("data-state") === "confirm") {
+        revertDeleteButton(buttonId, trashIcon);
+      }
+    }, timeout);
+
+    // Store timeout ID so we can cancel it if needed
+    button.setAttribute("data-timeout-id", String(timeoutId));
+  } else if (currentState === "confirm") {
+    // Second click: Execute callback
+    const timeoutId = button.getAttribute("data-timeout-id");
+    if (timeoutId) {
+      clearTimeout(Number(timeoutId));
+    }
+    onConfirm();
+  }
+}
+
+/**
+ * Reverts a delete button back to its original trash icon state
+ * @param buttonId - ID of the button element
+ * @param trashIcon - Optional custom trash icon HTML
+ */
+function revertDeleteButton(buttonId: string, trashIcon?: string): void {
+  const button = document.getElementById(buttonId);
+  if (!button) return;
+
+  const defaultTrashIcon =
+    trashIcon ||
+    `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+  </svg>`;
+
+  button.innerHTML = defaultTrashIcon;
+  button.setAttribute("data-state", "trash");
+  button.title = "Delete";
+  button.className =
+    "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn";
+
+  // Clear timeout ID
+  button.removeAttribute("data-timeout-id");
+}
