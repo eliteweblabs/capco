@@ -90,11 +90,117 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         <!-- <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Template Management</h3> -->
         <button
           id="new-template-btn"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
         >
           <LucideIcon name="plus" class="w-4 h-4 inline mr-2" />
           New Template
+          <LucideIcon
+            id="accordion-icon"
+            name="chevron-down"
+            class="w-4 h-4 ml-2 transition-transform"
+          />
         </button>
+      </div>
+
+      <!-- Template Editor Accordion (hidden by default) -->
+      <div
+        id="template-editor-accordion"
+        class="hidden mb-6 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+      >
+        <div class="bg-white dark:bg-gray-800 p-6">
+          <!-- File Upload Section -->
+          <div id="file-upload-section" class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Upload Document (Image, PDF, DOC, DOCX)
+            </label>
+            <div
+              class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center"
+            >
+              <input
+                type="file"
+                id="template-file-upload"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                class="hidden"
+              />
+              <button
+                id="upload-file-btn"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                <LucideIcon name="upload" class="w-4 h-4 inline mr-2" />
+                Choose File
+              </button>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF
+              </p>
+            </div>
+          </div>
+
+          <!-- Template Form -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Template Name
+              </label>
+              <input
+                type="text"
+                id="template-name"
+                placeholder="Enter template name..."
+                class={globalInputClasses}
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Template Type
+              </label>
+              <select id="template-type" class={globalInputClasses}>
+                <option value="body">Body Template</option>
+                <option value="header">Header Template</option>
+                <option value="footer">Footer Template</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Template Content Editor -->
+          <div class="grid grid-cols-12 gap-4">
+            <div class="mb-6 col-span-8">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Template Content
+              </label>
+              <div
+                id="template-editor"
+                class="border border-gray-300 dark:border-gray-600 rounded-md min-h-[400px]"
+              >
+                <!-- Quill Editor will be loaded here -->
+              </div>
+            </div>
+            <!-- Extracted Fields -->
+            <div id="extracted-fields" class="mb-6 hidden col-span-4 flex flex-col max-h-[600px]">
+              <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3 flex-shrink-0">
+                Detected Fields
+              </h4>
+              <div id="fields-list" class="space-y-2 overflow-y-auto flex-1 pr-2">
+                <!-- Extracted fields will be displayed here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Save Template -->
+          <div class="flex justify-end space-x-4 mt-6">
+            <button
+              id="cancel-template-btn"
+              class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              id="save-template-btn"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              <LucideIcon name="save" class="w-4 h-4 inline mr-2" />
+              Save Template
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Template List -->
@@ -196,123 +302,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
   </div>
 </div>
 
-<!-- Template Editor Modal -->
-<div id="template-editor-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-  <div class="flex items-center justify-center min-h-screen p-4 relative">
-    <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
-    >
-      <div
-        class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700"
-      >
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Template Editor</h3>
-        <button
-          id="close-editor-modal"
-          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-        >
-          <LucideIcon name="x" class="w-6 h-6" />
-        </button>
-      </div>
-
-      <div class="p-6 max-h-[calc(90vh-120px)] overflow-hidden">
-        <!-- File Upload Section -->
-        <div id="file-upload-section" class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Upload Document (Image, PDF, DOC, DOCX)
-          </label>
-          <div
-            class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center"
-          >
-            <input
-              type="file"
-              id="template-file-upload"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
-              class="hidden"
-            />
-            <button
-              id="upload-file-btn"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              <LucideIcon name="upload" class="w-4 h-4 inline mr-2" />
-              Choose File
-            </button>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF
-            </p>
-          </div>
-        </div>
-
-        <!-- Template Form -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Template Name
-            </label>
-            <input
-              type="text"
-              id="template-name"
-              placeholder="Enter template name..."
-              class={globalInputClasses}
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Template Type
-            </label>
-            <select id="template-type" class={globalInputClasses}>
-              <option value="body">Body Template</option>
-              <option value="header">Header Template</option>
-              <option value="footer">Footer Template</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Template Content Editor -->
-        <!-- put the template next to the extracted fields -->
-        <div class="grid grid-cols-12 gap-4">
-          <div class="mb-6 col-span-8">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Template Content
-            </label>
-            <div
-              id="template-editor"
-              class="border border-gray-300 dark:border-gray-600 rounded-md min-h-[400px]"
-            >
-              <!-- Monaco Editor will be loaded here -->
-            </div>
-          </div>
-          <!-- Extracted Fields -->
-          <div id="extracted-fields" class="mb-6 hidden col-span-4 flex flex-col max-h-[600px]">
-            <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3 flex-shrink-0">
-              Detected Fields
-            </h4>
-            <div id="fields-list" class="space-y-2 overflow-y-auto flex-1 pr-2">
-              <!-- Extracted fields will be displayed here -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Save Template -->
-        <div class="flex justify-end space-x-4 absolute bottom-0 right-0">
-          <button
-            id="cancel-template-btn"
-            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            id="save-template-btn"
-            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-          >
-            <LucideIcon name="save" class="w-4 h-4 inline mr-2" />
-            Save Template
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script is:inline>
   console.log("🚀 [PDF-SYSTEM] Script starting...");
 
@@ -350,10 +339,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         this.openTemplateEditor();
       });
 
-      // Template editor
-      document.getElementById("close-editor-modal")?.addEventListener("click", () => {
-        this.closeTemplateEditor();
-      });
+      // Template editor close is handled by cancel button
 
       document.getElementById("upload-file-btn")?.addEventListener("click", () => {
         document.getElementById("template-file-upload")?.click();
@@ -528,32 +514,52 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     }
 
     openTemplateEditor(templateId = null) {
-      const modal = document.getElementById("template-editor-modal");
-      if (modal) {
-        modal.classList.remove("hidden");
-        this.selectedTemplate = templateId;
+      const accordion = document.getElementById("template-editor-accordion");
+      const icon = document.getElementById("accordion-icon");
 
-        if (templateId) {
-          this.loadTemplateForEdit(templateId);
+      if (accordion) {
+        const isHidden = accordion.classList.contains("hidden");
+
+        if (isHidden) {
+          // Open accordion
+          accordion.classList.remove("hidden");
+          icon?.classList.add("rotate-180");
+
+          this.selectedTemplate = templateId;
+
+          if (templateId) {
+            this.loadTemplateForEdit(templateId);
+          } else {
+            this.resetTemplateForm();
+          }
+
+          // Initialize editor after accordion is visible
+          setTimeout(() => {
+            this.initializeEditor();
+          }, 100);
+
+          // Scroll to accordion
+          setTimeout(() => {
+            accordion.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }, 150);
         } else {
-          this.resetTemplateForm();
+          // Close accordion if clicking again
+          this.closeTemplateEditor();
         }
-
-        // Initialize editor after modal is shown
-        setTimeout(() => {
-          this.initializeEditor();
-        }, 100);
       }
     }
 
     closeTemplateEditor() {
-      const modal = document.getElementById("template-editor-modal");
-      if (modal) {
-        modal.classList.add("hidden");
+      const accordion = document.getElementById("template-editor-accordion");
+      const icon = document.getElementById("accordion-icon");
+
+      if (accordion) {
+        accordion.classList.add("hidden");
+        icon?.classList.remove("rotate-180");
         this.selectedTemplate = null;
         if (this.editor) {
-          this.editor.dispose();
-          this.editor = null;
+          this.editor.setContents([]);
+          // Don't dispose, just clear content so we can reuse it
         }
       }
     }
@@ -1294,6 +1300,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
     replaceFieldsWithPlaceholders(text) {
       let result = text;
+      const detectedFields = [];
       const counters = {
         date: 0,
         phone: 0,
@@ -1301,6 +1308,15 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         name: 0,
         email: 0,
         number: 0,
+      };
+      // Track unique values to reuse placeholders
+      const valueToPlaceholder = {
+        date: new Map(),
+        phone: new Map(),
+        address: new Map(),
+        name: new Map(),
+        email: new Map(),
+        number: new Map(),
       };
 
       // Replace dates with {{DATE_1}}, {{DATE_2}}, etc.
@@ -1314,8 +1330,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       datePatterns.forEach((pattern) => {
         result = result.replace(pattern, (match) => {
+          // Check if we've seen this value before
+          if (valueToPlaceholder.date.has(match)) {
+            return valueToPlaceholder.date.get(match);
+          }
+
+          // New unique value
           counters.date++;
-          return `{{DATE_${counters.date}}}`;
+          const placeholder = `{{DATE_${counters.date}}}`;
+          valueToPlaceholder.date.set(match, placeholder);
+          detectedFields.push({
+            name: `DATE_${counters.date}`,
+            type: "date",
+            value: match,
+            placeholder: placeholder,
+          });
+          return placeholder;
         });
       });
 
@@ -1329,8 +1359,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       phonePatterns.forEach((pattern) => {
         result = result.replace(pattern, (match) => {
+          // Check if we've seen this value before
+          if (valueToPlaceholder.phone.has(match)) {
+            return valueToPlaceholder.phone.get(match);
+          }
+
+          // New unique value
           counters.phone++;
-          return `{{PHONE_${counters.phone}}}`;
+          const placeholder = `{{PHONE_${counters.phone}}}`;
+          valueToPlaceholder.phone.set(match, placeholder);
+          detectedFields.push({
+            name: `PHONE_${counters.phone}`,
+            type: "phone",
+            value: match,
+            placeholder: placeholder,
+          });
+          return placeholder;
         });
       });
 
@@ -1343,8 +1387,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       addressPatterns.forEach((pattern) => {
         result = result.replace(pattern, (match) => {
+          // Check if we've seen this value before
+          if (valueToPlaceholder.address.has(match)) {
+            return valueToPlaceholder.address.get(match);
+          }
+
+          // New unique value
           counters.address++;
-          return `{{ADDRESS_${counters.address}}}`;
+          const placeholder = `{{ADDRESS_${counters.address}}}`;
+          valueToPlaceholder.address.set(match, placeholder);
+          detectedFields.push({
+            name: `ADDRESS_${counters.address}`,
+            type: "address",
+            value: match,
+            placeholder: placeholder,
+          });
+          return placeholder;
         });
       });
 
@@ -1368,8 +1426,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       result = result.replace(nameRegex, (match) => {
         // Filter out common false positives
         if (!commonWords.some((word) => match.includes(word))) {
+          // Check if we've seen this value before
+          if (valueToPlaceholder.name.has(match)) {
+            return valueToPlaceholder.name.get(match);
+          }
+
+          // New unique value
           counters.name++;
-          return `{{NAME_${counters.name}}}`;
+          const placeholder = `{{NAME_${counters.name}}}`;
+          valueToPlaceholder.name.set(match, placeholder);
+          detectedFields.push({
+            name: `NAME_${counters.name}`,
+            type: "name",
+            value: match,
+            placeholder: placeholder,
+          });
+          return placeholder;
         }
         return match;
       });
@@ -1377,16 +1449,47 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Replace emails with {{EMAIL_1}}, {{EMAIL_2}}, etc.
       const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
       result = result.replace(emailRegex, (match) => {
+        // Check if we've seen this value before
+        if (valueToPlaceholder.email.has(match)) {
+          return valueToPlaceholder.email.get(match);
+        }
+
+        // New unique value
         counters.email++;
-        return `{{EMAIL_${counters.email}}}`;
+        const placeholder = `{{EMAIL_${counters.email}}}`;
+        valueToPlaceholder.email.set(match, placeholder);
+        detectedFields.push({
+          name: `EMAIL_${counters.email}`,
+          type: "email",
+          value: match,
+          placeholder: placeholder,
+        });
+        return placeholder;
       });
 
       // Replace money amounts with {{NUMBER_1}}, {{NUMBER_2}}, etc.
       const moneyRegex = /\$[\d,]+(?:\.\d{2})?/g;
       result = result.replace(moneyRegex, (match) => {
+        // Check if we've seen this value before
+        if (valueToPlaceholder.number.has(match)) {
+          return valueToPlaceholder.number.get(match);
+        }
+
+        // New unique value
         counters.number++;
-        return `{{NUMBER_${counters.number}}}`;
+        const placeholder = `{{NUMBER_${counters.number}}}`;
+        valueToPlaceholder.number.set(match, placeholder);
+        detectedFields.push({
+          name: `NUMBER_${counters.number}`,
+          type: "number",
+          value: match,
+          placeholder: placeholder,
+        });
+        return placeholder;
       });
+
+      // Store the detected fields for later use
+      this.detectedFieldsMappings = detectedFields;
 
       return result;
     }
@@ -1395,14 +1498,18 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       const container = document.getElementById("extracted-fields");
       const fieldsList = document.getElementById("fields-list");
 
+      // Use the detected field mappings from replaceFieldsWithPlaceholders
+      // This ensures the placeholders match what's actually in the document
+      const fieldsToDisplay = this.detectedFieldsMappings || fields;
+
       // Add unique IDs and tracking info to fields
-      this.trackedFields = fields.map((field, index) => ({
+      this.trackedFields = fieldsToDisplay.map((field, index) => ({
         id: `field_${Date.now()}_${index}`,
         name: field.name,
         type: field.type,
         value: field.value,
         originalText: field.value,
-        placeholder: `{{${field.name}}}`,
+        placeholder: field.placeholder || `{{${field.name}}}`,
         isReplaced: true, // Assuming fields are already replaced in the text
         isVisible: true, // User can toggle visibility
         position: null, // Will be updated when we find it in the document
@@ -1424,8 +1531,14 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 <span class="text-xs text-gray-500 dark:text-gray-400">(${field.type})</span>
               </div>
               <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">${field.placeholder}</span>
-                <span class="text-xs text-gray-500 ml-2">Click to locate in document</span>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Original:</span>
+                  <span class="font-mono text-xs">${field.value}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">${field.placeholder}</span>
+                  <span class="text-xs text-gray-500 ml-2">← Click to locate</span>
+                </div>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -1460,54 +1573,98 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
     scrollToField(fieldId) {
       const field = this.trackedFields.find((f) => f.id === fieldId);
-      if (!field) return;
+      if (!field) {
+        console.warn("⚠️ [PDF-SYSTEM] Field not found:", fieldId);
+        return;
+      }
 
-      console.log("📍 [PDF-SYSTEM] Scrolling to field:", field.name);
+      console.log("📍 [PDF-SYSTEM] Scrolling to field:", field.name, field.placeholder);
 
-      // Get the editor content
-      const editorContent = this.editor.root.innerHTML;
-
-      // Search for the placeholder in the content
-      const placeholder = field.placeholder;
-      const placeholderIndex = editorContent.indexOf(placeholder);
-
-      if (placeholderIndex === -1) {
-        console.warn("⚠️ [PDF-SYSTEM] Placeholder not found in document:", placeholder);
+      if (!this.editor) {
+        console.error("❌ [PDF-SYSTEM] Editor not initialized");
         return;
       }
 
       // Get the Quill editor's text content to find the position
       const text = this.editor.getText();
+      const placeholder = field.placeholder;
       const textIndex = text.indexOf(placeholder);
 
-      if (textIndex !== -1) {
+      console.log("🔍 [PDF-SYSTEM] Text index:", textIndex, "Text length:", text.length);
+
+      if (textIndex === -1) {
+        console.warn("⚠️ [PDF-SYSTEM] Placeholder not found in document:", placeholder);
+        console.log("📄 [PDF-SYSTEM] Editor text:", text.substring(0, 200));
+        return;
+      }
+
+      try {
+        // Focus the editor first
+        this.editor.focus();
+
         // Scroll to the position and select the placeholder
         this.editor.setSelection(textIndex, placeholder.length);
 
-        // Scroll the selection into view
-        const editorElement = this.editor.root;
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const rect = range.getBoundingClientRect();
+        console.log("✅ [PDF-SYSTEM] Selection set at index:", textIndex);
 
-          // Scroll to make the selection visible with some offset
-          editorElement.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-
-        // Temporarily highlight the placeholder
-        const originalFormat = this.editor.getFormat(textIndex, placeholder.length);
-        this.editor.formatText(textIndex, placeholder.length, {
-          background: "#ffeb3b",
-          color: "#000",
-        });
-
-        // Remove highlight after 2 seconds
+        // Use Quill's scrolling API with a small delay to ensure selection is set
         setTimeout(() => {
-          this.editor.formatText(textIndex, placeholder.length, originalFormat);
-        }, 2000);
+          // Get the bounds of the selection
+          const bounds = this.editor.getBounds(textIndex);
+
+          if (bounds) {
+            console.log("📐 [PDF-SYSTEM] Bounds:", bounds);
+
+            // Get the Quill editor's scrolling element (.ql-editor)
+            const editorScrollContainer =
+              this.editor.root.parentElement.querySelector(".ql-editor");
+
+            if (editorScrollContainer) {
+              // Calculate the target scroll position
+              // Center the selection in the viewport
+              const targetScrollTop = bounds.top - editorScrollContainer.clientHeight / 3;
+
+              console.log("📜 [PDF-SYSTEM] Scrolling container:", {
+                currentScroll: editorScrollContainer.scrollTop,
+                targetScroll: Math.max(0, targetScrollTop),
+                boundsTop: bounds.top,
+                containerHeight: editorScrollContainer.clientHeight,
+              });
+
+              // Scroll the editor to show the selection
+              editorScrollContainer.scrollTo({
+                top: Math.max(0, targetScrollTop),
+                behavior: "smooth",
+              });
+            } else {
+              // Fallback: scroll the root element
+              const scrollTop = bounds.top - this.editor.root.clientHeight / 3;
+              this.editor.root.scrollTo({
+                top: Math.max(0, scrollTop),
+                behavior: "smooth",
+              });
+            }
+          }
+
+          // Temporarily highlight the placeholder
+          const originalFormat = this.editor.getFormat(textIndex, placeholder.length);
+          this.editor.formatText(textIndex, placeholder.length, {
+            background: "#ffeb3b",
+            color: "#000",
+          });
+
+          console.log("🎨 [PDF-SYSTEM] Applied highlight");
+
+          // Remove highlight after 2 seconds
+          setTimeout(() => {
+            this.editor.formatText(textIndex, placeholder.length, originalFormat);
+            console.log("🎨 [PDF-SYSTEM] Removed highlight");
+          }, 2000);
+        }, 100);
 
         console.log("✅ [PDF-SYSTEM] Field highlighted in document");
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error scrolling to field:", error);
       }
     }
 
