@@ -6,6 +6,143 @@ import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses } = globalClasses();
 ---
 
+<style>
+  .smoke-button {
+    position: relative;
+    display: inline-block;
+  }
+
+  .smoke-button::before,
+  .smoke-button::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    background: radial-gradient(
+      circle,
+      rgba(200, 200, 200, 0.8) 0%,
+      rgba(150, 150, 150, 0.4) 40%,
+      transparent 70%
+    );
+    border-radius: 50%;
+    opacity: 0;
+    animation: smoke 3s infinite ease-out;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .smoke-button::after {
+    animation-delay: 1.5s;
+    left: 45%;
+  }
+
+  @keyframes smoke {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, 0) scale(1);
+    }
+    10% {
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 0.6;
+      transform: translate(calc(-50% + 15px), -80px) scale(8);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(-50% + 25px), -120px) scale(12);
+    }
+  }
+
+  /* Multiple smoke particles */
+  .smoke-particle {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(
+      circle,
+      rgba(220, 220, 220, 0.7) 0%,
+      rgba(180, 180, 180, 0.3) 40%,
+      transparent 70%
+    );
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .smoke-particle:nth-child(1) {
+    animation: smoke-particle 4s infinite ease-out;
+    animation-delay: 0s;
+  }
+
+  .smoke-particle:nth-child(2) {
+    animation: smoke-particle 4.5s infinite ease-out;
+    animation-delay: 0.8s;
+    left: 55%;
+  }
+
+  .smoke-particle:nth-child(3) {
+    animation: smoke-particle 3.5s infinite ease-out;
+    animation-delay: 1.6s;
+    left: 45%;
+  }
+
+  .smoke-particle:nth-child(4) {
+    animation: smoke-particle 4.2s infinite ease-out;
+    animation-delay: 2.4s;
+    left: 52%;
+  }
+
+  .smoke-particle:nth-child(5) {
+    animation: smoke-particle 3.8s infinite ease-out;
+    animation-delay: 3.2s;
+    left: 48%;
+  }
+
+  @keyframes smoke-particle {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, 0) scale(1) rotate(0deg);
+    }
+    15% {
+      opacity: 0.9;
+    }
+    60% {
+      opacity: 0.5;
+      transform: translate(calc(-50% + 20px), -100px) scale(10) rotate(180deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(-50% + 35px), -150px) scale(15) rotate(360deg);
+    }
+  }
+
+  /* Dark mode adjustments */
+  .dark .smoke-button::before,
+  .dark .smoke-button::after {
+    background: radial-gradient(
+      circle,
+      rgba(100, 100, 100, 0.6) 0%,
+      rgba(70, 70, 70, 0.3) 40%,
+      transparent 70%
+    );
+  }
+
+  .dark .smoke-particle {
+    background: radial-gradient(
+      circle,
+      rgba(120, 120, 120, 0.5) 0%,
+      rgba(90, 90, 90, 0.2) 40%,
+      transparent 70%
+    );
+  }
+</style>
+
 <section data-aos="fade-up">
   <div
     class="md:ml-16 O6fABJPMfXjR3JaNKMui eQBRejYHR_MmxAuw7a2p NnjUZ5xJwhg9QVw6z6tO c2o4iKAiorg3anKO2ST_ asiM2r3KKappeL7cJd45 TNKwUFt_JKfd1xHcm8dc"
@@ -64,16 +201,23 @@ const { globalInputClasses } = globalClasses();
             >with guaranteed approval at a fraction of the cost of traditional firms.</span
           >
         </p>
-        <Button
-          variant="outline"
-          size="xl"
-          onclick="window.location.href='/auth/login?tab=register'"
-          class="pulse"
-          dataAttributes={{
-            "data-aos": "fade-up",
-            "data-aos-delay": "1000",
-          }}>Get Started</Button
-        >
+        <div class="smoke-button">
+          <span class="smoke-particle"></span>
+          <span class="smoke-particle"></span>
+          <span class="smoke-particle"></span>
+          <span class="smoke-particle"></span>
+          <span class="smoke-particle"></span>
+          <Button
+            variant="outline"
+            size="xl"
+            onclick="window.location.href='/auth/login?tab=register'"
+            class="pulse"
+            dataAttributes={{
+              "data-aos": "fade-up",
+              "data-aos-delay": "1000",
+            }}>Get Started</Button
+          >
+        </div>
 
         <form
           style="display: none;"
