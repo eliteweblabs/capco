@@ -53,27 +53,65 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Note: Payment processing should be handled by a separate payment API
     // This proposal API focuses on proposal/invoice creation and management
 
-    // Prepare invoice data
-    const invoiceData = {
-      ...(projectId && { projectId: parseInt(projectId) }),
-      status,
-      subject,
-      invoiceDate,
-      notes,
-      proposalNotes,
-      taxRate,
-      templateId,
-      ...(id ? {} : { createdBy: currentUser.id }),
-      ...(id
-        ? {}
-        : { dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] }),
-    };
+    let invoice;
+    let invoiceError;
 
-    // Create or update invoice
-    console.log("🔧 [PROPOSAL-UPSERT] Invoice data:", invoiceData);
-    const { data: invoice, error: invoiceError } = await (id
-      ? supabase.from("invoices").update(invoiceData).eq("id", id).select().single()
-      : supabase.from("invoices").insert(invoiceData).select().single());
+    // If projectId is provided without id, check if invoice already exists
+    if (!id && projectId) {
+      console.log("🔍 [PROPOSAL-UPSERT] Checking for existing invoice for project:", projectId);
+      const { data: existingInvoice, error: checkError } = await supabase
+        .from("invoices")
+        .select("*")
+        .eq("projectId", parseInt(projectId))
+        .single();
+
+      if (existingInvoice) {
+        console.log("✅ [PROPOSAL-UPSERT] Found existing invoice:", existingInvoice.id);
+        invoice = existingInvoice;
+        invoiceError = null;
+      } else {
+        console.log("🆕 [PROPOSAL-UPSERT] No existing invoice found, creating new one");
+        // Prepare invoice data for new invoice
+        const invoiceData = {
+          projectId: parseInt(projectId),
+          status,
+          subject,
+          invoiceDate,
+          notes,
+          proposalNotes,
+          taxRate,
+          templateId,
+          createdBy: currentUser.id,
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        };
+
+        const result = await supabase.from("invoices").insert(invoiceData).select().single();
+        invoice = result.data;
+        invoiceError = result.error;
+      }
+    } else if (id) {
+      // Update existing invoice by id
+      console.log("🔧 [PROPOSAL-UPSERT] Updating existing invoice:", id);
+      const invoiceData = {
+        ...(projectId && { projectId: parseInt(projectId) }),
+        status,
+        subject,
+        invoiceDate,
+        notes,
+        proposalNotes,
+        taxRate,
+        templateId,
+      };
+
+      const result = await supabase
+        .from("invoices")
+        .update(invoiceData)
+        .eq("id", id)
+        .select()
+        .single();
+      invoice = result.data;
+      invoiceError = result.error;
+    }
 
     console.log("🔧 [PROPOSAL-UPSERT] Invoice result:", { invoice, invoiceError });
 

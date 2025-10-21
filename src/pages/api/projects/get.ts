@@ -41,7 +41,14 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     if (projectId) {
       const { data: project, error } = await supabaseAdmin
         .from("projects")
-        .select("*")
+        .select(
+          `
+          *,
+          invoices!invoices_projectId_fkey (
+            id
+          )
+        `
+        )
         .eq("id", projectId)
         .single();
 
@@ -51,6 +58,13 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           headers: { "Content-Type": "application/json" },
         });
       }
+
+      // Extract invoice ID if exists (take first invoice)
+      if (project.invoices && project.invoices.length > 0) {
+        project.invoiceId = project.invoices[0].id;
+      }
+      // Remove the invoices array from response
+      delete project.invoices;
 
       // Fetch author profile data
       let authorProfile = null;

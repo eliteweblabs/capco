@@ -63,8 +63,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         const projectId = parseInt(projectIdParam);
         // console.log("🔍 [PROJECT-STATUSES-API] Fetching project data for ID:", projectId);
 
-        // Fetch project data using get-project API
-        const projectResponse = await fetch(`${getApiBaseUrl()}/api/get-project?id=${projectId}`, {
+        // Fetch project data using projects/get API
+        const projectResponse = await fetch(`${getApiBaseUrl()}/api/projects/get?id=${projectId}`, {
           headers: {
             Cookie: request.headers.get("Cookie") || "",
           },
@@ -327,9 +327,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       try {
         const parsedProjectId = parseInt(projectId);
 
-        // Fetch project data using get-project API
+        // Fetch project data using projects/get API
         const projectResponse = await fetch(
-          `${getApiBaseUrl()}/api/get-project?id=${parsedProjectId}`
+          `${getApiBaseUrl()}/api/projects/get?id=${parsedProjectId}`
         );
         if (projectResponse.ok) {
           const responseData = await projectResponse.json();
