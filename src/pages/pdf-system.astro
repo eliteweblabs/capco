@@ -5,6 +5,9 @@ import { supabase } from "../lib/supabase";
 import { checkAuth } from "../lib/auth";
 
 const { currentUser = undefined } = await checkAuth(Astro.cookies);
+if (!currentUser) {
+  return Astro.redirect("/auth/login");
+}
 const currentRole = currentUser?.profile?.role || "Client";
 ---
 
