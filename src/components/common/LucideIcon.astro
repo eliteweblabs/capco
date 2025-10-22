@@ -1,4 +1,7 @@
 ---
+import { getIcon } from "../../lib/custom-icons";
+import type { IconConfig } from "../../lib/custom-icons";
+
 interface Props {
   name: string;
   class?: string;
@@ -52,105 +55,36 @@ const {
   ...rest
 } = Astro.props;
 
-// Style variant classes - matching BoxIcon component exactly
-const styleClasses = {
-  primary: "text-primary-500 dark:text-primary-400",
-  secondary: "text-neutral-500 dark:text-neutral-400",
-  success: "text-success-500 dark:text-success-400",
-  warning: "text-warning-500 dark:text-warning-400",
-  danger: "text-danger-500 dark:text-danger-400",
-  outline:
-    "text-neutral-600 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-600 rounded-full p-1",
-  ghost:
-    "text-neutral-500 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400",
-  link: "text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300",
-  loading: "text-primary-500 dark:text-primary-400 animate-spin",
-  disabled: "text-neutral-400 dark:text-neutral-500 opacity-50",
-  selected: "text-primary-600 dark:text-primary-300 font-semibold",
-  anchor:
-    "text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300",
+// Use custom icon system
+const iconConfig: IconConfig = {
+  size:
+    size === "xs"
+      ? 12
+      : size === "sm"
+        ? 16
+        : size === "md"
+          ? 20
+          : size === "lg"
+            ? 24
+            : size === "xl"
+              ? 32
+              : 16,
+  color: color !== "currentColor" ? color : undefined,
+  className: className,
+  strokeWidth: 2,
 };
 
-// Size classes - mapping to Tailwind classes
-const sizeClasses = {
-  xs: "w-3 h-3",
-  sm: "w-4 h-4",
-  md: "w-5 h-5",
-  lg: "w-6 h-6",
-  xl: "w-8 h-8",
-};
-
-// Background color classes
-const backgroundColorClasses = {
-  primary: "bg-primary-500 dark:bg-primary-400 text-white",
-  secondary: "bg-neutral-500 dark:bg-neutral-400 text-white",
-  success: "bg-success-500 dark:bg-success-400 text-white",
-  warning: "bg-warning-500 dark:bg-warning-400 text-white",
-  danger: "bg-danger-500 dark:bg-danger-400 text-white",
-  outline:
-    "bg-transparent border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-300",
-  ghost:
-    "bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400",
-  link: "bg-transparent hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 dark:text-primary-400",
-  loading: "bg-primary-500 dark:bg-primary-400 text-white animate-pulse",
-  disabled: "bg-neutral-300 dark:bg-neutral-600 text-neutral-500 dark:text-neutral-400 opacity-50",
-  selected: "bg-primary-600 dark:bg-primary-300 text-white font-semibold",
-  anchor:
-    "bg-transparent hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 dark:text-primary-400",
-};
-
-// Shape classes
-const shapeClasses = {
-  circle: "rounded-full p-3",
-  rounded: "rounded-lg",
-  square: "rounded-none",
-};
-
-// Convert kebab-case to PascalCase for Lucide icons
-const convertToPascalCase = (str: string) => {
-  return str
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join("");
-};
-
-// Map common icon names to correct Lucide names
-const iconNameMapping: Record<string, string> = {
-  FileBlank: "File",
-  CommentDots: "MessageCircle",
-  MessageDots: "MessageCircle",
-  MessageRoundedDots: "MessageCircle",
-  MessageSquareDots: "MessageSquare",
-  UserPlus: "UserPlus",
-  CheckSquare: "CheckSquare",
-  BarChart3: "BarChart3",
-  MessageSquare: "MessageSquare",
-  User: "User",
-  Check: "Check",
-  Shield: "Shield",
-  Send: "Send",
-  Zap: "Zap",
-};
-
-const pascalCaseName = convertToPascalCase(name);
-const iconName = iconNameMapping[pascalCaseName] || pascalCaseName;
+const iconHTML = getIcon(name, iconConfig);
 const finalIconStyle = style || customStyle || (color !== "currentColor" ? `color: ${color};` : "");
 ---
 
-<i
-  data-lucide={iconName}
+<div
   style={finalIconStyle}
-  class:list={[
-    className,
-    sizeClasses[size],
-    variant && styleClasses[variant],
-    backgroundColor && backgroundColorClasses[backgroundColor],
-    shape && shapeClasses[shape],
-  ]}
+  class={className}
   {id}
   {...dataAttributes}
   {...rest}
->
-</i>
+  set:html={iconHTML}
+/>
 
 <!-- Lucide icons are initialized globally in App.astro -->

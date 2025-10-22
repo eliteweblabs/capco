@@ -30,6 +30,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const sortOrder = url.searchParams.get("sortOrder") === "asc" ? true : false;
     const includeTotal = url.searchParams.get("includeTotal") === "true";
 
+    console.log("🏗️ [PROJECTS-GET] Project ID:", projectId);
     if (!supabase || !supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
@@ -39,32 +40,45 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // Handle single project fetch by ID
     if (projectId) {
+      // First fetch the project
       const { data: project, error } = await supabaseAdmin
         .from("projects")
-        .select(
-          `
-          *,
-          invoices!invoices_projectId_fkey (
-            id
-          )
-        `
-        )
+        .select("*")
         .eq("id", projectId)
         .single();
 
       if (error || !project) {
+        console.error("🏗️ [PROJECTS-GET] Project fetch error:", error);
         return new Response(JSON.stringify({ error: "Project not found" }), {
           status: 404,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      // Extract invoice ID if exists (take first invoice)
-      if (project.invoices && project.invoices.length > 0) {
-        project.invoiceId = project.invoices[0].id;
+      // Fetch related invoice separately to avoid foreign key constraint issues
+      let invoiceId = null;
+      try {
+        const { data: invoices } = await supabaseAdmin
+          .from("invoices")
+          .select("id")
+          .eq("projectId", project.id)
+          .limit(1);
+
+        if (invoices && invoices.length > 0) {
+          invoiceId = invoices[0].id;
+        }
+      } catch (invoiceError) {
+        console.warn(
+          "🏗️ [PROJECTS-GET] Could not fetch invoice for project:",
+          project.id,
+          invoiceError
+        );
       }
-      // Remove the invoices array from response
-      delete project.invoices;
+
+      // Add invoice ID to project if found
+      if (invoiceId) {
+        project.invoiceId = invoiceId;
+      }
 
       // Fetch author profile data
       let authorProfile = null;
