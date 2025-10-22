@@ -6,7 +6,6 @@
   /* Demo page styles */
 
   .node-editor-canvas {
-    position: absolute;
     inset: 0;
     cursor: grab;
     margin: 0;
@@ -21,10 +20,41 @@
     cursor: grabbing;
   }
 
+  /* Pause button for debugging */
+  .pause-button {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    padding: 12px 20px;
+    background: rgba(59, 130, 246, 0.95);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s;
+  }
+
+  .pause-button:hover {
+    background: rgba(37, 99, 235, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .pause-button.paused {
+    background: rgba(239, 68, 68, 0.95);
+  }
+
+  .pause-button.paused:hover {
+    background: rgba(220, 38, 38, 1);
+  }
+
   /* Radial gradient mask to fade nodes for text legibility */
   .node-editor-canvas::after {
     content: "";
-    position: absolute;
     inset: 0;
     background: radial-gradient(
       ellipse 50% 80% at 30% 40%,
@@ -42,7 +72,6 @@
   /* Dark mode version - use :global() to match the HTML dark class */
   :global(.dark) .node-editor-canvas::after {
     content: "";
-    position: absolute;
     inset: 0;
     background: radial-gradient(
       ellipse 50% 80% at 30% 40%,
@@ -67,6 +96,21 @@
         rgba(255, 255, 255, 0.6) 40%,
         rgba(255, 255, 255, 0.3) 60%,
         rgba(255, 255, 255, 0.1) 80%,
+        transparent 100%
+      );
+    }
+
+    :global(.dark) .node-editor-canvas::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        ellipse 60% 80% at 50% 40%,
+        rgba(0, 0, 0, 0.95) 0%,
+        rgba(0, 0, 0, 0.8) 20%,
+        rgba(0, 0, 0, 0.6) 40%,
+        rgba(0, 0, 0, 0.3) 60%,
+        rgba(0, 0, 0, 0.1) 80%,
         transparent 100%
       );
     }
@@ -313,7 +357,7 @@
   }
 </style>
 
-<div class="node-editor-canvas" id="node-canvas">
+<div class="node-editor-canvas fixed inset-0" id="node-canvas">
   <!-- Nodes will be dynamically added here -->
 
   <!-- Connection overlay for drawing arrows -->
@@ -321,6 +365,9 @@
     <!-- Arrows will be drawn here -->
   </svg>
 </div>
+
+<!-- Pause button for debugging -->
+<button id="pause-scroll-btn" class="pause-button">⏸ Pause Scroll</button>
 <script>
   class NodeEditor {
     canvas;
@@ -357,11 +404,31 @@
       this.scrollInterval = null;
 
       this.init();
+      this.setupPauseButton();
     }
 
     init() {
       this.setupEventListeners();
       this.addCustomNodes(1500);
+    }
+
+    setupPauseButton() {
+      const pauseBtn = document.getElementById("pause-scroll-btn");
+      if (pauseBtn) {
+        // Update button state based on current scroll state
+        const updateButtonState = () => {
+          pauseBtn.textContent = this.isScrolling ? "⏸ Pause Scroll" : "▶ Resume Scroll";
+          pauseBtn.classList.toggle("paused", !this.isScrolling);
+        };
+
+        pauseBtn.addEventListener("click", () => {
+          this.isScrolling = !this.isScrolling;
+          updateButtonState();
+        });
+
+        // Set initial state after a brief delay to ensure scrolling has started
+        setTimeout(updateButtonState, 100);
+      }
     }
 
     setupEventListeners() {
@@ -398,7 +465,7 @@
           title: "Create Account",
           subtitle: "<a href='/auth/login?register=true'>Register</a>",
           status: "2 Minutes",
-          x: screenWidth - 200,
+          x: screenWidth,
           y: screenHeight * 0.2,
         });
       }, delay);
@@ -419,8 +486,8 @@
         () => {
           this.addConnection("create-account", "login", "right", "left");
         },
-        delay + delay + 100
-      ); // After upload-files is created
+        delay + delay + 200
+      ); // After login is created
 
       setTimeout(
         () => {
@@ -811,7 +878,7 @@
             ${node.subtitle ? `<div class="node-subtitle">${node.subtitle}</div>` : ""}
           </div>
         </div>
-        <div class="node-status">
+        <div class="node-status pulse">
           <div class="status-indicator pulse"></div>
           <span>${node.status}</span>
         </div>
@@ -1084,7 +1151,14 @@
     }
 
     addConnection(fromNodeId, toNodeId, fromSide = "right", toSide = "left") {
-      const connection = { from: fromNodeId, to: toNodeId, fromSide, toSide };
+      const connection = {
+        from: fromNodeId,
+        to: toNodeId,
+        fromSide,
+        toSide,
+        createdAt: Date.now(), // Track when connection was created
+        animated: true, // Track if animation has been applied
+      };
       this.connections.push(connection);
       this.renderConnection(connection);
     }
@@ -1109,9 +1183,21 @@
       path.setAttribute("d", pathData);
       path.setAttribute("class", "connection-line");
 
-      // Add drawing animation delay based on connection order
-      const delay = this.connections.indexOf(connection) * 200; // 200ms delay between each connection
-      path.style.animationDelay = `${delay}ms`;
+      // Check if connection should be animated (hasn't been rendered yet, or is still in animation period)
+      const age = Date.now() - (connection.createdAt || 0);
+      const animationDuration = 2500; // Total animation time (1500ms draw + 1000ms for arrow)
+      const shouldAnimate = !connection.animated && age < animationDuration;
+
+      if (shouldAnimate) {
+        // Add drawing animation delay based on connection order
+        const delay = this.connections.indexOf(connection) * 200; // 200ms delay between each connection
+        path.style.animationDelay = `${delay}ms`;
+      } else {
+        // Animation complete or already rendered - just show the line
+        path.style.animation = "none";
+        path.style.strokeDasharray = "8, 4";
+        connection.animated = true; // Mark as fully animated
+      }
 
       // Add arrowhead at the end
       const arrowSize = 8;
@@ -1123,7 +1209,15 @@
         `${toPos.x},${toPos.y} ${arrowX},${arrowY - arrowSize / 2} ${arrowX},${arrowY + arrowSize / 2}`
       );
       arrow.setAttribute("class", "connection-arrow");
-      arrow.style.animationDelay = `${delay + 1000}ms`; // Arrow appears after line is drawn
+
+      if (shouldAnimate) {
+        const delay = this.connections.indexOf(connection) * 200;
+        arrow.style.animationDelay = `${delay + 1000}ms`; // Arrow appears after line is drawn
+      } else {
+        // Animation complete - just show the arrow
+        arrow.style.animation = "none";
+        arrow.style.opacity = "1";
+      }
 
       this.svg.appendChild(path);
       this.svg.appendChild(arrow);
