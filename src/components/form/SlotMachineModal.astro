@@ -14,7 +14,7 @@ interface Props {
   showCloseButton?: boolean; // Optional: Show X close button (default: true)
   showCancelButton?: boolean; // Optional: Show Cancel button (default: true)
   addNewOption?: boolean; // Optional: Show add new option button (default: false)
-  skipSaveToAPI?: boolean; // Optional: Skip saving to API when used inside forms (default: false)
+  // skipSaveToAPI?: boolean; // Optional: Skip saving to API when used inside forms (default: false)
   name?: string; // Optional: Form field name (defaults to id)
   buttonClass?: string; // Optional: Custom button class (defaults to "")
   noResultsText?: string; // Optional: No results text (defaults to "No results found")
@@ -25,8 +25,6 @@ interface Props {
   searchPlaceholder?: string; // Optional: Search input placeholder
   apiParams?: Record<string, any>; // Optional: Additional API parameters
   dataTransform?: string; // Optional: Function name to transform API response
-  showImages?: boolean; // Optional: Whether to show images (for places)
-  imageField?: string; // Optional: Field name for image URLs
   valueField?: string; // Optional: Field name to use for the value (default: "value")
   labelField?: string; // Optional: Field name to use for the label (default: "label")
   fetchOnLoad?: boolean; // Optional: Whether to fetch data immediately on modal open (default: false)
@@ -61,7 +59,7 @@ const {
   showCloseButton = true,
   showCancelButton = true,
   addNewOption = false,
-  skipSaveToAPI = false,
+  // skipSaveToAPI = false,
   name,
   noResultsText = "No Options found",
   icon = "chevron-down",
@@ -74,8 +72,6 @@ const {
   searchPlaceholder = "Type to search options...",
   apiParams = {},
   dataTransform,
-  showImages = false,
-  imageField = "image_url",
   valueField = "value",
   labelField = "label",
   fetchOnLoad = false,
@@ -134,7 +130,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     selectedValue,
     showCloseButton,
     showCancelButton,
-    skipSaveToAPI,
+    // skipSaveToAPI,
     enableSearch,
     fetchApiEndpoint,
     saveApiEndpoint,
@@ -143,8 +139,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     showNotification,
     apiParams,
     dataTransform,
-    showImages,
-    imageField,
     valueField,
     labelField,
     fetchOnLoad,
@@ -184,110 +178,17 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         showCancelButton: showCancelButton,
         valueField: valueField,
         labelField: labelField,
-        fetchOnLoad: fetchOnLoad,
         searchText: searchText,
         searchPlaceholder: searchPlaceholder,
         globalInputClasses: globalInputClasses,
-        onSelect: (value, label) => {
-          // Update hidden input
-          if (hiddenInput) {
-            hiddenInput.value = value;
-          }
-
-          // Update button text by showing/hiding elements
-          // const buttonText = trigger.querySelector(".button-text");
-          // const buttonIcon = trigger.querySelector(".button-icon");
-
-          // if (buttonText) {
-          //   buttonText.textContent = label;
-          // }
-
-          // // Show the button icon if it exists
-          // if (buttonIcon) {
-          //   buttonIcon.style.display = "inline-block";
-          // }
-
-          console.log(`🎰 [SLOT-MACHINE] ===== SELECTION MADE =====`);
-          console.log(`🎰 [SLOT-MACHINE] Selected value: ${value} (type: ${typeof value})`);
-          console.log(`🎰 [SLOT-MACHINE] Selected label: ${label} (type: ${typeof label})`);
-          console.log(`🎰 [SLOT-MACHINE] Component ID: ${id}`);
-          console.log(`🎰 [SLOT-MACHINE] Skip save to API (form context): ${skipSaveToAPI}`);
-
-          // Call the generic handleSelect function
-          if (typeof window.handleSelect === "function") {
-            console.log(`🎰 [SLOT-MACHINE] Calling window.handleSelect function`);
-            window.handleSelect(value, label, id, saveApiEndpoint);
-          } else {
-            console.log(`🎰 [SLOT-MACHINE] No window.handleSelect function found`);
-          }
-
-          // Auto-save to API endpoint if saveApiEndpoint is provided or legacy component IDs
-          if (
-            saveApiEndpoint ||
-            id === "update-status" ||
-            id === "due-date" ||
-            id.startsWith("due-date") ||
-            id.startsWith("assign-staff-") ||
-            id === "assign-staff"
-          ) {
-            console.log(`🎰 [SLOT-MACHINE] ✅ AUTO-SAVE TRIGGERED - Calling saveToAPI with:`, {
-              saveApiEndpoint,
-              id,
-              value,
-              label,
-            });
-
-            // Determine the correct API endpoint - saveApiEndpoint takes priority
-            let apiIdentifier;
-            if (saveApiEndpoint) {
-              // Use the provided saveApiEndpoint (highest priority)
-              apiIdentifier = saveApiEndpoint;
-              console.log(`🎰 [SLOT-MACHINE] Using saveApiEndpoint: ${apiIdentifier}`);
-            } else if (id.startsWith("due-date") || id === "due-date") {
-              // For due-date components, use update-project endpoint
-              apiIdentifier = "update-project";
-              console.log(`🎰 [SLOT-MACHINE] Using due-date fallback: ${apiIdentifier}`);
-            } else if (id.startsWith("assign-staff-") || id === "assign-staff") {
-              // For assign-staff components without saveApiEndpoint, use the generic assign-staff endpoint
-              apiIdentifier = "assign-staff";
-              console.log(`🎰 [SLOT-MACHINE] Using assign-staff fallback: ${apiIdentifier}`);
-            } else {
-              // For other components without saveApiEndpoint, use the component ID
-              apiIdentifier = id;
-              console.log(`🎰 [SLOT-MACHINE] Using component ID fallback: ${apiIdentifier}`);
-            }
-
-            console.log(`🎰 [SLOT-MACHINE] Final API identifier: ${apiIdentifier}`);
-            console.log(
-              `🎰 [SLOT-MACHINE] Calling saveToAPI(${apiIdentifier}, ${value}, ${label})`
-            );
-            saveToAPI(apiIdentifier, value, label);
-          } else {
-            console.log(
-              `🎰 [SLOT-MACHINE] ❌ NOT AUTO-SAVING - No matching conditions for component: ${id}`
-            );
-            console.log(`🎰 [SLOT-MACHINE] Conditions checked:`);
-            console.log(`🎰 [SLOT-MACHINE]   - saveApiEndpoint: ${!!saveApiEndpoint}`);
-            console.log(`🎰 [SLOT-MACHINE]   - id === "update-status": ${id === "update-status"}`);
-            console.log(
-              `🎰 [SLOT-MACHINE]   - id.startsWith("assign-staff-"): ${id.startsWith("assign-staff-")}`
-            );
-            console.log(`🎰 [SLOT-MACHINE]   - id === "assign-staff": ${id === "assign-staff"}`);
-          }
-
-          console.log(`🎰 [SLOT-MACHINE] Selection process completed`);
-        },
         enableSearch: enableSearch,
         fetchApiEndpoint: fetchApiEndpoint,
         searchText: searchText,
         searchPlaceholder: searchPlaceholder,
         apiParams: apiParams,
         dataTransform: dataTransform,
-        showImages: showImages,
-        imageField: imageField,
         valueField: valueField,
         labelField: labelField,
-        fetchOnLoad: fetchOnLoad,
         noResultsText: noResultsText,
         globalInputClasses: globalInputClasses,
         // project: project,
@@ -295,301 +196,301 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     });
 
     // Check for URL parameters to auto-open this specific picker
-    function checkUrlParameters() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const modalParam = urlParams.get("modal");
+    // function checkUrlParameters() {
+    //   const urlParams = new URLSearchParams(window.location.search);
+    //   const modalParam = urlParams.get("modal");
 
-      console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
-        modalParam,
-        componentId: id,
-        match: modalParam === id,
-      });
+    //   console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
+    //     modalParam,
+    //     componentId: id,
+    //     match: modalParam === id,
+    //   });
 
-      if (modalParam === id) {
-        // console.log(`🎰 [SLOT-MACHINE] URL parameter detected: modal=${id}`);
+    //   if (modalParam === id) {
+    //     // console.log(`🎰 [SLOT-MACHINE] URL parameter detected: modal=${id}`);
 
-        // Wait for DOM to be ready, then trigger the picker
-        setTimeout(() => {
-          if (trigger) {
-            // console.log(`🎰 [SLOT-MACHINE] Auto-opening picker for ID: ${id}`);
-            trigger.click();
+    //     // Wait for DOM to be ready, then trigger the picker
+    //     setTimeout(() => {
+    //       if (trigger) {
+    //         // console.log(`🎰 [SLOT-MACHINE] Auto-opening picker for ID: ${id}`);
+    //         trigger.click();
 
-            // Clean up the URL parameter
-            const newUrl = new URL(window.location);
-            newUrl.searchParams.delete("modal");
-            window.history.replaceState({}, "", newUrl);
-            // console.log(`🎰 [SLOT-MACHINE] URL cleaned up: ${newUrl.href}`);
-          } else {
-            console.error(`🎰 [SLOT-MACHINE] Trigger button not found for auto-open`);
-          }
-        }, 100);
-      }
-    }
+    //         // Clean up the URL parameter
+    //         const newUrl = new URL(window.location);
+    //         newUrl.searchParams.delete("modal");
+    //         window.history.replaceState({}, "", newUrl);
+    //         // console.log(`🎰 [SLOT-MACHINE] URL cleaned up: ${newUrl.href}`);
+    //       } else {
+    //         console.error(`🎰 [SLOT-MACHINE] Trigger button not found for auto-open`);
+    //       }
+    //     }, 100);
+    //   }
+    // }
 
-    // Check URL parameters on load
-    checkUrlParameters();
+    // // Check URL parameters on load
+    // checkUrlParameters();
   });
 
   // Auto-save function that uses saveApiEndpoint or falls back to component ID
-  async function saveToAPI(apiEndpoint, value, label) {
-    try {
-      console.log(`🎰 [SLOT-MACHINE] ===== SAVE TO API START =====`);
-      console.log(`🎰 [SLOT-MACHINE] API Endpoint received: ${apiEndpoint}`);
-      console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
-      console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
-      // console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
-      // console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
-      // console.log(`🎰 [SLOT-MACHINE] ProjectId prop: ${projectId} (type: ${typeof projectId})`);
-      // console.log(`🎰 [SLOT-MACHINE] Current URL: ${window.location.href}`);
-      // console.log(`🎰 [SLOT-MACHINE] URL pathname: ${window.location.pathname}`);
+  // async function saveToAPI(apiEndpoint, value, label) {
+  //   try {
+  //     console.log(`🎰 [SLOT-MACHINE] ===== SAVE TO API START =====`);
+  //     console.log(`🎰 [SLOT-MACHINE] API Endpoint received: ${apiEndpoint}`);
+  //     console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
+  //     console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
+  //     // console.log(`🎰 [SLOT-MACHINE] Value: ${value} (type: ${typeof value})`);
+  //     // console.log(`🎰 [SLOT-MACHINE] Label: ${label} (type: ${typeof label})`);
+  //     // console.log(`🎰 [SLOT-MACHINE] ProjectId prop: ${projectId} (type: ${typeof projectId})`);
+  //     // console.log(`🎰 [SLOT-MACHINE] Current URL: ${window.location.href}`);
+  //     // console.log(`🎰 [SLOT-MACHINE] URL pathname: ${window.location.pathname}`);
 
-      // Format data based on the component type
-      let requestBody;
+  //     // Format data based on the component type
+  //     let requestBody;
 
-      console.log(`🎰 [XXXSLOT-MACHINE] API Endpoint: ${apiEndpoint}`);
-      if (apiEndpoint === "update-status") {
-        // console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-STATUS request`);
-        // console.log(`🎰 [SLOT-MACHINE] Raw projectId prop:`, projectId);
-        // console.log(`🎰 [SLOT-MACHINE] Raw value:`, value);
-        // console.log(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
+  //     console.log(`🎰 [XXXSLOT-MACHINE] API Endpoint: ${apiEndpoint}`);
+  //     if (apiEndpoint === "update-status") {
+  //       // console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-STATUS request`);
+  //       // console.log(`🎰 [SLOT-MACHINE] Raw projectId prop:`, projectId);
+  //       // console.log(`🎰 [SLOT-MACHINE] Raw value:`, value);
+  //       // console.log(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
 
-        const parsedProjectId =
-          parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
-        const parsedStatus = parseInt(value);
+  //       const parsedProjectId =
+  //         parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+  //       const parsedStatus = parseInt(value);
 
-        console.log(
-          `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
-        );
-        console.log(
-          `🎰 [SLOT-MACHINE] Parsed status: ${parsedStatus} (type: ${typeof parsedStatus})`
-        );
+  //       console.log(
+  //         `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
+  //       );
+  //       console.log(
+  //         `🎰 [SLOT-MACHINE] Parsed status: ${parsedStatus} (type: ${typeof parsedStatus})`
+  //       );
 
-        // Additional validation checks
-        if (!parsedProjectId) {
-          console.error(`🎰 [SLOT-MACHINE] ERROR: Could not parse projectId!`);
-          console.error(`🎰 [SLOT-MACHINE] projectId prop:`, projectId);
-          console.error(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
-          console.error(
-            `🎰 [SLOT-MACHINE] URL pathname split:`,
-            window.location.pathname.split("/")
-          );
-        }
+  //       // Additional validation checks
+  //       if (!parsedProjectId) {
+  //         console.error(`🎰 [SLOT-MACHINE] ERROR: Could not parse projectId!`);
+  //         console.error(`🎰 [SLOT-MACHINE] projectId prop:`, projectId);
+  //         console.error(`🎰 [SLOT-MACHINE] URL pathname:`, window.location.pathname);
+  //         console.error(
+  //           `🎰 [SLOT-MACHINE] URL pathname split:`,
+  //           window.location.pathname.split("/")
+  //         );
+  //       }
 
-        if (isNaN(parsedStatus)) {
-          console.error(`🎰 [SLOT-MACHINE] ERROR: Could not parse status!`);
-          console.error(`🎰 [SLOT-MACHINE] Raw value:`, value);
-          console.error(`🎰 [SLOT-MACHINE] Parsed status:`, parsedStatus);
-        }
+  //       if (isNaN(parsedStatus)) {
+  //         console.error(`🎰 [SLOT-MACHINE] ERROR: Could not parse status!`);
+  //         console.error(`🎰 [SLOT-MACHINE] Raw value:`, value);
+  //         console.error(`🎰 [SLOT-MACHINE] Parsed status:`, parsedStatus);
+  //       }
 
-        // For status updates, send the format expected by update-status API
-        requestBody = {
-          projectId: parsedProjectId,
-          status: parsedStatus, // Convert value to integer
-        };
-        console.log(`🎰 [SLOT-MACHINE] UPDATE-STATUS requestBody:`, requestBody);
-      } else if (apiEndpoint.startsWith("assign-staff-") || apiEndpoint === "assign-staff") {
-        console.log(`🎰 [SLOT-MACHINE] Processing ASSIGN-STAFF request`);
-        const parsedProjectId =
-          parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
-        console.log(
-          `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
-        );
-        console.log(`🎰 [SLOT-MACHINE] Staff ID: ${value} (type: ${typeof value})`);
-        console.log(`🎰 [SLOT-MACHINE] Staff Name: ${label} (type: ${typeof label})`);
+  //       // For status updates, send the format expected by update-status API
+  //       requestBody = {
+  //         projectId: parsedProjectId,
+  //         status: parsedStatus, // Convert value to integer
+  //       };
+  //       console.log(`🎰 [SLOT-MACHINE] UPDATE-STATUS requestBody:`, requestBody);
+  //     } else if (apiEndpoint.startsWith("assign-staff-") || apiEndpoint === "assign-staff") {
+  //       console.log(`🎰 [SLOT-MACHINE] Processing ASSIGN-STAFF request`);
+  //       const parsedProjectId =
+  //         parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+  //       console.log(
+  //         `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
+  //       );
+  //       console.log(`🎰 [SLOT-MACHINE] Staff ID: ${value} (type: ${typeof value})`);
+  //       console.log(`🎰 [SLOT-MACHINE] Staff Name: ${label} (type: ${typeof label})`);
 
-        // For staff assignment, send the format expected by update-project API
-        requestBody = {
-          projectId: parsedProjectId,
-          assignedToId: value, // Staff member ID
-          assignedToName: label, // Staff member name
-        };
-        console.log(`🎰 [SLOT-MACHINE] ASSIGN-STAFF requestBody:`, requestBody);
-      } else if (apiEndpoint === "update-project") {
-        console.log(`🎰 [SLOT-MACHINE] ===== UPDATE-PROJECT REQUEST START =====`);
-        console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-PROJECT request`);
-        console.log(`🎰 [SLOT-MACHINE] Component ID: ${id}`);
-        console.log(`🎰 [SLOT-MACHINE] API Endpoint: ${apiEndpoint}`);
-        console.log(`🎰 [SLOT-MACHINE] Project ID prop: ${projectId}`);
-        console.log(`🎰 [SLOT-MACHINE] Current URL: ${window.location.href}`);
+  //       // For staff assignment, send the format expected by update-project API
+  //       requestBody = {
+  //         projectId: parsedProjectId,
+  //         assignedToId: value, // Staff member ID
+  //         assignedToName: label, // Staff member name
+  //       };
+  //       console.log(`🎰 [SLOT-MACHINE] ASSIGN-STAFF requestBody:`, requestBody);
+  //     } else if (apiEndpoint === "update-project") {
+  //       console.log(`🎰 [SLOT-MACHINE] ===== UPDATE-PROJECT REQUEST START =====`);
+  //       console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-PROJECT request`);
+  //       console.log(`🎰 [SLOT-MACHINE] Component ID: ${id}`);
+  //       console.log(`🎰 [SLOT-MACHINE] API Endpoint: ${apiEndpoint}`);
+  //       console.log(`🎰 [SLOT-MACHINE] Project ID prop: ${projectId}`);
+  //       console.log(`🎰 [SLOT-MACHINE] Current URL: ${window.location.href}`);
 
-        const parsedProjectId =
-          parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
-        console.log(
-          `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
-        );
-        console.log(`🎰 [SLOT-MACHINE] Field value: ${value} (type: ${typeof value})`);
-        console.log(`🎰 [SLOT-MACHINE] Field label: ${label} (type: ${typeof label})`);
+  //       const parsedProjectId =
+  //         parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+  //       console.log(
+  //         `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
+  //       );
+  //       console.log(`🎰 [SLOT-MACHINE] Field value: ${value} (type: ${typeof value})`);
+  //       console.log(`🎰 [SLOT-MACHINE] Field label: ${label} (type: ${typeof label})`);
 
-        // For generic project updates, determine the field name from the component ID or context
-        let fieldName = "value"; // Default field name
+  //       // For generic project updates, determine the field name from the component ID or context
+  //       let fieldName = "value"; // Default field name
 
-        // Try to determine field name from component ID or context
-        if (id.includes("due-date") || id.includes("dueDate")) {
-          fieldName = "dueDate";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (due-date component)`);
-        } else if (id.includes("title")) {
-          fieldName = "title";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (title component)`);
-        } else if (id.includes("address")) {
-          fieldName = "address";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (address component)`);
-        } else if (id.includes("description")) {
-          fieldName = "description";
-          console.log(
-            `🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (description component)`
-          );
-        } else if (id.includes("sqFt") || id.includes("sqft")) {
-          fieldName = "sqFt";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (sqFt component)`);
-        } else if (id.includes("units")) {
-          fieldName = "units";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (units component)`);
-        } else if (id.includes("building")) {
-          fieldName = "building";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (building component)`);
-        } else if (id.includes("tier")) {
-          fieldName = "tier";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (tier component)`);
-        } else if (id.includes("project")) {
-          fieldName = "project";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (project component)`);
-        } else if (id.includes("service")) {
-          fieldName = "service";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (service component)`);
-        } else if (id.includes("architect")) {
-          fieldName = "architect";
-          console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (architect component)`);
-        } else if (id.includes("requestedDocs")) {
-          fieldName = "requestedDocs";
-          console.log(
-            `🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (requestedDocs component)`
-          );
-        } else {
-          console.log(
-            `🎰 [SLOT-MACHINE] Using default field name: ${fieldName} (no specific component detected)`
-          );
-        }
+  //       // Try to determine field name from component ID or context
+  //       if (id.includes("due-date") || id.includes("dueDate")) {
+  //         fieldName = "dueDate";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (due-date component)`);
+  //       } else if (id.includes("title")) {
+  //         fieldName = "title";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (title component)`);
+  //       } else if (id.includes("address")) {
+  //         fieldName = "address";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (address component)`);
+  //       } else if (id.includes("description")) {
+  //         fieldName = "description";
+  //         console.log(
+  //           `🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (description component)`
+  //         );
+  //       } else if (id.includes("sqFt") || id.includes("sqft")) {
+  //         fieldName = "sqFt";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (sqFt component)`);
+  //       } else if (id.includes("units")) {
+  //         fieldName = "units";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (units component)`);
+  //       } else if (id.includes("building")) {
+  //         fieldName = "building";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (building component)`);
+  //       } else if (id.includes("tier")) {
+  //         fieldName = "tier";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (tier component)`);
+  //       } else if (id.includes("project")) {
+  //         fieldName = "project";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (project component)`);
+  //       } else if (id.includes("service")) {
+  //         fieldName = "service";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (service component)`);
+  //       } else if (id.includes("architect")) {
+  //         fieldName = "architect";
+  //         console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (architect component)`);
+  //       } else if (id.includes("requestedDocs")) {
+  //         fieldName = "requestedDocs";
+  //         console.log(
+  //           `🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (requestedDocs component)`
+  //         );
+  //       } else {
+  //         console.log(
+  //           `🎰 [SLOT-MACHINE] Using default field name: ${fieldName} (no specific component detected)`
+  //         );
+  //       }
 
-        // For dueDate, convert to proper date format if needed
-        let fieldValue = value;
-        if (fieldName === "dueDate" && value) {
-          console.log(`🎰 [SLOT-MACHINE] Processing dueDate field with value: ${value}`);
-          // Ensure the date is in ISO format
-          const date = new Date(value);
-          if (!isNaN(date.getTime())) {
-            fieldValue = date.toISOString().split("T")[0]; // YYYY-MM-DD format
-            console.log(`🎰 [SLOT-MACHINE] Converted dueDate to: ${fieldValue}`);
-          } else {
-            console.log(`🎰 [SLOT-MACHINE] Invalid date value: ${value}`);
-          }
-        }
+  //       // For dueDate, convert to proper date format if needed
+  //       let fieldValue = value;
+  //       if (fieldName === "dueDate" && value) {
+  //         console.log(`🎰 [SLOT-MACHINE] Processing dueDate field with value: ${value}`);
+  //         // Ensure the date is in ISO format
+  //         const date = new Date(value);
+  //         if (!isNaN(date.getTime())) {
+  //           fieldValue = date.toISOString().split("T")[0]; // YYYY-MM-DD format
+  //           console.log(`🎰 [SLOT-MACHINE] Converted dueDate to: ${fieldValue}`);
+  //         } else {
+  //           console.log(`🎰 [SLOT-MACHINE] Invalid date value: ${value}`);
+  //         }
+  //       }
 
-        requestBody = {
-          projectId: parsedProjectId,
-          [fieldName]: fieldValue,
-        };
-        console.log(`🎰 [SLOT-MACHINE] UPDATE-PROJECT requestBody:`, requestBody);
-        console.log(`🎰 [SLOT-MACHINE] ===== UPDATE-PROJECT REQUEST END =====`);
-      } else {
-        console.log(`🎰 [SLOT-MACHINE] Processing GENERIC request for component: ${apiEndpoint}`);
-        // For other components, use generic format
-        requestBody = {
-          value: value,
-          label: label,
-          componentId: apiEndpoint,
-        };
-        console.log(`🎰 [SLOT-MACHINE] GENERIC requestBody:`, requestBody);
-      }
+  //       requestBody = {
+  //         projectId: parsedProjectId,
+  //         [fieldName]: fieldValue,
+  //       };
+  //       console.log(`🎰 [SLOT-MACHINE] UPDATE-PROJECT requestBody:`, requestBody);
+  //       console.log(`🎰 [SLOT-MACHINE] ===== UPDATE-PROJECT REQUEST END =====`);
+  //     } else {
+  //       console.log(`🎰 [SLOT-MACHINE] Processing GENERIC request for component: ${apiEndpoint}`);
+  //       // For other components, use generic format
+  //       requestBody = {
+  //         value: value,
+  //         label: label,
+  //         componentId: apiEndpoint,
+  //       };
+  //       console.log(`🎰 [SLOT-MACHINE] GENERIC requestBody:`, requestBody);
+  //     }
 
-      console.log(`🎰 [SLOT-MACHINE] Final request body:`, requestBody);
+  //     console.log(`🎰 [SLOT-MACHINE] Final request body:`, requestBody);
 
-      // Use the passed apiEndpoint directly
-      console.log(`🎰 [SLOT-MACHINE] Using API endpoint: ${apiEndpoint}`);
-      const finalApiEndpoint = `/api/${apiEndpoint}`;
-      console.log(`🎰 [SLOT-MACHINE] Final API endpoint: ${finalApiEndpoint}`);
-      console.log(`🎰 [SLOT-MACHINE] Making fetch request to: ${finalApiEndpoint}`);
+  //     // Use the passed apiEndpoint directly
+  //     console.log(`🎰 [SLOT-MACHINE] Using API endpoint: ${apiEndpoint}`);
+  //     const finalApiEndpoint = `/api/${apiEndpoint}`;
+  //     console.log(`🎰 [SLOT-MACHINE] Final API endpoint: ${finalApiEndpoint}`);
+  //     console.log(`🎰 [SLOT-MACHINE] Making fetch request to: ${finalApiEndpoint}`);
 
-      const response = await fetch(finalApiEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(requestBody),
-      });
+  //     const response = await fetch(finalApiEndpoint, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       credentials: "include",
+  //       body: JSON.stringify(requestBody),
+  //     });
 
-      console.log(`🎰 [SLOT-MACHINE] Fetch response status: ${response.status}`);
-      console.log(`🎰 [SLOT-MACHINE] Fetch response ok: ${response.ok}`);
-      console.log(
-        `🎰 [SLOT-MACHINE] Fetch response headers:`,
-        Object.fromEntries(response.headers.entries())
-      );
+  //     console.log(`🎰 [SLOT-MACHINE] Fetch response status: ${response.status}`);
+  //     console.log(`🎰 [SLOT-MACHINE] Fetch response ok: ${response.ok}`);
+  //     console.log(
+  //       `🎰 [SLOT-MACHINE] Fetch response headers:`,
+  //       Object.fromEntries(response.headers.entries())
+  //     );
 
-      if (response.ok) {
-        const result = await response.clone().json();
-        console.log(`🎰 [SLOT-MACHINE] ===== API SUCCESS RESPONSE =====`);
-        console.log(`🎰 [SLOT-MACHINE] API response:`, result);
+  //     if (response.ok) {
+  //       const result = await response.clone().json();
+  //       console.log(`🎰 [SLOT-MACHINE] ===== API SUCCESS RESPONSE =====`);
+  //       console.log(`🎰 [SLOT-MACHINE] API response:`, result);
 
-        // Show success notification
+  //       // Show success notification
 
-        // Also try the original notification handler if it exists
-        if (window.handleNewStatusModalAndEmail) {
-          window.handleNewStatusModalAndEmail(result, "SLOT-MACHINE");
-        }
+  //       // Also try the original notification handler if it exists
+  //       if (window.handleNewStatusModalAndEmail) {
+  //         window.handleNewStatusModalAndEmail(result, "SLOT-MACHINE");
+  //       }
 
-        // if (result.notificationData && window.showModal && showNotification) {
-        //   const { type, title, message, duration } = result.notificationData;
+  //       // if (result.notificationData && window.showModal && showNotification) {
+  //       //   const { type, title, message, duration } = result.notificationData;
 
-        //   window.showModal(type, title, message, duration);
-        // } else if (result.success && window.showModal && showNotification) {
-        //   // Fallback success notification
-        //   window.showModal(
-        //     "success",
-        //     "Success",
-        //     result.message || "Operation completed successfully",
-        //     3000
-        //   );
-        // }
+  //       //   window.showModal(type, title, message, duration);
+  //       // } else if (result.success && window.showModal && showNotification) {
+  //       //   // Fallback success notification
+  //       //   window.showModal(
+  //       //     "success",
+  //       //     "Success",
+  //       //     result.message || "Operation completed successfully",
+  //       //     3000
+  //       //   );
+  //       // }
 
-        // Close the modal after success
-        setTimeout(() => {
-          const modal = document.querySelector(`[data-modal-backdrop="${apiEndpoint}-modal"]`);
-          if (modal) {
-            modal.click(); // Click the backdrop to close
-          }
-        }, 1000);
-      } else {
-        console.log(`🎰 [SLOT-MACHINE] ===== API ERROR RESPONSE =====`);
-        console.log(`🎰 [SLOT-MACHINE] Response status: ${response.status}`);
-        console.log(`🎰 [SLOT-MACHINE] Response statusText: ${response.statusText}`);
+  //       // Close the modal after success
+  //       setTimeout(() => {
+  //         const modal = document.querySelector(`[data-modal-backdrop="${apiEndpoint}-modal"]`);
+  //         if (modal) {
+  //           modal.click(); // Click the backdrop to close
+  //         }
+  //       }, 1000);
+  //     } else {
+  //       console.log(`🎰 [SLOT-MACHINE] ===== API ERROR RESPONSE =====`);
+  //       console.log(`🎰 [SLOT-MACHINE] Response status: ${response.status}`);
+  //       console.log(`🎰 [SLOT-MACHINE] Response statusText: ${response.statusText}`);
 
-        let errorData;
-        try {
-          errorData = await response.clone().json();
-          console.log(`🎰 [SLOT-MACHINE] Error response body:`, errorData);
-        } catch (parseError) {
-          console.log(`🎰 [SLOT-MACHINE] Could not parse error response as JSON:`, parseError);
-          const textResponse = await response.clone().text();
-          console.log(`🎰 [SLOT-MACHINE] Error response as text:`, textResponse);
-          errorData = { error: textResponse };
-        }
+  //       let errorData;
+  //       try {
+  //         errorData = await response.clone().json();
+  //         console.log(`🎰 [SLOT-MACHINE] Error response body:`, errorData);
+  //       } catch (parseError) {
+  //         console.log(`🎰 [SLOT-MACHINE] Could not parse error response as JSON:`, parseError);
+  //         const textResponse = await response.clone().text();
+  //         console.log(`🎰 [SLOT-MACHINE] Error response as text:`, textResponse);
+  //         errorData = { error: textResponse };
+  //       }
 
-        console.error(`🎰 [SLOT-MACHINE] API error:`, errorData);
-        throw new Error(errorData.error || `Failed to save ${apiEndpoint}`);
-      }
-    } catch (error) {
-      console.log(`🎰 [SLOT-MACHINE] ===== CATCH BLOCK =====`);
-      console.error(`🎰 [SLOT-MACHINE] Error saving to API:`, error);
-      console.error(`🎰 [SLOT-MACHINE] Error name:`, error.name);
-      console.error(`🎰 [SLOT-MACHINE] Error message:`, error.message);
-      console.error(`🎰 [SLOT-MACHINE] Error stack:`, error.stack);
+  //       console.error(`🎰 [SLOT-MACHINE] API error:`, errorData);
+  //       throw new Error(errorData.error || `Failed to save ${apiEndpoint}`);
+  //     }
+  //   } catch (error) {
+  //     console.log(`🎰 [SLOT-MACHINE] ===== CATCH BLOCK =====`);
+  //     console.error(`🎰 [SLOT-MACHINE] Error saving to API:`, error);
+  //     console.error(`🎰 [SLOT-MACHINE] Error name:`, error.name);
+  //     console.error(`🎰 [SLOT-MACHINE] Error message:`, error.message);
+  //     console.error(`🎰 [SLOT-MACHINE] Error stack:`, error.stack);
 
-      // Show error notification if available
-      if (window.showModal) {
-        window.showModal("error", "Error", `Failed to save selection. Please try again.`, 5000);
-      }
-    }
-  }
+  //     // Show error notification if available
+  //     if (window.showModal) {
+  //       window.showModal("error", "Error", `Failed to save selection. Please try again.`, 5000);
+  //     }
+  //   }
+  // }
 
   // Generic slot machine modal function
   async function showSlotMachineModal(config) {
@@ -607,11 +508,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       searchPlaceholder,
       apiParams = {},
       dataTransform,
-      showImages = false,
-      imageField = "image_url",
       valueField = "value",
       labelField = "label",
-      fetchOnLoad = false,
       noResultsText = "No results found",
     } = config;
 
@@ -813,7 +711,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     const cancelButton = modal.querySelector(`#${id}-slot-cancel-btn`);
     const closeButton = modal.querySelector(`#${id}-close-slot-modal`);
     const searchInput = modal.querySelector(`#${id}-slot-search-input`);
-    const searchButton = modal.querySelector(`#${id}-slot-search-btn`);
     const liClassName = "text-black dark:text-white";
     const spanClassName = "slot-machine-item-text";
 
@@ -842,9 +739,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
     // Add search functionality if enabled
     if (enableSearch && searchInput) {
-      console.log(
-        `🔍 [SLOT-MACHINE] Setting up search for ${id}, enableSearch: ${enableSearch}, searchInput: ${!!searchInput}, fetchOnLoad: ${fetchOnLoad}, finalOptions: ${finalOptions.length}`
-      );
       let searchTimeout;
       // originalOptions is now initialized earlier in the function
 
@@ -860,130 +754,130 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         }
 
         // If fetchOnLoad is true OR we have pre-populated options without an API endpoint, filter existing options
-        if (
-          fetchOnLoad ||
-          (!fetchApiEndpoint && (originalOptions.length > 0 || finalOptions.length > 0))
-        ) {
-          // Store original options on first search
-          if (originalOptions.length === 0) {
-            // If we have finalOptions (pre-populated from props), use those
-            console.log("🔍 [SLOT-MACHINE] finalOptions", finalOptions);
-            if (finalOptions.length > 0) {
-              originalOptions = finalOptions.map((option, index) => ({
-                value: option[valueField] || option.value || "",
-                label: option[labelField] || option.label || "",
-                index: index,
-              }));
-              if (emptyState) {
-                emptyState.classList.add("hidden");
-              }
-            } else {
-              // Otherwise, get from DOM
-              originalOptions = Array.from(optionsList.querySelectorAll("li")).map((li, index) => {
-                const span = li.querySelector("span");
-                return {
-                  value: span?.dataset.value || "",
-                  label: span?.dataset.label || "",
-                  index: index,
-                };
-              });
-              if (emptyState) {
-                emptyState.classList.add("hidden");
-              }
-            }
-          }
+        //   if (
+        //     fetchOnLoad ||
+        //     (!fetchApiEndpoint && (originalOptions.length > 0 || finalOptions.length > 0))
+        //   ) {
+        //     // Store original options on first search
+        //     if (originalOptions.length === 0) {
+        //       // If we have finalOptions (pre-populated from props), use those
+        //       console.log("🔍 [SLOT-MACHINE] finalOptions", finalOptions);
+        //       if (finalOptions.length > 0) {
+        //         originalOptions = finalOptions.map((option, index) => ({
+        //           value: option[valueField] || option.value || "",
+        //           label: option[labelField] || option.label || "",
+        //           index: index,
+        //         }));
+        //         if (emptyState) {
+        //           emptyState.classList.add("hidden");
+        //         }
+        //       } else {
+        //         // Otherwise, get from DOM
+        //         originalOptions = Array.from(optionsList.querySelectorAll("li")).map((li, index) => {
+        //           const span = li.querySelector("span");
+        //           return {
+        //             value: span?.dataset.value || "",
+        //             label: span?.dataset.label || "",
+        //             index: index,
+        //           };
+        //         });
+        //         if (emptyState) {
+        //           emptyState.classList.add("hidden");
+        //         }
+        //       }
+        //     }
 
-          // If search is cleared, restore all original options
-          if (query.length === 0) {
-            if (optionsList) {
-              optionsList.innerHTML = "";
-              originalOptions.forEach((option, index) => {
-                const li = document.createElement("li");
-                li.className = spanClassName;
-                li.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 3rem;
-        text-align: center;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        min-height: 48px;
-        padding: 12px 16px;
-        user-select: none;
-        position: relative;
-      `;
+        //     // If search is cleared, restore all original options
+        //     if (query.length === 0) {
+        //       if (optionsList) {
+        //         optionsList.innerHTML = "";
+        //         originalOptions.forEach((option, index) => {
+        //           const li = document.createElement("li");
+        //           li.className = spanClassName;
+        //           li.style.cssText = `
+        //   display: flex;
+        //   align-items: center;
+        //   justify-content: center;
+        //   height: 3rem;
+        //   text-align: center;
+        //   font-weight: 500;
+        //   cursor: pointer;
+        //   transition: all 0.2s;
+        //   min-height: 48px;
+        //   padding: 12px 16px;
+        //   user-select: none;
+        //   position: relative;
+        // `;
 
-                const span = document.createElement("span");
-                span.className = spanClassName;
-                span.style.cssText = `
-        text-align: center;
-        font-weight: 500;
-        transition: all 0.2s;
-        width: 100%;
-      `;
+        //           const span = document.createElement("span");
+        //           span.className = spanClassName;
+        //           span.style.cssText = `
+        //   text-align: center;
+        //   font-weight: 500;
+        //   transition: all 0.2s;
+        //   width: 100%;
+        // `;
 
-                span.textContent = option.label;
-                span.dataset.value = option.value;
-                span.dataset.label = option.label;
-                span.dataset.index = index;
+        //           span.textContent = option.label;
+        //           span.dataset.value = option.value;
+        //           span.dataset.label = option.label;
+        //           span.dataset.index = index;
 
-                li.appendChild(span);
-                optionsList.appendChild(li);
-              });
-            }
-            return;
-          }
+        //           li.appendChild(span);
+        //           optionsList.appendChild(li);
+        //         });
+        //       }
+        //       return;
+        //     }
 
-          // Filter options based on search query
-          console.log(`🔍 [SLOT-MACHINE] Filtering options with query: "${query}"`);
-          console.log(
-            `🔍 [SLOT-MACHINE] Original options:`,
-            originalOptions.map((o) => ({ label: o.label, value: o.value }))
-          );
+        //     // Filter options based on search query
+        //     console.log(`🔍 [SLOT-MACHINE] Filtering options with query: "${query}"`);
+        //     console.log(
+        //       `🔍 [SLOT-MACHINE] Original options:`,
+        //       originalOptions.map((o) => ({ label: o.label, value: o.value }))
+        //     );
 
-          const filteredOptions = originalOptions.filter((option) => {
-            const matches = option.label.toLowerCase().includes(query.toLowerCase());
-            console.log(
-              `🔍 [SLOT-MACHINE] Option "${option.label}" matches "${query}": ${matches}`
-            );
-            return matches;
-          });
-          console.log(
-            `🔍 [SLOT-MACHINE] Filtered ${originalOptions.length} options to ${filteredOptions.length} results`
-          );
+        //     const filteredOptions = originalOptions.filter((option) => {
+        //       const matches = option.label.toLowerCase().includes(query.toLowerCase());
+        //       console.log(
+        //         `🔍 [SLOT-MACHINE] Option "${option.label}" matches "${query}": ${matches}`
+        //       );
+        //       return matches;
+        //     });
+        //     console.log(
+        //       `🔍 [SLOT-MACHINE] Filtered ${originalOptions.length} options to ${filteredOptions.length} results`
+        //     );
 
-          // Update the options list
-          if (optionsList) {
-            optionsList.innerHTML = "";
-            if (emptyState) {
-              emptyState.classList.add("hidden");
-            }
-            if (filteredOptions.length > 0) {
-              console.log(`🔍 [SLOT-MACHINE] Showing ${filteredOptions.length} filtered results`);
-              const newSelectedIndex = populateOptionsList(filteredOptions);
-              selectedIndex = newSelectedIndex;
+        //     // Update the options list
+        //     if (optionsList) {
+        //       optionsList.innerHTML = "";
+        //       if (emptyState) {
+        //         emptyState.classList.add("hidden");
+        //       }
+        //       if (filteredOptions.length > 0) {
+        //         console.log(`🔍 [SLOT-MACHINE] Showing ${filteredOptions.length} filtered results`);
+        //         const newSelectedIndex = populateOptionsList(filteredOptions);
+        //         selectedIndex = newSelectedIndex;
 
-              // Update selection styling and center the selected item
-              updateSelection();
-              centerSelectedItem();
-            } else {
-              console.log(
-                `🔍 [SLOT-MACHINE] No matching results found, showing no-results message`
-              );
-              // Show "no results" message
-              const messageLi = createMessageElement("No matching clients found");
-              optionsList.innerHTML = "";
-              optionsList.appendChild(messageLi);
-              selectedIndex = -1;
-              if (emptyState) {
-                emptyState.classList.remove("hidden");
-              }
-            }
-          }
-          return;
-        }
+        //         // Update selection styling and center the selected item
+        //         updateSelection();
+        //         centerSelectedItem();
+        //       } else {
+        //         console.log(
+        //           `🔍 [SLOT-MACHINE] No matching results found, showing no-results message`
+        //         );
+        //         // Show "no results" message
+        //         const messageLi = createMessageElement("No matching clients found");
+        //         optionsList.innerHTML = "";
+        //         optionsList.appendChild(messageLi);
+        //         selectedIndex = -1;
+        //         if (emptyState) {
+        //           emptyState.classList.remove("hidden");
+        //         }
+        //       }
+        //     }
+        //     return;
+        //   }
 
         // Original API-based search for non-fetchOnLoad cases
         if (fetchApiEndpoint && query.length >= 2) {
@@ -1065,67 +959,67 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       });
     }
 
-    // Fetch data on load if fetchOnLoad is true
-    if (fetchOnLoad && fetchApiEndpoint && optionsList) {
-      try {
-        console.log(`🔄 [SLOT-MACHINE] Fetching data on load for: ${fetchApiEndpoint}`);
+    // // Fetch data on load if fetchOnLoad is true
+    // if (fetchOnLoad && fetchApiEndpoint && optionsList) {
+    //   try {
+    //     console.log(`🔄 [SLOT-MACHINE] Fetching data on load for: ${fetchApiEndpoint}`);
 
-        // Build URL with API params
-        const searchParams = new URLSearchParams(apiParams);
-        const response = await fetch(`${fetchApiEndpoint}?${searchParams}`);
+    //     // Build URL with API params
+    //     const searchParams = new URLSearchParams(apiParams);
+    //     const response = await fetch(`${fetchApiEndpoint}?${searchParams}`);
 
-        if (!response.ok) {
-          throw new Error(`Fetch failed: ${response.status}`);
-        }
+    //     if (!response.ok) {
+    //       throw new Error(`Fetch failed: ${response.status}`);
+    //     }
 
-        const data = await response.json();
-        console.log(`🔄 [SLOT-MACHINE] Load data response:`, data);
+    //     const data = await response.json();
+    //     console.log(`🔄 [SLOT-MACHINE] Load data response:`, data);
 
-        // Transform data if transform function exists
-        let transformedData = data;
-        if (dataTransform && typeof window[dataTransform] === "function") {
-          transformedData = window[dataTransform](data);
-          console.log(`🔄 [SLOT-MACHINE] Transformed load data:`, transformedData);
-        }
+    //     // Transform data if transform function exists
+    //     let transformedData = data;
+    //     if (dataTransform && typeof window[dataTransform] === "function") {
+    //       transformedData = window[dataTransform](data);
+    //       console.log(`🔄 [SLOT-MACHINE] Transformed load data:`, transformedData);
+    //     }
 
-        // Handle different data formats
-        let optionsArray = [];
-        if (Array.isArray(transformedData)) {
-          optionsArray = transformedData;
-        } else if (transformedData && Array.isArray(transformedData.predictions)) {
-          // Google Places format
-          optionsArray = transformedData.predictions;
-        } else if (transformedData && Array.isArray(transformedData.results)) {
-          // Alternative format
-          optionsArray = transformedData.results;
-        } else if (transformedData && Array.isArray(transformedData.clients)) {
-          // Clients API format
-          optionsArray = transformedData.clients;
-        } else if (transformedData && transformedData.data && Array.isArray(transformedData.data)) {
-          // Wrapped format
-          optionsArray = transformedData.data;
-        }
+    //     // Handle different data formats
+    //     let optionsArray = [];
+    //     if (Array.isArray(transformedData)) {
+    //       optionsArray = transformedData;
+    //     } else if (transformedData && Array.isArray(transformedData.predictions)) {
+    //       // Google Places format
+    //       optionsArray = transformedData.predictions;
+    //     } else if (transformedData && Array.isArray(transformedData.results)) {
+    //       // Alternative format
+    //       optionsArray = transformedData.results;
+    //     } else if (transformedData && Array.isArray(transformedData.clients)) {
+    //       // Clients API format
+    //       optionsArray = transformedData.clients;
+    //     } else if (transformedData && transformedData.data && Array.isArray(transformedData.data)) {
+    //       // Wrapped format
+    //       optionsArray = transformedData.data;
+    //     }
 
-        console.log(`🔄 [SLOT-MACHINE] Load options array:`, optionsArray);
+    //     console.log(`🔄 [SLOT-MACHINE] Load options array:`, optionsArray);
 
-        // Update finalOptions with fetched data
-        if (optionsArray.length > 0) {
-          const newSelectedIndex = populateOptionsList(optionsArray);
-          selectedIndex = newSelectedIndex;
-          updateSelection();
-          centerSelectedItem();
-        }
-      } catch (error) {
-        console.error(`🔄 [SLOT-MACHINE] Error fetching data on load:`, error);
-      }
+    //     // Update finalOptions with fetched data
+    //     if (optionsArray.length > 0) {
+    //       const newSelectedIndex = populateOptionsList(optionsArray);
+    //       selectedIndex = newSelectedIndex;
+    //       updateSelection();
+    //       centerSelectedItem();
+    //     }
+    //   } catch (error) {
+    //     console.error(`🔄 [SLOT-MACHINE] Error fetching data on load:`, error);
+    //   }
 
-      // Focus search input after fetchOnLoad data is populated
-      if (searchInput) {
-        setTimeout(() => {
-          searchInput.focus();
-        }, 100);
-      }
-    }
+    //   // Focus search input after fetchOnLoad data is populated
+    //   if (searchInput) {
+    //     setTimeout(() => {
+    //       searchInput.focus();
+    //     }, 100);
+    //   }
+    // }
 
     // Populate options in the list from the partial (only if not fetched on load)
     if (optionsList && !fetchOnLoad) {
