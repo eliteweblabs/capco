@@ -1,33 +1,63 @@
-/* Global Color System - CSS Custom Properties */
-/* Auto-generated from GLOBAL_COLOR_PRIMARY: #ff0000 */
-/* Last generated: 2025-10-22T01:12:16.347Z */
+/**
+ * Generate colors.css from GLOBAL_COLOR_PRIMARY environment variable
+ * Run this before build or when primary color changes
+ */
+
+import { generateColorPalette } from "../color-generator.js";
+import { writeFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Get primary color from environment or use default
+const primaryColor = process.env.GLOBAL_COLOR_PRIMARY || "#825BDD";
+const secondaryColor = process.env.GLOBAL_COLOR_SECONDARY || "#0ea5e9";
+
+console.log("🎨 Generating colors.css...");
+console.log("   Primary Color:", primaryColor);
+console.log("   Secondary Color:", secondaryColor);
+
+// Generate color palettes
+const primaryPalette = generateColorPalette(primaryColor);
+const secondaryPalette = generateColorPalette(secondaryColor);
+
+// Generate CSS content
+const cssContent = `/* Global Color System - CSS Custom Properties */
+/* Auto-generated from GLOBAL_COLOR_PRIMARY: ${primaryColor} */
+/* Last generated: ${new Date().toISOString()} */
 
 :root {
   /* Brand Colors - Primary */
-  --color-primary-50: #fce8e8;
-  --color-primary-100: #fbd0d0;
-  --color-primary-200: #fa9e9e;
-  --color-primary-300: #fb6a6a;
-  --color-primary-400: #ff3333;
-  --color-primary-500: #ff0000;
-  --color-primary-600: #c20a0a;
-  --color-primary-700: #950404;
-  --color-primary-800: #660000;
-  --color-primary-900: #330000;
-  --color-primary-950: #1a0000;
+  --color-primary-50: ${primaryPalette[50]};
+  --color-primary-100: ${primaryPalette[100]};
+  --color-primary-200: ${primaryPalette[200]};
+  --color-primary-300: ${primaryPalette[300]};
+  --color-primary-400: ${primaryPalette[400]};
+  --color-primary-500: ${primaryPalette[500]};
+  --color-primary-600: ${primaryPalette[600]};
+  --color-primary-700: ${primaryPalette[700]};
+  --color-primary-800: ${primaryPalette[800]};
+  --color-primary-900: ${primaryPalette[900]};
+  --color-primary-950: ${primaryPalette[950]};
 
   /* Brand Colors - Secondary */
-  --color-secondary-50: #e3f3fa;
-  --color-secondary-100: #cceaf7;
-  --color-secondary-200: #9dd8f3;
-  --color-secondary-300: #6bc8f2;
-  --color-secondary-400: #37b9f3;
-  --color-secondary-500: #0ea5e9;
-  --color-secondary-600: #0a83ba;
-  --color-secondary-700: #04638d;
-  --color-secondary-800: #00415e;
-  --color-secondary-900: #002333;
-  --color-secondary-950: #00121a;
+  --color-secondary-50: ${secondaryPalette[50]};
+  --color-secondary-100: ${secondaryPalette[100]};
+  --color-secondary-200: ${secondaryPalette[200]};
+  --color-secondary-300: ${secondaryPalette[300]};
+  --color-secondary-400: ${secondaryPalette[400]};
+  --color-secondary-500: ${secondaryPalette[500]};
+  --color-secondary-600: ${secondaryPalette[600]};
+  --color-secondary-700: ${secondaryPalette[700]};
+  --color-secondary-800: ${secondaryPalette[800]};
+  --color-secondary-900: ${secondaryPalette[900]};
+  --color-secondary-950: ${secondaryPalette[950]};
 
   /* Semantic Colors */
   --color-success-50: #f0fdf4;
@@ -218,3 +248,11 @@
 .hover-border-primary:hover {
   border-color: var(--color-primary-600);
 }
+`;
+
+// Write to colors.css
+const outputPath = join(__dirname, "../src/styles/colors.css");
+writeFileSync(outputPath, cssContent, "utf-8");
+
+console.log("✅ colors.css generated successfully!");
+console.log("   Output:", outputPath);
