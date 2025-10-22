@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { setAuthCookies } from "../../../lib/auth-cookies";
 
 /**
  * Standardized Auth REGISTER API
@@ -26,7 +27,7 @@ interface RegisterData {
   role?: string;
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json();
     const registerData: RegisterData = body;
@@ -120,6 +121,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log(`✅ [AUTH-REGISTER] User registered successfully:`, authData.user.id);
 
+    // Set auth cookies if session exists
+    if (authData.session) {
+      setAuthCookies(cookies, authData.session.access_token, authData.session.refresh_token);
+      console.log("🔐 [AUTH-REGISTER] Auth cookies set successfully");
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -131,6 +138,8 @@ export const POST: APIRoute = async ({ request }) => {
           companyName: profileData.companyName,
           role: profileData.role,
         },
+        session: authData.session,
+        redirect: "/project/dashboard",
         message: "Registration successful",
       }),
       { status: 201, headers: { "Content-Type": "application/json" } }
