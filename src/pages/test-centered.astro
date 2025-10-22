@@ -1,0 +1,134 @@
+---
+// Test page for vertically centered content
+
+import { checkAuth } from "../lib/auth";
+const { currentUser, session } = await checkAuth(Astro.cookies);
+
+import { globalCompanyData } from "./api/global/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "./api/global/global-classes";
+const { globalInputClasses, globalPrimaryTextClasses, globalSecondaryTextClasses } =
+  globalClasses();
+
+import App from "../components/common/App.astro";
+import Button from "../components/common/Button.astro";
+import LucideIcon from "../components/common/LucideIcon.astro";
+---
+
+<App
+  title="Centered Content Test"
+  description="Testing vertically centered content"
+  {currentUser}
+  {session}
+  {globalCompanyName}
+  {globalCompanySlogan}
+  {globalCompanyAddress}
+  {globalCompanyPhone}
+  {globalCompanyEmail}
+  {globalCompanyWebsite}
+  {globalCompanyLogo}
+  {globalCompanyLogoDark}
+  {globalCompanyLogoLight}
+  {globalInputClasses}
+  {globalPrimaryTextClasses}
+  {globalSecondaryTextClasses}
+  centerContent={true}
+>
+  <!-- This content will be vertically and horizontally centered -->
+  <div class="mx-auto max-w-2xl text-center px-4" data-aos="fade-up">
+    <div
+      class="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30"
+    >
+      <LucideIcon name="check-circle" size="xl" class="text-primary-600 dark:text-primary-400" />
+    </div>
+
+    <h1 class="mb-4 text-5xl font-bold text-gray-900 dark:text-white">Vertically Centered!</h1>
+
+    <p class="mb-8 text-xl text-gray-600 dark:text-gray-400">
+      This content is perfectly centered vertically between the navbar and footer using the
+      App.astro wrapper with <code class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded"
+        >centerContent={true}</code
+      >
+    </p>
+
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <Button href="/" variant="primary" size="lg" icon="home" iconPosition="left">
+        Back to Home
+      </Button>
+
+      <Button
+        href="/auth/register-multi-step"
+        variant="outline"
+        size="lg"
+        icon="user-plus"
+        iconPosition="left"
+      >
+        Try Multi-Step Form
+      </Button>
+    </div>
+
+    <!-- Technical Details Card -->
+    <div
+      class="mt-12 text-left rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+    >
+      <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">How It Works</h3>
+      <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+        <li class="flex items-start">
+          <LucideIcon name="check" size="sm" class="mr-2 mt-1 text-green-600" />
+          <span
+            ><strong>App.astro</strong> has a new <code class="text-primary-600">centerContent</code
+            > prop</span
+          >
+        </li>
+        <li class="flex items-start">
+          <LucideIcon name="check" size="sm" class="mr-2 mt-1 text-green-600" />
+          <span
+            >When <code class="text-primary-600">true</code>, adds <code
+              class="text-xs bg-gray-100 dark:bg-gray-900 px-1 rounded"
+              >flex items-center justify-center</code
+            > to main</span
+          >
+        </li>
+        <li class="flex items-start">
+          <LucideIcon name="check" size="sm" class="mr-2 mt-1 text-green-600" />
+          <span
+            >The <code class="text-primary-600">flex-1</code> class makes main fill available vertical
+            space</span
+          >
+        </li>
+        <li class="flex items-start">
+          <LucideIcon name="check" size="sm" class="mr-2 mt-1 text-green-600" />
+          <span>Content automatically centers between navbar and footer</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</App>
+
+<script>
+  import AOS from "aos";
+  import "aos/dist/aos.css";
+
+  // Initialize AOS
+  AOS.init({
+    duration: 800,
+    once: true,
+    offset: 0,
+    easing: "ease-out",
+  });
+</script>
+
+<style>
+  @import "aos/dist/aos.css";
+</style>
