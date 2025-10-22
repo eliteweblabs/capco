@@ -503,6 +503,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
     readOnlyAtStatus: [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
+    columns: 1,
   },
 
   // New construction checkbox
@@ -533,6 +534,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     readOnlyAtStatus: [
       20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ],
+    columns: 1,
   },
 
   // Building Type button group
@@ -582,6 +584,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
       { value: "Civil engineering", label: "Civil engineering" },
       { value: "Other", label: "Other" },
     ],
+    columns: 1,
   },
 
   // Tier button group
@@ -628,6 +631,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
       { value: "IEBC", label: "IEBC" },
       { value: "IBC", label: "IBC" },
     ],
+    columns: 1,
   },
 
   // Form Actions
@@ -645,6 +649,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     hideAtStatus: [
       110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
     ],
+    columns: 1,
   },
 
   {
@@ -662,6 +667,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
       20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125,
       130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
     ],
+    columns: 1,
   },
 
   {
@@ -677,6 +683,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     action: "deleteProject",
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
+    columns: 1,
   },
 
   // {

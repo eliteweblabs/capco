@@ -26,7 +26,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
 
   // Base classes for all buttons
   const baseClasses =
-    "hover:scale-105 hover:-translate-y-1 hover:shadow-xl relative inline-flex items-center justify-center font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    "hover:scale-105 hover:-translate-y-1 hover:shadow-xl relative inline-flex items-center justify-center font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
 
   // Size classes
   const sizeClasses = {
@@ -42,7 +42,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     primary:
       "rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl",
     secondary:
-      "rounded-full border-2 border-neutral-300 text-neutral-700 hover:text-white dark:border-neutral-600 dark:text-neutral-300 hover:bg-primary-500 dark:hover:bg-primary-500",
+      "rounded-full border-2 border-neutral-300 text-neutral-700 hover:text-white dark:border-neutral-600 dark:text-neutral-300 hover:bg-primary-500 dark:hover:bg-primary-500 backdrop-blur-sm",
     success:
       "rounded-full bg-success-500 text-white hover:bg-success-600 dark:bg-success-500 dark:hover:bg-success-600 shadow-lg hover:shadow-xl",
     warning:
@@ -50,7 +50,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     danger:
       "rounded-full bg-danger-500 text-white hover:bg-danger-600 dark:bg-danger-500 dark:hover:bg-danger-600 shadow-lg hover:shadow-xl",
     outline:
-      "rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-400 dark:hover:text-white",
+      "rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-400 dark:hover:text-white backdrop-blur-sm",
     ghost:
       "rounded-full text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
     link: "text-primary-500 underline hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300",
