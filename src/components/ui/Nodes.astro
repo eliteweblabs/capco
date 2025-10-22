@@ -1,5 +1,7 @@
 ---
 // NodeEditor.astro - A complete node-based editor with demo page
+import { checkAuth } from "@/lib/auth";
+const { currentUser } = await checkAuth(Astro.cookies);
 ---
 
 <style>
@@ -12,7 +14,6 @@
     padding: 0;
     box-sizing: border-box;
     overflow: hidden;
-    z-index: 0;
     touch-action: none; /* Disable browser touch handling for better control */
   }
 
@@ -30,7 +31,6 @@
     background: rgba(59, 130, 246, 0.95);
     color: white;
     border: none;
-    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     font-size: 14px;
@@ -66,7 +66,8 @@
       transparent 100%
     );
     pointer-events: none;
-    z-index: 1000;
+    z-index: 10;
+    position: absolute;
   }
 
   /* Dark mode version - use :global() to match the HTML dark class */
@@ -83,7 +84,8 @@
       transparent 100%
     );
     pointer-events: none;
-    z-index: 1000;
+    z-index: 10;
+    position: absolute;
   }
 
   /* Responsive adjustments - move gradient center on smaller screens */
@@ -98,6 +100,7 @@
         rgba(255, 255, 255, 0.1) 80%,
         transparent 100%
       );
+      position: absolute;
     }
 
     :global(.dark) .node-editor-canvas::after {
@@ -113,6 +116,7 @@
         rgba(0, 0, 0, 0.1) 80%,
         transparent 100%
       );
+      position: absolute;
     }
 
     /* .dark .node-editor-canvas::after {
@@ -134,7 +138,6 @@
     position: absolute;
     min-width: 200px;
     max-width: 300px;
-    border-radius: 8px;
     padding: 16px;
     cursor: move;
     z-index: 5;
@@ -357,7 +360,7 @@
   }
 </style>
 
-<div class="node-editor-canvas fixed inset-0" id="node-canvas">
+<div class="node-editor-canvas absolute inset-0" id="node-canvas">
   <!-- Nodes will be dynamically added here -->
 
   <!-- Connection overlay for drawing arrows -->
@@ -367,8 +370,24 @@
 </div>
 
 <!-- Pause button for debugging -->
-<button id="pause-scroll-btn" class="pause-button">⏸ Pause Scroll</button>
+{
+  currentUser?.profile?.role === "Admin" && (
+    <button id="pause-scroll-btn" class="pause-button">
+      ⏸ Pause Scroll
+    </button>
+  )
+}
 <script>
+  // Type declaration for window.IconStyles
+  declare global {
+    interface Window {
+      IconStyles?: {
+        generateIconHTML: (name: string, preset: any) => string;
+        ICON_PRESETS: any;
+      };
+    }
+  }
+
   class NodeEditor {
     canvas;
     svg;
@@ -409,7 +428,26 @@
 
     init() {
       this.setupEventListeners();
-      this.addCustomNodes(1500);
+      // Wait for custom icon system to load before adding nodes
+      this.waitForIconSystem().then(() => {
+        this.addCustomNodes(1500);
+      });
+    }
+
+    async waitForIconSystem() {
+      // Try to load the custom icon system if not already available
+      if (!window.CustomIcons) {
+        try {
+          console.log("🔧 [ICON] Loading custom icon system synchronously...");
+          await import("../../lib/custom-icons-client.js");
+          console.log("🔧 [ICON] Custom icon system loaded successfully");
+        } catch (error) {
+          console.warn("Failed to load custom icon system:", error);
+        }
+      }
+
+      // Wait a bit more to ensure it's fully available
+      return new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     setupPauseButton() {
@@ -461,7 +499,7 @@
       setTimeout(() => {
         this.addNodeWithCenterMaintenance({
           id: "create-account",
-          type: "default",
+          icon: "user",
           title: "Create Account",
           subtitle: "<a href='/auth/login?register=true'>Register</a>",
           status: "2 Minutes",
@@ -473,7 +511,7 @@
       setTimeout(() => {
         this.addNodeWithCenterMaintenance({
           id: "login",
-          type: "login",
+          icon: "log-in",
           title: "Login",
           subtitle: "<a href='/auth/login'>Login</a>",
           status: "2 Seconds",
@@ -493,7 +531,7 @@
         () => {
           this.addNodeWithCenterMaintenance({
             id: "upload-files",
-            type: "default",
+            icon: "upload",
             title: "Upload Files",
             status: "PDF, jpeg, png, autocad, revit, dwg",
             x: screenWidth,
@@ -514,7 +552,7 @@
         () => {
           this.addNodeWithCenterMaintenance({
             id: "submit-files",
-            type: "default",
+            icon: "file-text",
             title: "Request Review",
             status: "2-4 hours to complete",
             x: screenWidth,
@@ -535,7 +573,7 @@
         () => {
           this.addNodeWithCenterMaintenance({
             id: "generate-proposal",
-            type: "storage",
+            icon: "file-text",
             title: "Generating Proposal",
             status: "24 hours to complete",
             x: screenWidth,
@@ -556,21 +594,21 @@
         () => {
           this.addNodeWithCenterMaintenance({
             id: "proposal-approved",
-            type: "storage",
+            icon: "check-circle",
             title: "Approve Proposal",
             status: "24 hours to complete",
             x: screenWidth,
             y: screenHeight * 0.25,
           });
         },
-        delay + delay + delay + delay + delay + delay
+        delay + delay + delay + delay + delay + delay + delay
       );
 
       setTimeout(
         () => {
           this.addNodeWithCenterMaintenance({
             id: "proposal-request-revision",
-            type: "storage",
+            icon: "edit-3",
             title: "Request Revision",
             status: "2-4 hours to complete",
             x: screenWidth,
@@ -598,7 +636,7 @@
         () => {
           this.addNodeWithCenterMaintenance({
             id: "approve-revisions",
-            type: "storage",
+            icon: "file-text",
             title: "Approve Revisions",
             status: "24 hours to complete",
             x: screenWidth,
@@ -612,7 +650,7 @@
         () => {
           this.addNodeWithCenterMaintenance({
             id: "sign-off-proposal",
-            type: "storage",
+            icon: "file-text",
             title: "Sign Off Proposal",
             status: "2-4 hours to complete",
             x: screenWidth,
@@ -648,7 +686,7 @@
         () => {
           this.addNodeWithCenterMaintenance({
             id: "final-documents",
-            type: "storage",
+            icon: "file-text",
             title: "Generating Final Documents",
             status: "24 hours to complete",
             x: screenWidth,
@@ -852,27 +890,51 @@
       const nodeElement = document.createElement("div");
       nodeElement.classList.add(
         "node-card",
-        "border-primary",
-        "dark:border-primary-dark",
-        "bg-white",
-        "dark:bg-black",
-        "dark:border-primary-dark"
+        "backdrop-blur-sm",
+        "rounded-lg",
+        "bg-black/10",
+        "border",
+        "border-white/10",
+        "dark:bg-white/10",
+        "dark:border-black/10"
       );
       nodeElement.dataset.nodeId = node.id;
       nodeElement.dataset.type = node.type;
       nodeElement.style.left = `${node.x}px`;
       nodeElement.style.top = `${node.y}px`;
 
-      const iconMap = {
-        database: "DB",
-        analytics: "A",
-        storage: "S",
-        default: "N",
+      // Custom icon system - Direct SVG HTML mapping
+      const getIconHTML = (iconName: string | undefined, preset: string = "default"): string => {
+        // Handle undefined or null icon names
+        if (!iconName) {
+          iconName = "circle"; // Default fallback icon
+        }
+
+        console.log(`🔧 [ICON] Requesting icon: "${iconName}"`);
+        console.log(`🔧 [ICON] CustomIcons available:`, !!window.CustomIcons);
+
+        // Use the custom icon system if available, otherwise fallback to simple SVG
+        if (window.CustomIcons && window.CustomIcons.getIcon) {
+          const iconHTML = window.CustomIcons.getIcon(iconName, {
+            size: 16,
+            className: "text-primary-500 dark:text-primary-400",
+          });
+          console.log(`🔧 [ICON] Generated icon HTML:`, iconHTML);
+          return iconHTML;
+        }
+
+        console.log(`🔧 [ICON] Using fallback circle for: "${iconName}"`);
+        // Fallback to simple circle icon
+        return `<div class="w-4 h-4 text-primary-500 dark:text-primary-400">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+          </svg>
+        </div>`;
       };
 
       nodeElement.innerHTML = `
         <div class="node-header">
-          <div class="node-icon">${iconMap[node.type] || "N"}</div>
+          <div class="node-icon">${getIconHTML(node.icon)}</div>
           <div>
             <div class="node-title">${node.title}</div>
             ${node.subtitle ? `<div class="node-subtitle">${node.subtitle}</div>` : ""}
@@ -1355,8 +1417,34 @@
     }
   }
 
+  // TypeScript declaration for CustomIcons
+  declare global {
+    interface Window {
+      CustomIcons?: {
+        getIcon: (name: string, config?: any) => string;
+        CUSTOM_ICONS: Record<string, any>;
+      };
+    }
+  }
+
   // Initialize when DOM is loaded
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
+    // Dynamically import the custom icon system
+    try {
+      console.log("🔧 [ICON] Loading custom icon system...");
+      await import("../../lib/custom-icons-client.js");
+      console.log("🔧 [ICON] Custom icon system loaded successfully");
+      console.log("🔧 [ICON] CustomIcons available:", !!window.CustomIcons);
+      if (window.CustomIcons) {
+        console.log(
+          "🔧 [ICON] Available icons:",
+          Object.keys(window.CustomIcons.CUSTOM_ICONS || {})
+        );
+      }
+    } catch (error) {
+      console.warn("Failed to load custom icon system:", error);
+    }
+
     const nodeEditor = new NodeEditor();
 
     // Optional: Start continuous node addition to demonstrate center maintenance

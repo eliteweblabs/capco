@@ -165,6 +165,11 @@ export function getFilteredFormActions(
   return actions;
 }
 
+const standardReadOnlyStatus = [
+  60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160,
+  170, 180, 190, 200, 210, 220,
+];
+
 // Form action button configurations
 export const FORM_ACTIONS: FormActionConfig[] = [
   {
@@ -178,10 +183,7 @@ export const FORM_ACTIONS: FormActionConfig[] = [
     allow: ["Admin", "Staff", "Client"], // All roles can save
     // No status restriction - can save project at any status
     // displayOnNew undefined - shows on both new and existing projects
-    hideAtStatus: [
-      60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
-      160, 170, 180, 190, 200, 210, 220,
-    ], // Only show when specs are received (status 10)
+    hideAtStatus: standardReadOnlyStatus, // Only show when specs are received (status 10)
   },
   {
     id: "delete-project",
@@ -217,9 +219,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     hideAtStatus: [
       10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
     ],
-    readOnlyAtStatus: [
-      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     columns: 1, // Left column
   },
 
@@ -234,9 +234,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "title",
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     columns: 1, // Half width
   },
 
@@ -251,9 +249,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "architect",
     allow: ["Admin", "Staff", "Client"],
     hideAtStatus: [],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     columns: 2, // Half width
   },
 
@@ -276,9 +272,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "sqFt",
     allow: ["Admin", "Staff", "Client"],
     hideAtStatus: [],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     columns: 2, // Half width
   },
 
@@ -293,9 +287,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "description",
     allow: ["Admin", "Staff", "Client"],
     hideAtStatus: [50, 60, 70, 80, 90],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     columns: 1, // Half width
   },
   {
@@ -309,7 +301,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "nfpaVersion",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
   {
@@ -323,7 +315,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "hazardousMaterial",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
   {
@@ -337,7 +329,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "hpsCommodities",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
   {
@@ -350,7 +342,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "siteAccess",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [0], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
 
@@ -364,7 +356,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "site_exterior_access",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [0], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
 
@@ -378,7 +370,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "fireSprinklerInstallation",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
   {
@@ -391,7 +383,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "commencementOfConstruction",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
   {
@@ -404,7 +396,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "commencementOfConstruction",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200], // Read-only after proposal is viewed but before signed off
+    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
   // Building height field
@@ -426,7 +418,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "buildingHeight",
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
-    readOnlyAtStatus: [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
+    readOnlyAtStatus: standardReadOnlyStatus,
   },
 
   // Fire Service button group
@@ -439,9 +431,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     groupType: "radio",
     cssClass: "fire-service-radio",
     allow: ["Admin", "Staff", "Client"],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     options: [
       { value: "Pump & Tank", label: "Pump & Tank" },
       { value: "2' Copper", label: "2' Copper" },
@@ -462,7 +452,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     groupType: "radio",
     cssClass: "fire-service-type-radio",
     allow: ["Admin", "Staff"],
-    readOnlyAtStatus: [60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
+    readOnlyAtStatus: standardReadOnlyStatus,
     options: [
       {
         value:
@@ -502,8 +492,8 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     dataField: "floorsBelowGrade",
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
-    readOnlyAtStatus: [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
-    columns: 1,
+    readOnlyAtStatus: standardReadOnlyStatus,
+    columns: 2,
   },
 
   // New construction checkbox
@@ -514,9 +504,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     elementType: "checkbox",
     label: "New Construction",
     allow: ["Admin", "Staff", "Client"],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
   },
 
   // Units slider
@@ -531,9 +519,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
       required: false,
     },
     allow: ["Admin", "Staff", "Client"],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     columns: 1,
   },
 
@@ -547,9 +533,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     groupType: "multi-select",
     cssClass: "building-type-radio",
     allow: ["Admin", "Staff", "Client"],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     options: [
       { value: "Residential", label: "Residential" },
       { value: "Mixed use", label: "Mixed use" },
@@ -572,9 +556,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     groupType: "multi-select",
     cssClass: "project-type-btns",
     allow: ["Admin", "Staff", "Client"],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     options: [
       { value: "Sprinkler", label: "Sprinkler" },
       { value: "Alarm", label: "Alarm" },
@@ -618,9 +600,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     groupType: "multi-select",
     cssClass: "",
     allow: ["Admin", "Staff"],
-    readOnlyAtStatus: [
-      30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
-    ],
+    readOnlyAtStatus: standardReadOnlyStatus,
     options: [
       { value: "Narrative", label: "Narrative", selected: true },
       { value: "Sprinkler", label: "Sprinkler", selected: true },
