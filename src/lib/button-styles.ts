@@ -26,7 +26,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
 
   // Base classes for all buttons
   const baseClasses =
-    "relative inline-flex items-center justify-center font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    "hover:scale-105 hover:-translate-y-1 hover:shadow-xl relative inline-flex items-center justify-center font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   // Size classes
   const sizeClasses = {

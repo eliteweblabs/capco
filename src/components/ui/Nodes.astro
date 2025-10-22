@@ -14,10 +14,66 @@
     box-sizing: border-box;
     overflow: hidden;
     z-index: 0;
+    touch-action: none; /* Disable browser touch handling for better control */
   }
 
   .node-editor-canvas:active {
     cursor: grabbing;
+  }
+
+  /* Radial gradient mask to fade nodes for text legibility */
+  .node-editor-canvas::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 50% 80% at 30% 40%,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.8) 20%,
+      rgba(255, 255, 255, 0.6) 40%,
+      rgba(255, 255, 255, 0.3) 60%,
+      rgba(255, 255, 255, 0.1) 80%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Dark mode version - use :global() to match the HTML dark class */
+  :global(.dark) .node-editor-canvas::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 50% 80% at 30% 40%,
+      rgba(0, 0, 0, 0.95) 0%,
+      rgba(0, 0, 0, 0.8) 20%,
+      rgba(0, 0, 0, 0.6) 40%,
+      rgba(0, 0, 0, 0.3) 60%,
+      rgba(0, 0, 0, 0.1) 80%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Responsive adjustments - move gradient center on smaller screens */
+  @media (max-width: 768px) {
+    .node-editor-canvas::after {
+      background: radial-gradient(
+        ellipse 60% 80% at 50% 40%,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.8) 20%,
+        rgba(255, 255, 255, 0.6) 40%,
+        rgba(255, 255, 255, 0.3) 60%,
+        rgba(255, 255, 255, 0.1) 80%,
+        transparent 100%
+      );
+    }
+
+    /* .dark .node-editor-canvas::after {
+      display: none;
+    } */
   }
 
   .connections-overlay {
@@ -41,6 +97,7 @@
     user-select: none;
     transition: all 0.2s;
     box-sizing: border-box;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
   }
 
   :global(.node-card:hover) {
@@ -256,7 +313,7 @@
   }
 </style>
 
-<div class="node-editor-canvas mask-gradient-140" id="node-canvas">
+<div class="node-editor-canvas" id="node-canvas">
   <!-- Nodes will be dynamically added here -->
 
   <!-- Connection overlay for drawing arrows -->
@@ -277,7 +334,6 @@
     nodeCounter;
     centerX;
     centerY;
-    nodeSpacing;
     isScrolling;
     scrollSpeed;
     scrollInterval;
@@ -295,7 +351,6 @@
       // Center maintenance properties
       this.centerX = 0;
       this.centerY = 0;
-      this.nodeSpacing = 250; // Horizontal spacing between nodes
       // Continuous scroll properties
       this.isScrolling = false;
       this.scrollSpeed = 2;
@@ -312,10 +367,19 @@
     setupEventListeners() {
       // Add node button
 
-      // Canvas events
+      // Canvas events - Mouse
       this.canvas?.addEventListener("mousedown", this.handleCanvasMouseDown.bind(this));
       this.canvas?.addEventListener("mousemove", this.handleCanvasMouseMove.bind(this));
       this.canvas?.addEventListener("mouseup", this.handleCanvasMouseUp.bind(this));
+
+      // Canvas events - Touch
+      this.canvas?.addEventListener("touchstart", this.handleCanvasTouchStart.bind(this), {
+        passive: false,
+      });
+      this.canvas?.addEventListener("touchmove", this.handleCanvasTouchMove.bind(this), {
+        passive: false,
+      });
+      this.canvas?.addEventListener("touchend", this.handleCanvasTouchEnd.bind(this));
     }
 
     addCustomNodes(delay = 1500) {
@@ -604,16 +668,14 @@
       const nodeId = options.id || `node-${++this.nodeCounter}`;
 
       // Calculate position using center maintenance
-      const position = this.calculateNodePosition(options);
-
       const node = {
         id: nodeId,
         type: options.type || "default",
         title: options.title || `Node ${this.nodeCounter}`,
         subtitle: options.subtitle || "",
         status: options.status || "Active",
-        x: position.x,
-        y: position.y,
+        x: options.x,
+        y: options.y,
       };
 
       this.nodes.set(nodeId, node);
@@ -625,24 +687,24 @@
       return node;
     }
 
-    calculateNodePosition(options = {}) {
-      // If specific coordinates are provided, use them
-      if (options.x !== undefined && options.y !== undefined) {
-        return { x: options.x, y: options.y };
-      }
+    // calculateNodePosition(options = {}) {
+    //   // If specific coordinates are provided, use them
+    //   if (options.x !== undefined && options.y !== undefined) {
+    //     return { x: options.x, y: options.y };
+    //   }
 
-      // Calculate canvas dimensions
-      const canvasWidth = this.canvas.offsetWidth;
-      const canvasHeight = this.canvas.offsetHeight;
-      this.centerX = canvasWidth / 2;
-      this.centerY = canvasHeight / 2;
+    //   // Calculate canvas dimensions
+    //   const canvasWidth = this.canvas.offsetWidth;
+    //   const canvasHeight = this.canvas.offsetHeight;
+    //   this.centerX = canvasWidth / 2;
+    //   this.centerY = canvasHeight / 2;
 
-      // Always place new nodes on the right side of the screen
-      const x = canvasWidth - 200; // Right side of screen
-      const y = this.centerY + (Math.random() - 0.5) * 300; // Add vertical variation
+    //   // Always place new nodes on the right side of the screen
+    //   const x = canvasWidth - 200; // Right side of screen
+    //   const y = this.centerY + (Math.random() - 0.5) * 300; // Add vertical variation
 
-      return { x, y };
-    }
+    //   return { x, y };
+    // }
 
     // Method to preserve individual node positioning while shifting
     preserveNodePositions() {
@@ -723,13 +785,11 @@
       const nodeElement = document.createElement("div");
       nodeElement.classList.add(
         "node-card",
-        "bg-primary-100",
-        "dark:bg-primary-900",
-        "border",
-        "border-primary-200",
-        "dark:border-primary-700",
-        "text-primary-900",
-        "dark:text-primary-100"
+        "border-primary",
+        "dark:border-primary-dark",
+        "bg-white",
+        "dark:bg-black",
+        "dark:border-primary-dark"
       );
       nodeElement.dataset.nodeId = node.id;
       nodeElement.dataset.type = node.type;
@@ -765,14 +825,26 @@
         <div class="connection-point output left"></div>
       `;
 
-      // Add drag functionality
+      // Add drag functionality - Mouse
       nodeElement.addEventListener("mousedown", (e) => {
         e.stopPropagation();
         this.startDrag(node, e);
       });
 
+      // Add drag functionality - Touch
+      nodeElement.addEventListener(
+        "touchstart",
+        (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          this.startDrag(node, e.touches[0]);
+        },
+        { passive: false }
+      );
+
       // Add connection point functionality
       nodeElement.querySelectorAll(".connection-point").forEach((point) => {
+        // Mouse events
         point.addEventListener("mousedown", (e) => {
           e.stopPropagation();
           const isOutput = point.classList.contains("output");
@@ -785,6 +857,25 @@
                 : "left";
           this.startConnection(node, isOutput, side, e);
         });
+
+        // Touch events
+        point.addEventListener(
+          "touchstart",
+          (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            const isOutput = point.classList.contains("output");
+            const side = point.classList.contains("top")
+              ? "top"
+              : point.classList.contains("right")
+                ? "right"
+                : point.classList.contains("bottom")
+                  ? "bottom"
+                  : "left";
+            this.startConnection(node, isOutput, side, e.touches[0]);
+          },
+          { passive: false }
+        );
       });
 
       this.canvas.appendChild(nodeElement);
@@ -930,6 +1021,33 @@
 
         // Clear preview
         this.clearConnectionPreview();
+      }
+    }
+
+    // Touch event handlers
+    handleCanvasTouchStart(e) {
+      // Prevent default to avoid scrolling
+      e.preventDefault();
+      // Convert to mouse event format
+      if (e.touches.length === 1) {
+        this.handleCanvasMouseDown(e.touches[0]);
+      }
+    }
+
+    handleCanvasTouchMove(e) {
+      // Prevent default to avoid scrolling
+      e.preventDefault();
+      // Convert to mouse event format
+      if (e.touches.length === 1) {
+        this.handleCanvasMouseMove(e.touches[0]);
+      }
+    }
+
+    handleCanvasTouchEnd(e) {
+      // Convert to mouse event format
+      // Use changedTouches since touches will be empty on touchend
+      if (e.changedTouches.length === 1) {
+        this.handleCanvasMouseUp(e.changedTouches[0]);
       }
     }
 
