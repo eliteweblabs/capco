@@ -422,7 +422,10 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       parseInt(projectId),
       "projectUpdated",
       "Project was updated",
-      { oldData: currentProject, newData: project }
+      {
+        oldData: currentProject,
+        newData: project,
+      }
     );
 
     return new Response(

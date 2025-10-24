@@ -91,16 +91,45 @@ async function handleFunctionCall(functionCall: any) {
   console.log("🤖 [VAPI-WEBHOOK] Function call:", functionCall.name, functionCall.parameters);
 
   try {
-    // Route to Cal.com integration
+    // Handle call termination
+    if (functionCall.name === "end_call") {
+      console.log("🤖 [VAPI-WEBHOOK] Call termination requested:", functionCall.parameters.reason);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Call terminated successfully",
+          reason: functionCall.parameters.reason,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Route to Cal.com integration for other functions
+    // Handle special cases for function name mapping
+    let type, action;
+    if (functionCall.name === "appointment_availability") {
+      type = "availability";
+      action = "read";
+    } else if (functionCall.name === "availability_read") {
+      type = "availability";
+      action = "read";
+    } else {
+      type = functionCall.name.split("_")[0]; // Extract type from function name
+      action = functionCall.name.split("_")[1]; // Extract action from function name
+    }
+
     const response = await fetch(`${process.env.SITE_URL}/api/vapi/cal-integration`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.VAPI_API_KEY}`,
+        Authorization: `Bearer ${process.env.VAPI_API_SECRET}`,
       },
       body: JSON.stringify({
-        type: functionCall.name.split("_")[0], // Extract type from function name
-        action: functionCall.name.split("_")[1], // Extract action from function name
+        type,
+        action,
         data: functionCall.parameters,
       }),
     });
@@ -146,15 +175,38 @@ async function handleCallStatus(call: any) {
 
   // Log call analytics
   if (call.status === "ended") {
+    const duration =
+      call.endedAt && call.startedAt
+        ? new Date(call.endedAt).getTime() - new Date(call.startedAt).getTime()
+        : null;
+
     console.log("🤖 [VAPI-WEBHOOK] Call ended:", {
       id: call.id,
-      duration:
-        call.endedAt && call.startedAt
-          ? new Date(call.endedAt).getTime() - new Date(call.startedAt).getTime()
-          : null,
+      duration: duration ? `${Math.round(duration / 1000)}s` : "unknown",
       cost: call.cost,
       summary: call.summary,
     });
+
+    // Alert if call was expensive or long
+    if (call.cost && call.cost > 1.0) {
+      console.warn("🚨 [VAPI-WEBHOOK] Expensive call detected:", {
+        id: call.id,
+        cost: call.cost,
+        duration: duration ? `${Math.round(duration / 1000)}s` : "unknown",
+      });
+    }
+  }
+
+  // Alert for long-running calls
+  if (call.status === "in-progress" && call.startedAt) {
+    const duration = Date.now() - new Date(call.startedAt).getTime();
+    if (duration > 300000) {
+      // 5 minutes
+      console.warn("🚨 [VAPI-WEBHOOK] Long-running call detected:", {
+        id: call.id,
+        duration: `${Math.round(duration / 1000)}s`,
+      });
+    }
   }
 
   return new Response(JSON.stringify({ success: true }), {

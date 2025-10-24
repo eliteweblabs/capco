@@ -121,7 +121,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         punchlistItem.projectId,
         markCompleted ? "punchlistCompleted" : "punchlistIncomplete",
         `Punchlist item ${markCompleted ? "marked as completed" : "marked as incomplete"}: ${(punchlistItem.message?.substring(0, 50) || "No message") + "..."}`,
-        { punchlistId, completed: markCompleted }
+        {
+          punchlistId,
+          completed: markCompleted,
+        }
       );
 
       console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Project logging completed successfully");

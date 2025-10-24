@@ -346,32 +346,23 @@ async function handleAvailability(
 
   switch (action) {
     case "read":
-      if (!eventTypeId) {
-        // Get all event types
-        const response = await fetch(`${calApiUrl}/event-types`, {
-          headers: {
-            Authorization: `Bearer ${process.env.CAL_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        });
+      // First get all event types to find available ones
+      const eventTypesResponse = await fetch(`${calApiUrl}/event-types`, {
+        headers: {
+          Authorization: `Bearer ${process.env.CAL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-        if (!response.ok) {
-          throw new Error(`Cal.com API error: ${response.status}`);
-        }
+      if (!eventTypesResponse.ok) {
+        throw new Error(`Cal.com API error: ${eventTypesResponse.status}`);
+      }
 
-        const eventTypes = await response.json();
-        return new Response(
-          JSON.stringify({
-            success: true,
-            eventTypes: eventTypes.eventTypes || eventTypes,
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      } else {
-        // Get specific event type availability
+      const eventTypes = await eventTypesResponse.json();
+      const availableEventTypes = eventTypes.eventTypes || eventTypes;
+
+      // If specific eventTypeId provided, get its availability
+      if (eventTypeId) {
         const response = await fetch(`${calApiUrl}/event-types/${eventTypeId}/availability`, {
           headers: {
             Authorization: `Bearer ${process.env.CAL_API_KEY}`,
@@ -388,6 +379,7 @@ async function handleAvailability(
           JSON.stringify({
             success: true,
             availability,
+            eventType: availableEventTypes.find((et: any) => et.id === eventTypeId),
           }),
           {
             status: 200,
@@ -395,6 +387,20 @@ async function handleAvailability(
           }
         );
       }
+
+      // Return available event types with basic info
+      return new Response(
+        JSON.stringify({
+          success: true,
+          eventTypes: availableEventTypes,
+          message:
+            "Available event types retrieved. Use specific event type ID to check detailed availability.",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
     case "write":
     case "update":
