@@ -116,6 +116,9 @@ async function handleFunctionCall(functionCall: any) {
     } else if (functionCall.name === "availability_read") {
       type = "availability";
       action = "read";
+    } else if (functionCall.name === "staff_read") {
+      type = "user";
+      action = "read";
     } else {
       type = functionCall.name.split("_")[0]; // Extract type from function name
       action = functionCall.name.split("_")[1]; // Extract action from function name

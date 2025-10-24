@@ -28,14 +28,21 @@ const assistantConfig = {
     stability: 0.5,
     similarityBoost: 0.8,
   },
-  firstMessage:
-    "Hi there! I'm here to help you schedule appointments. What can I do for you today?",
-  systemMessage: `You are a friendly appointment scheduling assistant. Your goal is to help users book appointments in a natural, conversational way.
+  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. I have several appointment times available this week - would you like to hear your options?`,
+  systemMessage: `You are a friendly appointment scheduling assistant for a company called ${process.env.GLOBAL_COMPANY_NAME}. ${process.env.GLOBAL_COMPANY_SLOGAN}. Your goal is to help users book appointments in a natural, conversational way.
 
 CURRENT DATE CONTEXT:
 - Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
 - Current time is ${new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" })}
 - Always use the current date when discussing scheduling
+
+PROACTIVE BEHAVIOR:
+- IMMEDIATELY call staff_read() to get available staff members
+- IMMEDIATELY call appointment_availability() to get available time slots
+- Present 3-5 specific available times with staff names right away without announcing you're checking
+- Be specific: "I have Sarah available Tuesday at 2pm, John available Wednesday at 10am, or Sarah again Thursday at 3pm"
+- Don't wait for the user to ask - proactively offer times with staff information
+- Act as if you already have the availability and staff data ready
 
 When suggesting times, be specific and helpful:
 - "How's Tuesday the 14th? We have 2pm and 4pm available"
@@ -54,13 +61,16 @@ IMPORTANT CALL MANAGEMENT:
 - Keep conversations focused and efficient
 - If the user seems confused or unresponsive, politely offer to end the call
 - After completing a task, ask if there's anything else, then end the call
-- Maximum conversation length: 3 minutes
+- Maximum conversation length: 4 minutes
 - If you detect silence for more than 10 seconds, politely end the call
 - Always end with a clear goodbye message`,
-  maxDurationSeconds: 180, // 3 minutes max call (reduced from 5)
+  maxDurationSeconds: 200, // 4 minutes max call (reduced from 5)
   endCallMessage: "Thank you for calling. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "thank you", "that's all", "done", "finished", "end call"],
-  backgroundSound: "office",
+  backgroundSound: {
+    name: "office",
+    volume: 0.3, // 30% volume (0.0 = silent, 1.0 = full volume)
+  },
   webhook: {
     url: VAPI_WEBHOOK_URL,
     secret: process.env.VAPI_WEBHOOK_SECRET,
@@ -251,6 +261,19 @@ IMPORTANT CALL MANAGEMENT:
           date: {
             type: "string",
             description: "Date to check availability for (YYYY-MM-DD)",
+          },
+        },
+      },
+    },
+    {
+      name: "staff_read",
+      description: "Get information about available staff members and their schedules",
+      parameters: {
+        type: "object",
+        properties: {
+          userId: {
+            type: "string",
+            description: "Specific user ID to get information for (optional)",
           },
         },
       },
