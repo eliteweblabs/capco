@@ -100,7 +100,7 @@ IMPORTANT CALL MANAGEMENT:
   // - Always end with a clear goodbye message`,
   maxDurationSeconds: 200, // 4 minutes max call (reduced from 5)
   endCallMessage: "Thank you for calling. Have a great day!",
-  endCallPhrases: ["goodbye", "bye", "thank you", "that's all", "done", "finished", "end call"],
+  endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
   backgroundSound: "office",
   functions: [
     {
