@@ -107,53 +107,129 @@ async function handleFunctionCall(functionCall: any) {
       );
     }
 
-    // Route to Cal.com integration for other functions
-    // Handle special cases for function name mapping
-    let type, action;
-    if (functionCall.name === "appointment_availability") {
-      type = "availability";
-      action = "read";
-    } else if (functionCall.name === "availability_read") {
-      type = "availability";
-      action = "read";
-    } else if (functionCall.name === "staff_read") {
-      type = "user";
-      action = "read";
-    } else {
-      type = functionCall.name.split("_")[0]; // Extract type from function name
-      action = functionCall.name.split("_")[1]; // Extract action from function name
+    // Route Cal.com function calls to the integration API
+    const calcomFunctions = ["staff_read", "appointment_availability", "create_booking"];
+    if (calcomFunctions.includes(functionCall.name)) {
+      console.log("🤖 [VAPI-WEBHOOK] Routing to Cal.com integration:", functionCall.name);
+
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      try {
+        // Map VAPI function calls to Cal.com integration actions
+        let action = "";
+        let params = {};
+
+        switch (functionCall.name) {
+          case "staff_read":
+            action = "get_users";
+            break;
+          case "appointment_availability":
+            action = "get_availability";
+            params = {
+              eventTypeId: functionCall.parameters.eventTypeId,
+              startDate: functionCall.parameters.startDate,
+              endDate: functionCall.parameters.endDate,
+            };
+            break;
+          case "create_booking":
+            action = "create_booking";
+            params = {
+              eventTypeId: functionCall.parameters.eventTypeId,
+              startTime: functionCall.parameters.startTime,
+              endTime: functionCall.parameters.endTime,
+              attendeeName: functionCall.parameters.attendeeName,
+              attendeeEmail: functionCall.parameters.attendeeEmail,
+              notes: functionCall.parameters.notes,
+            };
+            break;
+        }
+
+        const response = await fetch(
+          `${process.env.SITE_URL || "http://localhost:4321"}/api/vapi/cal-integration`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Vapi-System": "true",
+            },
+            body: JSON.stringify({
+              action,
+              ...params,
+            }),
+            signal: controller.signal,
+          }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`Cal.com integration failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("✅ [VAPI-WEBHOOK] Cal.com integration success:", result);
+
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
     }
 
-    const response = await fetch(`${process.env.SITE_URL}/api/vapi/cal-integration`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.VAPI_API_SECRET}`,
-      },
-      body: JSON.stringify({
-        type,
-        action,
-        data: functionCall.parameters,
+    // Handle other function calls
+    console.log(
+      "🤖 [VAPI-WEBHOOK] Function call received:",
+      functionCall.name,
+      functionCall.parameters
+    );
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Function call processed",
       }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Cal.com integration error: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log("🤖 [VAPI-WEBHOOK] Function call result:", result);
-
-    return new Response(JSON.stringify({ success: true, result }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (error) {
     console.error("❌ [VAPI-WEBHOOK] Function call error:", error);
-    return new Response(JSON.stringify({ error: "Function call failed" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+
+    // Handle timeout specifically
+    if (error.name === "AbortError") {
+      console.log("⏰ [VAPI-WEBHOOK] Function call timed out");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Function call timed out",
+          message:
+            "I'm having trouble accessing our scheduling system right now. Let me help you with general availability instead.",
+        }),
+        {
+          status: 200, // Return 200 to keep the call alive
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Function call failed",
+        message:
+          "I'm having trouble accessing our scheduling system right now. Let me help you with general availability instead.",
+      }),
+      {
+        status: 200, // Return 200 to keep the call alive
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
 
