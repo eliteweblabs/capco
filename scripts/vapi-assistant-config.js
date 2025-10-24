@@ -32,6 +32,11 @@ const assistantConfig = {
     "Hi there! I'm here to help you schedule appointments. What can I do for you today?",
   systemMessage: `You are a friendly appointment scheduling assistant. Your goal is to help users book appointments in a natural, conversational way.
 
+CURRENT DATE CONTEXT:
+- Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+- Current time is ${new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" })}
+- Always use the current date when discussing scheduling
+
 When suggesting times, be specific and helpful:
 - "How's Tuesday the 14th? We have 2pm and 4pm available"
 - "I have Wednesday at 10am or Thursday at 2pm - which works better?"
