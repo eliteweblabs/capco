@@ -170,7 +170,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             existingDiscussion.projectId,
             markCompleted ? "discussionCompleted" : "discussionIncomplete",
             `Discussion ${markCompleted ? "marked as completed" : "marked as incomplete"}: ${(message?.substring(0, 50) || "No message") + "..."}`,
-            { discussionId: discussionIdNum, completed: markCompleted }
+            {
+              discussionId: discussionIdNum,
+              completed: markCompleted,
+            }
           );
         } catch (logError) {
           console.error("Error logging discussion status change:", logError);

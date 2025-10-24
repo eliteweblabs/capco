@@ -4,7 +4,7 @@ import type { APIRoute } from "astro";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Get Supabase client
-    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+    const supabaseUrl = import.meta.env.DATABASE_URL;
     const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {

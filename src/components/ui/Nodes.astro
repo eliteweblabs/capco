@@ -58,12 +58,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
     inset: 0;
     background: radial-gradient(
       ellipse 50% 80% at 30% 40%,
-      rgba(255, 255, 255, 0.95) 0%,
-      rgba(255, 255, 255, 0.8) 20%,
-      rgba(255, 255, 255, 0.6) 40%,
-      rgba(255, 255, 255, 0.3) 60%,
-      rgba(255, 255, 255, 0.1) 80%,
-      transparent 100%
+      var(--color-background) 0%,
+      var(--color-background) 20%,
+      var(--color-background) 40%,
+      var(--color-background) 60%,
+      var(--color-background) 80%,
+      var(--color-background-dark) 100%
     );
     pointer-events: none;
     z-index: 10;
@@ -378,12 +378,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
   )
 }
 <script>
-  // Type declaration for window.IconStyles
+  // Type declaration for window.SimpleIcons
   declare global {
     interface Window {
-      IconStyles?: {
-        generateIconHTML: (name: string, preset: any) => string;
-        ICON_PRESETS: any;
+      SimpleIcons?: {
+        getIcon: (name: string, config?: any) => string;
+        SIMPLE_ICONS: Record<string, string>;
       };
     }
   }
@@ -436,10 +436,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
     async waitForIconSystem() {
       // Try to load the custom icon system if not already available
-      if (!window.CustomIcons) {
+      if (!window.SimpleIcons) {
         try {
           console.log("🔧 [ICON] Loading custom icon system synchronously...");
-          await import("../../lib/custom-icons-client.js");
+          await import("../../lib/simple-icons-client.js");
           console.log("🔧 [ICON] Custom icon system loaded successfully");
         } catch (error) {
           console.warn("Failed to load custom icon system:", error);
@@ -911,11 +911,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
         }
 
         console.log(`🔧 [ICON] Requesting icon: "${iconName}"`);
-        console.log(`🔧 [ICON] CustomIcons available:`, !!window.CustomIcons);
+        console.log(`🔧 [ICON] SimpleIcons available:`, !!window.SimpleIcons);
 
         // Use the custom icon system if available, otherwise fallback to simple SVG
-        if (window.CustomIcons && window.CustomIcons.getIcon) {
-          const iconHTML = window.CustomIcons.getIcon(iconName, {
+        if (window.SimpleIcons && window.SimpleIcons.getIcon) {
+          const iconHTML = window.SimpleIcons.getIcon(iconName, {
             size: 16,
             className: "text-primary-500 dark:text-primary-400",
           });
@@ -1417,12 +1417,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
   }
 
-  // TypeScript declaration for CustomIcons
+  // TypeScript declaration for SimpleIcons
   declare global {
     interface Window {
-      CustomIcons?: {
+      SimpleIcons?: {
         getIcon: (name: string, config?: any) => string;
-        CUSTOM_ICONS: Record<string, any>;
+        SIMPLE_ICONS: Record<string, string>;
       };
     }
   }
@@ -1432,13 +1432,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
     // Dynamically import the custom icon system
     try {
       console.log("🔧 [ICON] Loading custom icon system...");
-      await import("../../lib/custom-icons-client.js");
+      await import("../../lib/simple-icons-client.js");
       console.log("🔧 [ICON] Custom icon system loaded successfully");
-      console.log("🔧 [ICON] CustomIcons available:", !!window.CustomIcons);
-      if (window.CustomIcons) {
+      console.log("🔧 [ICON] SimpleIcons available:", !!window.SimpleIcons);
+      if (window.SimpleIcons) {
         console.log(
           "🔧 [ICON] Available icons:",
-          Object.keys(window.CustomIcons.CUSTOM_ICONS || {})
+          Object.keys(window.SimpleIcons.SIMPLE_ICONS || {})
         );
       }
     } catch (error) {

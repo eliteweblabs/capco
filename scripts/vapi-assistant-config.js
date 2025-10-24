@@ -8,7 +8,7 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 
-const VAPI_API_KEY = process.env.VAPI_API_KEY;
+const VAPI_API_KEY = process.env.VAPI_API_SECRET;
 const SITE_URL = process.env.SITE_URL || "http://localhost:4321";
 const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
 const CAL_WEBHOOK_URL = "https://calcom-web-app-production-fe0b.up.railway.app/api/webhooks";
@@ -21,7 +21,16 @@ const assistantConfig = {
     model: "gpt-4o-mini",
     temperature: 0.7,
     maxTokens: 1000,
-    systemMessage: `You are a friendly appointment scheduling assistant. Your goal is to help users book appointments in a natural, conversational way.
+  },
+  voice: {
+    provider: "11labs",
+    voiceId: "21m00Tcm4TlvDq8ikWAM", // Professional female voice
+    stability: 0.5,
+    similarityBoost: 0.8,
+  },
+  firstMessage:
+    "Hi there! I'm here to help you schedule appointments. What can I do for you today?",
+  systemMessage: `You are a friendly appointment scheduling assistant. Your goal is to help users book appointments in a natural, conversational way.
 
 When suggesting times, be specific and helpful:
 - "How's Tuesday the 14th? We have 2pm and 4pm available"
@@ -34,20 +43,23 @@ You can help with:
 - Reading appointments and availability
 - Creating, updating, and canceling appointments
 - Managing user accounts and profiles
-- Checking availability and scheduling`,
-  },
-  voice: {
-    provider: "elevenlabs",
-    voiceId: "21m00Tcm4TlvDq8ikWAM", // Professional female voice
-    stability: 0.5,
-    similarityBoost: 0.8,
-  },
-  firstMessage:
-    "Hi there! I'm here to help you schedule appointments. What can I do for you today?",
-  maxDurationSeconds: 300, // 5 minutes max call
+- Checking availability and scheduling
+
+IMPORTANT CALL MANAGEMENT:
+- Keep conversations focused and efficient
+- If the user seems confused or unresponsive, politely offer to end the call
+- After completing a task, ask if there's anything else, then end the call
+- Maximum conversation length: 3 minutes
+- If you detect silence for more than 10 seconds, politely end the call
+- Always end with a clear goodbye message`,
+  maxDurationSeconds: 180, // 3 minutes max call (reduced from 5)
   endCallMessage: "Thank you for calling. Have a great day!",
-  endCallPhrases: ["goodbye", "bye", "thank you", "that's all"],
+  endCallPhrases: ["goodbye", "bye", "thank you", "that's all", "done", "finished", "end call"],
   backgroundSound: "office",
+  webhook: {
+    url: VAPI_WEBHOOK_URL,
+    secret: process.env.VAPI_WEBHOOK_SECRET,
+  },
   functions: [
     {
       name: "appointment_read",
@@ -238,11 +250,20 @@ You can help with:
         },
       },
     },
+    {
+      name: "end_call",
+      description: "End the current call when task is complete or user requests",
+      parameters: {
+        type: "object",
+        properties: {
+          reason: {
+            type: "string",
+            description: "Reason for ending the call",
+          },
+        },
+      },
+    },
   ],
-  webhook: {
-    url: VAPI_WEBHOOK_URL,
-    secret: process.env.VAPI_WEBHOOK_SECRET,
-  },
 };
 
 // Create the assistant

@@ -3,6 +3,11 @@ import { checkAuth } from "./auth";
 import { supabase } from "./supabase";
 import { supabaseAdmin } from "./supabase-admin";
 
+// Extend globalThis to include currentUser
+declare global {
+  var currentUser: any;
+}
+
 export interface SimpleLogEntry {
   timestamp: string;
   action: string;
@@ -115,20 +120,38 @@ export class SimpleProjectLogger {
         };
         console.log("📝 [SIMPLE-LOGGER] Using system project for logging:", project);
       }
-      // Always try to get current user from cookies or metadata
+      // Always try to get current user - authenticate at the last minute
       let currentUser = null;
 
       // First, try to get user from metadata if provided
       if (metadata?.currentUser) {
         currentUser = metadata.currentUser;
       }
-      // Then try cookies if provided
+      // Try to extract user info from other metadata fields
+      else if (metadata?.changedBy || metadata?.userId) {
+        currentUser = {
+          email: metadata.changedBy || metadata.userId,
+          id: metadata.userId,
+        };
+      }
+      // Try cookies if provided
       else if (cookies) {
         try {
           const authResult = await checkAuth(cookies);
           currentUser = authResult.currentUser;
         } catch (error) {
           console.warn("📝 [SIMPLE-LOGGER] Could not authenticate user for logging:", error);
+        }
+      }
+      // Last resort: try to get user from global context if available
+      else {
+        try {
+          // Check if we have a global current user set by middleware
+          if (typeof globalThis !== "undefined" && globalThis.currentUser) {
+            currentUser = globalThis.currentUser;
+          }
+        } catch (error) {
+          // Silently fail - this is expected if not in request context
         }
       }
       // Extract user name from currentUser
@@ -266,9 +289,19 @@ export class SimpleProjectLogger {
       return `${firstName} ${lastName}`;
     }
 
+    // Try just firstName if available
+    if (firstName) {
+      return firstName;
+    }
+
     // Try email
     if (currentUser.email) {
       return currentUser.email;
+    }
+
+    // Try user ID as last resort
+    if (currentUser.id) {
+      return `User ${currentUser.id}`;
     }
 
     // Fallback
