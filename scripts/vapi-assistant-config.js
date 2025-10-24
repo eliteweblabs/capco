@@ -11,7 +11,6 @@ import fetch from "node-fetch";
 const VAPI_API_KEY = process.env.VAPI_API_SECRET;
 const SITE_URL = process.env.SITE_URL || "http://localhost:4321";
 const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
-const CAL_WEBHOOK_URL = "https://calcom-web-app-production-fe0b.up.railway.app/api/webhooks";
 
 // Assistant configuration
 const assistantConfig = {
@@ -21,15 +20,7 @@ const assistantConfig = {
     model: "claude-3-5-sonnet-20241022",
     temperature: 0.7,
     maxTokens: 1000,
-  },
-  voice: {
-    provider: "11labs",
-    voiceId: "21m00Tcm4TlvDq8ikWAM", // Professional female voice
-    stability: 0.5,
-    similarityBoost: 0.8,
-  },
-  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. I have several appointment times available this week - would you like to hear your options?`,
-  systemMessage: `You are a friendly appointment scheduling assistant for a company called ${process.env.GLOBAL_COMPANY_NAME}. ${process.env.GLOBAL_COMPANY_SLOGAN}. Your goal is to help users book appointments in a natural, conversational way.
+    systemPrompt: `You are a friendly appointment scheduling assistant for a company called ${process.env.GLOBAL_COMPANY_NAME}. ${process.env.GLOBAL_COMPANY_SLOGAN}. Your goal is to help users book appointments in a natural, conversational way.
 
 CURRENT DATE CONTEXT:
 - Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
@@ -64,17 +55,53 @@ IMPORTANT CALL MANAGEMENT:
 - Maximum conversation length: 4 minutes
 - If you detect silence for more than 10 seconds, politely end the call
 - Always end with a clear goodbye message`,
+  },
+  voice: {
+    provider: "11labs",
+    voiceId: "21m00Tcm4TlvDq8ikWAM", // Professional female voice
+    stability: 0.5,
+    similarityBoost: 0.8,
+  },
+  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. I have several appointment times available this week - would you like to hear your options?`,
+  //   systemPrompt: `You are a friendly appointment scheduling assistant for a company called ${process.env.GLOBAL_COMPANY_NAME}. ${process.env.GLOBAL_COMPANY_SLOGAN}. Your goal is to help users book appointments in a natural, conversational way.
+
+  // CURRENT DATE CONTEXT:
+  // - Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+  // - Current time is ${new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" })}
+  // - Always use the current date when discussing scheduling
+
+  // PROACTIVE BEHAVIOR:
+  // - IMMEDIATELY call staff_read() to get available staff members
+  // - IMMEDIATELY call appointment_availability() to get available time slots
+  // - Present 3-5 specific available times with staff names right away without announcing you're checking
+  // - Be specific: "I have Sarah available Tuesday at 2pm, John available Wednesday at 10am, or Sarah again Thursday at 3pm"
+  // - Don't wait for the user to ask - proactively offer times with staff information
+  // - Act as if you already have the availability and staff data ready
+
+  // When suggesting times, be specific and helpful:
+  // - "How's Tuesday the 14th? We have 2pm and 4pm available"
+  // - "I have Wednesday at 10am or Thursday at 2pm - which works better?"
+  // - "We're pretty booked this week, but I can do Monday at 3pm or Friday at 11am"
+
+  // Always be polite, confirm details, and ask clarifying questions when needed. Make the scheduling process feel natural and easy.
+
+  // You can help with:
+  // - Reading appointments and availability
+  // - Creating, updating, and canceling appointments
+  // - Managing user accounts and profiles
+  // - Checking availability and scheduling
+
+  // IMPORTANT CALL MANAGEMENT:
+  // - Keep conversations focused and efficient
+  // - If the user seems confused or unresponsive, politely offer to end the call
+  // - After completing a task, ask if there's anything else, then end the call
+  // - Maximum conversation length: 4 minutes
+  // - If you detect silence for more than 10 seconds, politely end the call
+  // - Always end with a clear goodbye message`,
   maxDurationSeconds: 200, // 4 minutes max call (reduced from 5)
   endCallMessage: "Thank you for calling. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "thank you", "that's all", "done", "finished", "end call"],
-  backgroundSound: {
-    name: "office",
-    volume: 0.3, // 30% volume (0.0 = silent, 1.0 = full volume)
-  },
-  webhook: {
-    url: VAPI_WEBHOOK_URL,
-    secret: process.env.VAPI_WEBHOOK_SECRET,
-  },
+  backgroundSound: "office",
   functions: [
     {
       name: "appointment_read",
