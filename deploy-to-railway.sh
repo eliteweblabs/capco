@@ -25,6 +25,11 @@ if [ ! -f ".railway/project.json" ]; then
 fi
 
 echo "📦 Building and deploying to Railway..."
+
+# Update VAPI assistant configuration before deployment
+echo "🤖 Updating VAPI assistant configuration..."
+npm run update-vapi
+
 railway up
 
 echo "✅ Deployment complete!"
