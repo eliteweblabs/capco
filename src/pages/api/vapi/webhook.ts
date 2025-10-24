@@ -126,17 +126,70 @@ async function handleFunctionCall(functionCall: any) {
             action = "get_users";
             break;
           case "appointment_availability":
+            // Validate required parameters
+            if (
+              !functionCall.parameters.eventTypeId ||
+              !functionCall.parameters.startDate ||
+              !functionCall.parameters.endDate
+            ) {
+              console.error(
+                "❌ [VAPI-WEBHOOK] Missing required parameters for appointment_availability:",
+                functionCall.parameters
+              );
+              throw new Error(
+                `Missing required parameters: ${[
+                  !functionCall.parameters.eventTypeId && "eventTypeId",
+                  !functionCall.parameters.startDate && "startDate",
+                  !functionCall.parameters.endDate && "endDate",
+                ]
+                  .filter(Boolean)
+                  .join(", ")}`
+              );
+            }
+            // Validate date format (YYYY-MM-DD)
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (
+              !dateRegex.test(functionCall.parameters.startDate) ||
+              !dateRegex.test(functionCall.parameters.endDate)
+            ) {
+              console.error("❌ [VAPI-WEBHOOK] Invalid date format:", functionCall.parameters);
+              throw new Error("Dates must be in YYYY-MM-DD format");
+            }
             action = "get_availability";
             params = {
-              eventTypeId: functionCall.parameters.eventTypeId,
+              eventTypeId: parseInt(functionCall.parameters.eventTypeId, 10),
               startDate: functionCall.parameters.startDate,
               endDate: functionCall.parameters.endDate,
             };
             break;
           case "create_booking":
+            // Validate required parameters
+            if (
+              !functionCall.parameters.eventTypeId ||
+              !functionCall.parameters.startTime ||
+              !functionCall.parameters.endTime ||
+              !functionCall.parameters.attendeeName ||
+              !functionCall.parameters.attendeeEmail
+            ) {
+              console.error(
+                "❌ [VAPI-WEBHOOK] Missing required parameters for create_booking:",
+                functionCall.parameters
+              );
+              throw new Error(
+                `Missing required parameters: ${[
+                  !functionCall.parameters.eventTypeId && "eventTypeId",
+                  !functionCall.parameters.startTime && "startTime",
+                  !functionCall.parameters.endTime && "endTime",
+                  !functionCall.parameters.attendeeName && "attendeeName",
+                  !functionCall.parameters.attendeeEmail && "attendeeEmail",
+                ]
+                  .filter(Boolean)
+                  .join(", ")}`
+              );
+            }
             action = "create_booking";
             params = {
-              eventTypeId: functionCall.parameters.eventTypeId,
+              eventTypeId: parseInt(functionCall.parameters.eventTypeId, 10),
               startTime: functionCall.parameters.startTime,
               endTime: functionCall.parameters.endTime,
               attendeeName: functionCall.parameters.attendeeName,

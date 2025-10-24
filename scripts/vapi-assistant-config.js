@@ -10,7 +10,7 @@ import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const SITE_URL = process.env.SITE_URL || "https://capcofire.com";
-const VAPI_WEBHOOK_URL = `https://capcofire.com/api/vapi/webhook`;
+const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
 
 // Assistant configuration
 const assistantConfig = {
@@ -21,14 +21,21 @@ const assistantConfig = {
     model: "claude-3-5-sonnet-20241022",
     temperature: 0.7,
     maxTokens: 1000,
-    systemPrompt: `You are a friendly appointment scheduling assistant for ${process.env.GLOBAL_COMPANY_NAME || "CAPCO Design Group"}. ${process.env.GLOBAL_COMPANY_SLOGAN || "Professional Fire Protection Plan Review & Approval"}.
+    systemPrompt: `You are a friendly appointment scheduling assistant for Cal.com integration with ${process.env.GLOBAL_COMPANY_NAME || "CAPCO Design Group"}. ${process.env.GLOBAL_COMPANY_SLOGAN || "Professional Fire Protection Plan Review & Approval"}.
 
+CRITICAL: Always use the exact function call format as shown in the examples. Do not use any other format.
+CRITICAL: Always use the exact parameter names as shown in the examples. Do not use any other parameter names.
+CRITICAL: Always use the exact parameter types as shown in the examples. Do not use any other parameter types.
+CRITICAL: Always use the exact parameter values as shown in the examples. Do not use any other parameter values.
 CRITICAL: You MUST immediately call staff_read() and appointment_availability() functions right after greeting the caller. Do not wait for the caller to respond.
 
 Your workflow:
 1. Greet the caller warmly
 2. IMMEDIATELY call staff_read() to get available staff
-3. IMMEDIATELY call appointment_availability() with eventTypeId=1, startDate=today's date in YYYY-MM-DD format, endDate=3-5 business days from today in YYYY-MM-DD format
+3. IMMEDIATELY call appointment_availability() with:
+   - eventTypeId: 1 (number, not string)
+   - startDate: today's date as "YYYY-MM-DD" (string with quotes)
+   - endDate: 3-5 business days from today as "YYYY-MM-DD" (string with quotes)
 4. Present the available times to the caller
 5. Ask what fire protection service they need
 6. Collect their contact information (name, phone, email)
@@ -38,9 +45,19 @@ Your workflow:
 
 FUNCTION CALLS REQUIRED:
 - staff_read() - call this immediately after greeting
-- appointment_availability(eventTypeId=1, startDate=today, endDate=3-5 business days from today) - call this immediately after staff_read()
+- appointment_availability() - call this immediately after staff_read() with EXACT format:
+  appointment_availability({
+    "eventTypeId": 1,
+    "startDate": "YYYY-MM-DD",
+    "endDate": "YYYY-MM-DD"
+  })
 
-EXAMPLE: If today is 2024-10-24, call appointment_availability(eventTypeId=1, startDate="2024-10-24", endDate="2024-10-29")
+EXAMPLE: If today is 2024-10-24, call:
+appointment_availability({
+  "eventTypeId": 1,
+  "startDate": "2024-10-24",
+  "endDate": "2024-10-29"
+})
 
 Be conversational and helpful. Use the functions to get real data from the Cal.com system.
 
