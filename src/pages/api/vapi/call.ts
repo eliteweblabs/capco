@@ -31,7 +31,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const vapiApiKey = process.env.VAPI_API_SECRET || "98d35715-e042-423f-a539-b7e36a5f113a";
+    const vapiApiKey = process.env.VAPI_API_KEY || "98d35715-e042-423f-a539-b7e36a5f113a";
     if (!vapiApiKey) {
       return new Response(
         JSON.stringify({

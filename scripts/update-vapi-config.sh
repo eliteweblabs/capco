@@ -6,8 +6,8 @@
 echo "🤖 Updating VAPI assistant configuration..."
 
 # Check if required environment variables are set
-if [ -z "$VAPI_API_SECRET" ]; then
-    echo "❌ Error: VAPI_API_SECRET environment variable is not set"
+if [ -z "$VAPI_API_KEY" ]; then
+    echo "❌ Error: VAPI_API_KEY environment variable is not set"
     echo "Please set it in your .env file or environment"
     exit 1
 fi
