@@ -17,8 +17,8 @@ const CAL_WEBHOOK_URL = "https://calcom-web-app-production-fe0b.up.railway.app/a
 const assistantConfig = {
   name: "Cal.com Assistant",
   model: {
-    provider: "openai",
-    model: "gpt-4o-mini",
+    provider: "anthropic",
+    model: "claude-3-5-sonnet-20241022",
     temperature: 0.7,
     maxTokens: 1000,
   },
