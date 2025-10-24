@@ -10,7 +10,7 @@ import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const SITE_URL = process.env.SITE_URL || "https://capcofire.com";
-const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
+const VAPI_WEBHOOK_URL = `https://capcofire.com/api/vapi/webhook`;
 
 // Assistant configuration
 const assistantConfig = {
