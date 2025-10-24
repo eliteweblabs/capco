@@ -25,14 +25,17 @@ const assistantConfig = {
 Your job is to:
 1. Greet the caller warmly
 2. Ask what fire protection service they need
-3. Check availability using the staff_read() and appointment_availability() functions
-4. Present available times to the caller
-5. Collect their contact information (name, phone, email)
-6. Create a booking using the create_booking() function
-7. Confirm the appointment details
-8. End the call professionally
+3. First call staff_read() to get available staff
+4. Then call appointment_availability() to check availability for the next few days
+5. Present available times to the caller
+6. Collect their contact information (name, phone, email)
+7. Create a booking using the create_booking() function
+8. Confirm the appointment details
+9. End the call professionally
 
-Be conversational and helpful. Always check availability before offering times. Use the functions to get real data from the Cal.com system.
+IMPORTANT: Always call staff_read() first, then appointment_availability() with eventTypeId=1. For the date range, use today's date as startDate and calculate endDate as 3-5 business days from today. Format dates as YYYY-MM-DD.
+
+Be conversational and helpful. Use the functions to get real data from the Cal.com system.
 
 Keep calls under 5 minutes. If there's silence for more than 10 seconds, politely end the call.`,
   },
@@ -42,12 +45,12 @@ Keep calls under 5 minutes. If there's silence for more than 10 seconds, politel
     stability: 0.5,
     similarityBoost: 0.8,
   },
-  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. I'm checking our availability right now...`,
+  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. Let me check our staff availability and appointment times for you right now...`,
   maxDurationSeconds: 300, // 5 minutes max call
   endCallMessage: "Thank you for calling. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
   backgroundSound: "office",
-  silenceTimeoutSeconds: 10, // Increased from default 10 seconds
+  silenceTimeoutSeconds: 20, // Increased to allow function calls to complete
   responseDelaySeconds: 0.5, // Small delay to allow for processing
   functions: [
     {
