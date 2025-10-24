@@ -3,9 +3,7 @@ import { Pool } from "pg";
 
 // Cal.com database connection
 const calcomDb = new Pool({
-  connectionString:
-    process.env.CALCOM_DATABASE_URL ||
-    "postgresql://postgres:xifiuamYNxidNaquKPxegVlyztMwLIGy@postgres-production-5af06.up.railway.app:5432/railway",
+  connectionString: process.env.CALCOM_DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
