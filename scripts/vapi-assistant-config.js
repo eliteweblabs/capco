@@ -243,10 +243,12 @@ async function main() {
   const assistantId = "3ae002d5-fe9c-4870-8034-4c66a9b43b51"; // Hardcoded assistant ID
 
   if (!VAPI_API_KEY) {
-    console.error("❌ [VAPI-CONFIG] VAPI_API_KEY environment variable is required");
-    console.error("❌ [VAPI-CONFIG] Please set one of these in Railway global variables:");
-    console.error("   - VAPI_API_KEY=your_vapi_api_key");
-    process.exit(1);
+    console.warn("⚠️ [VAPI-CONFIG] VAPI_API_KEY environment variable not found");
+    console.warn("⚠️ [VAPI-CONFIG] Skipping VAPI assistant configuration update");
+    console.warn(
+      "⚠️ [VAPI-CONFIG] This is normal during build process - assistant will use existing configuration"
+    );
+    return;
   }
 
   if (!VAPI_WEBHOOK_URL) {
