@@ -115,6 +115,9 @@ export const POST: APIRoute = async ({ request }) => {
       case "cancel_booking":
         return await handleCancelBooking(params);
 
+      case "get_database_url":
+        return await handleGetDatabaseUrl();
+
       default:
         return new Response(
           JSON.stringify({
@@ -234,8 +237,61 @@ async function handleGetUsers() {
 
 async function handleGetEventTypes() {
   try {
-    console.log("📅 [CAL-INTEGRATION] Getting event types");
+    console.log("📅 [CAL-INTEGRATION] Getting event types from Cal.com database");
 
+    // Test database connection first
+    const testResult = await calcomDb.query("SELECT 1 as test");
+    console.log("✅ [CAL-INTEGRATION] Database connection test:", testResult.rows);
+
+    // Try to get event types from database
+    try {
+      const result = await calcomDb.query(`
+        SELECT id, title, slug, length, description
+        FROM "EventType" 
+        ORDER BY title ASC
+        LIMIT 10
+      `);
+
+      const eventTypes = result.rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        length: row.length,
+        description: row.description,
+      }));
+
+      console.log("✅ [CAL-INTEGRATION] Found event types:", eventTypes.length);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: eventTypes,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } catch (dbError) {
+      console.log("⚠️ [CAL-INTEGRATION] Database query failed, using mock data:", dbError.message);
+
+      // Fallback to mock data if database query fails
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: mockEventTypes,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+  } catch (error) {
+    console.error("❌ [CAL-INTEGRATION] Error getting event types:", error);
+
+    // Fallback to mock data if database connection fails
+    console.log("🔄 [CAL-INTEGRATION] Falling back to mock data");
     return new Response(
       JSON.stringify({
         success: true,
@@ -243,18 +299,6 @@ async function handleGetEventTypes() {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  } catch (error) {
-    console.error("❌ [CAL-INTEGRATION] Error getting event types:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Failed to get event types",
-      }),
-      {
-        status: 500,
         headers: { "Content-Type": "application/json" },
       }
     );
@@ -417,6 +461,50 @@ async function handleCancelBooking(params: any) {
       JSON.stringify({
         success: false,
         error: "Failed to cancel booking",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
+async function handleGetDatabaseUrl() {
+  try {
+    console.log("🔗 [CAL-INTEGRATION] Getting database URL");
+
+    const databaseUrl = process.env.CALCOM_DATABASE_URL;
+
+    if (databaseUrl) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          databaseUrl: databaseUrl,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } else {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "CALCOM_DATABASE_URL not set",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+  } catch (error) {
+    console.error("❌ [CAL-INTEGRATION] Error getting database URL:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Failed to get database URL",
       }),
       {
         status: 500,

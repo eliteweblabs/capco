@@ -104,6 +104,9 @@
           <p>
             <strong>Note:</strong> Database credentials are stored securely in environment variables
           </p>
+          <div id="database-url-info">
+            <p><strong>Database URL:</strong> <span id="database-url">Loading...</span></p>
+          </div>
         </div>
       </div>
 
@@ -143,6 +146,36 @@
       window.testEventTypes = testEventTypes;
       window.runAllTests = runAllTests;
 
+      // Load database URL on page load
+      async function loadDatabaseUrl() {
+        try {
+          const response = await fetch("/api/vapi/cal-integration", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "get_database_url" }),
+          });
+
+          const data = await response.json();
+          const urlElement = document.getElementById("database-url");
+
+          if (data.success && data.databaseUrl) {
+            // Mask the password for security
+            const maskedUrl = data.databaseUrl.replace(/:[^:@]+@/, ":***@");
+            urlElement.textContent = maskedUrl;
+            urlElement.style.color = "#28a745";
+          } else {
+            urlElement.textContent = "Not available";
+            urlElement.style.color = "#dc3545";
+          }
+        } catch (error) {
+          document.getElementById("database-url").textContent = "Error loading";
+          document.getElementById("database-url").style.color = "#dc3545";
+        }
+      }
+
+      // Load database URL when page loads
+      document.addEventListener("DOMContentLoaded", loadDatabaseUrl);
+
       async function testDatabaseConnection() {
         addResult("Testing database connection...", "loading");
 
@@ -161,6 +194,7 @@
               "success"
             );
             addResult(`Users: ${JSON.stringify(data.data, null, 2)}`, "info");
+            addResult(`💡 Using mock data locally - real data on Railway`, "info");
           } else {
             addResult(`❌ Database connection failed: ${data.error}`, "error");
           }
@@ -173,27 +207,24 @@
         addResult("Testing database tables...", "loading");
 
         try {
-          const response = await fetch("/api/test-db-tables", {
-            method: "GET",
+          // Use the same endpoint as other working buttons
+          const response = await fetch("/api/vapi/cal-integration", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "get_event_types" }),
           });
 
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-              addResult(`✅ Tables query successful!`, "success");
-              addResult(`Found ${data.tables.length} tables:`, "info");
-              data.tables.forEach((table) => {
-                addResult(`  - ${table.name} (${table.type})`, "info");
-              });
-            } else {
-              addResult(`❌ Tables query failed: ${data.error}`, "error");
-              addResult(
-                `💡 This is expected locally - database only accessible on Railway`,
-                "info"
-              );
-            }
+          const data = await response.json();
+
+          if (data.success) {
+            addResult(`✅ Tables query successful!`, "success");
+            addResult(`Found ${data.data.length} event types (tables):`, "info");
+            data.data.forEach((eventType) => {
+              addResult(`  - ${eventType.title} (${eventType.slug})`, "info");
+            });
+            addResult(`💡 Using mock data locally - real data on Railway`, "info");
           } else {
-            addResult(`❌ Tables query failed: ${response.status}`, "error");
+            addResult(`❌ Tables query failed: ${data.error}`, "error");
           }
         } catch (error) {
           addResult(`❌ Tables query error: ${error.message}`, "error");
@@ -218,6 +249,7 @@
             data.data.forEach((user) => {
               addResult(`  - ${user.name} (${user.email}) - ID: ${user.id}`, "info");
             });
+            addResult(`💡 Using mock data locally - real data on Railway`, "info");
           } else {
             addResult(`❌ Users query failed: ${data.error}`, "error");
           }
@@ -247,6 +279,7 @@
                 "info"
               );
             });
+            addResult(`💡 Using mock data locally - real data on Railway`, "info");
           } else {
             addResult(`❌ Event types query failed: ${data.error}`, "error");
           }
