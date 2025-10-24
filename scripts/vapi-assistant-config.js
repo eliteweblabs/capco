@@ -47,7 +47,7 @@ Keep calls under 5 minutes. If there's silence for more than 10 seconds, politel
   endCallMessage: "Thank you for calling. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
   backgroundSound: "office",
-  silenceTimeoutSeconds: 15, // Increased from default 10 seconds
+  silenceTimeoutSeconds: 10, // Increased from default 10 seconds
   responseDelaySeconds: 0.5, // Small delay to allow for processing
   functions: [
     {
