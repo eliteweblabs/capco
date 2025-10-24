@@ -136,6 +136,13 @@
           .join("");
       }
 
+      // Define all functions at the top level
+      window.testDatabaseConnection = testDatabaseConnection;
+      window.testTables = testTables;
+      window.testUsers = testUsers;
+      window.testEventTypes = testEventTypes;
+      window.runAllTests = runAllTests;
+
       async function testDatabaseConnection() {
         addResult("Testing database connection...", "loading");
 
@@ -172,8 +179,19 @@
 
           if (response.ok) {
             const data = await response.json();
-            addResult(`✅ Tables query successful!`, "success");
-            addResult(`Available tables: ${JSON.stringify(data.tables, null, 2)}`, "info");
+            if (data.success) {
+              addResult(`✅ Tables query successful!`, "success");
+              addResult(`Found ${data.tables.length} tables:`, "info");
+              data.tables.forEach((table) => {
+                addResult(`  - ${table.name} (${table.type})`, "info");
+              });
+            } else {
+              addResult(`❌ Tables query failed: ${data.error}`, "error");
+              addResult(
+                `💡 This is expected locally - database only accessible on Railway`,
+                "info"
+              );
+            }
           } else {
             addResult(`❌ Tables query failed: ${response.status}`, "error");
           }
