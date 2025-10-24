@@ -46,7 +46,7 @@ SITE_URL=https://your-domain.com
 ```
 
 3. **Configure Cal.com Webhooks**
-   - Go to your Cal.com instance: https://calcom-web-app-production-fe0b.up.railway.app/settings/developer
+   - Go to your Cal.com instance: https://calcom-web-app-production-0b16.up.railway.app/settings/developer
    - Add webhook URL: `https://your-domain.com/api/cal/webhook`
    - Select events: `BOOKING_CREATED`, `BOOKING_RESCHEDULED`, `BOOKING_CANCELLED`, `BOOKING_CONFIRMED`
 
@@ -266,7 +266,7 @@ psql "$SUPABASE_URL" -c "SELECT COUNT(*) FROM appointments;"
 
 - [Vapi.ai Documentation](https://docs.vapi.ai/)
 - [Cal.com API Reference](https://cal.com/docs/api-reference)
-- [Your Cal.com Instance](https://calcom-web-app-production-fe0b.up.railway.app/)
+- [Your Cal.com Instance](https://calcom-web-app-production-0b16.up.railway.app/)
 - [Vapi.ai Dashboard](https://dashboard.vapi.ai/)
 
 ## 🆘 Support

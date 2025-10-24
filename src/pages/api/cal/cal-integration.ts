@@ -31,7 +31,7 @@ export const POST: APIRoute = async ({ request }) => {
     } = body;
 
     // Cal.com API configuration
-    const calComUrl = "https://calcom-web-app-production-fe0b.up.railway.app";
+    const calComUrl = "https://calcom-web-app-production-0b16.up.railway.app";
     const calApiKey = import.meta.env.CAL_API_KEY; // You'll need to set this in your environment
 
     if (!calApiKey) {

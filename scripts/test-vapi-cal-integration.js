@@ -17,7 +17,7 @@ async function testCalComAPI() {
 
   try {
     const response = await fetch(
-      "https://calcom-web-app-production-fe0b.up.railway.app/api/users",
+      "https://calcom-web-app-production-0b16.up.railway.app/api/users",
       {
         headers: {
           Authorization: `Bearer ${CAL_API_KEY}`,
