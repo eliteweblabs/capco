@@ -74,20 +74,33 @@ const mockEventTypes: CalComEventType[] = [
   },
 ];
 
-const mockAvailability: CalComAvailability[] = [
-  {
-    date: "2024-01-15",
-    slots: ["09:00", "10:00", "11:00", "14:00", "15:00"],
-  },
-  {
-    date: "2024-01-16",
-    slots: ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00"],
-  },
-  {
-    date: "2024-01-17",
-    slots: ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"],
-  },
-];
+// Generate mock availability data with ISO timestamps
+function generateMockAvailability(dateFrom: string, dateTo: string): CalComAvailability[] {
+  const start = new Date(dateFrom);
+  const end = new Date(dateTo);
+  const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+  return Array.from({ length: days }).map((_, i) => {
+    const date = new Date(start);
+    date.setDate(date.getDate() + i);
+    const dateStr = date.toISOString().split("T")[0];
+
+    // Generate slots from 9 AM to 5 PM every 30 minutes
+    const slots = [];
+    for (let hour = 9; hour < 17; hour++) {
+      for (let minute of [0, 30]) {
+        const slotDate = new Date(date);
+        slotDate.setHours(hour, minute, 0, 0);
+        slots.push(slotDate.toISOString());
+      }
+    }
+
+    return {
+      date: dateStr,
+      slots,
+    };
+  });
+}
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -272,7 +285,8 @@ async function handleGetEventTypes() {
           headers: { "Content-Type": "application/json" },
         }
       );
-    } catch (dbError) {
+    } catch (error: unknown) {
+      const dbError = error as Error;
       console.log("⚠️ [CAL-INTEGRATION] Database query failed, using mock data:", dbError.message);
 
       // Fallback to mock data if database query fails
@@ -307,8 +321,8 @@ async function handleGetEventTypes() {
 
 async function handleGetAvailability(params: any) {
   try {
-    const { eventTypeId, startDate, endDate } = params;
-    console.log("📊 [CAL-INTEGRATION] Getting availability:", { eventTypeId, startDate, endDate });
+    const { dateFrom, dateTo } = params;
+    console.log("📊 [CAL-INTEGRATION] Getting availability:", { dateFrom, dateTo });
 
     // Test database connection first
     const testResult = await calcomDb.query("SELECT 1 as test");
@@ -319,32 +333,47 @@ async function handleGetAvailability(params: any) {
       // Query for available time slots in the date range
       const result = await calcomDb.query(
         `
+        WITH business_hours AS (
+          -- Generate time slots every 30 minutes from 9 AM to 5 PM
+          SELECT generate_series(
+            date_trunc('day', $1::timestamptz) + interval '9 hours',
+            date_trunc('day', $2::timestamptz) + interval '17 hours',
+            interval '30 minutes'
+          ) as slot_start
+        ),
+        booked_slots AS (
+          -- Get all booked slots
+          SELECT start_time, end_time
+          FROM "Booking"
+          WHERE start_time >= $1::timestamptz
+          AND end_time <= $2::timestamptz
+          AND status = 'confirmed'
+        )
         SELECT 
-          DATE(start_time) as date,
-          EXTRACT(HOUR FROM start_time) as hour,
-          EXTRACT(MINUTE FROM start_time) as minute
-        FROM "Booking" 
-        WHERE start_time >= $1::date 
-        AND start_time < $2::date + INTERVAL '1 day'
-        AND status = 'confirmed'
-        ORDER BY start_time
+          slot_start AT TIME ZONE 'UTC' as available_time
+        FROM business_hours
+        WHERE NOT EXISTS (
+          SELECT 1 FROM booked_slots
+          WHERE slot_start >= start_time
+          AND slot_start < end_time
+        )
+        ORDER BY slot_start;
       `,
-        [startDate, endDate]
+        [dateFrom, dateTo]
       );
 
-      // Group by date and create time slots
+      // Group slots by date
       const availabilityByDate: { [key: string]: string[] } = {};
 
       result.rows.forEach((row) => {
-        const date = row.date.toISOString().split("T")[0];
-        const time = `${row.hour.toString().padStart(2, "0")}:${row.minute.toString().padStart(2, "0")}`;
+        const availableTime = new Date(row.available_time);
+        const date = availableTime.toISOString().split("T")[0];
+        const time = availableTime.toISOString();
 
         if (!availabilityByDate[date]) {
           availabilityByDate[date] = [];
         }
-        if (!availabilityByDate[date].includes(time)) {
-          availabilityByDate[date].push(time);
-        }
+        availabilityByDate[date].push(time);
       });
 
       // Convert to the expected format
@@ -365,10 +394,13 @@ async function handleGetAvailability(params: any) {
           headers: { "Content-Type": "application/json" },
         }
       );
-    } catch (dbError) {
+    } catch (error: unknown) {
+      const dbError = error as Error;
       console.log("⚠️ [CAL-INTEGRATION] Database query failed, using mock data:", dbError.message);
 
-      // Fallback to mock data if database query fails
+      // Generate mock data with proper ISO timestamps
+      const mockAvailability = generateMockAvailability(params.dateFrom, params.dateTo);
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -383,8 +415,9 @@ async function handleGetAvailability(params: any) {
   } catch (error) {
     console.error("❌ [CAL-INTEGRATION] Error getting availability:", error);
 
-    // Fallback to mock data if database connection fails
-    console.log("🔄 [CAL-INTEGRATION] Falling back to mock data");
+    // Generate mock data with proper ISO timestamps
+    const mockAvailability = generateMockAvailability(params.dateFrom, params.dateTo);
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -400,14 +433,12 @@ async function handleGetAvailability(params: any) {
 
 async function handleCreateBooking(params: any) {
   try {
-    const { eventTypeId, startTime, endTime, attendeeName, attendeeEmail, notes } = params;
+    const { start, name, email, smsReminderNumber } = params;
     console.log("📝 [CAL-INTEGRATION] Creating booking:", {
-      eventTypeId,
-      startTime,
-      endTime,
-      attendeeName,
-      attendeeEmail,
-      notes,
+      start,
+      name,
+      email,
+      smsReminderNumber,
     });
 
     // Test database connection first
@@ -416,6 +447,11 @@ async function handleCreateBooking(params: any) {
 
     // Try to create booking in database
     try {
+      // Calculate end time (30 minutes after start)
+      const startDate = new Date(start);
+      const endDate = new Date(startDate.getTime() + 30 * 60000);
+      const end = endDate.toISOString();
+
       const result = await calcomDb.query(
         `
         INSERT INTO "Booking" (
@@ -423,21 +459,19 @@ async function handleCreateBooking(params: any) {
           start_time,
           end_time,
           status,
-          event_type_id,
-          notes,
+          description,
           created_at,
           updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, NOW(), NOW()
+          $1, $2, $3, $4, $5, NOW(), NOW()
         ) RETURNING id, title, start_time, end_time, status
       `,
         [
-          `Fire Protection Consultation - ${attendeeName}`,
-          startTime,
-          endTime,
+          `Fire Protection Consultation - ${name}`,
+          start,
+          end,
           "confirmed",
-          eventTypeId,
-          notes || `Contact: ${attendeeName} (${attendeeEmail})`,
+          `Contact: ${name} (${email})${smsReminderNumber ? `, Phone: ${smsReminderNumber}` : ""}`,
         ]
       );
 
@@ -450,13 +484,14 @@ async function handleCreateBooking(params: any) {
           data: {
             id: booking.id,
             title: booking.title,
-            startTime: booking.start_time,
-            endTime: booking.end_time,
+            start: booking.start_time,
+            end: booking.end_time,
             status: booking.status,
             attendees: [
               {
-                name: attendeeName,
-                email: attendeeEmail,
+                name,
+                email,
+                phone: smsReminderNumber,
               },
             ],
           },
@@ -466,23 +501,30 @@ async function handleCreateBooking(params: any) {
           headers: { "Content-Type": "application/json" },
         }
       );
-    } catch (dbError) {
+    } catch (error: unknown) {
+      const dbError = error as Error;
       console.log(
         "⚠️ [CAL-INTEGRATION] Database insert failed, using mock booking:",
         dbError.message
       );
 
+      // Calculate end time for mock booking
+      const startDate = new Date(start);
+      const endDate = new Date(startDate.getTime() + 30 * 60000);
+      const end = endDate.toISOString();
+
       // Fallback to mock booking if database insert fails
       const mockBooking = {
         id: Math.floor(Math.random() * 1000),
         title: "Fire Protection Consultation",
-        startTime,
-        endTime,
+        start,
+        end,
         status: "confirmed",
         attendees: [
           {
-            name: attendeeName,
-            email: attendeeEmail,
+            name,
+            email,
+            phone: smsReminderNumber,
           },
         ],
       };
@@ -501,18 +543,24 @@ async function handleCreateBooking(params: any) {
   } catch (error) {
     console.error("❌ [CAL-INTEGRATION] Error creating booking:", error);
 
+    // Calculate end time for mock booking
+    const startDate = new Date(params.start);
+    const endDate = new Date(startDate.getTime() + 30 * 60000);
+    const end = endDate.toISOString();
+
     // Fallback to mock booking if database connection fails
     console.log("🔄 [CAL-INTEGRATION] Falling back to mock booking");
     const mockBooking = {
       id: Math.floor(Math.random() * 1000),
       title: "Fire Protection Consultation",
-      startTime: params.startTime,
-      endTime: params.endTime,
+      start: params.start,
+      end,
       status: "confirmed",
       attendees: [
         {
-          name: params.attendeeName,
-          email: params.attendeeEmail,
+          name: params.name,
+          email: params.email,
+          phone: params.smsReminderNumber,
         },
       ],
     };

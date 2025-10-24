@@ -30,7 +30,12 @@ interface VapiWebhookData {
     };
   };
   message?: {
-    type: "transcript" | "function-call" | "status-update";
+    type:
+      | "transcript"
+      | "function-call"
+      | "status-update"
+      | "speech-update"
+      | "conversation-update";
     transcript?: {
       role: "user" | "assistant";
       message: string;
@@ -40,10 +45,18 @@ interface VapiWebhookData {
       name: string;
       parameters: any;
     };
+    speech?: {
+      text: string;
+      role: "user" | "assistant";
+    };
+    conversation?: {
+      status: string;
+      message: string;
+    };
   };
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request }): Promise<Response> => {
   try {
     const body: VapiWebhookData = await request.json();
     console.log("🤖 [VAPI-WEBHOOK] Received webhook:", body);
@@ -57,10 +70,25 @@ export const POST: APIRoute = async ({ request }) => {
           return await handleTranscript(body.message.transcript);
         case "status-update":
           return await handleStatusUpdate(body.call);
+        case "speech-update":
+          // Speech updates are informational only, just acknowledge them
+          console.log("🗣️ [VAPI-WEBHOOK] Speech update:", body.message.speech);
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        case "conversation-update":
+          // Conversation updates are informational only, just acknowledge them
+          console.log("💬 [VAPI-WEBHOOK] Conversation update:", body.message.conversation);
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
         default:
           console.log("🤖 [VAPI-WEBHOOK] Unknown message type:", body.message.type);
-          return new Response(JSON.stringify({ success: false, error: "Unknown message type" }), {
-            status: 400,
+          // Return 200 instead of 400 to keep the call alive
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
             headers: { "Content-Type": "application/json" },
           });
       }
@@ -85,8 +113,13 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 // Handle function calls from Vapi.ai
-async function handleFunctionCall(functionCall: any) {
-  if (!functionCall) return;
+async function handleFunctionCall(functionCall: any): Promise<Response> {
+  if (!functionCall) {
+    return new Response(JSON.stringify({ success: false, error: "No function call provided" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   console.log("🤖 [VAPI-WEBHOOK] Function call:", functionCall.name, functionCall.parameters);
 
@@ -108,7 +141,7 @@ async function handleFunctionCall(functionCall: any) {
     }
 
     // Route Cal.com function calls to the integration API
-    const calcomFunctions = ["staff_read", "appointment_availability", "create_booking"];
+    const calcomFunctions = ["checkAvailability", "bookAppointment"];
     if (calcomFunctions.includes(functionCall.name)) {
       console.log("🤖 [VAPI-WEBHOOK] Routing to Cal.com integration:", functionCall.name);
 
@@ -121,80 +154,87 @@ async function handleFunctionCall(functionCall: any) {
         let action = "";
         let params = {};
 
+        // Validate date format (ISO with timezone)
+        const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
         switch (functionCall.name) {
-          case "staff_read":
-            action = "get_users";
-            break;
-          case "appointment_availability":
+          case "checkAvailability":
             // Validate required parameters
-            if (
-              !functionCall.parameters.eventTypeId ||
-              !functionCall.parameters.startDate ||
-              !functionCall.parameters.endDate
-            ) {
+            if (!functionCall.parameters.dateFrom || !functionCall.parameters.dateTo) {
               console.error(
-                "❌ [VAPI-WEBHOOK] Missing required parameters for appointment_availability:",
+                "❌ [VAPI-WEBHOOK] Missing required parameters for checkAvailability:",
                 functionCall.parameters
               );
               throw new Error(
                 `Missing required parameters: ${[
-                  !functionCall.parameters.eventTypeId && "eventTypeId",
-                  !functionCall.parameters.startDate && "startDate",
-                  !functionCall.parameters.endDate && "endDate",
+                  !functionCall.parameters.dateFrom && "dateFrom",
+                  !functionCall.parameters.dateTo && "dateTo",
                 ]
                   .filter(Boolean)
                   .join(", ")}`
               );
             }
-            // Validate date format (YYYY-MM-DD)
-            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            // Validate date format (ISO with timezone)
             if (
-              !dateRegex.test(functionCall.parameters.startDate) ||
-              !dateRegex.test(functionCall.parameters.endDate)
+              !isoDateRegex.test(functionCall.parameters.dateFrom) ||
+              !isoDateRegex.test(functionCall.parameters.dateTo)
             ) {
               console.error("❌ [VAPI-WEBHOOK] Invalid date format:", functionCall.parameters);
-              throw new Error("Dates must be in YYYY-MM-DD format");
+              throw new Error(
+                "Dates must be in ISO format with timezone (e.g., 2024-10-24T00:00:00.000Z)"
+              );
             }
             action = "get_availability";
             params = {
-              eventTypeId: parseInt(functionCall.parameters.eventTypeId, 10),
-              startDate: functionCall.parameters.startDate,
-              endDate: functionCall.parameters.endDate,
+              dateFrom: functionCall.parameters.dateFrom,
+              dateTo: functionCall.parameters.dateTo,
             };
             break;
-          case "create_booking":
+          case "bookAppointment":
             // Validate required parameters
             if (
-              !functionCall.parameters.eventTypeId ||
-              !functionCall.parameters.startTime ||
-              !functionCall.parameters.endTime ||
-              !functionCall.parameters.attendeeName ||
-              !functionCall.parameters.attendeeEmail
+              !functionCall.parameters.start ||
+              !functionCall.parameters.name ||
+              !functionCall.parameters.email
             ) {
               console.error(
-                "❌ [VAPI-WEBHOOK] Missing required parameters for create_booking:",
+                "❌ [VAPI-WEBHOOK] Missing required parameters for bookAppointment:",
                 functionCall.parameters
               );
               throw new Error(
                 `Missing required parameters: ${[
-                  !functionCall.parameters.eventTypeId && "eventTypeId",
-                  !functionCall.parameters.startTime && "startTime",
-                  !functionCall.parameters.endTime && "endTime",
-                  !functionCall.parameters.attendeeName && "attendeeName",
-                  !functionCall.parameters.attendeeEmail && "attendeeEmail",
+                  !functionCall.parameters.start && "start",
+                  !functionCall.parameters.name && "name",
+                  !functionCall.parameters.email && "email",
                 ]
                   .filter(Boolean)
                   .join(", ")}`
               );
             }
+            // Validate date format (ISO with timezone)
+            if (!isoDateRegex.test(functionCall.parameters.start)) {
+              console.error("❌ [VAPI-WEBHOOK] Invalid date format:", functionCall.parameters);
+              throw new Error(
+                "Start time must be in ISO format with timezone (e.g., 2024-10-24T14:00:00.000Z)"
+              );
+            }
+            // Validate phone number format if provided
+            if (functionCall.parameters.smsReminderNumber) {
+              const phoneRegex = /^\+\d{10,15}$/;
+              if (!phoneRegex.test(functionCall.parameters.smsReminderNumber)) {
+                console.error(
+                  "❌ [VAPI-WEBHOOK] Invalid phone number format:",
+                  functionCall.parameters
+                );
+                throw new Error("Phone number must be in E.164 format (e.g., +12345678900)");
+              }
+            }
             action = "create_booking";
             params = {
-              eventTypeId: parseInt(functionCall.parameters.eventTypeId, 10),
-              startTime: functionCall.parameters.startTime,
-              endTime: functionCall.parameters.endTime,
-              attendeeName: functionCall.parameters.attendeeName,
-              attendeeEmail: functionCall.parameters.attendeeEmail,
-              notes: functionCall.parameters.notes,
+              start: functionCall.parameters.start,
+              name: functionCall.parameters.name,
+              email: functionCall.parameters.email,
+              smsReminderNumber: functionCall.parameters.smsReminderNumber,
             };
             break;
         }
@@ -255,7 +295,7 @@ async function handleFunctionCall(functionCall: any) {
     console.error("❌ [VAPI-WEBHOOK] Function call error:", error);
 
     // Handle timeout specifically
-    if (error.name === "AbortError") {
+    if (error instanceof Error && error.name === "AbortError") {
       console.log("⏰ [VAPI-WEBHOOK] Function call timed out");
       return new Response(
         JSON.stringify({
@@ -287,8 +327,13 @@ async function handleFunctionCall(functionCall: any) {
 }
 
 // Handle transcript messages
-async function handleTranscript(transcript: any) {
-  if (!transcript) return;
+async function handleTranscript(transcript: any): Promise<Response> {
+  if (!transcript) {
+    return new Response(JSON.stringify({ success: false, error: "No transcript provided" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   console.log("🤖 [VAPI-WEBHOOK] Transcript:", transcript.role, transcript.message);
 
