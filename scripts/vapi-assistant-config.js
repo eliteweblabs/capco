@@ -8,13 +8,14 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 
-const VAPI_API_KEY = process.env.VAPI_API_SECRET;
+const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const SITE_URL = process.env.SITE_URL || "http://localhost:4321";
 const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
 
 // Assistant configuration
 const assistantConfig = {
   name: "Cal.com Assistant",
+  serverUrl: VAPI_WEBHOOK_URL,
   model: {
     provider: "anthropic",
     model: "claude-3-5-sonnet-20241022",
@@ -243,6 +244,8 @@ async function main() {
 
   if (!VAPI_API_KEY) {
     console.error("❌ [VAPI-CONFIG] VAPI_API_KEY environment variable is required");
+    console.error("❌ [VAPI-CONFIG] Please set one of these in Railway global variables:");
+    console.error("   - VAPI_API_KEY=your_vapi_api_key");
     process.exit(1);
   }
 
