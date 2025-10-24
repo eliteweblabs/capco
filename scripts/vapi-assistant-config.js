@@ -22,43 +22,40 @@ const assistantConfig = {
     model: "claude-3-5-sonnet-20241022",
     temperature: 0.7,
     maxTokens: 1000,
-    systemPrompt: `You are a friendly appointment scheduling assistant for Cal.com integration with ${process.env.GLOBAL_COMPANY_NAME || "CAPCO Design Group"}. ${process.env.GLOBAL_COMPANY_SLOGAN || "Professional Fire Protection Plan Review & Approval"}.
+    systemPrompt: `You are a friendly appointment scheduling assistant for ${process.env.GLOBAL_COMPANY_NAME || "CAPCO Design Group"}. ${process.env.GLOBAL_COMPANY_SLOGAN || "Professional Fire Protection Plan Review & Approval"}.
 
-CRITICAL: Always use the exact function call format as shown in the examples. Do not use any other format.
-CRITICAL: Always use the exact parameter names as shown in the examples. Do not use any other parameter names.
-CRITICAL: Always use the exact parameter types as shown in the examples. Do not use any other parameter types.
-CRITICAL: Always use the exact parameter values as shown in the examples. Do not use any other parameter values.
-CRITICAL: You MUST immediately call staff_read() and appointment_availability() functions right after greeting the caller. Do not wait for the caller to respond.
+CRITICAL: You must follow this exact format for function calls:
+
+1. To check availability:
+checkAvailability({
+  "dateFrom": "2024-10-24T00:00:00.000Z",
+  "dateTo": "2024-10-29T23:59:59.999Z"
+})
+
+2. To book an appointment:
+bookAppointment({
+  "start": "2024-10-24T14:00:00.000Z",
+  "name": "John Smith",
+  "email": "john@example.com",
+  "smsReminderNumber": "+1234567890"
+})
 
 Your workflow:
 1. Greet the caller warmly
-2. IMMEDIATELY call staff_read() to get available staff
-3. IMMEDIATELY call appointment_availability() with:
-   - eventTypeId: 1 (number, not string)
-   - startDate: today's date as "YYYY-MM-DD" (string with quotes)
-   - endDate: 3-5 business days from today as "YYYY-MM-DD" (string with quotes)
-4. Present the available times to the caller
-5. Ask what fire protection service they need
-6. Collect their contact information (name, phone, email)
-7. Create a booking using the create_booking() function
-8. Confirm the appointment details
-9. End the call professionally
+2. IMMEDIATELY check availability for the next 5 days using checkAvailability()
+3. Present the available times to the caller
+4. Ask what fire protection service they need
+5. Collect their contact information (name, email, phone)
+6. Book the appointment using bookAppointment()
+7. Confirm the appointment details
+8. End the call professionally
 
-FUNCTION CALLS REQUIRED:
-- staff_read() - call this immediately after greeting
-- appointment_availability() - call this immediately after staff_read() with EXACT format:
-  appointment_availability({
-    "eventTypeId": 1,
-    "startDate": "YYYY-MM-DD",
-    "endDate": "YYYY-MM-DD"
-  })
-
-EXAMPLE: If today is 2024-10-24, call:
-appointment_availability({
-  "eventTypeId": 1,
-  "startDate": "2024-10-24",
-  "endDate": "2024-10-29"
-})
+IMPORTANT:
+- All dates must be in ISO format with timezone (e.g., "2024-10-24T14:00:00.000Z")
+- dateFrom should be start of today
+- dateTo should be 5 days from today
+- Always include time portion in dates
+- Phone numbers must be in E.164 format (e.g., "+12345678900")
 
 Be conversational and helpful. Use the functions to get real data from the Cal.com system.
 
@@ -79,68 +76,48 @@ Keep calls under 5 minutes. If there's silence for more than 10 seconds, politel
   responseDelaySeconds: 0.5, // Small delay to allow for processing
   functions: [
     {
-      name: "staff_read",
-      description: "Get available staff members for appointments",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: [],
-      },
-    },
-    {
-      name: "appointment_availability",
-      description: "Check available appointment times",
+      name: "checkAvailability",
+      description: "Check available appointment times for the next few days",
       parameters: {
         type: "object",
         properties: {
-          eventTypeId: {
-            type: "number",
-            description: "The event type ID to check availability for",
-          },
-          startDate: {
+          dateFrom: {
             type: "string",
-            description: "Start date for availability check (YYYY-MM-DD)",
+            description: "Start date and time in ISO format (e.g., 2024-10-24T00:00:00.000Z)",
           },
-          endDate: {
+          dateTo: {
             type: "string",
-            description: "End date for availability check (YYYY-MM-DD)",
+            description: "End date and time in ISO format (e.g., 2024-10-29T23:59:59.999Z)",
           },
         },
-        required: ["eventTypeId", "startDate", "endDate"],
+        required: ["dateFrom", "dateTo"],
       },
     },
     {
-      name: "create_booking",
-      description: "Create a new appointment booking",
+      name: "bookAppointment",
+      description: "Book a new appointment",
       parameters: {
         type: "object",
         properties: {
-          eventTypeId: {
-            type: "number",
-            description: "The event type ID for the booking",
-          },
-          startTime: {
+          start: {
             type: "string",
-            description: "Start time of the appointment (ISO format)",
+            description:
+              "Start time of the appointment in ISO format (e.g., 2024-10-24T14:00:00.000Z)",
           },
-          endTime: {
+          name: {
             type: "string",
-            description: "End time of the appointment (ISO format)",
+            description: "Full name of the person booking the appointment",
           },
-          attendeeName: {
+          email: {
             type: "string",
-            description: "Name of the person booking the appointment",
+            description: "Email address for appointment confirmation",
           },
-          attendeeEmail: {
+          smsReminderNumber: {
             type: "string",
-            description: "Email of the person booking the appointment",
-          },
-          notes: {
-            type: "string",
-            description: "Additional notes for the appointment",
+            description: "Phone number in E.164 format (e.g., +12345678900) for SMS reminders",
           },
         },
-        required: ["eventTypeId", "startTime", "endTime", "attendeeName", "attendeeEmail"],
+        required: ["start", "name", "email"],
       },
     },
   ],
