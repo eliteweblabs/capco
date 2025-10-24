@@ -127,6 +127,9 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
       locals.user = data.user;
       locals.email = data.user.email;
       locals.role = profile?.role || "Client";
+
+      // Set current user in global context for logger access
+      globalThis.currentUser = data.user;
     }
 
     // Use shared utility for consistent cookie handling
@@ -157,7 +160,7 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
     }
 
     // Verify the tokens
-    const { error } = await supabase.auth.setSession({
+    const { data: sessionData, error } = await supabase.auth.setSession({
       access_token: accessToken.value,
       refresh_token: refreshToken.value,
     });
@@ -169,6 +172,11 @@ export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirec
         }),
         { status: 401 }
       );
+    }
+
+    // Set current user in global context for logger access
+    if (sessionData?.user) {
+      globalThis.currentUser = sessionData.user;
     }
   }
 

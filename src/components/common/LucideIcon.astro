@@ -1,6 +1,5 @@
 ---
-import { getIcon } from "../../lib/custom-icons";
-import type { IconConfig } from "../../lib/custom-icons";
+import { getIcon } from "../../lib/simple-icons";
 
 interface Props {
   name: string;
@@ -55,26 +54,24 @@ const {
   ...rest
 } = Astro.props;
 
-// Use custom icon system
-const iconConfig: IconConfig = {
-  size:
-    size === "xs"
-      ? 12
-      : size === "sm"
-        ? 16
-        : size === "md"
-          ? 20
-          : size === "lg"
-            ? 24
-            : size === "xl"
-              ? 32
-              : 16,
-  color: color !== "currentColor" ? color : undefined,
-  className: className,
-  strokeWidth: 2,
-};
+// Use simple icon system
+const iconSize =
+  size === "xs"
+    ? 12
+    : size === "sm"
+      ? 16
+      : size === "md"
+        ? 20
+        : size === "lg"
+          ? 24
+          : size === "xl"
+            ? 32
+            : 16;
 
-const iconHTML = getIcon(name, iconConfig);
+const iconHTML = getIcon(name, {
+  size: iconSize,
+  className: className,
+});
 const finalIconStyle = style || customStyle || (color !== "currentColor" ? `color: ${color};` : "");
 ---
 
