@@ -20,41 +20,21 @@ const assistantConfig = {
     model: "claude-3-5-sonnet-20241022",
     temperature: 0.7,
     maxTokens: 1000,
-    systemPrompt: `You are a friendly appointment scheduling assistant for a company called ${process.env.GLOBAL_COMPANY_NAME}. ${process.env.GLOBAL_COMPANY_SLOGAN}. Your goal is to help users book appointments in a natural, conversational way.
+    systemPrompt: `You are a friendly appointment scheduling assistant for ${process.env.GLOBAL_COMPANY_NAME}. ${process.env.GLOBAL_COMPANY_SLOGAN}.
 
-CURRENT DATE CONTEXT:
-- Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-- Current time is ${new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" })}
-- Always use the current date when discussing scheduling
+Your job is to:
+1. Greet the caller warmly
+2. Ask what fire protection service they need
+3. Check availability using the staff_read() and appointment_availability() functions
+4. Present available times to the caller
+5. Collect their contact information (name, phone, email)
+6. Create a booking using the create_booking() function
+7. Confirm the appointment details
+8. End the call professionally
 
-PROACTIVE BEHAVIOR:
-- IMMEDIATELY call staff_read() to get available staff members
-- IMMEDIATELY call appointment_availability() to get available time slots
-- Present 3-5 specific available times with staff names right away without announcing you're checking
-- Be specific: "I have Sarah available Tuesday at 2pm, John available Wednesday at 10am, or Sarah again Thursday at 3pm"
-- Don't wait for the user to ask - proactively offer times with staff information
-- Act as if you already have the availability and staff data ready
+Be conversational and helpful. Always check availability before offering times. Use the functions to get real data from the Cal.com system.
 
-When suggesting times, be specific and helpful:
-- "How's Tuesday the 14th? We have 2pm and 4pm available"
-- "I have Wednesday at 10am or Thursday at 2pm - which works better?"
-- "We're pretty booked this week, but I can do Monday at 3pm or Friday at 11am"
-
-Always be polite, confirm details, and ask clarifying questions when needed. Make the scheduling process feel natural and easy.
-
-You can help with:
-- Reading appointments and availability
-- Creating, updating, and canceling appointments
-- Managing user accounts and profiles
-- Checking availability and scheduling
-
-IMPORTANT CALL MANAGEMENT:
-- Keep conversations focused and efficient
-- If the user seems confused or unresponsive, politely offer to end the call
-- After completing a task, ask if there's anything else, then end the call
-- Maximum conversation length: 4 minutes
-- If you detect silence for more than 10 seconds, politely end the call
-- Always end with a clear goodbye message`,
+Keep calls under 5 minutes. If there's silence for more than 10 seconds, politely end the call.`,
   },
   voice: {
     provider: "11labs",
@@ -62,260 +42,77 @@ IMPORTANT CALL MANAGEMENT:
     stability: 0.5,
     similarityBoost: 0.8,
   },
-  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. I have several appointment times available this week - would you like to hear your options?`,
-  //   systemPrompt: `You are a friendly appointment scheduling assistant for a company called ${process.env.GLOBAL_COMPANY_NAME}. ${process.env.GLOBAL_COMPANY_SLOGAN}. Your goal is to help users book appointments in a natural, conversational way.
-
-  // CURRENT DATE CONTEXT:
-  // - Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-  // - Current time is ${new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" })}
-  // - Always use the current date when discussing scheduling
-
-  // PROACTIVE BEHAVIOR:
-  // - IMMEDIATELY call staff_read() to get available staff members
-  // - IMMEDIATELY call appointment_availability() to get available time slots
-  // - Present 3-5 specific available times with staff names right away without announcing you're checking
-  // - Be specific: "I have Sarah available Tuesday at 2pm, John available Wednesday at 10am, or Sarah again Thursday at 3pm"
-  // - Don't wait for the user to ask - proactively offer times with staff information
-  // - Act as if you already have the availability and staff data ready
-
-  // When suggesting times, be specific and helpful:
-  // - "How's Tuesday the 14th? We have 2pm and 4pm available"
-  // - "I have Wednesday at 10am or Thursday at 2pm - which works better?"
-  // - "We're pretty booked this week, but I can do Monday at 3pm or Friday at 11am"
-
-  // Always be polite, confirm details, and ask clarifying questions when needed. Make the scheduling process feel natural and easy.
-
-  // You can help with:
-  // - Reading appointments and availability
-  // - Creating, updating, and canceling appointments
-  // - Managing user accounts and profiles
-  // - Checking availability and scheduling
-
-  // IMPORTANT CALL MANAGEMENT:
-  // - Keep conversations focused and efficient
-  // - If the user seems confused or unresponsive, politely offer to end the call
-  // - After completing a task, ask if there's anything else, then end the call
-  // - Maximum conversation length: 4 minutes
-  // - If you detect silence for more than 10 seconds, politely end the call
-  // - Always end with a clear goodbye message`,
-  maxDurationSeconds: 200, // 4 minutes max call (reduced from 5)
+  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. I'm checking our availability right now...`,
+  maxDurationSeconds: 300, // 5 minutes max call
   endCallMessage: "Thank you for calling. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
   backgroundSound: "office",
+  silenceTimeoutSeconds: 15, // Increased from default 10 seconds
+  responseDelaySeconds: 0.5, // Small delay to allow for processing
   functions: [
     {
-      name: "appointment_read",
-      description: "Read appointments for a user or date range",
+      name: "staff_read",
+      description: "Get available staff members for appointments",
       parameters: {
         type: "object",
-        properties: {
-          userId: {
-            type: "string",
-            description: "User ID to get appointments for",
-          },
-          startDate: {
-            type: "string",
-            description: "Start date for appointment search (YYYY-MM-DD)",
-          },
-          endDate: {
-            type: "string",
-            description: "End date for appointment search (YYYY-MM-DD)",
-          },
-        },
+        properties: {},
+        required: [],
       },
     },
     {
-      name: "appointment_create",
-      description: "Create a new appointment",
+      name: "appointment_availability",
+      description: "Check available appointment times",
       parameters: {
         type: "object",
         properties: {
           eventTypeId: {
-            type: "string",
-            description: "Event type ID for the appointment",
+            type: "number",
+            description: "The event type ID to check availability for",
           },
-          start: {
+          startDate: {
             type: "string",
-            description: "Start time in ISO format",
+            description: "Start date for availability check (YYYY-MM-DD)",
           },
-          end: {
+          endDate: {
             type: "string",
-            description: "End time in ISO format",
+            description: "End date for availability check (YYYY-MM-DD)",
+          },
+        },
+        required: ["eventTypeId", "startDate", "endDate"],
+      },
+    },
+    {
+      name: "create_booking",
+      description: "Create a new appointment booking",
+      parameters: {
+        type: "object",
+        properties: {
+          eventTypeId: {
+            type: "number",
+            description: "The event type ID for the booking",
+          },
+          startTime: {
+            type: "string",
+            description: "Start time of the appointment (ISO format)",
+          },
+          endTime: {
+            type: "string",
+            description: "End time of the appointment (ISO format)",
           },
           attendeeName: {
             type: "string",
-            description: "Name of the attendee",
+            description: "Name of the person booking the appointment",
           },
           attendeeEmail: {
             type: "string",
-            description: "Email of the attendee",
+            description: "Email of the person booking the appointment",
           },
           notes: {
             type: "string",
             description: "Additional notes for the appointment",
           },
         },
-        required: ["eventTypeId", "start", "end", "attendeeName", "attendeeEmail"],
-      },
-    },
-    {
-      name: "appointment_update",
-      description: "Update an existing appointment",
-      parameters: {
-        type: "object",
-        properties: {
-          appointmentId: {
-            type: "string",
-            description: "ID of the appointment to update",
-          },
-          start: {
-            type: "string",
-            description: "New start time in ISO format",
-          },
-          end: {
-            type: "string",
-            description: "New end time in ISO format",
-          },
-          notes: {
-            type: "string",
-            description: "Updated notes for the appointment",
-          },
-        },
-        required: ["appointmentId"],
-      },
-    },
-    {
-      name: "appointment_cancel",
-      description: "Cancel an appointment",
-      parameters: {
-        type: "object",
-        properties: {
-          appointmentId: {
-            type: "string",
-            description: "ID of the appointment to cancel",
-          },
-          reason: {
-            type: "string",
-            description: "Reason for cancellation",
-          },
-        },
-        required: ["appointmentId"],
-      },
-    },
-    {
-      name: "user_read",
-      description: "Read user information",
-      parameters: {
-        type: "object",
-        properties: {
-          userId: {
-            type: "string",
-            description: "User ID to get information for",
-          },
-          email: {
-            type: "string",
-            description: "Email to search for user",
-          },
-        },
-      },
-    },
-    {
-      name: "appointment_availability",
-      description: "Check available appointment slots and get conversational suggestions",
-      parameters: {
-        type: "object",
-        properties: {
-          date: {
-            type: "string",
-            description:
-              "Specific date to check (YYYY-MM-DD) - if not provided, checks next 7 days",
-          },
-          startDate: {
-            type: "string",
-            description: "Start date for availability search (YYYY-MM-DD)",
-          },
-          endDate: {
-            type: "string",
-            description: "End date for availability search (YYYY-MM-DD)",
-          },
-          duration: {
-            type: "number",
-            description: "Appointment duration in minutes (default: 60)",
-          },
-        },
-      },
-    },
-    {
-      name: "user_create",
-      description: "Create a new user",
-      parameters: {
-        type: "object",
-        properties: {
-          username: {
-            type: "string",
-            description: "Username for the new user",
-          },
-          email: {
-            type: "string",
-            description: "Email for the new user",
-          },
-          name: {
-            type: "string",
-            description: "Full name of the user",
-          },
-          timeZone: {
-            type: "string",
-            description: "User's timezone",
-          },
-        },
-        required: ["username", "email", "name"],
-      },
-    },
-    {
-      name: "availability_read",
-      description: "Check availability for a user or event type",
-      parameters: {
-        type: "object",
-        properties: {
-          eventTypeId: {
-            type: "string",
-            description: "Event type ID to check availability for",
-          },
-          userId: {
-            type: "string",
-            description: "User ID to check availability for",
-          },
-          date: {
-            type: "string",
-            description: "Date to check availability for (YYYY-MM-DD)",
-          },
-        },
-      },
-    },
-    {
-      name: "staff_read",
-      description: "Get information about available staff members and their schedules",
-      parameters: {
-        type: "object",
-        properties: {
-          userId: {
-            type: "string",
-            description: "Specific user ID to get information for (optional)",
-          },
-        },
-      },
-    },
-    {
-      name: "end_call",
-      description: "End the current call when task is complete or user requests",
-      parameters: {
-        type: "object",
-        properties: {
-          reason: {
-            type: "string",
-            description: "Reason for ending the call",
-          },
-        },
+        required: ["eventTypeId", "startTime", "endTime", "attendeeName", "attendeeEmail"],
       },
     },
   ],
