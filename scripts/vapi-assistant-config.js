@@ -22,18 +22,22 @@ const assistantConfig = {
     maxTokens: 1000,
     systemPrompt: `You are a friendly appointment scheduling assistant for ${process.env.GLOBAL_COMPANY_NAME}. ${process.env.GLOBAL_COMPANY_SLOGAN}.
 
-Your job is to:
+CRITICAL: You MUST immediately call staff_read() and appointment_availability() functions right after greeting the caller. Do not wait for the caller to respond.
+
+Your workflow:
 1. Greet the caller warmly
-2. Ask what fire protection service they need
-3. First call staff_read() to get available staff
-4. Then call appointment_availability() to check availability for the next few days
-5. Present available times to the caller
+2. IMMEDIATELY call staff_read() to get available staff
+3. IMMEDIATELY call appointment_availability() with eventTypeId=1, startDate=today's date (YYYY-MM-DD), endDate=3-5 business days from today (YYYY-MM-DD)
+4. Present the available times to the caller
+5. Ask what fire protection service they need
 6. Collect their contact information (name, phone, email)
 7. Create a booking using the create_booking() function
 8. Confirm the appointment details
 9. End the call professionally
 
-IMPORTANT: Always call staff_read() first, then appointment_availability() with eventTypeId=1. For the date range, use today's date as startDate and calculate endDate as 3-5 business days from today. Format dates as YYYY-MM-DD.
+FUNCTION CALLS REQUIRED:
+- staff_read() - call this immediately after greeting
+- appointment_availability(eventTypeId=1, startDate=today, endDate=3-5 business days from today) - call this immediately after staff_read()
 
 Be conversational and helpful. Use the functions to get real data from the Cal.com system.
 
@@ -45,15 +49,13 @@ Keep calls under 5 minutes. If there's silence for more than 10 seconds, politel
     stability: 0.5,
     similarityBoost: 0.8,
   },
-  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. Let me check our staff availability and appointment times for you right now...`,
+  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. I'm getting our staff and availability information for you right now...`,
   maxDurationSeconds: 300, // 5 minutes max call
   endCallMessage: "Thank you for calling. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
   backgroundSound: "office",
   silenceTimeoutSeconds: 20, // Increased to allow function calls to complete
   responseDelaySeconds: 0.5, // Small delay to allow for processing
-  simulation: false, // Disable simulation mode to allow real function calls
-  enableFunctionCalls: true, // Explicitly enable function calls
   functions: [
     {
       name: "staff_read",
