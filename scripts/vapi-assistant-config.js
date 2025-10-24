@@ -9,7 +9,8 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const SITE_URL = process.env.SITE_URL || "https://capcofire.com";
+// do not change this url or this script will fail, the web hook url needs to be the live url of the site
+const SITE_URL = "https://capcofire.com";
 const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
 
 // Assistant configuration
