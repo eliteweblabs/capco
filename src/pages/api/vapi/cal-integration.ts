@@ -317,7 +317,8 @@ async function handleGetAvailability(params: any) {
     // Try to get availability from database
     try {
       // Query for available time slots in the date range
-      const result = await calcomDb.query(`
+      const result = await calcomDb.query(
+        `
         SELECT 
           DATE(start_time) as date,
           EXTRACT(HOUR FROM start_time) as hour,
@@ -327,15 +328,17 @@ async function handleGetAvailability(params: any) {
         AND start_time < $2::date + INTERVAL '1 day'
         AND status = 'confirmed'
         ORDER BY start_time
-      `, [startDate, endDate]);
+      `,
+        [startDate, endDate]
+      );
 
       // Group by date and create time slots
       const availabilityByDate: { [key: string]: string[] } = {};
-      
-      result.rows.forEach(row => {
-        const date = row.date.toISOString().split('T')[0];
-        const time = `${row.hour.toString().padStart(2, '0')}:${row.minute.toString().padStart(2, '0')}`;
-        
+
+      result.rows.forEach((row) => {
+        const date = row.date.toISOString().split("T")[0];
+        const time = `${row.hour.toString().padStart(2, "0")}:${row.minute.toString().padStart(2, "0")}`;
+
         if (!availabilityByDate[date]) {
           availabilityByDate[date] = [];
         }
@@ -347,7 +350,7 @@ async function handleGetAvailability(params: any) {
       // Convert to the expected format
       const availability = Object.entries(availabilityByDate).map(([date, slots]) => ({
         date,
-        slots: slots.sort()
+        slots: slots.sort(),
       }));
 
       console.log("✅ [CAL-INTEGRATION] Found availability:", availability.length, "days");
@@ -364,7 +367,7 @@ async function handleGetAvailability(params: any) {
       );
     } catch (dbError) {
       console.log("⚠️ [CAL-INTEGRATION] Database query failed, using mock data:", dbError.message);
-      
+
       // Fallback to mock data if database query fails
       return new Response(
         JSON.stringify({
@@ -379,7 +382,7 @@ async function handleGetAvailability(params: any) {
     }
   } catch (error) {
     console.error("❌ [CAL-INTEGRATION] Error getting availability:", error);
-    
+
     // Fallback to mock data if database connection fails
     console.log("🔄 [CAL-INTEGRATION] Falling back to mock data");
     return new Response(
@@ -413,7 +416,8 @@ async function handleCreateBooking(params: any) {
 
     // Try to create booking in database
     try {
-      const result = await calcomDb.query(`
+      const result = await calcomDb.query(
+        `
         INSERT INTO "Booking" (
           title,
           start_time,
@@ -426,14 +430,16 @@ async function handleCreateBooking(params: any) {
         ) VALUES (
           $1, $2, $3, $4, $5, $6, NOW(), NOW()
         ) RETURNING id, title, start_time, end_time, status
-      `, [
-        `Fire Protection Consultation - ${attendeeName}`,
-        startTime,
-        endTime,
-        'confirmed',
-        eventTypeId,
-        notes || `Contact: ${attendeeName} (${attendeeEmail})`
-      ]);
+      `,
+        [
+          `Fire Protection Consultation - ${attendeeName}`,
+          startTime,
+          endTime,
+          "confirmed",
+          eventTypeId,
+          notes || `Contact: ${attendeeName} (${attendeeEmail})`,
+        ]
+      );
 
       const booking = result.rows[0];
       console.log("✅ [CAL-INTEGRATION] Booking created:", booking.id);
@@ -461,8 +467,11 @@ async function handleCreateBooking(params: any) {
         }
       );
     } catch (dbError) {
-      console.log("⚠️ [CAL-INTEGRATION] Database insert failed, using mock booking:", dbError.message);
-      
+      console.log(
+        "⚠️ [CAL-INTEGRATION] Database insert failed, using mock booking:",
+        dbError.message
+      );
+
       // Fallback to mock booking if database insert fails
       const mockBooking = {
         id: Math.floor(Math.random() * 1000),
@@ -491,7 +500,7 @@ async function handleCreateBooking(params: any) {
     }
   } catch (error) {
     console.error("❌ [CAL-INTEGRATION] Error creating booking:", error);
-    
+
     // Fallback to mock booking if database connection fails
     console.log("🔄 [CAL-INTEGRATION] Falling back to mock booking");
     const mockBooking = {
