@@ -9,7 +9,7 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const SITE_URL = process.env.SITE_URL || "http://localhost:4321";
+const SITE_URL = process.env.SITE_URL || "https://capcofire.com";
 const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
 
 // Assistant configuration
@@ -21,7 +21,7 @@ const assistantConfig = {
     model: "claude-3-5-sonnet-20241022",
     temperature: 0.7,
     maxTokens: 1000,
-    systemPrompt: `You are a friendly appointment scheduling assistant for ${process.env.GLOBAL_COMPANY_NAME}. ${process.env.GLOBAL_COMPANY_SLOGAN}.
+    systemPrompt: `You are a friendly appointment scheduling assistant for ${process.env.GLOBAL_COMPANY_NAME || "CAPCO Design Group"}. ${process.env.GLOBAL_COMPANY_SLOGAN || "Professional Fire Protection Plan Review & Approval"}.
 
 CRITICAL: You MUST immediately call staff_read() and appointment_availability() functions right after greeting the caller. Do not wait for the caller to respond.
 
@@ -50,7 +50,7 @@ Keep calls under 5 minutes. If there's silence for more than 10 seconds, politel
     stability: 0.5,
     similarityBoost: 0.8,
   },
-  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME}. I'm getting our staff and availability information for you right now...`,
+  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME || "CAPCO Design Group"}. I'm getting our staff and availability information for you right now...`,
   maxDurationSeconds: 300, // 5 minutes max call
   endCallMessage: "Thank you for calling. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
@@ -240,7 +240,7 @@ async function testAssistant(assistantId) {
 
 // Main execution
 async function main() {
-  const assistantId = process.env.VAPI_ASSISTANT_ID;
+  const assistantId = "3ae002d5-fe9c-4870-8034-4c66a9b43b51"; // Hardcoded assistant ID
 
   if (!VAPI_API_KEY) {
     console.error("❌ [VAPI-CONFIG] VAPI_API_KEY environment variable is required");
@@ -251,6 +251,8 @@ async function main() {
 
   if (!VAPI_WEBHOOK_URL) {
     console.error("❌ [VAPI-CONFIG] SITE_URL environment variable is required");
+    console.error("❌ [VAPI-CONFIG] Please set SITE_URL in Railway global variables:");
+    console.error("   - SITE_URL=https://capcofire.com");
     process.exit(1);
   }
 
