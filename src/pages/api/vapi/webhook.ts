@@ -123,6 +123,9 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
 
   console.log("🤖 [VAPI-WEBHOOK] Function call:", functionCall.name, functionCall.parameters);
 
+  // Validate date format (ISO with timezone)
+  const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
   try {
     // Handle call termination
     if (functionCall.name === "end_call") {
@@ -153,9 +156,6 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
         // Map VAPI function calls to Cal.com integration actions
         let action = "";
         let params = {};
-
-        // Validate date format (ISO with timezone)
-        const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
         switch (functionCall.name) {
           case "checkAvailability":
