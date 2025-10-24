@@ -52,6 +52,8 @@ Keep calls under 5 minutes. If there's silence for more than 10 seconds, politel
   backgroundSound: "office",
   silenceTimeoutSeconds: 20, // Increased to allow function calls to complete
   responseDelaySeconds: 0.5, // Small delay to allow for processing
+  simulation: false, // Disable simulation mode to allow real function calls
+  enableFunctionCalls: true, // Explicitly enable function calls
   functions: [
     {
       name: "staff_read",
