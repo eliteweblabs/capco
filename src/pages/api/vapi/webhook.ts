@@ -132,7 +132,7 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
     }
 
     // Route Cal.com function calls to the integration API
-    const calcomFunctions = ["checkAvailability", "bookAppointment"];
+    const calcomFunctions = ["getAccountInfo", "checkAvailability", "bookAppointment"];
     if (calcomFunctions.includes(functionCall.name)) {
       console.log("🤖 [VAPI-WEBHOOK] Routing to Cal.com integration:", functionCall.name);
 
@@ -146,6 +146,10 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
         let params = {};
 
         switch (functionCall.name) {
+          case "getAccountInfo":
+            action = "get_account_info";
+            params = {};
+            break;
           case "checkAvailability":
             // Validate required parameters
             if (!functionCall.parameters.dateFrom || !functionCall.parameters.dateTo) {
