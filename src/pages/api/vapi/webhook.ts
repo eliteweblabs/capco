@@ -139,6 +139,7 @@ async function handleToolCalls(message: any): Promise<Response> {
           start: args.start,
           name: args.name,
           email: args.email,
+          smsReminderNumber: args.phone, // Map phone to smsReminderNumber
         };
         console.log(`[---VAPI-WEBHOOK] Booking params:`, params);
       }
