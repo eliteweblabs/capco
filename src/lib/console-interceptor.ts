@@ -123,6 +123,7 @@ export function disableConsoleDebug(): void {
 
 /**
  * Conditional console disabling based on environment
+ * Allows certain prefixes to show in production for debugging
  */
 export function setupConsoleInterceptor(): void {
   // Check if we're in production
@@ -142,11 +143,24 @@ export function setupConsoleInterceptor(): void {
 
   // Only disable console.log in production (both server and client)
   if (isProduction) {
-    disableConsoleLogs();
+    // Use selective interceptor to allow certain prefixes
+    createSelectiveConsoleInterceptor({
+      disableInProduction: true,
+      allowPrefixes: [
+        "[VAPI-WEBHOOK]",
+        "[VAPI-DEBUG]",
+        "[CRITICAL]",
+        "🔥 [VAPI",
+        "🔧 [VAPI",
+        "✅ [VAPI",
+        "❌ [VAPI",
+        "📤 [VAPI",
+      ],
+    });
     if (isServer) {
-      console.warn("🔇 [SERVER] Console.log statements disabled in production");
+      console.warn("🔇 [SERVER] Console.log statements disabled in production (except allowed prefixes)");
     } else {
-      console.warn("🔇 [CLIENT] Console.log statements disabled in production");
+      console.warn("🔇 [CLIENT] Console.log statements disabled in production (except allowed prefixes)");
     }
   } else {
     // In development, truncate long console logs to prevent terminal clutter
