@@ -73,10 +73,9 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
     } else if (body.message?.type === "tool-calls") {
       console.log("🔥 [VAPI-WEBHOOK] TOOL-CALLS DETECTED!");
       console.log("🔥 [VAPI-WEBHOOK] Tool Calls:", JSON.stringify(body.message, null, 2));
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      
+      // Handle tool calls properly according to VAPI docs
+      return await handleToolCalls(body.message);
     } else if (body.call?.status === "ended") {
       // Log final call stats
       const duration =
@@ -113,7 +112,80 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
   }
 };
 
-// Handle function calls from Vapi.ai
+// Handle tool calls (VAPI Custom Tools format)
+async function handleToolCalls(message: any): Promise<Response> {
+  try {
+    console.log("🔧 [VAPI-WEBHOOK] Processing tool calls...");
+    
+    const toolCallList = message.toolCallList || [];
+    if (toolCallList.length === 0) {
+      console.error("❌ [VAPI-WEBHOOK] No tool calls in list");
+      return new Response(JSON.stringify({ results: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const results = [];
+    
+    for (const toolCall of toolCallList) {
+      console.log("🔧 [VAPI-WEBHOOK] Tool Call:", toolCall.name, "ID:", toolCall.id);
+      
+      if (toolCall.name === "getAccountInfo") {
+        // Call our Cal.com integration
+        const response = await fetch(
+          `${process.env.SITE_URL || "http://localhost:4321"}/api/vapi/cal-integration`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Vapi-System": "true",
+            },
+            body: JSON.stringify({
+              action: "get_account_info",
+            }),
+          }
+        );
+
+        const data = await response.json();
+        console.log("✅ [VAPI-WEBHOOK] Got result:", data.result);
+
+        // Add to results array with proper format
+        results.push({
+          toolCallId: toolCall.id,
+          result: data.result,
+        });
+      }
+    }
+
+    // Return in VAPI's expected format
+    const responseData = { results };
+    console.log("📤 [VAPI-WEBHOOK] Sending response:", JSON.stringify(responseData));
+    
+    return new Response(JSON.stringify(responseData), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("❌ [VAPI-WEBHOOK] Tool call error:", error);
+    return new Response(
+      JSON.stringify({
+        results: [
+          {
+            toolCallId: "error",
+            result: "I'm having trouble accessing that information right now.",
+          },
+        ],
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
+// Handle function calls from Vapi.ai (legacy format)
 async function handleFunctionCall(functionCall: any): Promise<Response> {
   if (!functionCall) {
     return new Response(JSON.stringify({ success: false, error: "No function call provided" }), {
