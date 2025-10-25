@@ -111,92 +111,96 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("🔗 [CAL-INTEGRATION] Received request:", { action, params });
 
     switch (action) {
-    case "get_account_info":
-      // Generate next 10 available time slots (M-F, 9 AM - 5 PM UTC)
-      const slots: string[] = [];
-      const now = new Date();
-      let currentDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-      
-      while (slots.length < 10) {
-        const dayOfWeek = currentDate.getUTCDay();
-        
-        // Skip weekends
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-          // Generate slots for 9 AM - 5 PM (every hour)
-          for (let hour = 9; hour < 17 && slots.length < 10; hour++) {
-            const slotTime = new Date(Date.UTC(
-              currentDate.getUTCFullYear(),
-              currentDate.getUTCMonth(),
-              currentDate.getUTCDate(),
-              hour,
-              0,
-              0
-            ));
-            
-            // Only include future slots
-            if (slotTime > now) {
-              slots.push(slotTime.toISOString());
+      case "get_account_info":
+        // Generate next 10 available time slots (M-F, 9 AM - 5 PM UTC)
+        const slots: string[] = [];
+        const now = new Date();
+        let currentDate = new Date(
+          Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+        );
+
+        while (slots.length < 10) {
+          const dayOfWeek = currentDate.getUTCDay();
+
+          // Skip weekends
+          if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            // Generate slots for 9 AM - 5 PM (every hour)
+            for (let hour = 9; hour < 17 && slots.length < 10; hour++) {
+              const slotTime = new Date(
+                Date.UTC(
+                  currentDate.getUTCFullYear(),
+                  currentDate.getUTCMonth(),
+                  currentDate.getUTCDate(),
+                  hour,
+                  0,
+                  0
+                )
+              );
+
+              // Only include future slots
+              if (slotTime > now) {
+                slots.push(slotTime.toISOString());
+              }
             }
           }
+
+          // Move to next day
+          currentDate.setUTCDate(currentDate.getUTCDate() + 1);
         }
-        
-        // Move to next day
-        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-      }
 
-      // Format current date/time for speech
-      const currentDateTime = now.toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        timeZone: 'UTC',
-        timeZoneName: 'short'
-      });
-
-      // Format slots for speech - group by day for natural reading
-      let slotsList = "";
-      let lastDay = "";
-      
-      slots.forEach((slot, index) => {
-        const date = new Date(slot);
-        const dayKey = date.toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          month: 'long', 
-          day: 'numeric',
-          timeZone: 'UTC'
+        // Format current date/time for speech
+        const currentDateTime = now.toLocaleString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: "UTC",
+          timeZoneName: "short",
         });
-        const timeOnly = date.toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
-          minute: '2-digit',
-          timeZone: 'UTC'
-        });
-        
-        if (dayKey !== lastDay) {
-          // New day - include full date
-          if (index > 0) slotsList += ", ";
-          slotsList += `${dayKey} at ${timeOnly}`;
-          lastDay = dayKey;
-        } else {
-          // Same day - just add time
-          slotsList += `, ${timeOnly}`;
-        }
-      });
 
-      return new Response(
-        JSON.stringify({
-          result: `Today is ${currentDateTime}. Our next available appointments are ${slotsList}. Would you like to book one of these times?`,
-          data: {
-            slots,
-          },
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+        // Format slots for speech - group by day for natural reading
+        let slotsList = "";
+        let lastDay = "";
+
+        slots.forEach((slot, index) => {
+          const date = new Date(slot);
+          const dayKey = date.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            timeZone: "UTC",
+          });
+          const timeOnly = date.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone: "UTC",
+          });
+
+          if (dayKey !== lastDay) {
+            // New day - include full date
+            if (index > 0) slotsList += ", ";
+            slotsList += `${dayKey} at ${timeOnly}`;
+            lastDay = dayKey;
+          } else {
+            // Same day - just add time
+            slotsList += `, ${timeOnly}`;
+          }
+        });
+
+        return new Response(
+          JSON.stringify({
+            result: `Today is ${currentDateTime}. Our next available appointments are ${slotsList}. Would you like to book one of these times?`,
+            data: {
+              slots,
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
 
       case "get_users":
         return await handleGetUsers();
@@ -519,8 +523,7 @@ async function handleCreateBooking(params: any) {
   if (startDate <= now) {
     return new Response(
       JSON.stringify({
-        success: false,
-        error: "Appointment time must be in the future",
+        result: "Sorry, that appointment time has already passed. Please choose a future time.",
       }),
       {
         status: 400,
@@ -531,61 +534,115 @@ async function handleCreateBooking(params: any) {
 
   // Calculate end time (60 minutes after start for consultation)
   const endDate = new Date(startDate.getTime() + 60 * 60000);
-  const end = endDate.toISOString();
 
-  // Generate unique booking ID
-  const bookingId = Date.now();
+  try {
+    // Generate unique booking reference
+    const uid = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // Create booking object
-  const booking = {
-    id: bookingId,
-    uid: `booking-${bookingId}`,
-    title: `Fire Protection Consultation with ${name}`,
-    start,
-    end,
-    status: "confirmed",
-    attendees: [
-      {
-        name,
+    // Get the first event type (or you can query for a specific one)
+    const eventTypeResult = await calcomDb.query(
+      'SELECT id, length, title FROM "EventType" LIMIT 1'
+    );
+
+    if (eventTypeResult.rows.length === 0) {
+      throw new Error("No event types configured in Cal.com");
+    }
+
+    const eventType = eventTypeResult.rows[0];
+
+    // Insert into Cal.com Booking table
+    const bookingResult = await calcomDb.query(
+      `INSERT INTO "Booking" (
+        uid, 
+        title, 
+        description,
+        "startTime", 
+        "endTime", 
+        "eventTypeId",
+        status,
+        metadata,
+        "createdAt",
+        "updatedAt"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+      RETURNING id, uid, "startTime", "endTime", status`,
+      [
+        uid,
+        `${eventType.title} with ${name}`,
+        `Fire protection consultation booking via VAPI`,
+        startDate,
+        endDate,
+        eventType.id,
+        "ACCEPTED", // Cal.com status: ACCEPTED, PENDING, CANCELLED, REJECTED
+        JSON.stringify({
+          source: "vapi",
+          customerName: name,
+          customerEmail: email,
+          customerPhone: smsReminderNumber,
+        }),
+      ]
+    );
+
+    const booking = bookingResult.rows[0];
+    console.log("✅ [CAL-INTEGRATION] Booking inserted into database:", booking.id);
+
+    // Insert attendee information
+    await calcomDb.query(
+      `INSERT INTO "Attendee" (
         email,
-        phone: smsReminderNumber || null,
-      },
-    ],
-    createdAt: new Date().toISOString(),
-  };
+        name,
+        "timeZone",
+        "bookingId"
+      ) VALUES ($1, $2, $3, $4)`,
+      [email, name, "UTC", booking.id]
+    );
+    console.log("✅ [CAL-INTEGRATION] Attendee added to booking");
 
-  // In a real implementation, save to database here
-  // For now, just log it
-  console.log("✅ [CAL-INTEGRATION] Booking created:", booking.id);
-  console.log("📧 [CAL-INTEGRATION] Send confirmation to:", email);
-
-  // Format confirmation message for VAPI to speak
-  const confirmationMessage = `Your appointment has been confirmed for ${startDate.toLocaleDateString(
-    "en-US",
-    {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
+    // Format confirmation message for VAPI to speak
+    const confirmationMessage = `Your appointment has been confirmed for ${startDate.toLocaleDateString(
+      "en-US",
+      {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      }
+    )} at ${startDate.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
       timeZone: "UTC",
-    }
-  )} at ${startDate.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "UTC",
-  })}. You'll receive a confirmation email at ${email}.`;
+    })}. You'll receive a confirmation email at ${email}.`;
 
-  return new Response(
-    JSON.stringify({
-      result: confirmationMessage,
-      data: {
-        booking: booking, // Include booking details in data object
-      },
-    }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }
-  );
+    return new Response(
+      JSON.stringify({
+        result: confirmationMessage,
+        data: {
+          booking: {
+            id: booking.id,
+            uid: booking.uid,
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            status: booking.status,
+          },
+        },
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Database error:", error);
+    return new Response(
+      JSON.stringify({
+        result:
+          "I'm sorry, there was an error creating your booking. Please try again or contact us directly.",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 }
 
 async function handleGetBookings(params: any) {
