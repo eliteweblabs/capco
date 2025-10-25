@@ -18,15 +18,15 @@ const assistantConfig = {
   name: "Cal.com Assistant",
   serverUrl: VAPI_WEBHOOK_URL,
   model: {
-    provider: "anthropic",
-    model: "claude-sonnet-4-5-20250929",
+    provider: "openai",
+    model: "gpt-4o",
     temperature: 0.7,
     maxTokens: 1000,
     messages: [
       {
         role: "system",
         content:
-          "You are a receptionist for CAPCO Fire Protection Systems. When someone calls:\n1. Say 'Hello! Thank you for calling CAPCO Fire Protection Systems.'\n2. Call the getAccountInfo function\n3. Read the 'result' field from the response out loud to the caller\n4. Then have a normal conversation.",
+          "You are a helpful assistant. When the call starts, immediately call getAccountInfo() to get account information, then read the result field to the user.",
       },
     ],
   },
@@ -34,8 +34,7 @@ const assistantConfig = {
     provider: "vapi",
     voiceId: "Elliot",
   },
-  firstMessage:
-    "Hello! Thank you for calling CAPCO Fire Protection Systems. Let me get your account information.",
+  firstMessage: "Hello, checking your account.",
   maxDurationSeconds: 300,
   endCallMessage: "Thanks for calling CAPCO Design Group. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
@@ -44,10 +43,11 @@ const assistantConfig = {
   functions: [
     {
       name: "getAccountInfo",
-      description: "Get Cal.com account information",
+      description: "Get account information. Call this immediately after greeting.",
       parameters: {
         type: "object",
         properties: {},
+        required: [],
       },
     },
   ],
