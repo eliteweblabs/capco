@@ -1,6 +1,30 @@
 ---
 // Cal.com Booking Component
 // This component integrates with Cal.com for real appointment booking
+
+interface Props {
+  currentUser?: any;
+}
+
+const { currentUser } = Astro.props;
+
+// Create slug from company name
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/[^\w\-]+/g, "") // Remove all non-word chars
+    .replace(/\-\-+/g, "-") // Replace multiple - with single -
+    .replace(/^-+/, "") // Trim - from start of text
+    .replace(/-+$/, ""); // Trim - from end of text
+}
+
+// Get calLink from company name or default to 'capco'
+const companySlug = currentUser?.profile?.companyName 
+  ? slugify(currentUser.profile.companyName)
+  : "capco";
 ---
 
 <!-- Cal.com Booking Section -->
@@ -37,7 +61,7 @@
   </p>
 
   <!-- Cal.com Embed Container -->
-  <div id="cal-com-embed" class="min-h-[600px]">
+  <div id="cal-com-embed" class="min-h-[600px]" data-cal-link={`${companySlug}/30min`}>
     <div class="flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-700 rounded-lg">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
       <p class="text-gray-600 dark:text-gray-400 ml-3">Loading calendar...</p>
@@ -115,14 +139,16 @@
       return;
     }
 
+    // Get calLink from data attribute
+    const calLink = calEmbedContainer.getAttribute("data-cal-link") || "capco/30min";
+    
     // Cal.com configuration
     const calConfig = {
-      // Replace with your actual Cal.com username/event type
-      calLink: "capco/30min", // This should be your Cal.com username/event
+      calLink: calLink,
       layout: "month_view",
       theme: "light", // or "dark" based on user preference
       branding: {
-        brandColor: process.env.GLOBAL_COLOR_PRIMARY || "#825BDD", // Your brand color
+        brandColor: "#825BDD", // Your brand color
         hideEventTypeDetails: false,
         hideLandingPageDetails: false,
       },
