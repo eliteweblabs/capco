@@ -778,6 +778,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
         type: options.type || "default",
         title: options.title || `Node ${this.nodeCounter}`,
         subtitle: options.subtitle || "",
+        icon: options.icon || "circle",
         status: options.status || "Active",
         x: options.x,
         y: options.y,
@@ -906,9 +907,6 @@ const { currentUser } = await checkAuth(Astro.cookies);
       // Custom icon system - Direct SVG HTML mapping
       const getIconHTML = (iconName: string | undefined, preset: string = "default"): string => {
         // Handle undefined or null icon names
-        if (!iconName) {
-          iconName = "circle"; // Default fallback icon
-        }
 
         console.log(`🔧 [ICON] Requesting icon: "${iconName}"`);
         console.log(`🔧 [ICON] SimpleIcons available:`, !!window.SimpleIcons);
@@ -923,13 +921,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           return iconHTML;
         }
 
-        console.log(`🔧 [ICON] Using fallback circle for: "${iconName}"`);
         // Fallback to simple circle icon
-        return `<div class="w-4 h-4 text-primary-500 dark:text-primary-400">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-          </svg>
-        </div>`;
       };
 
       nodeElement.innerHTML = `
