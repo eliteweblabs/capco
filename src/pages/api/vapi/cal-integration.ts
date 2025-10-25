@@ -324,47 +324,64 @@ async function handleGetAvailability(params: any) {
   const { dateFrom, dateTo } = params;
   console.log("📊 [CAL-INTEGRATION] Getting availability:", { dateFrom, dateTo });
 
-  // Generate next available slot (tomorrow at 2 PM for simplicity)
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(14, 0, 0, 0); // 2 PM
-  const nextAvailable = tomorrow.toISOString();
-
-  // Generate additional slots (every 30 mins from 9 AM to 5 PM for next 5 days)
-  const slots: string[] = [];
+  // Parse dates and work in UTC to avoid timezone issues
   const startDate = new Date(dateFrom);
   const endDate = new Date(dateTo);
+  const now = new Date();
 
+  const slots: string[] = [];
+
+  // Iterate through each day in the range
   let currentDate = new Date(startDate);
+
   while (currentDate <= endDate) {
-    // Only business days (Monday-Friday)
-    const dayOfWeek = currentDate.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      // Generate slots from 9 AM to 5 PM
+    // Get day of week (0=Sunday, 6=Saturday)
+    const dayOfWeek = currentDate.getUTCDay();
+
+    // Only business days (Monday=1 through Friday=5)
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      // Generate slots from 9 AM to 5 PM (in UTC)
       for (let hour = 9; hour < 17; hour++) {
         for (let minute of [0, 30]) {
-          const slot = new Date(currentDate);
-          slot.setHours(hour, minute, 0, 0);
+          // Create slot time using UTC methods
+          const slot = new Date(
+            Date.UTC(
+              currentDate.getUTCFullYear(),
+              currentDate.getUTCMonth(),
+              currentDate.getUTCDate(),
+              hour,
+              minute,
+              0,
+              0
+            )
+          );
 
           // Only include future slots
-          if (slot > new Date()) {
+          if (slot > now) {
             slots.push(slot.toISOString());
           }
         }
       }
     }
-    currentDate.setDate(currentDate.getDate() + 1);
+
+    // Move to next day
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
   }
 
   console.log("✅ [CAL-INTEGRATION] Generated slots:", slots.length);
-  console.log("✅ [CAL-INTEGRATION] Next available:", nextAvailable);
+  if (slots.length > 0) {
+    console.log("✅ [CAL-INTEGRATION] Next available:", slots[0]);
+    console.log("✅ [CAL-INTEGRATION] First few slots:", slots.slice(0, 3));
+  } else {
+    console.log("⚠️ [CAL-INTEGRATION] No slots generated!");
+  }
 
   // Return simple, consistent format
   return new Response(
     JSON.stringify({
       success: true,
       result: {
-        nextAvailable: slots[0] || nextAvailable, // First slot or default
+        nextAvailable: slots[0] || null,
         availableSlots: slots.slice(0, 20), // First 20 slots
         totalSlots: slots.length,
       },
@@ -441,10 +458,13 @@ async function handleCreateBooking(params: any) {
           weekday: "long",
           month: "long",
           day: "numeric",
+          year: "numeric",
+          timeZone: "UTC",
         })} at ${startDate.toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
-        })}`,
+          timeZone: "UTC",
+        })} UTC`,
       },
     }),
     {
