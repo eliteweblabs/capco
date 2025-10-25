@@ -63,34 +63,55 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
 
     // Handle different message types
     if (body.message) {
-      switch (body.message.type) {
-        case "function-call":
-          return await handleFunctionCall(body.message.functionCall);
-        case "transcript":
-          return await handleTranscript(body.message.transcript);
-        case "status-update":
-          return await handleStatusUpdate(body.call);
-        case "speech-update":
-          // Speech updates are informational only, just acknowledge them
-          console.log("🗣️ [VAPI-WEBHOOK] Speech update:", body.message.speech);
-          return new Response(JSON.stringify({ success: true }), {
+      try {
+        switch (body.message.type) {
+          case "function-call":
+            return await handleFunctionCall(body.message.functionCall);
+          case "transcript":
+            return await handleTranscript(body.message.transcript);
+          case "status-update":
+            // For status-update, we want to acknowledge it and continue
+            console.log("🔄 [VAPI-WEBHOOK] Status update received:", body.message);
+            return new Response(JSON.stringify({ success: true }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+          case "speech-update":
+            // Speech updates are informational only, just acknowledge them
+            console.log("🗣️ [VAPI-WEBHOOK] Speech update:", body.message.speech);
+            return new Response(JSON.stringify({ success: true }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+          case "conversation-update":
+            // Conversation updates are informational only, just acknowledge them
+            console.log("💬 [VAPI-WEBHOOK] Conversation update:", body.message.conversation);
+            return new Response(JSON.stringify({ success: true }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+          default:
+            console.log("🤖 [VAPI-WEBHOOK] Unknown message type:", body.message.type);
+            // Return 200 instead of 400 to keep the call alive
+            return new Response(JSON.stringify({ success: true }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+        }
+      } catch (error) {
+        console.error("❌ [VAPI-WEBHOOK] Error handling message:", error);
+        // Always return 200 for message handling to keep the call alive
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Message handling error",
+            message: "Continuing with call...",
+          }),
+          {
             status: 200,
             headers: { "Content-Type": "application/json" },
-          });
-        case "conversation-update":
-          // Conversation updates are informational only, just acknowledge them
-          console.log("💬 [VAPI-WEBHOOK] Conversation update:", body.message.conversation);
-          return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
-        default:
-          console.log("🤖 [VAPI-WEBHOOK] Unknown message type:", body.message.type);
-          // Return 200 instead of 400 to keep the call alive
-          return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
+          }
+        );
       }
     }
 
@@ -105,10 +126,18 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
     });
   } catch (error) {
     console.error("❌ [VAPI-WEBHOOK] Error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    // Always return 200 to keep the call alive, even for parsing errors
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Request processing error",
+        message: "Continuing with call...",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 };
 
