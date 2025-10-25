@@ -399,11 +399,15 @@ async function handleGetAvailability(params: any) {
   }
 
   // Return format that VAPI can speak naturally
+  // Put technical data in 'data' object so assistant doesn't read it
   return new Response(
     JSON.stringify({
       result: message,
-      availableSlots: slots.slice(0, 20), // Include slots for assistant to use
-      nextAvailable: slots[0] || null,
+      data: {
+        nextAvailable: slots[0] || null,
+        availableSlots: slots.slice(0, 20),
+        totalSlots: slots.length,
+      },
     }),
     {
       status: 200,
@@ -486,7 +490,9 @@ async function handleCreateBooking(params: any) {
   return new Response(
     JSON.stringify({
       result: confirmationMessage,
-      booking: booking, // Include booking details for reference
+      data: {
+        booking: booking, // Include booking details in data object
+      },
     }),
     {
       status: 200,
