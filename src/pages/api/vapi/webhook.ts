@@ -109,9 +109,10 @@ async function handleToolCalls(message: any): Promise<Response> {
     const results = [];
 
     for (const toolCall of toolCallList) {
-      console.log(`[---VAPI-WEBHOOK] ${toolCall.name}()`);
+      const functionName = toolCall.function?.name || toolCall.name;
+      console.log(`[---VAPI-WEBHOOK] ${functionName}()`);
 
-      if (toolCall.name === "getAccountInfo") {
+      if (functionName === "getAccountInfo") {
         const response = await fetch(
           `${process.env.SITE_URL || "http://localhost:4321"}/api/vapi/cal-integration`,
           {
