@@ -3,14 +3,13 @@ import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const SITE_URL = "https://capcofire.com";
+const TOOL_ID = "5b8ac059-9bbe-4a27-985d-70df87f9490d";
 
-// Create bookAppointment tool
-async function createBookingTool() {
+async function updateBookingTool() {
   try {
-    console.log("🔧 Creating bookAppointment tool...");
+    console.log("🔧 Updating bookAppointment tool to include phone...");
 
     const toolConfig = {
-      type: "function",
       async: false,
       function: {
         name: "bookAppointment",
@@ -42,24 +41,10 @@ async function createBookingTool() {
         url: `${SITE_URL}/api/vapi/webhook`,
         timeoutSeconds: 20,
       },
-      messages: [
-        {
-          type: "request-start",
-          content: "Let me book that for you.",
-        },
-        {
-          type: "request-complete",
-          content: "Done!",
-        },
-        {
-          type: "request-failed",
-          content: "I'm having trouble booking that right now.",
-        },
-      ],
     };
 
-    const response = await fetch("https://api.vapi.ai/tool", {
-      method: "POST",
+    const response = await fetch(`https://api.vapi.ai/tool/${TOOL_ID}`, {
+      method: "PATCH",
       headers: {
         Authorization: `Bearer ${VAPI_API_KEY}`,
         "Content-Type": "application/json",
@@ -69,13 +54,11 @@ async function createBookingTool() {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Failed to create tool: ${response.status} ${error}`);
+      throw new Error(`Failed to update tool: ${response.status} ${error}`);
     }
 
     const tool = await response.json();
-    console.log("✅ bookAppointment tool created!");
-    console.log("📋 Tool ID:", tool.id);
-    console.log("\nAdd this to your assistant's toolIds array");
+    console.log("✅ bookAppointment tool updated with phone parameter!");
 
     return tool;
   } catch (error) {
@@ -84,5 +67,5 @@ async function createBookingTool() {
   }
 }
 
-createBookingTool();
+updateBookingTool();
 
