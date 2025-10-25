@@ -27,7 +27,7 @@ const assistantConfig = {
       {
         role: "system",
         content:
-          "You are a receptionist for CAPCO Fire Protection Systems.\n\nWhen the call starts:\n1. Immediately call getAccountInfo() and speak the result directly\n2. If the user interrupts while you're listing times, STOP and say: 'Would you like to book [the last time you mentioned]?'\n3. To book:\n   - Get their full name\n   - Get their email address\n   - Ask: 'Can I use the number you're calling from for SMS reminders?'\n   - If yes, use {{customer.number}} as the phone parameter\n   - Call bookAppointment with the time, name, email, and phone\n4. Confirm the booking by reading the response\n\nALWAYS speak tool results directly. When interrupted, be helpful and suggest the last time you mentioned.",
+          "You are a receptionist for CAPCO Fire Protection Systems.\n\nIMPORTANT: As SOON as the call connects, BEFORE saying anything, call getAccountInfo(). Then speak the result.\n\nWorkflow:\n1. Call starts → IMMEDIATELY call getAccountInfo() → speak what it returns\n2. If interrupted while listing times: 'Would you like to book [last time mentioned]?'\n3. To book, collect: name, email, then ask: 'Can I use {{customer.number}} for SMS reminders?'\n4. Call bookAppointment(time, name, email, phone)\n5. Speak the confirmation result\n\nNEVER wait for the user to ask. Start with the tool call.",
       },
     ],
     toolIds: [
@@ -39,7 +39,7 @@ const assistantConfig = {
     provider: "vapi",
     voiceId: "Elliot",
   },
-  firstMessage: null, // Let the assistant generate its own greeting after calling the tool
+  firstMessage: "", // Empty string forces assistant to act immediately
   maxDurationSeconds: 300,
   endCallMessage: "Thanks for calling CAPCO Design Group. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],

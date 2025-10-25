@@ -387,22 +387,32 @@ const { currentUser } = await checkAuth(Astro.cookies);
       };
     }
   }
+  interface NodeOptions {
+    id?: string;
+    type?: string;
+    title?: string;
+    subtitle?: string;
+    icon?: string;
+    status?: string;
+    x?: number;
+    y?: number;
+  }
 
   class NodeEditor {
     canvas;
     svg;
     nodes;
-    connections;
-    draggedNode;
-    dragOffset;
-    connecting;
-    connectionStart;
-    nodeCounter;
-    centerX;
+    connections: { from: string; to: string; side: string }[];
+    draggedNode: NodeOptions | null;
+    dragOffset: { x: number; y: number };
+    connecting: boolean;
+    connectionStart: { node: NodeOptions; isOutput: boolean; side: string } | null;
+    nodeCounter: number;
+    centerX: number;
     centerY;
-    isScrolling;
-    scrollSpeed;
-    scrollInterval;
+    isScrolling: boolean;
+    scrollSpeed: number;
+    scrollInterval: number | null;
 
     constructor() {
       this.canvas = document.getElementById("node-canvas");
@@ -439,7 +449,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       if (!window.SimpleIcons) {
         try {
           console.log("🔧 [ICON] Loading custom icon system synchronously...");
-          await import("../../lib/simple-icons-client.js");
+          await import("../../lib/simple-icons.ts");
           console.log("🔧 [ICON] Custom icon system loaded successfully");
         } catch (error) {
           console.warn("Failed to load custom icon system:", error);
@@ -702,74 +712,9 @@ const { currentUser } = await checkAuth(Astro.cookies);
         },
         delay + delay + delay + delay + delay + delay + delay + delay + delay + 100
       ); // After upload-files is created
-
-      // setTimeout(() => {
-      //   this.addNodeWithCenterMaintenance({
-      //     id: "approve",
-      //     type: "storage",
-      //     title: "Approve Proposal",
-      //     status: "24 hours to complete",
-      //     x: screenWidth - 200,
-      //     y: 700,
-      //   });
-      // }, delay + 2500);
-
-      // setTimeout(() => {
-      //   this.addNodeWithCenterMaintenance({
-      //     id: "revision",
-      //     type: "storage",
-      //     title: "Request Revision",
-      //     status: "24 hours to complete",
-      //     x: screenWidth - 200,
-      //     y: 200,
-      //   });
-      // }, delay + 3800);
-
-      // setTimeout(() => {
-      //   this.addNode({
-      //     id: "final-1",
-      //     type: "storage",
-      //     title: "Final Review",
-      //     status: "24 hours to complete",
-      //     x: screenWidth - 200,
-      //     y: 350,
-      //   });
-      // }, delay + 4500);
-
-      // setTimeout(() => {
-      //   this.addNode({
-      //     id: "deliverable",
-      //     type: "client",
-      //     title: "Final Documents Ready",
-      //     status: "24 hours to complete",
-      //     x: screenWidth - 200,
-      //     y: 5500,
-      //   });
-
-      //   // Keep scrolling - don't stop it
-      //   // this.stopContinuousScroll(); // Removed to keep scrolling
-      // }, delay + 3000);
-
-      // Add connections with additional delay
-
-      // setTimeout(() => {
-      //   this.addConnection("upload-files", "proposal", "right", "left");
-      // }, delay + 1600);
-
-      // setTimeout(() => {
-      //   this.addConnection("proposal", "approve", "right", "left");
-      // }, delay + 2000);
-
-      // setTimeout(() => {
-      //   this.addConnection("proposal", "revision", "right", "left");
-      // }, delay + 2600);
-
-      // setTimeout(() => {
-      //   this.addConnection("approval-1", "final-1", "right", "left");
-      // }, delay + 3200);
     }
 
-    addNode(options = {}) {
+    addNode(options: NodeOptions = {}) {
       const nodeId = options.id || `node-${++this.nodeCounter}`;
 
       // Calculate position using center maintenance
@@ -823,7 +768,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
 
     // Method to restore individual node positions
-    restoreNodePositions(nodePositions) {
+    restoreNodePositions(nodePositions: Map<string, { x: number; y: number }>) {
       nodePositions.forEach((position, nodeId) => {
         const node = this.nodes.get(nodeId);
         if (node) {
@@ -832,8 +777,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
           const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
           if (nodeElement) {
-            nodeElement.style.left = `${node.x}px`;
-            nodeElement.style.top = `${node.y}px`;
+            (nodeElement as HTMLElement).style.left = `${node.x}px`;
+            (nodeElement as HTMLElement).style.top = `${node.y}px`;
           }
         }
       });
@@ -841,7 +786,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
     // Method to remove nodes that have scrolled off the left side
     removeOffscreenNodes() {
-      const nodesToRemove = [];
+      const nodesToRemove: string[] = [];
 
       this.nodes.forEach((node, nodeId) => {
         // Remove nodes that are well off the left side of the screen
@@ -872,7 +817,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       const node = this.addNode(options);
 
       // Add entrance animation
-      const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
+      const nodeElement: HTMLElement | null = document.querySelector(`[data-node-id="${node.id}"]`);
       if (nodeElement) {
         nodeElement.style.opacity = "0";
         nodeElement.style.transform = "scale(0.01)";
@@ -887,7 +832,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       return node;
     }
 
-    renderNode(node) {
+    renderNode(node: NodeOptions) {
       const nodeElement = document.createElement("div");
       nodeElement.classList.add(
         "node-card",
@@ -899,29 +844,25 @@ const { currentUser } = await checkAuth(Astro.cookies);
         "dark:bg-white/10",
         "dark:border-black/10"
       );
-      nodeElement.dataset.nodeId = node.id;
-      nodeElement.dataset.type = node.type;
+      nodeElement.dataset.nodeId = node.id || "";
+      nodeElement.dataset.type = node.type || "";
       nodeElement.style.left = `${node.x}px`;
       nodeElement.style.top = `${node.y}px`;
 
       // Custom icon system - Direct SVG HTML mapping
-      const getIconHTML = (iconName: string | undefined, preset: string = "default"): string => {
+      const getIconHTML = (iconName: string | undefined): string => {
         // Handle undefined or null icon names
-
-        console.log(`🔧 [ICON] Requesting icon: "${iconName}"`);
-        console.log(`🔧 [ICON] SimpleIcons available:`, !!window.SimpleIcons);
 
         // Use the custom icon system if available, otherwise fallback to simple SVG
         if (window.SimpleIcons && window.SimpleIcons.getIcon) {
-          const iconHTML = window.SimpleIcons.getIcon(iconName, {
+          const iconHTML: string = window.SimpleIcons.getIcon(iconName || "", {
             size: 16,
             className: "text-primary-500 dark:text-primary-400",
           });
-          console.log(`🔧 [ICON] Generated icon HTML:`, iconHTML);
           return iconHTML;
+        } else {
+          return "";
         }
-
-        // Fallback to simple circle icon
       };
 
       nodeElement.innerHTML = `
@@ -1002,26 +943,34 @@ const { currentUser } = await checkAuth(Astro.cookies);
       this.canvas.appendChild(nodeElement);
     }
 
-    startDrag(node, e) {
+    startDrag(node: NodeOptions, e: MouseEvent | TouchEvent) {
       this.draggedNode = node;
-      const rect = e.target.closest(".node-card").getBoundingClientRect();
-      const canvasRect = this.canvas.getBoundingClientRect();
+      const rect = (e.target as HTMLElement).closest(".node-card")?.getBoundingClientRect() || {
+        left: 0,
+        top: 0,
+      };
+      const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
 
       this.dragOffset = {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,
       };
 
-      e.target.closest(".node-card").classList.add("dragging");
+      (e.target as HTMLElement).closest(".node-card")?.classList.add("dragging");
     }
 
-    startConnection(node, isOutput, side, e) {
+    startConnection(
+      node: NodeOptions,
+      isOutput: boolean,
+      side: string,
+      e: MouseEvent | TouchEvent
+    ) {
       this.connecting = true;
       this.connectionStart = { node, isOutput, side };
-      e.target.style.background = "#60a5fa";
+      (e.target as HTMLElement).style.background = "#60a5fa";
     }
 
-    findNearestAnchor(node, mouseX, mouseY) {
+    findNearestAnchor(node: NodeOptions, mouseX: number, mouseY: number) {
       const anchors = [
         { side: "top", pos: this.getConnectionPoint(node, "top") },
         { side: "right", pos: this.getConnectionPoint(node, "right") },
@@ -1043,21 +992,26 @@ const { currentUser } = await checkAuth(Astro.cookies);
       return nearest.side;
     }
 
-    getDistance(x1, y1, x2, y2) {
+    getDistance(x1: number, y1: number, x2: number, y2: number) {
       return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
     }
 
-    handleCanvasMouseMove(e) {
+    handleCanvasMouseMove(e: MouseEvent | TouchEvent) {
       if (this.draggedNode) {
-        const canvasRect = this.canvas.getBoundingClientRect();
+        const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
         const x = e.clientX - canvasRect.left - this.dragOffset.x;
         const y = e.clientY - canvasRect.top - this.dragOffset.y;
 
-        this.draggedNode.x = Math.max(0, Math.min(x, this.canvas.offsetWidth - 200));
-        this.draggedNode.y = Math.max(0, Math.min(y, this.canvas.offsetHeight - 100));
+        this.draggedNode.x = Math.max(0, Math.min(x, this.canvas?.offsetWidth || 0 - 200));
+        this.draggedNode.y = Math.max(0, Math.min(y, this.canvas?.offsetHeight || 0 - 100));
 
-        const nodeElement = document.querySelector(`[data-node-id="${this.draggedNode.id}"]`);
-        nodeElement.style.left = `${this.draggedNode.x}px`;
+        const nodeElement: HTMLElement | null = document.querySelector(
+          `[data-node-id="${this.draggedNode.id}"]`
+        );
+        if (nodeElement) {
+          nodeElement.style.left = `${this.draggedNode.x}px`;
+          nodeElement.style.top = `${this.draggedNode.y}px`;
+        }
         nodeElement.style.top = `${this.draggedNode.y}px`;
 
         this.updateConnections();
@@ -1065,19 +1019,22 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
       // Handle connection preview when connecting
       if (this.connecting && this.connectionStart) {
-        const canvasRect = this.canvas.getBoundingClientRect();
+        const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
         const mouseX = e.clientX - canvasRect.left;
         const mouseY = e.clientY - canvasRect.top;
 
         // Find the node under the mouse
-        const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+        const elementUnderMouse: HTMLElement | null = document.elementFromPoint(
+          e.clientX,
+          e.clientY
+        );
         const nodeElement = elementUnderMouse?.closest(".node-card");
 
         if (
           nodeElement &&
           nodeElement !== document.querySelector(`[data-node-id="${this.connectionStart.node.id}"]`)
         ) {
-          const nodeId = nodeElement.dataset.nodeId;
+          const nodeId = nodeElement.dataset.nodeId || "";
           const targetNode = this.nodes.get(nodeId);
 
           if (targetNode) {
@@ -1096,7 +1053,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       }
     }
 
-    handleCanvasMouseUp(e) {
+    handleCanvasMouseUp(e: MouseEvent | TouchEvent) {
       if (this.draggedNode) {
         this.draggedNode = null;
         document.querySelectorAll(".node-card").forEach((card) => {
@@ -1105,19 +1062,22 @@ const { currentUser } = await checkAuth(Astro.cookies);
       }
 
       if (this.connecting && this.connectionStart) {
-        const canvasRect = this.canvas.getBoundingClientRect();
+        const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
         const mouseX = e.clientX - canvasRect.left;
         const mouseY = e.clientY - canvasRect.top;
 
         // Find the node under the mouse
-        const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
-        const nodeElement = elementUnderMouse?.closest(".node-card");
+        const elementUnderMouse: HTMLElement | null = document.elementFromPoint(
+          e.clientX,
+          e.clientY
+        );
+        const nodeElement: HTMLElement | null = elementUnderMouse?.closest(".node-card");
 
         if (
           nodeElement &&
           nodeElement !== document.querySelector(`[data-node-id="${this.connectionStart.node.id}"]`)
         ) {
-          const nodeId = nodeElement.dataset.nodeId;
+          const nodeId = nodeElement.dataset.nodeId || "";
           const targetNode = this.nodes.get(nodeId);
 
           if (targetNode) {
@@ -1146,7 +1106,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
 
     // Touch event handlers
-    handleCanvasTouchStart(e) {
+    handleCanvasTouchStart(e: TouchEvent) {
       // Prevent default to avoid scrolling
       e.preventDefault();
       // Convert to mouse event format
@@ -1155,7 +1115,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       }
     }
 
-    handleCanvasTouchMove(e) {
+    handleCanvasTouchMove(e: TouchEvent) {
       // Prevent default to avoid scrolling
       e.preventDefault();
       // Convert to mouse event format
@@ -1164,7 +1124,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       }
     }
 
-    handleCanvasTouchEnd(e) {
+    handleCanvasTouchEnd(e: TouchEvent) {
       // Convert to mouse event format
       // Use changedTouches since touches will be empty on touchend
       if (e.changedTouches.length === 1) {
@@ -1172,7 +1132,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
       }
     }
 
-    updateConnectionPreview(fromNode, fromSide, toNode, toSide) {
+    updateConnectionPreview(
+      fromNode: NodeOptions,
+      fromSide: string,
+      toNode: NodeOptions,
+      toSide: string
+    ) {
       // Clear existing preview
       this.clearConnectionPreview();
 
@@ -1188,23 +1153,23 @@ const { currentUser } = await checkAuth(Astro.cookies);
       path.setAttribute("class", "connection-line");
       path.setAttribute("style", "stroke: #60a5fa; stroke-dasharray: 3,3; opacity: 0.7;");
 
-      this.svg.appendChild(path);
+      this.svg?.appendChild(path);
     }
 
     clearConnectionPreview() {
       // Remove preview connections (those with dashed style)
-      const previewLines = this.svg.querySelectorAll('path[style*="stroke-dasharray"]');
+      const previewLines = this.svg?.querySelectorAll('path[style*="stroke-dasharray"]') || [];
       previewLines.forEach((line) => line.remove());
     }
 
-    handleCanvasMouseDown(e) {
+    handleCanvasMouseDown(e: MouseEvent) {
       // Deselect all nodes
       document.querySelectorAll(".node-card").forEach((card) => {
         card.classList.remove("selected");
       });
     }
 
-    addConnection(fromNodeId, toNodeId, fromSide = "right", toSide = "left") {
+    addConnection(fromNodeId: string, toNodeId: string, fromSide = "right", toSide = "left") {
       const connection = {
         from: fromNodeId,
         to: toNodeId,
@@ -1217,7 +1182,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
       this.renderConnection(connection);
     }
 
-    renderConnection(connection) {
+    renderConnection(connection: {
+      from: string;
+      to: string;
+      fromSide: string;
+      toSide: string;
+      createdAt: number;
+      animated: boolean;
+    }) {
       const fromNode = this.nodes.get(connection.from);
       const toNode = this.nodes.get(connection.to);
 
@@ -1424,7 +1396,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
     // Dynamically import the custom icon system
     try {
       console.log("🔧 [ICON] Loading custom icon system...");
-      await import("../../lib/simple-icons-client.js");
+      await import("../../lib/simple-icons.ts");
       console.log("🔧 [ICON] Custom icon system loaded successfully");
       console.log("🔧 [ICON] SimpleIcons available:", !!window.SimpleIcons);
       if (window.SimpleIcons) {

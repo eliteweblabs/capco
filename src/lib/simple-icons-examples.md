@@ -39,10 +39,10 @@ const bellIcon = getIcon("bell", {
 ## Client-side Usage
 
 ```javascript
-// Import the client-side version
-import "/src/lib/simple-icons-client.js";
+// Import the unified system (works both server & client)
+import "/src/lib/simple-icons.ts";
 
-// Use globally available functions
+// Use globally available functions (auto-initialized for browser)
 const iconHTML = window.SimpleIcons.getIcon("user", {
   size: 16,
   className: "text-primary-500",
@@ -52,7 +52,7 @@ const iconHTML = window.SimpleIcons.getIcon("user", {
 ## Available Icons
 
 - `user` - User profile
-- `user-plus` - Add user  
+- `user-plus` - Add user
 - `log-in` - Login
 - `log-out` - Logout
 - `download` - Download
@@ -69,8 +69,8 @@ const iconHTML = window.SimpleIcons.getIcon("user", {
 
 ```typescript
 interface IconConfig {
-  size?: number;        // Icon size in pixels (default: 16)
-  className?: string;   // CSS classes to apply
+  size?: number; // Icon size in pixels (default: 16)
+  className?: string; // CSS classes to apply
 }
 ```
 
