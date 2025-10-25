@@ -65,13 +65,8 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
 
     // Only process function calls and call end status
     if (body.message?.type === "function-call") {
-      console.log("[---VAPI-WEBHOOK] FUNCTION CALL DETECTED!");
       return await handleFunctionCall(body.message.functionCall);
     } else if (body.message?.type === "tool-calls") {
-      console.log("[---VAPI-WEBHOOK] TOOL-CALLS DETECTED!");
-      console.log("[---VAPI-WEBHOOK] Tool Calls:", JSON.stringify(body.message, null, 2));
-
-      // Handle tool calls properly according to VAPI docs
       return await handleToolCalls(body.message);
     } else if (body.call?.status === "ended") {
       // Log final call stats
