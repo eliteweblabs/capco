@@ -61,7 +61,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
     const body: VapiWebhookData = await request.json();
 
     // LOG EVERY SINGLE REQUEST
-    console.log("🔥 [VAPI-WEBHOOK] ===== INCOMING REQUEST =====");
+    console.log("🔥 [VAPI-WEBHOOK] ===== INCOMING REQUEST (v2) =====");
     console.log("🔥 [VAPI-WEBHOOK] Message Type:", body.message?.type || "NO MESSAGE TYPE");
     console.log("🔥 [VAPI-WEBHOOK] Call Status:", body.call?.status || "NO CALL STATUS");
     console.log("🔥 [VAPI-WEBHOOK] Full Body:", JSON.stringify(body, null, 2));
