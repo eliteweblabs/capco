@@ -112,12 +112,25 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (action) {
     case "get_account_info":
-      // Mock users for now (replace with real Cal.com database query when ready)
-      const users = [
-        { id: 1, name: "John Smith", email: "john@capcofire.com" },
-        { id: 2, name: "Sarah Johnson", email: "sarah@capcofire.com" },
-        { id: 3, name: "Mike Chen", email: "mike@capcofire.com" },
-      ];
+      // Get users from profiles table (not Cal.com User table)
+      const { data: users, error: usersError } = await supabase
+        .from("profiles")
+        .select("id, name, phone")
+        .eq("role", "Admin")
+        .limit(10);
+
+      if (usersError) {
+        console.error("Error fetching users:", usersError);
+        return new Response(
+          JSON.stringify({
+            result: "I'm having trouble accessing staff information right now.",
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
 
       // Generate next 10 available time slots (M-F, 9 AM - 5 PM UTC)
       const slots: string[] = [];
