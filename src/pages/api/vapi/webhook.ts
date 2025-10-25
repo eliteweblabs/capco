@@ -121,10 +121,9 @@ async function handleToolCalls(message: any): Promise<Response> {
     const results = [];
 
     for (const toolCall of toolCallList) {
-      console.log("[---VAPI-WEBHOOK] Tool Call:", toolCall.name, "ID:", toolCall.id);
+      console.log(`[---VAPI-WEBHOOK] ${toolCall.name}()`);
 
       if (toolCall.name === "getAccountInfo") {
-        // Call our Cal.com integration
         const response = await fetch(
           `${process.env.SITE_URL || "http://localhost:4321"}/api/vapi/cal-integration`,
           {
@@ -140,9 +139,6 @@ async function handleToolCalls(message: any): Promise<Response> {
         );
 
         const data = await response.json();
-        console.log("[---VAPI-WEBHOOK] Got result:", data.result);
-
-        // Add to results array with proper format
         results.push({
           toolCallId: toolCall.id,
           result: data.result,
@@ -150,16 +146,12 @@ async function handleToolCalls(message: any): Promise<Response> {
       }
     }
 
-    // Return in VAPI's expected format
-    const responseData = { results };
-    console.log("[---VAPI-WEBHOOK] Sending response:", JSON.stringify(responseData));
-
-    return new Response(JSON.stringify(responseData), {
+    return new Response(JSON.stringify({ results }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("❌ [VAPI-WEBHOOK] Tool call error:", error);
+    console.error("[---VAPI-WEBHOOK] Tool error:", error);
     return new Response(
       JSON.stringify({
         results: [
