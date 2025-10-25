@@ -68,13 +68,34 @@ const iconSize =
             ? 32
             : 16;
 
-const iconHTML = getIcon(name, {
+// Get base icon HTML
+let iconHTML = getIcon(name, {
   size: iconSize,
   className: className,
-  style: style || customStyle || (color !== "currentColor" ? `color: ${color};` : ""),
-  id: id,
-  ...dataAttributes,
 });
+
+// Build attribute string for additional props
+const attrs = [];
+if (id) attrs.push(`id="${id}"`);
+if (style || customStyle || color !== "currentColor") {
+  const styleValue = style || customStyle || `color: ${color};`;
+  attrs.push(`style="${styleValue}"`);
+}
+// Add data attributes
+Object.entries(dataAttributes).forEach(([key, value]) => {
+  attrs.push(`${key}="${value}"`);
+});
+// Add any other props
+Object.entries(rest).forEach(([key, value]) => {
+  if (typeof value === "string") {
+    attrs.push(`${key}="${value}"`);
+  }
+});
+
+// Inject attributes into SVG tag
+if (attrs.length > 0) {
+  iconHTML = iconHTML.replace("<svg", `<svg ${attrs.join(" ")}`);
+}
 ---
 
 <Fragment set:html={iconHTML} />
