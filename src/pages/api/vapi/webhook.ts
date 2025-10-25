@@ -59,7 +59,12 @@ interface VapiWebhookData {
 export const POST: APIRoute = async ({ request }): Promise<Response> => {
   try {
     const body: VapiWebhookData = await request.json();
-    console.log("🤖 [VAPI-WEBHOOK] Received webhook:", body);
+    // Log only essential info from the webhook
+    if (body.message?.type) {
+      console.log("🤖 [VAPI-WEBHOOK] Message type:", body.message.type);
+    } else if (body.call?.status) {
+      console.log("🤖 [VAPI-WEBHOOK] Call status:", body.call.status);
+    }
 
     // Handle different message types
     if (body.message) {
@@ -70,22 +75,19 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
           case "transcript":
             return await handleTranscript(body.message.transcript);
           case "status-update":
-            // For status-update, we want to acknowledge it and continue
-            console.log("🔄 [VAPI-WEBHOOK] Status update received:", body.message);
+            // For status-update, just acknowledge it and continue
             return new Response(JSON.stringify({ success: true }), {
               status: 200,
               headers: { "Content-Type": "application/json" },
             });
           case "speech-update":
             // Speech updates are informational only, just acknowledge them
-            console.log("🗣️ [VAPI-WEBHOOK] Speech update:", body.message.speech);
             return new Response(JSON.stringify({ success: true }), {
               status: 200,
               headers: { "Content-Type": "application/json" },
             });
           case "conversation-update":
             // Conversation updates are informational only, just acknowledge them
-            console.log("💬 [VAPI-WEBHOOK] Conversation update:", body.message.conversation);
             return new Response(JSON.stringify({ success: true }), {
               status: 200,
               headers: { "Content-Type": "application/json" },
@@ -150,7 +152,8 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
     });
   }
 
-  console.log("🤖 [VAPI-WEBHOOK] Function call:", functionCall.name, functionCall.parameters);
+  // Only log function name for clarity
+  console.log("🤖 [VAPI-WEBHOOK] Function call:", functionCall.name);
 
   // Validate date format (ISO with timezone)
   const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -291,7 +294,7 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
         }
 
         const result = await response.json();
-        console.log("✅ [VAPI-WEBHOOK] Cal.com integration success:", result);
+        console.log("✅ [VAPI-WEBHOOK] Cal.com integration success");
 
         return new Response(JSON.stringify(result), {
           status: 200,
@@ -364,7 +367,8 @@ async function handleTranscript(transcript: any): Promise<Response> {
     });
   }
 
-  console.log("🤖 [VAPI-WEBHOOK] Transcript:", transcript.role, transcript.message);
+  // Only log transcript role for debugging
+  console.log("🤖 [VAPI-WEBHOOK] Transcript role:", transcript.role);
 
   // Store transcript in database or send to analytics
   // This could be used for training or analysis
@@ -377,7 +381,10 @@ async function handleTranscript(transcript: any): Promise<Response> {
 
 // Handle call status updates
 async function handleCallStatus(call: any) {
-  console.log("🤖 [VAPI-WEBHOOK] Call status:", call.status, call.id);
+  // Only log call status changes
+  if (call.status === "ended" || call.status === "failed") {
+    console.log("🤖 [VAPI-WEBHOOK] Call status:", call.status);
+  }
 
   // Log call analytics
   if (call.status === "ended") {
@@ -386,12 +393,11 @@ async function handleCallStatus(call: any) {
         ? new Date(call.endedAt).getTime() - new Date(call.startedAt).getTime()
         : null;
 
-    console.log("🤖 [VAPI-WEBHOOK] Call ended:", {
-      id: call.id,
-      duration: duration ? `${Math.round(duration / 1000)}s` : "unknown",
-      cost: call.cost,
-      summary: call.summary,
-    });
+    // Only log duration for ended calls
+    console.log(
+      "🤖 [VAPI-WEBHOOK] Call duration:",
+      duration ? `${Math.round(duration / 1000)}s` : "unknown"
+    );
 
     // Alert if call was expensive or long
     if (call.cost && call.cost > 1.0) {
@@ -414,16 +420,6 @@ async function handleCallStatus(call: any) {
       });
     }
   }
-
-  return new Response(JSON.stringify({ success: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-// Handle status updates
-async function handleStatusUpdate(call: any) {
-  console.log("🤖 [VAPI-WEBHOOK] Status update:", call.status);
 
   return new Response(JSON.stringify({ success: true }), {
     status: 200,
