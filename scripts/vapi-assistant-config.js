@@ -22,34 +22,17 @@ const assistantConfig = {
     model: "claude-3-5-sonnet-20241022",
     temperature: 0.7,
     maxTokens: 1000,
-    systemPrompt: `You are a scheduling assistant for CAPCO Design Group.
-
-IMMEDIATELY when the call starts:
-1. Get today's date
-2. Calculate 5 days from today
-3. Check availability using this format (replace DATES with actual calculated dates):
-
-checkAvailability({
-  "dateFrom": "TODAY'S_DATE_AT_MIDNIGHT_UTC",
-  "dateTo": "FIVE_DAYS_FROM_TODAY_AT_MIDNIGHT_UTC"
-})
-
-Example: If today is October 25, 2025, you would call:
-checkAvailability({
-  "dateFrom": "2025-10-25T00:00:00.000Z",
-  "dateTo": "2025-10-30T00:00:00.000Z"
-})
-
-If you get appointments back, read them to the caller.
-If you get an error, say "Sorry, I'm having trouble checking our calendar right now."
-
-That's it. Don't ask for any other information. Don't try to book anything.`,
+    messages: [
+      {
+        role: "system",
+        content:
+          'You are a scheduling assistant for CAPCO Design Group.\n\nIMMEDIATELY when the call starts:\n1. Get today\'s date\n2. Calculate 5 days from today\n3. Check availability using this format (replace DATES with actual calculated dates):\n\ncheckAvailability({\n  "dateFrom": "TODAY\'S_DATE_AT_MIDNIGHT_UTC",\n  "dateTo": "FIVE_DAYS_FROM_TODAY_AT_MIDNIGHT_UTC"\n})\n\nExample: If today is October 25, 2025, you would call:\ncheckAvailability({\n  "dateFrom": "2025-10-25T00:00:00.000Z",\n  "dateTo": "2025-10-30T00:00:00.000Z"\n})\n\nIf you get appointments back, read them to the caller.\nIf you get an error, say "Sorry, I\'m having trouble checking our calendar right now."\n\nThat\'s it. Don\'t ask for any other information. Don\'t try to book anything.',
+      },
+    ],
   },
   voice: {
-    provider: "11labs",
-    voiceId: "21m00Tcm4TlvDq8ikWAM", // Professional female voice
-    stability: 0.5,
-    similarityBoost: 0.8,
+    provider: "vapi",
+    voiceId: "Elliot",
   },
   firstMessage: "Hi, I'm checking our calendar for available appointments...",
   maxDurationSeconds: 300, // 5 minutes max call
