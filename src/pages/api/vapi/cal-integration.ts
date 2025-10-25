@@ -156,23 +156,38 @@ export const POST: APIRoute = async ({ request }) => {
         timeZoneName: 'short'
       });
 
-      // Format slots for speech
-      const slotsList = slots.map(slot => {
+      // Format slots for speech - group by day for natural reading
+      let slotsList = "";
+      let lastDay = "";
+      
+      slots.forEach((slot, index) => {
         const date = new Date(slot);
-        const options: Intl.DateTimeFormatOptions = { 
+        const dayKey = date.toLocaleDateString('en-US', { 
           weekday: 'long', 
           month: 'long', 
           day: 'numeric',
-          hour: 'numeric',
+          timeZone: 'UTC'
+        });
+        const timeOnly = date.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
           minute: '2-digit',
           timeZone: 'UTC'
-        };
-        return date.toLocaleString('en-US', options);
-      }).join(", ");
+        });
+        
+        if (dayKey !== lastDay) {
+          // New day - include full date
+          if (index > 0) slotsList += ", ";
+          slotsList += `${dayKey} at ${timeOnly}`;
+          lastDay = dayKey;
+        } else {
+          // Same day - just add time
+          slotsList += `, ${timeOnly}`;
+        }
+      });
 
       return new Response(
         JSON.stringify({
-          result: `Today is ${currentDateTime}. The next available time slots are: ${slotsList}. Would you like to book one of these times?`,
+          result: `Today is ${currentDateTime}. Our next available appointments are ${slotsList}. Would you like to book one of these times?`,
           data: {
             slots,
           },
