@@ -119,9 +119,30 @@ async function handleToolCalls(message: any): Promise<Response> {
     const results = [];
 
     for (const toolCall of toolCallList) {
-      console.log(`[---VAPI-WEBHOOK] Tool call:`, toolCall.id);
-      
-      // Always call the endpoint regardless of function name (for debugging)
+      const functionName = toolCall.function?.name || toolCall.name;
+      console.log(`[---VAPI-WEBHOOK] Tool call: ${functionName}`);
+
+      let action = "";
+      let params: any = {};
+
+      // Route to appropriate action based on function name
+      if (functionName === "getAccountInfo") {
+        action = "get_account_info";
+      } else if (functionName === "bookAppointment") {
+        action = "create_booking";
+        // Parse arguments if they're a string
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+        params = {
+          start: args.start,
+          name: args.name,
+          email: args.email,
+        };
+        console.log(`[---VAPI-WEBHOOK] Booking params:`, params);
+      }
+
       const response = await fetch(
         `${process.env.SITE_URL || "http://localhost:4321"}/api/vapi/cal-integration`,
         {
@@ -131,14 +152,15 @@ async function handleToolCalls(message: any): Promise<Response> {
             "X-Vapi-System": "true",
           },
           body: JSON.stringify({
-            action: "get_account_info",
+            action,
+            ...params,
           }),
         }
       );
 
       const data = await response.json();
       console.log(`[---VAPI-WEBHOOK] Result:`, data.result?.substring(0, 50) + "...");
-      
+
       results.push({
         toolCallId: toolCall.id,
         result: data.result,

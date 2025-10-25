@@ -19,24 +19,27 @@ const assistantConfig = {
   serverUrl: VAPI_WEBHOOK_URL,
   functions: [], // Clear old functions array
   model: {
-    provider: "openai",
-    model: "gpt-4o",
+    provider: "anthropic",
+    model: "claude-3-5-sonnet-20241022",
     temperature: 0.7,
     maxTokens: 1000,
     messages: [
       {
         role: "system",
         content:
-          "You are a helpful scheduling assistant for CAPCO Fire Protection Systems. When the call starts:\n1. Immediately call getAccountInfo() to get staff and availability\n2. Read the 'result' field from the response directly to the user\n3. Help them book an appointment if they're interested",
+          "You are a receptionist for CAPCO Fire Protection Systems.\n\nWhen the call starts:\n1. Immediately call getAccountInfo() and speak the result directly\n2. If the user interrupts while you're listing times, STOP and say: 'Would you like to book [the last time you mentioned]?'\n3. To book, get their name and email, then call bookAppointment with the time they selected\n4. Confirm the booking by reading the response\n\nALWAYS speak tool results directly. When interrupted, be helpful and suggest the last time you mentioned.",
       },
     ],
-    toolIds: ["0b17d3bc-a697-432b-8386-7ed1235fd111"], // Reference to the custom tool
+    toolIds: [
+      "0b17d3bc-a697-432b-8386-7ed1235fd111", // getAccountInfo
+      "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment
+    ],
   },
   voice: {
     provider: "vapi",
     voiceId: "Elliot",
   },
-  firstMessage: "Hello! Let me get our staff and availability information.",
+  firstMessage: null, // Let the assistant generate its own greeting after calling the tool
   maxDurationSeconds: 300,
   endCallMessage: "Thanks for calling CAPCO Design Group. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
