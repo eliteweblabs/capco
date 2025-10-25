@@ -60,9 +60,23 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
   try {
     const body: VapiWebhookData = await request.json();
 
+    // LOG EVERY SINGLE REQUEST
+    console.log("🔥 [VAPI-WEBHOOK] ===== INCOMING REQUEST =====");
+    console.log("🔥 [VAPI-WEBHOOK] Message Type:", body.message?.type || "NO MESSAGE TYPE");
+    console.log("🔥 [VAPI-WEBHOOK] Call Status:", body.call?.status || "NO CALL STATUS");
+    console.log("🔥 [VAPI-WEBHOOK] Full Body:", JSON.stringify(body, null, 2));
+
     // Only process function calls and call end status
     if (body.message?.type === "function-call") {
+      console.log("🔥 [VAPI-WEBHOOK] FUNCTION CALL DETECTED!");
       return await handleFunctionCall(body.message.functionCall);
+    } else if (body.message?.type === "tool-calls") {
+      console.log("🔥 [VAPI-WEBHOOK] TOOL-CALLS DETECTED!");
+      console.log("🔥 [VAPI-WEBHOOK] Tool Calls:", JSON.stringify(body.message, null, 2));
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     } else if (body.call?.status === "ended") {
       // Log final call stats
       const duration =
