@@ -31,6 +31,10 @@ async function testAvailability() {
   const result = await response.json();
   console.log("✅ Availability response:", JSON.stringify(result, null, 2));
 
+  if (!result.result) {
+    throw new Error("No result message in response");
+  }
+
   return result;
 }
 
@@ -53,6 +57,10 @@ async function testBooking(startTime) {
   const result = await response.json();
   console.log("✅ Booking response:", JSON.stringify(result, null, 2));
 
+  if (!result.result) {
+    throw new Error("No result message in response");
+  }
+
   return result;
 }
 
@@ -64,13 +72,8 @@ async function main() {
     // Test availability
     const availabilityResult = await testAvailability();
 
-    if (!availabilityResult.success) {
-      console.error("❌ Availability check failed");
-      process.exit(1);
-    }
-
     // Get the first available slot
-    const nextSlot = availabilityResult.result?.nextAvailable;
+    const nextSlot = availabilityResult.nextAvailable;
 
     if (!nextSlot) {
       console.error("❌ No available slots found");
@@ -81,11 +84,6 @@ async function main() {
 
     // Test booking with that slot
     const bookingResult = await testBooking(nextSlot);
-
-    if (!bookingResult.success) {
-      console.error("❌ Booking creation failed");
-      process.exit(1);
-    }
 
     console.log("\n✅ All tests passed!");
     console.log("\n📋 Summary:");
