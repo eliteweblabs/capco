@@ -60,19 +60,19 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
   try {
     const body: VapiWebhookData = await request.json();
 
-    // LOG EVERY SINGLE REQUEST (prefixed logs allowed in production)
-    console.log("🔥 [VAPI-WEBHOOK] ===== INCOMING REQUEST =====");
-    console.log("🔥 [VAPI-WEBHOOK] Message Type:", body.message?.type || "NO MESSAGE TYPE");
-    console.log("🔥 [VAPI-WEBHOOK] Call Status:", body.call?.status || "NO CALL STATUS");
-    console.log("🔥 [VAPI-WEBHOOK] Full Body:", JSON.stringify(body, null, 2));
+    // LOG EVERY SINGLE REQUEST ([---] prefix allows production logging)
+    console.log("[---VAPI-WEBHOOK] ===== INCOMING REQUEST =====");
+    console.log("[---VAPI-WEBHOOK] Message Type:", body.message?.type || "NO MESSAGE TYPE");
+    console.log("[---VAPI-WEBHOOK] Call Status:", body.call?.status || "NO CALL STATUS");
+    console.log("[---VAPI-WEBHOOK] Full Body:", JSON.stringify(body, null, 2));
 
     // Only process function calls and call end status
     if (body.message?.type === "function-call") {
-      console.log("🔥 [VAPI-WEBHOOK] FUNCTION CALL DETECTED!");
+      console.log("[---VAPI-WEBHOOK] FUNCTION CALL DETECTED!");
       return await handleFunctionCall(body.message.functionCall);
     } else if (body.message?.type === "tool-calls") {
-      console.log("🔥 [VAPI-WEBHOOK] TOOL-CALLS DETECTED!");
-      console.log("🔥 [VAPI-WEBHOOK] Tool Calls:", JSON.stringify(body.message, null, 2));
+      console.log("[---VAPI-WEBHOOK] TOOL-CALLS DETECTED!");
+      console.log("[---VAPI-WEBHOOK] Tool Calls:", JSON.stringify(body.message, null, 2));
 
       // Handle tool calls properly according to VAPI docs
       return await handleToolCalls(body.message);
@@ -115,11 +115,11 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
 // Handle tool calls (VAPI Custom Tools format)
 async function handleToolCalls(message: any): Promise<Response> {
   try {
-    console.log("🔧 [VAPI-WEBHOOK] Processing tool calls...");
+    console.log("[---VAPI-WEBHOOK] Processing tool calls...");
     
     const toolCallList = message.toolCallList || [];
     if (toolCallList.length === 0) {
-      console.log("❌ [VAPI-WEBHOOK] No tool calls in list");
+      console.log("[---VAPI-WEBHOOK] No tool calls in list");
       return new Response(JSON.stringify({ results: [] }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -129,7 +129,7 @@ async function handleToolCalls(message: any): Promise<Response> {
     const results = [];
 
     for (const toolCall of toolCallList) {
-      console.log("🔧 [VAPI-WEBHOOK] Tool Call:", toolCall.name, "ID:", toolCall.id);
+      console.log("[---VAPI-WEBHOOK] Tool Call:", toolCall.name, "ID:", toolCall.id);
 
       if (toolCall.name === "getAccountInfo") {
         // Call our Cal.com integration
@@ -148,7 +148,7 @@ async function handleToolCalls(message: any): Promise<Response> {
         );
 
         const data = await response.json();
-        console.log("✅ [VAPI-WEBHOOK] Got result:", data.result);
+        console.log("[---VAPI-WEBHOOK] Got result:", data.result);
 
         // Add to results array with proper format
         results.push({
@@ -160,7 +160,7 @@ async function handleToolCalls(message: any): Promise<Response> {
 
     // Return in VAPI's expected format
     const responseData = { results };
-    console.log("📤 [VAPI-WEBHOOK] Sending response:", JSON.stringify(responseData));
+    console.log("[---VAPI-WEBHOOK] Sending response:", JSON.stringify(responseData));
 
     return new Response(JSON.stringify(responseData), {
       status: 200,
