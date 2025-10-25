@@ -57,8 +57,14 @@ interface VapiWebhookData {
 }
 
 export const POST: APIRoute = async ({ request }): Promise<Response> => {
+  // Log immediately before anything else
+  console.log("[---VAPI-WEBHOOK] POST request received");
+  
   try {
-    const body: VapiWebhookData = await request.json();
+    const rawBody = await request.text();
+    console.log("[---VAPI-WEBHOOK] Raw body:", rawBody);
+    
+    const body: VapiWebhookData = JSON.parse(rawBody);
 
     // LOG EVERY SINGLE REQUEST ([---] prefix allows production logging)
     console.log("[---VAPI-WEBHOOK] ===== INCOMING REQUEST =====");
@@ -96,6 +102,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.log("[---VAPI-WEBHOOK] CRITICAL ERROR:", error);
     console.error("❌ [VAPI-WEBHOOK] Error:", error);
     // Always return 200 to keep the call alive
     return new Response(
