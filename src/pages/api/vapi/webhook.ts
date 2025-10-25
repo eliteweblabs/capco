@@ -109,8 +109,9 @@ async function handleToolCalls(message: any): Promise<Response> {
     const results = [];
 
     for (const toolCall of toolCallList) {
+      console.log(`[---VAPI-WEBHOOK] Tool call structure:`, JSON.stringify(toolCall, null, 2));
       const functionName = toolCall.function?.name || toolCall.name;
-      console.log(`[---VAPI-WEBHOOK] ${functionName}()`);
+      console.log(`[---VAPI-WEBHOOK] Calling: ${functionName}()`);
 
       if (functionName === "getAccountInfo") {
         const response = await fetch(
