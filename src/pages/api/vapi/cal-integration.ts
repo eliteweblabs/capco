@@ -376,15 +376,34 @@ async function handleGetAvailability(params: any) {
     console.log("⚠️ [CAL-INTEGRATION] No slots generated!");
   }
 
-  // Return simple, consistent format
+  // Format next available slot as human-readable text
+  let message = "No appointments available in the requested timeframe.";
+  if (slots.length > 0) {
+    const nextSlot = new Date(slots[0]);
+    const dayName = nextSlot.toLocaleDateString("en-US", {
+      weekday: "long",
+      timeZone: "UTC",
+    });
+    const monthDay = nextSlot.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+    const time = nextSlot.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "UTC",
+    });
+
+    message = `The next available appointment is ${dayName}, ${monthDay} at ${time}.`;
+  }
+
+  // Return format that VAPI can speak naturally
   return new Response(
     JSON.stringify({
-      success: true,
-      result: {
-        nextAvailable: slots[0] || null,
-        availableSlots: slots.slice(0, 20), // First 20 slots
-        totalSlots: slots.length,
-      },
+      result: message,
+      availableSlots: slots.slice(0, 20), // Include slots for assistant to use
+      nextAvailable: slots[0] || null,
     }),
     {
       status: 200,
@@ -449,23 +468,25 @@ async function handleCreateBooking(params: any) {
   console.log("✅ [CAL-INTEGRATION] Booking created:", booking.id);
   console.log("📧 [CAL-INTEGRATION] Send confirmation to:", email);
 
+  // Format confirmation message for VAPI to speak
+  const confirmationMessage = `Your appointment has been confirmed for ${startDate.toLocaleDateString(
+    "en-US",
+    {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    }
+  )} at ${startDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+  })}. You'll receive a confirmation email at ${email}.`;
+
   return new Response(
     JSON.stringify({
-      success: true,
-      result: {
-        booking,
-        message: `Appointment confirmed for ${startDate.toLocaleDateString("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-          timeZone: "UTC",
-        })} at ${startDate.toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          timeZone: "UTC",
-        })} UTC`,
-      },
+      result: confirmationMessage,
+      booking: booking, // Include booking details for reference
     }),
     {
       status: 200,
