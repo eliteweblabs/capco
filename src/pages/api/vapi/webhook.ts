@@ -254,16 +254,11 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
         const result = await response.json();
         console.log("✅ [VAPI-WEBHOOK] Cal.com integration success:", result);
 
-        // Return the result in a format VAPI can use
-        return new Response(
-          JSON.stringify({
-            result: result.result || result.data || result,
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        // Return the result - VAPI will read the 'result' field out loud
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
       } catch (fetchError) {
         clearTimeout(timeoutId);
         throw fetchError;
