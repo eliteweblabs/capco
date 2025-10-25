@@ -246,16 +246,24 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error("❌ [VAPI-WEBHOOK] Cal.com integration error:", errorText);
           throw new Error(`Cal.com integration failed: ${response.status}`);
         }
 
         const result = await response.json();
-        console.log("✅ [VAPI-WEBHOOK] Cal.com integration success");
+        console.log("✅ [VAPI-WEBHOOK] Cal.com integration success:", result);
 
-        return new Response(JSON.stringify(result), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+        // Return the result in a format VAPI can use
+        return new Response(
+          JSON.stringify({
+            result: result.result || result.data || result,
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       } catch (fetchError) {
         clearTimeout(timeoutId);
         throw fetchError;
