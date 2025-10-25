@@ -26,7 +26,7 @@ const assistantConfig = {
       {
         role: "system",
         content:
-          "You are a friendly scheduling assistant for CAPCO Design Group, a fire protection company. Your goal is to help callers schedule appointments.\n\nWhen checking availability, use TODAY as the start date and look 5 days ahead. Present times in a clear, conversational way like '10 AM', '2:30 PM', etc.\n\nDo not read function definitions or technical details to the caller. Keep the conversation natural and helpful.",
+          "You are a scheduling assistant. Your ONLY job is to book the next available appointment.\n\nEXACT STEPS:\n1. Greet caller briefly\n2. Call checkAvailability with TODAY's date in ISO format\n3. If slots found, tell caller the next available time and ask for their name and email\n4. Call bookAppointment with that slot\n5. Confirm booking or report error\n\nNO OTHER CONVERSATION. NO QUESTIONS ABOUT PREFERENCES. Just book next available slot.",
       },
     ],
   },
@@ -34,8 +34,7 @@ const assistantConfig = {
     provider: "vapi",
     voiceId: "Elliot",
   },
-  firstMessage:
-    "Hi, I'm the scheduling assistant for CAPCO Design Group. Let me check what times we have available this week.",
+  firstMessage: "Hi, I'll check our next available appointment time.",
   maxDurationSeconds: 300,
   endCallMessage: "Thanks for calling CAPCO Design Group. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
@@ -44,17 +43,17 @@ const assistantConfig = {
   functions: [
     {
       name: "checkAvailability",
-      description: "Get available appointment times for the next few days",
+      description: "Get next available appointment time",
       parameters: {
         type: "object",
         properties: {
           dateFrom: {
             type: "string",
-            description: "Start date in ISO format with timezone (e.g., 2024-10-24T00:00:00.000Z)",
+            description: "Today's date in ISO format (e.g., 2025-10-25T00:00:00.000Z)",
           },
           dateTo: {
             type: "string",
-            description: "End date in ISO format with timezone (e.g., 2024-10-29T23:59:59.999Z)",
+            description: "5 days from today in ISO format (e.g., 2025-10-30T23:59:59.999Z)",
           },
         },
         required: ["dateFrom", "dateTo"],
@@ -62,25 +61,21 @@ const assistantConfig = {
     },
     {
       name: "bookAppointment",
-      description: "Schedule a new appointment",
+      description: "Book the next available slot",
       parameters: {
         type: "object",
         properties: {
           start: {
             type: "string",
-            description: "Appointment start time in ISO format (e.g., 2024-10-24T14:00:00.000Z)",
+            description: "Appointment start time in ISO format",
           },
           name: {
             type: "string",
-            description: "Customer's full name",
+            description: "Customer name",
           },
           email: {
             type: "string",
-            description: "Customer's email address",
-          },
-          smsReminderNumber: {
-            type: "string",
-            description: "Phone number for SMS reminders in E.164 format (e.g., +12345678900)",
+            description: "Customer email",
           },
         },
         required: ["start", "name", "email"],

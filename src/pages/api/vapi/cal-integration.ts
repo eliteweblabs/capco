@@ -348,7 +348,7 @@ async function handleGetAvailability(params: any) {
           FROM "Booking"
           WHERE start_time >= $1::timestamptz
           AND end_time <= $2::timestamptz
-          AND status = 'confirmed'
+          AND status IN ('confirmed', 'ACCEPTED')
         )
         SELECT 
           slot_start AT TIME ZONE 'UTC' as available_time
@@ -377,18 +377,24 @@ async function handleGetAvailability(params: any) {
         availabilityByDate[date].push(time);
       });
 
-      // Convert to the expected format
-      const availability = Object.entries(availabilityByDate).map(([date, slots]) => ({
-        date,
-        slots: slots.sort(),
-      }));
+      // Find the next available slot
+      const allSlots = result.rows.map((row) => row.available_time).sort();
 
-      console.log("✅ [CAL-INTEGRATION] Found availability:", availability.length, "days");
+      if (allSlots.length === 0) {
+        console.log("⚠️ [CAL-INTEGRATION] No available slots found in database");
+        throw new Error("No available slots found");
+      }
+
+      // Get the first available slot
+      const nextAvailable = allSlots[0];
+      console.log("✅ [CAL-INTEGRATION] Found next available slot:", nextAvailable);
 
       return new Response(
         JSON.stringify({
           success: true,
-          data: availability,
+          data: {
+            nextAvailable,
+          },
         }),
         {
           status: 200,
@@ -448,10 +454,35 @@ async function handleCreateBooking(params: any) {
 
     // Try to create booking in database
     try {
-      // Calculate end time (30 minutes after start)
+      // Validate start time is in the future
       const startDate = new Date(start);
+      const now = new Date();
+      if (startDate <= now) {
+        throw new Error("Appointment time must be in the future");
+      }
+
+      // Calculate end time (30 minutes after start)
       const endDate = new Date(startDate.getTime() + 30 * 60000);
       const end = endDate.toISOString();
+
+      // Verify the slot is actually available
+      const availabilityCheck = await calcomDb.query(
+        `
+        SELECT COUNT(*) as conflict_count
+        FROM "Booking"
+        WHERE status IN ('confirmed', 'ACCEPTED')
+        AND (
+          (start_time <= $1 AND end_time > $1)
+          OR (start_time < $2 AND end_time >= $2)
+          OR (start_time >= $1 AND end_time <= $2)
+        )
+      `,
+        [start, end]
+      );
+
+      if (availabilityCheck.rows[0].conflict_count > 0) {
+        throw new Error("Selected time slot is no longer available");
+      }
 
       // First, get the first user and event type
       const userResult = await calcomDb.query(`
