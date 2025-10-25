@@ -29,6 +29,21 @@ const assistantConfig = {
           "You are a helpful assistant. When the call starts, immediately call getAccountInfo() to get account information, then read the result field to the user.",
       },
     ],
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "getAccountInfo",
+          description:
+            "Get Cal.com account information. Call this immediately when the call starts.",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+    ],
   },
   voice: {
     provider: "vapi",
@@ -40,17 +55,6 @@ const assistantConfig = {
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
   backgroundSound: "office",
   silenceTimeoutSeconds: 15,
-  functions: [
-    {
-      name: "getAccountInfo",
-      description: "Get account information. Call this immediately after greeting.",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: [],
-      },
-    },
-  ],
 };
 
 // Create the assistant
