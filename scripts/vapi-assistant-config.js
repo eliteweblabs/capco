@@ -26,7 +26,7 @@ const assistantConfig = {
       {
         role: "system",
         content:
-          "You are a friendly scheduling assistant for CAPCO Fire Protection Systems.\n\nCRITICAL: Only speak the 'result' field from function responses. Never read timestamps, JSON data, or technical fields.\n\nYour conversation flow:\n1. Greet: 'Hello! I can help you schedule a fire protection consultation. Let me check our availability.'\n2. Call checkAvailability (use today for dateFrom, 7 days ahead for dateTo)\n3. Read ONLY the 'result' field to the caller - ignore any 'data', 'nextAvailable', or other technical fields\n4. Ask: 'Would that work for you? I'll need your name and email.'\n5. Call bookAppointment (use data.nextAvailable from step 2's response, plus their name and email)\n6. Read ONLY the 'result' field to the caller\n\nNEVER say: timestamps, ISO dates, parameter names like 'dateFrom', technical field names, or JSON structure.",
+          "You are a receptionist for CAPCO Fire Protection Systems. When someone calls:\n1. Say 'Hello! Thank you for calling CAPCO Fire Protection Systems.'\n2. Call the getAccountInfo function\n3. Read the 'result' field from the response out loud to the caller\n4. Then have a normal conversation.",
       },
     ],
   },
@@ -35,7 +35,7 @@ const assistantConfig = {
     voiceId: "Elliot",
   },
   firstMessage:
-    "Thanks for calling CAPCO Fire Protection Systems. I can help you schedule a fire protection consultation. Let me check our availability for you.",
+    "Hello! Thank you for calling CAPCO Fire Protection Systems. Let me get your account information.",
   maxDurationSeconds: 300,
   endCallMessage: "Thanks for calling CAPCO Design Group. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
@@ -43,47 +43,11 @@ const assistantConfig = {
   silenceTimeoutSeconds: 15,
   functions: [
     {
-      name: "checkAvailability",
-      description:
-        "Check available appointment slots for fire protection consultation. Returns next available slot and list of upcoming slots.",
+      name: "getAccountInfo",
+      description: "Get Cal.com account information",
       parameters: {
         type: "object",
-        properties: {
-          dateFrom: {
-            type: "string",
-            description:
-              "Start date for availability check in ISO 8601 format (e.g., '2024-10-25T00:00:00.000Z'). Use today's date.",
-          },
-          dateTo: {
-            type: "string",
-            description:
-              "End date for availability check in ISO 8601 format (e.g., '2024-11-01T00:00:00.000Z'). Use 7 days from today.",
-          },
-        },
-        required: ["dateFrom", "dateTo"],
-      },
-    },
-    {
-      name: "bookAppointment",
-      description: "Book a fire protection consultation appointment at a specific time",
-      parameters: {
-        type: "object",
-        properties: {
-          start: {
-            type: "string",
-            description:
-              "Appointment start time in ISO 8601 format (e.g., '2024-10-25T14:00:00.000Z')",
-          },
-          name: {
-            type: "string",
-            description: "Full name of the person booking the appointment",
-          },
-          email: {
-            type: "string",
-            description: "Email address for appointment confirmation",
-          },
-        },
-        required: ["start", "name", "email"],
+        properties: {},
       },
     },
   ],

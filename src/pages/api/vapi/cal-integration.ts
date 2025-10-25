@@ -111,6 +111,17 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("🔗 [CAL-INTEGRATION] Received request:", { action, params });
 
     switch (action) {
+      case "get_account_info":
+        return new Response(
+          JSON.stringify({
+            result: "Your Cal.com account manager is capco. How can I help you today?",
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
       case "get_users":
         return await handleGetUsers();
 
