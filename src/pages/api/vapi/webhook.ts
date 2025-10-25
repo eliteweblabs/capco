@@ -68,18 +68,6 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
       return await handleFunctionCall(body.message.functionCall);
     } else if (body.message?.type === "tool-calls") {
       return await handleToolCalls(body.message);
-    } else if (body.call?.status === "ended") {
-      // Log final call stats
-      const duration =
-        body.call.endedAt && body.call.startedAt
-          ? Math.round(
-              (new Date(body.call.endedAt).getTime() - new Date(body.call.startedAt).getTime()) /
-                1000
-            )
-          : null;
-      console.log("🤖 [VAPI-WEBHOOK] Call ended:", {
-        duration: duration ? `${duration}s` : "unknown",
-      });
     }
 
     // Acknowledge all other messages without processing
