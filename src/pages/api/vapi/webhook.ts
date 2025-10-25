@@ -59,76 +59,32 @@ interface VapiWebhookData {
 export const POST: APIRoute = async ({ request }): Promise<Response> => {
   try {
     const body: VapiWebhookData = await request.json();
-    // Log only essential info from the webhook
-    if (body.message?.type) {
-      console.log("🤖 [VAPI-WEBHOOK] Message type:", body.message.type);
-    } else if (body.call?.status) {
-      console.log("🤖 [VAPI-WEBHOOK] Call status:", body.call.status);
+
+    // Only process function calls and call end status
+    if (body.message?.type === "function-call") {
+      return await handleFunctionCall(body.message.functionCall);
+    } else if (body.call?.status === "ended") {
+      // Log final call stats
+      const duration =
+        body.call.endedAt && body.call.startedAt
+          ? Math.round(
+              (new Date(body.call.endedAt).getTime() - new Date(body.call.startedAt).getTime()) /
+                1000
+            )
+          : null;
+      console.log("🤖 [VAPI-WEBHOOK] Call ended:", {
+        duration: duration ? `${duration}s` : "unknown",
+      });
     }
 
-    // Handle different message types
-    if (body.message) {
-      try {
-        switch (body.message.type) {
-          case "function-call":
-            return await handleFunctionCall(body.message.functionCall);
-          case "transcript":
-            return await handleTranscript(body.message.transcript);
-          case "status-update":
-            // For status-update, just acknowledge it and continue
-            return new Response(JSON.stringify({ success: true }), {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            });
-          case "speech-update":
-            // Speech updates are informational only, just acknowledge them
-            return new Response(JSON.stringify({ success: true }), {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            });
-          case "conversation-update":
-            // Conversation updates are informational only, just acknowledge them
-            return new Response(JSON.stringify({ success: true }), {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            });
-          default:
-            console.log("🤖 [VAPI-WEBHOOK] Unknown message type:", body.message.type);
-            // Return 200 instead of 400 to keep the call alive
-            return new Response(JSON.stringify({ success: true }), {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            });
-        }
-      } catch (error) {
-        console.error("❌ [VAPI-WEBHOOK] Error handling message:", error);
-        // Always return 200 for message handling to keep the call alive
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "Message handling error",
-            message: "Continuing with call...",
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-    }
-
-    // Handle call status updates
-    if (body.call) {
-      return await handleCallStatus(body.call);
-    }
-
+    // Acknowledge all other messages without processing
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("❌ [VAPI-WEBHOOK] Error:", error);
-    // Always return 200 to keep the call alive, even for parsing errors
+    // Always return 200 to keep the call alive
     return new Response(
       JSON.stringify({
         success: false,
@@ -356,73 +312,4 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
       }
     );
   }
-}
-
-// Handle transcript messages
-async function handleTranscript(transcript: any): Promise<Response> {
-  if (!transcript) {
-    return new Response(JSON.stringify({ success: false, error: "No transcript provided" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Only log transcript role for debugging
-  console.log("🤖 [VAPI-WEBHOOK] Transcript role:", transcript.role);
-
-  // Store transcript in database or send to analytics
-  // This could be used for training or analysis
-
-  return new Response(JSON.stringify({ success: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-// Handle call status updates
-async function handleCallStatus(call: any) {
-  // Only log call status changes
-  if (call.status === "ended" || call.status === "failed") {
-    console.log("🤖 [VAPI-WEBHOOK] Call status:", call.status);
-  }
-
-  // Log call analytics
-  if (call.status === "ended") {
-    const duration =
-      call.endedAt && call.startedAt
-        ? new Date(call.endedAt).getTime() - new Date(call.startedAt).getTime()
-        : null;
-
-    // Only log duration for ended calls
-    console.log(
-      "🤖 [VAPI-WEBHOOK] Call duration:",
-      duration ? `${Math.round(duration / 1000)}s` : "unknown"
-    );
-
-    // Alert if call was expensive or long
-    if (call.cost && call.cost > 1.0) {
-      console.warn("🚨 [VAPI-WEBHOOK] Expensive call detected:", {
-        id: call.id,
-        cost: call.cost,
-        duration: duration ? `${Math.round(duration / 1000)}s` : "unknown",
-      });
-    }
-  }
-
-  // Alert for long-running calls
-  if (call.status === "in-progress" && call.startedAt) {
-    const duration = Date.now() - new Date(call.startedAt).getTime();
-    if (duration > 300000) {
-      // 5 minutes
-      console.warn("🚨 [VAPI-WEBHOOK] Long-running call detected:", {
-        id: call.id,
-        duration: `${Math.round(duration / 1000)}s`,
-      });
-    }
-  }
-
-  return new Response(JSON.stringify({ success: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
 }
