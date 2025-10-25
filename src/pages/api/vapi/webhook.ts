@@ -33,6 +33,7 @@ interface VapiWebhookData {
     type:
       | "transcript"
       | "function-call"
+      | "tool-calls"
       | "status-update"
       | "speech-update"
       | "conversation-update";
@@ -45,6 +46,15 @@ interface VapiWebhookData {
       name: string;
       parameters: any;
     };
+    toolCallList?: Array<{
+      id: string;
+      type: string;
+      function?: {
+        name: string;
+        arguments: string;
+      };
+      name?: string;
+    }>;
     speech?: {
       text: string;
       role: "user" | "assistant";
@@ -60,7 +70,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
   try {
     const body: VapiWebhookData = await request.json();
     const messageType = body.message?.type || "unknown";
-    
+
     console.log(`[---VAPI-WEBHOOK] ${messageType}`);
 
     // Only process function calls and call end status
@@ -96,7 +106,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
 async function handleToolCalls(message: any): Promise<Response> {
   try {
     console.log("[---VAPI-WEBHOOK] Processing tool calls...");
-    
+
     const toolCallList = message.toolCallList || [];
     if (toolCallList.length === 0) {
       console.log("[---VAPI-WEBHOOK] No tool calls in list");
