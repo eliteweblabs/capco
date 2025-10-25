@@ -29,7 +29,8 @@ interface CalComAvailability {
   slots: string[];
 }
 
-interface CalComBooking {
+// Used in mock data and response types
+type CalComBooking = {
   id: number;
   title: string;
   startTime: string;
@@ -39,7 +40,7 @@ interface CalComBooking {
     name: string;
     email: string;
   }>;
-}
+};
 
 // Mock data for demonstration - replace with actual Cal.com API calls
 const mockUsers: CalComUser[] = [
@@ -672,7 +673,7 @@ async function handleGetBookings(params: any) {
 
     // In a real implementation, this would call the Cal.com API
     // For now, return mock booking data
-    const mockBookings = [
+    const mockBookings: CalComBooking[] = [
       {
         id: 1,
         title: "Fire Protection Consultation",
