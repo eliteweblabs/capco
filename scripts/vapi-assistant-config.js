@@ -17,6 +17,7 @@ const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
 const assistantConfig = {
   name: "Cal.com Assistant",
   serverUrl: VAPI_WEBHOOK_URL,
+  functions: [], // Clear old functions array
   model: {
     provider: "openai",
     model: "gpt-4o",
@@ -29,21 +30,7 @@ const assistantConfig = {
           "You are a helpful assistant. When the call starts, immediately call getAccountInfo() to get account information, then read the result field to the user.",
       },
     ],
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: "getAccountInfo",
-          description:
-            "Get Cal.com account information. Call this immediately when the call starts.",
-          parameters: {
-            type: "object",
-            properties: {},
-            required: [],
-          },
-        },
-      },
-    ],
+    toolIds: ["0b17d3bc-a697-432b-8386-7ed1235fd111"], // Reference to the custom tool
   },
   voice: {
     provider: "vapi",

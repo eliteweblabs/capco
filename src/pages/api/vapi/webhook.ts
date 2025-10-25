@@ -57,20 +57,11 @@ interface VapiWebhookData {
 }
 
 export const POST: APIRoute = async ({ request }): Promise<Response> => {
-  // Log immediately before anything else
-  console.log("[---VAPI-WEBHOOK] POST request received");
-  
   try {
-    const rawBody = await request.text();
-    console.log("[---VAPI-WEBHOOK] Raw body:", rawBody);
+    const body: VapiWebhookData = await request.json();
+    const messageType = body.message?.type || "unknown";
     
-    const body: VapiWebhookData = JSON.parse(rawBody);
-
-    // LOG EVERY SINGLE REQUEST ([---] prefix allows production logging)
-    console.log("[---VAPI-WEBHOOK] ===== INCOMING REQUEST =====");
-    console.log("[---VAPI-WEBHOOK] Message Type:", body.message?.type || "NO MESSAGE TYPE");
-    console.log("[---VAPI-WEBHOOK] Call Status:", body.call?.status || "NO CALL STATUS");
-    console.log("[---VAPI-WEBHOOK] Full Body:", JSON.stringify(body, null, 2));
+    console.log(`[---VAPI-WEBHOOK] ${messageType}`);
 
     // Only process function calls and call end status
     if (body.message?.type === "function-call") {
@@ -102,8 +93,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.log("[---VAPI-WEBHOOK] CRITICAL ERROR:", error);
-    console.error("❌ [VAPI-WEBHOOK] Error:", error);
+    console.error("[---VAPI-WEBHOOK] Error:", error);
     // Always return 200 to keep the call alive
     return new Response(
       JSON.stringify({
