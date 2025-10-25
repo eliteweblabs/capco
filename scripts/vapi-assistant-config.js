@@ -26,7 +26,7 @@ const assistantConfig = {
       {
         role: "system",
         content:
-          "You are a scheduling assistant. Your ONLY job is to book the next available appointment.\n\nEXACT STEPS:\n1. Greet caller briefly\n2. Call checkAvailability with TODAY's date in ISO format\n3. If slots found, tell caller the next available time and ask for their name and email\n4. Call bookAppointment with that slot\n5. Confirm booking or report error\n\nNO OTHER CONVERSATION. NO QUESTIONS ABOUT PREFERENCES. Just book next available slot.",
+          "You are a friendly scheduling assistant for CAPCO Fire Protection Systems.\n\nYour job:\n1. Greet the caller warmly\n2. Get availability by calling checkAvailability with dates:\n   - dateFrom: today's date in ISO format (use current date)\n   - dateTo: 7 days from today in ISO format\n3. Tell them the next available time slot from the 'nextAvailable' field in the response\n4. Ask for their full name and email address\n5. Book the appointment using bookAppointment with their info\n6. Confirm the booking details from the response message\n\nBe conversational and friendly. Keep it brief.",
       },
     ],
   },
@@ -34,7 +34,8 @@ const assistantConfig = {
     provider: "vapi",
     voiceId: "Elliot",
   },
-  firstMessage: "Hi, I'll check our next available appointment time.",
+  firstMessage:
+    "Hello! I'm calling from CAPCO Fire Protection Systems. I can help you schedule a fire protection consultation. Let me check our availability for you.",
   maxDurationSeconds: 300,
   endCallMessage: "Thanks for calling CAPCO Design Group. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
@@ -43,17 +44,20 @@ const assistantConfig = {
   functions: [
     {
       name: "checkAvailability",
-      description: "Get next available appointment time",
+      description:
+        "Check available appointment slots for fire protection consultation. Returns next available slot and list of upcoming slots.",
       parameters: {
         type: "object",
         properties: {
           dateFrom: {
             type: "string",
-            description: "Today's date in ISO format (e.g., 2025-10-25T00:00:00.000Z)",
+            description:
+              "Start date for availability check in ISO 8601 format (e.g., '2024-10-25T00:00:00.000Z'). Use today's date.",
           },
           dateTo: {
             type: "string",
-            description: "5 days from today in ISO format (e.g., 2025-10-30T23:59:59.999Z)",
+            description:
+              "End date for availability check in ISO 8601 format (e.g., '2024-11-01T00:00:00.000Z'). Use 7 days from today.",
           },
         },
         required: ["dateFrom", "dateTo"],
@@ -61,21 +65,22 @@ const assistantConfig = {
     },
     {
       name: "bookAppointment",
-      description: "Book the next available slot",
+      description: "Book a fire protection consultation appointment at a specific time",
       parameters: {
         type: "object",
         properties: {
           start: {
             type: "string",
-            description: "Appointment start time in ISO format",
+            description:
+              "Appointment start time in ISO 8601 format (e.g., '2024-10-25T14:00:00.000Z')",
           },
           name: {
             type: "string",
-            description: "Customer name",
+            description: "Full name of the person booking the appointment",
           },
           email: {
             type: "string",
-            description: "Customer email",
+            description: "Email address for appointment confirmation",
           },
         },
         required: ["start", "name", "email"],
