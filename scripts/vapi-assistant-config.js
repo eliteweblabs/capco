@@ -26,7 +26,7 @@ const assistantConfig = {
       {
         role: "system",
         content:
-          'You are a scheduling assistant for CAPCO Design Group.\n\nIMMEDIATELY when the call starts:\n1. Get today\'s date\n2. Calculate 5 days from today\n3. Check availability using this format (replace DATES with actual calculated dates):\n\ncheckAvailability({\n  "dateFrom": "TODAY\'S_DATE_AT_MIDNIGHT_UTC",\n  "dateTo": "FIVE_DAYS_FROM_TODAY_AT_MIDNIGHT_UTC"\n})\n\nExample: If today is October 25, 2025, you would call:\ncheckAvailability({\n  "dateFrom": "2025-10-25T00:00:00.000Z",\n  "dateTo": "2025-10-30T00:00:00.000Z"\n})\n\nIf you get appointments back, read them to the caller.\nIf you get an error, say "Sorry, I\'m having trouble checking our calendar right now."\n\nThat\'s it. Don\'t ask for any other information. Don\'t try to book anything.',
+          "You are a friendly scheduling assistant for CAPCO Design Group, a fire protection company. Your goal is to help callers schedule appointments.\n\nWhen checking availability, use TODAY as the start date and look 5 days ahead. Present times in a clear, conversational way like '10 AM', '2:30 PM', etc.\n\nDo not read function definitions or technical details to the caller. Keep the conversation natural and helpful.",
       },
     ],
   },
@@ -34,30 +34,56 @@ const assistantConfig = {
     provider: "vapi",
     voiceId: "Elliot",
   },
-  firstMessage: "Hi, I'm checking our calendar for available appointments...",
-  maxDurationSeconds: 300, // 5 minutes max call
-  endCallMessage: "Thank you for calling. Have a great day!",
+  firstMessage:
+    "Hi, I'm the scheduling assistant for CAPCO Design Group. Let me check what times we have available this week.",
+  maxDurationSeconds: 300,
+  endCallMessage: "Thanks for calling CAPCO Design Group. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
   backgroundSound: "office",
-  silenceTimeoutSeconds: 20, // Increased to allow function calls to complete
-  responseDelaySeconds: 0.5, // Small delay to allow for processing
+  silenceTimeoutSeconds: 15,
   functions: [
     {
       name: "checkAvailability",
-      description: "Check available appointment times",
+      description: "Get available appointment times for the next few days",
       parameters: {
         type: "object",
         properties: {
           dateFrom: {
             type: "string",
-            description: "Start date and time in ISO format",
+            description: "Start date in ISO format with timezone (e.g., 2024-10-24T00:00:00.000Z)",
           },
           dateTo: {
             type: "string",
-            description: "End date and time in ISO format",
+            description: "End date in ISO format with timezone (e.g., 2024-10-29T23:59:59.999Z)",
           },
         },
         required: ["dateFrom", "dateTo"],
+      },
+    },
+    {
+      name: "bookAppointment",
+      description: "Schedule a new appointment",
+      parameters: {
+        type: "object",
+        properties: {
+          start: {
+            type: "string",
+            description: "Appointment start time in ISO format (e.g., 2024-10-24T14:00:00.000Z)",
+          },
+          name: {
+            type: "string",
+            description: "Customer's full name",
+          },
+          email: {
+            type: "string",
+            description: "Customer's email address",
+          },
+          smsReminderNumber: {
+            type: "string",
+            description: "Phone number for SMS reminders in E.164 format (e.g., +12345678900)",
+          },
+        },
+        required: ["start", "name", "email"],
       },
     },
   ],
