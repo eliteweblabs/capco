@@ -60,7 +60,7 @@ async function createTool() {
     console.log("📋 Tool ID:", tool.id);
     console.log("\nNow add this tool ID to your assistant using:");
     console.log(`node scripts/add-tool-to-assistant.js ${tool.id}`);
-    
+
     return tool;
   } catch (error) {
     console.error("❌ Error:", error);
@@ -69,4 +69,3 @@ async function createTool() {
 }
 
 createTool();
-

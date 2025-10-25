@@ -73,7 +73,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
     } else if (body.message?.type === "tool-calls") {
       console.log("🔥 [VAPI-WEBHOOK] TOOL-CALLS DETECTED!");
       console.log("🔥 [VAPI-WEBHOOK] Tool Calls:", JSON.stringify(body.message, null, 2));
-      
+
       // Handle tool calls properly according to VAPI docs
       return await handleToolCalls(body.message);
     } else if (body.call?.status === "ended") {
@@ -116,7 +116,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
 async function handleToolCalls(message: any): Promise<Response> {
   try {
     console.log("🔧 [VAPI-WEBHOOK] Processing tool calls...");
-    
+
     const toolCallList = message.toolCallList || [];
     if (toolCallList.length === 0) {
       console.error("❌ [VAPI-WEBHOOK] No tool calls in list");
@@ -127,10 +127,10 @@ async function handleToolCalls(message: any): Promise<Response> {
     }
 
     const results = [];
-    
+
     for (const toolCall of toolCallList) {
       console.log("🔧 [VAPI-WEBHOOK] Tool Call:", toolCall.name, "ID:", toolCall.id);
-      
+
       if (toolCall.name === "getAccountInfo") {
         // Call our Cal.com integration
         const response = await fetch(
@@ -161,7 +161,7 @@ async function handleToolCalls(message: any): Promise<Response> {
     // Return in VAPI's expected format
     const responseData = { results };
     console.log("📤 [VAPI-WEBHOOK] Sending response:", JSON.stringify(responseData));
-    
+
     return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: { "Content-Type": "application/json" },
