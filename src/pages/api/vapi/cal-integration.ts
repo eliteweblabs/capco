@@ -112,26 +112,6 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (action) {
     case "get_account_info":
-      // Get users from profiles table (not Cal.com User table)
-      const { data: users, error: usersError } = await supabase
-        .from("profiles")
-        .select("id, name, phone")
-        .eq("role", "Admin")
-        .limit(10);
-
-      if (usersError) {
-        console.error("Error fetching users:", usersError);
-        return new Response(
-          JSON.stringify({
-            result: "I'm having trouble accessing staff information right now.",
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-
       // Generate next 10 available time slots (M-F, 9 AM - 5 PM UTC)
       const slots: string[] = [];
       const now = new Date();
@@ -176,11 +156,6 @@ export const POST: APIRoute = async ({ request }) => {
         timeZoneName: 'short'
       });
 
-      // Format users for speech
-      const staffList = users && users.length > 0
-        ? users.map(u => u.name || u.email).join(", ")
-        : "no staff members found";
-
       // Format slots for speech
       const slotsList = slots.map(slot => {
         const date = new Date(slot);
@@ -197,9 +172,8 @@ export const POST: APIRoute = async ({ request }) => {
 
       return new Response(
         JSON.stringify({
-          result: `Today is ${currentDateTime}. Our staff includes: ${staffList}. The next available time slots are: ${slotsList}. Would you like to book one of these times?`,
+          result: `Today is ${currentDateTime}. The next available time slots are: ${slotsList}. Would you like to book one of these times?`,
           data: {
-            users,
             slots,
           },
         }),
