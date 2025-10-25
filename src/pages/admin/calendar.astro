@@ -31,15 +31,31 @@ import App from "../../components/common/App.astro";
 import LucideIcon from "../../components/common/LucideIcon.astro";
 import "../../lib/refresh-manager.ts";
 
-// Cal.com admin URL
-const CALCOM_ADMIN_URL = "https://calcom-web-app-production-0b16.up.railway.app";
+// Create slug from company name
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/[^\w\-]+/g, "") // Remove all non-word chars
+    .replace(/\-\-+/g, "-") // Replace multiple - with single -
+    .replace(/^-+/, "") // Trim - from start of text
+    .replace(/-+$/, ""); // Trim - from end of text
+}
+
+// Get calLink from company name or default to 'capco'
+const companySlug = currentUser?.profile?.companyName 
+  ? slugify(currentUser.profile.companyName)
+  : "capco";
+
+// Cal.com URLs
+const CALCOM_BASE_URL = "https://calcom-web-app-production-0b16.up.railway.app";
+const CALCOM_ADMIN_URL = `${CALCOM_BASE_URL}/settings/admin`;
+const CALCOM_USER_URL = `${CALCOM_BASE_URL}/${companySlug}`;
 ---
 
-<App
-  title="Calendar Admin - CAPCO Fire Protection"
-  currentUser={currentUser}
-  bodyClass="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900"
->
+<App title="Calendar Admin - CAPCO Fire Protection" {currentUser}>
   <div class="flex-grow container mx-auto px-4 py-8">
     <!-- Page Header -->
     <div class="mb-6">
@@ -48,30 +64,37 @@ const CALCOM_ADMIN_URL = "https://calcom-web-app-production-0b16.up.railway.app"
           <div
             class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center"
           >
-            <LucideIcon
-              name="calendar"
-              size={24}
-              class="text-blue-600 dark:text-blue-400"
-            />
+            <LucideIcon name="calendar" size={24} class="text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-              Calendar Management
-            </h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Calendar Management</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">
-              Manage appointments and availability
+              Admin: <code class="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">/{companySlug}</code>
             </p>
           </div>
         </div>
-        <a
-          href={CALCOM_ADMIN_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <LucideIcon name="external-link" size={16} />
-          Open in New Tab
-        </a>
+        <div class="flex gap-2">
+          <a
+            href={CALCOM_USER_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            title="View your public booking page"
+          >
+            <LucideIcon name="calendar" size={16} />
+            Booking Page
+          </a>
+          <a
+            href={CALCOM_ADMIN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            title="Open admin settings in new tab"
+          >
+            <LucideIcon name="external-link" size={16} />
+            Admin Settings
+          </a>
+        </div>
       </div>
     </div>
 
@@ -148,4 +171,3 @@ const CALCOM_ADMIN_URL = "https://calcom-web-app-production-0b16.up.railway.app"
     }
   </script>
 </App>
-
