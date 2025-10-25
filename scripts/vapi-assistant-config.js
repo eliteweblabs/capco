@@ -22,44 +22,28 @@ const assistantConfig = {
     model: "claude-3-5-sonnet-20241022",
     temperature: 0.7,
     maxTokens: 1000,
-    systemPrompt: `You are a friendly appointment scheduling assistant for ${process.env.GLOBAL_COMPANY_NAME || "CAPCO Design Group"}. ${process.env.GLOBAL_COMPANY_SLOGAN || "Professional Fire Protection Plan Review & Approval"}.
+    systemPrompt: `You are a scheduling assistant for CAPCO Design Group.
 
-CRITICAL: You must follow this exact format for function calls:
+IMMEDIATELY when the call starts:
+1. Get today's date
+2. Calculate 5 days from today
+3. Check availability using this format (replace DATES with actual calculated dates):
 
-1. To check availability:
 checkAvailability({
-  "dateFrom": "2024-10-24T00:00:00.000Z",
-  "dateTo": "2024-10-29T23:59:59.999Z"
+  "dateFrom": "TODAY'S_DATE_AT_MIDNIGHT_UTC",
+  "dateTo": "FIVE_DAYS_FROM_TODAY_AT_MIDNIGHT_UTC"
 })
 
-2. To book an appointment:
-bookAppointment({
-  "start": "2024-10-24T14:00:00.000Z",
-  "name": "John Smith",
-  "email": "john@example.com",
-  "smsReminderNumber": "+1234567890"
+Example: If today is October 25, 2025, you would call:
+checkAvailability({
+  "dateFrom": "2025-10-25T00:00:00.000Z",
+  "dateTo": "2025-10-30T00:00:00.000Z"
 })
 
-Your workflow:
-1. Greet the caller warmly
-2. IMMEDIATELY check availability for the next 5 days using checkAvailability()
-3. Present the available times to the caller
-4. Ask what fire protection service they need
-5. Collect their contact information (name, email, phone)
-6. Book the appointment using bookAppointment()
-7. Confirm the appointment details
-8. End the call professionally
+If you get appointments back, read them to the caller.
+If you get an error, say "Sorry, I'm having trouble checking our calendar right now."
 
-IMPORTANT:
-- All dates must be in ISO format with timezone (e.g., "2024-10-24T14:00:00.000Z")
-- dateFrom should be start of today
-- dateTo should be 5 days from today
-- Always include time portion in dates
-- Phone numbers must be in E.164 format (e.g., "+12345678900")
-
-Be conversational and helpful. Use the functions to get real data from the Cal.com system.
-
-Keep calls under 5 minutes. If there's silence for more than 10 seconds, politely end the call.`,
+That's it. Don't ask for any other information. Don't try to book anything.`,
   },
   voice: {
     provider: "11labs",
@@ -67,7 +51,7 @@ Keep calls under 5 minutes. If there's silence for more than 10 seconds, politel
     stability: 0.5,
     similarityBoost: 0.8,
   },
-  firstMessage: `Hi there! Thank you for calling ${process.env.GLOBAL_COMPANY_NAME || "CAPCO Design Group"}. I'm getting our staff and availability information for you right now...`,
+  firstMessage: "Hi, I'm checking our calendar for available appointments...",
   maxDurationSeconds: 300, // 5 minutes max call
   endCallMessage: "Thank you for calling. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
@@ -77,47 +61,20 @@ Keep calls under 5 minutes. If there's silence for more than 10 seconds, politel
   functions: [
     {
       name: "checkAvailability",
-      description: "Check available appointment times for the next few days",
+      description: "Check available appointment times",
       parameters: {
         type: "object",
         properties: {
           dateFrom: {
             type: "string",
-            description: "Start date and time in ISO format (e.g., 2024-10-24T00:00:00.000Z)",
+            description: "Start date and time in ISO format",
           },
           dateTo: {
             type: "string",
-            description: "End date and time in ISO format (e.g., 2024-10-29T23:59:59.999Z)",
+            description: "End date and time in ISO format",
           },
         },
         required: ["dateFrom", "dateTo"],
-      },
-    },
-    {
-      name: "bookAppointment",
-      description: "Book a new appointment",
-      parameters: {
-        type: "object",
-        properties: {
-          start: {
-            type: "string",
-            description:
-              "Start time of the appointment in ISO format (e.g., 2024-10-24T14:00:00.000Z)",
-          },
-          name: {
-            type: "string",
-            description: "Full name of the person booking the appointment",
-          },
-          email: {
-            type: "string",
-            description: "Email address for appointment confirmation",
-          },
-          smsReminderNumber: {
-            type: "string",
-            description: "Phone number in E.164 format (e.g., +12345678900) for SMS reminders",
-          },
-        },
-        required: ["start", "name", "email"],
       },
     },
   ],
