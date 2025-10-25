@@ -19,7 +19,8 @@ async function updateBookingTool() {
           properties: {
             start: {
               type: "string",
-              description: "ISO timestamp of appointment start time (e.g., 2025-10-27T09:00:00.000Z)",
+              description:
+                "ISO timestamp of appointment start time (e.g., 2025-10-27T09:00:00.000Z)",
             },
             name: {
               type: "string",
@@ -31,7 +32,8 @@ async function updateBookingTool() {
             },
             phone: {
               type: "string",
-              description: "Customer's phone number for SMS reminders (E.164 format, e.g., +12345678900)",
+              description:
+                "Customer's phone number for SMS reminders (E.164 format, e.g., +12345678900)",
             },
           },
           required: ["start", "name", "email"],
@@ -68,4 +70,3 @@ async function updateBookingTool() {
 }
 
 updateBookingTool();
-
