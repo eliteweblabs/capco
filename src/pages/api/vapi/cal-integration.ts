@@ -111,16 +111,90 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("🔗 [CAL-INTEGRATION] Received request:", { action, params });
 
     switch (action) {
-      case "get_account_info":
+    case "get_account_info":
+      // Get users from Cal.com database
+      const { data: users, error: usersError } = await supabase
+        .from("User")
+        .select("id, name, email")
+        .limit(10);
+
+      if (usersError) {
+        console.error("Error fetching users:", usersError);
         return new Response(
           JSON.stringify({
-            result: "Your Cal.com account manager is capco. How can I help you today?",
+            result: "I'm having trouble accessing staff information right now.",
           }),
           {
             status: 200,
             headers: { "Content-Type": "application/json" },
           }
         );
+      }
+
+      // Generate next 10 available time slots (M-F, 9 AM - 5 PM UTC)
+      const slots: string[] = [];
+      const now = new Date();
+      let currentDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      
+      while (slots.length < 10) {
+        const dayOfWeek = currentDate.getUTCDay();
+        
+        // Skip weekends
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          // Generate slots for 9 AM - 5 PM (every hour)
+          for (let hour = 9; hour < 17 && slots.length < 10; hour++) {
+            const slotTime = new Date(Date.UTC(
+              currentDate.getUTCFullYear(),
+              currentDate.getUTCMonth(),
+              currentDate.getUTCDate(),
+              hour,
+              0,
+              0
+            ));
+            
+            // Only include future slots
+            if (slotTime > now) {
+              slots.push(slotTime.toISOString());
+            }
+          }
+        }
+        
+        // Move to next day
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+      }
+
+      // Format users for speech
+      const staffList = users && users.length > 0
+        ? users.map(u => u.name || u.email).join(", ")
+        : "no staff members found";
+
+      // Format slots for speech
+      const slotsList = slots.map(slot => {
+        const date = new Date(slot);
+        const options: Intl.DateTimeFormatOptions = { 
+          weekday: 'long', 
+          month: 'long', 
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZone: 'UTC'
+        };
+        return date.toLocaleString('en-US', options);
+      }).join(", ");
+
+      return new Response(
+        JSON.stringify({
+          result: `Our staff includes: ${staffList}. The next available time slots are: ${slotsList}. Would you like to book one of these times?`,
+          data: {
+            users,
+            slots,
+          },
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       case "get_users":
         return await handleGetUsers();
