@@ -45,7 +45,7 @@ function slugify(text: string): string {
 }
 
 // Get calLink from company name or default to 'capco'
-const companySlug = currentUser?.profile?.companyName 
+const companySlug = currentUser?.profile?.companyName
   ? slugify(currentUser.profile.companyName)
   : "capco";
 
@@ -55,21 +55,25 @@ const CALCOM_ADMIN_URL = `${CALCOM_BASE_URL}/settings/admin`;
 const CALCOM_USER_URL = `${CALCOM_BASE_URL}/${companySlug}`;
 ---
 
-<App title="Calendar Admin - CAPCO Fire Protection" {currentUser}>
-  <div class="flex-grow container mx-auto px-4 py-8">
-    <!-- Page Header -->
-    <div class="mb-6">
-      <div class="flex items-center justify-between mb-4">
+<App
+  title="Calendar Admin - CAPCO Fire Protection"
+  {currentUser}
+  bodyClass="flex flex-col h-screen overflow-hidden"
+>
+  <div class="flex flex-col h-full">
+    <!-- Compact Header -->
+    <div
+      class="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+    >
+      <div class="flex items-center justify-between px-4 py-3">
         <div class="flex items-center gap-3">
-          <div
-            class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center"
-          >
-            <LucideIcon name="calendar" size={24} class="text-blue-600 dark:text-blue-400" />
-          </div>
+          <LucideIcon name="calendar" size={20} class="text-blue-600 dark:text-blue-400" />
           <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Calendar Management</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">
-              Admin: <code class="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">/{companySlug}</code>
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Calendar Management
+            </h1>
+            <p class="text-xs text-gray-600 dark:text-gray-400">
+              <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">/{companySlug}</code>
             </p>
           </div>
         </div>
@@ -78,53 +82,68 @@ const CALCOM_USER_URL = `${CALCOM_BASE_URL}/${companySlug}`;
             href={CALCOM_USER_URL}
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
             title="View your public booking page"
           >
-            <LucideIcon name="calendar" size={16} />
-            Booking Page
+            <LucideIcon name="calendar" size={14} />
+            Booking
           </a>
           <a
             href={CALCOM_ADMIN_URL}
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             title="Open admin settings in new tab"
           >
-            <LucideIcon name="external-link" size={16} />
-            Admin Settings
+            <LucideIcon name="external-link" size={14} />
+            Admin
           </a>
+        </div>
+      </div>
+
+      <!-- Separate Login Notice (Compact) -->
+      <div class="px-4 pb-3">
+        <div
+          class="flex items-start gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-2"
+        >
+          <LucideIcon
+            name="info"
+            size={16}
+            class="text-blue-600 dark:text-blue-400 flex-shrink-0"
+          />
+          <p class="text-xs text-blue-800 dark:text-blue-200">
+            <strong>Note:</strong> Cal.com uses separate authentication. You'll need to log in with your
+            Cal.com credentials.
+          </p>
         </div>
       </div>
     </div>
 
-    <!-- Cal.com Admin Iframe -->
-    <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
-      style="height: calc(100vh - 200px);"
-    >
+    <!-- Cal.com Admin Iframe (Full Height) -->
+    <div class="flex-1 relative bg-white dark:bg-gray-800">
+      <!-- Loading State -->
+      <div
+        id="iframe-loading"
+        class="absolute inset-0 bg-white dark:bg-gray-800 flex items-center justify-center z-10"
+      >
+        <div class="text-center">
+          <div
+            class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"
+          >
+          </div>
+          <p class="text-gray-600 dark:text-gray-400">Loading calendar...</p>
+        </div>
+      </div>
+      
+      <!-- Iframe -->
       <iframe
         id="calcom-admin-iframe"
         src={CALCOM_ADMIN_URL}
-        class="w-full h-full border-0"
+        class="absolute inset-0 w-full h-full border-0"
         title="Cal.com Admin Interface"
         allow="camera; microphone; geolocation; clipboard-write"
         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals"
       ></iframe>
-    </div>
-
-    <!-- Loading State -->
-    <div
-      id="iframe-loading"
-      class="absolute inset-0 bg-white dark:bg-gray-800 flex items-center justify-center"
-    >
-      <div class="text-center">
-        <div
-          class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"
-        >
-        </div>
-        <p class="text-gray-600 dark:text-gray-400">Loading calendar...</p>
-      </div>
     </div>
   </div>
 
