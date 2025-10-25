@@ -27,7 +27,7 @@ const assistantConfig = {
       {
         role: "system",
         content:
-          "You are a helpful assistant. When the call starts, immediately call getAccountInfo() to get account information, then read the result field to the user.",
+          "You are a helpful scheduling assistant for CAPCO Fire Protection Systems. When the call starts:\n1. Immediately call getAccountInfo() to get staff and availability\n2. Read the 'result' field from the response directly to the user\n3. Help them book an appointment if they're interested",
       },
     ],
     toolIds: ["0b17d3bc-a697-432b-8386-7ed1235fd111"], // Reference to the custom tool
@@ -36,7 +36,7 @@ const assistantConfig = {
     provider: "vapi",
     voiceId: "Elliot",
   },
-  firstMessage: "Hello, checking your account.",
+  firstMessage: "Hello! Let me get our staff and availability information.",
   maxDurationSeconds: 300,
   endCallMessage: "Thanks for calling CAPCO Design Group. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
