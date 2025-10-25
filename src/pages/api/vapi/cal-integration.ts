@@ -452,26 +452,113 @@ async function handleCreateBooking(params: any) {
       const endDate = new Date(startDate.getTime() + 30 * 60000);
       const end = endDate.toISOString();
 
+      // First, get the first user and event type
+      const userResult = await calcomDb.query(`
+        SELECT id FROM "User" 
+        WHERE username = 'capco' 
+        LIMIT 1
+      `);
+
+      const eventTypeResult = await calcomDb.query(`
+        SELECT id FROM "EventType" 
+        WHERE slug = 'fire-protection-consultation' 
+        LIMIT 1
+      `);
+
+      if (!userResult.rows[0]?.id || !eventTypeResult.rows[0]?.id) {
+        throw new Error("Could not find required user or event type");
+      }
+
+      const userId = userResult.rows[0].id;
+      const eventTypeId = eventTypeResult.rows[0].id;
+
+      // Generate a unique ID for the booking
+      const uid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+      // Prepare JSONB fields
+      const attendees = JSON.stringify([
+        {
+          email,
+          name,
+          timeZone: "America/New_York",
+          language: { translate: "en", locale: "en" },
+        },
+      ]);
+
+      const responses = JSON.stringify({
+        email,
+        name,
+        smsReminderNumber: smsReminderNumber || null,
+      });
+
+      const metadata = JSON.stringify({
+        videoCallUrl: null,
+        additionalNotes: null,
+      });
+
+      const bookingFields = JSON.stringify([
+        {
+          name: "name",
+          value: name,
+        },
+        {
+          name: "email",
+          value: email,
+        },
+        ...(smsReminderNumber
+          ? [
+              {
+                name: "smsReminderNumber",
+                value: smsReminderNumber,
+              },
+            ]
+          : []),
+      ]);
+
       const result = await calcomDb.query(
         `
         INSERT INTO "Booking" (
+          uid,
           title,
           start_time,
           end_time,
           status,
           description,
           created_at,
-          updated_at
+          updated_at,
+          user_id,
+          event_type_id,
+          email,
+          name,
+          phone,
+          attendees,
+          responses,
+          metadata,
+          booking_fields,
+          time_zone,
+          language
         ) VALUES (
-          $1, $2, $3, $4, $5, NOW(), NOW()
+          $1, $2, $3, $4, $5, $6, NOW(), NOW(), $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
         ) RETURNING id, title, start_time, end_time, status
       `,
         [
+          uid,
           `Fire Protection Consultation - ${name}`,
           start,
           end,
-          "confirmed",
+          "ACCEPTED", // Cal.com uses ACCEPTED instead of confirmed
           `Contact: ${name} (${email})${smsReminderNumber ? `, Phone: ${smsReminderNumber}` : ""}`,
+          userId,
+          eventTypeId,
+          email,
+          name,
+          smsReminderNumber || null,
+          attendees,
+          responses,
+          metadata,
+          bookingFields,
+          "America/New_York",
+          "en",
         ]
       );
 
