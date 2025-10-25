@@ -143,24 +143,23 @@ export function setupConsoleInterceptor(): void {
 
   // Only disable console.log in production (both server and client)
   if (isProduction) {
-    // Use selective interceptor to allow certain prefixes
-    createSelectiveConsoleInterceptor({
-      disableInProduction: true,
-      allowPrefixes: [
-        "[VAPI-WEBHOOK]",
-        "[VAPI-DEBUG]",
-        "[CRITICAL]",
-        "🔥 [VAPI",
-        "🔧 [VAPI",
-        "✅ [VAPI",
-        "❌ [VAPI",
-        "📤 [VAPI",
-      ],
-    });
+    // Store original console.log
+    const originalLog = console.log;
+    
+    // Override with selective filter - allow [---] prefixed logs
+    console.log = (...args: any[]) => {
+      const message = args.join(" ");
+      // Allow logs that contain [---] pattern (e.g., [---VAPI], [---DEBUG], etc.)
+      if (message.includes("[---")) {
+        originalLog(...args);
+      }
+      // Otherwise, suppress the log
+    };
+    
     if (isServer) {
-      console.warn("🔇 [SERVER] Console.log statements disabled in production (except allowed prefixes)");
+      console.warn("🔇 [SERVER] Console.log disabled in production (except [---] prefixed logs)");
     } else {
-      console.warn("🔇 [CLIENT] Console.log statements disabled in production (except allowed prefixes)");
+      console.warn("🔇 [CLIENT] Console.log disabled in production (except [---] prefixed logs)");
     }
   } else {
     // In development, truncate long console logs to prevent terminal clutter
