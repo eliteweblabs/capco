@@ -17,11 +17,13 @@ export function getIcon(name: string, config: IconConfig = {}): string {
 
   const iconSvg = SIMPLE_ICONS[name];
   if (!iconSvg) {
-    return `<span class="inline-block">[icon:${name}]</span>`; // Debug fallback
+    return `<span class="inline-block text-red-500">[icon:${name}]</span>`; // Debug fallback
   }
 
-  // Replace size and add className with inline-block default
-  const classes = className ? `${className} inline-block` : "inline-block";
+  // Replace size and add className (add inline-block only if className is provided and doesn't already have it)
+  const needsInlineBlock =
+    className && !className.includes("inline-block") && !className.includes("block");
+  const classes = needsInlineBlock ? `${className} inline-block` : className || "inline-block";
 
   return iconSvg
     .replace(/width="16"/g, `width="${size}"`)
