@@ -39,7 +39,7 @@ const assistantConfig = {
     provider: "vapi",
     voiceId: "Elliot",
   },
-  firstMessage: null, // null forces immediate tool call without greeting
+  firstMessage: "Thank you for calling Capco Design Group, how may I assist you?",
   maxDurationSeconds: 300,
   endCallMessage: "Thanks for calling CAPCO Design Group. Have a great day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
