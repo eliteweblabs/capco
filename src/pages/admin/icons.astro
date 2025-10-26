@@ -1,0 +1,274 @@
+---
+const requireAuthRedirect = "/auth/login";
+import { checkAuth } from "../../lib/auth";
+
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
+
+// Handle auth redirect first
+if (requireAuthRedirect && (!session || !currentUser || currentUser.profile.role !== "Admin")) {
+  return Astro.redirect(requireAuthRedirect);
+}
+
+import { globalCompanyData } from "../api/global/global-company-data.ts";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+import { globalClasses } from "../api/global/global-classes.ts";
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+
+import App from "../../components/common/App.astro";
+import LucideIcon from "../../components/common/LucideIcon.astro";
+import { SIMPLE_ICONS } from "../../lib/simple-icons";
+
+// Get all available icons
+const iconNames = Object.keys(SIMPLE_ICONS).sort();
+const totalIcons = iconNames.length;
+
+// Group icons by category for better organization
+const iconCategories: Record<string, string[]> = {
+  "User & Auth": iconNames.filter(name => 
+    name.includes('user') || name.includes('log') || name.includes('shield') || name.includes('lock')
+  ),
+  "Files & Documents": iconNames.filter(name => 
+    name.includes('file') || name.includes('folder') || name.includes('pdf') || name.includes('save') || name.includes('upload') || name.includes('download')
+  ),
+  "Navigation & UI": iconNames.filter(name => 
+    name.includes('chevron') || name.includes('arrow') || name.includes('menu') || name.includes('grid') || name.includes('search') || name.includes('eye')
+  ),
+  "Communication": iconNames.filter(name => 
+    name.includes('message') || name.includes('mail') || name.includes('phone') || name.includes('send') || name.includes('reply') || name.includes('comment')
+  ),
+  "Actions & Controls": iconNames.filter(name => 
+    name.includes('edit') || name.includes('trash') || name.includes('plus') || name.includes('x') || name.includes('check') || name.includes('refresh')
+  ),
+  "Data & Analytics": iconNames.filter(name => 
+    name.includes('chart') || name.includes('bar') || name.includes('trending') || name.includes('activity') || name.includes('pulse') || name.includes('database')
+  ),
+  "Calendar & Time": iconNames.filter(name => 
+    name.includes('calendar') || name.includes('clock') || name.includes('history')
+  ),
+  "System & Settings": iconNames.filter(name => 
+    name.includes('settings') || name.includes('server') || name.includes('wifi') || name.includes('zap') || name.includes('loader')
+  ),
+  "Media & Content": iconNames.filter(name => 
+    name.includes('image') || name.includes('video') || name.includes('star') || name.includes('external-link')
+  ),
+  "Other": []
+};
+
+// Calculate "Other" category after all others are defined
+const categorized: string[] = [
+  ...iconCategories["User & Auth"],
+  ...iconCategories["Files & Documents"],
+  ...iconCategories["Navigation & UI"],
+  ...iconCategories["Communication"],
+  ...iconCategories["Actions & Controls"],
+  ...iconCategories["Data & Analytics"],
+  ...iconCategories["Calendar & Time"],
+  ...iconCategories["System & Settings"],
+  ...iconCategories["Media & Content"]
+];
+
+iconCategories["Other"] = iconNames.filter(name => !categorized.includes(name));
+
+// Remove duplicates and ensure all icons are categorized
+Object.keys(iconCategories).forEach(category => {
+  iconCategories[category] = [...new Set(iconCategories[category])];
+});
+---
+
+<App
+  title={`Icon Library - ${globalCompanyName}`}
+  description={`Browse all available icons in the ${globalCompanyName} system`}
+  {currentUser}
+  session={session || undefined}
+  {supabase}
+  {primaryTextClasses}
+  {secondaryTextClasses}
+  {globalInputClasses}
+  {globalCompanyName}
+  {globalCompanySlogan}
+  {globalCompanyAddress}
+  {globalCompanyPhone}
+  {globalCompanyEmail}
+  {globalCompanyWebsite}
+  {globalCompanyLogo}
+  {globalCompanyLogoDark}
+  {globalCompanyLogoLight}
+>
+  <div class="px-4 pt-4">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="mb-2 text-3xl font-bold">Icon Library</h1>
+      <p class="text-gray-800 dark:text-gray-200">Browse all available icons in the system</p>
+    </div>
+
+    <!-- Icon Statistics -->
+    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        class="rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+      >
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <LucideIcon name="grid" class="h-8 w-8 text-blue-600" />
+          </div>
+          <div class="ml-4">
+            <dt class="text-muted dark:text-muted text-sm font-medium">Total Icons</dt>
+            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
+              {totalIcons}
+            </dd>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+      >
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <LucideIcon name="folder" class="h-8 w-8 text-green-600" />
+          </div>
+          <div class="ml-4">
+            <dt class="text-muted dark:text-muted text-sm font-medium">Categories</dt>
+            <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
+              {Object.keys(iconCategories).length}
+            </dd>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+      >
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <LucideIcon name="wifi" class="h-8 w-8 text-purple-600" />
+          </div>
+          <div class="ml-4">
+            <dt class="text-muted dark:text-muted text-sm font-medium">Latest Addition</dt>
+            <dd class="text-sm font-semibold text-gray-900 dark:text-white">
+              wifi
+            </dd>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
+      >
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <LucideIcon name="info" class="h-8 w-8 text-orange-600" />
+          </div>
+          <div class="ml-4">
+            <dt class="text-muted dark:text-muted text-sm font-medium">System</dt>
+            <dd class="text-sm font-semibold text-gray-900 dark:text-white">
+              Lucide Icons
+            </dd>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Icon Categories -->
+    {Object.entries(iconCategories).map(([categoryName, icons]: [string, string[]]) => (
+      <div class="mb-12">
+        <h2 class="mb-6 text-2xl font-semibold text-gray-900 dark:text-white">
+          {categoryName}
+          <span class="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+            ({icons.length} icons)
+          </span>
+        </h2>
+        
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+          {icons.map((iconName: string) => (
+            <div
+              class="group relative rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+            >
+              <!-- Icon Display -->
+              <div class="mb-3 flex justify-center">
+                <LucideIcon 
+                  name={iconName} 
+                  size="lg" 
+                  class="text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                />
+              </div>
+              
+              <!-- Icon Name -->
+              <div class="text-center">
+                <p class="text-xs font-medium text-gray-900 dark:text-white">
+                  {iconName}
+                </p>
+              </div>
+
+              <!-- Copy Button -->
+              <button
+                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                onclick={`navigator.clipboard.writeText('${iconName}').then(() => {
+                  const btn = event.target;
+                  const originalText = btn.textContent;
+                  btn.textContent = 'Copied!';
+                  btn.classList.add('text-green-600');
+                  setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('text-green-600');
+                  }, 1000);
+                })`}
+                title="Copy icon name"
+              >
+                <LucideIcon name="copy" size="sm" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+
+    <!-- Usage Instructions -->
+    <div class="mt-12 rounded-lg bg-blue-50 p-6 dark:bg-blue-900/20">
+      <h3 class="mb-4 text-lg font-semibold text-blue-900 dark:text-blue-100">
+        <LucideIcon name="info-circle" class="mr-2 inline h-5 w-5" />
+        How to Use Icons
+      </h3>
+      <div class="space-y-3 text-sm text-blue-800 dark:text-blue-200">
+        <p>
+          <strong>In Astro components:</strong>
+          <code class="ml-2 rounded bg-blue-100 px-2 py-1 dark:bg-blue-800">
+            &lt;LucideIcon name="icon-name" /&gt;
+          </code>
+        </p>
+        <p>
+          <strong>In JavaScript:</strong>
+          <code class="ml-2 rounded bg-blue-100 px-2 py-1 dark:bg-blue-800">
+            window.SimpleIcons.getIcon("icon-name")
+          </code>
+        </p>
+        <p>
+          <strong>Available sizes:</strong> xs, sm, md, lg, xl
+        </p>
+        <p>
+          <strong>Available variants:</strong> primary, secondary, success, warning, danger, outline, ghost, link
+        </p>
+      </div>
+    </div>
+  </div>
+</App>
+
+<script>
+  // Add copy functionality for icon names
+  document.addEventListener('DOMContentLoaded', function() {
+    // The copy functionality is handled inline in the onclick handlers above
+    console.log('Icon library page loaded');
+  });
+</script>

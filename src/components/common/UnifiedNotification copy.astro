@@ -1,58 +1,52 @@
 ---
-// Toast Notification System -
+// Unified Notification System -
 ---
 
-<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-full sm:max-w-md">
+<div
+  id="unified-notification-container"
+  class="bg-white dark:bg-black fixed left-4 right-4 top-4 z-50 space-y-2 sm:left-auto sm:max-w-lg"
+>
 </div>
 
 <style>
-  /* Toast slide-in animation */
-  @keyframes toast-slide-in {
+  /* Mac Genie Animation - Show (bottom to center) */
+  @keyframes genie-show {
     0% {
       opacity: 0;
-      transform: translateX(100%);
+      transform: translateY(100vh) scale(0.3);
     }
     100% {
       opacity: 1;
-      transform: translateX(0);
+      transform: translateY(0) scale(1);
     }
   }
 
-  /* Toast slide-out animation */
-  @keyframes toast-slide-out {
+  /* Mac Genie Animation - Hide (center to top) */
+  @keyframes genie-hide {
     0% {
       opacity: 1;
-      transform: translateX(0);
+      transform: translateY(0) scale(1);
     }
     100% {
       opacity: 0;
-      transform: translateX(100%);
+      transform: translateY(-100vh) scale(0.3);
     }
   }
 
-  /* Apply toast animations */
-  .toast-slide-in {
-    animation: toast-slide-in 300ms ease-out forwards;
+  /* Apply genie show animation */
+  .notification-genie-show {
+    animation: genie-show 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   }
 
-  .toast-slide-out {
-    animation: toast-slide-out 300ms ease-in forwards;
+  /* Apply genie hide animation */
+  .notification-genie-hide {
+    animation: genie-hide 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   }
 
-  /* Initial state for toasts */
-  .toast-element {
+  /* Initial state for notifications */
+  .notification-element {
     opacity: 0;
-    transform: translateX(100%);
-  }
-
-  /* Mobile responsive positioning */
-  @media (max-width: 640px) {
-    #toast-container {
-      top: 1rem;
-      right: 1rem;
-      left: 1rem;
-      max-width: none;
-    }
+    transform: translateY(100vh) scale(0.3);
   }
 </style>
 
@@ -79,21 +73,40 @@
     onClose?: () => void; // Callback when notification is closed
   }
 
-  class ToastNotificationManager {
+  class UnifiedNotificationManager {
     private container: HTMLElement;
     private notifications: Map<string, NotificationOptions & { id: string }> = new Map();
     private redirectTimers: Map<string, NodeJS.Timeout> = new Map();
 
     constructor() {
-      this.container = document.getElementById("toast-container")!;
+      this.container = document.getElementById("unified-notification-container")!;
+      // this.container.classList.add("notification-genie-show");
     }
 
     async show(options: NotificationOptions): Promise<string> {
-      console.log("🔔 [TOAST] show() called with options:", options);
+      // console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
 
       // Clear existing notifications unless persist is true
       if (options.persist !== true) {
         this.hide(); // Clear all existing notifications
+      }
+
+      console.log("🔔 [UNIFIED-NOTIFICATION] show() called with options:", options);
+
+      // Lock body scroll to prevent background scrolling (Safari iOS compatible)
+      if ((window as any).lockBodyScroll) {
+        (window as any).lockBodyScroll();
+      } else {
+        // Fallback for older implementations
+        document.body.style.overflow = "hidden";
+      }
+
+      // Scroll to top before showing modal (only on mobile devices - fixes Safari positioning issues)
+      if (window.isMobile && window.isMobile()) {
+        console.log("🔔 [UNIFIED-NOTIFICATION] Scrolling to top before showing modal");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        console.log("🔔 [UNIFIED-NOTIFICATION] Not scrolling to top before showing modal");
       }
 
       // Generate unique ID with fallback for older browsers
@@ -111,14 +124,22 @@
       if (!options.redirect && options.duration !== undefined && options.duration > 0) {
         // Use setTimeout to ensure DOM is ready and CSS is applied
         setTimeout(() => {
-          const element = document.getElementById(`toast-${id}`);
+          const element = document.getElementById(`unified-notification-${id}`);
           if (element) {
-            console.log("🔔 [TOAST] Setting up auto-hide timer");
-            // Set up auto-hide timer
-            setTimeout(() => {
-              console.log("🔔 [TOAST] Auto-hide timer expired, hiding toast");
-              this.hide(id);
-            }, options.duration);
+            console.log("🔔 [UNIFIED-NOTIFICATION] Setting up auto-hide animation");
+            // Apply animation directly to style attribute
+            element.style.animation = `modal-auto-hide-fade ${options.duration}ms linear forwards`;
+            element.style.opacity = "1"; // Ensure starting opacity
+
+            // Listen for animation end to hide the modal
+            element.addEventListener(
+              "animationend",
+              () => {
+                console.log("🔔 [UNIFIED-NOTIFICATION] Animation ended, hiding modal");
+                this.hide(id);
+              },
+              { once: true }
+            );
           }
         }, 100);
       }
@@ -134,6 +155,14 @@
     }
 
     hide(id?: string) {
+      // Unlock body scroll (Safari iOS compatible)
+      if ((window as any).unlockBodyScroll) {
+        (window as any).unlockBodyScroll();
+      } else {
+        // Fallback for older implementations
+        document.body.style.overflow = "";
+      }
+
       if (id) {
         const notification = this.notifications.get(id);
         if (notification?.onClose) {
@@ -142,16 +171,18 @@
 
         this.notifications.delete(id);
         this.clearRedirectTimer(id);
+        // this.cleanupGlobalActions(id);
 
-        const element = document.getElementById(`toast-${id}`);
+        const element = document.getElementById(`unified-notification-${id}`);
         if (element) {
-          element.classList.add("toast-slide-out");
+          element.classList.add("animate-fade-out");
           setTimeout(() => element.remove(), 300);
         }
       } else {
         // Hide all notifications
         this.notifications.clear();
         this.clearAllRedirectTimers();
+        // this.cleanupAllGlobalActions();
         this.container.innerHTML = "";
       }
     }
@@ -201,9 +232,9 @@
           return;
         }
 
-        const element = document.getElementById(`toast-${id}`);
+        const element = document.getElementById(`unified-notification-${id}`);
         if (!element) {
-          console.log("🔔 [TOAST] No element found for ID:", id);
+          console.log("🔔 [UNIFIED-NOTIFICATION] No element found for ID:", id);
           return;
         }
 
@@ -326,43 +357,45 @@
           : "";
 
       const element = document.createElement("div");
-      element.id = `toast-${notification.id}`;
+      element.id = `unified-notification-${notification.id}`;
       element.setAttribute("role", "alert");
 
       element.className = `
-          bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700
-          toast-element p-4 mb-2
+          fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm
+          notification-element
         `.trim();
 
       element.innerHTML = `
-          <div class="flex items-start">
+          <div class="rounded-xl dot-grid shadow-2xl max-w-md w-full mx-4 relative overflow-hidden">
             ${
               notification.duration && notification.duration > 0
                 ? `
-              <div class="absolute top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-t-lg">
-                <div id="progress-bar-${notification.id}" class="h-full ${config?.progressColor || "bg-primary-500"} rounded-t-lg" style="width: 0%; animation: progress-bar-fill ${notification.duration}ms linear forwards;"></div>
+              <div class="absolute top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700">
+                <div id="progress-bar-${notification.id}" class="h-full ${config?.progressColor || "bg-primary-500"}" style="width: 0%; animation: progress-bar-fill ${notification.duration}ms linear forwards;"></div>
               </div>
             `
                 : ""
             }
-            <div class="flex-shrink-0 mr-3">
-              <div class="inline-flex items-center justify-center w-8 h-8 ${config?.iconBg || "text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200"} rounded-full">
-                ${config?.icon || ""}
-                <span class="sr-only">${config?.label || "Notification"}</span>
+            <div class="p-8">
+              <div class="flex items-center justify-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 ${config?.iconBg || "text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200"} rounded-full">
+                  ${config?.icon || ""}
+                  <span class="sr-only">${config?.label || "Notification"}</span>
+                </div>
               </div>
-            </div>
-            <div class="flex-1 min-w-0">
-              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">${notification.title}</h4>
-              <div class="notification-message text-sm text-gray-600 dark:text-gray-400">${notification.message}</div>
-              ${actionsHTML}
+              <div class="text-center">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">${notification.title}</h3>
+                <div class="notification-message text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">${notification.message}</div>
+                ${actionsHTML}
+              </div>
             </div>
             <button 
               type="button" 
-              class="flex-shrink-0 ml-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1" 
+              class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2" 
               aria-label="Close"
-              onclick="toastNotificationManager.hide('${notification.id}')"
+              onclick="unifiedNotificationManager.hide('${notification.id}')"
             >
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
               </svg>
             </button>
@@ -371,10 +404,13 @@
 
       this.container.appendChild(element);
 
-      // Trigger slide-in animation
-      setTimeout(() => {
-        element.classList.add("toast-slide-in");
-      }, 10);
+      // Add click-outside-to-close functionality
+      element.addEventListener("click", (e) => {
+        // Only close if clicking on the backdrop (not the modal content)
+        if (e.target === element) {
+          this.hide(notification.id);
+        }
+      });
 
       // Add event listeners for action buttons
       if (notification.actions && Array.isArray(notification.actions)) {
@@ -495,52 +531,15 @@
   }
 
   // Create instance and make it globally accessible
-  const toastNotificationManager = new ToastNotificationManager();
-  (window as any).toastNotificationManager = toastNotificationManager;
+  const unifiedNotificationManager = new UnifiedNotificationManager();
+  (window as any).unifiedNotificationManager = unifiedNotificationManager;
 
   // Convenience functions for backward compatibility and ease of use
   (window as any).showNotification = async (options: NotificationOptions) => {
-    return await toastNotificationManager.show(options);
+    return await unifiedNotificationManager.show(options);
   };
 
-  // Toast-specific convenience functions
-  (window as any).showSuccess = (title: string, message: string, duration: number = 4000) => {
-    return toastNotificationManager.show({
-      type: "success",
-      title,
-      message,
-      duration,
-    });
-  };
-
-  (window as any).showError = (title: string, message: string, duration: number = 0) => {
-    return toastNotificationManager.show({
-      type: "error",
-      title,
-      message,
-      duration,
-    });
-  };
-
-  (window as any).showWarning = (title: string, message: string, duration: number = 4000) => {
-    return toastNotificationManager.show({
-      type: "warning",
-      title,
-      message,
-      duration,
-    });
-  };
-
-  (window as any).showInfo = (title: string, message: string, duration: number = 4000) => {
-    return toastNotificationManager.show({
-      type: "info",
-      title,
-      message,
-      duration,
-    });
-  };
-
-  // Default behavior is now toast notifications - supports both object and individual parameters
+  // Default behavior is now full-screen modal - supports both object and individual parameters
   (window as any).showModal = async (
     typeOrObject: string | any,
     title?: string,
@@ -551,7 +550,7 @@
       | { url: string; showCountdown?: boolean },
     persist?: boolean
   ) => {
-    console.log("🔔 [TOAST] showModal called with:", typeOrObject);
+    console.log("🔔 [UNIFIED-NOTIFICATION] showModal called with:", typeOrObject);
     let modalData: any;
 
     // Check if first parameter is an object (new format)
@@ -580,16 +579,16 @@
     const redirectData = modalData.redirect || modalData.actions;
     const isRedirect = redirectData && typeof redirectData === "object" && "url" in redirectData;
 
-    console.log("🔔 [TOAST] Processed modal data:", modalData);
-    console.log("🔔 [TOAST] Is redirect:", isRedirect);
-    console.log("🔔 [TOAST] Redirect data:", redirectData);
+    console.log("🔔 [UNIFIED-NOTIFICATION] Processed modal data:", modalData);
+    console.log("🔔 [UNIFIED-NOTIFICATION] Is redirect:", isRedirect);
+    console.log("🔔 [UNIFIED-NOTIFICATION] Redirect data:", redirectData);
 
     // Prepare notification options
     const notificationOptions = {
       type: modalData.type as any,
       title: modalData.title,
       message: modalData.message,
-      duration: modalData.duration, // Don't set default duration - let it be undefined for persistent toasts
+      duration: modalData.duration, // Don't set default duration - let it be undefined for persistent modals
       persist: modalData.persist, // Pass through the persist parameter
       actions: isRedirect
         ? undefined
@@ -599,27 +598,96 @@
         : modalData.redirect, // Also check for redirect in modalData itself
     };
 
-    console.log("🔔 [TOAST] Showing notification with options:", notificationOptions);
+    console.log(
+      "🔔 [UNIFIED-NOTIFICATION] Showing notification with options:",
+      notificationOptions
+    );
 
-    const result = await toastNotificationManager.show(notificationOptions);
+    const result = await unifiedNotificationManager.show(notificationOptions);
 
-    console.log("🔔 [TOAST] showModal returning ID:", result);
+    console.log("🔔 [UNIFIED-NOTIFICATION] showModal returning ID:", result);
     return result;
   };
 
   // Ensure showModal is always available with fallback
   if (!(window as any).showModal) {
-    console.warn("🔔 [TOAST] showModal not properly initialized, creating fallback");
+    console.warn("🔔 [UNIFIED-NOTIFICATION] showModal not properly initialized, creating fallback");
     (window as any).showModal = (type: string, title: string, message: string) => {
-      console.error("🔔 [TOAST] Fallback showModal called - notification system not ready");
+      console.error(
+        "🔔 [UNIFIED-NOTIFICATION] Fallback showModal called - notification system not ready"
+      );
       alert(`${title}: ${message}`);
     };
   }
 
-  console.log("🔔 [TOAST] Toast notification system initialized successfully");
+  // console.log("🔔 [UNIFIED-NOTIFICATION] Notification system initialized successfully");
 </script>
 
 <style>
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 0.3s ease-out;
+  }
+
+  /* CSS-based modal auto-hide animation */
+  .modal-auto-hide {
+    animation: modal-fade-out var(--modal-duration, 3000ms) linear forwards;
+  }
+
+  @keyframes modal-fade-out {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes modal-auto-hide-fade {
+    0% {
+      opacity: 1 !important;
+    }
+    100% {
+      opacity: 0 !important;
+    }
+  }
+
   /* CSS-based progress bar animation */
   .progress-bar-animation {
     width: 0%;

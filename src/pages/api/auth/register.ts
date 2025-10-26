@@ -29,8 +29,25 @@ interface RegisterData {
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const body = await request.json();
-    const registerData: RegisterData = body;
+    // Handle both FormData and JSON requests
+    let registerData: RegisterData;
+
+    const contentType = request.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      const body = await request.json();
+      registerData = body;
+    } else {
+      // Handle FormData (from forms)
+      const formData = await request.formData();
+      registerData = {
+        email: formData.get("email")?.toString() || "",
+        password: formData.get("password")?.toString() || "",
+        firstName: formData.get("firstName")?.toString() || "",
+        lastName: formData.get("lastName")?.toString() || "",
+        companyName: formData.get("companyName")?.toString() || "",
+        role: formData.get("role")?.toString() || "Client",
+      };
+    }
 
     // Validate required fields
     if (!registerData.email?.trim() || !registerData.password?.trim()) {
@@ -89,6 +106,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // If no session was created, try to sign in the user immediately
+    let session = authData.session;
+    if (!session) {
+      console.log("🔐 [AUTH-REGISTER] No session created, attempting immediate sign-in...");
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: registerData.email.trim(),
+        password: registerData.password.trim(),
+      });
+
+      if (signInError) {
+        console.error("❌ [AUTH-REGISTER] Immediate sign-in failed:", signInError.message);
+      } else {
+        session = signInData.session;
+        console.log("✅ [AUTH-REGISTER] Immediate sign-in successful");
+      }
+    }
+
     // Create user profile
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from("profiles")
@@ -122,9 +156,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log(`✅ [AUTH-REGISTER] User registered successfully:`, authData.user.id);
 
     // Set auth cookies if session exists
-    if (authData.session) {
-      setAuthCookies(cookies, authData.session.access_token, authData.session.refresh_token);
+    if (session) {
+      setAuthCookies(cookies, session.access_token, session.refresh_token);
       console.log("🔐 [AUTH-REGISTER] Auth cookies set successfully");
+    } else {
+      console.log("⚠️ [AUTH-REGISTER] No session available - user will need to sign in manually");
     }
 
     return new Response(
@@ -138,8 +174,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           companyName: profileData.companyName,
           role: profileData.role,
         },
-        session: authData.session,
-        redirect: "/project/dashboard",
+        session: session,
+        redirect: "/project/new",
         message: "Registration successful",
       }),
       { status: 201, headers: { "Content-Type": "application/json" } }
