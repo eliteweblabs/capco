@@ -527,9 +527,9 @@ async function handleCreateBooking(params: any) {
     // Generate unique booking reference
     const uid = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Get the first event type (or you can query for a specific one)
+    // Get the 30-minute meeting event type (more appropriate for consultations)
     const eventTypeResult = await calcomDb.query(
-      'SELECT id, length, title FROM "EventType" LIMIT 1'
+      'SELECT id, length, title FROM "EventType" WHERE id = 2'
     );
 
     if (eventTypeResult.rows.length === 0) {
