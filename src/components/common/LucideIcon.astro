@@ -41,7 +41,7 @@ interface Props {
 
 const {
   name,
-  class: className = "inline-block",
+  class: className = "",
   color = "currentColor",
   variant,
   size = "sm",
@@ -68,15 +68,39 @@ const iconSize =
             ? 32
             : 16;
 
-// Get base icon HTML
+// Build variant classes if variant is specified
+let variantClasses = "";
+if (variant) {
+  const variantMap = {
+    primary: "text-blue-600 dark:text-blue-400",
+    secondary: "text-gray-600 dark:text-gray-400",
+    success: "text-green-600 dark:text-green-400",
+    warning: "text-yellow-600 dark:text-yellow-400",
+    danger: "text-red-600 dark:text-red-400",
+    outline: "text-gray-500 dark:text-gray-400",
+    ghost: "text-gray-400 dark:text-gray-500",
+    link: "text-blue-500 dark:text-blue-400",
+    loading: "text-gray-400 animate-spin",
+    disabled: "text-gray-300 dark:text-gray-600",
+    selected: "text-blue-500 dark:text-blue-400",
+    anchor: "text-blue-600 dark:text-blue-400",
+  };
+  variantClasses = variantMap[variant] || "";
+}
+
+// Combine all classes
+const finalClasses = [className, variantClasses].filter(Boolean).join(" ");
+
+// Get base icon HTML (without classes, we'll add them ourselves)
 let iconHTML = getIcon(name, {
   size: iconSize,
-  className: className,
+  className: "", // Don't add classes here, we'll inject them below
 });
 
-// Build attribute string for additional props
+// Build attribute string for ALL props
 const attrs = [];
 if (id) attrs.push(`id="${id}"`);
+if (finalClasses) attrs.push(`class="${finalClasses}"`);
 if (style || customStyle || color !== "currentColor") {
   const styleValue = style || customStyle || `color: ${color};`;
   attrs.push(`style="${styleValue}"`);
@@ -92,8 +116,11 @@ Object.entries(rest).forEach(([key, value]) => {
   }
 });
 
-// Inject attributes into SVG tag
+// Inject attributes into SVG tag, REPLACING the existing class
 if (attrs.length > 0) {
+  // Remove the existing class="" attribute from getIcon
+  iconHTML = iconHTML.replace(/class="[^"]*"/, "");
+  // Add all our attributes
   iconHTML = iconHTML.replace("<svg", `<svg ${attrs.join(" ")}`);
 }
 ---
