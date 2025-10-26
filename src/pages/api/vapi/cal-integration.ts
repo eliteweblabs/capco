@@ -527,9 +527,10 @@ async function handleCreateBooking(params: any) {
     // Generate unique booking reference
     const uid = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Get the 30-minute meeting event type (more appropriate for consultations)
+    // Get the configured event type for VAPI bookings
+    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2"; // Default to 30-minute meeting
     const eventTypeResult = await calcomDb.query(
-      'SELECT id, length, title FROM "EventType" WHERE id = 2'
+      `SELECT id, length, title FROM "EventType" WHERE id = ${VAPI_EVENT_TYPE_ID}`
     );
 
     if (eventTypeResult.rows.length === 0) {
