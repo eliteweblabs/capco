@@ -560,7 +560,7 @@ async function handleCreateBooking(params: any) {
         startDate,
         endDate,
         eventType.id,
-        "ACCEPTED", // Cal.com status: ACCEPTED, PENDING, CANCELLED, REJECTED
+        "accepted", // Cal.com status: accepted, pending, cancelled, rejected, awaiting_host
         JSON.stringify({
           source: "vapi",
           customerName: name,
