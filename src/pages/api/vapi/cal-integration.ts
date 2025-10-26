@@ -538,6 +538,13 @@ async function handleCreateBooking(params: any) {
 
     const eventType = eventTypeResult.rows[0];
 
+    // Get the first user (host) to assign the booking to
+    const userResult = await calcomDb.query("SELECT id FROM users LIMIT 1");
+    if (userResult.rows.length === 0) {
+      throw new Error("No users found in Cal.com - please create a user account first");
+    }
+    const userId = userResult.rows[0].id;
+
     // Insert into Cal.com Booking table
     const bookingResult = await calcomDb.query(
       `INSERT INTO "Booking" (
@@ -547,11 +554,15 @@ async function handleCreateBooking(params: any) {
         "startTime", 
         "endTime", 
         "eventTypeId",
+        "userId",
         status,
+        paid,
+        "isRecorded",
+        "iCalSequence",
         metadata,
         "createdAt",
         "updatedAt"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
       RETURNING id, uid, "startTime", "endTime", status`,
       [
         uid,
@@ -560,7 +571,11 @@ async function handleCreateBooking(params: any) {
         startDate,
         endDate,
         eventType.id,
+        userId, // Assign to the first user (host)
         "accepted", // Cal.com status: accepted, pending, cancelled, rejected, awaiting_host
+        false, // paid
+        false, // isRecorded
+        0, // iCalSequence
         JSON.stringify({
           source: "vapi",
           customerName: name,
