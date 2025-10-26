@@ -148,18 +148,6 @@ export const POST: APIRoute = async ({ request }) => {
           currentDate.setUTCDate(currentDate.getUTCDate() + 1);
         }
 
-        // Format current date/time for speech
-        const currentDateTime = now.toLocaleString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-          timeZone: "UTC",
-          timeZoneName: "short",
-        });
-
         // Format slots for speech - group by day for natural reading
         let slotsList = "";
         let lastDay = "";
@@ -191,7 +179,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         return new Response(
           JSON.stringify({
-            result: `Today is ${currentDateTime}. Our next available appointments are ${slotsList}. Would you like to book one of these times?`,
+            result: `Our next available appointments are ${slotsList}. Would you like to book one of these times?`,
             data: {
               slots,
             },
