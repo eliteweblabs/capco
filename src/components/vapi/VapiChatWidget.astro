@@ -33,6 +33,32 @@ const {
     <span id="vapi-call-btn-text">Schedule Appointment</span>
   </button>
 
+  <!-- Response Buttons Container (hidden by default) -->
+  <div
+    id="vapi-response-buttons-container"
+    class="hidden w-96 max-w-[90vw] rounded-lg bg-white p-6 shadow-2xl dark:bg-gray-800"
+  >
+    <div class="mb-4 flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">How can I help you?</h3>
+      <button
+        id="vapi-close-response-buttons"
+        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div id="vapi-response-buttons-grid" class="grid grid-cols-1 gap-3">
+      <!-- Response buttons will be injected here -->
+    </div>
+  </div>
+
   <!-- Time Slots Container (hidden by default) -->
   <div
     id="vapi-time-slots-container"
@@ -82,6 +108,9 @@ const {
   // Get DOM elements
   const callBtn = document.getElementById("vapi-call-btn");
   const callBtnText = document.getElementById("vapi-call-btn-text");
+  const responseButtonsContainer = document.getElementById("vapi-response-buttons-container");
+  const responseButtonsGrid = document.getElementById("vapi-response-buttons-grid");
+  const closeResponseButtons = document.getElementById("vapi-close-response-buttons");
   const timeSlotsContainer = document.getElementById("vapi-time-slots-container");
   const timeSlotsGrid = document.getElementById("vapi-time-slots-grid");
   const closeSlots = document.getElementById("vapi-close-slots");
@@ -122,6 +151,7 @@ const {
       callBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
       callBtn.classList.add("bg-red-600", "hover:bg-red-700");
       showStatus("Connected");
+      showResponseButtons();
     });
 
     vapi.on("call-end", () => {
@@ -132,6 +162,7 @@ const {
       callBtn.classList.add("bg-blue-600", "hover:bg-blue-700");
       hideStatus();
       hideTimeSlots();
+      hideResponseButtons();
     });
 
     vapi.on("speech-start", () => {
@@ -165,6 +196,7 @@ const {
   function setupUIListeners() {
     callBtn.addEventListener("click", toggleCall);
     closeSlots.addEventListener("click", hideTimeSlots);
+    closeResponseButtons.addEventListener("click", hideResponseButtons);
   }
 
   // Toggle call on/off
@@ -315,12 +347,94 @@ const {
     timeSlotsGrid.innerHTML = "";
   }
 
+  // Show response buttons
+  function showResponseButtons() {
+    console.log("[VAPI-WIDGET] Showing response buttons");
+
+    // Clear previous buttons
+    responseButtonsGrid.innerHTML = "";
+
+    // Define common response options
+    const responseOptions = [
+      {
+        text: "Schedule a Meeting",
+        message: "I'd like to schedule a meeting or appointment",
+        icon: "📅",
+      },
+      {
+        text: "Check Available Times",
+        message: "What times are available for appointments?",
+        icon: "⏰",
+      },
+      {
+        text: "Website Information",
+        message: "Can you tell me about your website and services?",
+        icon: "🌐",
+      },
+      {
+        text: "General Help",
+        message: "I need help with something else",
+        icon: "❓",
+      },
+      {
+        text: "Contact Information",
+        message: "What's your contact information?",
+        icon: "📞",
+      },
+    ];
+
+    // Create buttons for each option
+    responseOptions.forEach((option) => {
+      const button = document.createElement("button");
+      button.className =
+        "flex items-center gap-3 rounded-lg border-2 border-blue-600 bg-blue-50 px-4 py-3 text-left text-sm font-medium text-blue-600 transition-all hover:bg-blue-600 hover:text-white dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white";
+      button.innerHTML = `
+        <span class="text-lg">${option.icon}</span>
+        <span>${option.text}</span>
+      `;
+      button.onclick = () => selectResponseOption(option.message);
+
+      responseButtonsGrid.appendChild(button);
+    });
+
+    // Show the container
+    responseButtonsContainer.classList.remove("hidden");
+  }
+
+  // Hide response buttons
+  function hideResponseButtons() {
+    responseButtonsContainer.classList.add("hidden");
+    responseButtonsGrid.innerHTML = "";
+  }
+
+  // Handle response option selection
+  function selectResponseOption(message) {
+    console.log("[VAPI-WIDGET] Selected response:", message);
+
+    // Send message to assistant
+    if (vapi) {
+      vapi.send({
+        type: "add-message",
+        message: {
+          role: "user",
+          content: message,
+        },
+      });
+    }
+
+    // Hide response buttons
+    hideResponseButtons();
+    showStatus("Processing your request...");
+  }
+
   // Make functions available globally for inline onclick handlers
   window.selectTimeSlot = selectTimeSlot;
+  window.selectResponseOption = selectResponseOption;
 </script>
 
 <style>
   /* Smooth animations */
+  #vapi-response-buttons-container,
   #vapi-time-slots-container {
     animation: slideUp 0.3s ease-out;
   }

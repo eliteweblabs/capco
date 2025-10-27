@@ -20,5 +20,6 @@ export const isBackendPage = (pathname: string) =>
   pathname.startsWith("/admin/logs") ||
   pathname.startsWith("/admin/reports") ||
   pathname.startsWith("/auth/login") ||
+  pathname.startsWith("/auth/register") ||
   pathname.startsWith("/register") ||
   pathname.startsWith("/project/new");
