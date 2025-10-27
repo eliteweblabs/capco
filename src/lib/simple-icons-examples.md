@@ -64,6 +64,7 @@ const iconHTML = window.SimpleIcons.getIcon("user", {
 - `check-circle` - Success check
 - `edit-3` - Edit/pencil
 - `clock` - Clock/time
+- `adobe` - Adobe/document icon (clean outline style)
 
 ## Configuration Options
 
