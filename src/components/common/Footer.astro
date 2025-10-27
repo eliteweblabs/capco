@@ -102,7 +102,7 @@ import Tooltip from "@/components/common/Tooltip.astro";
     {
       !currentUser && !isBackend && (
         <>
-          <vapi-widget
+          {/* <vapi-widget
             public-key="77cb0a47-2427-44ac-996d-e6ed2ca03bbf"
             assistant-id="3ae002d5-fe9c-4870-8034-4c66a9b43b51"
             mode="chat"
@@ -128,7 +128,216 @@ import Tooltip from "@/components/common/Tooltip.astro";
             src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js"
             async
             type="text/javascript"
-          />
+          /> */}
+
+          {/* <!-- Custom Response Buttons for VAPI Widget --> */}
+          <div
+            id="vapi-response-buttons-overlay"
+            class="hidden fixed bottom-20 right-6 z-50 w-80 max-w-[90vw] rounded-lg bg-white p-4 shadow-2xl dark:bg-gray-800"
+          >
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
+              <button
+                id="vapi-close-response-buttons"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+            <div id="vapi-response-buttons-grid" class="grid grid-cols-1 gap-2">
+              <!-- Response buttons will be injected here -->
+            </div>
+          </div>
+
+          <script>
+            // Enhanced VAPI Widget with Response Buttons
+            document.addEventListener('DOMContentLoaded', function() {
+              let vapiInstance: any = null;
+              let responseButtonsOverlay: HTMLElement | null = null;
+              let responseButtonsGrid: HTMLElement | null = null;
+              let closeResponseButtons: HTMLElement | null = null;
+
+              // Wait for VAPI widget to load
+              const checkVapiWidget = setInterval(() => {
+                if ((window as any).VapiWidget) {
+                  clearInterval(checkVapiWidget);
+                  initializeVapiWidget();
+                }
+              }, 100);
+
+              function initializeVapiWidget() {
+                console.log('[VAPI-FOOTER] Initializing enhanced VAPI widget');
+                
+                // Get DOM elements
+                responseButtonsOverlay = document.getElementById('vapi-response-buttons-overlay');
+                responseButtonsGrid = document.getElementById('vapi-response-buttons-grid');
+                closeResponseButtons = document.getElementById('vapi-close-response-buttons');
+
+                // Set up event listeners
+                if (closeResponseButtons) {
+                  closeResponseButtons.addEventListener('click', hideResponseButtons);
+                }
+
+                // Listen for VAPI widget events
+                document.addEventListener('vapi-widget-ready', (event: any) => {
+                  vapiInstance = event.detail;
+                  console.log('[VAPI-FOOTER] VAPI widget ready');
+                });
+
+                // Listen for messages from assistant
+                document.addEventListener('vapi-message', (event: any) => {
+                  const message = event.detail;
+                  console.log('[VAPI-FOOTER] Assistant message:', message);
+                  
+                  // Show response buttons for common scenarios
+                  if (message.text && message.text.includes('How can I help you today')) {
+                    showGeneralResponseButtons();
+                  } else if (message.text && message.text.includes('available appointments')) {
+                    showBookingResponseButtons();
+                  }
+                });
+
+                // Listen for call start/end
+                document.addEventListener('vapi-call-start', () => {
+                  console.log('[VAPI-FOOTER] Call started');
+                  showGeneralResponseButtons();
+                });
+
+                document.addEventListener('vapi-call-end', () => {
+                  console.log('[VAPI-FOOTER] Call ended');
+                  hideResponseButtons();
+                });
+              }
+
+              function showGeneralResponseButtons() {
+                console.log('[VAPI-FOOTER] Showing general response buttons');
+                
+                if (!responseButtonsGrid) return;
+                
+                responseButtonsGrid.innerHTML = '';
+                
+                const responseOptions = [
+                  {
+                    text: 'Schedule Meeting',
+                    message: 'I\'d like to schedule a meeting or appointment',
+                    icon: '📅'
+                  },
+                  {
+                    text: 'Check Times',
+                    message: 'What times are available for appointments?',
+                    icon: '⏰'
+                  },
+                  {
+                    text: 'Website Info',
+                    message: 'Can you tell me about your website and services?',
+                    icon: '🌐'
+                  },
+                  {
+                    text: 'Contact Info',
+                    message: 'What\'s your contact information?',
+                    icon: '📞'
+                  }
+                ];
+
+                responseOptions.forEach((option) => {
+                  const button = document.createElement('button');
+                  button.className = 'flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-600 transition-all hover:bg-blue-600 hover:text-white dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white';
+                  button.innerHTML = `
+                    <span>${option.icon}</span>
+                    <span>${option.text}</span>
+                  `;
+                  button.onclick = () => selectResponseOption(option.message);
+                  
+                  if (responseButtonsGrid) {
+                    responseButtonsGrid.appendChild(button);
+                  }
+                });
+
+                if (responseButtonsOverlay) {
+                  responseButtonsOverlay.classList.remove('hidden');
+                }
+              }
+
+              function showBookingResponseButtons() {
+                console.log('[VAPI-FOOTER] Showing booking response buttons');
+                
+                if (!responseButtonsGrid) return;
+                
+                responseButtonsGrid.innerHTML = '';
+                
+                const bookingOptions = [
+                  {
+                    text: 'Yes, Book It',
+                    message: 'Yes, please book that appointment',
+                    icon: '✅'
+                  },
+                  {
+                    text: 'Different Time',
+                    message: 'I need a different time',
+                    icon: '🕐'
+                  },
+                  {
+                    text: 'Cancel',
+                    message: 'No thank you, I\'ll call back later',
+                    icon: '❌'
+                  }
+                ];
+
+                bookingOptions.forEach((option) => {
+                  const button = document.createElement('button');
+                  button.className = 'flex items-center gap-2 rounded-lg border border-green-600 bg-green-50 px-3 py-2 text-xs font-medium text-green-600 transition-all hover:bg-green-600 hover:text-white dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-600 dark:hover:text-white';
+                  button.innerHTML = `
+                    <span>${option.icon}</span>
+                    <span>${option.text}</span>
+                  `;
+                  button.onclick = () => selectResponseOption(option.message);
+                  
+                  if (responseButtonsGrid) {
+                    responseButtonsGrid.appendChild(button);
+                  }
+                });
+
+                if (responseButtonsOverlay) {
+                  responseButtonsOverlay.classList.remove('hidden');
+                }
+              }
+
+              function hideResponseButtons() {
+                if (responseButtonsOverlay) {
+                  responseButtonsOverlay.classList.add('hidden');
+                }
+                if (responseButtonsGrid) {
+                  responseButtonsGrid.innerHTML = '';
+                }
+              }
+
+              function selectResponseOption(message: string) {
+                console.log('[VAPI-FOOTER] Selected response:', message);
+                
+                // Send message to VAPI widget
+                if (vapiInstance && vapiInstance.sendMessage) {
+                  vapiInstance.sendMessage(message);
+                } else {
+                  // Fallback: try to find the widget input and send message
+                  const widgetInput = document.querySelector('vapi-widget input[type="text"]') as HTMLInputElement;
+                  if (widgetInput) {
+                    widgetInput.value = message;
+                    widgetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    widgetInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+                  }
+                }
+                
+                hideResponseButtons();
+              }
+            });
+          </script>
         </>
       )
     }
