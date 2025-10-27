@@ -2,13 +2,31 @@ import type { APIRoute } from "astro";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 import { getApiBaseUrl } from "../../../lib/url-utils";
+import { checkAuth } from "../../../lib/auth";
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
+    // Check authentication first
+    const { currentUser, isAuth } = await checkAuth(cookies);
+    if (!currentUser || !isAuth) {
+      console.log("📧 [ASSIGN-STAFF] Authentication failed - user not logged in");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Authentication required",
+          message: "Please log in to assign staff",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const body = await request.json();
     console.log("📧 [ASSIGN-STAFF] API received:", body);
 
-    const { projectId, assignedToId, currentUser } = body;
+    const { projectId, assignedToId } = body;
 
     console.log("📧 [ASSIGN-STAFF] Project ID:", projectId);
     console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assignedToId);
