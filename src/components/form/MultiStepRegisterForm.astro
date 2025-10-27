@@ -42,6 +42,16 @@ const { globalInputClasses } = Astro.props;
           <p class="text-lg text-gray-600 dark:text-gray-400">
             We'll use this to keep you updated on your projects
           </p>
+          <!-- Hidden Google OAuth Form -->
+          <form
+            id="google-oauth-form"
+            action="/api/auth/signin"
+            method="post"
+            style="display: none;"
+          >
+            <input type="hidden" name="provider" value="google" />
+          </form>
+
           <div class="inline-flex justify-center">
             <Button
               type="button"
@@ -49,7 +59,7 @@ const { globalInputClasses } = Astro.props;
               fullWidth
               size="md"
               class="google-signup-btn"
-              onclick="handleGoogleSignup()"
+              onclick="document.getElementById('google-oauth-form').submit();"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -362,7 +372,7 @@ const { globalInputClasses } = Astro.props;
 
         <!-- Review Summary -->
         <div
-          class="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-8 dark:border-gray-700 dark:bg-gray-800/50"
+          class="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-8 dark:border-gray-700 color-background/50"
           data-aos="fade-up"
           data-aos-delay="400"
         >
@@ -482,29 +492,6 @@ const { globalInputClasses } = Astro.props;
 
 <script>
   import AOS from "aos";
-
-  // Handle Google Signup
-  function handleGoogleSignup() {
-    console.log("[GOOGLE-SIGNUP] Initiating Google OAuth...");
-
-    // Create a temporary form to submit to Google OAuth
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "/api/auth/signin";
-    form.style.display = "none";
-
-    const providerInput = document.createElement("input");
-    providerInput.type = "hidden";
-    providerInput.name = "provider";
-    providerInput.value = "google";
-
-    form.appendChild(providerInput);
-    document.body.appendChild(form);
-    form.submit();
-  }
-
-  // Make function globally available
-  (window as any).handleGoogleSignup = handleGoogleSignup;
 
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("multi-step-form") as HTMLFormElement;
