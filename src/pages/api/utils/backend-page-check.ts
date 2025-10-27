@@ -9,4 +9,16 @@ export const isBackendPage = (pathname: string) =>
   pathname.startsWith("/users") ||
   pathname.startsWith("/discussions") ||
   pathname.startsWith("/global-activity") ||
+  pathname.startsWith("/analytics") ||
+  pathname.startsWith("/admin/analytics") ||
+  pathname.startsWith("/admin/discussions") ||
+  pathname.startsWith("/admin/global-activity") ||
+  pathname.startsWith("/admin/users") ||
+  pathname.startsWith("/admin/payments") ||
+  pathname.startsWith("/admin/uploads") ||
+  pathname.startsWith("/admin/settings") ||
+  pathname.startsWith("/admin/logs") ||
+  pathname.startsWith("/admin/reports") ||
+  pathname.startsWith("/auth/login") ||
+  pathname.startsWith("/register") ||
   pathname.startsWith("/project/new");

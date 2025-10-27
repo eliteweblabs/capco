@@ -3,6 +3,24 @@
  *
  * This script configures a Vapi.ai assistant to handle Cal.com operations
  * including reading/writing appointments, users, and availability
+ *
+ * TEMPLATE VARIABLES:
+ * - {{company.name}} - Company name (set via assistantOverrides.variableValues)
+ * - {{assistant.name}} - Assistant name (set via assistantOverrides.variableValues)
+ * - {{customer.number}} - Customer phone number (set via customer.number in call request)
+ * - {{now}}, {{date}}, {{time}} - Built-in VAPI variables for current date/time
+ *
+ * To use these variables, provide them when initiating a call:
+ * {
+ *   "assistantId": "your-assistant-id",
+ *   "customer": { "number": "+1234567890" },
+ *   "assistantOverrides": {
+ *     "variableValues": {
+ *       "company.name": "CAPCo Fire Protection",
+ *       "assistant.name": "Sarah"
+ *     }
+ *   }
+ * }
  */
 
 import "dotenv/config";

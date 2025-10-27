@@ -96,6 +96,9 @@ const projectId = project?.id || "";
 // Ensure options is always an array
 const optionsArray = Array.isArray(options) ? options : [];
 
+// Debug logging for project data
+console.log("🔧 [SLOT-MACHINE] Project data:", { project, projectId });
+
 // Determine if search should be enabled (if searchText is provided)
 const enableSearch = !!searchText;
 
@@ -158,7 +161,7 @@ const displayText = selectedOption?.label || placeholder;
     noResultsText,
     currentUser,
     globalInputClasses,
-    // project,
+    project,
   }}
   is:inline
 >
@@ -266,12 +269,25 @@ const displayText = selectedOption?.label || placeholder;
   // Auto-save function that uses saveApiEndpoint or falls back to component ID
   async function saveToAPI(saveApiEndpoint, value, label, projectId) {
     try {
-      let requestBody;
+      console.log("🔧 [SLOT-MACHINE] saveToAPI called with:", {
+        saveApiEndpoint,
+        value,
+        label,
+        projectId,
+      });
 
-      requestBody = {
-        projectId: projectId,
+      // Validate projectId
+      if (!projectId || projectId === "") {
+        console.error("🔧 [SLOT-MACHINE] No projectId provided - cannot save assignment");
+        throw new Error("Project ID is required for staff assignment");
+      }
+
+      let requestBody = {
+        projectId: parseInt(projectId), // Ensure it's a number
         assignedToId: value, // Staff member ID
       };
+
+      console.log("🔧 [SLOT-MACHINE] Request body:", requestBody);
 
       // if (apiEndpoint.startsWith("assign-staff-") || apiEndpoint === "assign-staff") {
       //   console.log(`🎰 [SLOT-MACHINE] Processing ASSIGN-STAFF request`);
@@ -383,6 +399,8 @@ const displayText = selectedOption?.label || placeholder;
       //   console.log(`🎰 [SLOT-MACHINE] GENERIC requestBody:`, requestBody);
       // }
 
+      console.log("🔧 [SLOT-MACHINE] Making API call to:", `/api/${saveApiEndpoint}`);
+
       const response = await fetch(`/api/${saveApiEndpoint}`, {
         method: "POST",
         headers: {
@@ -391,6 +409,9 @@ const displayText = selectedOption?.label || placeholder;
         credentials: "include",
         body: JSON.stringify(requestBody),
       });
+
+      console.log("🔧 [SLOT-MACHINE] API response status:", response.status);
+      console.log("🔧 [SLOT-MACHINE] API response ok:", response.ok);
 
       // const response = await fetch(`/api/${apiEndpoint}`, {
       //   method: "POST",
@@ -1428,7 +1449,14 @@ const displayText = selectedOption?.label || placeholder;
 
     // Auto-save to API if saveApiEndpoint is provided
     if (saveApiEndpoint) {
-      console.log(`🎰 [SLOT-MACHINE-${id}] Auto-saving to API`);
+      console.log(`🎰 [SLOT-MACHINE-${id}] Auto-saving to API with projectId: ${projectId}`);
+      if (!projectId || projectId === "") {
+        console.error(`🎰 [SLOT-MACHINE-${id}] Cannot save - projectId is empty or undefined`);
+        if (window.showModal) {
+          window.showModal("error", "Error", "Project ID is missing. Cannot assign staff.", 5000);
+        }
+        return;
+      }
       saveToAPI(saveApiEndpoint, value, label, projectId);
     } else {
       console.log(`🎰 [SLOT-MACHINE-${id}] Not auto-saving to API`);

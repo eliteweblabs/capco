@@ -6,11 +6,11 @@ import { checkAuth } from "../../lib/auth";
 interface Props {
   currentUser: any;
   session: any;
+  isBackend?: boolean;
 }
 
 const { currentUser } = await checkAuth(Astro.cookies);
-
-const currentRole = currentUser?.profile?.role;
+const { session, isBackend } = Astro.props;
 
 // Prioritize profile.avatarUrl (Supabase Storage) over user_metadata.avatarUrl (Google CDN)
 const avatarUrl =
@@ -131,7 +131,7 @@ const avatarUrl =
         </ul>
       </div>
     </>
-  ) : (
+  ) : !isBackend ? (
     <Button
       href="/auth/register"
       variant="outline"
@@ -142,7 +142,7 @@ const avatarUrl =
     >
       <span class="hidden sm:block">sign&nbsp;in</span>
     </Button>
-  )
+  ) : null
 }
 
 <script>
