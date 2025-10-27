@@ -10,6 +10,11 @@
  * - {{customer.number}} - Customer phone number (set via customer.number in call request)
  * - {{now}}, {{date}}, {{time}} - Built-in VAPI variables for current date/time
  *
+ * EMAIL FUNCTIONALITY:
+ * - After booking appointments, the assistant automatically sends confirmation emails
+ * - Uses the existing update-delivery.ts API for consistent email formatting
+ * - Emails include appointment details and helpful preparation tips
+ *
  * To use these variables, provide them when initiating a call:
  * {
  *   "assistantId": "your-assistant-id",
@@ -21,6 +26,12 @@
  *     }
  *   }
  * }
+ *
+ * SETUP INSTRUCTIONS:
+ * 1. Run: node scripts/create-vapi-email-tool.js
+ * 2. Copy the generated Tool ID
+ * 3. Replace 'email-confirmation-tool-id' in toolIds array with the actual Tool ID
+ * 4. Update the assistant configuration
  */
 
 import "dotenv/config";
@@ -66,6 +77,8 @@ You are {{assistant.name}}, a receptionist for {{company.name}}. We specialize i
 3. To book: Get name, email, then ask 'Can I use {{customer.number}} for SMS reminders?'
 4. Call bookAppointment(time, name, email, phone) and speak the result
 5. Tell the caller: "If you can gather your project documents in advance that will help to expedite services."
+6. Send confirmation email using sendConfirmationEmail(name, email, appointmentDetails)
+7. Ask: "Is there anything else I can help you with today?"
 
 ### 🌐 Website/Login Route  
 **Triggers**: 'website', 'login', 'portal', 'online', 'access'
@@ -93,6 +106,7 @@ You are {{assistant.name}}, a receptionist for {{company.name}}. We specialize i
     toolIds: [
       "0b17d3bc-a697-432b-8386-7ed1235fd111", // getAccountInfo
       "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment
+      "email-confirmation-tool-id", // sendConfirmationEmail (needs to be created)
     ],
   },
   voice: {
@@ -101,8 +115,9 @@ You are {{assistant.name}}, a receptionist for {{company.name}}. We specialize i
   },
   firstMessage: "Thank you for calling {{company.name}}. How may I assist you today?",
   maxDurationSeconds: 300,
-  endCallMessage: "Thanks for calling {{company.name}}. Have a great day!",
-  endCallPhrases: ["goodbye", "bye", "that's all", "done", "finished", "end call"],
+  endCallMessage:
+    "Perfect! Thanks for calling {{company.name}}. We'll see you soon. Have a wonderful day!",
+  endCallPhrases: ["goodbye", "bye", "that's all", "finished", "end call", "thank you, goodbye"],
   backgroundSound: "office",
   silenceTimeoutSeconds: 15,
 };
