@@ -36,11 +36,46 @@
 
 import "dotenv/config";
 import fetch from "node-fetch";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 // do not change this url or this script will fail, the web hook url needs to be the live url of the site
 const SITE_URL = "https://capcofire.com";
 const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
+
+// Process the assistant config to replace placeholders using placeholder-utils.ts
+async function processAssistantConfig(config) {
+  const processedConfig = JSON.parse(JSON.stringify(config)); // Deep clone
+
+  // Import the Node.js compatible placeholder-utils
+  const { replacePlaceholders } = await import("./placeholder-utils-node.js");
+
+  // Process each message field that might contain placeholders
+  const fieldsToProcess = ["firstMessage", "endCallMessage", "chatFirstMessage", "chatPlaceholder"];
+
+  for (const field of fieldsToProcess) {
+    if (processedConfig[field] && typeof processedConfig[field] === "string") {
+      // Use placeholder-utils.ts with no project data (only global placeholders)
+      processedConfig[field] = replacePlaceholders(processedConfig[field], null);
+    }
+  }
+
+  // Process any nested objects that might contain placeholders
+  if (processedConfig.assistantOverrides && processedConfig.assistantOverrides.variableValues) {
+    const variableValues = processedConfig.assistantOverrides.variableValues;
+
+    for (const [key, value] of Object.entries(variableValues)) {
+      if (typeof value === "string") {
+        // Use placeholder-utils.ts with no project data (only global placeholders)
+        variableValues[key] = replacePlaceholders(value, null);
+      }
+    }
+  }
+
+  return processedConfig;
+}
 
 // Assistant configuration
 const assistantConfig = {
@@ -55,9 +90,9 @@ const assistantConfig = {
     messages: [
       {
         role: "system",
-        content: `# {{company.name}} Receptionist
+        content: `# {{GLOBAL_COMPANY_NAME}} Receptionist
 
-You are {{assistant.name}}, a receptionist for {{company.name}}. We specialize in crafting fire sprinkler and alarm legal documents quickly.
+You are {{assistant.name}}, a receptionist for {{GLOBAL_COMPANY_NAME}}. We specialize in crafting fire sprinkler and alarm legal documents quickly.
 
 ## CRITICAL INSTRUCTIONS - FOLLOW EXACTLY
 
@@ -106,17 +141,17 @@ You are {{assistant.name}}, a receptionist for {{company.name}}. We specialize i
     toolIds: [
       "0b17d3bc-a697-432b-8386-7ed1235fd111", // getAccountInfo
       "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment
-      "email-confirmation-tool-id", // sendConfirmationEmail (needs to be created)
+      // "email-confirmation-tool-id", // sendConfirmationEmail (needs to be created)
     ],
   },
   voice: {
     provider: "vapi",
     voiceId: "Elliot",
   },
-  firstMessage: "Thank you for calling {{company.name}}. How may I assist you today?",
+  firstMessage: "Thank you for calling {{GLOBAL_COMPANY_NAME}}. How may I assist you today?",
   maxDurationSeconds: 300,
   endCallMessage:
-    "Perfect! Thanks for calling {{company.name}}. We'll see you soon. Have a wonderful day!",
+    "Perfect! Thanks for calling {{GLOBAL_COMPANY_NAME}}. We'll see you soon. Have a wonderful day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "finished", "end call", "thank you, goodbye"],
   backgroundSound: "office",
   silenceTimeoutSeconds: 15,
@@ -127,13 +162,17 @@ async function createAssistant() {
   try {
     console.log("🤖 [VAPI-CONFIG] Creating Vapi.ai assistant...");
 
+    // Process the config to replace placeholders with actual company data
+    const processedConfig = await processAssistantConfig(assistantConfig);
+    console.log("🔄 [VAPI-CONFIG] Processed placeholders in configuration");
+
     const response = await fetch("https://api.vapi.ai/assistant", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${VAPI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(assistantConfig),
+      body: JSON.stringify(processedConfig),
     });
 
     if (!response.ok) {
@@ -156,13 +195,17 @@ async function updateAssistant(assistantId) {
   try {
     console.log("🤖 [VAPI-CONFIG] Updating Vapi.ai assistant:", assistantId);
 
+    // Process the config to replace placeholders with actual company data
+    const processedConfig = await processAssistantConfig(assistantConfig);
+    console.log("🔄 [VAPI-CONFIG] Processed placeholders in configuration");
+
     const response = await fetch(`https://api.vapi.ai/assistant/${assistantId}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${VAPI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(assistantConfig),
+      body: JSON.stringify(processedConfig),
     });
 
     if (!response.ok) {
