@@ -23,7 +23,7 @@ check_env_var "VAPI_API_KEY"
 check_env_var "CAL_API_KEY"
 check_env_var "SITE_URL"
 check_env_var "SUPABASE_URL"
-check_env_var "SUPABASE_SERVICE_ROLE_KEY"
+check_env_var "SUPABASE_ANON_KEY"
 
 echo "✅ All required environment variables are set"
 

@@ -4,8 +4,8 @@ import type { APIRoute } from "astro";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Get Supabase client
-    const supabaseUrl = import.meta.env.DATABASE_URL;
-    const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = import.meta.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
       return new Response(JSON.stringify({ error: "Supabase configuration missing" }), {
@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (accessToken && refreshToken && !anonymous) {
       try {
         // Create a client with the user's session
-        const supabaseUser = createClient(supabaseUrl!, import.meta.env.PUBLIC_SUPABASE_ANON_KEY!, {
+        const supabaseUser = createClient(supabaseUrl!, import.meta.env.SUPABASE_ANON_KEY!, {
           global: {
             headers: {
               Authorization: `Bearer ${accessToken}`,
