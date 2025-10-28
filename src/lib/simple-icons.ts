@@ -33,8 +33,8 @@ export function getIcon(name: string, config: IconConfig = {}): string {
 
 // Auto-initialize for client-side (browser) usage
 if (typeof window !== "undefined") {
-  window.SimpleIcons = {
+  (window as any).SimpleIcons = {
     getIcon,
     SIMPLE_ICONS,
-  };
+  } as any;
 }
