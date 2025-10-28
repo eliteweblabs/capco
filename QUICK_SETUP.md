@@ -25,10 +25,10 @@
 ```bash
 # Supabase Database Configuration
 PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-PUBLIC_SUPABASE_ANON_KEY=eyJ...your-anon-key-here
+SUPABASE_ANON_KEY=eyJ...your-anon-key-here
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=eyJ...your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+SUPABASE_ANON_KEY=your-service-role-key-here
 
 # Vapi.ai Configuration
 VAPI_API_KEY=your_vapi_api_key_here
@@ -126,7 +126,7 @@ Your assistant will handle conversations like:
 
 ### **"Supabase admin client not configured"**
 
-- Add `SUPABASE_SERVICE_ROLE_KEY` to your `.env` file
+- Add `SUPABASE_ANON_KEY` to your `.env` file
 - Get it from Supabase Dashboard > Settings > API
 
 ### **"Appointments table not found"**

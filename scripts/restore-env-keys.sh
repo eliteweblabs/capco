@@ -7,10 +7,10 @@ echo "🔧 Restoring complete .env file with all necessary keys..."
 cat > .env << 'EOF'
 # Supabase Database Configuration
 PUBLIC_SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co
-PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+SUPABASE_ANON_KEY=your_supabase_anon_key_here
 SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co
 SUPABASE_ANON_KEY=your_supabase_anon_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+SUPABASE_ANON_KEY=your_SUPABASE_ANON_KEY_here
 
 # Site Configuration
 SITE_URL=http://localhost:4321
@@ -67,7 +67,7 @@ echo "📋 You need to fill in these placeholders with your actual keys:"
 echo ""
 echo "🔑 Supabase Keys (REQUIRED):"
 echo "   - your_supabase_anon_key_here"
-echo "   - your_supabase_service_role_key_here"
+echo "   - your_SUPABASE_ANON_KEY_here"
 echo ""
 echo "🔑 Google OAuth (if using):"
 echo "   - your_google_client_id_here"
