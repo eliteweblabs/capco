@@ -74,7 +74,7 @@ export default defineConfig({
         env.PUBLIC_STRIPE_PUBLISHABLE_KEY
       ),
       "process.env.SUPABASE_ANON_KEY": JSON.stringify(env.SUPABASE_ANON_KEY),
-      "process.env.PUBLIC_SUPABASE_URL": JSON.stringify(env.PUBLIC_SUPABASE_URL),
+      "process.env.SUPABASE_URL": JSON.stringify(env.SUPABASE_URL),
       "process.env.RESEND_WEBHOOK_SECRET": JSON.stringify(env.RESEND_WEBHOOK_SECRET),
       "process.env.GLOBAL_COLOR_SECONDARY": JSON.stringify(env.GLOBAL_COLOR_SECONDARY),
       "process.env.SITE_URL": JSON.stringify(env.SITE_URL || "https://capcofire.com"),

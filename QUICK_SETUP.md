@@ -24,7 +24,7 @@
 
 ```bash
 # Supabase Database Configuration
-PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=eyJ...your-anon-key-here
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=eyJ...your-anon-key-here
