@@ -121,8 +121,7 @@ You are {{assistant.name}}, a receptionist for {{GLOBAL_COMPANY_NAME}}. We speci
 3. To book: Get name, email, then ask 'Can I use {{customer.number}} for SMS reminders?'
 4. Call bookAppointment(time, name, email, phone) and speak the result
 5. Tell the caller: "If you can gather your project documents in advance that will help to expedite services."
-6. Send confirmation email using sendConfirmationEmail(name, email, appointmentDetails)
-7. Ask: "Is there anything else I can help you with today?"
+6. Ask: "Is there anything else I can help you with today?"
 
 ### 🌐 Website/Login Route  
 **Triggers**: 'website', 'login', 'portal', 'online', 'access'
@@ -150,18 +149,25 @@ You are {{assistant.name}}, a receptionist for {{GLOBAL_COMPANY_NAME}}. We speci
     toolIds: [
       "0b17d3bc-a697-432b-8386-7ed1235fd111", // getAccountInfo
       "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment
-      "22c53307-7b52-47b7-acb6-f3f6c21e3b4a", // sendConfirmationEmail
     ],
   },
   voice: {
     provider: "vapi",
-    voiceId: "Elliot",
+    voiceId: "Kylie",
   },
   firstMessage: "Thank you for calling {{GLOBAL_COMPANY_NAME}}. How may I assist you today?",
   maxDurationSeconds: 300,
   endCallMessage:
     "Perfect! Thanks for calling {{GLOBAL_COMPANY_NAME}}. We'll see you soon. Have a wonderful day!",
-  endCallPhrases: ["goodbye", "bye", "that's all", "finished", "end call", "thank you, goodbye"],
+  endCallPhrases: [
+    "goodbye",
+    "bye",
+    "that's all",
+    "finished",
+    "end call",
+    "thank you, goodbye",
+    "hangup",
+  ],
   backgroundSound: "office",
   silenceTimeoutSeconds: 15,
 };

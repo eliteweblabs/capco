@@ -601,6 +601,86 @@ async function handleCreateBooking(params: any) {
     );
     console.log("✅ [CAL-INTEGRATION] Attendee added to booking");
 
+    // Send confirmation email automatically
+    try {
+      console.log("📧 [CAL-INTEGRATION] Sending confirmation email...");
+
+      const emailSubject = `Appointment Confirmation - ${startDate.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      })}`;
+
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Appointment Confirmation</h2>
+          
+          <p>Dear ${name},</p>
+          
+          <p>Thank you for scheduling your appointment with CAPCo Fire Protection. Here are the details:</p>
+          
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #1e40af;">Appointment Details</h3>
+            <p><strong>Date:</strong> ${startDate.toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              timeZone: "UTC",
+            })}</p>
+            <p><strong>Time:</strong> ${startDate.toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              timeZone: "UTC",
+            })}</p>
+            <p><strong>Duration:</strong> 30 minutes</p>
+            <p><strong>Location:</strong> Online consultation</p>
+            <p><strong>Meeting Type:</strong> Fire protection consultation</p>
+          </div>
+          
+          <p><strong>Important:</strong> If you can gather your project documents in advance, that will help to expedite our services.</p>
+          
+          <p>If you need to reschedule or have any questions, please don't hesitate to contact us.</p>
+          
+          <p>We look forward to meeting with you!</p>
+          
+          <p>Best regards,<br>
+          CAPCo Fire Protection Team</p>
+        </div>
+      `;
+
+      // Send email using the existing update-delivery API
+      const emailResponse = await fetch(
+        `${process.env.SITE_URL || "http://localhost:4321"}/api/delivery/update-delivery`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            usersToNotify: [email],
+            method: "email",
+            emailSubject: emailSubject,
+            emailContent: emailContent,
+            buttonText: "View Our Website",
+            buttonLink: `${process.env.SITE_URL || "http://localhost:4321"}`,
+            currentUser: null, // VAPI calls don't have user context
+          }),
+        }
+      );
+
+      if (emailResponse.ok) {
+        const emailResult = await emailResponse.json();
+        console.log("✅ [CAL-INTEGRATION] Confirmation email sent successfully:", emailResult);
+      } else {
+        const errorText = await emailResponse.text();
+        console.error("❌ [CAL-INTEGRATION] Failed to send confirmation email:", errorText);
+      }
+    } catch (emailError) {
+      console.error("❌ [CAL-INTEGRATION] Error sending confirmation email:", emailError);
+      // Don't fail the booking if email fails
+    }
+
     // Format confirmation message for VAPI to speak
     const confirmationMessage = `Your appointment has been confirmed for ${startDate.toLocaleDateString(
       "en-US",

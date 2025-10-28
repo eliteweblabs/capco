@@ -16,13 +16,21 @@ interface ConfirmationEmailRequest {
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    // Check authentication
-    const { isAuth, currentUser } = await checkAuth(cookies);
-    if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+    // Skip authentication check for VAPI tool calls
+    // VAPI tools don't have user session context
+    const isVapiCall = request.headers.get("X-Vapi-System") === "true" || 
+                       request.headers.get("User-Agent")?.includes("Vapi") ||
+                       request.url.includes("/api/vapi/");
+
+    if (!isVapiCall) {
+      // Only check authentication for non-VAPI calls
+      const { isAuth, currentUser } = await checkAuth(cookies);
+      if (!isAuth || !currentUser) {
+        return new Response(JSON.stringify({ error: "Authentication required" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
     }
 
     const body: ConfirmationEmailRequest = await request.json();
@@ -87,7 +95,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         emailContent: emailContent,
         buttonText: "View Our Website",
         buttonLink: `${baseUrl}`,
-        currentUser: currentUser,
+        currentUser: null, // VAPI calls don't have user context
       }),
     });
 
