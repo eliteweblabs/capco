@@ -53,12 +53,21 @@ async function processAssistantConfig(config) {
   const { replacePlaceholders } = await import("./placeholder-utils-node.js");
 
   // Process each message field that might contain placeholders
-  const fieldsToProcess = ["firstMessage", "endCallMessage", "chatFirstMessage", "chatPlaceholder"];
+  const fieldsToProcess = ["name", "firstMessage", "endCallMessage", "chatPlaceholder"];
 
   for (const field of fieldsToProcess) {
     if (processedConfig[field] && typeof processedConfig[field] === "string") {
       // Use placeholder-utils.ts with no project data (only global placeholders)
       processedConfig[field] = replacePlaceholders(processedConfig[field], null);
+    }
+  }
+
+  // Process nested model.messages content
+  if (processedConfig.model && processedConfig.model.messages) {
+    for (const message of processedConfig.model.messages) {
+      if (message.content && typeof message.content === "string") {
+        message.content = replacePlaceholders(message.content, null);
+      }
     }
   }
 
@@ -79,7 +88,7 @@ async function processAssistantConfig(config) {
 
 // Assistant configuration
 const assistantConfig = {
-  name: "{{company.name}} Receptionist",
+  name: "{{GLOBAL_COMPANY_NAME}} Receptionist",
   serverUrl: VAPI_WEBHOOK_URL,
   functions: [], // Clear old functions array
   model: {
@@ -141,7 +150,7 @@ You are {{assistant.name}}, a receptionist for {{GLOBAL_COMPANY_NAME}}. We speci
     toolIds: [
       "0b17d3bc-a697-432b-8386-7ed1235fd111", // getAccountInfo
       "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment
-      // "email-confirmation-tool-id", // sendConfirmationEmail (needs to be created)
+      "22c53307-7b52-47b7-acb6-f3f6c21e3b4a", // sendConfirmationEmail
     ],
   },
   voice: {

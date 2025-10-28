@@ -14,6 +14,7 @@ const SITE_URL = "https://capcofire.com";
 // Tool definition for sending confirmation emails
 const emailConfirmationTool = {
   type: "function",
+  async: false,
   function: {
     name: "sendConfirmationEmail",
     description: "Send a confirmation email to the customer after booking an appointment",
@@ -57,10 +58,25 @@ const emailConfirmationTool = {
       },
       required: ["name", "email", "appointmentDetails"],
     },
-    server: {
-      url: `${SITE_URL}/api/vapi/send-confirmation-email`,
-    },
   },
+  server: {
+    url: `${SITE_URL}/api/vapi/send-confirmation-email`,
+    timeoutSeconds: 20,
+  },
+  messages: [
+    {
+      type: "request-start",
+      content: "Sending your confirmation email now.",
+    },
+    {
+      type: "request-complete",
+      content: "Confirmation email sent!",
+    },
+    {
+      type: "request-failed",
+      content: "I'm having trouble sending the email right now.",
+    },
+  ],
 };
 
 // Create the tool
