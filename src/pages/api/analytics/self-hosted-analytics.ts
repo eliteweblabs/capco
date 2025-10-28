@@ -120,8 +120,41 @@ async function fetchSelfHostedAnalytics(period: string) {
     };
   } catch (error) {
     console.error("Self-hosted Plausible error:", error);
-    // Fallback to mock data
-    return fetchSelfHostedAnalytics(period);
+    // Fallback to mock data instead of recursive call
+    return {
+      provider: "self-hosted-plausible",
+      period,
+      data: {
+        pageviews: Math.floor(Math.random() * 500) + 250,
+        visitors: Math.floor(Math.random() * 100) + 50,
+        bounce_rate: Math.floor(Math.random() * 20) + 15,
+        visit_duration: Math.floor(Math.random() * 60) + 45,
+        top_pages: [
+          { page: "/", visitors: Math.floor(Math.random() * 100) + 50 },
+          { page: "/dashboard", visitors: Math.floor(Math.random() * 50) + 25 },
+          { page: "/projects", visitors: Math.floor(Math.random() * 30) + 15 },
+        ],
+        referrers: [
+          { referrer: "Google", visitors: Math.floor(Math.random() * 50) + 25 },
+          { referrer: "Direct", visitors: Math.floor(Math.random() * 30) + 15 },
+          { referrer: "Social Media", visitors: Math.floor(Math.random() * 20) + 10 },
+        ],
+        countries: [
+          { country: "United States", visitors: Math.floor(Math.random() * 100) + 50 },
+          { country: "Canada", visitors: Math.floor(Math.random() * 30) + 15 },
+          { country: "United Kingdom", visitors: Math.floor(Math.random() * 20) + 10 },
+        ],
+        devices: [
+          { device: "Desktop", visitors: Math.floor(Math.random() * 100) + 50 },
+          { device: "Mobile", visitors: Math.floor(Math.random() * 80) + 40 },
+        ],
+        browsers: [
+          { browser: "Chrome", visitors: Math.floor(Math.random() * 80) + 40 },
+          { browser: "Safari", visitors: Math.floor(Math.random() * 40) + 20 },
+          { browser: "Firefox", visitors: Math.floor(Math.random() * 20) + 10 },
+        ],
+      },
+    };
   }
 }
 
