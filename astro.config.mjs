@@ -70,9 +70,7 @@ export default defineConfig({
       "process.env.MAILGUN_WEBHOOK_SIGNING_KEY": JSON.stringify(env.MAILGUN_WEBHOOK_SIGNING_KEY),
       "process.env.GLOBAL_COLOR_PRIMARY": JSON.stringify(env.GLOBAL_COLOR_PRIMARY),
       "process.env.PUBLIC_GOOGLE_MAPS_API_KEY": JSON.stringify(env.PUBLIC_GOOGLE_MAPS_API_KEY),
-      "process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY": JSON.stringify(
-        env.PUBLIC_STRIPE_PUBLISHABLE_KEY
-      ),
+      "process.env.STRIPE_PUBLISHABLE_KEY": JSON.stringify(env.STRIPE_PUBLISHABLE_KEY),
       "process.env.SUPABASE_ANON_KEY": JSON.stringify(env.SUPABASE_ANON_KEY),
       "process.env.SUPABASE_URL": JSON.stringify(env.SUPABASE_URL),
       "process.env.RESEND_WEBHOOK_SECRET": JSON.stringify(env.RESEND_WEBHOOK_SECRET),

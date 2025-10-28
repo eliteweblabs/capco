@@ -17,7 +17,7 @@ Add these to your `.env` file:
 # Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
 STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
-PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
 ```
 
 ## Stripe Dashboard Setup
@@ -112,7 +112,7 @@ Use these test card numbers in development:
 ### Common Issues
 
 1. **"Failed to load Stripe"**
-   - Check your `PUBLIC_STRIPE_PUBLISHABLE_KEY` environment variable
+   - Check your `STRIPE_PUBLISHABLE_KEY` environment variable
    - Ensure the key is correct and not empty
 
 2. **"Payment failed"**
