@@ -5,11 +5,10 @@ interface ImportMetaEnv {
   // Supabase - Primary (required)
   readonly SUPABASE_URL: string;
   readonly SUPABASE_ANON_KEY: string;
-  readonly SUPABASE_ANON_KEY?: string;
+  readonly SUPABASE_SERVICE_ROLE_KEY: string;
 
-  // Supabase - Client-side (optional, fallback to above)
-  readonly SUPABASE_URL?: string;
-  readonly SUPABASE_ANON_KEY?: string;
+  // Supabase - Alternative names (optional, fallback to above)
+  readonly SUPABASE_URI?: string;
 
   // Email configuration
   readonly EMAIL_PROVIDER?: string;
@@ -28,6 +27,14 @@ interface ImportMetaEnv {
   // Stripe configuration
   readonly STRIPE_SECRET_KEY?: string;
   readonly STRIPE_PUBLISHABLE_KEY?: string;
+
+  // Company branding
+  readonly GLOBAL_COMPANY_NAME?: string;
+  readonly GLOBAL_COMPANY_SLOGAN?: string;
+  readonly YEAR?: string;
+
+  // Development flag
+  readonly DEV?: boolean;
 }
 
 interface ImportMeta {
