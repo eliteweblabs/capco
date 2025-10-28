@@ -18,9 +18,9 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     console.error("🔐 [VERIFY] Supabase admin client not available");
     console.error("🔐 [VERIFY] Environment check:", {
       hasSupabaseUrl: !!import.meta.env.SUPABASE_URL,
-      hasServiceRoleKey: !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY,
+      hasServiceRoleKey: !!import.meta.env.SUPABASE_ADMIN_KEY,
       supabaseUrl: import.meta.env.SUPABASE_URL ? "present" : "missing",
-      serviceRoleKey: import.meta.env.SUPABASE_SERVICE_ROLE_KEY ? "present" : "missing",
+      serviceRoleKey: import.meta.env.SUPABASE_ADMIN_KEY ? "present" : "missing",
     });
     return redirect("/auth/login?error=verification_error");
   }
