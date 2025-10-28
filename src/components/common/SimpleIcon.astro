@@ -1,0 +1,130 @@
+---
+import { getIcon } from "../../lib/simple-icons";
+
+interface Props {
+  name: string;
+  class?: string;
+  color?: string;
+  variant?:
+    | "primary"
+    | "secondary"
+    | "success"
+    | "warning"
+    | "danger"
+    | "outline"
+    | "ghost"
+    | "link"
+    | "loading"
+    | "disabled"
+    | "selected"
+    | "anchor";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  backgroundColor?:
+    | "primary"
+    | "secondary"
+    | "success"
+    | "warning"
+    | "danger"
+    | "outline"
+    | "ghost"
+    | "link"
+    | "loading"
+    | "disabled"
+    | "selected"
+    | "anchor";
+  shape?: "circle" | "rounded" | "square";
+  id?: string;
+  customStyle?: string;
+  style?: string;
+  dataAttributes?: Record<string, string>;
+}
+
+const {
+  name,
+  class: className = "",
+  color = "currentColor",
+  variant,
+  size = "sm",
+  backgroundColor,
+  shape,
+  id,
+  customStyle,
+  style,
+  dataAttributes = {},
+  ...rest
+} = Astro.props;
+
+// Use simple icon system
+const iconSize =
+  size === "xs"
+    ? 12
+    : size === "sm"
+      ? 16
+      : size === "md"
+        ? 20
+        : size === "lg"
+          ? 24
+          : size === "xl"
+            ? 32
+            : 16;
+
+// Build variant classes if variant is specified
+let variantClasses = "";
+if (variant) {
+  const variantMap = {
+    primary: "text-blue-600 dark:text-blue-400",
+    secondary: "text-gray-600 dark:text-gray-400",
+    success: "text-green-600 dark:text-green-400",
+    warning: "text-yellow-600 dark:text-yellow-400",
+    danger: "text-red-600 dark:text-red-400",
+    outline: "text-gray-500 dark:text-gray-400",
+    ghost: "text-gray-400 dark:text-gray-500",
+    link: "text-blue-500 dark:text-blue-400",
+    loading: "text-gray-400 animate-spin",
+    disabled: "text-gray-300 dark:text-gray-600",
+    selected: "text-blue-500 dark:text-blue-400",
+    anchor: "text-blue-600 dark:text-blue-400",
+  };
+  variantClasses = variantMap[variant] || "";
+}
+
+// Combine all classes
+const finalClasses = [className, variantClasses].filter(Boolean).join(" ");
+
+// Get base icon HTML (without classes, we'll add them ourselves)
+let iconHTML = getIcon(name, {
+  size: iconSize,
+  className: "", // Don't add classes here, we'll inject them below
+});
+
+// Build attribute string for ALL props
+const attrs = [];
+if (id) attrs.push(`id="${id}"`);
+if (finalClasses) attrs.push(`class="${finalClasses}"`);
+if (style || customStyle || color !== "currentColor") {
+  const styleValue = style || customStyle || `color: ${color};`;
+  attrs.push(`style="${styleValue}"`);
+}
+// Add data attributes
+Object.entries(dataAttributes).forEach(([key, value]) => {
+  attrs.push(`${key}="${value}"`);
+});
+// Add any other props
+Object.entries(rest).forEach(([key, value]) => {
+  if (typeof value === "string") {
+    attrs.push(`${key}="${value}"`);
+  }
+});
+
+// Inject attributes into SVG tag, REPLACING the existing class
+if (attrs.length > 0) {
+  // Remove the existing class="" attribute from getIcon
+  iconHTML = iconHTML.replace(/class="[^"]*"/, "");
+  // Add all our attributes
+  iconHTML = iconHTML.replace("<svg", `<svg ${attrs.join(" ")}`);
+}
+---
+
+<Fragment set:html={iconHTML} />
+
+<!-- Simple icons are rendered as inline SVG -->
