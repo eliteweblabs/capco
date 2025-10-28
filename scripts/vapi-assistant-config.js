@@ -159,15 +159,7 @@ You are {{assistant.name}}, a receptionist for {{GLOBAL_COMPANY_NAME}}. We speci
   maxDurationSeconds: 300,
   endCallMessage:
     "Perfect! Thanks for calling {{GLOBAL_COMPANY_NAME}}. We'll see you soon. Have a wonderful day!",
-  endCallPhrases: [
-    "goodbye",
-    "bye",
-    "that's all",
-    "finished",
-    "end call",
-    "thank you, goodbye",
-    "hangup",
-  ],
+  endCallPhrases: ["goodbye", "bye", "that's all", "finished", "end call", "hangup"],
   backgroundSound: "office",
   silenceTimeoutSeconds: 15,
 };
