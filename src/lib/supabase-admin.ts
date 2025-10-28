@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 // Server-side Supabase client using the service role key
 // Note: This file must ONLY be imported from server code (e.g., API routes)
 const supabaseUrl = import.meta.env.SUPABASE_URL || import.meta.env.SUPABASE_URI;
-const supabaseServiceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServiceRoleKey = import.meta.env.SUPABASE_ADMIN_KEY;
 
 export const supabaseAdmin =
   supabaseUrl && supabaseServiceRoleKey

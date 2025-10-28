@@ -5,7 +5,7 @@ interface ImportMetaEnv {
   // Supabase - Primary (required)
   readonly SUPABASE_URL: string;
   readonly SUPABASE_ANON_KEY: string;
-  readonly SUPABASE_SERVICE_ROLE_KEY: string;
+  readonly SUPABASE_ADMIN_KEY: string;
 
   // Supabase - Alternative names (optional, fallback to above)
   readonly SUPABASE_URI?: string;

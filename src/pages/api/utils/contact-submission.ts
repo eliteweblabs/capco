@@ -36,7 +36,7 @@ export const POST: APIRoute = async ({ request }) => {
     const { createClient } = await import("@supabase/supabase-js");
     const supabaseAdmin = createClient(
       import.meta.env.SUPABASE_URL || "",
-      import.meta.env.SUPABASE_SERVICE_ROLE_KEY || "",
+      import.meta.env.SUPABASE_ADMIN_KEY || "",
       {
         auth: {
           autoRefreshToken: false,
