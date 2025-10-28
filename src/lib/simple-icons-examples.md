@@ -17,8 +17,8 @@ import { getIcon } from "../lib/simple-icons";
 <!-- With custom styling -->
 <div set:html={getIcon("bell", { size: 20, className: "text-red-500" })} />
 
-<!-- Using LucideIcon component (now uses simple system) -->
-<LucideIcon name="user" size="lg" variant="primary" />
+<!-- Using SimpleIcon component (now uses simple system) -->
+<SimpleIcon name="user" size="lg" variant="primary" />
 ```
 
 ## Usage in TypeScript/JavaScript

@@ -47,13 +47,23 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     }
 
     console.log("Session exchange successful:", !!data.session);
+    console.log("📞 [AUTH-CALLBACK] Session data:", {
+      hasSession: !!data.session,
+      hasProviderToken: !!data.session?.provider_token,
+      providerToken: data.session?.provider_token ? "present" : "missing",
+      userMetadata: data.user?.user_metadata,
+    });
 
     if (!data.session) {
       return new Response("No session created", { status: 400 });
     }
 
-    const { access_token, refresh_token } = data.session;
-    console.log("Tokens received:", !!access_token, !!refresh_token);
+    const { access_token, refresh_token, provider_token } = data.session;
+    console.log("Tokens received:", {
+      accessToken: !!access_token,
+      refreshToken: !!refresh_token,
+      providerToken: !!provider_token,
+    });
 
     // Profile will be automatically created by database trigger
 

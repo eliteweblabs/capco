@@ -274,6 +274,8 @@ const displayText = selectedOption?.label || placeholder;
         value,
         label,
         projectId,
+        valueType: typeof value,
+        isEmptyString: value === "",
       });
 
       // Validate projectId
@@ -284,10 +286,16 @@ const displayText = selectedOption?.label || placeholder;
 
       let requestBody = {
         projectId: parseInt(projectId), // Ensure it's a number
-        assignedToId: value, // Staff member ID
+        assignedToId: value === "" ? null : value, // Staff member ID - convert empty string to null for unassigned
       };
 
       console.log("🔧 [SLOT-MACHINE] Request body:", requestBody);
+      console.log(
+        "🔧 [SLOT-MACHINE] assignedToId value:",
+        requestBody.assignedToId,
+        "type:",
+        typeof requestBody.assignedToId
+      );
 
       // if (apiEndpoint.startsWith("assign-staff-") || apiEndpoint === "assign-staff") {
       //   console.log(`🎰 [SLOT-MACHINE] Processing ASSIGN-STAFF request`);
