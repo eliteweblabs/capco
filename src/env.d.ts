@@ -27,7 +27,7 @@ interface ImportMetaEnv {
 
   // Stripe configuration
   readonly STRIPE_SECRET_KEY?: string;
-  readonly PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
+  readonly STRIPE_PUBLISHABLE_KEY?: string;
 }
 
 interface ImportMeta {

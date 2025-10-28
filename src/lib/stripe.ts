@@ -10,7 +10,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 //   stripeSecretKey ? `${stripeSecretKey.substring(0, 15)}...` : "undefined"
 // );
 // console.log("STRIPE_SECRET_KEY starts with sk_:", stripeSecretKey?.startsWith("sk_"));
-// console.log("PUBLIC_STRIPE_PUBLISHABLE_KEY exists:", !!process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
+// console.log("STRIPE_PUBLISHABLE_KEY exists:", !!process.env.STRIPE_PUBLISHABLE_KEY);
 // console.log(
 //   "All process.env keys containing STRIPE:",
 //   Object.keys(process.env).filter((key) => key.includes("STRIPE"))
@@ -35,7 +35,7 @@ export const stripe =
 
 // Stripe configuration for client-side
 export const stripeConfig = {
-  publishableKey: process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+  publishableKey: process.env.STRIPE_PUBLISHABLE_KEY!,
   // Enable Apple Pay and other payment methods
   paymentMethods: {
     card: true,
