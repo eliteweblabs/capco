@@ -39,7 +39,7 @@ The server will run on **port 3001** by default.
 Make sure your `.env` file contains:
 
 ```bash
-PUBLIC_SUPABASE_URL=your_supabase_url
+SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_service_role_key
 ```
 
@@ -139,7 +139,7 @@ Check the browser console for Socket.io connection logs:
 
 Make sure your production environment has:
 
-- `PUBLIC_SUPABASE_URL`
+- `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 
 ## 🔒 Security
