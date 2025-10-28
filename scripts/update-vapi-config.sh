@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # VAPI Assistant Configuration Update Script
-# This script updates the VAPI assistant configuration
+# This script processes placeholders and updates the VAPI assistant configuration
 
 echo "🤖 Updating VAPI assistant configuration..."
 
@@ -19,6 +19,17 @@ if [ -z "$SITE_URL" ]; then
 fi
 
 echo "✅ Environment variables are set"
+
+# Process placeholders in the VAPI config
+echo "📝 Processing placeholders..."
+node scripts/process-vapi-config.js --update-original
+
+if [ $? -eq 0 ]; then
+    echo "✅ Placeholders processed successfully"
+else
+    echo "❌ Failed to process placeholders"
+    exit 1
+fi
 
 # Run the VAPI assistant configuration
 echo "🔄 Updating VAPI assistant..."
