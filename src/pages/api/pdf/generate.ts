@@ -2,6 +2,11 @@ import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { supabase } from "../../../lib/supabase";
 import puppeteer from "puppeteer";
+import {
+  encryptPDF,
+  EncryptionOptions,
+  validateEncryptionOptions,
+} from "../../../lib/pdf-encryption";
 
 /**
  * Generate PDF API
@@ -22,10 +27,27 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { templateId, projectId, pageSize = "8.5x11", orientation = "portrait" } = body;
+    const {
+      templateId,
+      projectId,
+      pageSize = "8.5x11",
+      orientation = "portrait",
+      encryptionOptions,
+    } = body;
 
     if (!templateId || !projectId) {
       return createErrorResponse("Template ID and Project ID are required", 400);
+    }
+
+    // Validate encryption options if provided
+    if (encryptionOptions) {
+      const validation = validateEncryptionOptions(encryptionOptions);
+      if (!validation.valid) {
+        return createErrorResponse(
+          `Invalid encryption options: ${validation.errors.join(", ")}`,
+          400
+        );
+      }
     }
 
     console.log("📄 [PDF-GENERATE] Generating PDF:", {
@@ -93,13 +115,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Generate PDF using Puppeteer
     const pdfBuffer = await generatePDFFromHTML(htmlContent, pageSize, orientation);
 
+    // Apply encryption if requested
+    let finalPdfBuffer = pdfBuffer;
+    let encryptionMetadata = null;
+
+    if (encryptionOptions) {
+      console.log("🔐 [PDF-GENERATE] Applying encryption to PDF...");
+      const encryptionResult = await encryptPDF(pdfBuffer, encryptionOptions);
+
+      if (!encryptionResult.success) {
+        console.error("❌ [PDF-GENERATE] Encryption failed:", encryptionResult.error);
+        return createErrorResponse(`PDF encryption failed: ${encryptionResult.error}`, 500);
+      }
+
+      finalPdfBuffer = encryptionResult.encryptedBuffer!;
+      encryptionMetadata = encryptionResult.metadata;
+      console.log("✅ [PDF-GENERATE] PDF encrypted successfully");
+    }
+
     // Save PDF to storage
     const fileName = `project-${projectId}-${Date.now()}.pdf`;
     const filePath = `pdfs/${projectId}/${fileName}`;
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("project-media")
-      .upload(filePath, pdfBuffer, {
+      .upload(filePath, finalPdfBuffer, {
         contentType: "application/pdf",
         upsert: false,
       });
@@ -119,11 +159,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         status: "completed",
         fileName,
         filePath,
-        fileSize: pdfBuffer.length,
+        fileSize: finalPdfBuffer.length,
         generationData: {
           pageSize,
           orientation,
           templateName: template.name,
+          encryption: encryptionMetadata,
         },
         completedAt: new Date().toISOString(),
       })
@@ -148,9 +189,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return createSuccessResponse({
       fileName,
       filePath,
-      fileSize: pdfBuffer.length,
+      fileSize: finalPdfBuffer.length,
       downloadUrl: urlData?.signedUrl,
       jobId: jobData?.id,
+      encrypted: !!encryptionMetadata?.encrypted,
+      encryptionMetadata,
     });
   } catch (error) {
     console.error("❌ [PDF-GENERATE] Unexpected error:", error);
