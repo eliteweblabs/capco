@@ -23,8 +23,8 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        client_id: import.meta.env.GOOGLE_CONTACTS_CLIENT_ID,
-        client_secret: import.meta.env.GOOGLE_CONTACTS_CLIENT_SECRET,
+        client_id: import.meta.env.GOOGLE_PEOPLE_CLIENT_ID,
+        client_secret: import.meta.env.GOOGLE_PEOPLE_CLIENT_SECRET,
         code: code,
         grant_type: "authorization_code",
         redirect_uri: `${url.origin}/api/google/oauth-callback`,
