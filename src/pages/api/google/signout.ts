@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { clearGoogleAuth } from "../../lib/google-auth";
+import { clearGoogleAuth } from "../../../lib/google-auth";
 
 export const GET: APIRoute = async ({ cookies, redirect }) => {
   // Clear all Google auth cookies
