@@ -15,6 +15,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           error: "Google access token not available",
           message: "Please authenticate with Google first",
           authUrl: "/api/google/signin",
+          requiresAuth: true,
+          authButtonText: "Sign in with Google",
+          authDescription: "Connect your Google account to search contacts",
         }),
         {
           status: 401,
@@ -24,6 +27,66 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     console.log("📞 [GOOGLE-CONTACTS] Using Google access token from cookies");
+
+    // First, validate the token by checking user info
+    try {
+      const userInfoResponse = await fetch(
+        `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${googleAccessToken}`
+      );
+      
+      if (!userInfoResponse.ok) {
+        console.error("📞 [GOOGLE-CONTACTS] Token validation failed:", userInfoResponse.status);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Invalid Google access token",
+            message: "Please re-authenticate with Google",
+            authUrl: "/api/google/signin",
+            requiresAuth: true,
+            authButtonText: "Re-authenticate with Google",
+            authDescription: "Your Google session has expired",
+          }),
+          {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      const userInfo = await userInfoResponse.json();
+      console.log("📞 [GOOGLE-CONTACTS] Token valid for user:", userInfo.email);
+      
+      // Check token info to see granted scopes
+      try {
+        const tokenInfoResponse = await fetch(
+          `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${googleAccessToken}`
+        );
+        if (tokenInfoResponse.ok) {
+          const tokenInfo = await tokenInfoResponse.json();
+          console.log("📞 [GOOGLE-CONTACTS] Token scopes:", tokenInfo.scope);
+          console.log("📞 [GOOGLE-CONTACTS] Token audience:", tokenInfo.audience);
+        }
+      } catch (scopeError) {
+        console.warn("📞 [GOOGLE-CONTACTS] Could not check token scopes:", scopeError);
+      }
+    } catch (tokenError) {
+      console.error("📞 [GOOGLE-CONTACTS] Token validation error:", tokenError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Token validation failed",
+          message: "Please re-authenticate with Google",
+          authUrl: "/api/google/signin",
+          requiresAuth: true,
+          authButtonText: "Re-authenticate with Google",
+          authDescription: "Unable to validate your Google session",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     console.log("📞 [GOOGLE-CONTACTS] Making request to Google People API");
 
@@ -40,6 +103,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     // Make the request to Google People API
+    console.log("📞 [GOOGLE-CONTACTS] Making request to:", googleApiUrl.toString());
+    console.log("📞 [GOOGLE-CONTACTS] Using token:", googleAccessToken.substring(0, 20) + "...");
+    
     const response = await fetch(googleApiUrl.toString(), {
       method: "GET",
       headers: {
@@ -47,16 +113,38 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       },
     });
 
+    console.log("📞 [GOOGLE-CONTACTS] Google API response status:", response.status);
+
     if (!response.ok) {
       console.error("📞 [GOOGLE-CONTACTS] Google API error:", response.status, response.statusText);
       const errorText = await response.text();
       console.error("📞 [GOOGLE-CONTACTS] Error response:", errorText);
+
+      // Check if it's a scope/permission issue
+      if (response.status === 403) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Google Contacts permission denied",
+            message: "Please re-authenticate with Google to grant contacts access",
+            authUrl: "/api/google/signin",
+            requiresAuth: true,
+            authButtonText: "Re-authenticate with Google",
+            authDescription: "Grant access to your Google contacts",
+          }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
 
       return new Response(
         JSON.stringify({
           success: false,
           error: "Failed to fetch contacts from Google",
           details: `Google API returned ${response.status}: ${response.statusText}`,
+          errorText: errorText,
         }),
         {
           status: response.status,
