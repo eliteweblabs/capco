@@ -136,7 +136,7 @@ export function showPunchlistError(message: string, containerId: string = "punch
   if (container) {
     container.innerHTML = `
       <div class="text-center py-8 text-red-500">
-        <i data-lucide="alert-circle" class="mx-auto mb-4 text-4xl"></i>
+        <SimpleIcon name="alert-circle" class="mx-auto mb-4 text-4xl" />
         <p>${message}</p>
       </div>
     `;
