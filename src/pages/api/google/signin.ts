@@ -2,8 +2,8 @@ import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ url, redirect }) => {
   // Google OAuth credentials from environment variables
-  const clientId = import.meta.env.GOOGLE_CONTACTS_CLIENT_ID;
-  const clientSecret = import.meta.env.GOOGLE_CONTACTS_CLIENT_SECRET;
+  const clientId = import.meta.env.GOOGLE_PEOPLE_CLIENT_ID;
+  const clientSecret = import.meta.env.GOOGLE_PEOPLE_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     console.error("Google OAuth credentials not configured");
