@@ -33,8 +33,8 @@ Add these to your `.env` file:
 
 ```env
 # Google OAuth for Contacts API (Standalone)
-GOOGLE_CLIENT_ID=your_google_client_id_here
-GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+GOOGLE_CONTACTS_CLIENT_ID=your_GOOGLE_CONTACTS_CLIENT_ID_here
+GOOGLE_CONTACTS_CLIENT_SECRET=your_GOOGLE_CONTACTS_CLIENT_SECRET_here
 ```
 
 ## API Endpoint

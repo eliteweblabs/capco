@@ -26,8 +26,8 @@ CAL_WEBHOOK_SECRET=/CCHhXeOqe3CEGGPiyaP6z3vTZ0gSubTrNO336nJmfs=
 POSTGRES_PASSWORD=CxO/OgBSceiXcc1STDfpCLJdPI5A7rpQfsM+GEDewP0=
 
 # Google OAuth Configuration
-GOOGLE_CLIENT_ID=your_google_client_id_here
-GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+GOOGLE_CONTACTS_CLIENT_ID=your_GOOGLE_CONTACTS_CLIENT_ID_here
+GOOGLE_CONTACTS_CLIENT_SECRET=your_GOOGLE_CONTACTS_CLIENT_SECRET_here
 
 # Email Configuration
 EMAIL_SERVER_HOST=your_email_host_here
@@ -70,8 +70,8 @@ echo "   - your_supabase_anon_key_here"
 echo "   - your_SUPABASE_ANON_KEY_here"
 echo ""
 echo "🔑 Google OAuth (if using):"
-echo "   - your_google_client_id_here"
-echo "   - your_google_client_secret_here"
+echo "   - your_GOOGLE_CONTACTS_CLIENT_ID_here"
+echo "   - your_GOOGLE_CONTACTS_CLIENT_SECRET_here"
 echo ""
 echo "🔑 Email Service (if using):"
 echo "   - your_resend_api_key_here"
