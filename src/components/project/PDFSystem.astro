@@ -575,7 +575,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         accordion.classList.add("hidden");
         icon?.classList.remove("rotate-180");
         this.selectedTemplate = null;
-        
+
         // Properly destroy the editor
         if (this.editor) {
           console.log("🗑️ [PDF-SYSTEM] Destroying editor on close...");
@@ -585,7 +585,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           } catch (error) {
             console.warn("⚠️ [PDF-SYSTEM] Error disposing editor:", error);
           }
-          
+
           // Clear the editor container completely
           const editorContainer = document.getElementById("template-editor");
           if (editorContainer) {
@@ -593,18 +593,18 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             // Remove any Quill-specific classes that might be left behind
             editorContainer.className = "";
           }
-          
+
           // Remove any existing Quill toolbars from the DOM
-          const existingToolbars = document.querySelectorAll('.ql-toolbar');
-          existingToolbars.forEach(toolbar => {
+          const existingToolbars = document.querySelectorAll(".ql-toolbar");
+          existingToolbars.forEach((toolbar) => {
             if (toolbar.parentNode) {
               toolbar.parentNode.removeChild(toolbar);
             }
           });
-          
+
           // Remove any existing Quill containers
-          const existingContainers = document.querySelectorAll('.ql-container');
-          existingContainers.forEach(container => {
+          const existingContainers = document.querySelectorAll(".ql-container");
+          existingContainers.forEach((container) => {
             if (container.parentNode) {
               container.parentNode.removeChild(container);
             }
@@ -629,7 +629,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         } catch (error) {
           console.warn("⚠️ [PDF-SYSTEM] Error disposing editor:", error);
         }
-        
+
         // Clear the editor container completely
         const editorContainer = document.getElementById("template-editor");
         if (editorContainer) {
@@ -637,18 +637,18 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           // Remove any Quill-specific classes that might be left behind
           editorContainer.className = "";
         }
-        
+
         // Remove any existing Quill toolbars from the DOM
-        const existingToolbars = document.querySelectorAll('.ql-toolbar');
-        existingToolbars.forEach(toolbar => {
+        const existingToolbars = document.querySelectorAll(".ql-toolbar");
+        existingToolbars.forEach((toolbar) => {
           if (toolbar.parentNode) {
             toolbar.parentNode.removeChild(toolbar);
           }
         });
-        
+
         // Remove any existing Quill containers
-        const existingContainers = document.querySelectorAll('.ql-container');
-        existingContainers.forEach(container => {
+        const existingContainers = document.querySelectorAll(".ql-container");
+        existingContainers.forEach((container) => {
           if (container.parentNode) {
             container.parentNode.removeChild(container);
           }
@@ -1606,9 +1606,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         fieldsList.innerHTML = this.trackedFields
           .map(
             (field) => `
-          <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-600 rounded-md gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors" 
-               data-field-id="${field.id}"
-               onclick="window.pdfSystem.scrollToField('${field.id}')">
+          <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-600 rounded-md gap-3 hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors" 
+               data-field-id="${field.id}">
             <div class="flex-1">
               <div class="flex items-center gap-2">
                 <span class="font-medium text-gray-900 dark:text-white">${field.name}</span>
@@ -1621,7 +1620,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">${field.placeholder}</span>
-                  <span class="text-xs text-gray-500 ml-2">← Click to locate</span>
                 </div>
               </div>
             </div>
@@ -1630,7 +1628,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               <button 
                 onclick="event.stopPropagation(); window.pdfSystem.revertField('${field.id}')"
                 class="px-3 py-1 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors"
-                title="Show original text"
+                title="Toggle between original text and placeholder, then locate in document"
               >
                 Show Original
               </button>
@@ -1687,51 +1685,56 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         // Focus the editor first
         this.editor.focus();
 
-        // Scroll to the position and select the placeholder
-        this.editor.setSelection(textIndex, placeholder.length);
+        // Get the bounds of the selection first (before setting selection)
+        const bounds = this.editor.getBounds(textIndex, placeholder.length);
+        
+        if (bounds) {
+          console.log("📐 [PDF-SYSTEM] Bounds:", bounds);
 
-        console.log("✅ [PDF-SYSTEM] Selection set at index:", textIndex);
+          // Get the Quill editor's scrolling element (.ql-editor)
+          const editorScrollContainer =
+            this.editor.root.parentElement.querySelector(".ql-editor");
 
-        // Use Quill's scrolling API with a small delay to ensure selection is set
-        setTimeout(() => {
-          // Get the bounds of the selection
-          const bounds = this.editor.getBounds(textIndex);
+          if (editorScrollContainer) {
+            // Calculate the target scroll position - center the selection
+            const containerHeight = editorScrollContainer.clientHeight;
+            const targetScrollTop = bounds.top - (containerHeight / 2) + (bounds.height / 2);
 
-          if (bounds) {
-            console.log("📐 [PDF-SYSTEM] Bounds:", bounds);
+            console.log("📜 [PDF-SYSTEM] Scrolling container:", {
+              currentScroll: editorScrollContainer.scrollTop,
+              targetScroll: Math.max(0, targetScrollTop),
+              boundsTop: bounds.top,
+              boundsHeight: bounds.height,
+              containerHeight: containerHeight,
+            });
 
-            // Get the Quill editor's scrolling element (.ql-editor)
-            const editorScrollContainer =
-              this.editor.root.parentElement.querySelector(".ql-editor");
+            // Scroll the editor to show the selection smoothly
+            editorScrollContainer.scrollTo({
+              top: Math.max(0, targetScrollTop),
+              behavior: "smooth",
+            });
 
-            if (editorScrollContainer) {
-              // Calculate the target scroll position
-              // Center the selection in the viewport
-              const targetScrollTop = bounds.top - editorScrollContainer.clientHeight / 3;
-
-              console.log("📜 [PDF-SYSTEM] Scrolling container:", {
-                currentScroll: editorScrollContainer.scrollTop,
-                targetScroll: Math.max(0, targetScrollTop),
-                boundsTop: bounds.top,
-                containerHeight: editorScrollContainer.clientHeight,
-              });
-
-              // Scroll the editor to show the selection
-              editorScrollContainer.scrollTo({
-                top: Math.max(0, targetScrollTop),
-                behavior: "smooth",
-              });
-            } else {
-              // Fallback: scroll the root element
-              const scrollTop = bounds.top - this.editor.root.clientHeight / 3;
-              this.editor.root.scrollTo({
-                top: Math.max(0, scrollTop),
-                behavior: "smooth",
-              });
-            }
+            // Set selection after scrolling starts
+            setTimeout(() => {
+              this.editor.setSelection(textIndex, placeholder.length);
+              console.log("✅ [PDF-SYSTEM] Selection set at index:", textIndex);
+            }, 50);
+          } else {
+            // Fallback: scroll the root element
+            const scrollTop = bounds.top - this.editor.root.clientHeight / 2;
+            this.editor.root.scrollTo({
+              top: Math.max(0, scrollTop),
+              behavior: "smooth",
+            });
+            
+            setTimeout(() => {
+              this.editor.setSelection(textIndex, placeholder.length);
+            }, 50);
           }
+        }
 
-          // Temporarily highlight the placeholder
+        // Temporarily highlight the placeholder
+        setTimeout(() => {
           const originalFormat = this.editor.getFormat(textIndex, placeholder.length);
           this.editor.formatText(textIndex, placeholder.length, {
             background: "#ffeb3b",
@@ -1745,7 +1748,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             this.editor.formatText(textIndex, placeholder.length, originalFormat);
             console.log("🎨 [PDF-SYSTEM] Removed highlight");
           }, 2000);
-        }, 100);
+        }, 200);
 
         console.log("✅ [PDF-SYSTEM] Field highlighted in document");
       } catch (error) {
@@ -1765,16 +1768,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       if (field.isReplaced) {
         // Currently showing placeholder, switch to original text
-        updatedContent = content.replace(
-          new RegExp(`{{${field.name}}}`, "g"),
-          field.originalText
-        );
+        updatedContent = content.replace(new RegExp(`{{${field.name}}}`, "g"), field.originalText);
         field.isReplaced = false;
         console.log("✅ [PDF-SYSTEM] Field switched to original text");
       } else {
         // Currently showing original text, switch to placeholder
         updatedContent = content.replace(
-          new RegExp(field.originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g"),
+          new RegExp(field.originalText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
           `{{${field.name}}}`
         );
         field.isReplaced = true;
@@ -1787,15 +1787,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       // Update button text to reflect current state
       this.updateRevertButton(fieldId, field.isReplaced);
+
+      // After toggling, locate the field in the document
+      setTimeout(() => {
+        this.scrollToField(fieldId);
+      }, 100);
     }
 
     updateRevertButton(fieldId, isReplaced) {
       const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
       if (fieldElement) {
-        const revertButton = fieldElement.querySelector("button[title='Revert to original text']");
+        const revertButton = fieldElement.querySelector("button[title*='Toggle between original text and placeholder']");
         if (revertButton) {
           revertButton.textContent = isReplaced ? "Show Original" : "Show Placeholder";
-          revertButton.title = isReplaced ? "Show original text" : "Show placeholder text";
+          revertButton.title = isReplaced 
+            ? "Show original text and locate in document" 
+            : "Show placeholder text and locate in document";
         }
       }
     }
