@@ -84,8 +84,8 @@ NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000
 
 # OAuth (optional)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CONTACTS_CLIENT_ID=your_GOOGLE_CONTACTS_CLIENT_ID
+GOOGLE_CONTACTS_CLIENT_SECRET=your_GOOGLE_CONTACTS_CLIENT_SECRET
 
 # Email (optional)
 EMAIL_SERVER_HOST=smtp.gmail.com
