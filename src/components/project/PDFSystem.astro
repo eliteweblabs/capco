@@ -1630,9 +1630,9 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               <button 
                 onclick="event.stopPropagation(); window.pdfSystem.revertField('${field.id}')"
                 class="px-3 py-1 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors"
-                title="Revert to original text"
+                title="Show original text"
               >
-                Revert
+                Show Original
               </button>
               <button 
                 onclick="event.stopPropagation(); window.pdfSystem.toggleFieldVisibility('${field.id}')"
@@ -1757,25 +1757,47 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       const field = this.trackedFields.find((f) => f.id === fieldId);
       if (!field) return;
 
-      console.log("🔄 [PDF-SYSTEM] Reverting field:", field.name);
+      console.log("🔄 [PDF-SYSTEM] Toggling field:", field.name, "isReplaced:", field.isReplaced);
 
       // Get current editor content
       const content = this.editor.root.innerHTML;
+      let updatedContent;
 
-      // Replace placeholder with original text
-      const updatedContent = content.replace(
-        new RegExp(`{{${field.name}}}`, "g"),
-        field.originalText
-      );
+      if (field.isReplaced) {
+        // Currently showing placeholder, switch to original text
+        updatedContent = content.replace(
+          new RegExp(`{{${field.name}}}`, "g"),
+          field.originalText
+        );
+        field.isReplaced = false;
+        console.log("✅ [PDF-SYSTEM] Field switched to original text");
+      } else {
+        // Currently showing original text, switch to placeholder
+        updatedContent = content.replace(
+          new RegExp(field.originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g"),
+          `{{${field.name}}}`
+        );
+        field.isReplaced = true;
+        console.log("✅ [PDF-SYSTEM] Field switched to placeholder");
+      }
 
       // Update editor
       const delta = this.editor.clipboard.convert(updatedContent);
       this.editor.setContents(delta);
 
-      // Update field status
-      field.isReplaced = false;
+      // Update button text to reflect current state
+      this.updateRevertButton(fieldId, field.isReplaced);
+    }
 
-      console.log("✅ [PDF-SYSTEM] Field reverted to original text");
+    updateRevertButton(fieldId, isReplaced) {
+      const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
+      if (fieldElement) {
+        const revertButton = fieldElement.querySelector("button[title='Revert to original text']");
+        if (revertButton) {
+          revertButton.textContent = isReplaced ? "Show Original" : "Show Placeholder";
+          revertButton.title = isReplaced ? "Show original text" : "Show placeholder text";
+        }
+      }
     }
 
     toggleFieldVisibility(fieldId) {
