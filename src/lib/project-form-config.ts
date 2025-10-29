@@ -136,67 +136,15 @@ export function isFormElementReadOnly(
 }
 
 // Function to get filtered form actions based on user role and project state
-export function getFilteredFormActions(
-  userRole?: string | null,
-  isNewProject: boolean = false,
-  projectStatus?: number | null
-): FormActionConfig[] {
-  // For new projects, use status 0, otherwise use actual status
-  const effectiveStatus = isNewProject ? 0 : projectStatus;
-
-  let actions = FORM_ACTIONS.filter(
-    (action) => isAllowed(action, userRole) && isStatusAllowed(action, effectiveStatus)
-  );
-
-  // Change "Save Project" to "Create Project" for new projects
-  if (isNewProject) {
-    actions = actions.map((action) => {
-      if (action.id === "save-project") {
-        return {
-          ...action,
-          label: "Create Project",
-          icon: "plus", // Change icon to plus for create
-        };
-      }
-      return action;
-    });
-  }
-
-  return actions;
-}
 
 const standardReadOnlyStatus = [
   60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160,
   170, 180, 190, 200, 210, 220,
 ];
 
-// Form action button configurations
-export const FORM_ACTIONS: FormActionConfig[] = [
-  {
-    id: "save-project",
-    type: "submit",
-    label: "Save Project",
-    icon: "save",
-    variant: "primary",
-    cssClass:
-      "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
-    allow: ["Admin", "Staff", "Client"], // All roles can save
-    // No status restriction - can save project at any status
-    // displayOnNew undefined - shows on both new and existing projects
-    hideAtStatus: standardReadOnlyStatus, // Only show when specs are received (status 10)
-  },
-  {
-    id: "delete-project",
-    type: "button",
-    label: "Delete Project",
-    icon: "trash-2",
-    variant: "danger",
-    cssClass:
-      "flex-1 w-full md:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-colors mt-6",
-    action: "deleteProject",
-    allow: ["Admin", "Staff"], // Only admin and staff can delete
-    hideAtStatus: [0], // Only show when specs are received (status 10)
-  },
+const clientReadOnlyStatus = [
+  20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130,
+  135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
 ];
 
 // Unified form elements array - combines fields, button groups, and actions in order
@@ -247,9 +195,23 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Architect",
     placeholder: "Architect",
     dataField: "architect",
-    allow: ["Admin", "Staff", "Client"],
+    allow: ["Admin", "Staff"],
     hideAtStatus: [],
     readOnlyAtStatus: standardReadOnlyStatus,
+    columns: 2, // Half width
+  },
+
+  {
+    id: "architect-input",
+    name: "architect",
+    type: "field",
+    elementType: "text",
+    label: "Architect",
+    placeholder: "Architect",
+    dataField: "architect",
+    allow: ["Client"],
+    hideAtStatus: [],
+    readOnlyAtStatus: clientReadOnlyStatus,
     columns: 2, // Half width
   },
 
@@ -270,9 +232,30 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
       required: false,
     },
     dataField: "sqFt",
-    allow: ["Admin", "Staff", "Client"],
-    hideAtStatus: [],
+    allow: ["Admin", "Staff"],
+    // hideAtStatus: [],
     readOnlyAtStatus: standardReadOnlyStatus,
+    columns: 2, // Half width
+  },
+  {
+    id: "square-foot-input",
+    name: "sqFt",
+    type: "field",
+    elementType: "component",
+    label: "Square Footage",
+    placeholder: "Gross Square Footage (GFA) *",
+    required: false,
+    min: 0,
+    max: 50000,
+    step: 100,
+    component: "UnitSlider",
+    componentProps: {
+      required: false,
+    },
+    dataField: "sqFt",
+    allow: ["Client"],
+    // hideAtStatus: [],
+    readOnlyAtStatus: clientReadOnlyStatus,
     columns: 2, // Half width
   },
 
@@ -285,11 +268,25 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Description",
     placeholder: "Project description...",
     dataField: "description",
-    allow: ["Admin", "Staff", "Client"],
-    hideAtStatus: [50, 60, 70, 80, 90],
+    allow: ["Admin", "Staff"],
+    // hideAtStatus: [50, 60, 70, 80, 90],
     readOnlyAtStatus: standardReadOnlyStatus,
     columns: 1, // Half width
   },
+  {
+    id: "description-input",
+    name: "description",
+    type: "field",
+    elementType: "textarea",
+    label: "Description",
+    placeholder: "Project description...",
+    dataField: "description",
+    allow: ["Client"],
+    // hideAtStatus: [50, 60, 70, 80, 90],
+    readOnlyAtStatus: clientReadOnlyStatus,
+    columns: 1, // Half width
+  },
+
   {
     id: "nfpa-version-input",
     name: "nfpaVersion",
@@ -300,7 +297,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     value: "13",
     dataField: "nfpaVersion",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
+    // hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
@@ -314,7 +311,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
     dataField: "hazardousMaterial",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
+    // hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
@@ -328,7 +325,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
     dataField: "hpsCommodities",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
+    // hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
@@ -341,7 +338,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     placeholder: "Site access for fire / rescue vehicles is via ____________",
     dataField: "siteAccess",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [0], // Hide after proposal is signed off
+    // hideAtStatus: [0], // Hide after proposal is signed off
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
@@ -355,7 +352,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     placeholder: "An exterior fire alarm beacon ... visible from __________",
     dataField: "site_exterior_access",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [0], // Hide after proposal is signed off
+    // hideAtStatus: [0], // Hide after proposal is signed off
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
@@ -369,7 +366,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     placeholder: "The fire sprinkler contractor will install: _______",
     dataField: "fireSprinklerInstallation",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
+    // hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
@@ -382,7 +379,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     placeholder: "Estimated Commencement of Construction",
     dataField: "commencementOfConstruction",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
+    // hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
@@ -395,7 +392,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     placeholder: "Suppression & Detection Systems",
     dataField: "commencementOfConstruction",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    hideAtStatus: [], // Hide after proposal is signed off
+    // hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
@@ -430,8 +427,27 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Supply / Service",
     groupType: "radio",
     cssClass: "fire-service-radio",
-    allow: ["Admin", "Staff", "Client"],
+    allow: ["Admin", "Staff"],
     readOnlyAtStatus: standardReadOnlyStatus,
+    options: [
+      { value: "Pump & Tank", label: "Pump & Tank" },
+      { value: "2' Copper", label: "2' Copper" },
+      { value: "4' Ductile", label: "4' Ductile" },
+      { value: "6' Ductile", label: "6' Ductile" },
+      { value: "Unknown", label: "Unknown" },
+    ],
+    columns: 1,
+  },
+  {
+    id: "fire-service",
+    name: "service",
+    type: "button-group",
+    elementType: "button-group",
+    label: "Supply / Service",
+    groupType: "radio",
+    cssClass: "fire-service-radio",
+    allow: ["Client"],
+    readOnlyAtStatus: clientReadOnlyStatus,
     options: [
       { value: "Pump & Tank", label: "Pump & Tank" },
       { value: "2' Copper", label: "2' Copper" },
@@ -518,8 +534,22 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     componentProps: {
       required: false,
     },
-    allow: ["Admin", "Staff", "Client"],
+    allow: ["Admin", "Staff"],
     readOnlyAtStatus: standardReadOnlyStatus,
+    columns: 1,
+  },
+  {
+    id: "units-slider",
+    name: "units",
+    type: "field",
+    elementType: "component",
+    label: "Units",
+    component: "UnitSlider",
+    componentProps: {
+      required: false,
+    },
+    allow: ["Client"],
+    readOnlyAtStatus: clientReadOnlyStatus,
     columns: 1,
   },
 
@@ -532,8 +562,29 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Building",
     groupType: "multi-select",
     cssClass: "building-type-radio",
-    allow: ["Admin", "Staff", "Client"],
+    allow: ["Admin", "Staff"],
     readOnlyAtStatus: standardReadOnlyStatus,
+    options: [
+      { value: "Residential", label: "Residential" },
+      { value: "Mixed use", label: "Mixed use" },
+      { value: "Mercantile", label: "Mercantile" },
+      { value: "Commercial", label: "Commercial" },
+      { value: "Storage", label: "Storage" },
+      { value: "Warehouse", label: "Warehouse" },
+      { value: "Institutional", label: "Institutional" },
+    ],
+    columns: 1,
+  },
+  {
+    id: "building-type",
+    name: "building",
+    type: "button-group",
+    elementType: "button-group",
+    label: "Building",
+    groupType: "multi-select",
+    cssClass: "building-type-radio",
+    allow: ["Client"],
+    readOnlyAtStatus: clientReadOnlyStatus,
     options: [
       { value: "Residential", label: "Residential" },
       { value: "Mixed use", label: "Mixed use" },
@@ -555,8 +606,29 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Project",
     groupType: "multi-select",
     cssClass: "project-type-btns",
-    allow: ["Admin", "Staff", "Client"],
+    allow: ["Admin", "Staff"],
     readOnlyAtStatus: standardReadOnlyStatus,
+    options: [
+      { value: "Sprinkler", label: "Sprinkler" },
+      { value: "Alarm", label: "Alarm" },
+      { value: "Mechanical", label: "Mechanical" },
+      { value: "Electrical", label: "Electrical" },
+      { value: "Plumbing", label: "Plumbing" },
+      { value: "Civil engineering", label: "Civil engineering" },
+      { value: "Other", label: "Other" },
+    ],
+    columns: 1,
+  },
+  {
+    id: "consulting-services",
+    name: "project",
+    type: "button-group",
+    elementType: "button-group",
+    label: "Project",
+    groupType: "multi-select",
+    cssClass: "project-type-btns",
+    allow: ["Client"],
+    readOnlyAtStatus: clientReadOnlyStatus,
     options: [
       { value: "Sprinkler", label: "Sprinkler" },
       { value: "Alarm", label: "Alarm" },
@@ -578,10 +650,26 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Tier",
     groupType: "multi-select",
     cssClass: "project-type-btns",
-    allow: ["Admin", "Staff", "Client"],
-    readOnlyAtStatus: [
-      20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
+    allow: ["Admin", "Staff"],
+    readOnlyAtStatus: standardReadOnlyStatus,
+    options: [
+      { value: "Tier I", label: "Tier I" },
+      { value: "Tier II", label: "Tier II" },
+      { value: "Tier III", label: "Tier III" },
     ],
+    columns: 1,
+  },
+
+  {
+    id: "tier",
+    name: "tier",
+    type: "button-group",
+    elementType: "button-group",
+    label: "Tier",
+    groupType: "multi-select",
+    cssClass: "project-type-btns",
+    allow: ["Client"],
+    readOnlyAtStatus: clientReadOnlyStatus,
     options: [
       { value: "Tier I", label: "Tier I" },
       { value: "Tier II", label: "Tier II" },
@@ -623,12 +711,10 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Save Project",
     icon: "save",
     variant: "primary",
-    cssClass:
-      "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
+    // cssClass:
+    // "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
     allow: ["Admin", "Staff"],
-    hideAtStatus: [
-      110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220,
-    ],
+    hideAtStatus: standardReadOnlyStatus,
     columns: 1,
   },
 
@@ -640,8 +726,8 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Save Project",
     icon: "save",
     variant: "primary",
-    cssClass:
-      "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
+    // cssClass:
+    // "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
     allow: ["Client"],
     hideAtStatus: [
       20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125,

@@ -29,39 +29,48 @@ const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
 const clientName = project?.authorProfile?.companyName;
 
-// Fetch invoice from API (single source of truth) during SSR
+// Upsert invoice from API (single source of truth) during SSR
 let existingInvoice: any = null;
 let invoiceId: any = null;
 
 try {
   const baseUrl = Astro.url.origin;
-  const response = await fetch(`${baseUrl}/api/proposal/get?projectId=${projectId}`);
+  const response = await fetch(`${baseUrl}/api/proposal/upsert`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      projectId: projectId,
+    }),
+  });
+
   const data = await response.json();
 
   if (data.success && data.invoice) {
     existingInvoice = data.invoice;
     invoiceId = data.invoice.id;
-    console.log("✅ [ProposalManager SSR] Found existing invoice via API:", invoiceId);
+    console.log("✅ [ProposalManager SSR] Upserted invoice via API:", invoiceId);
   } else {
-    console.log("ℹ️ [ProposalManager SSR] No existing invoice found");
+    console.error("❌ [ProposalManager SSR] Failed to upsert invoice:", data.error);
   }
 } catch (error) {
-  console.error("❌ [ProposalManager SSR] Error fetching invoice via API:", error);
+  console.error("❌ [ProposalManager SSR] Error upserting invoice via API:", error);
 }
 
 function getStatusAlert() {
   // Client status messages
   if (currentRole === "Client") {
     if (Number(projectStatus) < 20) {
-      return "Submit your project documents first.";
+      return `Submit your project documents first <a href='/project/${projectId}?status=documents'>here</a>.`;
     }
     if (Number(projectStatus) >= 20 && Number(projectStatus) < 30) {
       return "Proposal is being generated. You will be notified when it is ready.";
     }
-    if (Number(projectStatus) >= 30 && Number(projectStatus) < 50 && invoiceId && existingInvoice) {
+    if (Number(projectStatus) >= 30 && Number(projectStatus) < 50 && invoiceId) {
       return "Please review your proposal & submit a 50% deposit to approve this proposal and begin work.";
     }
-    if (Number(projectStatus) >= 40 && Number(projectStatus) < 50 && invoiceId && existingInvoice) {
+    if (Number(projectStatus) >= 40 && Number(projectStatus) < 50 && invoiceId) {
       return "Please sign contact for work to begin.";
     }
     if (Number(projectStatus) >= 50 && Number(projectStatus) < 60) {
@@ -93,7 +102,10 @@ function getStatusAlert() {
 const statusAlert = getStatusAlert();
 ---
 
-<div id="content-proposal" class="tab-content p-4 color-background relative">
+<div
+  id="content-proposal"
+  class="tab-content p-4 color-background relative min-h-[calc(100dvh-24rem)]"
+>
   {statusAlert && <Alert type="info" title={statusAlert} />}
 
   {
@@ -123,19 +135,6 @@ const statusAlert = getStatusAlert();
         existingInvoice={existingInvoice}
         invoiceId={invoiceId}
       />
-
-      // <EnhancedProposalManager
-      //   projectId={projectId}
-      //   project={project}
-      //   projectStatus={projectStatus}
-      //   currentUser={currentUser}
-      //   globalInputClasses={globalInputClasses || ""}
-      //   secondaryTextClasses={secondaryTextClasses || ""}
-      //   primaryTextClasses={primaryTextClasses || ""}
-      //   statusData={statusData}
-      //   existingInvoice={existingInvoice}
-      //   invoiceId={invoiceId}
-      // />
     )
   }
 </div>
