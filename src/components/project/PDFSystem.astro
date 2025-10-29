@@ -579,13 +579,36 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         // Properly destroy the editor
         if (this.editor) {
           console.log("🗑️ [PDF-SYSTEM] Destroying editor on close...");
-          this.editor = null;
+          try {
+            // Properly dispose of the Quill instance
+            this.editor = null;
+          } catch (error) {
+            console.warn("⚠️ [PDF-SYSTEM] Error disposing editor:", error);
+          }
           
-          // Clear the editor container
+          // Clear the editor container completely
           const editorContainer = document.getElementById("template-editor");
           if (editorContainer) {
             editorContainer.innerHTML = "";
+            // Remove any Quill-specific classes that might be left behind
+            editorContainer.className = "";
           }
+          
+          // Remove any existing Quill toolbars from the DOM
+          const existingToolbars = document.querySelectorAll('.ql-toolbar');
+          existingToolbars.forEach(toolbar => {
+            if (toolbar.parentNode) {
+              toolbar.parentNode.removeChild(toolbar);
+            }
+          });
+          
+          // Remove any existing Quill containers
+          const existingContainers = document.querySelectorAll('.ql-container');
+          existingContainers.forEach(container => {
+            if (container.parentNode) {
+              container.parentNode.removeChild(container);
+            }
+          });
         }
       }
     }
@@ -600,13 +623,36 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Destroy existing editor if it exists
       if (this.editor) {
         console.log("🗑️ [PDF-SYSTEM] Destroying existing editor...");
-        this.editor = null;
+        try {
+          // Properly dispose of the Quill instance
+          this.editor = null;
+        } catch (error) {
+          console.warn("⚠️ [PDF-SYSTEM] Error disposing editor:", error);
+        }
         
-        // Clear the editor container
+        // Clear the editor container completely
         const editorContainer = document.getElementById("template-editor");
         if (editorContainer) {
           editorContainer.innerHTML = "";
+          // Remove any Quill-specific classes that might be left behind
+          editorContainer.className = "";
         }
+        
+        // Remove any existing Quill toolbars from the DOM
+        const existingToolbars = document.querySelectorAll('.ql-toolbar');
+        existingToolbars.forEach(toolbar => {
+          if (toolbar.parentNode) {
+            toolbar.parentNode.removeChild(toolbar);
+          }
+        });
+        
+        // Remove any existing Quill containers
+        const existingContainers = document.querySelectorAll('.ql-container');
+        existingContainers.forEach(container => {
+          if (container.parentNode) {
+            container.parentNode.removeChild(container);
+          }
+        });
       }
 
       // Load Quill CSS and JS dynamically (like contract system)
