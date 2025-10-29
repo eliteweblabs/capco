@@ -26,7 +26,43 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     console.log("📧 [ASSIGN-STAFF] API received:", body);
 
-    const { projectId, assignedToId } = body;
+    let { projectId, assignedToId } = body;
+
+    // Handle case where assignedToId might be an object with an id property
+    if (assignedToId && typeof assignedToId === "object") {
+      assignedToId = assignedToId.id || assignedToId.uuid || null;
+      console.log("📧 [ASSIGN-STAFF] Extracted UUID from object:", assignedToId);
+    }
+
+    // Validate assignedToId is a valid UUID string or null
+    if (assignedToId !== null && assignedToId !== undefined && typeof assignedToId !== "string") {
+      console.error("📧 [ASSIGN-STAFF] Invalid assignedToId type:", typeof assignedToId, assignedToId);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid assignedToId format - must be a UUID string or null",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Validate UUID format if provided
+    if (assignedToId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assignedToId)) {
+      console.error("📧 [ASSIGN-STAFF] Invalid UUID format:", assignedToId);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid UUID format for assignedToId",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     console.log("📧 [ASSIGN-STAFF] Project ID:", projectId);
     console.log("📧 [ASSIGN-STAFF] Assigned to ID:", assignedToId);
