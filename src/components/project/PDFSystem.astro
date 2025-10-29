@@ -575,9 +575,17 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         accordion.classList.add("hidden");
         icon?.classList.remove("rotate-180");
         this.selectedTemplate = null;
+        
+        // Properly destroy the editor
         if (this.editor) {
-          this.editor.setContents([]);
-          // Don't dispose, just clear content so we can reuse it
+          console.log("🗑️ [PDF-SYSTEM] Destroying editor on close...");
+          this.editor = null;
+          
+          // Clear the editor container
+          const editorContainer = document.getElementById("template-editor");
+          if (editorContainer) {
+            editorContainer.innerHTML = "";
+          }
         }
       }
     }
@@ -588,6 +596,18 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       this.templateTypeSelect = document.getElementById("template-type");
 
       console.log("🚀 [PDF-SYSTEM] Initializing Quill editor...");
+
+      // Destroy existing editor if it exists
+      if (this.editor) {
+        console.log("🗑️ [PDF-SYSTEM] Destroying existing editor...");
+        this.editor = null;
+        
+        // Clear the editor container
+        const editorContainer = document.getElementById("template-editor");
+        if (editorContainer) {
+          editorContainer.innerHTML = "";
+        }
+      }
 
       // Load Quill CSS and JS dynamically (like contract system)
       if (!document.querySelector("#quill-css-pdf")) {
