@@ -33,7 +33,7 @@ A beautiful, **full-screen** multi-step registration experience that guides user
 - **Large 5xl headings** for maximum impact
 - **Centered text inputs** for focus
 - **AOS fade-up animations** with staggered delays (200ms, 400ms, 600ms)
-- **Icon-based visual hierarchy** with 40px Lucide icons
+- **Icon-based visual hierarchy** with 40px Simple icons
 - **Professional gradient progress bar** at the top
 - **Clean review summary cards** with edit buttons
 - **Fixed login link** at bottom for easy access
@@ -106,7 +106,7 @@ All form fields are submitted together when user clicks "Create Account" on the 
 - **Subtle gradient overlay** (white with 40%→20%→10% opacity in light, black with 60%→40%→20% opacity in dark)
 - **Backdrop blur** allowing the background pattern to show through
 - **Tailwind CSS** for responsive design
-- **Lucide Icons** for iconography (mail, user, building-2, phone, check-circle, arrows)
+- **Simple Icons** for iconography (mail, user, building-2, phone, check-circle, arrows)
 - **AOS animations** for smooth rolling fade effects
 - **Centered text inputs** with larger font sizes (text-xl)
 - **Fixed login link** at bottom with backdrop blur
