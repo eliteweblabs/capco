@@ -29,11 +29,16 @@ import LoadingSpinner from "./LoadingSpinner.astro";
     // Get calLink from data attribute
     const calLink = "capco/30min";
 
+    // Check for dark mode preference
+    const isDarkMode =
+      document.documentElement.classList.contains("dark") ||
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+
     // Cal.com configuration
     const calConfig = {
       calLink: calLink,
       layout: "month_view",
-      theme: "light", // or "dark" based on user preference
+      theme: isDarkMode ? "dark" : "light", // Dynamic theme based on user preference
       branding: {
         brandColor: "#825BDD", // Your brand color
         hideEventTypeDetails: false,
@@ -75,8 +80,10 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         iframe.style.border = "none";
         iframe.style.borderRadius = "8px";
         iframe.allow = "camera; microphone; geolocation";
-        iframe.sandbox =
-          "allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox";
+        iframe.setAttribute(
+          "sandbox",
+          "allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+        );
 
         // Add loading state
         iframe.onload = () => {

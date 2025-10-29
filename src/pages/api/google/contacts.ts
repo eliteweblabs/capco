@@ -25,23 +25,25 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     console.log("📞 [GOOGLE-CONTACTS] Using Google access token from cookies");
 
-    console.log("📞 [GOOGLE-CONTACTS] Making request to Google Contacts API v3");
+    console.log("📞 [GOOGLE-CONTACTS] Making request to Google People API");
 
-    // Build the Google Contacts API v3 URL (more permissive than People API)
-    const googleApiUrl = new URL("https://www.google.com/m8/feeds/contacts/default/full");
-    googleApiUrl.searchParams.set("alt", "json");
-    googleApiUrl.searchParams.set("max-results", "1000");
+    // Build the Google People API URL (matches our OAuth scope)
+    const googleApiUrl = new URL("https://people.googleapis.com/v1/people/me/connections");
+    googleApiUrl.searchParams.set(
+      "personFields",
+      "names,emailAddresses,phoneNumbers,organizations,addresses,photos,biographies,urls"
+    );
+    googleApiUrl.searchParams.set("pageSize", "1000");
 
     if (searchQuery) {
-      googleApiUrl.searchParams.set("q", searchQuery);
+      googleApiUrl.searchParams.set("query", searchQuery);
     }
 
-    // Make the request to Google Contacts API v3
+    // Make the request to Google People API
     const response = await fetch(googleApiUrl.toString(), {
       method: "GET",
       headers: {
         Authorization: `Bearer ${googleAccessToken}`,
-        "GData-Version": "3.0",
       },
     });
 
@@ -64,42 +66,59 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     }
 
     const data = await response.json();
-    console.log("📞 [GOOGLE-CONTACTS] Google API response:", {
+    console.log("📞 [GOOGLE-CONTACTS] Google People API response:", {
       status: "OK",
-      totalContacts: data.feed?.entry?.length || 0,
+      totalContacts: data.connections?.length || 0,
     });
 
-    // Transform the Google Contacts v3 data to match the expected format
-    const contacts = (data.feed?.entry || []).map((contact: any) => {
+    // Transform the Google People API data to match the expected format
+    const contacts = (data.connections || []).map((contact: any) => {
       // Extract name
-      const name = contact.title?.$t || "Unknown Contact";
+      const nameEntry = contact.names?.[0];
+      const name = nameEntry
+        ? `${nameEntry.givenName || ""} ${nameEntry.familyName || ""}`.trim() ||
+          nameEntry.displayName ||
+          "Unknown Contact"
+        : "Unknown Contact";
 
       // Extract email
-      const emailEntry = contact.gd$email?.[0];
-      const email = emailEntry?.address || "";
+      const emailEntry = contact.emailAddresses?.[0];
+      const email = emailEntry?.value || "";
 
       // Extract phone
-      const phoneEntry = contact.gd$phoneNumber?.[0];
-      const phone = phoneEntry?.$t || "";
+      const phoneEntry = contact.phoneNumbers?.[0];
+      const phone = phoneEntry?.value || "";
 
       // Extract organization
-      const orgEntry = contact.gd$organization?.[0];
-      const organization = orgEntry?.gd$orgName?.$t || "";
-      const jobTitle = orgEntry?.gd$orgTitle?.$t || "";
+      const orgEntry = contact.organizations?.[0];
+      const organization = orgEntry?.name || "";
+      const jobTitle = orgEntry?.title || "";
 
       // Extract address
-      const addressEntry = contact.gd$structuredPostalAddress?.[0];
-      const address = addressEntry?.gd$formattedAddress?.$t || "";
+      const addressEntry = contact.addresses?.[0];
+      const address = addressEntry
+        ? [
+            addressEntry.streetAddress,
+            addressEntry.city,
+            addressEntry.region,
+            addressEntry.postalCode,
+            addressEntry.country,
+          ]
+            .filter(Boolean)
+            .join(", ")
+        : "";
 
-      // Extract additional fields
-      const photoUrl = contact.gd$photo?.$t || "";
-      const biography = contact.content?.$t || "";
+      // Extract photo URL
+      const photoUrl = contact.photos?.[0]?.url || "";
+
+      // Extract biography/notes
+      const biography = contact.biographies?.[0]?.value || "";
 
       // Extract websites
-      const websites = contact.gd$website?.map((w: any) => w.href) || [];
+      const websites = contact.urls?.map((url: any) => url.value) || [];
 
-      // Create ID from contact ID
-      const id = contact.id?.$t?.split("/").pop() || Math.random().toString(36).substr(2, 9);
+      // Create ID from contact resource name
+      const id = contact.resourceName || Math.random().toString(36).substr(2, 9);
 
       return {
         // Basic identification

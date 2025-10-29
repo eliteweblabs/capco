@@ -29,7 +29,9 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         queryParams: {
           access_type: "offline",
           prompt: "consent",
-          scope: "openid email profile https://www.googleapis.com/auth/contacts.readonly",
+          // Note: contacts.readonly scope is ONLY for standalone PDF system (/api/google/signin)
+          // Regular authentication does NOT need contacts access
+          scope: "openid email profile",
         },
       },
     });

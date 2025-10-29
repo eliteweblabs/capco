@@ -30,7 +30,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
 
   // Size classes
   const sizeClasses = {
-    xs: "px-2.5 py-1.5 text-xs",
+    xs: "px-2 py-2 text-xs",
     sm: "px-4 py-2 text-sm",
     md: "px-5 py-2.5 text-sm",
     lg: "px-6 py-3 text-base",

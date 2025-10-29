@@ -1,0 +1,39 @@
+---
+import App from "../components/common/App.astro";
+import PDFSystem from "../components/project/PDFSystem.astro";
+import { checkGoogleAuth } from "../lib/google-auth";
+
+// Check Google authentication instead of Supabase
+const { isAuthenticated, user } = await checkGoogleAuth(Astro.cookies);
+
+// Create a mock currentUser object for the PDFSystem component
+const currentUser =
+  isAuthenticated && user
+    ? {
+        id: user.id || "google-user",
+        email: user.email || "user@example.com",
+        profile: {
+          role: "Admin", // Default to Admin for standalone system
+          name: user.name || "Google User",
+        },
+      }
+    : null;
+
+// If not authenticated, redirect to Google sign-in
+if (!isAuthenticated) {
+  return Astro.redirect("/google-signin");
+}
+---
+
+<App title="PDF System - CAPCo Fire Protection">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="mx-auto px-1 py-8">
+      <PDFSystem
+        {currentUser}
+        globalInputClasses="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        secondaryTextClasses="text-gray-600 dark:text-gray-400"
+        primaryTextClasses="text-gray-900 dark:text-white"
+      />
+    </div>
+  </div>
+</App>

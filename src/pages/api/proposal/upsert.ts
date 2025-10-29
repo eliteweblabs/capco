@@ -41,6 +41,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       templateId = "1", // Default template ID
     } = body;
 
+    // Get project data for default values when creating new invoice
+    let projectData = null;
+    if (!id && projectId) {
+      const { data: project } = await supabase
+        .from("projects")
+        .select("title, description")
+        .eq("id", projectId)
+        .single();
+      projectData = project;
+    }
+
     // Validate required fields
     if (!id && !projectId) {
       return createErrorResponse("Either invoice ID or project ID is required", 400);
@@ -71,14 +82,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         invoiceError = null;
       } else {
         console.log("🆕 [PROPOSAL-UPSERT] No existing invoice found, creating new one");
-        // Prepare invoice data for new invoice
+        // Prepare invoice data for new invoice with smart defaults
         const invoiceData = {
           projectId: parseInt(projectId),
           status,
-          subject,
+          subject: subject || `Fire Protection Proposal - ${projectData?.title || "Project"}`,
           invoiceDate,
-          notes,
-          proposalNotes,
+          notes: notes || "Auto-generated proposal",
+          proposalNotes:
+            proposalNotes || "This proposal was automatically created for your project.",
           taxRate,
           templateId,
           createdBy: currentUser.id,
