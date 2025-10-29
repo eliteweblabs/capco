@@ -93,7 +93,45 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const body = await request.json();
+    // Parse request body with better error handling
+    let body;
+    try {
+      const bodyText = await request.text();
+      console.log("📡 [USERS-UPSERT] Raw request body:", bodyText);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        return new Response(
+          JSON.stringify({
+            error: "Empty request body",
+            details: "Request body is required",
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      
+      body = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error("❌ [USERS-UPSERT] JSON parse error:", parseError);
+      return new Response(
+        JSON.stringify({
+          error: "Invalid JSON in request body",
+          details: parseError instanceof Error ? parseError.message : "Unknown parse error",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Validate that body is an object
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid request body format",
+          details: "Request body must be a JSON object",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    
     const userData: UserData = body;
 
     // Validate required fields
