@@ -30,7 +30,16 @@ export function truncateConsoleLogs(): void {
   const originalDebug = console.debug;
   const originalInfo = console.info;
 
-  const truncateMessage = (message: string, maxLines: number = 10): string => {
+  const truncateMessage = (message: string, maxLines: number = 10, maxWords: number = 50): string => {
+    // First check word count
+    const words = message.split(/\s+/);
+    if (words.length > maxWords) {
+      const firstWords = words.slice(0, maxWords).join(" ");
+      const remainingWords = words.length - maxWords;
+      return firstWords + ` ... [truncated ${remainingWords} words]`;
+    }
+    
+    // Then check line count
     const lines = message.split("\n");
     if (lines.length <= maxLines) return message;
     const firstLines = lines.slice(0, maxLines).join("\n");
@@ -46,7 +55,8 @@ export function truncateConsoleLogs(): void {
       if (typeof arg === "object" && arg !== null) {
         try {
           const stringified = JSON.stringify(arg);
-          if (stringified.split("\n").length > 10 || stringified.length > 200) {
+          const words = stringified.split(/\s+/);
+          if (stringified.split("\n").length > 10 || stringified.length > 200 || words.length > 50) {
             return truncateMessage(stringified);
           }
           return arg;
@@ -67,7 +77,8 @@ export function truncateConsoleLogs(): void {
       if (typeof arg === "object" && arg !== null) {
         try {
           const stringified = JSON.stringify(arg);
-          if (stringified.split("\n").length > 10 || stringified.length > 200) {
+          const words = stringified.split(/\s+/);
+          if (stringified.split("\n").length > 10 || stringified.length > 200 || words.length > 50) {
             return truncateMessage(stringified);
           }
           return arg;
@@ -88,7 +99,8 @@ export function truncateConsoleLogs(): void {
       if (typeof arg === "object" && arg !== null) {
         try {
           const stringified = JSON.stringify(arg);
-          if (stringified.split("\n").length > 10 || stringified.length > 200) {
+          const words = stringified.split(/\s+/);
+          if (stringified.split("\n").length > 10 || stringified.length > 200 || words.length > 50) {
             return truncateMessage(stringified);
           }
           return arg;
