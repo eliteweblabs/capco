@@ -52,6 +52,21 @@ export function truncateConsoleLogs(): void {
   };
 
   console.log = (...args: any[]) => {
+    const message = args.join(" ");
+
+    // Filter out image fetch logs
+    if (
+      message.includes("Fetch finished loading: GET") &&
+      (message.includes(".png") ||
+        message.includes(".jpg") ||
+        message.includes(".jpeg") ||
+        message.includes(".gif") ||
+        message.includes(".svg") ||
+        message.includes(".webp"))
+    ) {
+      return; // Don't log image fetch messages
+    }
+
     const truncatedArgs = args.map((arg) => {
       if (typeof arg === "string") {
         return truncateMessage(arg);
@@ -177,6 +192,20 @@ export function setupConsoleInterceptor(): void {
     // Override with selective filter - allow [---] prefixed logs
     console.log = (...args: any[]) => {
       const message = args.join(" ");
+
+      // Filter out image fetch logs
+      if (
+        message.includes("Fetch finished loading: GET") &&
+        (message.includes(".png") ||
+          message.includes(".jpg") ||
+          message.includes(".jpeg") ||
+          message.includes(".gif") ||
+          message.includes(".svg") ||
+          message.includes(".webp"))
+      ) {
+        return; // Don't log image fetch messages
+      }
+
       // Allow logs that contain [---] pattern (e.g., [---VAPI], [---DEBUG], etc.)
       if (message.includes("[---")) {
         originalLog(...args);
@@ -218,6 +247,19 @@ export function createSelectiveConsoleInterceptor(
 
     console.log = (...args: any[]) => {
       const message = args.join(" ");
+
+      // Filter out image fetch logs
+      if (
+        message.includes("Fetch finished loading: GET") &&
+        (message.includes(".png") ||
+          message.includes(".jpg") ||
+          message.includes(".jpeg") ||
+          message.includes(".gif") ||
+          message.includes(".svg") ||
+          message.includes(".webp"))
+      ) {
+        return; // Don't log image fetch messages
+      }
 
       // Allow specific prefixes
       if (allowPrefixes.length > 0) {
