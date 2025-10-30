@@ -5,7 +5,7 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
-import { getApiBaseUrl } from "../../../lib/url-utils";
+import { getApiBaseUrl, ensureProtocol } from "../../../lib/url-utils";
 // Import validateEmail from ux-utils (server-side API routes need explicit import)
 import { validateEmail } from "../../../lib/ux-utils";
 
@@ -493,8 +493,9 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       formData.append("smsAlerts", "false");
       formData.append("role", "Client");
 
+      const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
       const createUserResponse = await fetch(
-        `${process.env.RAILWAY_PUBLIC_DOMAIN}/api/users/upsert`,
+        `${baseUrl}/api/users/upsert`,
         {
           method: "POST",
           body: formData,
@@ -648,8 +649,9 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
     console.log("🏗️ [EMAIL-WEBHOOK] Project data for API:", JSON.stringify(projectData, null, 2));
 
     // Call the create-project API endpoint to ensure proper processing
+    const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
     const createProjectResponse = await fetch(
-      `${process.env.RAILWAY_PUBLIC_DOMAIN}/api/projects/upsert`,
+      `${baseUrl}/api/projects/upsert`,
       {
         method: "POST",
         headers: {

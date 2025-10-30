@@ -3,7 +3,7 @@
 
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
-import { getApiBaseUrl } from "../../../lib/url-utils";
+import { getApiBaseUrl, ensureProtocol } from "../../../lib/url-utils";
 import { validateEmail } from "../../../lib/ux-utils";
 
 export interface EmailWebhookData {
@@ -361,13 +361,11 @@ export async function findOrCreateUser(email: string, headers?: Record<string, s
       formData.append("smsAlerts", "false");
       formData.append("role", "Client");
 
-      const createUserResponse = await fetch(
-        `${process.env.RAILWAY_PUBLIC_DOMAIN}/api/users/upsert`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
+      const createUserResponse = await fetch(`${baseUrl}/api/users/upsert`, {
+        method: "POST",
+        body: formData,
+      });
 
       const createUserResult = await createUserResponse.json();
 

@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { ensureProtocol } from "../../../lib/url-utils";
 
 // Twilio incoming call webhook handler for voice AI pipeline
 export const POST: APIRoute = async ({ request }) => {
@@ -58,11 +59,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Return TwiML response to control the call
     console.log("✅ [TWILIO] Returning TwiML response");
+    const baseUrl = ensureProtocol(import.meta.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
     return new Response(
       `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice">Hello! This is your AI assistant. How can I help you today?</Say>
-  <Record maxLength="30" action="${import.meta.env.RAILWAY_PUBLIC_DOMAIN}/api/webhook/twilio-recording" method="POST" />
+  <Record maxLength="30" action="${baseUrl}/api/webhook/twilio-recording" method="POST" />
 </Response>`,
       {
         status: 200,

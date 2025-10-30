@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { ensureProtocol } from "../../../lib/url-utils";
 
 // Twilio webhook that uses GET requests to bypass CSRF protection
 export const GET: APIRoute = async ({ request }) => {
@@ -193,11 +194,12 @@ export const GET: APIRoute = async ({ request }) => {
         const processingTime = Date.now() - startTime;
         console.log(`⏱️ [TWILIO-GET-${requestId}] Total processing time: ${processingTime}ms`);
 
+        const baseUrl = ensureProtocol(import.meta.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
         return new Response(
           `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice">${aiMessage}</Say>
-  <Record maxLength="30" action="${import.meta.env.RAILWAY_PUBLIC_DOMAIN}/api/webhook/twilio-recording" method="POST" />
+  <Record maxLength="30" action="${baseUrl}/api/webhook/twilio-recording" method="POST" />
 </Response>`,
           {
             status: 200,
@@ -247,11 +249,12 @@ export const GET: APIRoute = async ({ request }) => {
 function createFallbackResponse(requestId: string, reason: string) {
   console.log(`🔄 [TWILIO-GET-${requestId}] Using fallback response. Reason: ${reason}`);
 
+  const baseUrl = ensureProtocol(import.meta.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice">Hello! This is your AI assistant. How can I help you today?</Say>
-  <Record maxLength="30" action="${import.meta.env.RAILWAY_PUBLIC_DOMAIN}/api/webhook/twilio-recording" method="POST" />
+  <Record maxLength="30" action="${baseUrl}/api/webhook/twilio-recording" method="POST" />
 </Response>`,
     {
       status: 200,
