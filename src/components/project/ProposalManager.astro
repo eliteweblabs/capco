@@ -594,11 +594,13 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         this.cachedLineItems.some((item) => item.name && item.name.trim() !== "");
 
       console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
+      console.log("🔍 [PROPOSAL-MANAGER] cachedLineItems:", this.cachedLineItems);
 
       if (!hasValidLineItems) {
         console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
         this.initializeDefaultLineItems();
-        // Note: saveToDatabase() will be called when user makes changes
+        // Save the defaults to database
+        this.saveToDatabase();
       }
 
       // Render the line items to the DOM
@@ -682,6 +684,8 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     }
 
     initializeDefaultLineItems() {
+      console.log("🔧 [PROPOSAL-MANAGER] initializeDefaultLineItems called");
+      
       // Add default line items for fire protection system
       const lineItems = [
         {
@@ -704,7 +708,10 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         },
       ];
 
+      console.log("🔧 [PROPOSAL-MANAGER] Setting cachedLineItems to:", lineItems);
       this.cachedLineItems = lineItems;
+      console.log("🔧 [PROPOSAL-MANAGER] cachedLineItems after setting:", this.cachedLineItems);
+      
       this.renderLineItems();
       updateProposalTotal();
     }
@@ -781,15 +788,25 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       // Add the "Add Line Item" button row
       console.log(
         "🔍 [PROPOSAL-MANAGER] Checking projectStatus for Add Line Item button:",
-        projectStatus
+        this.projectStatus,
+        "Type:",
+        typeof this.projectStatus
       );
-      if (projectStatus === 20 && !document.querySelector("#add-row-btn")) {
+      
+      // For now, show the button for all statuses >= 20 (we can restrict later)
+      const canEdit = Number(this.projectStatus) >= 20;
+      console.log("🔍 [PROPOSAL-MANAGER] Can edit:", canEdit);
+      
+      if (canEdit && !document.querySelector("#add-row-btn")) {
         console.log("🔍 [PROPOSAL-MANAGER] Adding Add Line Item button");
         this.addLineItemButton(tbody);
-      } else {
+      } else if (!canEdit) {
         console.log(
-          "🔍 [PROPOSAL-MANAGER] Not adding Add Line Item button - projectStatus is not 20"
+          "🔍 [PROPOSAL-MANAGER] Not adding Add Line Item button - projectStatus is not >= 20, current status:",
+          this.projectStatus
         );
+      } else {
+        console.log("🔍 [PROPOSAL-MANAGER] Add Line Item button already exists");
       }
     }
 
