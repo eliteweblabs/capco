@@ -21,7 +21,7 @@ export const GET: APIRoute = async () => {
     });
 
     // Temporary fix: manually set the assistant ID for testing
-    const finalAssistantId = assistantId || "3ae002d5-fe9c-4870-8034-4c66a9b43b51";
+    const finalAssistantId = assistantId;
 
     return new Response(
       JSON.stringify({

@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { Pool } from "pg";
+// import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
 // Cal.com database connection using Railway environment variables
 const calcomDb = new Pool({
@@ -645,7 +646,7 @@ async function handleCreateBooking(params: any) {
           <p>We look forward to meeting with you!</p>
           
           <p>Best regards,<br>
-          CAPCo Fire Protection Team</p>
+          ${process.env.GLOBAL_COMPANY_NAME}</p>
         </div>
       `;
 

@@ -15,9 +15,9 @@ SUPABASE_ANON_KEY=your_SUPABASE_ANON_KEY_here
 # Site Configuration
 SITE_URL=http://localhost:4321
 
-# Vapi.ai Configuration
-VAPI_API_KEY=77cb0a47-2427-44ac-996d-e6ed2ca03bbf
-VAPI_WEBHOOK_SECRET=98d35715-e042-423f-a539-b7e36a5f113a
+# Vapi.ai Configuration (fill in locally; do NOT commit real values)
+VAPI_API_KEY=your_vapi_api_key_here
+VAPI_WEBHOOK_SECRET=your_vapi_webhook_secret_here
 
 # Cal.com Configuration
 DATABASE_URL=https://qudlxlryegnainztkrtk.supabase.co
