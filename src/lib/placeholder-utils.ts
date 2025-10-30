@@ -130,7 +130,15 @@ export function replacePlaceholders(
   // === LEGACY PLACEHOLDER REPLACEMENT ===
   // Extract data from project object and additional data
   const projectId = data?.project?.id;
-  const baseUrl = import.meta.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_PUBLIC_DOMAIN;
+  let baseUrl = import.meta.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_PUBLIC_DOMAIN;
+  
+  // Debug: Log what we're getting as baseUrl
+  if (typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml"))) {
+    console.error("🚨 [PLACEHOLDER-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG content:", baseUrl.substring(0, 100) + "...");
+    console.error("🚨 [PLACEHOLDER-UTILS] This will cause malformed URLs. Check your environment variables.");
+    // Fallback to prevent malformed URLs
+    baseUrl = "https://capcofire.com";
+  }
   const baseProjectLink = `${baseUrl}/project`;
   // Only create project link if projectId is valid (not 0 or null)
   const projectLink =
