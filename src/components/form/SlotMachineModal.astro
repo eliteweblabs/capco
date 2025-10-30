@@ -869,7 +869,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         if (fetchApiEndpoint && query.length >= 2) {
           searchTimeout = setTimeout(async () => {
             try {
-              console.log(`🔍 [SLOT-MACHINE] Searching for: ${query}`);
+              // console.log(`🔍 [SLOT-MACHINE] Searching for: ${query}`);
 
               // Build search URL with API params
               const searchParams = new URLSearchParams({
@@ -904,6 +904,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
               } else if (transformedData && Array.isArray(transformedData.results)) {
                 // Alternative format
                 optionsArray = transformedData.results;
+              } else if (transformedData && Array.isArray(transformedData.contacts)) {
+                // Google Contacts format
+                optionsArray = transformedData.contacts;
               } else if (
                 transformedData &&
                 transformedData.data &&
@@ -914,6 +917,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
               }
 
               console.log(`🔍 [SLOT-MACHINE] Options array:`, optionsArray);
+              console.log(`🔍 [SLOT-MACHINE] First option:`, optionsArray[0]);
+              console.log(`🔍 [SLOT-MACHINE] Value field:`, valueField);
+              console.log(`🔍 [SLOT-MACHINE] Label field:`, labelField);
 
               // Update options list with search results
               if (optionsList) {
