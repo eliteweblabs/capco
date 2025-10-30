@@ -3,6 +3,21 @@
  */
 
 /**
+ * Ensures a URL has a protocol (http:// or https://)
+ * If no protocol is present, adds https://
+ * @param url - The URL string to check/fix
+ * @param defaultUrl - Optional default URL if input is empty
+ * @returns URL with protocol
+ */
+export function ensureProtocol(url?: string | null, defaultUrl: string = "http://localhost:4321"): string {
+  if (!url) return defaultUrl;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  return `https://${url}`;
+}
+
+/**
  * Get the base URL for the current environment
  * Uses RAILWAY_PUBLIC_DOMAIN environment variable, with request URL fallback for development
  */

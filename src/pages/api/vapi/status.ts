@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { ensureProtocol } from "../../../lib/url-utils";
 
 /**
  * Vapi.ai Status API
@@ -40,7 +41,7 @@ export const GET: APIRoute = async () => {
             hasValue: webhookSecret ? webhookSecret.length > 0 : false,
           },
           environment: {
-            siteUrl: process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321",
+            siteUrl: ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"),
           },
         },
       }),

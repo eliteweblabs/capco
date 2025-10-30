@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { ensureProtocol } from "../../../lib/url-utils";
 
 /**
  * Vapi.ai Appointments Integration (Internal System)
@@ -289,8 +290,9 @@ async function handleCheckAvailability(currentUser: any, data: any) {
     const { date, startDate, endDate, duration } = data;
 
     // Call the availability API
+    const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
     const availabilityResponse = await fetch(
-      `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"}/api/appointments/availability`,
+      `${baseUrl}/api/appointments/availability`,
       {
         method: "POST",
         headers: {

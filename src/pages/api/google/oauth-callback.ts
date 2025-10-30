@@ -84,7 +84,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     console.log("✅ [GOOGLE-OAUTH] OAuth flow completed successfully");
 
     // Redirect to success page or back to the app
-    return redirect(url.origin + "/?google_auth=success");
+    return redirect(url.pathname + "/?google_auth=success");
   } catch (error) {
     console.error("❌ [GOOGLE-OAUTH] OAuth callback error:", error);
     return redirect("/?error=oauth_callback_error");
