@@ -19,23 +19,38 @@ export interface ButtonStyleConfig {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   fullWidth?: boolean;
   className?: string;
+  icon?: boolean;
 }
 
 export function getButtonClasses(config: ButtonStyleConfig = {}): string {
-  const { variant = "primary", size = "md", fullWidth = false, className = "" } = config;
+  const {
+    variant = "primary",
+    size = "md",
+    fullWidth = false,
+    className = "",
+    icon = false,
+  } = config;
 
   // Base classes for all buttons
   const baseClasses =
     "hover:scale-105 hover:-translate-y-1 hover:shadow-xl relative inline-flex items-center justify-center font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
 
-  // Size classes
-  const sizeClasses = {
-    xs: "px-2 py-2 text-xs",
-    sm: "px-4 py-2 text-sm",
-    md: "px-5 py-2.5 text-sm",
-    lg: "px-6 py-3 text-base",
-    xl: "px-7 py-3.5 text-lg",
-  };
+  // Size classes check if theres an icon and if so, make padding match so the icon is centered and the button is round perfectly
+  const sizeClasses = icon
+    ? {
+        xs: "px-2 py-2 text-xs",
+        sm: "px-3 py-3 text-sm",
+        md: "px-4 py-4 text-sm",
+        lg: "px-5 py-5 text-base",
+        xl: "px-6 py-6 text-lg",
+      }
+    : {
+        xs: "px-2 py-2 text-xs",
+        sm: "px-4 py-2 text-sm",
+        md: "px-5 py-2.5 text-sm",
+        lg: "px-6 py-3 text-base",
+        xl: "px-7 py-3.5 text-lg",
+      };
 
   // Variant classes using global color system
   const variantClasses = {
