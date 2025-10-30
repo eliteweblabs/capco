@@ -615,17 +615,19 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       }
 
       console.log("🔍 [PROPOSAL-MANAGER] Loading from existing invoice:", this.existingInvoice);
+      console.log("🔍 [PROPOSAL-MANAGER] Invoice catalogLineItems:", this.existingInvoice.catalogLineItems);
 
       // Load line items from the existing invoice
       if (this.existingInvoice.catalogLineItems && this.existingInvoice.catalogLineItems.length > 0) {
         this.cachedLineItems = this.existingInvoice.catalogLineItems.map((item) => ({
-          name: item.name || "",
+          name: item.name || item.description || "Fire Protection Service", // Use description as name if name not available
           description: item.description || "",
           quantity: item.quantity || 1,
           unitPrice: item.unitPrice || 0,
           catalogItemId: item.catalogItemId || null,
         }));
         console.log("✅ [PROPOSAL-MANAGER] Loaded line items from invoice:", this.cachedLineItems.length);
+        console.log("✅ [PROPOSAL-MANAGER] Mapped line items:", this.cachedLineItems);
       }
 
       // Load subject from invoice
