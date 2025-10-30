@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { Pool } from "pg";
+import { ensureProtocol } from "../../../lib/url-utils";
 // import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
 // Cal.com database connection using Railway environment variables
@@ -651,8 +652,9 @@ async function handleCreateBooking(params: any) {
       `;
 
       // Send email using the existing update-delivery API
+      const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
       const emailResponse = await fetch(
-        `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"}/api/delivery/update-delivery`,
+        `${baseUrl}/api/delivery/update-delivery`,
         {
           method: "POST",
           headers: {
@@ -664,7 +666,7 @@ async function handleCreateBooking(params: any) {
             emailSubject: emailSubject,
             emailContent: emailContent,
             buttonText: "View Our Website",
-            buttonLink: `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"}`,
+            buttonLink: baseUrl,
             currentUser: null, // VAPI calls don't have user context
           }),
         }

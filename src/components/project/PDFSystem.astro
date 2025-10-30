@@ -16,7 +16,7 @@ const {
   primaryTextClasses = "text-gray-900 dark:text-white",
 } = Astro.props;
 
-import SlotMachineModal from "../form/SlotMachineModal.astro";
+import SlotMachineModalFunction from "../form/SlotMachineModalFunction.astro";
 
 console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 ---
@@ -80,6 +80,14 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         >
           <SimpleIcon name="file-plus" class="w-4 h-4 inline mr-2" />
           Generate PDF
+        </button>
+        <button
+          id="contacts-tab"
+          class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+          data-tab="contacts"
+        >
+          <SimpleIcon name="user" class="w-4 h-4 inline mr-2" />
+          Google Contacts
         </button>
       </nav>
     </div>
@@ -217,30 +225,20 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     <div class="mb-6">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generate PDF</h3>
 
-      <!-- Template Selection -->
+      <!-- User Search -->
       <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Select Template
-        </label>
-        <select id="template-select" class={globalInputClasses}>
-          <option value="">Choose a template...</option>
-        </select>
-      </div>
-
-      <!-- Project Search -->
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label class="hidden block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Search User
         </label>
         <div class="flex space-x-2">
           <!-- <input
             type="text"
-            id="project-search"
-            placeholder="Search by project name, address, or client..."
+            id="user-search"
+            placeholder="Search by user name, address, or client..."
             class={globalInputClasses}
           />
           <button
-            id="search-projects-btn"
+            id="search-users-btn"
             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           >
             <SimpleIcon name="search" class="w-4 h-4 inline mr-2" />
@@ -249,7 +247,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           <!-- replace the above with slot machine for google contacts endpoint -->
           <button
             id="search-user-btn"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            class="hidden px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             onclick="window.pdfSystem.checkGoogleAuthAndSearch()"
           >
             <SimpleIcon name="user" class="w-4 h-4 inline mr-2" />
@@ -257,7 +255,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           </button>
 
           <!-- Hidden SlotMachineModal for when auth is ready -->
-          <SlotMachineModal
+          <SlotMachineModalFunction
             id="user-search"
             icon="user"
             title="Search User"
@@ -273,12 +271,28 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             {currentUser}
             {globalInputClasses}
           />
+          <!-- Selected user preview -->
+          <div
+            id="user-search-preview"
+            class="mt-4 hidden rounded-md border p-4 text-sm color-background"
+          >
+          </div>
         </div>
       </div>
 
-      <!-- Project Results -->
-      <div id="project-results" class="mb-6">
-        <!-- Project search results will be displayed here -->
+      <!-- Template Selection -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Select Template
+        </label>
+        <select id="template-select" class={globalInputClasses}>
+          <option value="">Choose a template...</option>
+        </select>
+      </div>
+
+      <!-- User Results -->
+      <div id="user-results" class="mb-6">
+        <!-- User search results will be displayed here -->
       </div>
 
       <!-- PDF Generation Options -->
@@ -329,6 +343,55 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       </div>
     </div>
   </div>
+
+  <!-- Google Contacts Tab Content -->
+  <div id="contacts-content" class="pdf-tab-content hidden">
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Google Contacts</h3>
+
+      <!-- Information Card -->
+      <div
+        class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+      >
+        <div class="flex items-start">
+          <div
+            class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 mt-0.5 flex-shrink-0 text-lg font-bold"
+          >
+            i
+          </div>
+          <div class="flex-1">
+            <p class="text-sm text-blue-800 dark:text-blue-300">
+              <strong>Note:</strong> Google Contacts cannot be embedded in iframes due to security restrictions.
+              Click the button below to open Google Contacts in a new tab where you can manage your contacts.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Open Google Contacts Button -->
+      <div
+        class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+      >
+        <SimpleIcon name="user" class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
+        <h4 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          Manage Google Contacts
+        </h4>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">
+          Add, edit, or search your Google Contacts in a new tab
+        </p>
+        <a
+          href="https://contacts.google.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-lg hover:shadow-xl"
+        >
+          Open Google Contacts
+          <span class="ml-2 text-sm">↗</span>
+        </a>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">Opens in a new tab</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script is:inline>
@@ -338,9 +401,9 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     constructor() {
       this.currentUser = null; // Will be set when needed
       this.selectedTemplate = null;
-      this.selectedProject = null;
+      this.selectedUser = null;
       this.templates = [];
-      this.projects = [];
+      this.users = [];
       this.editor = null;
       this.templateNameInput = null;
       this.templateTypeSelect = null;
@@ -353,10 +416,12 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       this.setupEventListeners();
       await this.loadTemplates();
       this.setupTabNavigation();
+      this.checkGoogleAuthAndSearch();
     }
 
     setupEventListeners() {
       // Tab navigation
+
       document.querySelectorAll(".pdf-tab").forEach((tab) => {
         tab.addEventListener("click", (e) => {
           this.switchTab(e.target.dataset.tab);
@@ -386,9 +451,135 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         this.closeTemplateEditor();
       });
 
+      // Listen for user selection from SlotMachineModal (Google Contacts)
+      window.addEventListener("slot-select", (event) => {
+        const ce = /** @type {CustomEvent} */ (event);
+        const detail = (ce && ce.detail) || {};
+        if (detail.componentId !== "user-search") return;
+
+        const preview = document.getElementById("user-search-preview");
+        if (!preview) return;
+
+        const c = detail.data || {};
+        const name = detail.label || c.name || "Selected Contact";
+
+        // Helper to format keys (camelCase to Title Case)
+        const formatKey = (key) => {
+          return key
+            .replace(/([A-Z])/g, " $1")
+            .replace(/^./, (str) => str.toUpperCase())
+            .trim();
+        };
+
+        // Helper to format values
+        const formatValue = (value) => {
+          if (Array.isArray(value)) {
+            return value.join(", ");
+          }
+          if (typeof value === "object" && value !== null) {
+            return JSON.stringify(value, null, 2);
+          }
+          return String(value);
+        };
+
+        // Get emoji for common fields
+        const getEmoji = (key) => {
+          const emojiMap = {
+            email: "📧",
+            phone: "📞",
+            organization: "🏢",
+            company: "🏢",
+            jobTitle: "💼",
+            title: "💼",
+            address: "📍",
+            birthday: "🎂",
+            websites: "🌐",
+            biography: "📝",
+            allEmails: "📧",
+            allPhones: "📞",
+          };
+          return emojiMap[key.toLowerCase()] || "•";
+        };
+
+        // Build the fields HTML by looping through all properties
+        const fieldsHtml = Object.keys(c)
+          .filter((key) => {
+            // Skip name (already displayed), id, and empty values
+            const value = c[key];
+            const keyLower = key.toLowerCase();
+            const formattedLabel = formatKey(key).toLowerCase();
+
+            // Skip keys that contain "Value:" or "Raw Contact" (check both key and formatted label)
+            // Check for exact matches and specific patterns (but not partial word matches like "allEmails" containing "value")
+            const skipPatterns = [
+              "value:",
+              /^value$/i, // exact match for "value" or "Value"
+              /^raw\s*contact$/i, // exact match for "raw contact" or "Raw Contact" or "rawcontact"
+              "rawcontact",
+              "raw_contact",
+            ];
+
+            const shouldSkip = skipPatterns.some((pattern) => {
+              if (typeof pattern === "string") {
+                return keyLower.includes(pattern) || formattedLabel.includes(pattern);
+              } else if (pattern instanceof RegExp) {
+                return pattern.test(key) || pattern.test(formattedLabel);
+              }
+              return false;
+            });
+
+            if (shouldSkip) {
+              console.log("🔍 [PDF-SYSTEM] Skipping field:", key, "formatted:", formattedLabel);
+              return false;
+            }
+
+            // Additional check: if the formatted label will display as "Value:" or "Raw Contact", skip it
+            const displayLabel = formatKey(key);
+            if (
+              displayLabel.toLowerCase().includes("value:") ||
+              displayLabel.toLowerCase().includes("raw contact")
+            ) {
+              console.log(
+                "🔍 [PDF-SYSTEM] Skipping field based on display label:",
+                key,
+                "->",
+                displayLabel
+              );
+              return false;
+            }
+
+            return (
+              key !== "name" &&
+              key !== "id" &&
+              value !== null &&
+              value !== undefined &&
+              value !== "" &&
+              !(Array.isArray(value) && value.length === 0) &&
+              !(typeof value === "object" && Object.keys(value).length === 0)
+            );
+          })
+          .map((key) => {
+            const value = formatValue(c[key]);
+            const label = formatKey(key);
+            const emoji = getEmoji(key);
+            return `<div>${emoji} <span class="font-medium">${label}:</span> ${value}</div>`;
+          })
+          .join("");
+
+        preview.innerHTML = `
+          <div class="text-sm">
+            <div class="text-base font-semibold mb-1">${name}</div>
+            <div class="space-y-1 text-gray-700 dark:text-gray-300">
+              ${fieldsHtml || '<div class="text-gray-500 italic">No additional information available</div>'}
+            </div>
+          </div>
+        `;
+        preview.classList.remove("hidden");
+      });
+
       // Generate PDF
-      document.getElementById("search-projects-btn")?.addEventListener("click", () => {
-        this.searchProjects();
+      document.getElementById("search-users-btn")?.addEventListener("click", () => {
+        this.searchUsers();
       });
 
       document.getElementById("preview-pdf-btn")?.addEventListener("click", () => {
@@ -899,7 +1090,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             // Convert to HTML format with preserved structure and placeholders
             const htmlContent = `
               <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-                <h2>Extracted PDF Content</h2>
                 <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
                   ${textWithPlaceholders}
                 </div>
@@ -1941,15 +2131,15 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       }
     }
 
-    async searchProjects() {
-      const query = document.getElementById("project-search")?.value;
+    async searchUsers() {
+      const query = document.getElementById("user-search")?.value;
       if (!query) {
         this.showNotification("Please enter a search term", "error");
         return;
       }
 
       try {
-        const response = await fetch("/api/projects/search", {
+        const response = await fetch("/api/users/search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -1958,40 +2148,40 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
         const data = await response.json();
         if (data.success) {
-          this.projects = data.data || [];
-          this.renderProjectResults();
+          this.users = data.data || [];
+          this.renderUserResults();
         } else {
-          this.showNotification("Error searching projects: " + data.error, "error");
+          this.showNotification("Error searching users: " + data.error, "error");
         }
       } catch (error) {
-        console.error("❌ [PDF-SYSTEM] Error searching projects:", error);
-        this.showNotification("Error searching projects", "error");
+        console.error("❌ [PDF-SYSTEM] Error searching users:", error);
+        this.showNotification("Error searching users", "error");
       }
     }
 
-    renderProjectResults() {
-      const container = document.getElementById("project-results");
+    renderUserResults() {
+      const container = document.getElementById("user-results");
       if (!container) return;
 
-      if (this.projects.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No projects found</p>';
+      if (this.users.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No users found</p>';
         return;
       }
 
       container.innerHTML = `
         <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Search Results</h4>
         <div class="space-y-2">
-          ${this.projects
+          ${this.users
             .map(
-              (project) => `
+              (user) => `
             <div class="flex items-center justify-between p-3 color-background rounded-md">
               <div>
-                <h5 class="font-medium text-gray-900 dark:text-white">${project.title}</h5>
-                <p class="text-sm text-gray-600 dark:text-gray-400">${project.address || "No address"}</p>
+                <h5 class="font-medium text-gray-900 dark:text-white">${user.title}</h5>
+                <p class="text-sm text-gray-600 dark:text-gray-400">${user.address || "No address"}</p>
               </div>
               <button 
-                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm select-project-btn"
-                data-project-id="${project.id}"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm select-user-btn"
+                data-user-id="${user.id}"
               >
                 Select
               </button>
@@ -2003,33 +2193,33 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       `;
 
       // Add event listeners to the select buttons
-      container.querySelectorAll(".select-project-btn").forEach((btn) => {
+      container.querySelectorAll(".select-user-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
-          const projectId = e.target.getAttribute("data-project-id");
-          this.selectProject(projectId);
+          const userId = e.target.getAttribute("data-user-id");
+          this.selectUser(userId);
         });
       });
     }
 
-    selectProject(projectId) {
-      this.selectedProject = projectId;
-      this.showNotification("Project selected", "success");
+    selectUser(userId) {
+      this.selectedUser = userId;
+      this.showNotification("User selected", "success");
     }
 
     async previewPDF() {
-      if (!this.selectedTemplate || !this.selectedProject) {
-        this.showNotification("Please select a template and project", "error");
+      if (!this.selectedTemplate || !this.selectedUser) {
+        this.showNotification("Please select a template and user", "error");
         return;
       }
 
       // Open preview in new window
-      const previewUrl = `/api/pdf/preview?templateId=${this.selectedTemplate}&projectId=${this.selectedProject}`;
+      const previewUrl = `/api/pdf/preview?templateId=${this.selectedTemplate}&userId=${this.selectedUser}`;
       window.open(previewUrl, "_blank");
     }
 
     async generatePDF() {
-      if (!this.selectedTemplate || !this.selectedProject) {
-        this.showNotification("Please select a template and project", "error");
+      if (!this.selectedTemplate || !this.selectedUser) {
+        this.showNotification("Please select a template and user", "error");
         return;
       }
 
@@ -2043,7 +2233,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           credentials: "include",
           body: JSON.stringify({
             templateId: this.selectedTemplate,
-            projectId: this.selectedProject,
+            userId: this.selectedUser,
             pageSize,
             orientation,
           }),
@@ -2142,7 +2332,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         if (response.ok) {
           // Auth is working, open the search modal
           console.log("✅ [PDF-SYSTEM] Google auth is working, opening search modal");
-          this.openUserSearchModal();
+          // this.openUserSearchModal();
         } else if (response.status === 401) {
           // Need to authenticate
           console.log("🔐 [PDF-SYSTEM] Google auth required, showing auth modal");
