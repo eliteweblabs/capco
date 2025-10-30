@@ -247,6 +247,16 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             Search
           </button> -->
           <!-- replace the above with slot machine for google contacts endpoint -->
+          <button
+            id="search-user-btn"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            onclick="window.pdfSystem.checkGoogleAuthAndSearch()"
+          >
+            <SimpleIcon name="user" class="w-4 h-4 inline mr-2" />
+            Search for a user...
+          </button>
+          
+          <!-- Hidden SlotMachineModal for when auth is ready -->
           <SlotMachineModal
             id="user-search"
             icon="user"
@@ -261,6 +271,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             valueField="id"
             labelField="name"
             {currentUser}
+            {globalInputClasses}
           />
         </div>
       </div>
@@ -1687,18 +1698,17 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
         // Get the bounds of the selection first (before setting selection)
         const bounds = this.editor.getBounds(textIndex, placeholder.length);
-        
+
         if (bounds) {
           console.log("📐 [PDF-SYSTEM] Bounds:", bounds);
 
           // Get the Quill editor's scrolling element (.ql-editor)
-          const editorScrollContainer =
-            this.editor.root.parentElement.querySelector(".ql-editor");
+          const editorScrollContainer = this.editor.root.parentElement.querySelector(".ql-editor");
 
           if (editorScrollContainer) {
             // Calculate the target scroll position - center the selection
             const containerHeight = editorScrollContainer.clientHeight;
-            const targetScrollTop = bounds.top - (containerHeight / 2) + (bounds.height / 2);
+            const targetScrollTop = bounds.top - containerHeight / 2 + bounds.height / 2;
 
             console.log("📜 [PDF-SYSTEM] Scrolling container:", {
               currentScroll: editorScrollContainer.scrollTop,
@@ -1726,7 +1736,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               top: Math.max(0, scrollTop),
               behavior: "smooth",
             });
-            
+
             setTimeout(() => {
               this.editor.setSelection(textIndex, placeholder.length);
             }, 50);
@@ -1797,11 +1807,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     updateRevertButton(fieldId, isReplaced) {
       const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
       if (fieldElement) {
-        const revertButton = fieldElement.querySelector("button[title*='Toggle between original text and placeholder']");
+        const revertButton = fieldElement.querySelector(
+          "button[title*='Toggle between original text and placeholder']"
+        );
         if (revertButton) {
           revertButton.textContent = isReplaced ? "Show Original" : "Show Placeholder";
-          revertButton.title = isReplaced 
-            ? "Show original text and locate in document" 
+          revertButton.title = isReplaced
+            ? "Show original text and locate in document"
             : "Show placeholder text and locate in document";
         }
       }
@@ -2115,6 +2127,98 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       } catch (error) {
         console.error("❌ [PDF-SYSTEM] Error deleting template:", error);
         this.showNotification("Error deleting template", "error");
+      }
+    }
+
+    async checkGoogleAuthAndSearch() {
+      console.log("🔍 [PDF-SYSTEM] Checking Google authentication...");
+      
+      try {
+        // Check if Google auth is available by making a test call
+        const response = await fetch("/api/google/contacts?input=test", {
+          credentials: "include",
+        });
+        
+        if (response.ok) {
+          // Auth is working, open the search modal
+          console.log("✅ [PDF-SYSTEM] Google auth is working, opening search modal");
+          this.openUserSearchModal();
+        } else if (response.status === 401) {
+          // Need to authenticate
+          console.log("🔐 [PDF-SYSTEM] Google auth required, showing auth modal");
+          this.showGoogleAuthModal();
+        } else {
+          // Other error
+          console.error("❌ [PDF-SYSTEM] Google auth check failed:", response.status);
+          this.showNotification("Error checking Google authentication", "error");
+        }
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error checking Google auth:", error);
+        this.showNotification("Error checking Google authentication", "error");
+      }
+    }
+
+    openUserSearchModal() {
+      // Trigger the SlotMachineModal
+      const searchButton = document.querySelector('[data-slot-machine-id="user-search"]');
+      if (searchButton) {
+        searchButton.click();
+      } else {
+        console.error("❌ [PDF-SYSTEM] Could not find user search modal trigger");
+        this.showNotification("Error opening search modal", "error");
+      }
+    }
+
+    showGoogleAuthModal() {
+      // Create a simple modal for Google authentication
+      const modal = document.createElement("div");
+      modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+      modal.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+          <div class="flex items-center mb-4">
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Google Authentication Required</h3>
+          </div>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
+            To search your Google contacts, you need to authenticate with Google first. This will allow us to access your contacts safely and securely.
+          </p>
+          <div class="flex space-x-3">
+            <button
+              onclick="window.pdfSystem.authenticateWithGoogle()"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+            >
+              Sign in with Google
+            </button>
+            <button
+              onclick="window.pdfSystem.closeGoogleAuthModal()"
+              class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      this.googleAuthModal = modal;
+    }
+
+    authenticateWithGoogle() {
+      // Redirect to Google OAuth
+      window.location.href = "/api/google/signin";
+    }
+
+    closeGoogleAuthModal() {
+      if (this.googleAuthModal) {
+        this.googleAuthModal.remove();
+        this.googleAuthModal = null;
       }
     }
   }
