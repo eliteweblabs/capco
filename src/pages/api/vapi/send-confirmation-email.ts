@@ -1,6 +1,8 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { getApiBaseUrl } from "../../../lib/url-utils";
+// import {supabase} from "../../../lib/supabase";
+// import {SimpleProjectLogger} from "../../../lib/simple-logging";
 
 interface ConfirmationEmailRequest {
   name: string;
@@ -18,9 +20,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Skip authentication check for VAPI tool calls
     // VAPI tools don't have user session context
-    const isVapiCall = request.headers.get("X-Vapi-System") === "true" || 
-                       request.headers.get("User-Agent")?.includes("Vapi") ||
-                       request.url.includes("/api/vapi/");
+    const isVapiCall =
+      request.headers.get("X-Vapi-System") === "true" ||
+      request.headers.get("User-Agent")?.includes("Vapi") ||
+      request.url.includes("/api/vapi/");
 
     if (!isVapiCall) {
       // Only check authentication for non-VAPI calls
@@ -82,39 +85,48 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       </div>
     `;
 
-    // Send email using the existing update-delivery API
-    const emailResponse = await fetch(`${baseUrl}/api/delivery/update-delivery`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        usersToNotify: [email],
-        method: "email",
-        emailSubject: emailSubject,
-        emailContent: emailContent,
-        buttonText: "View Our Website",
-        buttonLink: `${baseUrl}`,
-        currentUser: null, // VAPI calls don't have user context
-      }),
-    });
+    // Prefer a direct, dependency-light email path to avoid DB requirements
+    const emailApiKey = import.meta.env.EMAIL_API_KEY;
+    const fromEmail = import.meta.env.FROM_EMAIL || "noreply@capcofire.com";
+    const fromName = import.meta.env.FROM_NAME || "CAPCo";
 
-    if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      console.error("📧 [VAPI-CONFIRMATION-EMAIL] Failed to send email:", errorText);
+    if (!emailApiKey) {
+      console.error("📧 [VAPI-CONFIRMATION-EMAIL] EMAIL_API_KEY not configured");
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to send confirmation email",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: "Email service not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const emailResult = await emailResponse.json();
+    const payload = {
+      from: `${fromName} <${fromEmail}>`,
+      to: email,
+      subject: emailSubject,
+      html: emailContent,
+      text: emailContent
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+      track_links: true,
+      track_opens: true,
+    };
+
+    const emailResp = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${emailApiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!emailResp.ok) {
+      const errTxt = await emailResp.text();
+      console.error("📧 [VAPI-CONFIRMATION-EMAIL] Resend error:", errTxt);
+      return new Response(JSON.stringify({ success: false, error: "Email provider error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const emailResult = await emailResp.json();
     console.log("📧 [VAPI-CONFIRMATION-EMAIL] Email sent successfully:", emailResult);
 
     return new Response(
