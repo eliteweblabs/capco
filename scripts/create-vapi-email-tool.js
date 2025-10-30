@@ -9,7 +9,7 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const SITE_URL = "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
 
 // Tool definition for sending confirmation emails
 const emailConfirmationTool = {
@@ -60,7 +60,7 @@ const emailConfirmationTool = {
     },
   },
   server: {
-    url: `${SITE_URL}/api/vapi/send-confirmation-email`,
+    url: `${RAILWAY_PUBLIC_DOMAIN}/api/vapi/send-confirmation-email`,
     timeoutSeconds: 20,
   },
   messages: [

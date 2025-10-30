@@ -44,7 +44,8 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Send password reset email
     const { error } = await supabase.auth.resetPasswordForEmail(resetData.email.trim(), {
-      redirectTo: resetData.redirectTo || `${import.meta.env.SITE_URL}/auth/reset-password`,
+      redirectTo:
+        resetData.redirectTo || `${import.meta.env.RAILWAY_PUBLIC_DOMAIN}/auth/reset-password`,
     });
 
     if (error) {

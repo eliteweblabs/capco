@@ -155,7 +155,7 @@ BEGIN
     -- Insert default punchlist items
     INSERT INTO punchlist (project_id, author_id, message, internal, mark_completed, company_name)
     VALUES 
-    (project_id_param, admin_user_id, ' Receive CAD files from client / download from <a href="{{SITE_URL}}/project/{{PROJECT_ID}}?status=documents">Documents</a>', false, false, 'CAPCo Fire'),
+    (project_id_param, admin_user_id, ' Receive CAD files from client / download from <a href="{{RAILWAY_PUBLIC_DOMAIN}}/project/{{PROJECT_ID}}?status=documents">Documents</a>', false, false, 'CAPCo Fire'),
     (project_id_param, admin_user_id, ' Obtain fire hydrant flow test data', false, false, 'CAPCo Fire'),
     (project_id_param, admin_user_id, ' Conduct design kickoff and review scope', false, false, 'CAPCo Fire'),
     (project_id_param, admin_user_id, ' Coordinate with fire alarm designer', false, false, 'CAPCo Fire'),
@@ -165,7 +165,7 @@ BEGIN
     (project_id_param, admin_user_id, ' Add notes and leader callouts', false, false, 'CAPCo Fire'),  
     (project_id_param, admin_user_id, ' Add details and general notes', false, false, 'CAPCo Fire'),
     (project_id_param, admin_user_id, ' Finalize design and apply titleblock', false, false, 'CAPCo Fire'),
-    (project_id_param, admin_user_id, ' Print drawings to PDF for submittal / upload to <a href="{{SITE_URL}}/project/{{PROJECT_ID}}?status=deliverables">Deliverables</a>', false, false, 'CAPCo Fire');
+    (project_id_param, admin_user_id, ' Print drawings to PDF for submittal / upload to <a href="{{RAILWAY_PUBLIC_DOMAIN}}/project/{{PROJECT_ID}}?status=deliverables">Deliverables</a>', false, false, 'CAPCo Fire');
 
     RAISE NOTICE 'Created default punchlist items for project %', project_id_param;
 END;

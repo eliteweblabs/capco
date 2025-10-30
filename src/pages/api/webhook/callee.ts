@@ -361,10 +361,13 @@ export async function findOrCreateUser(email: string, headers?: Record<string, s
       formData.append("smsAlerts", "false");
       formData.append("role", "Client");
 
-      const createUserResponse = await fetch(`${process.env.SITE_URL}/api/users/upsert`, {
-        method: "POST",
-        body: formData,
-      });
+      const createUserResponse = await fetch(
+        `${process.env.RAILWAY_PUBLIC_DOMAIN}/api/users/upsert`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const createUserResult = await createUserResponse.json();
 

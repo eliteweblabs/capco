@@ -56,7 +56,7 @@ SUPABASE_ANON_KEY=[your-new-dev-service-role-key]
 
 # Make sure these are set
 NODE_ENV=development
-SITE_URL=http://localhost:4321
+RAILWAY_PUBLIC_DOMAIN=http://localhost:4321
 ```
 
 ## Step 5: Copy Database Schema from Production
@@ -267,7 +267,7 @@ echo "SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co" >> .env.production
 echo "SUPABASE_ANON_KEY=[production-anon-key]" >> .env.production
 echo "SUPABASE_ANON_KEY=[production-service-role-key]" >> .env.production
 echo "NODE_ENV=production" >> .env.production
-echo "SITE_URL=https://capcofire.com" >> .env.production
+echo "RAILWAY_PUBLIC_DOMAIN=https://capcofire.com" >> .env.production
 ```
 
 ## Troubleshooting

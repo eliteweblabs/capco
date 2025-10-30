@@ -29,7 +29,7 @@ interface ImportMetaEnv {
   readonly STRIPE_PUBLISHABLE_KEY?: string;
 
   // Company branding
-  readonly GLOBAL_COMPANY_NAME?: string;
+  readonly RAILWAY_PROJECT_NAME?: string;
   readonly GLOBAL_COMPANY_SLOGAN?: string;
   readonly YEAR?: string;
 

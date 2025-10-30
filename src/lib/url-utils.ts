@@ -4,16 +4,16 @@
 
 /**
  * Get the base URL for the current environment
- * Uses SITE_URL environment variable, with request URL fallback for development
+ * Uses RAILWAY_PUBLIC_DOMAIN environment variable, with request URL fallback for development
  */
 export function getBaseUrl(request?: Request): string {
-  // Check for SITE_URL environment variable first
-  if (process.env.SITE_URL) {
-    return process.env.SITE_URL;
+  // Check for RAILWAY_PUBLIC_DOMAIN environment variable first
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    return process.env.RAILWAY_PUBLIC_DOMAIN;
   }
 
-  if (import.meta.env.SITE_URL) {
-    return import.meta.env.SITE_URL;
+  if (import.meta.env.RAILWAY_PUBLIC_DOMAIN) {
+    return import.meta.env.RAILWAY_PUBLIC_DOMAIN;
   }
 
   // Fallback to request URL in development
@@ -22,22 +22,22 @@ export function getBaseUrl(request?: Request): string {
     return `${url.protocol}//${url.host}`;
   }
 
-  // No fallbacks - throw error if SITE_URL is not configured
-  throw new Error("SITE_URL environment variable is required but not set");
+  // No fallbacks - throw error if RAILWAY_PUBLIC_DOMAIN is not configured
+  throw new Error("RAILWAY_PUBLIC_DOMAIN environment variable is required but not set");
 }
 
 /**
  * Get the base URL for API calls
- * Uses SITE_URL environment variable, with request URL fallback for development
+ * Uses RAILWAY_PUBLIC_DOMAIN environment variable, with request URL fallback for development
  */
 export function getApiBaseUrl(request?: Request): string {
-  // Check for SITE_URL environment variable first
-  if (process.env.SITE_URL) {
-    return process.env.SITE_URL;
+  // Check for RAILWAY_PUBLIC_DOMAIN environment variable first
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    return process.env.RAILWAY_PUBLIC_DOMAIN;
   }
 
-  if (import.meta.env.SITE_URL) {
-    return import.meta.env.SITE_URL;
+  if (import.meta.env.RAILWAY_PUBLIC_DOMAIN) {
+    return import.meta.env.RAILWAY_PUBLIC_DOMAIN;
   }
 
   // Fallback to request URL in development
@@ -46,8 +46,8 @@ export function getApiBaseUrl(request?: Request): string {
     return `${url.protocol}//${url.host}`;
   }
 
-  // No fallbacks - throw error if SITE_URL is not configured
-  throw new Error("SITE_URL environment variable is required but not set");
+  // No fallbacks - throw error if RAILWAY_PUBLIC_DOMAIN is not configured
+  throw new Error("RAILWAY_PUBLIC_DOMAIN environment variable is required but not set");
 }
 
 /**

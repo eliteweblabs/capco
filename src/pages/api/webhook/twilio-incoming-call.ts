@@ -62,7 +62,7 @@ export const POST: APIRoute = async ({ request }) => {
       `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice">Hello! This is your AI assistant. How can I help you today?</Say>
-  <Record maxLength="30" action="${import.meta.env.SITE_URL}/api/webhook/twilio-recording" method="POST" />
+  <Record maxLength="30" action="${import.meta.env.RAILWAY_PUBLIC_DOMAIN}/api/webhook/twilio-recording" method="POST" />
 </Response>`,
       {
         status: 200,

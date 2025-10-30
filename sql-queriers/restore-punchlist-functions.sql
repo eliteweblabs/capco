@@ -31,7 +31,7 @@ BEGIN
      -- Insert default punchlist items with incremental timestamps for proper ordering
      INSERT INTO punchlist ("projectId", "authorId", message, internal, "markCompleted", "companyName", "createdAt")
      VALUES 
-     (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Receive CAD files from client / download from <a class="text-primary dark:text-primary-text" href="{{SITE_URL}}/project/{{PROJECT_ID}}?status=documents">Documents</a>', false, false, 'CAPCo Fire', base_time + INTERVAL '1 second'),
+     (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Receive CAD files from client / download from <a class="text-primary dark:text-primary-text" href="{{RAILWAY_PUBLIC_DOMAIN}}/project/{{PROJECT_ID}}?status=documents">Documents</a>', false, false, 'CAPCo Fire', base_time + INTERVAL '1 second'),
      (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Obtain fire hydrant flow test data', false, false, 'CAPCo Fire', base_time + INTERVAL '2 seconds'),
      (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Conduct design kickoff and review scope', false, false, 'CAPCo Fire', base_time + INTERVAL '3 seconds'),
      (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Coordinate with fire alarm designer', false, false, 'CAPCo Fire', base_time + INTERVAL '4 seconds'),
@@ -41,7 +41,7 @@ BEGIN
      (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Add notes and leader callouts', false, false, 'CAPCo Fire', base_time + INTERVAL '8 seconds'),  
      (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Add details and general notes', false, false, 'CAPCo Fire', base_time + INTERVAL '9 seconds'),
      (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Finalize design and apply titleblock', false, false, 'CAPCo Fire', base_time + INTERVAL '10 seconds'),
-     (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Print drawings to PDF for submittal / upload to <a class="text-primary dark:text-primary-text" href="{{SITE_URL}}/project/{{PROJECT_ID}}?status=deliverables">Deliverables</a>', false, false, 'CAPCo Fire', base_time + INTERVAL '11 seconds');
+     (project_id_param, 'bdaaa7d3-469d-4b1b-90d1-978e1be47a17', 'Print drawings to PDF for submittal / upload to <a class="text-primary dark:text-primary-text" href="{{RAILWAY_PUBLIC_DOMAIN}}/project/{{PROJECT_ID}}?status=deliverables">Deliverables</a>', false, false, 'CAPCo Fire', base_time + INTERVAL '11 seconds');
     
     RAISE NOTICE 'Created default punchlist items for project % with author %', project_id_param, project_author_id;
 END;

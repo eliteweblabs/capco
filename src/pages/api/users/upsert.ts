@@ -338,7 +338,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       try {
         apiBaseUrl = getApiBaseUrl();
       } catch (error) {
-        console.warn("⚠️ [USERS-UPSERT] SITE_URL not set, using localhost fallback");
+        console.warn("⚠️ [USERS-UPSERT] RAILWAY_PUBLIC_DOMAIN not set, using localhost fallback");
         apiBaseUrl = "http://localhost:4321";
       }
 

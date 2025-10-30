@@ -7,7 +7,7 @@
 import fetch from "node-fetch";
 
 // Configuration
-const SITE_URL = process.env.SITE_URL || "http://localhost:4321";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321";
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const CAL_API_KEY = process.env.CAL_API_KEY;
 
@@ -71,9 +71,9 @@ async function testWebhookEndpoints() {
   console.log("🧪 Testing webhook endpoints...");
 
   const endpoints = [
-    { name: "Vapi.ai Webhook", url: `${SITE_URL}/api/vapi/webhook` },
-    { name: "Cal.com Webhook", url: `${SITE_URL}/api/cal/webhook` },
-    { name: "Cal Integration", url: `${SITE_URL}/api/vapi/cal-integration` },
+    { name: "Vapi.ai Webhook", url: `${RAILWAY_PUBLIC_DOMAIN}/api/vapi/webhook` },
+    { name: "Cal.com Webhook", url: `${RAILWAY_PUBLIC_DOMAIN}/api/cal/webhook` },
+    { name: "Cal Integration", url: `${RAILWAY_PUBLIC_DOMAIN}/api/vapi/cal-integration` },
   ];
 
   for (const endpoint of endpoints) {
@@ -102,7 +102,7 @@ async function testCalIntegration() {
 
   try {
     // Test reading appointments
-    const response = await fetch(`${SITE_URL}/api/vapi/cal-integration`, {
+    const response = await fetch(`${RAILWAY_PUBLIC_DOMAIN}/api/vapi/cal-integration`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -134,7 +134,7 @@ async function testDatabaseConnection() {
   console.log("🧪 Testing database connection...");
 
   try {
-    const response = await fetch(`${SITE_URL}/api/projects/get`, {
+    const response = await fetch(`${RAILWAY_PUBLIC_DOMAIN}/api/projects/get`, {
       headers: {
         Cookie: "test-auth-cookie", // This will fail auth, but tests endpoint
       },

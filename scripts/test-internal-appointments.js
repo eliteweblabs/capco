@@ -7,7 +7,7 @@
 import fetch from "node-fetch";
 
 // Configuration
-const SITE_URL = process.env.SITE_URL || "http://localhost:4321";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321";
 
 // Test data
 const testAppointment = {
@@ -31,7 +31,7 @@ async function testInternalAppointments() {
   try {
     // Test creating an appointment
     console.log("📝 Creating test appointment...");
-    const createResponse = await fetch(`${SITE_URL}/api/appointments/upsert`, {
+    const createResponse = await fetch(`${RAILWAY_PUBLIC_DOMAIN}/api/appointments/upsert`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -46,7 +46,7 @@ async function testInternalAppointments() {
 
       // Test reading appointments
       console.log("📖 Reading appointments...");
-      const readResponse = await fetch(`${SITE_URL}/api/appointments/get`, {
+      const readResponse = await fetch(`${RAILWAY_PUBLIC_DOMAIN}/api/appointments/get`, {
         headers: {
           // Note: You'll need to add authentication cookies here
         },
@@ -71,7 +71,7 @@ async function testVapiAppointments() {
 
   try {
     // Test Vapi.ai appointment read
-    const vapiResponse = await fetch(`${SITE_URL}/api/vapi/appointments`, {
+    const vapiResponse = await fetch(`${RAILWAY_PUBLIC_DOMAIN}/api/vapi/appointments`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -99,17 +99,20 @@ async function testAvailability() {
 
   try {
     // Test availability API
-    const availabilityResponse = await fetch(`${SITE_URL}/api/appointments/availability`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // Note: You'll need to add authentication cookies here
-      },
-      body: JSON.stringify({
-        date: "2024-12-20", // Test specific date
-        duration: 60,
-      }),
-    });
+    const availabilityResponse = await fetch(
+      `${RAILWAY_PUBLIC_DOMAIN}/api/appointments/availability`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Note: You'll need to add authentication cookies here
+        },
+        body: JSON.stringify({
+          date: "2024-12-20", // Test specific date
+          duration: 60,
+        }),
+      }
+    );
 
     if (availabilityResponse.ok) {
       const availabilityData = await availabilityResponse.json();

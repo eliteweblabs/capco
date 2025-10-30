@@ -21,7 +21,7 @@ echo "🔍 Checking environment variables..."
 # Required environment variables
 check_env_var "VAPI_API_KEY"
 check_env_var "CAL_API_KEY"
-check_env_var "SITE_URL"
+check_env_var "RAILWAY_PUBLIC_DOMAIN"
 check_env_var "SUPABASE_URL"
 check_env_var "SUPABASE_ANON_KEY"
 
@@ -78,7 +78,7 @@ fi
 # Test webhook endpoints
 echo "Testing webhook endpoints..."
 WEBHOOK_TEST_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    "$SITE_URL/api/vapi/webhook")
+    "$RAILWAY_PUBLIC_DOMAIN/api/vapi/webhook")
 
 if [ "$WEBHOOK_TEST_RESPONSE" = "405" ] || [ "$WEBHOOK_TEST_RESPONSE" = "200" ]; then
     echo "✅ Vapi.ai webhook endpoint is accessible"
@@ -87,7 +87,7 @@ else
 fi
 
 CAL_WEBHOOK_TEST_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    "$SITE_URL/api/cal/webhook")
+    "$RAILWAY_PUBLIC_DOMAIN/api/cal/webhook")
 
 if [ "$CAL_WEBHOOK_TEST_RESPONSE" = "405" ] || [ "$CAL_WEBHOOK_TEST_RESPONSE" = "200" ]; then
     echo "✅ Cal.com webhook endpoint is accessible"
@@ -101,7 +101,7 @@ echo ""
 echo "📋 Next steps:"
 echo "1. Configure webhooks in your Cal.com instance:"
 echo "   - Go to https://calcom-web-app-production-0b16.up.railway.app/settings/developer"
-echo "   - Add webhook URL: $SITE_URL/api/cal/webhook"
+echo "   - Add webhook URL: $RAILWAY_PUBLIC_DOMAIN/api/cal/webhook"
 echo "   - Select events: BOOKING_CREATED, BOOKING_RESCHEDULED, BOOKING_CANCELLED, BOOKING_CONFIRMED"
 echo ""
 echo "2. Test the Vapi.ai assistant:"
@@ -121,8 +121,8 @@ echo "🔗 Useful URLs:"
 echo "   - Cal.com: https://calcom-web-app-production-0b16.up.railway.app/"
 echo "   - Vapi.ai Dashboard: https://dashboard.vapi.ai/"
 echo "   - Your webhook endpoints:"
-echo "     - Vapi.ai: $SITE_URL/api/vapi/webhook"
-echo "     - Cal.com: $SITE_URL/api/cal/webhook"
+echo "     - Vapi.ai: $RAILWAY_PUBLIC_DOMAIN/api/vapi/webhook"
+echo "     - Cal.com: $RAILWAY_PUBLIC_DOMAIN/api/cal/webhook"
 echo ""
 echo "📚 Documentation:"
 echo "   - Vapi.ai: https://docs.vapi.ai/"

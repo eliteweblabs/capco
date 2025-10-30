@@ -13,7 +13,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key_here
 SUPABASE_ANON_KEY=your_SUPABASE_ANON_KEY_here
 
 # Site Configuration
-SITE_URL=http://localhost:4321
+RAILWAY_PUBLIC_DOMAIN=http://localhost:4321
 
 # Vapi.ai Configuration (fill in locally; do NOT commit real values)
 VAPI_API_KEY=your_vapi_api_key_here

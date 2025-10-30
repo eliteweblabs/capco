@@ -6,7 +6,7 @@
 
 import fetch from "node-fetch";
 
-const SITE_URL = process.env.SITE_URL || "http://localhost:4321";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321";
 
 async function testAvailability() {
   console.log("\n🧪 Testing availability check...");
@@ -16,7 +16,7 @@ async function testAvailability() {
 
   console.log("📅 Date range:", { dateFrom, dateTo });
 
-  const response = await fetch(`${SITE_URL}/api/vapi/cal-integration`, {
+  const response = await fetch(`${RAILWAY_PUBLIC_DOMAIN}/api/vapi/cal-integration`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -41,7 +41,7 @@ async function testAvailability() {
 async function testBooking(startTime) {
   console.log("\n🧪 Testing booking creation...");
 
-  const response = await fetch(`${SITE_URL}/api/vapi/cal-integration`, {
+  const response = await fetch(`${RAILWAY_PUBLIC_DOMAIN}/api/vapi/cal-integration`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -67,7 +67,7 @@ async function testBooking(startTime) {
 async function main() {
   try {
     console.log("🚀 Starting VAPI booking integration tests...");
-    console.log("🌐 Testing against:", SITE_URL);
+    console.log("🌐 Testing against:", RAILWAY_PUBLIC_DOMAIN);
 
     // Test availability
     const availabilityResult = await testAvailability();

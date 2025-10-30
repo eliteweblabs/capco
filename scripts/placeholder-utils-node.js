@@ -83,11 +83,11 @@ export function replacePlaceholders(message, data = null, addBoldTags = false) {
   }
 
   // === LEGACY PLACEHOLDER REPLACEMENT ===
-  // Replace GLOBAL_COMPANY_NAME placeholders (same as placeholder-utils.ts)
+  // Replace RAILWAY_PROJECT_NAME placeholders (same as placeholder-utils.ts)
   if (globalCompanyData().globalCompanyName) {
     const beforeReplace = result;
     result = result.replace(
-      /\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g,
+      /\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g,
       globalCompanyData().globalCompanyName
     );
     if (result !== beforeReplace) {

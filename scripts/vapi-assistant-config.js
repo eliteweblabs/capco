@@ -42,8 +42,8 @@ import { fileURLToPath } from "url";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 // do not change this url or this script will fail, the web hook url needs to be the live url of the site
-const SITE_URL = "https://capcofire.com";
-const VAPI_WEBHOOK_URL = `${SITE_URL}/api/vapi/webhook`;
+const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
+const VAPI_WEBHOOK_URL = `${RAILWAY_PUBLIC_DOMAIN}/api/vapi/webhook`;
 
 // Process the assistant config to replace placeholders using placeholder-utils.ts
 async function processAssistantConfig(config) {
@@ -88,7 +88,7 @@ async function processAssistantConfig(config) {
 
 // Assistant configuration
 const assistantConfig = {
-  name: "{{GLOBAL_COMPANY_NAME}} Receptionist",
+  name: "{{RAILWAY_PROJECT_NAME}} Receptionist",
   serverUrl: VAPI_WEBHOOK_URL,
   functions: [], // Clear old functions array
   model: {
@@ -99,9 +99,9 @@ const assistantConfig = {
     messages: [
       {
         role: "system",
-        content: `# {{GLOBAL_COMPANY_NAME}} Receptionist
+        content: `# {{RAILWAY_PROJECT_NAME}} Receptionist
 
-You are {{assistant.name}}, a receptionist for {{GLOBAL_COMPANY_NAME}}. We specialize in crafting fire sprinkler and alarm legal documents quickly.
+You are {{assistant.name}}, a receptionist for {{RAILWAY_PROJECT_NAME}}. We specialize in crafting fire sprinkler and alarm legal documents quickly.
 
 ## CRITICAL INSTRUCTIONS - FOLLOW EXACTLY
 
@@ -153,10 +153,10 @@ You are {{assistant.name}}, a receptionist for {{GLOBAL_COMPANY_NAME}}. We speci
     provider: "vapi",
     voiceId: "Kylie",
   },
-  firstMessage: "Thank you for calling {{GLOBAL_COMPANY_NAME}}. How may I assist you today?",
+  firstMessage: "Thank you for calling {{RAILWAY_PROJECT_NAME}}. How may I assist you today?",
   maxDurationSeconds: 300,
   endCallMessage:
-    "Perfect! Thanks for calling {{GLOBAL_COMPANY_NAME}}. We'll see you soon. Have a wonderful day!",
+    "Perfect! Thanks for calling {{RAILWAY_PROJECT_NAME}}. We'll see you soon. Have a wonderful day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "finished", "end call", "hangup"],
   backgroundSound: "office",
   silenceTimeoutSeconds: 15,
@@ -296,9 +296,9 @@ async function main() {
   }
 
   if (!VAPI_WEBHOOK_URL) {
-    console.error("❌ [VAPI-CONFIG] SITE_URL environment variable is required");
-    console.error("❌ [VAPI-CONFIG] Please set SITE_URL in Railway global variables:");
-    console.error("   - SITE_URL=https://capcofire.com");
+    console.error("❌ [VAPI-CONFIG] RAILWAY_PUBLIC_DOMAIN environment variable is required");
+    console.error("❌ [VAPI-CONFIG] Please set RAILWAY_PUBLIC_DOMAIN in Railway global variables:");
+    console.error("   - RAILWAY_PUBLIC_DOMAIN=https://capcofire.com");
     process.exit(1);
   }
 
