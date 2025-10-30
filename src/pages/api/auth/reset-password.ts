@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
+import { ensureProtocol } from "../../../lib/url-utils";
 
 /**
  * Standardized Auth RESET PASSWORD API
@@ -43,9 +44,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Send password reset email
+    const baseUrl = ensureProtocol(import.meta.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
     const { error } = await supabase.auth.resetPasswordForEmail(resetData.email.trim(), {
-      redirectTo:
-        resetData.redirectTo || `${import.meta.env.RAILWAY_PUBLIC_DOMAIN}/auth/reset-password`,
+      redirectTo: resetData.redirectTo || `${baseUrl}/auth/reset-password`,
     });
 
     if (error) {
