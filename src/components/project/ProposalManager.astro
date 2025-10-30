@@ -348,6 +348,13 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   // Define ProposalManager class directly in the script (following working pattern from PDF uploader)
   class ProposalManager {
     constructor(project, currentUser, initialInvoiceId = null, initialExistingInvoice = null) {
+      console.log("🏗️ [PROPOSAL-MANAGER] Constructor called with:");
+      console.log("🏗️ [PROPOSAL-MANAGER] - project:", project);
+      console.log("🏗️ [PROPOSAL-MANAGER] - projectId:", project?.id);
+      console.log("🏗️ [PROPOSAL-MANAGER] - projectStatus:", project?.status);
+      console.log("🏗️ [PROPOSAL-MANAGER] - initialInvoiceId:", initialInvoiceId);
+      console.log("🏗️ [PROPOSAL-MANAGER] - initialExistingInvoice:", initialExistingInvoice);
+      
       this.project = project;
       this.projectId = project.id;
       this.projectAuthor = project.author;
@@ -363,11 +370,18 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       this.existingInvoice = initialExistingInvoice;
       this.saveTimeout = null;
       this.saveBuffer = 1000; // 1 second buffer
+      
+      console.log("🏗️ [PROPOSAL-MANAGER] Constructor completed with:");
+      console.log("🏗️ [PROPOSAL-MANAGER] - this.invoiceId:", this.invoiceId);
+      console.log("🏗️ [PROPOSAL-MANAGER] - this.existingInvoice:", this.existingInvoice);
+      console.log("🏗️ [PROPOSAL-MANAGER] - this.projectStatus:", this.projectStatus);
     }
 
     async buildProposal() {
       console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.project);
       console.log("🔧 [PROPOSAL-MANAGER] Current invoiceId:", this.invoiceId);
+      console.log("🔧 [PROPOSAL-MANAGER] Current existingInvoice:", this.existingInvoice);
+      console.log("🔧 [PROPOSAL-MANAGER] Current projectStatus:", this.projectStatus);
 
       if (!this.project) {
         console.error("Project data not available");
@@ -378,13 +392,16 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       const placeholder = document.getElementById("proposal-placeholder");
       const content = document.getElementById("proposal-content");
 
+      console.log("🔧 [PROPOSAL-MANAGER] Hiding placeholder, showing content");
       if (placeholder) placeholder.style.display = "none";
       if (content) content.style.display = "block";
 
       // Initialize proposal form with project data (handles loading existing or defaults)
+      console.log("🔧 [PROPOSAL-MANAGER] Calling initializeProposalForm...");
       this.initializeProposalForm();
 
       // Initialize autocomplete functionality
+      console.log("🔧 [PROPOSAL-MANAGER] Calling initializeAutocomplete...");
       this.initializeAutocomplete();
 
       // Ensure totals are calculated after everything is loaded
@@ -583,8 +600,11 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
     initializeProposalForm() {
       console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal form...");
+      console.log("🔧 [PROPOSAL-MANAGER] this.existingInvoice:", this.existingInvoice);
+      console.log("🔧 [PROPOSAL-MANAGER] this.invoiceId:", this.invoiceId);
 
       // Load invoice data if it exists (from upsert)
+      console.log("🔧 [PROPOSAL-MANAGER] Calling loadInvoiceData...");
       this.loadInvoiceData();
 
       // Check if we have valid line items
@@ -595,21 +615,28 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
       console.log("🔍 [PROPOSAL-MANAGER] cachedLineItems:", this.cachedLineItems);
+      console.log("🔍 [PROPOSAL-MANAGER] cachedLineItems length:", this.cachedLineItems?.length);
 
       if (!hasValidLineItems) {
         console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
         this.initializeDefaultLineItems();
         // Save the defaults to database
+        console.log("🔍 [PROPOSAL-MANAGER] Saving defaults to database...");
         this.saveToDatabase();
+      } else {
+        console.log("🔍 [PROPOSAL-MANAGER] Valid line items found, using existing data");
       }
 
       // Render the line items to the DOM
+      console.log("🔧 [PROPOSAL-MANAGER] Calling renderLineItems...");
       this.renderLineItems();
+      console.log("🔧 [PROPOSAL-MANAGER] Calling updateProposalTotal...");
       updateProposalTotal();
     }
 
     loadInvoiceData() {
       console.log("🔍 [PROPOSAL-MANAGER] Loading invoice data...");
+      console.log("🔍 [PROPOSAL-MANAGER] this.existingInvoice:", this.existingInvoice);
       
       if (!this.existingInvoice) {
         console.log("🔍 [PROPOSAL-MANAGER] No existing invoice data");
@@ -618,18 +645,29 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       console.log("🔍 [PROPOSAL-MANAGER] Loading from existing invoice:", this.existingInvoice);
       console.log("🔍 [PROPOSAL-MANAGER] Invoice catalogLineItems:", this.existingInvoice.catalogLineItems);
+      console.log("🔍 [PROPOSAL-MANAGER] Invoice catalogLineItems type:", typeof this.existingInvoice.catalogLineItems);
+      console.log("🔍 [PROPOSAL-MANAGER] Invoice catalogLineItems length:", this.existingInvoice.catalogLineItems?.length);
 
       // Load line items from the existing invoice
       if (this.existingInvoice.catalogLineItems && this.existingInvoice.catalogLineItems.length > 0) {
-        this.cachedLineItems = this.existingInvoice.catalogLineItems.map((item) => ({
-          name: item.name || item.description || "Fire Protection Service", // Use description as name if name not available
-          description: item.description || "",
-          quantity: item.quantity || 1,
-          unitPrice: item.unitPrice || 0,
-          catalogItemId: item.catalogItemId || null,
-        }));
+        console.log("🔍 [PROPOSAL-MANAGER] Processing catalogLineItems...");
+        this.cachedLineItems = this.existingInvoice.catalogLineItems.map((item, index) => {
+          console.log(`🔍 [PROPOSAL-MANAGER] Processing item ${index}:`, item);
+          const mappedItem = {
+            name: item.name || item.description || "Fire Protection Service", // Use description as name if name not available
+            description: item.description || "",
+            quantity: item.quantity || 1,
+            unitPrice: item.unitPrice || 0,
+            catalogItemId: item.catalogItemId || null,
+          };
+          console.log(`🔍 [PROPOSAL-MANAGER] Mapped item ${index}:`, mappedItem);
+          return mappedItem;
+        });
         console.log("✅ [PROPOSAL-MANAGER] Loaded line items from invoice:", this.cachedLineItems.length);
-        console.log("✅ [PROPOSAL-MANAGER] Mapped line items:", this.cachedLineItems);
+        console.log("✅ [PROPOSAL-MANAGER] Final mapped line items:", this.cachedLineItems);
+      } else {
+        console.log("🔍 [PROPOSAL-MANAGER] No catalogLineItems found in invoice");
+        console.log("🔍 [PROPOSAL-MANAGER] catalogLineItems value:", this.existingInvoice.catalogLineItems);
       }
 
       // Load subject from invoice
@@ -717,18 +755,31 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     }
 
     renderLineItems() {
+      console.log("🎨 [PROPOSAL-MANAGER] renderLineItems called");
+      console.log("🎨 [PROPOSAL-MANAGER] this.cachedLineItems:", this.cachedLineItems);
+      console.log("🎨 [PROPOSAL-MANAGER] this.cachedLineItems length:", this.cachedLineItems?.length);
+      console.log("🎨 [PROPOSAL-MANAGER] this.projectStatus:", this.projectStatus);
+      console.log("🎨 [PROPOSAL-MANAGER] typeof this.projectStatus:", typeof this.projectStatus);
+      
       const tbody = document.getElementById("proposal-line-items");
+      console.log("🎨 [PROPOSAL-MANAGER] tbody element:", tbody);
 
       if (!tbody) {
+        console.error("❌ [PROPOSAL-MANAGER] tbody element not found!");
         debugger;
-
         return;
       }
 
       tbody.innerHTML = "";
+      console.log("🎨 [PROPOSAL-MANAGER] Cleared tbody innerHTML");
 
       // Render each line item
-      (this.cachedLineItems || []).forEach((item, index) => {
+      const itemsToRender = this.cachedLineItems || [];
+      console.log("🎨 [PROPOSAL-MANAGER] Items to render:", itemsToRender);
+      console.log("🎨 [PROPOSAL-MANAGER] Items to render length:", itemsToRender.length);
+      
+      itemsToRender.forEach((item, index) => {
+        console.log(`🎨 [PROPOSAL-MANAGER] Rendering item ${index}:`, item);
         const row = document.createElement("tr");
         row.className = "proposal-line-item-row";
 
@@ -786,27 +837,28 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       });
 
       // Add the "Add Line Item" button row
-      console.log(
-        "🔍 [PROPOSAL-MANAGER] Checking projectStatus for Add Line Item button:",
-        this.projectStatus,
-        "Type:",
-        typeof this.projectStatus
-      );
+      console.log("🎨 [PROPOSAL-MANAGER] Checking projectStatus for Add Line Item button:");
+      console.log("🎨 [PROPOSAL-MANAGER] - this.projectStatus:", this.projectStatus);
+      console.log("🎨 [PROPOSAL-MANAGER] - typeof this.projectStatus:", typeof this.projectStatus);
+      console.log("🎨 [PROPOSAL-MANAGER] - Number(this.projectStatus):", Number(this.projectStatus));
       
       // For now, show the button for all statuses >= 20 (we can restrict later)
       const canEdit = Number(this.projectStatus) >= 20;
-      console.log("🔍 [PROPOSAL-MANAGER] Can edit:", canEdit);
+      console.log("🎨 [PROPOSAL-MANAGER] Can edit (projectStatus >= 20):", canEdit);
       
-      if (canEdit && !document.querySelector("#add-row-btn")) {
-        console.log("🔍 [PROPOSAL-MANAGER] Adding Add Line Item button");
+      const existingButton = document.querySelector("#add-row-btn");
+      console.log("🎨 [PROPOSAL-MANAGER] Existing Add Line Item button:", existingButton);
+      
+      if (canEdit && !existingButton) {
+        console.log("🎨 [PROPOSAL-MANAGER] Adding Add Line Item button");
         this.addLineItemButton(tbody);
       } else if (!canEdit) {
         console.log(
-          "🔍 [PROPOSAL-MANAGER] Not adding Add Line Item button - projectStatus is not >= 20, current status:",
+          "🎨 [PROPOSAL-MANAGER] Not adding Add Line Item button - projectStatus is not >= 20, current status:",
           this.projectStatus
         );
       } else {
-        console.log("🔍 [PROPOSAL-MANAGER] Add Line Item button already exists");
+        console.log("🎨 [PROPOSAL-MANAGER] Add Line Item button already exists");
       }
     }
 

@@ -33,31 +33,49 @@ const clientName = project?.authorProfile?.companyName;
 let existingInvoice: any = null;
 let invoiceId: any = null;
 
+console.log("🔍 [TAB-PROPOSAL SSR] Starting SSR for projectId:", projectId);
+console.log("🔍 [TAB-PROPOSAL SSR] projectStatus:", projectStatus);
+console.log("🔍 [TAB-PROPOSAL SSR] currentUser role:", currentUser?.profile?.role);
+
 try {
   const baseUrl = Astro.url.origin;
+  console.log("🔍 [TAB-PROPOSAL SSR] Making upsert request to:", `${baseUrl}/api/proposal/upsert`);
+  console.log("🔍 [TAB-PROPOSAL SSR] Request body:", { projectId: projectId });
+  
   const response = await fetch(`${baseUrl}/api/proposal/upsert`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Cookie": Astro.request.headers.get("cookie") || "",
+      Cookie: Astro.request.headers.get("cookie") || "",
     },
     body: JSON.stringify({
       projectId: projectId,
     }),
   });
 
+  console.log("🔍 [TAB-PROPOSAL SSR] Response status:", response.status);
+  console.log("🔍 [TAB-PROPOSAL SSR] Response ok:", response.ok);
+
   const data = await response.json();
+  console.log("🔍 [TAB-PROPOSAL SSR] Response data:", data);
 
   if (data.success && data.invoice) {
     existingInvoice = data.invoice;
     invoiceId = data.invoice.id;
-    console.log("✅ [ProposalManager SSR] Upserted invoice via API:", invoiceId);
+    console.log("✅ [TAB-PROPOSAL SSR] Successfully upserted invoice:", invoiceId);
+    console.log("🔍 [TAB-PROPOSAL SSR] Invoice data:", existingInvoice);
+    console.log("🔍 [TAB-PROPOSAL SSR] Invoice catalogLineItems:", existingInvoice?.catalogLineItems);
+    console.log("🔍 [TAB-PROPOSAL SSR] Invoice catalogLineItems length:", existingInvoice?.catalogLineItems?.length);
   } else {
-    console.error("❌ [ProposalManager SSR] Failed to upsert invoice:", data.error);
+    console.error("❌ [TAB-PROPOSAL SSR] Failed to upsert invoice:", data.error);
+    console.error("❌ [TAB-PROPOSAL SSR] Full response data:", data);
   }
 } catch (error) {
-  console.error("❌ [ProposalManager SSR] Error upserting invoice via API:", error);
+  console.error("❌ [TAB-PROPOSAL SSR] Error upserting invoice via API:", error);
 }
+
+console.log("🔍 [TAB-PROPOSAL SSR] Final existingInvoice:", existingInvoice);
+console.log("🔍 [TAB-PROPOSAL SSR] Final invoiceId:", invoiceId);
 
 function getStatusAlert() {
   // Client status messages
