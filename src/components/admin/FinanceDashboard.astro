@@ -20,36 +20,52 @@ let financialData = {
   totalSqFt: 0,
   monthlyRevenue: [],
   recentInvoices: [],
-  projectRevenue: []
+  projectRevenue: [],
 };
 
 if (currentUser?.id) {
   try {
     const baseUrl = Astro.url.origin;
-    
+
     // Fetch financial overview
-    const overviewResponse = await fetch(`${baseUrl}/api/finance/overview`);
+    const overviewResponse = await fetch(`${baseUrl}/api/finance/overview`, {
+      headers: {
+        Cookie: Astro.request.headers.get("cookie") || "",
+      },
+    });
     if (overviewResponse.ok) {
       const overviewData = await overviewResponse.json();
       financialData = { ...financialData, ...overviewData };
     }
-    
+
     // Fetch monthly revenue data
-    const monthlyResponse = await fetch(`${baseUrl}/api/finance/monthly-revenue`);
+    const monthlyResponse = await fetch(`${baseUrl}/api/finance/monthly-revenue`, {
+      headers: {
+        Cookie: Astro.request.headers.get("cookie") || "",
+      },
+    });
     if (monthlyResponse.ok) {
       const monthlyData = await monthlyResponse.json();
       financialData.monthlyRevenue = monthlyData;
     }
-    
+
     // Fetch recent invoices
-    const invoicesResponse = await fetch(`${baseUrl}/api/finance/recent-invoices`);
+    const invoicesResponse = await fetch(`${baseUrl}/api/finance/recent-invoices`, {
+      headers: {
+        Cookie: Astro.request.headers.get("cookie") || "",
+      },
+    });
     if (invoicesResponse.ok) {
       const invoicesData = await invoicesResponse.json();
       financialData.recentInvoices = invoicesData;
     }
-    
+
     // Fetch project revenue
-    const projectResponse = await fetch(`${baseUrl}/api/finance/project-revenue`);
+    const projectResponse = await fetch(`${baseUrl}/api/finance/project-revenue`, {
+      headers: {
+        Cookie: Astro.request.headers.get("cookie") || "",
+      },
+    });
     if (projectResponse.ok) {
       const projectData = await projectResponse.json();
       financialData.projectRevenue = projectData;
@@ -60,14 +76,14 @@ if (currentUser?.id) {
 }
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(amount);
 };
 
 const formatNumber = (num: number) => {
-  return new Intl.NumberFormat('en-US').format(num);
+  return new Intl.NumberFormat("en-US").format(num);
 };
 ---
 
@@ -75,69 +91,132 @@ const formatNumber = (num: number) => {
   <!-- Key Metrics Cards -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     <!-- Total Revenue -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-md flex items-center justify-center">
-            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+          <div
+            class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-md flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-green-600 dark:text-green-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+              ></path>
             </svg>
           </div>
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{formatCurrency(financialData.totalRevenue)}</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {formatCurrency(financialData.totalRevenue)}
+          </p>
         </div>
       </div>
     </div>
 
     <!-- Total Invoices -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-md flex items-center justify-center">
-            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          <div
+            class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-md flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-blue-600 dark:text-blue-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              ></path>
             </svg>
           </div>
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Invoices</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{formatNumber(financialData.totalInvoices)}</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {formatNumber(financialData.totalInvoices)}
+          </p>
         </div>
       </div>
     </div>
 
     <!-- Paid Invoices -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-md flex items-center justify-center">
-            <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          <div
+            class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-md flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-emerald-600 dark:text-emerald-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Paid Invoices</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{formatNumber(financialData.paidInvoices)}</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {formatNumber(financialData.paidInvoices)}
+          </p>
         </div>
       </div>
     </div>
 
     <!-- Active Projects -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-md flex items-center justify-center">
-            <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+          <div
+            class="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-md flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-purple-600 dark:text-purple-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              ></path>
             </svg>
           </div>
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{formatNumber(financialData.activeProjects)}</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {formatNumber(financialData.activeProjects)}
+          </p>
         </div>
       </div>
     </div>
@@ -146,12 +225,20 @@ const formatNumber = (num: number) => {
   <!-- Charts Row -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Monthly Revenue Chart -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Monthly Revenue</h3>
         <div class="flex space-x-2">
-          <button class="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">6M</button>
-          <button class="px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900 rounded-md">12M</button>
+          <button
+            class="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+            >6M</button
+          >
+          <button
+            class="px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900 rounded-md"
+            >12M</button
+          >
         </div>
       </div>
       <div class="h-64">
@@ -160,7 +247,9 @@ const formatNumber = (num: number) => {
     </div>
 
     <!-- Invoice Status Chart -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Invoice Status</h3>
       </div>
@@ -173,63 +262,100 @@ const formatNumber = (num: number) => {
   <!-- Recent Transactions and Project Revenue -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Recent Invoices -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"
+    >
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Invoices</h3>
       </div>
       <div class="divide-y divide-gray-200 dark:divide-gray-700">
-        {financialData.recentInvoices.slice(0, 5).map((invoice: any) => (
-          <div class="px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <div class={`w-2 h-2 rounded-full ${
-                  invoice.status === 'paid' ? 'bg-green-400' :
-                  invoice.status === 'sent' ? 'bg-blue-400' :
-                  invoice.status === 'overdue' ? 'bg-red-400' :
-                  'bg-gray-400'
-                }`}></div>
+        {
+          financialData.recentInvoices.slice(0, 5).map((invoice: any) => (
+            <div class="px-6 py-4 flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div
+                    class={`w-2 h-2 rounded-full ${
+                      invoice.status === "paid"
+                        ? "bg-green-400"
+                        : invoice.status === "sent"
+                          ? "bg-blue-400"
+                          : invoice.status === "overdue"
+                            ? "bg-red-400"
+                            : "bg-gray-400"
+                    }`}
+                  />
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    {invoice.subject || "Untitled Invoice"}
+                  </p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Project #{invoice.projectId}
+                  </p>
+                </div>
               </div>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{invoice.subject || 'Untitled Invoice'}</p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Project #{invoice.projectId}</p>
+              <div class="text-right">
+                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  {formatCurrency(invoice.totalAmount || 0)}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {new Date(invoice.createdAt).toLocaleDateString()}
+                </p>
               </div>
             </div>
-            <div class="text-right">
-              <p class="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(invoice.totalAmount || 0)}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{new Date(invoice.createdAt).toLocaleDateString()}</p>
-            </div>
-          </div>
-        ))}
+          ))
+        }
       </div>
     </div>
 
     <!-- Project Revenue -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"
+    >
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Project Revenue</h3>
       </div>
       <div class="divide-y divide-gray-200 dark:divide-gray-700">
-        {financialData.projectRevenue.slice(0, 5).map((project: any) => (
-          <div class="px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-md flex items-center justify-center">
-                  <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                  </svg>
+        {
+          financialData.projectRevenue.slice(0, 5).map((project: any) => (
+            <div class="px-6 py-4 flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-md flex items-center justify-center">
+                    <svg
+                      class="w-4 h-4 text-blue-600 dark:text-blue-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">{project.title}</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {formatNumber(project.sqFt)} sq ft
+                  </p>
                 </div>
               </div>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{project.title}</p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">{formatNumber(project.sqFt)} sq ft</p>
+              <div class="text-right">
+                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  {formatCurrency(project.totalRevenue || 0)}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {project.invoiceCount} invoices
+                </p>
               </div>
             </div>
-            <div class="text-right">
-              <p class="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(project.totalRevenue || 0)}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{project.invoiceCount} invoices</p>
-            </div>
-          </div>
-        ))}
+          ))
+        }
       </div>
     </div>
   </div>
@@ -237,52 +363,105 @@ const formatNumber = (num: number) => {
   <!-- Additional Stats Row -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <!-- Outstanding Payments -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-md flex items-center justify-center">
-            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <div
+            class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-md flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-yellow-600 dark:text-yellow-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Outstanding</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{formatNumber(financialData.totalInvoices - financialData.paidInvoices)}</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {formatNumber(financialData.totalInvoices - financialData.paidInvoices)}
+          </p>
         </div>
       </div>
     </div>
 
     <!-- Average Invoice -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-md flex items-center justify-center">
-            <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          <div
+            class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-md flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-indigo-600 dark:text-indigo-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              ></path>
             </svg>
           </div>
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Invoice</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{formatCurrency(financialData.totalInvoices > 0 ? financialData.totalRevenue / financialData.totalInvoices : 0)}</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {
+              formatCurrency(
+                financialData.totalInvoices > 0
+                  ? financialData.totalRevenue / financialData.totalInvoices
+                  : 0
+              )
+            }
+          </p>
         </div>
       </div>
     </div>
 
     <!-- Total Sq Ft -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-pink-100 dark:bg-pink-900 rounded-md flex items-center justify-center">
-            <svg class="w-5 h-5 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+          <div
+            class="w-8 h-8 bg-pink-100 dark:bg-pink-900 rounded-md flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-pink-600 dark:text-pink-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              ></path>
             </svg>
           </div>
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Sq Ft</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{formatNumber(financialData.totalSqFt)}</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {formatNumber(financialData.totalSqFt)}
+          </p>
         </div>
       </div>
     </div>
@@ -293,81 +472,87 @@ const formatNumber = (num: number) => {
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script define:vars={{ financialData }}>
   // Wait for DOM to be ready
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener("DOMContentLoaded", function () {
     // Monthly Revenue Chart
-    const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart');
-    if (monthlyRevenueCtx && typeof Chart !== 'undefined') {
+    const monthlyRevenueCtx = document.getElementById("monthlyRevenueChart");
+    if (monthlyRevenueCtx && typeof Chart !== "undefined") {
       const monthlyData = financialData.monthlyRevenue;
       new Chart(monthlyRevenueCtx, {
-        type: 'line',
+        type: "line",
         data: {
-          labels: monthlyData.map((item) => new Date(item.month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })),
-          datasets: [{
-            label: 'Revenue',
-            data: monthlyData.map((item) => parseFloat(item.monthly_revenue) || 0),
-            borderColor: 'rgb(59, 130, 246)',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            tension: 0.4,
-            fill: true
-          }]
+          labels: monthlyData.map((item) =>
+            new Date(item.month).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+          ),
+          datasets: [
+            {
+              label: "Revenue",
+              data: monthlyData.map((item) => parseFloat(item.monthly_revenue) || 0),
+              borderColor: "rgb(59, 130, 246)",
+              backgroundColor: "rgba(59, 130, 246, 0.1)",
+              tension: 0.4,
+              fill: true,
+            },
+          ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              display: false
-            }
+              display: false,
+            },
           },
           scales: {
             y: {
               beginAtZero: true,
               ticks: {
-                callback: function(value) {
-                  return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    minimumFractionDigits: 0
+                callback: function (value) {
+                  return new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                    minimumFractionDigits: 0,
                   }).format(value);
-                }
-              }
-            }
-          }
-        }
+                },
+              },
+            },
+          },
+        },
       });
     }
 
     // Invoice Status Chart
-    const invoiceStatusCtx = document.getElementById('invoiceStatusChart');
-    if (invoiceStatusCtx && typeof Chart !== 'undefined') {
+    const invoiceStatusCtx = document.getElementById("invoiceStatusChart");
+    if (invoiceStatusCtx && typeof Chart !== "undefined") {
       new Chart(invoiceStatusCtx, {
-        type: 'doughnut',
+        type: "doughnut",
         data: {
-          labels: ['Paid', 'Draft', 'Sent', 'Overdue'],
-          datasets: [{
-            data: [
-              financialData.paidInvoices,
-              financialData.draftInvoices,
-              financialData.sentInvoices || 0,
-              financialData.overdueInvoices || 0
-            ],
-            backgroundColor: [
-              'rgb(34, 197, 94)',
-              'rgb(107, 114, 128)',
-              'rgb(59, 130, 246)',
-              'rgb(239, 68, 68)'
-            ]
-          }]
+          labels: ["Paid", "Draft", "Sent", "Overdue"],
+          datasets: [
+            {
+              data: [
+                financialData.paidInvoices,
+                financialData.draftInvoices,
+                financialData.sentInvoices || 0,
+                financialData.overdueInvoices || 0,
+              ],
+              backgroundColor: [
+                "rgb(34, 197, 94)",
+                "rgb(107, 114, 128)",
+                "rgb(59, 130, 246)",
+                "rgb(239, 68, 68)",
+              ],
+            },
+          ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              position: 'bottom'
-            }
-          }
-        }
+              position: "bottom",
+            },
+          },
+        },
       });
     }
   });

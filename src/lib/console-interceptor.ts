@@ -30,7 +30,11 @@ export function truncateConsoleLogs(): void {
   const originalDebug = console.debug;
   const originalInfo = console.info;
 
-  const truncateMessage = (message: string, maxLines: number = 10, maxWords: number = 50): string => {
+  const truncateMessage = (
+    message: string,
+    maxLines: number = 10,
+    maxWords: number = 50
+  ): string => {
     // First check word count
     const words = message.split(/\s+/);
     if (words.length > maxWords) {
@@ -38,7 +42,7 @@ export function truncateConsoleLogs(): void {
       const remainingWords = words.length - maxWords;
       return firstWords + ` ... [truncated ${remainingWords} words]`;
     }
-    
+
     // Then check line count
     const lines = message.split("\n");
     if (lines.length <= maxLines) return message;
@@ -56,7 +60,11 @@ export function truncateConsoleLogs(): void {
         try {
           const stringified = JSON.stringify(arg);
           const words = stringified.split(/\s+/);
-          if (stringified.split("\n").length > 10 || stringified.length > 200 || words.length > 50) {
+          if (
+            stringified.split("\n").length > 10 ||
+            stringified.length > 200 ||
+            words.length > 50
+          ) {
             return truncateMessage(stringified);
           }
           return arg;
@@ -78,7 +86,11 @@ export function truncateConsoleLogs(): void {
         try {
           const stringified = JSON.stringify(arg);
           const words = stringified.split(/\s+/);
-          if (stringified.split("\n").length > 10 || stringified.length > 200 || words.length > 50) {
+          if (
+            stringified.split("\n").length > 10 ||
+            stringified.length > 200 ||
+            words.length > 50
+          ) {
             return truncateMessage(stringified);
           }
           return arg;
@@ -100,7 +112,11 @@ export function truncateConsoleLogs(): void {
         try {
           const stringified = JSON.stringify(arg);
           const words = stringified.split(/\s+/);
-          if (stringified.split("\n").length > 10 || stringified.length > 200 || words.length > 50) {
+          if (
+            stringified.split("\n").length > 10 ||
+            stringified.length > 200 ||
+            words.length > 50
+          ) {
             return truncateMessage(stringified);
           }
           return arg;
@@ -157,7 +173,7 @@ export function setupConsoleInterceptor(): void {
   if (isProduction) {
     // Store original console.log
     const originalLog = console.log;
-    
+
     // Override with selective filter - allow [---] prefixed logs
     console.log = (...args: any[]) => {
       const message = args.join(" ");
@@ -167,7 +183,7 @@ export function setupConsoleInterceptor(): void {
       }
       // Otherwise, suppress the log
     };
-    
+
     if (isServer) {
       console.warn("🔇 [SERVER] Console.log disabled in production (except [---] prefixed logs)");
     } else {

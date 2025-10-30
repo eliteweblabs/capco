@@ -1,6 +1,6 @@
 /**
  * API Response Optimization Utilities
- * 
+ *
  * Standardized response helpers for consistent API responses across the application
  */
 
@@ -70,7 +70,12 @@ export function createValidationErrorResponse(
   errors: Record<string, string[]>,
   status: number = 422
 ): Response {
-  return createErrorResponse("Validation failed", status, { validation: errors }, "VALIDATION_ERROR");
+  return createErrorResponse(
+    "Validation failed",
+    status,
+    { validation: errors },
+    "VALIDATION_ERROR"
+  );
 }
 
 /**
@@ -83,7 +88,9 @@ export function createAuthErrorResponse(message: string = "Authentication requir
 /**
  * Creates a standardized authorization error response
  */
-export function createAuthorizationErrorResponse(message: string = "Insufficient permissions"): Response {
+export function createAuthorizationErrorResponse(
+  message: string = "Insufficient permissions"
+): Response {
   return createErrorResponse(message, 403, undefined, "AUTHORIZATION_ERROR");
 }
 
@@ -208,8 +215,8 @@ export function validateRequiredFields(
   body: Record<string, any>,
   requiredFields: string[]
 ): { isValid: boolean; missingFields: string[] } {
-  const missingFields = requiredFields.filter(field => 
-    body[field] === undefined || body[field] === null || body[field] === ""
+  const missingFields = requiredFields.filter(
+    (field) => body[field] === undefined || body[field] === null || body[field] === ""
   );
 
   return {

@@ -164,5 +164,6 @@ declare global {
 
     // Partials
     createButtonPartial?: (config: any) => Promise<HTMLElement | null>;
+    createSimpleIconPartial?: (config: any) => Promise<string | null>;
   }
 }

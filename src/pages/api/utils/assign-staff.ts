@@ -36,7 +36,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Validate assignedToId is a valid UUID string or null
     if (assignedToId !== null && assignedToId !== undefined && typeof assignedToId !== "string") {
-      console.error("📧 [ASSIGN-STAFF] Invalid assignedToId type:", typeof assignedToId, assignedToId);
+      console.error(
+        "📧 [ASSIGN-STAFF] Invalid assignedToId type:",
+        typeof assignedToId,
+        assignedToId
+      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -50,7 +54,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Validate UUID format if provided
-    if (assignedToId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assignedToId)) {
+    if (
+      assignedToId &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assignedToId)
+    ) {
       console.error("📧 [ASSIGN-STAFF] Invalid UUID format:", assignedToId);
       return new Response(
         JSON.stringify({
@@ -162,7 +169,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           const adminResponse = await fetch(`${baseUrl}/api/users/get?role=Admin`, {
             method: "GET",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              Cookie: request.headers.get("cookie") || "",
+            },
           });
 
           let adminEmails = [];
@@ -195,6 +205,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
+                Cookie: request.headers.get("cookie") || "",
               },
               body: JSON.stringify(staffEmailData),
             });

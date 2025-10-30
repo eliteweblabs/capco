@@ -33,7 +33,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       const userInfoResponse = await fetch(
         `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${googleAccessToken}`
       );
-      
+
       if (!userInfoResponse.ok) {
         console.error("📞 [GOOGLE-CONTACTS] Token validation failed:", userInfoResponse.status);
         return new Response(
@@ -52,10 +52,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           }
         );
       }
-      
+
       const userInfo = await userInfoResponse.json();
       console.log("📞 [GOOGLE-CONTACTS] Token valid for user:", userInfo.email);
-      
+
       // Check token info to see granted scopes
       try {
         const tokenInfoResponse = await fetch(
@@ -98,14 +98,14 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     );
     googleApiUrl.searchParams.set("pageSize", "1000");
 
-    if (searchQuery) {
-      googleApiUrl.searchParams.set("query", searchQuery);
-    }
+    // Note: Google People API doesn't support query parameter in the way we're using it
+    // We'll fetch all contacts and filter them client-side
+    console.log("📞 [GOOGLE-CONTACTS] Will filter contacts client-side for query:", searchQuery);
 
     // Make the request to Google People API
     console.log("📞 [GOOGLE-CONTACTS] Making request to:", googleApiUrl.toString());
     console.log("📞 [GOOGLE-CONTACTS] Using token:", googleAccessToken.substring(0, 20) + "...");
-    
+
     const response = await fetch(googleApiUrl.toString(), {
       method: "GET",
       headers: {
@@ -280,11 +280,41 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     console.log("📞 [GOOGLE-CONTACTS] Transformed contacts:", contacts.length);
 
+    // Filter contacts client-side if search query is provided
+    let filteredContacts = contacts;
+    if (searchQuery && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filteredContacts = contacts.filter((contact) => {
+        const searchableText = [
+          contact.name,
+          contact.email,
+          contact.phone,
+          contact.organization,
+          contact.firstName,
+          contact.lastName,
+          contact.company,
+          contact.jobTitle,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(query);
+      });
+      console.log(
+        "📞 [GOOGLE-CONTACTS] Filtered contacts for query:",
+        query,
+        "Results:",
+        filteredContacts.length
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        contacts: contacts,
-        total: contacts.length,
+        contacts: filteredContacts,
+        total: filteredContacts.length,
+        originalTotal: contacts.length,
       }),
       {
         status: 200,
