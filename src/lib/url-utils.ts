@@ -8,12 +8,14 @@
  */
 export function getBaseUrl(request?: Request): string {
   // Check for RAILWAY_PUBLIC_DOMAIN environment variable first
-  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
-    return process.env.RAILWAY_PUBLIC_DOMAIN;
-  }
-
-  if (import.meta.env.RAILWAY_PUBLIC_DOMAIN) {
-    return import.meta.env.RAILWAY_PUBLIC_DOMAIN;
+  let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
+  
+  if (baseUrl) {
+    // Ensure baseUrl has proper protocol
+    if (!baseUrl.startsWith('http')) {
+      baseUrl = `https://${baseUrl}`;
+    }
+    return baseUrl;
   }
 
   // Fallback to request URL in development
@@ -32,12 +34,14 @@ export function getBaseUrl(request?: Request): string {
  */
 export function getApiBaseUrl(request?: Request): string {
   // Check for RAILWAY_PUBLIC_DOMAIN environment variable first
-  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
-    return process.env.RAILWAY_PUBLIC_DOMAIN;
-  }
-
-  if (import.meta.env.RAILWAY_PUBLIC_DOMAIN) {
-    return import.meta.env.RAILWAY_PUBLIC_DOMAIN;
+  let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
+  
+  if (baseUrl) {
+    // Ensure baseUrl has proper protocol
+    if (!baseUrl.startsWith('http')) {
+      baseUrl = `https://${baseUrl}`;
+    }
+    return baseUrl;
   }
 
   // Fallback to request URL in development
