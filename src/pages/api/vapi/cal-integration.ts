@@ -114,83 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (action) {
       case "get_account_info":
-        // Generate next 10 available time slots (M-F, 9 AM - 5 PM UTC)
-        const slots: string[] = [];
-        const now = new Date();
-        let currentDate = new Date(
-          Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-        );
-
-        while (slots.length < 10) {
-          const dayOfWeek = currentDate.getUTCDay();
-
-          // Skip weekends
-          if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-            // Generate slots for 9 AM - 5 PM (every hour)
-            for (let hour = 9; hour < 17 && slots.length < 10; hour++) {
-              const slotTime = new Date(
-                Date.UTC(
-                  currentDate.getUTCFullYear(),
-                  currentDate.getUTCMonth(),
-                  currentDate.getUTCDate(),
-                  hour,
-                  0,
-                  0
-                )
-              );
-
-              // Only include future slots
-              if (slotTime > now) {
-                slots.push(slotTime.toISOString());
-              }
-            }
-          }
-
-          // Move to next day
-          currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-        }
-
-        // Format slots for speech - group by day for natural reading
-        let slotsList = "";
-        let lastDay = "";
-
-        slots.forEach((slot, index) => {
-          const date = new Date(slot);
-          const dayKey = date.toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            timeZone: "UTC",
-          });
-          const timeOnly = date.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            timeZone: "UTC",
-          });
-
-          if (dayKey !== lastDay) {
-            // New day - include full date
-            if (index > 0) slotsList += ", ";
-            slotsList += `${dayKey} at ${timeOnly}`;
-            lastDay = dayKey;
-          } else {
-            // Same day - just add time
-            slotsList += `, ${timeOnly}`;
-          }
-        });
-
-        return new Response(
-          JSON.stringify({
-            result: `Our next available appointments are ${slotsList}. Would you like to book one of these times?`,
-            data: {
-              slots,
-            },
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        return await handleGetAccountInfo();
 
       case "get_users":
         return await handleGetUsers();
@@ -401,37 +325,238 @@ async function handleGetEventTypes() {
   }
 }
 
+// Get account info with real Cal.com availability
+async function handleGetAccountInfo() {
+  try {
+    console.log("📊 [CAL-INTEGRATION] Getting real account info from Cal.com...");
+
+    // Get the configured event type for VAPI bookings
+    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2";
+    const eventTypeResult = await calcomDb.query(
+      `SELECT id, length, title, "userId" FROM "EventType" WHERE id = ${VAPI_EVENT_TYPE_ID}`
+    );
+
+    if (eventTypeResult.rows.length === 0) {
+      throw new Error("No event types configured in Cal.com");
+    }
+
+    const eventType = eventTypeResult.rows[0];
+    const userId = eventType.userId;
+    const eventLength = eventType.length || 30; // Default to 30 minutes
+
+    // Get existing bookings for this event type to exclude them
+    const now = new Date();
+    const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+    const existingBookingsResult = await calcomDb.query(
+      `SELECT "startTime", "endTime" 
+       FROM "Booking" 
+       WHERE "eventTypeId" = $1 
+       AND "userId" = $2 
+       AND status != 'cancelled' 
+       AND "startTime" >= $3 
+       AND "startTime" <= $4 
+       ORDER BY "startTime" ASC`,
+      [eventType.id, userId, now, twoWeeksFromNow]
+    );
+
+    const existingBookings = existingBookingsResult.rows;
+    console.log(`📅 [CAL-INTEGRATION] Found ${existingBookings.length} existing bookings`);
+
+    // Generate available slots (M-F, 9 AM - 5 PM UTC)
+    const slots: string[] = [];
+    let currentDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+    // Helper to check if a slot overlaps with existing bookings
+    const isSlotAvailable = (slotStart: Date, slotEnd: Date): boolean => {
+      return !existingBookings.some((booking: any) => {
+        const bookingStart = new Date(booking.startTime);
+        const bookingEnd = new Date(booking.endTime);
+        // Check if slot overlaps with any existing booking
+        return (
+          (slotStart >= bookingStart && slotStart < bookingEnd) ||
+          (slotEnd > bookingStart && slotEnd <= bookingEnd) ||
+          (slotStart <= bookingStart && slotEnd >= bookingEnd)
+        );
+      });
+    };
+
+    // Generate slots until we have 10 available
+    while (slots.length < 10 && currentDate <= twoWeeksFromNow) {
+      const dayOfWeek = currentDate.getUTCDay();
+
+      // Only business days (Monday=1 through Friday=5)
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        // Generate slots from 9 AM to 5 PM
+        for (let hour = 9; hour < 17; hour++) {
+          // Create slot based on event length (default 30 minutes)
+          const slotMinutes = eventLength === 60 ? 0 : 30;
+          const slotTime = new Date(
+            Date.UTC(
+              currentDate.getUTCFullYear(),
+              currentDate.getUTCMonth(),
+              currentDate.getUTCDate(),
+              hour,
+              slotMinutes,
+              0,
+              0
+            )
+          );
+
+          // Only include future slots
+          if (slotTime > now) {
+            const slotEnd = new Date(slotTime.getTime() + eventLength * 60 * 1000);
+
+            // Check if slot is available (not overlapping with existing bookings)
+            if (isSlotAvailable(slotTime, slotEnd)) {
+              slots.push(slotTime.toISOString());
+              if (slots.length >= 10) break;
+            }
+          }
+        }
+      }
+
+      // Move to next day
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    }
+
+    console.log(`✅ [CAL-INTEGRATION] Generated ${slots.length} available slots`);
+
+    // Format slots for speech - group by day for natural reading
+    let slotsList = "";
+    let lastDay = "";
+
+    slots.forEach((slot, index) => {
+      const date = new Date(slot);
+      const dayKey = date.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      });
+      const timeOnly = date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "UTC",
+      });
+
+      if (dayKey !== lastDay) {
+        // New day - include full date
+        if (index > 0) slotsList += ", ";
+        slotsList += `${dayKey} at ${timeOnly}`;
+        lastDay = dayKey;
+      } else {
+        // Same day - just add time
+        slotsList += `, ${timeOnly}`;
+      }
+    });
+
+    return new Response(
+      JSON.stringify({
+        result: `Our next available appointments are ${slotsList}. Would you like to book one of these times?`,
+        data: {
+          slots,
+          eventType: eventType.title,
+          existingBookingsCount: existingBookings.length,
+        },
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Error getting account info:", error);
+    return new Response(
+      JSON.stringify({
+        result:
+          "I'm having trouble checking our availability right now. Please try again in a moment.",
+        error: error.message,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
 async function handleGetAvailability(params: any) {
   const { dateFrom, dateTo } = params;
-  console.log("📊 [CAL-INTEGRATION] Getting availability:", { dateFrom, dateTo });
+  console.log("📊 [CAL-INTEGRATION] Getting real availability from Cal.com:", { dateFrom, dateTo });
 
-  // Parse dates and work in UTC to avoid timezone issues
-  const startDate = new Date(dateFrom);
-  const endDate = new Date(dateTo);
-  const now = new Date();
+  try {
+    // Get the configured event type for VAPI bookings
+    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2";
+    const eventTypeResult = await calcomDb.query(
+      `SELECT id, length, title, "userId" FROM "EventType" WHERE id = ${VAPI_EVENT_TYPE_ID}`
+    );
 
-  const slots: string[] = [];
+    if (eventTypeResult.rows.length === 0) {
+      throw new Error("No event types configured in Cal.com");
+    }
 
-  // Iterate through each day in the range
-  let currentDate = new Date(startDate);
+    const eventType = eventTypeResult.rows[0];
+    const userId = eventType.userId;
+    const eventLength = eventType.length || 30; // Default to 30 minutes
 
-  while (currentDate <= endDate) {
-    // Get day of week (0=Sunday, 6=Saturday)
-    const dayOfWeek = currentDate.getUTCDay();
+    // Parse dates and work in UTC to avoid timezone issues
+    const startDate = new Date(dateFrom);
+    const endDate = new Date(dateTo);
+    const now = new Date();
 
-    // Only business days (Monday=1 through Friday=5)
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      // Generate slots from 9 AM to 5 PM (in UTC)
-      for (let hour = 9; hour < 17; hour++) {
-        for (let minute of [0, 30]) {
-          // Create slot time using UTC methods
+    // Get existing bookings for this event type in the date range to exclude them
+    const existingBookingsResult = await calcomDb.query(
+      `SELECT "startTime", "endTime" 
+       FROM "Booking" 
+       WHERE "eventTypeId" = $1 
+       AND "userId" = $2 
+       AND status != 'cancelled' 
+       AND "startTime" >= $3 
+       AND "startTime" <= $4 
+       ORDER BY "startTime" ASC`,
+      [eventType.id, userId, startDate, endDate]
+    );
+
+    const existingBookings = existingBookingsResult.rows;
+    console.log(`📅 [CAL-INTEGRATION] Found ${existingBookings.length} existing bookings in range`);
+
+    // Helper to check if a slot overlaps with existing bookings
+    const isSlotAvailable = (slotStart: Date, slotEnd: Date): boolean => {
+      return !existingBookings.some((booking: any) => {
+        const bookingStart = new Date(booking.startTime);
+        const bookingEnd = new Date(booking.endTime);
+        // Check if slot overlaps with any existing booking
+        return (
+          (slotStart >= bookingStart && slotStart < bookingEnd) ||
+          (slotEnd > bookingStart && slotEnd <= bookingEnd) ||
+          (slotStart <= bookingStart && slotEnd >= bookingEnd)
+        );
+      });
+    };
+
+    const slots: string[] = [];
+
+    // Iterate through each day in the range
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      // Get day of week (0=Sunday, 6=Saturday)
+      const dayOfWeek = currentDate.getUTCDay();
+
+      // Only business days (Monday=1 through Friday=5)
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        // Generate slots from 9 AM to 5 PM (in UTC)
+        for (let hour = 9; hour < 17; hour++) {
+          // Create slot based on event length (default 30 minutes)
+          const slotMinutes = eventLength === 60 ? 0 : 30;
           const slot = new Date(
             Date.UTC(
               currentDate.getUTCFullYear(),
               currentDate.getUTCMonth(),
               currentDate.getUTCDate(),
               hour,
-              minute,
+              slotMinutes,
               0,
               0
             )
@@ -439,62 +564,80 @@ async function handleGetAvailability(params: any) {
 
           // Only include future slots
           if (slot > now) {
-            slots.push(slot.toISOString());
+            const slotEnd = new Date(slot.getTime() + eventLength * 60 * 1000);
+
+            // Check if slot is available (not overlapping with existing bookings)
+            if (isSlotAvailable(slot, slotEnd)) {
+              slots.push(slot.toISOString());
+            }
           }
         }
       }
+
+      // Move to next day
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
 
-    // Move to next day
-    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-  }
-
-  console.log("✅ [CAL-INTEGRATION] Generated slots:", slots.length);
-  if (slots.length > 0) {
-    console.log("✅ [CAL-INTEGRATION] Next available:", slots[0]);
-    console.log("✅ [CAL-INTEGRATION] First few slots:", slots.slice(0, 3));
-  } else {
-    console.log("⚠️ [CAL-INTEGRATION] No slots generated!");
-  }
-
-  // Format next available slot as human-readable text
-  let message = "No appointments available in the requested timeframe.";
-  if (slots.length > 0) {
-    const nextSlot = new Date(slots[0]);
-    const dayName = nextSlot.toLocaleDateString("en-US", {
-      weekday: "long",
-      timeZone: "UTC",
-    });
-    const monthDay = nextSlot.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      timeZone: "UTC",
-    });
-    const time = nextSlot.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: "UTC",
-    });
-
-    message = `The next available appointment is ${dayName}, ${monthDay} at ${time}.`;
-  }
-
-  // Return format that VAPI can speak naturally
-  // Put technical data in 'data' object so assistant doesn't read it
-  return new Response(
-    JSON.stringify({
-      result: message,
-      data: {
-        nextAvailable: slots[0] || null,
-        availableSlots: slots.slice(0, 20),
-        totalSlots: slots.length,
-      },
-    }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
+    console.log("✅ [CAL-INTEGRATION] Generated slots:", slots.length);
+    if (slots.length > 0) {
+      console.log("✅ [CAL-INTEGRATION] Next available:", slots[0]);
+      console.log("✅ [CAL-INTEGRATION] First few slots:", slots.slice(0, 3));
+    } else {
+      console.log("⚠️ [CAL-INTEGRATION] No slots generated!");
     }
-  );
+
+    // Format next available slot as human-readable text
+    let message = "No appointments available in the requested timeframe.";
+    if (slots.length > 0) {
+      const nextSlot = new Date(slots[0]);
+      const dayName = nextSlot.toLocaleDateString("en-US", {
+        weekday: "long",
+        timeZone: "UTC",
+      });
+      const monthDay = nextSlot.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      });
+      const time = nextSlot.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "UTC",
+      });
+
+      message = `The next available appointment is ${dayName}, ${monthDay} at ${time}.`;
+    }
+
+    // Return format that VAPI can speak naturally
+    // Put technical data in 'data' object so assistant doesn't read it
+    return new Response(
+      JSON.stringify({
+        result: message,
+        data: {
+          nextAvailable: slots[0] || null,
+          availableSlots: slots.slice(0, 20),
+          totalSlots: slots.length,
+        },
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Error getting availability:", error);
+    return new Response(
+      JSON.stringify({
+        result:
+          "I'm having trouble checking our availability right now. Please try again in a moment.",
+        error: error.message,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 }
 
 async function handleCreateBooking(params: any) {
@@ -529,10 +672,10 @@ async function handleCreateBooking(params: any) {
     // Generate unique booking reference
     const uid = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Get the configured event type for VAPI bookings
+    // Get the configured event type for VAPI bookings (must include userId - the owner)
     const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2"; // Default to 30-minute meeting
     const eventTypeResult = await calcomDb.query(
-      `SELECT id, length, title FROM "EventType" WHERE id = ${VAPI_EVENT_TYPE_ID}`
+      `SELECT id, length, title, "userId" FROM "EventType" WHERE id = ${VAPI_EVENT_TYPE_ID}`
     );
 
     if (eventTypeResult.rows.length === 0) {
@@ -541,12 +684,13 @@ async function handleCreateBooking(params: any) {
 
     const eventType = eventTypeResult.rows[0];
 
-    // Get the first user (host) to assign the booking to
-    const userResult = await calcomDb.query("SELECT id FROM users LIMIT 1");
-    if (userResult.rows.length === 0) {
-      throw new Error("No users found in Cal.com - please create a user account first");
+    // Use the event type's owner (userId) - this ensures bookings show up in the correct user's calendar
+    if (!eventType.userId) {
+      throw new Error(
+        "Event type has no owner (userId) - please ensure the event type is properly configured in Cal.com"
+      );
     }
-    const userId = userResult.rows[0].id;
+    const userId = eventType.userId;
 
     // Insert into Cal.com Booking table
     const bookingResult = await calcomDb.query(
@@ -653,24 +797,21 @@ async function handleCreateBooking(params: any) {
 
       // Send email using the existing update-delivery API
       const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
-      const emailResponse = await fetch(
-        `${baseUrl}/api/delivery/update-delivery`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            usersToNotify: [email],
-            method: "email",
-            emailSubject: emailSubject,
-            emailContent: emailContent,
-            buttonText: "View Our Website",
-            buttonLink: baseUrl,
-            currentUser: null, // VAPI calls don't have user context
-          }),
-        }
-      );
+      const emailResponse = await fetch(`${baseUrl}/api/delivery/update-delivery`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          usersToNotify: [email],
+          method: "email",
+          emailSubject: emailSubject,
+          emailContent: emailContent,
+          buttonText: "View Our Website",
+          buttonLink: baseUrl,
+          currentUser: null, // VAPI calls don't have user context
+        }),
+      });
 
       if (emailResponse.ok) {
         const emailResult = await emailResponse.json();
