@@ -139,6 +139,11 @@ export function replacePlaceholders(
     // Fallback to prevent malformed URLs
     baseUrl = "https://capcofire.com";
   }
+  
+  // Ensure baseUrl has proper protocol
+  if (typeof baseUrl === "string" && baseUrl && !baseUrl.startsWith('http')) {
+    baseUrl = `https://${baseUrl}`;
+  }
   const baseProjectLink = `${baseUrl}/project`;
   // Only create project link if projectId is valid (not 0 or null)
   const projectLink =

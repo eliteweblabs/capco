@@ -19,7 +19,7 @@ const primaryColorRgb = hexToRgb(primaryColor);
 
 // https://astro.build/config
 export default defineConfig({
-  site: env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com", // Set your production domain
+  site: env.RAILWAY_PUBLIC_DOMAIN?.startsWith('http') ? env.RAILWAY_PUBLIC_DOMAIN : `https://${env.RAILWAY_PUBLIC_DOMAIN || "capcofire.com"}`, // Set your production domain
   output: "server",
   adapter: node({
     mode: "standalone",
