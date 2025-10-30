@@ -19,7 +19,7 @@ const primaryColorRgb = hexToRgb(primaryColor);
 
 // https://astro.build/config
 export default defineConfig({
-  site: env.SITE_URL || "https://capcofire.com", // Set your production domain
+  site: env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com", // Set your production domain
   output: "server",
   adapter: node({
     mode: "standalone",
@@ -58,7 +58,7 @@ export default defineConfig({
       // "process.env.FALLBACK_MODE": JSON.stringify(env.FALLBACK_MODE),
       "process.env.FROM_EMAIL": JSON.stringify(env.FROM_EMAIL),
       "process.env.FROM_NAME": JSON.stringify(env.FROM_NAME),
-      "process.env.GLOBAL_COMPANY_NAME": JSON.stringify(env.GLOBAL_COMPANY_NAME),
+      "process.env.RAILWAY_PROJECT_NAME": JSON.stringify(env.RAILWAY_PROJECT_NAME),
       "process.env.GLOBAL_COMPANY_SLOGAN": JSON.stringify(env.GLOBAL_COMPANY_SLOGAN),
       "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
       "process.env.GOOGLE_PLACES_API_KEY": JSON.stringify(env.GOOGLE_PLACES_API_KEY),
@@ -75,7 +75,9 @@ export default defineConfig({
       "process.env.SUPABASE_URL": JSON.stringify(env.SUPABASE_URL),
       "process.env.RESEND_WEBHOOK_SECRET": JSON.stringify(env.RESEND_WEBHOOK_SECRET),
       "process.env.GLOBAL_COLOR_SECONDARY": JSON.stringify(env.GLOBAL_COLOR_SECONDARY),
-      "process.env.SITE_URL": JSON.stringify(env.SITE_URL || "https://capcofire.com"),
+      "process.env.RAILWAY_PUBLIC_DOMAIN": JSON.stringify(
+        env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com"
+      ),
       "process.env.STRIPE_DOMAIN_ID": JSON.stringify(env.STRIPE_DOMAIN_ID),
       "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),
       "process.env.SUPABASE_ANON_KEY": JSON.stringify(env.SUPABASE_ANON_KEY),

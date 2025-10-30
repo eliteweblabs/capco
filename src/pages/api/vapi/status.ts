@@ -40,7 +40,7 @@ export const GET: APIRoute = async () => {
             hasValue: webhookSecret ? webhookSecret.length > 0 : false,
           },
           environment: {
-            siteUrl: process.env.SITE_URL || "http://localhost:4321",
+            siteUrl: process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321",
           },
         },
       }),

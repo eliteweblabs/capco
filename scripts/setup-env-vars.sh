@@ -40,11 +40,11 @@ else
 fi
 
 # Site URL
-if [ -z "$SITE_URL" ]; then
-    echo "SITE_URL=http://localhost:4321"
+if [ -z "$RAILWAY_PUBLIC_DOMAIN" ]; then
+    echo "RAILWAY_PUBLIC_DOMAIN=http://localhost:4321"
     echo "# Your site URL (change for production)"
 else
-    echo "✅ SITE_URL is already set: $SITE_URL"
+    echo "✅ RAILWAY_PUBLIC_DOMAIN is already set: $RAILWAY_PUBLIC_DOMAIN"
 fi
 
 echo ""

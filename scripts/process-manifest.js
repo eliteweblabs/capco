@@ -5,12 +5,12 @@
  * and placeholders at build time, similar to vapi-assistant-config.js
  *
  * TEMPLATE VARIABLES:
- * - {{GLOBAL_COMPANY_NAME}} - Company name from environment
+ * - {{RAILWAY_PROJECT_NAME}} - Company name from environment
  * - {{GLOBAL_COMPANY_SLOGAN}} - Company slogan from environment
  * - {{YEAR}} - Current year from environment
  * - {{GLOBAL_COLOR_PRIMARY}} - Primary brand color
  * - {{GLOBAL_COLOR_SECONDARY}} - Secondary brand color
- * - {{SITE_URL}} - Site URL for start_url and scope
+ * - {{RAILWAY_PUBLIC_DOMAIN}} - Site URL for start_url and scope
  *
  * USAGE:
  * - Run during build process: node scripts/process-manifest.js
@@ -32,7 +32,7 @@ const getEnvVar = (key, fallback = "") => {
 };
 
 // Load global company data
-const globalCompanyName = getEnvVar("GLOBAL_COMPANY_NAME", "CAPCO Design Group");
+const globalCompanyName = getEnvVar("RAILWAY_PROJECT_NAME", "CAPCO Design Group");
 const globalCompanySlogan = getEnvVar(
   "GLOBAL_COMPANY_SLOGAN",
   "Professional Fire Protection Plan Review & Approval"
@@ -40,7 +40,7 @@ const globalCompanySlogan = getEnvVar(
 const year = getEnvVar("YEAR", new Date().getFullYear().toString());
 const globalColorPrimary = getEnvVar("GLOBAL_COLOR_PRIMARY", "#825BDD");
 const globalColorSecondary = getEnvVar("GLOBAL_COLOR_SECONDARY", "#0ea5e9");
-const siteUrl = getEnvVar("SITE_URL", "http://localhost:4321");
+const siteUrl = getEnvVar("RAILWAY_PUBLIC_DOMAIN", "http://localhost:4321");
 
 // Template file paths
 const templatePath = path.join(__dirname, "../public/manifest.json.template");
@@ -61,7 +61,7 @@ try {
     // Convert to template by replacing values with placeholders
     const templateManifest = {
       ...currentManifest,
-      name: "{{GLOBAL_COMPANY_NAME}}",
+      name: "{{RAILWAY_PROJECT_NAME}}",
       description: "{{GLOBAL_COMPANY_SLOGAN}}",
       theme_color: "{{GLOBAL_COLOR_PRIMARY}}",
       background_color: "#ffffff",
@@ -70,7 +70,7 @@ try {
           name: "New Project",
           short_name: "New",
           description: "Create a new fire protection project",
-          url: "{{SITE_URL}}/dashboard#new-project",
+          url: "{{RAILWAY_PUBLIC_DOMAIN}}/dashboard#new-project",
           icons: [],
         },
       ],
@@ -86,7 +86,7 @@ try {
 
   // Replace placeholders with actual values
   let processedContent = templateContent
-    .replace(/\{\{GLOBAL_COMPANY_NAME\}\}/g, globalCompanyName)
+    .replace(/\{\{RAILWAY_PROJECT_NAME\}\}/g, globalCompanyName)
     .replace(/\{\{GLOBAL_COMPANY_SLOGAN\}\}/g, globalCompanySlogan)
     .replace(/\{\{YEAR\}\}/g, year)
     .replace(/\{\{GLOBAL_COLOR_PRIMARY\}\}/g, globalColorPrimary)

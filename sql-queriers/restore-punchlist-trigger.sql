@@ -67,7 +67,7 @@ BEGIN
     -- Insert default punchlist items with incremental timestamps for proper ordering
     INSERT INTO punchlist (project_id, author_id, message, internal, mark_completed, company_name, created_at)
     VALUES 
-    (project_id_param, admin_user_id, 'Receive CAD files from client / download from <a class="text-primary dark:text-primary-text" href="{{SITE_URL}}/project/{{PROJECT_ID}}?status=documents">Documents</a>', false, false, 'CAPCo Fire', base_time + INTERVAL '1 second'),
+    (project_id_param, admin_user_id, 'Receive CAD files from client / download from <a class="text-primary dark:text-primary-text" href="{{RAILWAY_PUBLIC_DOMAIN}}/project/{{PROJECT_ID}}?status=documents">Documents</a>', false, false, 'CAPCo Fire', base_time + INTERVAL '1 second'),
     (project_id_param, admin_user_id, 'Obtain fire hydrant flow test data', false, false, 'CAPCo Fire', base_time + INTERVAL '2 seconds'),
     (project_id_param, admin_user_id, 'Conduct design kickoff and review scope', false, false, 'CAPCo Fire', base_time + INTERVAL '3 seconds'),
     (project_id_param, admin_user_id, 'Coordinate with fire alarm designer', false, false, 'CAPCo Fire', base_time + INTERVAL '4 seconds'),
@@ -77,7 +77,7 @@ BEGIN
     (project_id_param, admin_user_id, 'Add notes and leader callouts', false, false, 'CAPCo Fire', base_time + INTERVAL '8 seconds'),
     (project_id_param, admin_user_id, 'Add details and general notes', false, false, 'CAPCo Fire', base_time + INTERVAL '9 seconds'),
     (project_id_param, admin_user_id, 'Finalize design and apply titleblock', false, false, 'CAPCo Fire', base_time + INTERVAL '10 seconds'),
-    (project_id_param, admin_user_id, 'Print drawings to PDF for submittal / upload to <a class="text-primary dark:text-primary-text" href="{{SITE_URL}}/project/{{PROJECT_ID}}?status=deliverables">Deliverables</a>', false, false, 'CAPCo Fire', base_time + INTERVAL '11 seconds');
+    (project_id_param, admin_user_id, 'Print drawings to PDF for submittal / upload to <a class="text-primary dark:text-primary-text" href="{{RAILWAY_PUBLIC_DOMAIN}}/project/{{PROJECT_ID}}?status=deliverables">Deliverables</a>', false, false, 'CAPCo Fire', base_time + INTERVAL '11 seconds');
     
     RAISE NOTICE 'Created default punchlist items for project %', project_id_param;
 END;

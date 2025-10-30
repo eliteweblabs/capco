@@ -145,7 +145,7 @@ const data = await response.json();
 - `{{CLIENT_EMAIL}}` - Client's email address
 - `{{STATUS_NAME}}` - Current status name
 - `{{CONTRACT_URL}}` - Link to contract tab
-- `{{SITE_URL}}` - Base site URL
+- `{{RAILWAY_PUBLIC_DOMAIN}}` - Base site URL
 
 ## Performance Benefits
 

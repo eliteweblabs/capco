@@ -2,7 +2,7 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const SITE_URL = "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
 const TOOL_ID = "5b8ac059-9bbe-4a27-985d-70df87f9490d";
 
 async function updateBookingTool() {
@@ -40,7 +40,7 @@ async function updateBookingTool() {
         },
       },
       server: {
-        url: `${SITE_URL}/api/vapi/webhook`,
+        url: `${RAILWAY_PUBLIC_DOMAIN}/api/vapi/webhook`,
         timeoutSeconds: 20,
       },
     };

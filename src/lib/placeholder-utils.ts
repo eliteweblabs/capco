@@ -130,7 +130,7 @@ export function replacePlaceholders(
   // === LEGACY PLACEHOLDER REPLACEMENT ===
   // Extract data from project object and additional data
   const projectId = data?.project?.id;
-  const baseUrl = import.meta.env.SITE_URL || process.env.SITE_URL;
+  const baseUrl = import.meta.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_PUBLIC_DOMAIN;
   const baseProjectLink = `${baseUrl}/project`;
   // Only create project link if projectId is valid (not 0 or null)
   const projectLink =
@@ -331,11 +331,11 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace GLOBAL_COMPANY_NAME placeholders
+  // Replace RAILWAY_PROJECT_NAME placeholders
   if (globalCompanyData().globalCompanyName) {
     const beforeReplace = result;
     result = result.replace(
-      /\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g,
+      /\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g,
       globalCompanyData().globalCompanyName
     );
     if (result !== beforeReplace) {

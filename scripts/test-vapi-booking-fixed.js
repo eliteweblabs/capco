@@ -1,13 +1,13 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 
-const SITE_URL = process.env.SITE_URL || "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com";
 
 async function testVapiBooking() {
   try {
     console.log("🧪 Testing VAPI booking with fixed user ID...");
 
-    const response = await fetch(`${SITE_URL}/api/vapi/cal-integration`, {
+    const response = await fetch(`${RAILWAY_PUBLIC_DOMAIN}/api/vapi/cal-integration`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

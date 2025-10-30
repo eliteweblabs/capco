@@ -4,7 +4,7 @@ echo "Starting Astro application..."
 
 # Debug: Print runtime environment variables
 echo "🔍 RUNTIME ENV CHECK:"
-echo "SITE_URL: $SITE_URL"
+echo "RAILWAY_PUBLIC_DOMAIN: $RAILWAY_PUBLIC_DOMAIN"
 echo "NODE_ENV: $NODE_ENV"
 echo "SUPABASE_URL: $SUPABASE_URL"
 echo "PORT: $PORT"

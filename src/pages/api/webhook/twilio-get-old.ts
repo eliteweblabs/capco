@@ -40,14 +40,17 @@ export const GET: APIRoute = async ({ request }) => {
       // Use the N8N tunnel URL
       // Use environment-based N8N URL
       // Check if we're running through a tunnel (LocalTunnel) vs local development
-      const isTunneled = request.url.includes('loca.lt') || request.url.includes('ngrok') || request.url.includes('tunnel');
+      const isTunneled =
+        request.url.includes("loca.lt") ||
+        request.url.includes("ngrok") ||
+        request.url.includes("tunnel");
       const n8nWebhookUrl =
         import.meta.env.N8N_WEBHOOK_URL ||
         (import.meta.env.PROD
           ? "https://your-domain.com:5678/webhook/incoming-call"
           : isTunneled
-          ? "https://capco-fire-n8n.loca.lt/webhook/incoming-call"
-          : "http://localhost:5678/webhook/incoming-call");
+            ? "https://capco-fire-n8n.loca.lt/webhook/incoming-call"
+            : "http://localhost:5678/webhook/incoming-call");
       console.log(`🔍 [TWILIO-GET-${requestId}] Starting N8N integration... (UPDATED)`);
       console.log(`🔍 [TWILIO-GET-${requestId}] Request URL:`, request.url);
       console.log(`🔍 [TWILIO-GET-${requestId}] Is tunneled:`, isTunneled);
@@ -194,7 +197,7 @@ export const GET: APIRoute = async ({ request }) => {
           `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice">${aiMessage}</Say>
-  <Record maxLength="30" action="${import.meta.env.SITE_URL}/api/webhook/twilio-recording" method="POST" />
+  <Record maxLength="30" action="${import.meta.env.RAILWAY_PUBLIC_DOMAIN}/api/webhook/twilio-recording" method="POST" />
 </Response>`,
           {
             status: 200,
@@ -248,7 +251,7 @@ function createFallbackResponse(requestId: string, reason: string) {
     `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice">Hello! This is your AI assistant. How can I help you today?</Say>
-  <Record maxLength="30" action="${import.meta.env.SITE_URL}/api/webhook/twilio-recording" method="POST" />
+  <Record maxLength="30" action="${import.meta.env.RAILWAY_PUBLIC_DOMAIN}/api/webhook/twilio-recording" method="POST" />
 </Response>`,
     {
       status: 200,

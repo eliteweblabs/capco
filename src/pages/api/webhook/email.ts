@@ -493,10 +493,13 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       formData.append("smsAlerts", "false");
       formData.append("role", "Client");
 
-      const createUserResponse = await fetch(`${process.env.SITE_URL}/api/users/upsert`, {
-        method: "POST",
-        body: formData,
-      });
+      const createUserResponse = await fetch(
+        `${process.env.RAILWAY_PUBLIC_DOMAIN}/api/users/upsert`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const createUserResult = await createUserResponse.json();
 
@@ -645,13 +648,16 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
     console.log("🏗️ [EMAIL-WEBHOOK] Project data for API:", JSON.stringify(projectData, null, 2));
 
     // Call the create-project API endpoint to ensure proper processing
-    const createProjectResponse = await fetch(`${process.env.SITE_URL}/api/projects/upsert`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(projectData),
-    });
+    const createProjectResponse = await fetch(
+      `${process.env.RAILWAY_PUBLIC_DOMAIN}/api/projects/upsert`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(projectData),
+      }
+    );
 
     if (!createProjectResponse.ok) {
       const errorText = await createProjectResponse.text();

@@ -646,13 +646,13 @@ async function handleCreateBooking(params: any) {
           <p>We look forward to meeting with you!</p>
           
           <p>Best regards,<br>
-          ${process.env.GLOBAL_COMPANY_NAME}</p>
+          ${process.env.RAILWAY_PROJECT_NAME}</p>
         </div>
       `;
 
       // Send email using the existing update-delivery API
       const emailResponse = await fetch(
-        `${process.env.SITE_URL || "http://localhost:4321"}/api/delivery/update-delivery`,
+        `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"}/api/delivery/update-delivery`,
         {
           method: "POST",
           headers: {
@@ -664,7 +664,7 @@ async function handleCreateBooking(params: any) {
             emailSubject: emailSubject,
             emailContent: emailContent,
             buttonText: "View Our Website",
-            buttonLink: `${process.env.SITE_URL || "http://localhost:4321"}`,
+            buttonLink: `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"}`,
             currentUser: null, // VAPI calls don't have user context
           }),
         }

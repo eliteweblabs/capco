@@ -2,7 +2,7 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const SITE_URL = "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
 
 // Create a Custom Tool (not a function in the assistant)
 async function createTool() {
@@ -22,7 +22,7 @@ async function createTool() {
         },
       },
       server: {
-        url: `${SITE_URL}/api/vapi/webhook`,
+        url: `${RAILWAY_PUBLIC_DOMAIN}/api/vapi/webhook`,
         timeoutSeconds: 20,
       },
       messages: [

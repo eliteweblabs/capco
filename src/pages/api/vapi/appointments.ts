@@ -290,7 +290,7 @@ async function handleCheckAvailability(currentUser: any, data: any) {
 
     // Call the availability API
     const availabilityResponse = await fetch(
-      `${process.env.SITE_URL || "http://localhost:4321"}/api/appointments/availability`,
+      `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"}/api/appointments/availability`,
       {
         method: "POST",
         headers: {

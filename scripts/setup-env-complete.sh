@@ -29,7 +29,7 @@ echo ""
 
 # Site configuration
 echo "# Site Configuration"
-echo "SITE_URL=http://localhost:4321"
+echo "RAILWAY_PUBLIC_DOMAIN=http://localhost:4321"
 echo ""
 
 echo "📋 Next steps:"

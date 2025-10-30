@@ -145,7 +145,7 @@ async function handleToolCalls(message: any): Promise<Response> {
       }
 
       const response = await fetch(
-        `${process.env.SITE_URL || "http://localhost:4321"}/api/vapi/cal-integration`,
+        `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"}/api/vapi/cal-integration`,
         {
           method: "POST",
           headers: {
@@ -165,7 +165,7 @@ async function handleToolCalls(message: any): Promise<Response> {
       // Fire-and-forget: send confirmation email when a booking succeeds
       if (functionName === "bookAppointment") {
         try {
-          const siteUrl = process.env.SITE_URL || "http://localhost:4321";
+          const siteUrl = process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321";
           // Prefer explicit params; fall back to data returned from cal-integration
           const startTime = params.start || data?.data?.booking?.startTime;
           const personName = params.name;
@@ -368,7 +368,7 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
         }
 
         const response = await fetch(
-          `${process.env.SITE_URL || "http://localhost:4321"}/api/vapi/cal-integration`,
+          `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"}/api/vapi/cal-integration`,
           {
             method: "POST",
             headers: {
