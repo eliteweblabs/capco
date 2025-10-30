@@ -41,7 +41,7 @@ try {
   const baseUrl = Astro.url.origin;
   console.log("🔍 [TAB-PROPOSAL SSR] Making upsert request to:", `${baseUrl}/api/proposal/upsert`);
   console.log("🔍 [TAB-PROPOSAL SSR] Request body:", { projectId: projectId });
-  
+
   const response = await fetch(`${baseUrl}/api/proposal/upsert`, {
     method: "POST",
     headers: {
@@ -59,13 +59,19 @@ try {
   const data = await response.json();
   console.log("🔍 [TAB-PROPOSAL SSR] Response data:", data);
 
-  if (data.success && data.invoice) {
-    existingInvoice = data.invoice;
-    invoiceId = data.invoice.id;
+  if (data.success && data.data && data.data.invoice) {
+    existingInvoice = data.data.invoice;
+    invoiceId = data.data.invoice.id;
     console.log("✅ [TAB-PROPOSAL SSR] Successfully upserted invoice:", invoiceId);
     console.log("🔍 [TAB-PROPOSAL SSR] Invoice data:", existingInvoice);
-    console.log("🔍 [TAB-PROPOSAL SSR] Invoice catalogLineItems:", existingInvoice?.catalogLineItems);
-    console.log("🔍 [TAB-PROPOSAL SSR] Invoice catalogLineItems length:", existingInvoice?.catalogLineItems?.length);
+    console.log(
+      "🔍 [TAB-PROPOSAL SSR] Invoice catalogLineItems:",
+      existingInvoice?.catalogLineItems
+    );
+    console.log(
+      "🔍 [TAB-PROPOSAL SSR] Invoice catalogLineItems length:",
+      existingInvoice?.catalogLineItems?.length
+    );
   } else {
     console.error("❌ [TAB-PROPOSAL SSR] Failed to upsert invoice:", data.error);
     console.error("❌ [TAB-PROPOSAL SSR] Full response data:", data);
