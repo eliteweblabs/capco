@@ -366,8 +366,8 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     }
 
     async buildProposal() {
-      // console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.project);
-      // console.log("🔧 [PROPOSAL-MANAGER] Current invoiceId:", this.invoiceId);
+      console.log("🔧 [PROPOSAL-MANAGER] Building proposal for project:", this.project);
+      console.log("🔧 [PROPOSAL-MANAGER] Current invoiceId:", this.invoiceId);
 
       if (!this.project) {
         console.error("Project data not available");
@@ -381,15 +381,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       if (placeholder) placeholder.style.display = "none";
       if (content) content.style.display = "block";
 
-      // Get or create invoice ID
-      if (this.project.invoiceId) {
-        this.invoiceId = Number(this.project.invoiceId);
-        await this.loadDataFromDatabase();
-      } else {
-        await this.ensureInvoiceExists();
-      }
-
-      // Initialize proposal form with project data
+      // Initialize proposal form with project data (handles loading existing or defaults)
       this.initializeProposalForm();
 
       // Initialize autocomplete functionality
@@ -398,220 +390,293 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       // Ensure totals are calculated after everything is loaded
       setTimeout(() => {
         updateProposalTotal();
-        // console.log("🔧 [PROPOSAL-MANAGER] Updated totals after building proposal");
+        console.log("🔧 [PROPOSAL-MANAGER] Updated totals after building proposal");
       }, 100);
     }
 
-    async ensureInvoiceExists() {
-      try {
-        // console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.project);
+    // async ensureInvoiceExists() {
+    //   try {
+    //     // console.log("🔍 [PROPOSAL-MANAGER] Ensuring invoice exists for project:", this.project);
 
-        // If we already have an invoiceId from SSR, use it
-        if (this.invoiceId) {
-          // console.log("✅ [PROPOSAL-MANAGER] Using pre-fetched invoice ID:", this.invoiceId);
-          return;
-        }
+    //     // If we already have an invoiceId from SSR, use it
+    //     if (this.invoiceId) {
+    //       // console.log("✅ [PROPOSAL-MANAGER] Using pre-fetched invoice ID:", this.invoiceId);
+    //       return;
+    //     }
 
-        // Upsert invoice - create if doesn't exist, update if it does
-        const response = await fetch("/api/proposal/upsert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            projectId: this.projectId,
-            status: "draft",
-            subject: "Fire Protection System Proposal",
-            lineItems: [
-              {
-                description:
-                  "Tier I Fire Sprinkler Design and Fire Alarm Design\n\nTier I Fire Sprinkler Design\n1. Fire Sprinkler Design\n2. Hydraulic Calculations\n3. Project Narrative\n4. NFPA 241 Plan\n\nTier I Fire Alarm Design\n1. Fire Alarm Design\n2. Fire Alarm Narrative",
-                quantity: 1,
-                unitPrice: 500.0,
-              },
-            ],
-          }),
-        });
+    //     // Upsert invoice - create if doesn't exist, update if it does
+    //     const response = await fetch("/api/proposal/upsert", {
+    //       method: "POST",
+    //       headers: { "Content-Type": "application/json" },
+    //       credentials: "include",
+    //       body: JSON.stringify({
+    //         projectId: this.projectId,
+    //         status: "draft",
+    //         subject: "Fire Protection System Proposal",
+    //         lineItems: [
+    //           {
+    //             description:
+    //               "Tier I Fire Sprinkler Design and Fire Alarm Design\n\nTier I Fire Sprinkler Design\n1. Fire Sprinkler Design\n2. Hydraulic Calculations\n3. Project Narrative\n4. NFPA 241 Plan\n\nTier I Fire Alarm Design\n1. Fire Alarm Design\n2. Fire Alarm Narrative",
+    //             quantity: 1,
+    //             unitPrice: 500.0,
+    //           },
+    //         ],
+    //       }),
+    //     });
 
-        const data = await response.json();
-        console.log("📝 [PROPOSAL-MANAGER] Upsert response:", data);
+    //     const data = await response.json();
+    //     console.log("📝 [PROPOSAL-MANAGER] Upsert response:", data);
 
-        if (data.success) {
-          this.invoiceId = parseInt(data.data.invoice.id);
-          console.log("✅ [PROPOSAL-MANAGER] Invoice upserted:", this.invoiceId);
-        } else {
-          console.error("❌ [PROPOSAL-MANAGER] Failed to upsert invoice:", data.error);
-        }
-      } catch (error) {
-        console.error("❌ [PROPOSAL-MANAGER] Error ensuring invoice exists:", error);
+    //     if (data.success) {
+    //       this.invoiceId = parseInt(data.data.invoice.id);
+    //       console.log("✅ [PROPOSAL-MANAGER] Invoice upserted:", this.invoiceId);
+    //     } else {
+    //       console.error("❌ [PROPOSAL-MANAGER] Failed to upsert invoice:", data.error);
+    //     }
+    //   } catch (error) {
+    //     console.error("❌ [PROPOSAL-MANAGER] Error ensuring invoice exists:", error);
+    //   }
+    // }
+
+    // async loadDataFromDatabase() {
+    //   if (!this.invoiceId) {
+    //     // console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot load data");
+    //     return;
+    //   }
+    //   console.log("🔍 [PROPOSAL-MANAGER] Loading data from database for invoice:", this.invoiceId);
+
+    //   try {
+    //     const response = await fetch(`/api/proposal/get?id=${this.invoiceId}`);
+    //     const data = await response.json();
+
+    //     console.log("🔍 [PROPOSAL-MANAGER] Data:", data);
+
+    //     if (data.success && data.invoice) {
+    //       const invoice = data.invoice;
+
+    //       // Load line items from catalogLineItems and convert field names
+    //       const dbLineItems = invoice.catalogLineItems || [];
+    //       this.cachedLineItems = dbLineItems.map((item) => ({
+    //         name: item.name || "",
+    //         description: item.description || "",
+    //         quantity: item.quantity || 1,
+    //         unitPrice: item.unitPrice || 0, // Convert unitPrice to unitPrice
+    //         catalogItemId: item.catalogItemId || null,
+    //       }));
+
+    //       // Load subject from invoice
+    //       const subjectTextElement = document.getElementById("proposal-subject-text");
+    //       const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
+
+    //       if (subjectTextElement) {
+    //         if (invoice.subject) {
+    //           // Replace skeleton with actual subject text
+    //           subjectTextElement.className =
+    //             "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
+    //           subjectTextElement.textContent = invoice.subject;
+    //         } else {
+    //           // No subject in database, show default
+    //           subjectTextElement.className =
+    //             "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
+    //           subjectTextElement.textContent = "Fire Protection Services Proposal";
+    //           // console.log("✅ [PROPOSAL-MANAGER] No subject in database, using default");
+    //         }
+
+    //         if (hiddenInput) {
+    //           hiddenInput.value = invoice.subject || "Fire Protection Services Proposal";
+    //         }
+    //       }
+
+    //       // Load proposal date from invoice
+    //       const proposalDateElement = document.getElementById("proposal-date");
+    //       if (proposalDateElement) {
+    //         let dateToShow;
+    //         if (invoice.createdAt) {
+    //           // Use invoice creation date
+    //           const invoiceDate = new Date(invoice.createdAt);
+    //           dateToShow = invoiceDate.toLocaleDateString("en-US", {
+    //             year: "numeric",
+    //             month: "long",
+    //             day: "numeric",
+    //           });
+    //           // console.log("✅ [PROPOSAL-MANAGER] Using invoice creation date:", dateToShow);
+    //         } else {
+    //           // No date in database, use current time
+    //           const now = new Date();
+    //           dateToShow = now.toLocaleDateString("en-US", {
+    //             year: "numeric",
+    //             month: "long",
+    //             day: "numeric",
+    //           });
+    //           // console.log("✅ [PROPOSAL-MANAGER] No invoice date, using current date:", dateToShow);
+    //         }
+    //         proposalDateElement.textContent = dateToShow;
+    //       } else {
+    //         console.log("❌ [PROPOSAL-MANAGER] proposal-date element not found");
+    //       }
+
+    //       // Load proposal notes from invoice
+    //       const notesElement = document.getElementById("proposal-notes");
+    //       if (notesElement) {
+    //         if (invoice.proposalNotes) {
+    //           notesElement.value = invoice.proposalNotes;
+    //           // console.log("✅ [PROPOSAL-MANAGER] Loaded notes:", invoice.proposalNotes);
+    //         } else {
+    //           notesElement.value = "";
+    //           // console.log("✅ [PROPOSAL-MANAGER] No notes in database, using empty string");
+    //         }
+    //       } else {
+    //         // console.log("❌ [PROPOSAL-MANAGER] proposal-notes element not found");
+    //       }
+
+    //       // If no line items or empty/malformed line items, initialize with defaults
+    //       // console.log("🔍 [PROPOSAL-MANAGER] Checking for valid line items...");
+    //       // console.log("🔍 [PROPOSAL-MANAGER] cachedLineItems.length:", this.cachedLineItems.length);
+
+    //       const hasValidLineItems =
+    //         this.cachedLineItems.length > 0 &&
+    //         this.cachedLineItems.some((item) => item.name && item.name.trim() !== "");
+
+    //       console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
+
+    //       debugger;
+    //       if (!hasValidLineItems) {
+    //         // console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
+    //         this.initializeDefaultLineItems();
+    //         await this.saveToDatabase(); // Save the defaults
+    //       }
+
+    //       // Render the loaded line items to the DOM
+    //       this.renderLineItems();
+    //       updateProposalTotal();
+    //     } else {
+    //       // Failed to load data, show default subject
+    //       const subjectTextElement = document.getElementById("proposal-subject-text");
+    //       const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
+
+    //       if (subjectTextElement) {
+    //         subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
+    //         subjectTextElement.textContent = "Fire Protection Services Proposal";
+    //       }
+
+    //       if (hiddenInput) {
+    //         hiddenInput.value = "Fire Protection Services Proposal";
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error("❌ [PROPOSAL-MANAGER] Error loading data from database:", error);
+
+    //     // On error, show default subject
+    //     const subjectTextElement = document.getElementById("proposal-subject-text");
+    //     const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
+
+    //     if (subjectTextElement) {
+    //       subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
+    //       subjectTextElement.textContent = "Fire Protection Services Proposal";
+    //     }
+
+    //     if (hiddenInput) {
+    //       hiddenInput.value = "Fire Protection Services Proposal";
+    //     }
+    //   }
+    // }
+
+    initializeProposalForm() {
+      console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal form...");
+
+      // Load invoice data if it exists (from upsert)
+      this.loadInvoiceData();
+
+      // Check if we have valid line items
+      const hasValidLineItems = 
+        this.cachedLineItems && 
+        this.cachedLineItems.length > 0 &&
+        this.cachedLineItems.some((item) => item.name && item.name.trim() !== "");
+
+      console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
+
+      if (!hasValidLineItems) {
+        console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
+        this.initializeDefaultLineItems();
+        // Note: saveToDatabase() will be called when user makes changes
       }
+
+      // Render the line items to the DOM
+      this.renderLineItems();
+      updateProposalTotal();
     }
 
-    async loadDataFromDatabase() {
-      if (!this.invoiceId) {
-        // console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot load data");
+    loadInvoiceData() {
+      console.log("🔍 [PROPOSAL-MANAGER] Loading invoice data...");
+      
+      if (!this.existingInvoice) {
+        console.log("🔍 [PROPOSAL-MANAGER] No existing invoice data");
         return;
       }
-      console.log("🔍 [PROPOSAL-MANAGER] Loading data from database for invoice:", this.invoiceId);
 
-      try {
-        const response = await fetch(`/api/proposal/get?id=${this.invoiceId}`);
-        const data = await response.json();
+      console.log("🔍 [PROPOSAL-MANAGER] Loading from existing invoice:", this.existingInvoice);
 
-        console.log("🔍 [PROPOSAL-MANAGER] Data:", data);
+      // Load line items from the existing invoice
+      if (this.existingInvoice.catalogLineItems && this.existingInvoice.catalogLineItems.length > 0) {
+        this.cachedLineItems = this.existingInvoice.catalogLineItems.map((item) => ({
+          name: item.name || "",
+          description: item.description || "",
+          quantity: item.quantity || 1,
+          unitPrice: item.unitPrice || 0,
+          catalogItemId: item.catalogItemId || null,
+        }));
+        console.log("✅ [PROPOSAL-MANAGER] Loaded line items from invoice:", this.cachedLineItems.length);
+      }
 
-        if (data.success && data.invoice) {
-          const invoice = data.invoice;
+      // Load subject from invoice
+      const subjectTextElement = document.getElementById("proposal-subject-text");
+      const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
 
-          // Load line items from catalogLineItems and convert field names
-          const dbLineItems = invoice.catalogLineItems || [];
-          this.cachedLineItems = dbLineItems.map((item) => ({
-            name: item.name || "",
-            description: item.description || "",
-            quantity: item.quantity || 1,
-            unitPrice: item.unitPrice || 0, // Convert unitPrice to unitPrice
-            catalogItemId: item.catalogItemId || null,
-          }));
-
-          // Load subject from invoice
-          const subjectTextElement = document.getElementById("proposal-subject-text");
-          const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
-
-          if (subjectTextElement) {
-            if (invoice.subject) {
-              // Replace skeleton with actual subject text
-              subjectTextElement.className =
-                "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
-              subjectTextElement.textContent = invoice.subject;
-            } else {
-              // No subject in database, show default
-              subjectTextElement.className =
-                "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
-              subjectTextElement.textContent = "Fire Protection Services Proposal";
-              // console.log("✅ [PROPOSAL-MANAGER] No subject in database, using default");
-            }
-
-            if (hiddenInput) {
-              hiddenInput.value = invoice.subject || "Fire Protection Services Proposal";
-            }
-          }
-
-          // Load proposal date from invoice
-          const proposalDateElement = document.getElementById("proposal-date");
-          if (proposalDateElement) {
-            let dateToShow;
-            if (invoice.createdAt) {
-              // Use invoice creation date
-              const invoiceDate = new Date(invoice.createdAt);
-              dateToShow = invoiceDate.toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              });
-              // console.log("✅ [PROPOSAL-MANAGER] Using invoice creation date:", dateToShow);
-            } else {
-              // No date in database, use current time
-              const now = new Date();
-              dateToShow = now.toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              });
-              // console.log("✅ [PROPOSAL-MANAGER] No invoice date, using current date:", dateToShow);
-            }
-            proposalDateElement.textContent = dateToShow;
-          } else {
-            console.log("❌ [PROPOSAL-MANAGER] proposal-date element not found");
-          }
-
-          // Load proposal notes from invoice
-          const notesElement = document.getElementById("proposal-notes");
-          if (notesElement) {
-            if (invoice.proposalNotes) {
-              notesElement.value = invoice.proposalNotes;
-              // console.log("✅ [PROPOSAL-MANAGER] Loaded notes:", invoice.proposalNotes);
-            } else {
-              notesElement.value = "";
-              // console.log("✅ [PROPOSAL-MANAGER] No notes in database, using empty string");
-            }
-          } else {
-            // console.log("❌ [PROPOSAL-MANAGER] proposal-notes element not found");
-          }
-
-          // If no line items or empty/malformed line items, initialize with defaults
-          // console.log("🔍 [PROPOSAL-MANAGER] Checking for valid line items...");
-          // console.log("🔍 [PROPOSAL-MANAGER] cachedLineItems.length:", this.cachedLineItems.length);
-
-          const hasValidLineItems =
-            this.cachedLineItems.length > 0 &&
-            this.cachedLineItems.some((item) => item.name && item.name.trim() !== "");
-
-          console.log("🔍 [PROPOSAL-MANAGER] hasValidLineItems:", hasValidLineItems);
-
-          debugger;
-          if (!hasValidLineItems) {
-            // console.log("🔍 [PROPOSAL-MANAGER] No valid line items found, initializing defaults");
-            this.initializeDefaultLineItems();
-            await this.saveToDatabase(); // Save the defaults
-          }
-
-          // Render the loaded line items to the DOM
-          this.renderLineItems();
-          updateProposalTotal();
+      if (subjectTextElement) {
+        if (this.existingInvoice.subject) {
+          subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200";
+          subjectTextElement.textContent = this.existingInvoice.subject;
         } else {
-          // Failed to load data, show default subject
-          const subjectTextElement = document.getElementById("proposal-subject-text");
-          const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
-
-          if (subjectTextElement) {
-            subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
-            subjectTextElement.textContent = "Fire Protection Services Proposal";
-          }
-
-          if (hiddenInput) {
-            hiddenInput.value = "Fire Protection Services Proposal";
-          }
-        }
-      } catch (error) {
-        console.error("❌ [PROPOSAL-MANAGER] Error loading data from database:", error);
-
-        // On error, show default subject
-        const subjectTextElement = document.getElementById("proposal-subject-text");
-        const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
-
-        if (subjectTextElement) {
-          subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200"; // Restore original styling
+          subjectTextElement.className = "text-2xl font-medium text-gray-800 dark:text-gray-200";
           subjectTextElement.textContent = "Fire Protection Services Proposal";
         }
 
         if (hiddenInput) {
-          hiddenInput.value = "Fire Protection Services Proposal";
+          hiddenInput.value = this.existingInvoice.subject || "Fire Protection Services Proposal";
         }
       }
-    }
 
-    initializeProposalForm() {
-      // console.log("🔧 [PROPOSAL-MANAGER] Initializing proposal form...");
+      // Load proposal date from invoice
+      const proposalDateElement = document.getElementById("proposal-date");
+      if (proposalDateElement) {
+        let dateToShow;
+        if (this.existingInvoice.createdAt) {
+          const invoiceDate = new Date(this.existingInvoice.createdAt);
+          dateToShow = invoiceDate.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+        } else {
+          const now = new Date();
+          dateToShow = now.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+        }
+        proposalDateElement.textContent = dateToShow;
+      }
 
-      // Set project details in the form
-
-      // const address = document.getElementById("proposal-project-address");
-      // const clientName = document.getElementById("proposal-client-name");
-      // const proposalDate = document.getElementById("proposal-date");
-
-      // if (address) address.textContent = this.project.address || "Project Address";
-      // if (clientName)
-      //   clientName.textContent =
-      //     this.project.authorProfile?.firstName? +
-      //       " " +
-      //       this.project.authorProfile?.lastName? +
-      //       " → " +
-      //       this.project.authorProfile?.companyName || "Client Name";
-
-      // // Date is now handled in loadDataFromDatabase()
-
-      // Render line items from cached data
-      this.renderLineItems();
-      updateProposalTotal();
+      // Load proposal notes from invoice
+      const notesElement = document.getElementById("proposal-notes");
+      if (notesElement) {
+        if (this.existingInvoice.proposalNotes) {
+          notesElement.value = this.existingInvoice.proposalNotes;
+        } else {
+          notesElement.value = "";
+        }
+      }
     }
 
     initializeDefaultLineItems() {
@@ -994,12 +1059,8 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       }
 
       if (!this.invoiceId) {
-        console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot save. Ensuring invoice exists...");
-        await this.ensureInvoiceExists();
-        if (!this.invoiceId) {
-          console.log("❌ [PROPOSAL-MANAGER] Failed to create/get invoice ID");
-          return;
-        }
+        console.log("❌ [PROPOSAL-MANAGER] No invoice ID, cannot save. Invoice should be created via upsert.");
+        return;
       }
 
       try {
