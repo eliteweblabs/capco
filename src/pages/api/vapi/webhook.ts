@@ -162,6 +162,50 @@ async function handleToolCalls(message: any): Promise<Response> {
       const data = await response.json();
       console.log(`[---VAPI-WEBHOOK] Result:`, data.result?.substring(0, 50) + "...");
 
+      // Fire-and-forget: send confirmation email when a booking succeeds
+      if (functionName === "bookAppointment") {
+        try {
+          const siteUrl = process.env.SITE_URL || "http://localhost:4321";
+          // Prefer explicit params; fall back to data returned from cal-integration
+          const startTime = params.start || data?.data?.booking?.startTime;
+          const personName = params.name;
+          const personEmail = params.email;
+
+          if (startTime && personName && personEmail) {
+            const start = new Date(startTime);
+            const date = start.toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              timeZone: "UTC",
+            });
+            const time = start.toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              timeZone: "UTC",
+            });
+
+            fetch(`${siteUrl}/api/vapi/send-confirmation-email`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-Vapi-System": "true" },
+              body: JSON.stringify({
+                name: personName,
+                email: personEmail,
+                appointmentDetails: {
+                  date,
+                  time,
+                  duration: "30 minutes",
+                  location: "Online consultation",
+                  meetingType: "Fire protection consultation",
+                },
+              }),
+            }).catch((e) => console.error("[---VAPI-WEBHOOK] send-confirmation-email error:", e));
+          }
+        } catch (e) {
+          console.error("[---VAPI-WEBHOOK] Failed to queue confirmation email:", e);
+        }
+      }
+
       results.push({
         toolCallId: toolCall.id,
         result: data.result,
