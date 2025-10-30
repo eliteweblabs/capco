@@ -180,11 +180,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
+    // Fetch the complete invoice data including line items
+    const { data: completeInvoice, error: fetchError } = await supabase
+      .from("invoices")
+      .select("*")
+      .eq("id", invoice.id)
+      .single();
+
+    if (fetchError) {
+      console.error("❌ [PROPOSAL-UPSERT] Error fetching complete invoice:", fetchError);
+      return createErrorResponse("Failed to fetch complete invoice data", 500);
+    }
+
     const responseData = {
-      invoice: {
-        id: invoice.id,
-        status: invoice.status,
-      },
+      invoice: completeInvoice,
       message: `Invoice ${id ? "updated" : "created"} successfully`,
     };
 
