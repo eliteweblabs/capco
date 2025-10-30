@@ -271,7 +271,7 @@ const debugData = {
       {isBackend}
     />
 
-    <div class="safari-18-fix">
+    <div class="safari-18-fix flex pt-14">
       <Aside
         {currentUser}
         {project}
@@ -283,10 +283,10 @@ const debugData = {
 
       <div
         id="main-content"
-        class=`${mainClasses} ${currentUser && currentRole !== "Client" ? "" : ""}`
+        class=`w-full ${mainClasses} ${currentUser && currentRole !== "Client" ? "" : ""}`
       >
         <main
-          class={`min-h-[calc(100dvh-8rem)] mt-14 p-4 flex-1 relative ${centerContent ? "flex items-center justify-center" : ""}`}
+          class={`min-h-[calc(100dvh-8rem)] p-4 flex-1 relative ${centerContent ? "flex items-center justify-center" : ""}`}
         >
           <slot />
         </main>
@@ -439,6 +439,32 @@ const debugData = {
           }
         } catch (error) {
           console.error("Error creating button partial:", error);
+          return null;
+        }
+      };
+
+      (window as any).createSimpleIconPartial = async function (config: any) {
+        try {
+          const headers = new Headers();
+          Object.entries(config).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              headers.set(`x-icon-${key}`, value.toString());
+            }
+          });
+
+          const response = await fetch("/partials/simple-icon", {
+            headers: headers,
+          });
+
+          if (response.ok) {
+            const iconHTML = await response.text();
+            return iconHTML; // Return HTML string instead of DOM element
+          } else {
+            console.error("Failed to fetch simple-icon partial:", response.status);
+            return null;
+          }
+        } catch (error) {
+          console.error("Error creating simple-icon partial:", error);
           return null;
         }
       };

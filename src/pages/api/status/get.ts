@@ -159,10 +159,10 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const simplifiedStatuses: Record<number, { admin: any; client: any; current: any }> = {};
 
     // Debug: Log the current user's role
-    console.log("🔍 [PROJECT-STATUSES-API] Current user role:", currentUser?.profile?.role);
+    // console.log("🔍 [PROJECT-STATUSES-API] Current user role:", currentUser?.profile?.role);
     const isAdminOrStaff =
       currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "Staff";
-    console.log("🔍 [PROJECT-STATUSES-API] Is admin or staff:", isAdminOrStaff);
+    // console.log("🔍 [PROJECT-STATUSES-API] Is admin or staff:", isAdminOrStaff);
 
     // Get admin and staff emails using reusable API
     // No longer need to fetch admin/staff emails here since we pass role names directly

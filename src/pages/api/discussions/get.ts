@@ -388,7 +388,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       incompleteCount = incompleteCountResult || 0;
     }
 
-    console.log(`✅ [DISCUSSIONS-GET] Returning ${enrichedDiscussions.length} discussions`);
+    // console.log(`✅ [DISCUSSIONS-GET] Returning ${enrichedDiscussions.length} discussions`);
 
     return new Response(
       JSON.stringify({

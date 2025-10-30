@@ -98,8 +98,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
       const bodyText = await request.text();
       console.log("📡 [USERS-UPSERT] Raw request body:", bodyText);
-      
-      if (!bodyText || bodyText.trim() === '') {
+
+      if (!bodyText || bodyText.trim() === "") {
         return new Response(
           JSON.stringify({
             error: "Empty request body",
@@ -108,7 +108,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           { status: 400, headers: { "Content-Type": "application/json" } }
         );
       }
-      
+
       body = JSON.parse(bodyText);
     } catch (parseError) {
       console.error("❌ [USERS-UPSERT] JSON parse error:", parseError);
@@ -120,9 +120,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
-    
+
     // Validate that body is an object
-    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
       return new Response(
         JSON.stringify({
           error: "Invalid request body format",
@@ -131,7 +131,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
-    
+
     const userData: UserData = body;
 
     // Validate required fields

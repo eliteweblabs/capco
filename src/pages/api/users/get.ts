@@ -56,7 +56,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       includeTotal: url.searchParams.get("includeTotal") === "true",
     };
 
-    console.log(`📡 [USERS-GET] Fetching users with filters:`, filters);
+    // console.log(`📡 [USERS-GET] Fetching users with filters:`, filters);
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -96,7 +96,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     if (filters.role) {
       // Handle multiple roles (comma-separated)
       if (filters.role.includes(",")) {
-        const roles = filters.role.split(",").map(r => r.trim());
+        const roles = filters.role.split(",").map((r) => r.trim());
         query = query.in("role", roles);
       } else {
         query = query.eq("role", filters.role);

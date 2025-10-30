@@ -1,15 +1,21 @@
 ---
 import App from "../../components/common/App.astro";
 import PDFSystem from "../../components/project/PDFSystem.astro";
-import { supabase } from "../../lib/supabase";
 import { checkAuth } from "../../lib/auth";
 
-const { currentUser = undefined } = await checkAuth(Astro.cookies);
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role || "Client";
+const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.props;
+
+// For development: allow access without authentication
+// In production, you might want to re-enable these checks
 if (!currentUser) {
   return Astro.redirect("/auth/login");
 }
-const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.props;
-const currentRole = currentUser?.profile?.role || "Client";
+
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
 ---
 
 <App title="PDF System - CAPCo Fire Protection">
