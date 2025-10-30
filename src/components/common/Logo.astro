@@ -17,11 +17,6 @@ export interface Props {
 }
 
 const { file = "svg", link = "/", size = "md", isBackend } = Astro.props;
-// Defensive: ensure link is a URL/path, not raw SVG/XML accidentally passed in
-const safeLink =
-  typeof link === "string" && !link.trim().startsWith("<") && !link.trim().startsWith("%3C")
-    ? link
-    : "/";
 // Get the logo SVG content with the current size
 // const logoSvg = getCapcoLogoSvg(size, file, link);
 
@@ -43,15 +38,15 @@ if (file === "string") {
   file === "svg" && link && isBackend ? (
     <a
       class="flex sm:hidden w-10"
-      href={safeLink}
+      href={link}
       title="Go to home page"
       set:html={logoSvgIconLight}
     />
-    <a class="hidden sm:flex" href={safeLink} title="Go to home page" set:html={logoSvg} />
+    <a class="hidden sm:flex" href={link} title="Go to home page" set:html={logoSvg} />
 
   ) : (
     file === "svg" && link && !isBackend && (
-      <a href={safeLink} title="Go to home page" set:html={logoSvg} />
+      <a href={link} title="Go to home page" set:html={logoSvg} />
     )
   )
 }

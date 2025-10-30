@@ -14,7 +14,7 @@ export const globalCompanyData = () => {
     globalCompanyAddress: "335 Washington St, Suite 1114, Woburn, MA 01801",
     globalCompanyPhone: "(617) 644-0014",
     globalCompanyEmail: "admin@capcofire.com",
-    globalCompanyWebsite: "https://capcofire.com",
+    globalCompanyWebsite: process.env.RAILWAY_PUBLIC_DOMAIN,
     globalCompanyLogo: logo,
     globalCompanyLogoDark: logo,
     globalCompanyLogoLight: logo,
