@@ -1538,6 +1538,36 @@ async function handleCreateBooking(params: any) {
       };
     }
 
+    // Query valid BookingStatus enum values
+    let validBookingStatus = "ACCEPTED"; // Default fallback
+    try {
+      const enumResult = await calcomDb.query(`
+        SELECT enumlabel 
+        FROM pg_enum 
+        WHERE enumtypid = (
+          SELECT oid 
+          FROM pg_type 
+          WHERE typname = 'BookingStatus'
+        )
+        ORDER BY enumsortorder
+      `);
+
+      const enumValues = enumResult.rows.map((r: any) => r.enumlabel);
+      console.log(`📋 [CAL-INTEGRATION] Valid BookingStatus values: ${enumValues.join(", ")}`);
+
+      // Prefer these in order: ACCEPTED, PENDING, CONFIRMED, CANCELLED, REJECTED
+      const preferredValues = ["ACCEPTED", "PENDING", "CONFIRMED", "CANCELLED", "REJECTED"];
+      validBookingStatus =
+        preferredValues.find((v) => enumValues.includes(v)) || enumValues[0] || "ACCEPTED";
+
+      console.log(`✅ [CAL-INTEGRATION] Using BookingStatus: ${validBookingStatus}`);
+    } catch (enumError: any) {
+      console.log(
+        `⚠️ [CAL-INTEGRATION] Could not query BookingStatus enum, using default: ${enumError.message}`
+      );
+      // Keep default
+    }
+
     // Build INSERT statement using detected column names
     const columns = [
       "uid",
@@ -1562,7 +1592,7 @@ async function handleCreateBooking(params: any) {
       endDate,
       eventType.id,
       userId,
-      "CONFIRMED", // Using CONFIRMED instead of ACCEPTED (enum validation)
+      validBookingStatus, // Dynamically determined valid enum value
       false,
       false,
       0,
