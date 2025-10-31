@@ -1,6 +1,6 @@
 # Flowbite Components Documentation
 
-This document provides comprehensive documentation for all Flowbite components created for the CAPCo Fire Protection Systems project.
+This document provides comprehensive documentation for all Flowbite components created for the CAPCO Design Group Systems project.
 
 ## 🎯 Overview
 
@@ -26,14 +26,7 @@ A responsive navigation bar with mobile menu support.
 **Usage**:
 
 ```astro
-<FlowbiteNavbar
-  isAuth={isAuth}
-  currentUser={currentUser}
-  currentRole={currentRole}
-  session={session}
-  desktopNavigationHTML={desktopNavigationHTML}
-  id={id}
-/>
+<FlowbiteNavbar {isAuth} {currentUser} {currentRole} {session} {desktopNavigationHTML} {id} />
 ```
 
 ### 2. FlowbiteSidebar
@@ -189,11 +182,11 @@ Main layout component for dashboard pages.
 
 ```astro
 <FlowbiteDashboardLayout
-  isAuth={isAuth}
-  currentUser={currentUser}
-  currentRole={currentRole}
-  session={session}
-  desktopNavigationHTML={desktopNavigationHTML}
+  {isAuth}
+  {currentUser}
+  {currentRole}
+  {session}
+  {desktopNavigationHTML}
   pageTitle="My Dashboard"
 >
   <!-- Page content -->

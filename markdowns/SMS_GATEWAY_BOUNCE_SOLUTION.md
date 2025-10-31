@@ -22,7 +22,7 @@ Your SMS gateway emails are bouncing to `@vtext.com` addresses (Verizon). This i
 ### 2. **Message Content Optimization**
 
 ```
-Before: "CAPCo Fire Protection: Your project 'Project Name' status has been updated to: Status Name\n\nProject Address: 123 Main St\n\nReply STOP to opt out of SMS notifications."
+Before: "CAPCO Design Group: Your project 'Project Name' status has been updated to: Status Name\n\nProject Address: 123 Main St\n\nReply STOP to opt out of SMS notifications."
 
 After: "CAPCo Fire: 'Project Name' → Status Name\nAddr: 123 Main St\nReply STOP to opt out"
 ```

@@ -756,7 +756,7 @@ SELECT * FROM (VALUES
         'Standard document footer with company info',
         '<div class="document-footer" style="margin-top: 30px; padding-top: 15px; border-top: 2px solid #333; text-align: center; font-size: 10px; color: #666;">
             <div style="margin-bottom: 5px;">
-                <strong>CAPCo Fire Protection Systems</strong>
+                <strong>CAPCO Design Group Systems</strong>
             </div>
             <div>
                 This document was generated on {{CURRENT_DATE}} for project {{PROJECT_TITLE}}

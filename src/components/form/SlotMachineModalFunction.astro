@@ -152,84 +152,223 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   // Debug logging in script
 
   // Initialize the slot machine picker
-  document.addEventListener("DOMContentLoaded", function () {
+  // Wait for DOM to be ready and element to exist
+  let hiddenInput = null;
+  let googleAuthModal = null; // Track Google auth modal instance
+
+  function setupSlotMachine() {
     const trigger = document.getElementById(id);
-    const hiddenInput = document.getElementById(`${id}-value`);
+    hiddenInput = document.getElementById(`${id}-value`);
 
     if (!trigger) {
-      console.error(`🎰 [SLOT-MACHINE] Trigger button with ID '${id}' not found`);
+      console.warn(`🎰 [SLOT-MACHINE] Trigger button with ID '${id}' not found yet, retrying...`);
+      // Retry after a short delay
+      setTimeout(setupSlotMachine, 100);
       return;
     }
 
-    // Set up click handler
-    trigger.addEventListener("click", function (e) {
-      e.stopPropagation();
-      // // console.log(`🎰 [SLOT-MACHINE] Opening picker for ID: ${id}`);
+    console.log(`✅ [SLOT-MACHINE] Trigger button found for ID: ${id}`);
+    attachClickHandler(trigger);
+  }
 
-      // Open the slot machine modal using variables directly
-      // Use current hidden input value if it exists, otherwise fall back to original selectedValue
-      const currentValue = hiddenInput ? hiddenInput.value : selectedValue;
-      showSlotMachineModal({
-        id: id,
-        title: title,
-        options: options,
-        selectedValue: currentValue,
-        showCloseButton: showCloseButton,
-        showCancelButton: showCancelButton,
-        valueField: valueField,
-        labelField: labelField,
-        searchText: searchText,
-        searchPlaceholder: searchPlaceholder,
-        globalInputClasses: globalInputClasses,
-        enableSearch: enableSearch,
-        fetchApiEndpoint: fetchApiEndpoint,
-        searchText: searchText,
-        searchPlaceholder: searchPlaceholder,
-        apiParams: apiParams,
-        dataTransform: dataTransform,
-        valueField: valueField,
-        labelField: labelField,
-        noResultsText: noResultsText,
-        globalInputClasses: globalInputClasses,
-        // project: project,
-      });
+  function attachClickHandler(trigger) {
+    console.log(`🔗 [SLOT-MACHINE] Attaching click handler to trigger for ID: ${id}`);
+    console.log(`🔗 [SLOT-MACHINE] Trigger element:`, trigger);
+    console.log(`🔗 [SLOT-MACHINE] Trigger tag:`, trigger.tagName);
+    console.log(`🔗 [SLOT-MACHINE] fetchApiEndpoint: ${fetchApiEndpoint}`);
+
+    // Set up click handler
+    trigger.addEventListener("click", async function (e) {
+      console.log(`🎯 [SLOT-MACHINE] Click event fired for ID: ${id}`);
+      console.log(`🎯 [SLOT-MACHINE] Event target:`, e.target);
+      console.log(`🎯 [SLOT-MACHINE] Event currentTarget:`, e.currentTarget);
+
+      e.stopPropagation();
+
+      // Only preventDefault if it's a link (anchor tag)
+      if (trigger.tagName === "A") {
+        e.preventDefault();
+        console.log(`🛑 [SLOT-MACHINE] Prevented default navigation`);
+      }
+
+      console.log(`🎰 [SLOT-MACHINE] Click handler processing for ID: ${id}`);
+      console.log(`🎰 [SLOT-MACHINE] fetchApiEndpoint: ${fetchApiEndpoint}`);
+
+      // If this is a Google Contacts picker, check auth first
+      if (fetchApiEndpoint && fetchApiEndpoint.includes("/api/google/contacts")) {
+        console.log("🔍 [SLOT-MACHINE] Google Contacts detected, checking auth...");
+        try {
+          const isAuthenticated = await checkGoogleAuthAndSearch();
+          console.log(`🔍 [SLOT-MACHINE] Auth check result: ${isAuthenticated}`);
+
+          // If auth check passed, modal will already be opened by checkGoogleAuthAndSearch
+          // If not authenticated, auth modal is shown and we don't proceed
+          if (!isAuthenticated) {
+            console.log("❌ [SLOT-MACHINE] Auth failed, not proceeding");
+            return; // Don't proceed if auth failed
+          }
+        } catch (authError) {
+          console.error("❌ [SLOT-MACHINE] Error during auth check:", authError);
+          showSlotNotification("Error checking authentication", "error");
+          return;
+        }
+      } else {
+        // For non-Google endpoints, open directly
+        console.log("✅ [SLOT-MACHINE] Non-Google endpoint, opening modal directly");
+        initializeSlotMachine();
+      }
     });
 
-    // Check for URL parameters to auto-open this specific picker
-    // function checkUrlParameters() {
-    //   const urlParams = new URLSearchParams(window.location.search);
-    //   const modalParam = urlParams.get("modal");
+    console.log(`✅ [SLOT-MACHINE] Click handler attached successfully for ID: ${id}`);
+  }
 
-    //   console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
-    //     modalParam,
-    //     componentId: id,
-    //     match: modalParam === id,
-    //   });
+  function initializeSlotMachine() {
+    const currentValue = hiddenInput ? hiddenInput.value : selectedValue;
+    showSlotMachineModal({
+      id: id,
+      title: title,
+      options: options,
+      selectedValue: currentValue,
+      showCloseButton: showCloseButton,
+      showCancelButton: showCancelButton,
+      valueField: valueField,
+      labelField: labelField,
+      searchText: searchText,
+      searchPlaceholder: searchPlaceholder,
+      globalInputClasses: globalInputClasses,
+      enableSearch: enableSearch,
+      fetchApiEndpoint: fetchApiEndpoint,
+      searchText: searchText,
+      searchPlaceholder: searchPlaceholder,
+      apiParams: apiParams,
+      dataTransform: dataTransform,
+      valueField: valueField,
+      labelField: labelField,
+      noResultsText: noResultsText,
+      globalInputClasses: globalInputClasses,
+      // project: project,
+    });
+  }
+  // Check for successful Google auth redirect on page load
+  function checkGoogleAuthRedirect() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const googleAuthSuccess = urlParams.get("google_auth");
 
-    //   if (modalParam === id) {
-    //     // console.log(`🎰 [SLOT-MACHINE] URL parameter detected: modal=${id}`);
+    // Also check sessionStorage for auth component tracking
+    const authComponentId = sessionStorage.getItem("google_auth_component_id");
+    const authTimestamp = sessionStorage.getItem("google_auth_timestamp");
 
-    //     // Wait for DOM to be ready, then trigger the picker
-    //     setTimeout(() => {
-    //       if (trigger) {
-    //         // console.log(`🎰 [SLOT-MACHINE] Auto-opening picker for ID: ${id}`);
-    //         trigger.click();
+    // Check if this component should auto-open after auth (within last 30 seconds)
+    const shouldAutoOpen =
+      authComponentId === id &&
+      authTimestamp &&
+      Date.now() - parseInt(authTimestamp) < 30000 &&
+      fetchApiEndpoint &&
+      fetchApiEndpoint.includes("/api/google/contacts");
 
-    //         // Clean up the URL parameter
-    //         const newUrl = new URL(window.location);
-    //         newUrl.searchParams.delete("modal");
-    //         window.history.replaceState({}, "", newUrl);
-    //         // console.log(`🎰 [SLOT-MACHINE] URL cleaned up: ${newUrl.href}`);
-    //       } else {
-    //         console.error(`🎰 [SLOT-MACHINE] Trigger button not found for auto-open`);
-    //       }
-    //     }, 100);
-    //   }
-    // }
+    if (
+      (googleAuthSuccess === "success" || shouldAutoOpen) &&
+      fetchApiEndpoint &&
+      fetchApiEndpoint.includes("/api/google/contacts")
+    ) {
+      // Clean up URL parameter and sessionStorage
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete("google_auth");
+      window.history.replaceState({}, "", newUrl);
+      sessionStorage.removeItem("google_auth_component_id");
+      sessionStorage.removeItem("google_auth_timestamp");
 
-    // // Check URL parameters on load
-    // checkUrlParameters();
-  });
+      // Close any existing auth modal
+      closeGoogleAuthModal();
+
+      // Wait longer for cookies to be set (httpOnly cookies need time)
+      setTimeout(async () => {
+        console.log("🔄 [SLOT-MACHINE] Google auth redirect detected, retrying auth check...");
+
+        // Try multiple times with exponential backoff
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        const retryAuth = async () => {
+          attempts++;
+          const isAuthenticated = await checkGoogleAuthAndSearch();
+
+          if (!isAuthenticated && attempts < maxAttempts) {
+            console.log(
+              `🔄 [SLOT-MACHINE] Auth check failed, retrying in ${attempts * 500}ms... (attempt ${attempts}/${maxAttempts})`
+            );
+            setTimeout(retryAuth, attempts * 500);
+          } else if (isAuthenticated) {
+            console.log("✅ [SLOT-MACHINE] Auth successful after redirect, modal should be open");
+          } else {
+            console.error("❌ [SLOT-MACHINE] Auth check failed after multiple attempts");
+            showSlotNotification("Authentication failed. Please try again.", "error");
+          }
+        };
+
+        retryAuth();
+      }, 1000);
+    }
+  }
+
+  // Check on page load if we just returned from Google auth
+  if (typeof window !== "undefined") {
+    // Run immediately and also on DOMContentLoaded as fallback
+    checkGoogleAuthRedirect();
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", checkGoogleAuthRedirect);
+    } else {
+      // DOM already loaded, run immediately
+      checkGoogleAuthRedirect();
+    }
+  }
+
+  // Initialize the component when DOM is ready
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", setupSlotMachine);
+    } else {
+      // DOM already loaded
+      setupSlotMachine();
+    }
+  }
+
+  // Check for URL parameters to auto-open this specific picker
+  // function checkUrlParameters() {
+  //   const urlParams = new URLSearchParams(window.location.search);
+  //   const modalParam = urlParams.get("modal");
+
+  //   console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
+  //     modalParam,
+  //     componentId: id,
+  //     match: modalParam === id,
+  //   });
+
+  //   if (modalParam === id) {
+  //     // console.log(`🎰 [SLOT-MACHINE] URL parameter detected: modal=${id}`);
+
+  //     // Wait for DOM to be ready, then trigger the picker
+  //     setTimeout(() => {
+  //       if (trigger) {
+  //         // console.log(`🎰 [SLOT-MACHINE] Auto-opening picker for ID: ${id}`);
+  //         trigger.click();
+
+  //         // Clean up the URL parameter
+  //         const newUrl = new URL(window.location);
+  //         newUrl.searchParams.delete("modal");
+  //         window.history.replaceState({}, "", newUrl);
+  //         // console.log(`🎰 [SLOT-MACHINE] URL cleaned up: ${newUrl.href}`);
+  //       } else {
+  //         console.error(`🎰 [SLOT-MACHINE] Trigger button not found for auto-open`);
+  //       }
+  //     }, 100);
+  //   }
+  // }
+
+  // // Check URL parameters on load
+  // checkUrlParameters();
+
+  // });
 
   // Auto-save function that uses saveApiEndpoint or falls back to component ID
   // async function saveToAPI(apiEndpoint, value, label) {
@@ -489,6 +628,166 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   //   }
   // }
 
+  function showGoogleAuthModal() {
+    // Create a simple modal for Google authentication
+    const modal = document.createElement("div");
+    modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+    modal.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+          <div class="flex items-center mb-4">
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Google Authentication Required</h3>
+          </div>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
+            To search your Google contacts, you need to authenticate with Google first. This will allow us to access your contacts safely and securely.
+          </p>
+          <div class="flex space-x-3">
+            <button
+              onclick="window.authenticateWithGoogle()"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+            >
+              Sign in with Google
+            </button>
+            <button
+              onclick="window.closeGoogleAuthModal()"
+              class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      `;
+
+    document.body.appendChild(modal);
+    googleAuthModal = modal;
+  }
+
+  function authenticateWithGoogle() {
+    // Store the component ID in sessionStorage so we can auto-open after redirect
+    sessionStorage.setItem("google_auth_component_id", id);
+    sessionStorage.setItem("google_auth_timestamp", Date.now().toString());
+
+    // Redirect to Google OAuth with current page as redirect target + success param
+    const currentUrl = window.location.pathname + window.location.search;
+    const redirectUrl = `${currentUrl}${currentUrl.includes("?") ? "&" : "?"}google_auth=success`;
+    window.location.href = `/api/google/signin?redirect=${encodeURIComponent(redirectUrl)}`;
+  }
+  window.authenticateWithGoogle = authenticateWithGoogle;
+
+  function closeGoogleAuthModal() {
+    try {
+      if (googleAuthModal) {
+        googleAuthModal.remove();
+        googleAuthModal = null;
+        console.log("✅ [SLOT-MACHINE] Google auth modal closed");
+      }
+    } catch (error) {
+      console.error("❌ [SLOT-MACHINE] Error closing Google auth modal:", error);
+      // Try to find and remove any existing modals as fallback
+      const existingModal = document.querySelector(".fixed.inset-0.bg-black.bg-opacity-50");
+      if (existingModal && existingModal.innerHTML.includes("Google Authentication Required")) {
+        existingModal.remove();
+      }
+    }
+  }
+  window.closeGoogleAuthModal = closeGoogleAuthModal;
+
+  // Generic notification function (can be overridden by parent component)
+  function showSlotNotification(message, type = "info") {
+    if (typeof window.showNotification === "function") {
+      window.showNotification(message, type);
+    } else {
+      // Fallback notification
+      const notification = document.createElement("div");
+      notification.className = `fixed top-4 right-4 p-4 rounded-md text-white z-50 ${
+        type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-blue-600"
+      }`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+  }
+
+  async function checkGoogleAuthAndSearch() {
+    console.log("🔍 [SLOT-MACHINE] Checking Google authentication...");
+    console.log("🔍 [SLOT-MACHINE] Current URL:", window.location.href);
+    console.log(
+      "🔍 [SLOT-MACHINE] Cookies check:",
+      document.cookie
+        ? "Cookies present"
+        : "No cookies in document.cookie (httpOnly cookies won't show here)"
+    );
+
+    try {
+      // First, check cookies via debug endpoint to see if they're actually set
+      try {
+        const debugResponse = await fetch("/api/debug-cookies", {
+          credentials: "include",
+        });
+
+        if (debugResponse.ok) {
+          const debugData = await debugResponse.json();
+          console.log("🍪 [SLOT-MACHINE] Cookie debug info:", {
+            availableCookies: debugData.availableCookies,
+            hasGoogleToken: debugData.availableCookies.includes("google_access_token"),
+            totalCookies: debugData.totalCookiesFound,
+          });
+        }
+      } catch (debugError) {
+        console.warn("⚠️ [SLOT-MACHINE] Could not check debug cookies:", debugError);
+      }
+
+      // Check if Google auth is available by making a test call
+      const response = await fetch("/api/google/contacts?input=test", {
+        credentials: "include",
+      });
+
+      console.log("🔍 [SLOT-MACHINE] Auth check response:", {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+      });
+
+      if (response.ok) {
+        // Auth is working, open the search modal
+        console.log("✅ [SLOT-MACHINE] Google auth is working, opening search modal");
+        initializeSlotMachine();
+        return true;
+      } else if (response.status === 401) {
+        // Need to authenticate
+        let errorData = {};
+        try {
+          const text = await response.text();
+          errorData = JSON.parse(text);
+        } catch (e) {
+          // Ignore parse errors
+        }
+        console.log("🔐 [SLOT-MACHINE] Google auth required (401):", errorData);
+        console.log("🔐 [SLOT-MACHINE] Showing auth modal - cookies may not be set correctly");
+        console.log("🔐 [SLOT-MACHINE] Try visiting /api/debug-cookies to verify cookie status");
+        showGoogleAuthModal();
+        return false;
+      } else {
+        // Other error
+        console.error("❌ [SLOT-MACHINE] Google auth check failed:", response.status);
+        const errorText = await response.text().catch(() => "Unknown error");
+        console.error("❌ [SLOT-MACHINE] Error response:", errorText);
+        showSlotNotification(`Error checking Google authentication: ${response.status}`, "error");
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ [SLOT-MACHINE] Error checking Google auth:", error);
+      showSlotNotification("Error checking Google authentication", "error");
+      return false;
+    }
+  }
   // Generic slot machine modal function
   async function showSlotMachineModal(config) {
     const {
@@ -1058,6 +1357,12 @@ const displayText = buttonText || selectedOption?.label || placeholder;
               })
             );
 
+            // If this is a Google Contacts picker and we have data, try to render preview
+            if (fetchApiEndpoint && fetchApiEndpoint.includes("/api/google/contacts") && rawData) {
+              const previewId = `${id}-preview`;
+              renderContactPreview(rawData, previewId);
+            }
+
             if (typeof window.handleSelect === "function") {
               window.handleSelect(value, label, id);
             }
@@ -1406,6 +1711,116 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         modal.remove();
       }
     });
+  }
+
+  // Generic contact preview rendering function (for Google Contacts and similar data)
+  function renderContactPreview(data, previewElementId) {
+    const preview = document.getElementById(previewElementId);
+    if (!preview || !data) return;
+
+    const c = typeof data === "string" ? JSON.parse(data) : data;
+    const name = c.name || c.label || "Selected Contact";
+
+    // Helper to format keys (camelCase to Title Case)
+    const formatKey = (key) => {
+      return key
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, (str) => str.toUpperCase())
+        .trim();
+    };
+
+    // Helper to format values
+    const formatValue = (value) => {
+      if (Array.isArray(value)) {
+        return value.join(", ");
+      }
+      if (typeof value === "object" && value !== null) {
+        return JSON.stringify(value, null, 2);
+      }
+      return String(value);
+    };
+
+    // Get emoji for common fields
+    const getEmoji = (key) => {
+      const emojiMap = {
+        email: "📧",
+        phone: "📞",
+        organization: "🏢",
+        company: "🏢",
+        jobTitle: "💼",
+        title: "💼",
+        address: "📍",
+        birthday: "🎂",
+        websites: "🌐",
+        biography: "📝",
+        allEmails: "📧",
+        allPhones: "📞",
+      };
+      return emojiMap[key.toLowerCase()] || "•";
+    };
+
+    // Build the fields HTML by looping through all properties
+    const fieldsHtml = Object.keys(c)
+      .filter((key) => {
+        const value = c[key];
+        const keyLower = key.toLowerCase();
+        const formattedLabel = formatKey(key).toLowerCase();
+
+        // Skip keys that contain "Value:" or "Raw Contact"
+        const skipPatterns = [
+          "value:",
+          /^value$/i,
+          /^raw\s*contact$/i,
+          "rawcontact",
+          "raw_contact",
+        ];
+
+        const shouldSkip = skipPatterns.some((pattern) => {
+          if (typeof pattern === "string") {
+            return keyLower.includes(pattern) || formattedLabel.includes(pattern);
+          } else if (pattern instanceof RegExp) {
+            return pattern.test(key) || pattern.test(formattedLabel);
+          }
+          return false;
+        });
+
+        if (shouldSkip) return false;
+
+        const displayLabel = formatKey(key);
+        if (
+          displayLabel.toLowerCase().includes("value:") ||
+          displayLabel.toLowerCase().includes("raw contact")
+        ) {
+          return false;
+        }
+
+        return (
+          key !== "name" &&
+          key !== "id" &&
+          value !== null &&
+          value !== undefined &&
+          value !== "" &&
+          !(Array.isArray(value) && value.length === 0) &&
+          !(typeof value === "object" && Object.keys(value).length === 0)
+        );
+      })
+      .map((key) => {
+        const value = formatValue(c[key]);
+        const label = formatKey(key);
+        const emoji = getEmoji(key);
+        return `<div>${emoji} <span class="font-medium">${label}:</span> ${value}</div>`;
+      })
+      .join("");
+
+    preview.innerHTML = `
+      <div class="text-sm">
+        <div class="text-base font-semibold mb-1">${name}</div>
+        <div class="space-y-1 text-gray-700 dark:text-gray-300">
+          ${fieldsHtml || '<div class="text-gray-500 italic">No additional information available</div>'}
+        </div>
+      </div>
+    `;
+    preview.classList.remove("hidden");
   }
 
   // Generic handleSelect function that works for any slot machine

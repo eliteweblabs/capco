@@ -80,32 +80,39 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
     console.log("✅ [GOOGLE-OAUTH] User info retrieved:", userData.email);
 
-    // Store tokens in cookies (in production, use secure, httpOnly cookies)
-    cookies.set("google_access_token", tokenData.access_token, {
+    // Store tokens in cookies (use same pattern as other auth system)
+    const isDev = !import.meta.env.PROD;
+    const cookieOptions = {
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      secure: true,
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "lax" as const,
+      secure: !isDev, // Only secure in production (matches auth-cookies.ts pattern)
+    };
+
+    cookies.set("google_access_token", tokenData.access_token, {
+      ...cookieOptions,
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
     if (tokenData.refresh_token) {
       cookies.set("google_refresh_token", tokenData.refresh_token, {
-        path: "/",
+        ...cookieOptions,
         maxAge: 60 * 60 * 24 * 30, // 30 days
-        secure: true,
-        httpOnly: true,
-        sameSite: "lax",
       });
     }
 
     // Store user info in cookies
     cookies.set("google_user_info", JSON.stringify(userData), {
-      path: "/",
+      ...cookieOptions,
       maxAge: 60 * 60 * 24 * 7, // 7 days
-      secure: true,
-      httpOnly: true,
-      sameSite: "lax",
+    });
+
+    console.log("✅ [GOOGLE-OAUTH] Cookies set:", {
+      isDev,
+      secure: !isDev,
+      hasAccessToken: !!tokenData.access_token,
+      hasRefreshToken: !!tokenData.refresh_token,
+      origin: url.origin,
     });
 
     console.log("✅ [GOOGLE-OAUTH] OAuth flow completed successfully");

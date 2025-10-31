@@ -213,6 +213,17 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         </div>
       </div>
 
+      <!-- Create New Template Button -->
+      <div class="mb-4 flex justify-end">
+        <button
+          id="create-template-btn"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          <SimpleIcon name="plus" class="w-4 h-4 inline mr-2" />
+          Create New Template
+        </button>
+      </div>
+
       <!-- Template List -->
       <div id="templates-list" class="space-y-4">
         <!-- Templates will be loaded here -->
@@ -245,14 +256,14 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             Search
           </button> -->
           <!-- replace the above with slot machine for google contacts endpoint -->
-          <button
+          <!-- <button
             id="search-user-btn"
             class="hidden px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             onclick="window.pdfSystem.checkGoogleAuthAndSearch()"
           >
             <SimpleIcon name="user" class="w-4 h-4 inline mr-2" />
             Search for a user...
-          </button>
+          </button> -->
 
           <!-- Hidden SlotMachineModal for when auth is ready -->
           <SlotMachineModalFunction
@@ -271,11 +282,10 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             {currentUser}
             {globalInputClasses}
           />
-          <!-- Selected user preview -->
-          <div
-            id="user-search-preview"
-            class="mt-4 hidden rounded-md border p-4 text-sm color-background"
-          >
+        </div>
+        <div class="flex space-x-2">
+          <!-- Selected user preview (rendered by SlotMachineModalFunction) -->
+          <div id="user-search-preview" class="mt-4 rounded-md border p-4 text-sm color-background">
           </div>
         </div>
       </div>
@@ -394,7 +404,10 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
   </div>
 </div>
 
-<script is:inline>
+<script
+  is:inline
+  define:vars={{ currentUser, globalInputClasses, primaryTextClasses, secondaryTextClasses }}
+>
   console.log("🚀 [PDF-SYSTEM] Script starting...");
 
   class PDFSystem {
@@ -405,6 +418,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       this.templates = [];
       this.users = [];
       this.editor = null;
+      this.templateEditors = {}; // Store Quill editors for each template
       this.templateNameInput = null;
       this.templateTypeSelect = null;
 
@@ -416,7 +430,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       this.setupEventListeners();
       await this.loadTemplates();
       this.setupTabNavigation();
-      this.checkGoogleAuthAndSearch();
     }
 
     setupEventListeners() {
@@ -451,130 +464,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         this.closeTemplateEditor();
       });
 
+      // Create new template button
+      document.getElementById("create-template-btn")?.addEventListener("click", () => {
+        this.createNewTemplate();
+      });
+
       // Listen for user selection from SlotMachineModal (Google Contacts)
+      // The preview rendering is now handled by SlotMachineModalFunction.astro
+      // This listener can be used for additional PDF-system specific logic if needed
       window.addEventListener("slot-select", (event) => {
         const ce = /** @type {CustomEvent} */ (event);
         const detail = (ce && ce.detail) || {};
         if (detail.componentId !== "user-search") return;
 
-        const preview = document.getElementById("user-search-preview");
-        if (!preview) return;
-
-        const c = detail.data || {};
-        const name = detail.label || c.name || "Selected Contact";
-
-        // Helper to format keys (camelCase to Title Case)
-        const formatKey = (key) => {
-          return key
-            .replace(/([A-Z])/g, " $1")
-            .replace(/^./, (str) => str.toUpperCase())
-            .trim();
-        };
-
-        // Helper to format values
-        const formatValue = (value) => {
-          if (Array.isArray(value)) {
-            return value.join(", ");
-          }
-          if (typeof value === "object" && value !== null) {
-            return JSON.stringify(value, null, 2);
-          }
-          return String(value);
-        };
-
-        // Get emoji for common fields
-        const getEmoji = (key) => {
-          const emojiMap = {
-            email: "📧",
-            phone: "📞",
-            organization: "🏢",
-            company: "🏢",
-            jobTitle: "💼",
-            title: "💼",
-            address: "📍",
-            birthday: "🎂",
-            websites: "🌐",
-            biography: "📝",
-            allEmails: "📧",
-            allPhones: "📞",
-          };
-          return emojiMap[key.toLowerCase()] || "•";
-        };
-
-        // Build the fields HTML by looping through all properties
-        const fieldsHtml = Object.keys(c)
-          .filter((key) => {
-            // Skip name (already displayed), id, and empty values
-            const value = c[key];
-            const keyLower = key.toLowerCase();
-            const formattedLabel = formatKey(key).toLowerCase();
-
-            // Skip keys that contain "Value:" or "Raw Contact" (check both key and formatted label)
-            // Check for exact matches and specific patterns (but not partial word matches like "allEmails" containing "value")
-            const skipPatterns = [
-              "value:",
-              /^value$/i, // exact match for "value" or "Value"
-              /^raw\s*contact$/i, // exact match for "raw contact" or "Raw Contact" or "rawcontact"
-              "rawcontact",
-              "raw_contact",
-            ];
-
-            const shouldSkip = skipPatterns.some((pattern) => {
-              if (typeof pattern === "string") {
-                return keyLower.includes(pattern) || formattedLabel.includes(pattern);
-              } else if (pattern instanceof RegExp) {
-                return pattern.test(key) || pattern.test(formattedLabel);
-              }
-              return false;
-            });
-
-            if (shouldSkip) {
-              console.log("🔍 [PDF-SYSTEM] Skipping field:", key, "formatted:", formattedLabel);
-              return false;
-            }
-
-            // Additional check: if the formatted label will display as "Value:" or "Raw Contact", skip it
-            const displayLabel = formatKey(key);
-            if (
-              displayLabel.toLowerCase().includes("value:") ||
-              displayLabel.toLowerCase().includes("raw contact")
-            ) {
-              console.log(
-                "🔍 [PDF-SYSTEM] Skipping field based on display label:",
-                key,
-                "->",
-                displayLabel
-              );
-              return false;
-            }
-
-            return (
-              key !== "name" &&
-              key !== "id" &&
-              value !== null &&
-              value !== undefined &&
-              value !== "" &&
-              !(Array.isArray(value) && value.length === 0) &&
-              !(typeof value === "object" && Object.keys(value).length === 0)
-            );
-          })
-          .map((key) => {
-            const value = formatValue(c[key]);
-            const label = formatKey(key);
-            const emoji = getEmoji(key);
-            return `<div>${emoji} <span class="font-medium">${label}:</span> ${value}</div>`;
-          })
-          .join("");
-
-        preview.innerHTML = `
-          <div class="text-sm">
-            <div class="text-base font-semibold mb-1">${name}</div>
-            <div class="space-y-1 text-gray-700 dark:text-gray-300">
-              ${fieldsHtml || '<div class="text-gray-500 italic">No additional information available</div>'}
-            </div>
-          </div>
-        `;
-        preview.classList.remove("hidden");
+        // Additional PDF-system specific logic can go here
+        // The contact preview is automatically rendered by SlotMachineModalFunction
+        console.log("📄 [PDF-SYSTEM] Contact selected:", detail.label);
       });
 
       // Generate PDF
@@ -673,53 +578,212 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         return;
       }
 
+      // Create accordion HTML for each template (following FileManager pattern)
       container.innerHTML = this.templates
-        .map((template) => {
-          const defaultBadge = template.isDefault
-            ? '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">Default</span>'
-            : "";
-          return `
-        <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-          <div class="flex justify-between items-start">
-            <div class="flex-1">
-              <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${template.name}</h4>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${template.description || "No description"}</p>
-              <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                <span>Type: ${template.templateType}</span>
-                <span>Size: ${template.pageSize}</span>
-                <span>Created: ${new Date(template.createdAt).toLocaleDateString()}</span>
-                ${defaultBadge}
+        .map((template, index) => {
+          return this.createTemplateAccordion(template, index === 0); // First one open by default
+        })
+        .join("");
+
+      // Initialize accordions
+      this.initAccordions();
+
+      // Initialize Quill editors for each template
+      this.templates.forEach((template) => {
+        setTimeout(() => {
+          this.initializeTemplateEditor(template.id);
+        }, 100);
+      });
+    }
+
+    // Create accordion HTML for a template (following FileManager accordion pattern)
+    createTemplateAccordion(template, open = false) {
+      const defaultBadge = template.isDefault
+        ? '<span class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded text-xs">Default</span>'
+        : "";
+
+      const createdDate = template.createdAt
+        ? new Date(template.createdAt).toLocaleDateString()
+        : "Unknown";
+
+      const description =
+        template.description || template.html_content?.substring(0, 100) || "No description";
+
+      return `
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg relative">
+          <!-- Accordion Header -->
+          <div class="flex items-center justify-between cursor-pointer rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
+            <!-- Clickable header area -->
+            <div 
+              class="flex-1"
+              data-accordion-target="#accordion-template-${template.id}"
+              aria-expanded="${open}"
+              aria-controls="accordion-template-${template.id}"
+              role="button"
+              tabindex="0"
+              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+            >
+              <div class="p-4">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-lg font-medium ${primaryTextClasses} truncate">
+                    ${template.name}
+                  </h3>
+                  ${defaultBadge}
+                </div>
+                <p class="mt-1 ${secondaryTextClasses} text-sm truncate">${description}</p>
+                <div class="flex items-center space-x-4 mt-2 text-xs ${secondaryTextClasses}">
+                  <span>Type: ${template.templateType || "body"}</span>
+                  <span>Size: ${template.pageSize || "8.5x11"}</span>
+                  <span>Created: ${createdDate}</span>
+                </div>
               </div>
             </div>
-            <div class="flex space-x-2">
-              <button 
-                class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 edit-template-btn"
-                data-template-id="${template.id}"
-                title="Edit template"
+
+            <!-- Accordion Toggle Button -->
+            <button
+              class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300 p-4"
+              data-accordion-target="#accordion-template-${template.id}"
+              aria-expanded="${open}"
+              aria-controls="accordion-template-${template.id}"
+              type="button"
+            >
+              <svg
+                class="w-5 h-5 transition-transform duration-200 ${open ? "rotate-180" : ""}"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <SimpleIcon name="edit" class="w-4 h-4" />
-              </button>
-              <button 
-                class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 delete-template-btn"
-                data-template-id="${template.id}"
-                title="Delete template"
-              >
-                <SimpleIcon name="trash-2" class="w-4 h-4" />
-              </button>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Accordion Content -->
+          <div
+            id="accordion-template-${template.id}"
+            class="${open ? "" : "hidden"}"
+            aria-labelledby="accordion-template-${template.id}"
+          >
+            <div class="border-t border-gray-200 px-4 pb-4 dark:border-gray-700">
+              <div class="pt-4 space-y-4">
+                <!-- Template Name Input -->
+                <div>
+                  <label for="template-name-${template.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Template Name
+                  </label>
+                  <input
+                    type="text"
+                    id="template-name-${template.id}"
+                    class="${globalInputClasses}"
+                    value="${template.name || ""}"
+                    placeholder="Enter template name..."
+                  />
+                </div>
+
+                <!-- Template Description -->
+                <div>
+                  <label for="template-description-${template.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    id="template-description-${template.id}"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    rows="2"
+                    placeholder="Enter template description..."
+                  >${template.description || ""}</textarea>
+                </div>
+
+                <!-- Quill Editor Container -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Template Content
+                  </label>
+                  <div id="template-editor-${template.id}" class="min-h-[300px] bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
+                    <!-- Quill editor will be initialized here -->
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-2 pt-2">
+                  <button
+                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors delete-template-btn"
+                    data-template-id="${template.id}"
+                    type="button"
+                  >
+                    <SimpleIcon name="trash-2" class="w-4 h-4 inline mr-2" />
+                    Delete
+                  </button>
+                  <button
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors save-template-btn"
+                    data-template-id="${template.id}"
+                    type="button"
+                  >
+                    <SimpleIcon name="save" class="w-4 h-4 inline mr-2" />
+                    Save Template
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       `;
-        })
-        .join("");
+    }
 
-      // Add event listeners for template actions
-      container.querySelectorAll(".edit-template-btn").forEach((btn) => {
+    // Initialize accordions (following FileManager pattern)
+    initAccordions() {
+      const accordionButtons = document.querySelectorAll("[data-accordion-target]");
+      accordionButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+          const targetId = this.getAttribute("data-accordion-target");
+          const target = document.querySelector(targetId);
+          const isExpanded = this.getAttribute("aria-expanded") === "true";
+
+          if (target) {
+            if (isExpanded) {
+              target.classList.add("hidden");
+              this.setAttribute("aria-expanded", "false");
+              // Update both the main header and the toggle button
+              const svg = this.querySelector("svg");
+              if (svg) svg.style.transform = "rotate(0deg)";
+              // Also update the toggle button if it exists
+              const toggleButton = document.querySelector(
+                `button[data-accordion-target="${targetId}"]`
+              );
+              if (toggleButton && toggleButton !== this) {
+                const toggleSvg = toggleButton.querySelector("svg");
+                if (toggleSvg) toggleSvg.style.transform = "rotate(0deg)";
+                toggleButton.setAttribute("aria-expanded", "false");
+              }
+            } else {
+              target.classList.remove("hidden");
+              this.setAttribute("aria-expanded", "true");
+              // Update both the main header and the toggle button
+              const svg = this.querySelector("svg");
+              if (svg) svg.style.transform = "rotate(180deg)";
+              // Also update the toggle button if it exists
+              const toggleButton = document.querySelector(
+                `button[data-accordion-target="${targetId}"]`
+              );
+              if (toggleButton && toggleButton !== this) {
+                const toggleSvg = toggleButton.querySelector("svg");
+                if (toggleSvg) toggleSvg.style.transform = "rotate(180deg)";
+                toggleButton.setAttribute("aria-expanded", "true");
+              }
+            }
+          }
+        });
+      });
+
+      // Add event listeners for save and delete buttons
+      const container = document.getElementById("templates-list");
+      if (!container) return;
+
+      container.querySelectorAll(".save-template-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           const templateId = e.target
-            .closest(".edit-template-btn")
+            .closest(".save-template-btn")
             .getAttribute("data-template-id");
-          this.editTemplate(templateId);
+          this.saveTemplate(templateId);
         });
       });
 
@@ -731,6 +795,226 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           this.deleteTemplate(templateId);
         });
       });
+    }
+
+    // Initialize Quill editor for a specific template
+    async initializeTemplateEditor(templateId) {
+      const editorContainer = document.getElementById(`template-editor-${templateId}`);
+      if (!editorContainer) {
+        console.warn(`⚠️ [PDF-SYSTEM] Editor container not found for template ${templateId}`);
+        return;
+      }
+
+      // Check if editor already exists
+      if (this.templateEditors && this.templateEditors[templateId]) {
+        console.log(`✅ [PDF-SYSTEM] Editor already exists for template ${templateId}`);
+        return;
+      }
+
+      // Load Quill if not already loaded
+      if (!window.Quill) {
+        await this.loadQuill();
+      }
+
+      // Find the template data
+      const template = this.templates.find((t) => t.id === templateId);
+      if (!template) {
+        console.error(`❌ [PDF-SYSTEM] Template ${templateId} not found`);
+        return;
+      }
+
+      // Create Quill editor
+      try {
+        if (!this.templateEditors) {
+          this.templateEditors = {};
+        }
+
+        this.templateEditors[templateId] = new window.Quill(`#template-editor-${templateId}`, {
+          theme: "snow",
+          modules: {
+            toolbar: [
+              [{ header: [1, 2, 3, false] }],
+              ["bold", "italic", "underline", "strike"],
+              [{ list: "ordered" }, { list: "bullet" }],
+              [{ script: "sub" }, { script: "super" }],
+              [{ indent: "-1" }, { indent: "+1" }],
+              [{ direction: "rtl" }],
+              [{ size: ["small", false, "large", "huge"] }],
+              [{ color: [] }, { background: [] }],
+              [{ font: [] }],
+              [{ align: [] }],
+              ["clean"],
+              ["link", "image"],
+            ],
+          },
+        });
+
+        // Set initial content
+        const content = template.html_content || template.content || "";
+        if (content) {
+          this.templateEditors[templateId].clipboard.dangerouslyPasteHTML(content);
+        }
+
+        console.log(`✅ [PDF-SYSTEM] Quill editor initialized for template ${templateId}`);
+      } catch (error) {
+        console.error(
+          `❌ [PDF-SYSTEM] Error initializing editor for template ${templateId}:`,
+          error
+        );
+      }
+    }
+
+    // Load Quill CSS and JS if not already loaded
+    async loadQuill() {
+      return new Promise((resolve) => {
+        // Load Quill CSS
+        if (!document.querySelector("#quill-css-templates")) {
+          const quillCSS = document.createElement("link");
+          quillCSS.id = "quill-css-templates";
+          quillCSS.rel = "stylesheet";
+          quillCSS.href = "https://cdn.quilljs.com/1.3.6/quill.snow.css";
+          document.head.appendChild(quillCSS);
+        }
+
+        // Load Quill JS
+        if (!window.Quill) {
+          const quillJS = document.createElement("script");
+          quillJS.src = "https://cdn.quilljs.com/1.3.6/quill.min.js";
+          quillJS.onload = () => {
+            console.log("✅ [PDF-SYSTEM] Quill JS loaded for templates");
+            resolve();
+          };
+          document.head.appendChild(quillJS);
+        } else {
+          resolve();
+        }
+      });
+    }
+
+    // Save template
+    async saveTemplate(templateId) {
+      const template = this.templates.find((t) => t.id === templateId);
+      if (!template) {
+        window.showNotification("Template not found", "error");
+        return;
+      }
+
+      const nameInput = document.getElementById(`template-name-${templateId}`);
+      const descriptionInput = document.getElementById(`template-description-${templateId}`);
+      const editor = this.templateEditors?.[templateId];
+
+      if (!nameInput || !editor) {
+        window.showNotification("Template editor not found", "error");
+        return;
+      }
+
+      const name = nameInput.value.trim();
+      if (!name) {
+        window.showNotification("Template name is required", "error");
+        return;
+      }
+
+      const description = descriptionInput?.value.trim() || "";
+      const content = editor.root.innerHTML;
+
+      try {
+        const response = await fetch("/api/pdf/templates/upsert", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: templateId,
+            name,
+            description,
+            content,
+            templateType: template.templateType || "body",
+            pageSize: template.pageSize || "8.5x11",
+            margins: template.margins || { top: "1in", right: "1in", bottom: "1in", left: "1in" },
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          window.showNotification("Template saved successfully", "success");
+          // Reload templates to refresh the list
+          await this.loadTemplates();
+        } else {
+          window.showNotification(data.message || "Failed to save template", "error");
+        }
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error saving template:", error);
+        window.showNotification("Error saving template", "error");
+      }
+    }
+
+    // Delete template
+    async deleteTemplate(templateId) {
+      if (
+        !confirm("Are you sure you want to delete this template? This action cannot be undone.")
+      ) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/pdf/templates/${templateId}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          window.showNotification("Template deleted successfully", "success");
+          // Remove editor instance
+          if (this.templateEditors?.[templateId]) {
+            delete this.templateEditors[templateId];
+          }
+          // Reload templates
+          await this.loadTemplates();
+        } else {
+          const data = await response.json();
+          window.showNotification(data.message || "Failed to delete template", "error");
+        }
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error deleting template:", error);
+        // If DELETE endpoint doesn't exist, show message to implement it
+        window.showNotification(
+          "Delete functionality requires a DELETE endpoint. Please implement /api/pdf/templates/[id] DELETE route.",
+          "error"
+        );
+      }
+    }
+
+    // Create new template
+    async createNewTemplate() {
+      try {
+        const response = await fetch("/api/pdf/templates/upsert", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: "New Template",
+            description: "",
+            content: "<p>Start editing your template...</p>",
+            templateType: "body",
+            pageSize: "8.5x11",
+            margins: { top: "1in", right: "1in", bottom: "1in", left: "1in" },
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          window.showNotification("Template created successfully", "success");
+          // Reload templates to show the new one
+          await this.loadTemplates();
+        } else {
+          window.showNotification(data.message || "Failed to create template", "error");
+        }
+      } catch (error) {
+        console.error("❌ [PDF-SYSTEM] Error creating template:", error);
+        window.showNotification("Error creating template", "error");
+      }
     }
 
     openTemplateEditor(templateId = null) {
@@ -2293,126 +2577,16 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       this.openTemplateEditor(templateId);
     }
 
-    async deleteTemplate(templateId) {
-      if (!confirm("Are you sure you want to delete this template?")) {
-        return;
-      }
-
-      try {
-        console.log("📄 [PDF-SYSTEM] Deleting template:", templateId);
-        const response = await fetch("/api/pdf/templates/delete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ id: templateId }),
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          this.showNotification("Template deleted successfully!", "success");
-          await this.loadTemplates();
-        } else {
-          this.showNotification("Error deleting template: " + data.error, "error");
-        }
-      } catch (error) {
-        console.error("❌ [PDF-SYSTEM] Error deleting template:", error);
-        this.showNotification("Error deleting template", "error");
-      }
-    }
-
-    async checkGoogleAuthAndSearch() {
-      console.log("🔍 [PDF-SYSTEM] Checking Google authentication...");
-
-      try {
-        // Check if Google auth is available by making a test call
-        const response = await fetch("/api/google/contacts?input=test", {
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          // Auth is working, open the search modal
-          console.log("✅ [PDF-SYSTEM] Google auth is working, opening search modal");
-          // this.openUserSearchModal();
-        } else if (response.status === 401) {
-          // Need to authenticate
-          console.log("🔐 [PDF-SYSTEM] Google auth required, showing auth modal");
-          this.showGoogleAuthModal();
-        } else {
-          // Other error
-          console.error("❌ [PDF-SYSTEM] Google auth check failed:", response.status);
-          this.showNotification("Error checking Google authentication", "error");
-        }
-      } catch (error) {
-        console.error("❌ [PDF-SYSTEM] Error checking Google auth:", error);
-        this.showNotification("Error checking Google authentication", "error");
-      }
-    }
-
-    openUserSearchModal() {
-      // Trigger the SlotMachineModal
-      const searchButton = document.getElementById("user-search");
-      if (searchButton) {
-        searchButton.click();
-      } else {
-        console.error("❌ [PDF-SYSTEM] Could not find user search modal trigger");
-        this.showNotification("Error opening search modal", "error");
-      }
-    }
-
-    showGoogleAuthModal() {
-      // Create a simple modal for Google authentication
-      const modal = document.createElement("div");
-      modal.className =
-        "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
-      modal.innerHTML = `
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-          <div class="flex items-center mb-4">
-            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
-              <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Google Authentication Required</h3>
-          </div>
-          <p class="text-gray-600 dark:text-gray-400 mb-6">
-            To search your Google contacts, you need to authenticate with Google first. This will allow us to access your contacts safely and securely.
-          </p>
-          <div class="flex space-x-3">
-            <button
-              onclick="window.pdfSystem.authenticateWithGoogle()"
-              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
-            >
-              Sign in with Google
-            </button>
-            <button
-              onclick="window.pdfSystem.closeGoogleAuthModal()"
-              class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-      this.googleAuthModal = modal;
-    }
-
-    authenticateWithGoogle() {
-      // Redirect to Google OAuth with current page as redirect target
-      const currentUrl = window.location.pathname + window.location.search;
-      window.location.href = `/api/google/signin?redirect=${encodeURIComponent(currentUrl)}`;
-    }
-
-    closeGoogleAuthModal() {
-      if (this.googleAuthModal) {
-        this.googleAuthModal.remove();
-        this.googleAuthModal = null;
-      }
-    }
+    // openUserSearchModal() {
+    //   // Trigger the SlotMachineModal
+    //   const searchButton = document.getElementById("user-search");
+    //   if (searchButton) {
+    //     searchButton.click();
+    //   } else {
+    //     console.error("❌ [PDF-SYSTEM] Could not find user search modal trigger");
+    //     this.showNotification("Error opening search modal", "error");
+    //   }
+    // }
   }
 
   // Initialize PDF System

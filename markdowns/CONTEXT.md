@@ -1,4 +1,4 @@
-# 🔥 CAPCo Fire Protection Systems - Developer Context
+# 🔥 CAPCO Design Group Systems - Developer Context
 
 > **Always reference this file when working on the project**
 

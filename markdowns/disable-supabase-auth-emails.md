@@ -36,7 +36,7 @@ Make sure these are set in your `.env`:
 EMAIL_PROVIDER=resend
 EMAIL_API_KEY=re_your_api_key_here
 FROM_EMAIL=noreply@capcofire.com
-FROM_NAME=CAPCo Fire Protection
+FROM_NAME=CAPCO Design Group
 
 # Disable Supabase email confirmations
 SUPABASE_AUTH_EMAIL_DISABLED=true

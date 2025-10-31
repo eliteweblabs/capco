@@ -132,7 +132,7 @@ CREATE POLICY "Users can insert their own generation history" ON "pdfGenerationH
 INSERT INTO "pdfTemplates" (name, description, content, "templateType", "isDefault", "authorId") VALUES
 ('Default Header', 'Standard header template for all PDFs', 
  '<div style="text-align: center; padding: 20px; border-bottom: 2px solid #333;">
-   <h1 style="margin: 0; color: #0056b3;">CAPCo Fire Protection</h1>
+   <h1 style="margin: 0; color: #0056b3;">CAPCO Design Group</h1>
    <p style="margin: 5px 0; color: #666;">Professional Fire Protection Services</p>
  </div>', 
  'header', true, (SELECT id FROM auth.users WHERE email = 'admin@capcofire.com' LIMIT 1)),
@@ -140,7 +140,7 @@ INSERT INTO "pdfTemplates" (name, description, content, "templateType", "isDefau
 ('Default Footer', 'Standard footer template for all PDFs', 
  '<div style="text-align: center; padding: 20px; border-top: 1px solid #ccc; margin-top: 50px;">
    <p style="margin: 0; font-size: 12px; color: #666;">
-     &copy; ' || EXTRACT(YEAR FROM NOW()) || ' CAPCo Fire Protection. All rights reserved.<br>
+     &copy; ' || EXTRACT(YEAR FROM NOW()) || ' CAPCO Design Group. All rights reserved.<br>
      Phone: (555) 123-4567 | Email: info@capcofire.com
    </p>
  </div>', 
