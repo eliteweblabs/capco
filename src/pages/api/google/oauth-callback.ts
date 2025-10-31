@@ -1,6 +1,15 @@
 import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
+  console.log("🔍 [GOOGLE-OAUTH] OAuth callback received:", {
+    fullUrl: url.toString(),
+    pathname: url.pathname,
+    searchParams: url.search,
+    hasCode: url.searchParams.has("code"),
+    hasState: url.searchParams.has("state"),
+    hasError: url.searchParams.has("error"),
+  });
+
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
@@ -12,6 +21,13 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
   if (!code) {
     console.error("❌ [GOOGLE-OAUTH] No authorization code received");
+    console.error("🔍 [GOOGLE-OAUTH] URL details:", {
+      href: url.href,
+      search: url.search,
+      searchParams: Object.fromEntries(url.searchParams.entries()),
+      origin: url.origin,
+      pathname: url.pathname,
+    });
     return redirect("/?error=no_code");
   }
 
@@ -84,7 +100,9 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     console.log("✅ [GOOGLE-OAUTH] OAuth flow completed successfully");
 
     // Redirect to success page or back to the app
-    return redirect(url.pathname + "/?google_auth=success");
+    // Don't redirect to the callback path itself - go to a different page
+    const redirectTo = url.searchParams.get("redirect") || "/?google_auth=success";
+    return redirect(redirectTo);
   } catch (error) {
     console.error("❌ [GOOGLE-OAUTH] OAuth callback error:", error);
     return redirect("/?error=oauth_callback_error");

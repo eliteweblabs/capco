@@ -239,7 +239,17 @@ const { globalInputClasses } = Astro.props;
           body: formData,
         });
 
-        const result = await response.json();
+        // Check if response is actually JSON before parsing
+        const contentType = response.headers.get("content-type");
+        let result;
+        
+        if (contentType && contentType.includes("application/json")) {
+          result = await response.json();
+        } else {
+          const text = await response.text();
+          console.error("Non-JSON response received:", text.substring(0, 100));
+          throw new Error(`Expected JSON response but received: ${contentType || "unknown"}`);
+        }
 
         if (response.ok && result.success) {
           // Success - show modal and redirect

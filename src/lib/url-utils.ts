@@ -11,6 +11,13 @@
  */
 export function ensureProtocol(url?: string | null, defaultUrl: string = "http://localhost:4321"): string {
   if (!url) return defaultUrl;
+  
+  // Defensive check: ensure url doesn't contain SVG/XML content
+  if (typeof url === "string" && (url.includes("<svg") || url.includes("<?xml") || url.includes("xmlns="))) {
+    console.error("🚨 [URL-UTILS] ensureProtocol received SVG/XML content, using defaultUrl");
+    return defaultUrl;
+  }
+  
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
@@ -26,9 +33,18 @@ export function getBaseUrl(request?: Request): string {
   let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
   
   if (baseUrl) {
-    // Ensure baseUrl has proper protocol
-    if (!baseUrl.startsWith('http')) {
-      baseUrl = `https://${baseUrl}`;
+    // Defensive check: ensure baseUrl doesn't contain SVG/XML content
+    if (typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))) {
+      console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG/XML content, using fallback");
+      baseUrl = request ? (() => {
+        const url = new URL(request.url);
+        return `${url.protocol}//${url.host}`;
+      })() : "https://capcofire.com";
+    } else {
+      // Ensure baseUrl has proper protocol
+      if (!baseUrl.startsWith('http')) {
+        baseUrl = `https://${baseUrl}`;
+      }
     }
     return baseUrl;
   }
@@ -52,9 +68,18 @@ export function getApiBaseUrl(request?: Request): string {
   let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
   
   if (baseUrl) {
-    // Ensure baseUrl has proper protocol
-    if (!baseUrl.startsWith('http')) {
-      baseUrl = `https://${baseUrl}`;
+    // Defensive check: ensure baseUrl doesn't contain SVG/XML content
+    if (typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))) {
+      console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG/XML content, using fallback");
+      baseUrl = request ? (() => {
+        const url = new URL(request.url);
+        return `${url.protocol}//${url.host}`;
+      })() : "https://capcofire.com";
+    } else {
+      // Ensure baseUrl has proper protocol
+      if (!baseUrl.startsWith('http')) {
+        baseUrl = `https://${baseUrl}`;
+      }
     }
     return baseUrl;
   }

@@ -16,7 +16,22 @@ export interface Props {
   isBackend?: boolean;
 }
 
-const { file = "svg", link = "/", size = "md", isBackend } = Astro.props;
+const { file = "svg", link: rawLink = "/", size = "md", isBackend } = Astro.props;
+
+// Defensive check: ensure link is a valid URL path (not SVG/XML content)
+let link = rawLink;
+if (
+  typeof link === "string" &&
+  (link.includes("<svg") || link.includes("<?xml") || link.includes("xmlns="))
+) {
+  console.error("🚨 [LOGO] Invalid link prop contains SVG/XML content, defaulting to '/'");
+  link = "/";
+}
+// Ensure link starts with "/" or "http" for valid URL paths
+if (typeof link === "string" && link && !link.startsWith("/") && !link.startsWith("http")) {
+  link = "/";
+}
+
 // Get the logo SVG content with the current size
 // const logoSvg = getCapcoLogoSvg(size, file, link);
 
