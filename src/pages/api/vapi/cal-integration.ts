@@ -1406,47 +1406,157 @@ async function handleCreateBooking(params: any) {
     const uid = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Insert into Cal.com Booking table with all required fields
+    // Detect actual column names in the Booking table
+    let columnMap: {
+      startTime: string;
+      endTime: string;
+      eventTypeId: string;
+      userId: string;
+      isRecorded: string;
+      iCalSequence: string;
+      timeZone?: string;
+      references: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+
+    try {
+      const columnCheck = await calcomDb.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'Booking'
+        AND column_name IN ('startTime', 'start_time', 'endTime', 'end_time', 'eventTypeId', 'event_type_id', 
+                            'userId', 'user_id', 'isRecorded', 'is_recorded', 'iCalSequence', 'ical_sequence',
+                            'timeZone', 'time_zone', 'references', 'createdAt', 'created_at', 'updatedAt', 'updated_at')
+        ORDER BY column_name
+      `);
+
+      const columns = columnCheck.rows.map((r: any) => r.column_name);
+      console.log(`📋 [CAL-INTEGRATION] Booking table columns found: ${columns.join(", ")}`);
+
+      // Map column names based on what exists
+      columnMap = {
+        startTime:
+          columns.find((c: string) => c === "startTime" || c === "start_time") || "startTime",
+        endTime: columns.find((c: string) => c === "endTime" || c === "end_time") || "endTime",
+        eventTypeId:
+          columns.find((c: string) => c === "eventTypeId" || c === "event_type_id") ||
+          "eventTypeId",
+        userId: columns.find((c: string) => c === "userId" || c === "user_id") || "userId",
+        isRecorded:
+          columns.find((c: string) => c === "isRecorded" || c === "is_recorded") || "isRecorded",
+        iCalSequence:
+          columns.find((c: string) => c === "iCalSequence" || c === "ical_sequence") ||
+          "iCalSequence",
+        references: columns.find((c: string) => c === "references") || "references",
+        createdAt:
+          columns.find((c: string) => c === "createdAt" || c === "created_at") || "createdAt",
+        updatedAt:
+          columns.find((c: string) => c === "updatedAt" || c === "updated_at") || "updatedAt",
+      };
+
+      const timeZoneCol = columns.find((c: string) => c === "timeZone" || c === "time_zone");
+      if (timeZoneCol) {
+        columnMap.timeZone = timeZoneCol;
+      }
+
+      // Quote column names that are camelCase or contain capital letters
+      const quoteIfNeeded = (col: string) => {
+        if (
+          col.includes("Time") ||
+          col.includes("Id") ||
+          col.includes("Sequence") ||
+          col.includes("At") ||
+          col === "references"
+        ) {
+          return `"${col}"`;
+        }
+        return col;
+      };
+
+      columnMap.startTime = quoteIfNeeded(columnMap.startTime);
+      columnMap.endTime = quoteIfNeeded(columnMap.endTime);
+      columnMap.eventTypeId = quoteIfNeeded(columnMap.eventTypeId);
+      columnMap.userId = quoteIfNeeded(columnMap.userId);
+      columnMap.isRecorded = quoteIfNeeded(columnMap.isRecorded);
+      columnMap.iCalSequence = quoteIfNeeded(columnMap.iCalSequence);
+      columnMap.references = quoteIfNeeded(columnMap.references);
+      columnMap.createdAt = quoteIfNeeded(columnMap.createdAt);
+      columnMap.updatedAt = quoteIfNeeded(columnMap.updatedAt);
+      if (columnMap.timeZone) {
+        columnMap.timeZone = quoteIfNeeded(columnMap.timeZone);
+      }
+
+      console.log(`✅ [CAL-INTEGRATION] Using column mapping:`, columnMap);
+    } catch (colError: any) {
+      console.log(
+        `⚠️ [CAL-INTEGRATION] Could not check columns, using default PascalCase: ${colError.message}`
+      );
+      // Default to PascalCase
+      columnMap = {
+        startTime: '"startTime"',
+        endTime: '"endTime"',
+        eventTypeId: '"eventTypeId"',
+        userId: '"userId"',
+        isRecorded: '"isRecorded"',
+        iCalSequence: '"iCalSequence"',
+        references: '"references"',
+        createdAt: '"createdAt"',
+        updatedAt: '"updatedAt"',
+      };
+    }
+
+    // Build INSERT statement using detected column names
+    const columns = [
+      "uid",
+      "title",
+      "description",
+      columnMap.startTime,
+      columnMap.endTime,
+      columnMap.eventTypeId,
+      columnMap.userId,
+      "status",
+      "paid",
+      columnMap.isRecorded,
+      columnMap.iCalSequence,
+      "metadata",
+    ];
+
+    const values = [
+      uid,
+      `${eventType.title} with ${name}`,
+      `Fire protection consultation booking via VAPI`,
+      startDate,
+      endDate,
+      eventType.id,
+      userId,
+      "ACCEPTED",
+      false,
+      false,
+      0,
+      JSON.stringify({
+        source: "vapi",
+        customerName: name,
+        customerEmail: email,
+        customerPhone: smsReminderNumber,
+      }),
+    ];
+
+    if (columnMap.timeZone) {
+      columns.push(columnMap.timeZone);
+      values.push("UTC");
+    }
+
+    columns.push(columnMap.references, columnMap.createdAt, columnMap.updatedAt);
+
+    const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
+
     const bookingResult = await calcomDb.query(
       `INSERT INTO "Booking" (
-        uid, 
-        title, 
-        description,
-        "startTime", 
-        "endTime", 
-        "eventTypeId",
-        "userId",
-        status,
-        paid,
-        "isRecorded",
-        "iCalSequence",
-        metadata,
-        "timeZone",
-        "references",
-        "createdAt",
-        "updatedAt"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
-      RETURNING id, uid, "startTime", "endTime", status`,
-      [
-        uid,
-        `${eventType.title} with ${name}`,
-        `Fire protection consultation booking via VAPI`,
-        startDate,
-        endDate,
-        eventType.id,
-        userId,
-        "ACCEPTED", // Cal.com status: ACCEPTED (uppercase), pending, cancelled, rejected, awaiting_host
-        false, // paid
-        false, // isRecorded
-        0, // iCalSequence
-        JSON.stringify({
-          source: "vapi",
-          customerName: name,
-          customerEmail: email,
-          customerPhone: smsReminderNumber,
-        }),
-        "UTC", // timeZone - use UTC to match our slot generation
-        JSON.stringify([]), // references - empty array for booking references
-      ]
+        ${columns.join(", ")}
+      ) VALUES (${placeholders}, NOW(), NOW())
+      RETURNING id, uid, ${columnMap.startTime} as "startTime", ${columnMap.endTime} as "endTime", status`,
+      values
     );
 
     const booking = bookingResult.rows[0];
