@@ -33,30 +33,40 @@ export function getBaseUrl(request?: Request): string {
   let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
   
   if (baseUrl) {
+    // Defensive check: ensure baseUrl doesn't contain placeholder patterns like ${...}
+    if (typeof baseUrl === "string" && baseUrl.includes("${")) {
+      console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains unresolved placeholder:", baseUrl);
+      baseUrl = null; // Treat as invalid, will use fallback
+    }
+    
     // Defensive check: ensure baseUrl doesn't contain SVG/XML content
-    if (typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))) {
+    if (baseUrl && typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))) {
       console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG/XML content, using fallback");
-      baseUrl = request ? (() => {
-        const url = new URL(request.url);
-        return `${url.protocol}//${url.host}`;
-      })() : "https://capcofire.com";
-    } else {
+      baseUrl = null; // Treat as invalid, will use fallback
+    }
+    
+    if (baseUrl) {
       // Ensure baseUrl has proper protocol
       if (!baseUrl.startsWith('http')) {
         baseUrl = `https://${baseUrl}`;
       }
+      return baseUrl;
     }
-    return baseUrl;
   }
 
   // Fallback to request URL in development
   if (request) {
-    const url = new URL(request.url);
-    return `${url.protocol}//${url.host}`;
+    try {
+      const url = new URL(request.url);
+      return `${url.protocol}//${url.host}`;
+    } catch (e) {
+      console.error("🚨 [URL-UTILS] Failed to parse request URL, using default");
+    }
   }
 
-  // No fallbacks - throw error if RAILWAY_PUBLIC_DOMAIN is not configured
-  throw new Error("RAILWAY_PUBLIC_DOMAIN environment variable is required but not set");
+  // Final fallback to production URL
+  console.warn("⚠️ [URL-UTILS] RAILWAY_PUBLIC_DOMAIN not set or invalid, using default fallback");
+  return "https://capcofire.com";
 }
 
 /**
@@ -68,30 +78,40 @@ export function getApiBaseUrl(request?: Request): string {
   let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
   
   if (baseUrl) {
+    // Defensive check: ensure baseUrl doesn't contain placeholder patterns like ${...}
+    if (typeof baseUrl === "string" && baseUrl.includes("${")) {
+      console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains unresolved placeholder:", baseUrl);
+      baseUrl = null; // Treat as invalid, will use fallback
+    }
+    
     // Defensive check: ensure baseUrl doesn't contain SVG/XML content
-    if (typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))) {
+    if (baseUrl && typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))) {
       console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG/XML content, using fallback");
-      baseUrl = request ? (() => {
-        const url = new URL(request.url);
-        return `${url.protocol}//${url.host}`;
-      })() : "https://capcofire.com";
-    } else {
+      baseUrl = null; // Treat as invalid, will use fallback
+    }
+    
+    if (baseUrl) {
       // Ensure baseUrl has proper protocol
       if (!baseUrl.startsWith('http')) {
         baseUrl = `https://${baseUrl}`;
       }
+      return baseUrl;
     }
-    return baseUrl;
   }
 
   // Fallback to request URL in development
   if (request) {
-    const url = new URL(request.url);
-    return `${url.protocol}//${url.host}`;
+    try {
+      const url = new URL(request.url);
+      return `${url.protocol}//${url.host}`;
+    } catch (e) {
+      console.error("🚨 [URL-UTILS] Failed to parse request URL, using default");
+    }
   }
 
-  // No fallbacks - throw error if RAILWAY_PUBLIC_DOMAIN is not configured
-  throw new Error("RAILWAY_PUBLIC_DOMAIN environment variable is required but not set");
+  // Final fallback to production URL
+  console.warn("⚠️ [URL-UTILS] RAILWAY_PUBLIC_DOMAIN not set or invalid, using default fallback");
+  return "https://capcofire.com";
 }
 
 /**
