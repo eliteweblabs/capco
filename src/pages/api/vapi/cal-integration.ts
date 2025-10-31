@@ -1415,7 +1415,7 @@ async function handleCreateBooking(params: any) {
       isRecorded: string;
       iCalSequence: string;
       timeZone?: string;
-      references: string;
+      references?: string;
       createdAt: string;
       updatedAt: string;
     };
@@ -1432,43 +1432,74 @@ async function handleCreateBooking(params: any) {
       `);
 
       const columns = columnCheck.rows.map((r: any) => r.column_name);
-      console.log(`📋 [CAL-INTEGRATION] Booking table columns found: ${columns.join(", ")}`);
+      console.log(
+        `📋 [CAL-INTEGRATION] Booking table columns found (from info_schema): ${columns.join(", ")}`
+      );
 
-      // Map column names based on what exists
-      columnMap = {
-        startTime:
-          columns.find((c: string) => c === "startTime" || c === "start_time") || "startTime",
-        endTime: columns.find((c: string) => c === "endTime" || c === "end_time") || "endTime",
-        eventTypeId:
-          columns.find((c: string) => c === "eventTypeId" || c === "event_type_id") ||
-          "eventTypeId",
-        userId: columns.find((c: string) => c === "userId" || c === "user_id") || "userId",
-        isRecorded:
-          columns.find((c: string) => c === "isRecorded" || c === "is_recorded") || "isRecorded",
-        iCalSequence:
-          columns.find((c: string) => c === "iCalSequence" || c === "ical_sequence") ||
-          "iCalSequence",
-        references: columns.find((c: string) => c === "references") || "references",
-        createdAt:
-          columns.find((c: string) => c === "createdAt" || c === "created_at") || "createdAt",
-        updatedAt:
-          columns.find((c: string) => c === "updatedAt" || c === "updated_at") || "updatedAt",
+      // Get actual column names from pg_attribute (preserves case)
+      // Query all columns and filter in code for case-insensitive matching
+      const actualColumns = await calcomDb.query(`
+        SELECT attname 
+        FROM pg_attribute 
+        WHERE attrelid = '"Booking"'::regclass 
+        AND attnum > 0 
+        AND NOT attisdropped
+      `);
+
+      const actualColumnNames = actualColumns.rows.map((r: any) => r.attname);
+      console.log(
+        `📋 [CAL-INTEGRATION] Actual Booking columns (from pg_attribute): ${actualColumnNames.join(", ")}`
+      );
+
+      // Map column names based on what exists (using actual case)
+      const findActualColumn = (variants: string[]): string => {
+        for (const variant of variants) {
+          const found = actualColumnNames.find(
+            (c: string) => c.toLowerCase() === variant.toLowerCase()
+          );
+          if (found) return found;
+        }
+        // Default to camelCase if not found
+        return variants[0];
       };
 
-      const timeZoneCol = columns.find((c: string) => c === "timeZone" || c === "time_zone");
-      if (timeZoneCol) {
-        columnMap.timeZone = timeZoneCol;
+      columnMap = {
+        startTime: findActualColumn(["startTime", "start_time"]),
+        endTime: findActualColumn(["endTime", "end_time"]),
+        eventTypeId: findActualColumn(["eventTypeId", "event_type_id"]),
+        userId: findActualColumn(["userId", "user_id"]),
+        isRecorded: findActualColumn(["isRecorded", "is_recorded"]),
+        iCalSequence: findActualColumn(["iCalSequence", "ical_sequence"]),
+        createdAt: findActualColumn(["createdAt", "created_at"]),
+        updatedAt: findActualColumn(["updatedAt", "updated_at"]),
+      };
+
+      // Check if references column exists (it's optional)
+      const referencesCol = findActualColumn(["references"]);
+      if (
+        referencesCol &&
+        actualColumnNames.some((c: string) => c.toLowerCase() === referencesCol.toLowerCase())
+      ) {
+        columnMap.references =
+          actualColumnNames.find((c: string) => c.toLowerCase() === referencesCol.toLowerCase()) ||
+          referencesCol;
       }
 
-      // Quote column names that are camelCase or contain capital letters
+      const timeZoneCol = findActualColumn(["timeZone", "time_zone"]);
+      // Check if the column actually exists (findActualColumn might return default)
+      if (
+        timeZoneCol &&
+        actualColumnNames.some((c: string) => c.toLowerCase() === timeZoneCol.toLowerCase())
+      ) {
+        columnMap.timeZone =
+          actualColumnNames.find((c: string) => c.toLowerCase() === timeZoneCol.toLowerCase()) ||
+          timeZoneCol;
+      }
+
+      // Quote column names that are camelCase (contain capital letters) or reserved keywords
       const quoteIfNeeded = (col: string) => {
-        if (
-          col.includes("Time") ||
-          col.includes("Id") ||
-          col.includes("Sequence") ||
-          col.includes("At") ||
-          col === "references"
-        ) {
+        // Quote if it contains capital letters (camelCase) or is a reserved keyword
+        if (/[A-Z]/.test(col) || col.toLowerCase() === "references") {
           return `"${col}"`;
         }
         return col;
@@ -1480,7 +1511,9 @@ async function handleCreateBooking(params: any) {
       columnMap.userId = quoteIfNeeded(columnMap.userId);
       columnMap.isRecorded = quoteIfNeeded(columnMap.isRecorded);
       columnMap.iCalSequence = quoteIfNeeded(columnMap.iCalSequence);
-      columnMap.references = quoteIfNeeded(columnMap.references);
+      if (columnMap.references) {
+        columnMap.references = quoteIfNeeded(columnMap.references);
+      }
       columnMap.createdAt = quoteIfNeeded(columnMap.createdAt);
       columnMap.updatedAt = quoteIfNeeded(columnMap.updatedAt);
       if (columnMap.timeZone) {
@@ -1492,7 +1525,7 @@ async function handleCreateBooking(params: any) {
       console.log(
         `⚠️ [CAL-INTEGRATION] Could not check columns, using default PascalCase: ${colError.message}`
       );
-      // Default to PascalCase
+      // Default to PascalCase (references is optional, will be checked separately)
       columnMap = {
         startTime: '"startTime"',
         endTime: '"endTime"',
@@ -1500,7 +1533,6 @@ async function handleCreateBooking(params: any) {
         userId: '"userId"',
         isRecorded: '"isRecorded"',
         iCalSequence: '"iCalSequence"',
-        references: '"references"',
         createdAt: '"createdAt"',
         updatedAt: '"updatedAt"',
       };
@@ -1530,7 +1562,7 @@ async function handleCreateBooking(params: any) {
       endDate,
       eventType.id,
       userId,
-      "ACCEPTED",
+      "CONFIRMED", // Using CONFIRMED instead of ACCEPTED (enum validation)
       false,
       false,
       0,
@@ -1547,7 +1579,12 @@ async function handleCreateBooking(params: any) {
       values.push("UTC");
     }
 
-    columns.push(columnMap.references, columnMap.createdAt, columnMap.updatedAt);
+    if (columnMap.references) {
+      columns.push(columnMap.references);
+      values.push(null); // references is typically nullable
+    }
+
+    columns.push(columnMap.createdAt, columnMap.updatedAt);
 
     const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
 
