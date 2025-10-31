@@ -18,7 +18,7 @@ This guide sets up a complete voice AI pipeline for your fire protection system:
 2. **n8n Instance** (self-hosted or cloud)
 3. **Claude API Key** (Anthropic)
 4. **ElevenLabs API Key**
-5. **Your CAPCo Fire Protection System** (already configured)
+5. **Your CAPCO Design Group System** (already configured)
 
 ## Step 1: MessageBird Voice Setup
 
@@ -191,7 +191,7 @@ Update the Claude node in n8n to include fire protection context:
 ```json
 {
   "role": "user",
-  "content": "You are CAPCo Fire Protection Systems AI assistant. You help with fire protection system inquiries, project status, and technical support. The caller said: {{ $json.transcript }}. Respond professionally and helpfully. If they ask about project status, direct them to check their project dashboard."
+  "content": "You are CAPCO Design Group Systems AI assistant. You help with fire protection system inquiries, project status, and technical support. The caller said: {{ $json.transcript }}. Respond professionally and helpfully. If they ask about project status, direct them to check their project dashboard."
 }
 ```
 
@@ -211,7 +211,7 @@ const n8nPayload = {
   webhookData: body,
   // Add fire protection context
   systemContext: {
-    company: "CAPCo Fire Protection Systems",
+    company: "CAPCO Design Group Systems",
     services: ["Fire Alarm Systems", "Sprinkler Systems", "Fire Suppression"],
     supportHours: "24/7 Emergency Support",
   },

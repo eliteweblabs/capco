@@ -1,6 +1,6 @@
 # PDF Generator System
 
-A comprehensive PDF generation system for the CAPCo Fire Protection Systems application that allows users to create custom documents using templates and components.
+A comprehensive PDF generation system for the CAPCO Design Group Systems application that allows users to create custom documents using templates and components.
 
 ## Overview
 

@@ -142,7 +142,7 @@ BEGIN
       'admin@capcofire.com',
       'CAPCo',
       'Admin',
-      'CAPCo Fire Protection Systems',
+      'CAPCO Design Group Systems',
       'Admin',
       NOW(),
       NOW()

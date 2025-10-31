@@ -1,5 +1,5 @@
 -- =====================================================
--- CAPCo Fire Protection - Development Database Setup
+-- CAPCO Design Group - Development Database Setup
 -- =====================================================
 -- Run this entire script in your NEW development Supabase project
 -- SQL Editor: Copy and paste this entire file, then click "Run"

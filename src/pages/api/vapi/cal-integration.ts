@@ -1539,7 +1539,7 @@ async function handleCreateBooking(params: any) {
     }
 
     // Query valid BookingStatus enum values
-    let validBookingStatus = "ACCEPTED"; // Default fallback
+    let validBookingStatus = "accepted"; // Default fallback (usually lowercase in Cal.com)
     try {
       const enumResult = await calcomDb.query(`
         SELECT enumlabel 
@@ -1555,10 +1555,25 @@ async function handleCreateBooking(params: any) {
       const enumValues = enumResult.rows.map((r: any) => r.enumlabel);
       console.log(`📋 [CAL-INTEGRATION] Valid BookingStatus values: ${enumValues.join(", ")}`);
 
-      // Prefer these in order: ACCEPTED, PENDING, CONFIRMED, CANCELLED, REJECTED
-      const preferredValues = ["ACCEPTED", "PENDING", "CONFIRMED", "CANCELLED", "REJECTED"];
-      validBookingStatus =
-        preferredValues.find((v) => enumValues.includes(v)) || enumValues[0] || "ACCEPTED";
+      // Prefer active statuses in order: accepted, pending, confirmed (case-insensitive)
+      // Avoid cancelled or rejected as they hide bookings
+      const preferredValues = ["accepted", "pending", "confirmed"];
+      const activeStatus = preferredValues.find((v) =>
+        enumValues.some((ev: string) => ev.toLowerCase() === v.toLowerCase())
+      );
+
+      if (activeStatus) {
+        // Find the actual case from enum values
+        validBookingStatus =
+          enumValues.find((ev: string) => ev.toLowerCase() === activeStatus.toLowerCase()) ||
+          activeStatus;
+      } else {
+        // Fallback: use first non-cancelled/rejected value, or first value
+        validBookingStatus =
+          enumValues.find((ev: string) => !["cancelled", "rejected"].includes(ev.toLowerCase())) ||
+          enumValues[0] ||
+          "accepted";
+      }
 
       console.log(`✅ [CAL-INTEGRATION] Using BookingStatus: ${validBookingStatus}`);
     } catch (enumError: any) {

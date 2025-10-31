@@ -107,7 +107,7 @@ BEGIN
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
       
       <div style="text-align: center; color: #6b7280; font-size: 14px;">
-        <p>This is an automated notification from CAPCo Fire Protection Systems</p>
+        <p>This is an automated notification from CAPCO Design Group Systems</p>
         <p>Project ID: ' || project_info.id || ' | Discussion ID: ' || NEW.id || '</p>
       </div>
     </div>';

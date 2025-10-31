@@ -27,12 +27,14 @@ Your system has been successfully reconfigured to send emails instead of SMS:
 ## 🧪 How to Test
 
 ### **Method 1: Use the Contact Form**
+
 1. Visit your site's contact form
 2. Fill out a test message
 3. Click "Send Email to CAPCo Team"
 4. Check both email addresses for delivery
 
 ### **Method 2: Direct API Test**
+
 ```bash
 curl -X POST http://localhost:4321/api/send-email-sms \
   -F "message=Test email from API - please confirm receipt" \
@@ -40,8 +42,9 @@ curl -X POST http://localhost:4321/api/send-email-sms \
 ```
 
 ### **Expected Results:**
+
 - Both `capco@eliteweblabs.com` and `jk@capcofire.com` should receive:
-  - Subject: "CAPCo Fire Protection - Project Notification"
+  - Subject: "CAPCO Design Group - Project Notification"
   - HTML formatted message
   - Contact info (if provided)
   - CAPCo branding
@@ -49,11 +52,13 @@ curl -X POST http://localhost:4321/api/send-email-sms \
 ## 🔧 **SMS Functionality Status**
 
 **Currently Disabled** due to Verizon gateway bounces:
+
 - All SMS gateway code is commented out
 - Phone number fields removed from forms
 - Carrier selection disabled
 
 **To Re-enable SMS** (when you're ready):
+
 1. Uncomment SMS code in `/api/send-email-sms`
 2. Restore phone/carrier fields in `SMSForm.astro`
 3. Or better yet: implement Twilio for reliable SMS

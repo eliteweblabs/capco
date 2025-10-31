@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide will help you set up the real-time team chat functionality for CAPCo Fire Protection Systems. The chat is a floating widget that appears in the bottom-left corner for Admin/Staff users only.
+This guide will help you set up the real-time team chat functionality for CAPCO Design Group Systems. The chat is a floating widget that appears in the bottom-left corner for Admin/Staff users only.
 
 ## ✨ Features
 

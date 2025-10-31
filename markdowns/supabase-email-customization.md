@@ -21,11 +21,11 @@ Keep Supabase handling password reset functionality, but customize the email tem
 Replace the default template with your CAPCo branding:
 
 ```html
-<h2>Reset Your CAPCo Fire Protection Password</h2>
+<h2>Reset Your CAPCO Design Group Password</h2>
 
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background: #ef4444; color: white; padding: 20px; text-align: center;">
-    <h1 style="margin: 0;">CAPCo Fire Protection</h1>
+    <h1 style="margin: 0;">CAPCO Design Group</h1>
   </div>
 
   <div style="padding: 30px; background: #f9f9f9;">
@@ -34,8 +34,8 @@ Replace the default template with your CAPCo branding:
     <p>Hello,</p>
 
     <p>
-      You requested a password reset for your CAPCo Fire Protection account. Click the button below
-      to reset your password:
+      You requested a password reset for your CAPCO Design Group account. Click the button below to
+      reset your password:
     </p>
 
     <div style="text-align: center; margin: 30px 0;">
@@ -54,7 +54,7 @@ Replace the default template with your CAPCo branding:
     <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;" />
 
     <p style="color: #666; font-size: 12px;">
-      This email was sent by CAPCo Fire Protection Systems.<br />
+      This email was sent by CAPCO Design Group Systems.<br />
       If you're having trouble clicking the button, copy and paste this URL into your browser:<br />
       {{ .ConfirmationURL }}
     </p>

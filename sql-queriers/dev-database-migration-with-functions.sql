@@ -1,5 +1,5 @@
 -- =====================================================
--- CAPCo Fire Protection - Development Database Setup
+-- CAPCO Design Group - Development Database Setup
 -- WITH ESSENTIAL FUNCTIONS ONLY
 -- =====================================================
 -- This includes ONLY the functions that are actively used

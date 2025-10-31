@@ -6,13 +6,13 @@ INSERT INTO globalOptions (key, value, description) VALUES
 ('welcomeClientEmailContent', 
 '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="text-align: center; margin-bottom: 30px;">
-    <h1 style="color: #333; margin-bottom: 10px;">Welcome to CAPCo Fire Protection!</h1>
+    <h1 style="color: #333; margin-bottom: 10px;">Welcome to CAPCO Design Group!</h1>
     <p style="color: #666; font-size: 16px;">Your account has been successfully created.</p>
   </div>
   
   <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
     <h2 style="color: #333; margin-top: 0;">Hello {{project.authorProfile.companyName}}!</h2>
-    <p>Welcome to CAPCo Fire Protection! Your account has been successfully created and you can now access our fire protection project management system.</p>
+    <p>Welcome to CAPCO Design Group! Your account has been successfully created and you can now access our fire protection project management system.</p>
   </div>
   
   <div style="background: #fff; border: 1px solid #e9ecef; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -42,7 +42,7 @@ INSERT INTO globalOptions (key, value, description) VALUES
   
   <div style="border-top: 1px solid #e9ecef; padding-top: 20px; margin-top: 30px;">
     <p style="color: #666; font-size: 14px; margin-bottom: 10px;">If you have any questions or need assistance, please don''t hesitate to contact our team.</p>
-    <p style="color: #999; font-size: 12px;">© 2024 CAPCo Fire Protection. All rights reserved.</p>
+    <p style="color: #999; font-size: 12px;">© 2024 CAPCO Design Group. All rights reserved.</p>
   </div>
 </div>', 
 'Welcome email template for new client users') 
@@ -62,7 +62,7 @@ INSERT INTO globalOptions (key, value, description) VALUES
   
   <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
     <h2 style="color: #333; margin-top: 0;">Hello {{project.authorProfile.firstName}} {{project.authorProfile.lastName}}!</h2>
-    <p>Welcome to the CAPCo Fire Protection team! Your staff account has been successfully created and you now have access to our project management system.</p>
+    <p>Welcome to the CAPCO Design Group team! Your staff account has been successfully created and you now have access to our project management system.</p>
   </div>
   
   <div style="background: #fff; border: 1px solid #e9ecef; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -95,7 +95,7 @@ INSERT INTO globalOptions (key, value, description) VALUES
   
   <div style="border-top: 1px solid #e9ecef; padding-top: 20px; margin-top: 30px;">
     <p style="color: #666; font-size: 14px; margin-bottom: 10px;">If you have any questions about your account or need training materials, please contact your supervisor.</p>
-    <p style="color: #999; font-size: 12px;">© 2024 CAPCo Fire Protection. All rights reserved.</p>
+    <p style="color: #999; font-size: 12px;">© 2024 CAPCO Design Group. All rights reserved.</p>
   </div>
 </div>', 
 'Welcome email template for new staff users') 

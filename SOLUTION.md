@@ -84,7 +84,7 @@ git push origin main
 
 ## Expected Conversation
 
-**Assistant**: "Hello! I'm calling from CAPCO Fire Protection Systems. I can help you schedule a fire protection consultation. Let me check our availability for you."
+**Assistant**: "Hello! I'm calling from CAPCO Design Group Systems. I can help you schedule a fire protection consultation. Let me check our availability for you."
 
 _Checks availability automatically_
 

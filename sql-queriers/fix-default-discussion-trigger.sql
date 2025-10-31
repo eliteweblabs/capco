@@ -103,7 +103,7 @@ BEGIN
   
   -- Fallback to default if no admin found
   IF company_name IS NULL THEN
-    company_name := 'CAPCo Fire Protection Systems';
+    company_name := 'CAPCO Design Group Systems';
   END IF;
   
   -- Insert default discussions
