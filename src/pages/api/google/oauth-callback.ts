@@ -14,9 +14,20 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
+  // Decode redirect URL from state
+  let redirectTo = null;
+  if (state) {
+    try {
+      const stateData = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
+      redirectTo = stateData.redirect || null;
+    } catch (e) {
+      console.warn("⚠️ [GOOGLE-OAUTH] Failed to decode state, using default redirect");
+    }
+  }
+
   if (error) {
     console.error("❌ [GOOGLE-OAUTH] OAuth error:", error);
-    return redirect("/?error=oauth_error");
+    return redirect(redirectTo || "/?error=oauth_error");
   }
 
   if (!code) {
@@ -28,7 +39,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       origin: url.origin,
       pathname: url.pathname,
     });
-    return redirect("/?error=no_code");
+    return redirect(redirectTo || "/?error=no_code");
   }
 
   try {
@@ -99,12 +110,23 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
 
     console.log("✅ [GOOGLE-OAUTH] OAuth flow completed successfully");
 
-    // Redirect to success page or back to the app
-    // Don't redirect to the callback path itself - go to a different page
-    const redirectTo = url.searchParams.get("redirect") || "/?google_auth=success";
-    return redirect(redirectTo);
+    // Redirect back to the page that initiated the auth, or to success page
+    // If redirectTo was decoded from state, use it; otherwise use query param or default
+    const finalRedirect = redirectTo || url.searchParams.get("redirect") || "/?google_auth=success";
+    return redirect(finalRedirect);
   } catch (error) {
     console.error("❌ [GOOGLE-OAUTH] OAuth callback error:", error);
-    return redirect("/?error=oauth_callback_error");
+    // Decode redirect URL from state for error redirect too
+    let errorRedirect = null;
+    const state = url.searchParams.get("state");
+    if (state) {
+      try {
+        const stateData = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
+        errorRedirect = stateData.redirect || null;
+      } catch (e) {
+        // Ignore decode errors
+      }
+    }
+    return redirect(errorRedirect || "/?error=oauth_callback_error");
   }
 };

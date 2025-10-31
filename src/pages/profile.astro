@@ -139,6 +139,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobileCarrier
                 id="first-name"
                 name="firstName"
                 value={userProfile?.firstName || ""}
+                required
                 class=`${globalInputClasses}`
                 placeholder="Enter your first name"
               />
@@ -155,6 +156,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobileCarrier
                 id="last-name"
                 name="lastName"
                 value={userProfile?.lastName || ""}
+                required
                 class=`${globalInputClasses}`
                 placeholder="Enter your last name"
               />
@@ -199,6 +201,7 @@ const storedCarrierKey = currentUser?.user_metadata?.mobileCarrier
             showSMS={true}
             smsChecked={currentUser?.user_metadata?.smsAlerts || false}
             selectedCarrier={storedCarrierKey || ""}
+            {globalInputClasses}
           />
 
           <!-- Action Buttons -->
@@ -263,16 +266,38 @@ const storedCarrierKey = currentUser?.user_metadata?.mobileCarrier
 
     // Handle profile form submission
     profileForm?.addEventListener("submit", async (e) => {
+      // Check form validity before preventing default
+      if (!(profileForm as HTMLFormElement).checkValidity()) {
+        // Let the browser show validation messages
+        (profileForm as HTMLFormElement).reportValidity();
+        return;
+      }
+
       e.preventDefault();
 
       const formData = new FormData(profileForm as HTMLFormElement);
       const companyName = formData.get("companyName");
-      const firstName = formData.get("firstName");
-      const lastName = formData.get("lastName");
+      const firstName = formData.get("firstName") as string;
+      const lastName = formData.get("lastName") as string;
       const phone = formData.get("phone");
       const smsAlertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;
       const smsAlerts = smsAlertsCheckbox?.checked || false;
       const mobileCarrier = formData.get("mobileCarrier");
+
+      // Validate required fields manually as well
+      if (!firstName?.trim() || !lastName?.trim()) {
+        if (window.showModal) {
+          window.showModal(
+            "error",
+            "Validation Error",
+            "First name and last name are required fields.",
+            5000
+          );
+        } else {
+          alert("First name and last name are required fields.");
+        }
+        return;
+      }
 
       // Disable button and show loading state
       if (saveProfileBtn) {
@@ -296,7 +321,17 @@ const storedCarrierKey = currentUser?.user_metadata?.mobileCarrier
           }),
         });
 
-        const result = await response.json();
+        // Check if response is actually JSON before parsing
+        const contentType = response.headers.get("content-type");
+        let result;
+
+        if (contentType && contentType.includes("application/json")) {
+          result = await response.json();
+        } else {
+          const text = await response.text();
+          console.error("Non-JSON response received:", text.substring(0, 100));
+          throw new Error(`Expected JSON response but received: ${contentType || "unknown"}`);
+        }
 
         if (response.ok) {
           if (window.showModal) {
