@@ -473,6 +473,44 @@ const debugData = {
         }
       };
 
+      // Helper function to create user avatars using UserAvatar partial
+      (window as any).createUserAvatarPartial = async function (config: any) {
+        try {
+          const headers = new Headers();
+          
+          // Handle nested user object
+          if (config.user) {
+            Object.entries(config.user).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                headers.set(`x-user-avatar-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`, value.toString());
+              }
+            });
+          }
+          
+          // Handle other config options
+          Object.entries(config).forEach(([key, value]) => {
+            if (key !== "user" && value !== undefined && value !== null) {
+              headers.set(`x-user-avatar-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`, value.toString());
+            }
+          });
+
+          const response = await fetch("/partials/user-avatar", {
+            headers: headers,
+          });
+
+          if (response.ok) {
+            const avatarHTML = await response.text();
+            return avatarHTML; // Return HTML string instead of DOM element
+          } else {
+            console.error("Failed to fetch user-avatar partial:", response.status);
+            return null;
+          }
+        } catch (error) {
+          console.error("Error creating user-avatar partial:", error);
+          return null;
+        }
+      };
+
       if (!String.prototype.startsWith) {
         console.log("🔧 [POLYFILL] Adding startsWith polyfill...");
         String.prototype.startsWith = function (search: string, pos?: number) {
