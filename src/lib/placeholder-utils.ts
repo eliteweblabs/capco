@@ -231,6 +231,16 @@ export function replacePlaceholders(
     }
   }
 
+  // Replace RAILWAY_PUBLIC_DOMAIN placeholders
+  if (baseUrl) {
+    const beforeReplace = result;
+    result = result.replace(/\{\{\s*RAILWAY_PUBLIC_DOMAIN\s*\}\}/g, baseUrl);
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
   // Replace PROJECT_ID placeholders (only if projectId > 0)
   if (projectId && projectId > 0) {
     const beforeReplace = result;

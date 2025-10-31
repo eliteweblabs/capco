@@ -58,12 +58,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
     inset: 0;
     background: radial-gradient(
       ellipse 50% 80% at 30% 40%,
-      var(--color-background) 0%,
-      var(--color-background) 20%,
-      var(--color-background) 40%,
-      var(--color-background) 60%,
-      var(--color-background) 80%,
-      var(--color-background) 100%
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.8) 20%,
+      rgba(255, 255, 255, 0.6) 40%,
+      rgba(255, 255, 255, 0.3) 60%,
+      rgba(255, 255, 255, 0.1) 80%,
+      transparent 100%
     );
     pointer-events: none;
     z-index: 10;
@@ -695,6 +695,27 @@ const { currentUser } = await checkAuth(Astro.cookies);
         },
         delay + delay + delay + delay + delay + delay + delay + delay + delay + delay + 100
       ); // After upload-files is created
+
+      setTimeout(
+        () => {
+          this.addNodeWithCenterMaintenance({
+            id: "final-documents-delivered",
+            icon: "file-text",
+            title: "Delivering Final Documents",
+            status: "2 minutes to complete",
+            x: screenWidth,
+            y: screenHeight * 0.25,
+          });
+        },
+        delay + delay + delay + delay + delay + delay + delay + delay + delay + delay + delay
+      );
+
+      setTimeout(
+        () => {
+          this.addConnection("final-documents", "final-documents-delivered", "right", "left");
+        },
+        delay + delay + delay + delay + delay + delay + delay + delay + delay + delay + delay + 100
+      ); // After upload-files is created
     }
 
     addNode(options: NodeOptions = {}) {
@@ -882,7 +903,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
         (e) => {
           e.stopPropagation();
           e.preventDefault();
-          this.startDrag(node, e.touches[0]);
+          this.startDrag(node, e);
         },
         { passive: false }
       );
@@ -900,7 +921,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
               : point.classList.contains("bottom")
                 ? "bottom"
                 : "left";
-          this.startConnection(node, isOutput, side, e);
+          this.startConnection(node, isOutput, side, e as MouseEvent);
         });
 
         // Touch events
@@ -917,13 +938,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
                 : point.classList.contains("bottom")
                   ? "bottom"
                   : "left";
-            this.startConnection(node, isOutput, side, e.touches[0]);
+            this.startConnection(node, isOutput, side, e as TouchEvent);
           },
           { passive: false }
         );
       });
 
-      this.canvas.appendChild(nodeElement);
+      (this.canvas as HTMLElement).appendChild(nodeElement);
     }
 
     startDrag(node: NodeOptions, e: MouseEvent | TouchEvent) {
@@ -934,9 +955,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
       };
       const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
 
+      // Handle both MouseEvent and TouchEvent
+      const clientX = e instanceof TouchEvent ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+      const clientY = e instanceof TouchEvent ? (e.touches[0]?.clientY ?? 0) : e.clientY;
+
       this.dragOffset = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+        x: clientX - rect.left,
+        y: clientY - rect.top,
       };
 
       (e.target as HTMLElement).closest(".node-card")?.classList.add("dragging");
@@ -980,10 +1005,20 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
 
     handleCanvasMouseMove(e: MouseEvent | TouchEvent) {
+      // Helper to get coordinates from either MouseEvent or TouchEvent
+      const getClientX = (evt: MouseEvent | TouchEvent): number => {
+        return evt instanceof TouchEvent ? (evt.touches[0]?.clientX ?? 0) : evt.clientX;
+      };
+      const getClientY = (evt: MouseEvent | TouchEvent): number => {
+        return evt instanceof TouchEvent ? (evt.touches[0]?.clientY ?? 0) : evt.clientY;
+      };
+
       if (this.draggedNode) {
         const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
-        const x = e.clientX - canvasRect.left - this.dragOffset.x;
-        const y = e.clientY - canvasRect.top - this.dragOffset.y;
+        const clientX = getClientX(e);
+        const clientY = getClientY(e);
+        const x = clientX - canvasRect.left - this.dragOffset.x;
+        const y = clientY - canvasRect.top - this.dragOffset.y;
 
         this.draggedNode.x = Math.max(0, Math.min(x, this.canvas?.offsetWidth || 0 - 200));
         this.draggedNode.y = Math.max(0, Math.min(y, this.canvas?.offsetHeight || 0 - 100));
@@ -992,10 +1027,9 @@ const { currentUser } = await checkAuth(Astro.cookies);
           `[data-node-id="${this.draggedNode.id}"]`
         );
         if (nodeElement) {
-          nodeElement.style.left = `${this.draggedNode.x}px`;
-          nodeElement.style.top = `${this.draggedNode.y}px`;
+          nodeElement.style.left = `${this.draggedNode.x ?? 0}px`;
+          nodeElement.style.top = `${this.draggedNode.y ?? 0}px`;
         }
-        nodeElement.style.top = `${this.draggedNode.y}px`;
 
         this.updateConnections();
       }
@@ -1003,21 +1037,23 @@ const { currentUser } = await checkAuth(Astro.cookies);
       // Handle connection preview when connecting
       if (this.connecting && this.connectionStart) {
         const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
-        const mouseX = e.clientX - canvasRect.left;
-        const mouseY = e.clientY - canvasRect.top;
+        const clientX = getClientX(e);
+        const clientY = getClientY(e);
+        const mouseX = clientX - canvasRect.left;
+        const mouseY = clientY - canvasRect.top;
 
         // Find the node under the mouse
         const elementUnderMouse: HTMLElement | null = document.elementFromPoint(
-          e.clientX,
-          e.clientY
-        );
-        const nodeElement = elementUnderMouse?.closest(".node-card");
+          clientX,
+          clientY
+        ) as HTMLElement | null;
+        const nodeElement = elementUnderMouse?.closest(".node-card") as HTMLElement | null;
 
         if (
           nodeElement &&
           nodeElement !== document.querySelector(`[data-node-id="${this.connectionStart.node.id}"]`)
         ) {
-          const nodeId = nodeElement.dataset.nodeId || "";
+          const nodeId = (nodeElement.dataset.nodeId as string) || "";
           const targetNode = this.nodes.get(nodeId);
 
           if (targetNode) {
@@ -1037,6 +1073,24 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
 
     handleCanvasMouseUp(e: MouseEvent | TouchEvent) {
+      // Helper to get coordinates from either MouseEvent or TouchEvent
+      const getClientX = (evt: MouseEvent | TouchEvent): number => {
+        if (evt instanceof TouchEvent) {
+          return evt.changedTouches.length > 0
+            ? (evt.changedTouches[0]?.clientX ?? 0)
+            : (evt.touches[0]?.clientX ?? 0);
+        }
+        return evt.clientX;
+      };
+      const getClientY = (evt: MouseEvent | TouchEvent): number => {
+        if (evt instanceof TouchEvent) {
+          return evt.changedTouches.length > 0
+            ? (evt.changedTouches[0]?.clientY ?? 0)
+            : (evt.touches[0]?.clientY ?? 0);
+        }
+        return evt.clientY;
+      };
+
       if (this.draggedNode) {
         this.draggedNode = null;
         document.querySelectorAll(".node-card").forEach((card) => {
@@ -1046,21 +1100,25 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
       if (this.connecting && this.connectionStart) {
         const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
-        const mouseX = e.clientX - canvasRect.left;
-        const mouseY = e.clientY - canvasRect.top;
+        const clientX = getClientX(e);
+        const clientY = getClientY(e);
+        const mouseX = clientX - canvasRect.left;
+        const mouseY = clientY - canvasRect.top;
 
         // Find the node under the mouse
         const elementUnderMouse: HTMLElement | null = document.elementFromPoint(
-          e.clientX,
-          e.clientY
-        );
-        const nodeElement: HTMLElement | null = elementUnderMouse?.closest(".node-card");
+          clientX,
+          clientY
+        ) as HTMLElement | null;
+        const nodeElement: HTMLElement | null = elementUnderMouse?.closest(
+          ".node-card"
+        ) as HTMLElement | null;
 
         if (
           nodeElement &&
           nodeElement !== document.querySelector(`[data-node-id="${this.connectionStart.node.id}"]`)
         ) {
-          const nodeId = nodeElement.dataset.nodeId || "";
+          const nodeId = (nodeElement.dataset.nodeId as string) || "";
           const targetNode = this.nodes.get(nodeId);
 
           if (targetNode) {
@@ -1069,7 +1127,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
             // Create the connection
             this.addConnection(
-              this.connectionStart.node.id,
+              this.connectionStart.node.id as string,
               targetNode.id,
               this.connectionStart.side,
               nearestSide
@@ -1080,7 +1138,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
         this.connecting = false;
         this.connectionStart = null;
         document.querySelectorAll(".connection-point").forEach((point) => {
-          point.style.background = "#3b82f6";
+          (point as HTMLElement).style.background = "#3b82f6";
         });
 
         // Clear preview
@@ -1092,26 +1150,26 @@ const { currentUser } = await checkAuth(Astro.cookies);
     handleCanvasTouchStart(e: TouchEvent) {
       // Prevent default to avoid scrolling
       e.preventDefault();
-      // Convert to mouse event format
+      // Pass TouchEvent directly to handlers that can handle it
       if (e.touches.length === 1) {
-        this.handleCanvasMouseDown(e.touches[0]);
+        this.handleCanvasMouseDown(e);
       }
     }
 
     handleCanvasTouchMove(e: TouchEvent) {
       // Prevent default to avoid scrolling
       e.preventDefault();
-      // Convert to mouse event format
+      // Pass TouchEvent directly to handlers that can handle it
       if (e.touches.length === 1) {
-        this.handleCanvasMouseMove(e.touches[0]);
+        this.handleCanvasMouseMove(e);
       }
     }
 
     handleCanvasTouchEnd(e: TouchEvent) {
-      // Convert to mouse event format
+      // Pass TouchEvent directly to handlers that can handle it
       // Use changedTouches since touches will be empty on touchend
       if (e.changedTouches.length === 1) {
-        this.handleCanvasMouseUp(e.changedTouches[0]);
+        this.handleCanvasMouseUp(e);
       }
     }
 
@@ -1145,7 +1203,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       previewLines.forEach((line) => line.remove());
     }
 
-    handleCanvasMouseDown(e: MouseEvent) {
+    handleCanvasMouseDown(e: MouseEvent | TouchEvent) {
       // Deselect all nodes
       document.querySelectorAll(".node-card").forEach((card) => {
         card.classList.remove("selected");
@@ -1161,15 +1219,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
         createdAt: Date.now(), // Track when connection was created
         animated: true, // Track if animation has been applied
       };
-      this.connections.push(connection);
-      this.renderConnection(connection);
+      this.connections.push(connection as any);
+      this.renderConnection(connection as any);
     }
 
     renderConnection(connection: {
       from: string;
       to: string;
-      fromSide: string;
-      toSide: string;
+      side: string;
       createdAt: number;
       animated: boolean;
     }) {
@@ -1220,7 +1277,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       arrow.setAttribute("class", "connection-arrow");
 
       if (shouldAnimate) {
-        const delay = this.connections.indexOf(connection) * 200;
+        const delay = this.connections.indexOf(connection as any) * 200;
         arrow.style.animationDelay = `${delay + 1000}ms`; // Arrow appears after line is drawn
       } else {
         // Animation complete - just show the arrow
@@ -1228,11 +1285,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
         arrow.style.opacity = "1";
       }
 
-      this.svg.appendChild(path);
-      this.svg.appendChild(arrow);
+      (this.svg as HTMLElement).appendChild(path);
+      (this.svg as HTMLElement).appendChild(arrow);
     }
 
-    getConnectionPoint(node, side) {
+    getConnectionPoint(node: NodeOptions, side: string) {
       // Get actual node dimensions from the DOM element
       const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
       let nodeWidth = 200;
@@ -1240,28 +1297,28 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
       if (nodeElement) {
         const rect = nodeElement.getBoundingClientRect();
-        const canvasRect = this.canvas.getBoundingClientRect();
+        const canvasRect = (this.canvas as HTMLElement).getBoundingClientRect();
         nodeWidth = rect.width;
         nodeHeight = rect.height;
       }
 
       switch (side) {
         case "top":
-          return { x: node.x + nodeWidth / 2, y: node.y };
+          return { x: (node.x ?? 0) + nodeWidth / 2, y: node.y ?? 0 };
         case "right":
-          return { x: node.x + nodeWidth, y: node.y + nodeHeight / 2 };
+          return { x: (node.x ?? 0) + nodeWidth, y: (node.y ?? 0) + nodeHeight / 2 };
         case "bottom":
-          return { x: node.x + nodeWidth / 2, y: node.y + nodeHeight };
+          return { x: (node.x ?? 0) + nodeWidth / 2, y: (node.y ?? 0) + nodeHeight };
         case "left":
-          return { x: node.x, y: node.y + nodeHeight / 2 };
+          return { x: node.x ?? 0, y: (node.y ?? 0) + nodeHeight / 2 };
         default:
-          return { x: node.x + nodeWidth, y: node.y + nodeHeight / 2 };
+          return { x: (node.x ?? 0) + nodeWidth, y: (node.y ?? 0) + nodeHeight / 2 };
       }
     }
 
     updateConnections() {
       // Clear existing connections
-      this.svg.innerHTML = "";
+      (this.svg as HTMLElement).innerHTML = "";
 
       // Re-render all connections with updated positions
       this.connections.forEach((connection) => {
@@ -1270,7 +1327,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
         // Only render if both nodes exist
         if (fromNode && toNode) {
-          this.renderConnection(connection);
+          this.renderConnection(connection as any);
         }
       });
     }
@@ -1278,8 +1335,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
     clearAll() {
       this.nodes.clear();
       this.connections = [];
-      this.canvas.innerHTML = "";
-      this.svg.innerHTML = "";
+      (this.canvas as HTMLElement).innerHTML = "";
+      (this.svg as HTMLElement).innerHTML = "";
     }
 
     // Method to continuously add nodes to demonstrate center maintenance
@@ -1335,7 +1392,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
             const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
             if (nodeElement) {
-              nodeElement.style.left = `${node.x}px`;
+              (nodeElement as HTMLElement).style.left = `${node.x ?? 0}px`;
             }
           });
 

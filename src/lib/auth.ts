@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { clearAuthCookies } from "./auth-cookies";
 import { supabase } from "./supabase";
+import { isBackendPage } from "../pages/api/utils/backend-page-check";
 
 export interface ExtendedUser extends User {
   profile?: any;
@@ -172,12 +173,9 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     }
   } else {
     // Only log if we're on a protected route where auth is expected
-    const publicPages = ["/", "/auth/login", "/register", "/forgot-password"];
-    const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
-
-    if (!publicPages.includes(currentPath)) {
-      console.log("🔐 [AUTH] No authentication tokens found");
-    }
+    isBackendPage(typeof window !== "undefined" ? window.location.pathname : "")
+      ? console.log("🔐 [AUTH] No authentication tokens found")
+      : null;
   }
 
   const result = {

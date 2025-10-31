@@ -41,13 +41,15 @@ const currentRole = currentUser?.profile?.role;
 ---
 
 <nav
-  class=`z-10 flex py-2 w-full items-center gap-2 px-2 bg-blend-difference backdrop-blur-md fixed top-0 left-0 right-0`
+  class=`flex w-full gap-2 p-2 items-center justify-between 
+  
+  z-10  bg-blend-difference backdrop-blur-md fixed top-0 left-0 right-0`
 >
+  <ToggleSidebar {currentUser} />
   <div
     class=`flex w-full items-center justify-between ${!currentUser ? "max-w-screen-xl mx-auto" : ""}`
   >
     <div class="flex-start flex items-center">
-      <ToggleSidebar {currentUser} />
       <Logo link="/" file="svg" className="mr-4 flex" {isBackend} />
     </div>
 
@@ -76,14 +78,13 @@ const currentRole = currentUser?.profile?.role;
       }
 
       <ThemeToggle />
+
+      <!-- Hidden data attribute for notifications -->
+      {isAuth && <div data-user-id={currentUser?.id} style="display: none;" />}
+
+      <AuthIcon {currentUser} {session} {isBackend} />
     </div>
   </div>
-
-  <!-- Hidden data attribute for notifications -->
-  {isAuth && <div data-user-id={currentUser?.id} style="display: none;" />}
-
-  <AuthIcon {currentUser} {session} {isBackend} />
-
   <nav class="hidden border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
     <div class="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between p-4">
       <!-- Logo with back button support -->
