@@ -254,6 +254,131 @@ async function handleGetUsers() {
   }
 }
 
+// Helper function to get working hours from Cal.com Availability table
+// Throws an error if availability cannot be found - NO FALLBACKS
+async function getWorkingHours(
+  userId: number,
+  eventTypeId?: number
+): Promise<{
+  startHour: number;
+  startMinute: number;
+  endHour: number;
+  endMinute: number;
+}> {
+  // Try to get availability from Availability table
+  // Cal.com stores availability with days array, start_time, and end_time
+  let availabilityQuery = `
+    SELECT "startTime", "endTime", days
+    FROM "Availability"
+    WHERE "userId" = $1
+  `;
+  const queryParams: any[] = [userId];
+
+  if (eventTypeId) {
+    availabilityQuery += ` AND ("eventTypeId" = $2 OR "eventTypeId" IS NULL)`;
+    queryParams.push(eventTypeId);
+  }
+
+  availabilityQuery += ` ORDER BY "eventTypeId" NULLS LAST LIMIT 1`;
+
+  let availabilityResult;
+  try {
+    availabilityResult = await calcomDb.query(availabilityQuery, queryParams);
+  } catch (error: any) {
+    // Try alternative table name (lowercase)
+    console.log(
+      `⚠️ [CAL-INTEGRATION] Availability table query failed, trying alternative table name: ${error.message}`
+    );
+    try {
+      availabilityResult = await calcomDb.query(
+        `
+        SELECT "start_time", "end_time", days
+        FROM availability
+        WHERE user_id = $1
+        ORDER BY event_type_id NULLS LAST
+        LIMIT 1
+      `,
+        [userId]
+      );
+
+      // Rename fields for consistent handling
+      if (availabilityResult.rows.length > 0) {
+        availabilityResult.rows[0].startTime = availabilityResult.rows[0].start_time;
+        availabilityResult.rows[0].endTime = availabilityResult.rows[0].end_time;
+      }
+    } catch (altError: any) {
+      throw new Error(
+        `Failed to query Cal.com availability: Primary query error: ${error.message}, Alternative query error: ${altError.message}`
+      );
+    }
+  }
+
+  if (!availabilityResult || availabilityResult.rows.length === 0) {
+    throw new Error(
+      `No availability found in Cal.com for userId ${userId}${eventTypeId ? ` and eventTypeId ${eventTypeId}` : ""}. Please configure availability in Cal.com.`
+    );
+  }
+
+  const availability = availabilityResult.rows[0];
+
+  // Parse start_time and end_time (they're TIME types, e.g., "10:30:00" or "17:00:00")
+  const startTime = availability.startTime;
+  const endTime = availability.endTime;
+
+  if (!startTime || !endTime) {
+    throw new Error(
+      `Availability record found but missing startTime or endTime. startTime: ${startTime}, endTime: ${endTime}`
+    );
+  }
+
+  // Handle different time formats
+  let startHour: number, startMinute: number;
+  let endHour: number, endMinute: number;
+
+  if (typeof startTime === "string") {
+    // Parse "HH:MM:SS" or "HH:MM" format
+    const parts = startTime.split(":");
+    if (parts.length < 2) {
+      throw new Error(`Invalid startTime format: ${startTime}. Expected HH:MM or HH:MM:SS`);
+    }
+    startHour = Number(parts[0]);
+    startMinute = Number(parts[1]) || 0;
+
+    if (isNaN(startHour) || isNaN(startMinute)) {
+      throw new Error(`Invalid startTime format: ${startTime}. Could not parse hour or minute`);
+    }
+  } else if (startTime instanceof Date) {
+    startHour = startTime.getUTCHours();
+    startMinute = startTime.getUTCMinutes();
+  } else {
+    throw new Error(`Unexpected startTime type: ${typeof startTime}. Value: ${startTime}`);
+  }
+
+  if (typeof endTime === "string") {
+    const parts = endTime.split(":");
+    if (parts.length < 2) {
+      throw new Error(`Invalid endTime format: ${endTime}. Expected HH:MM or HH:MM:SS`);
+    }
+    endHour = Number(parts[0]);
+    endMinute = Number(parts[1]) || 0;
+
+    if (isNaN(endHour) || isNaN(endMinute)) {
+      throw new Error(`Invalid endTime format: ${endTime}. Could not parse hour or minute`);
+    }
+  } else if (endTime instanceof Date) {
+    endHour = endTime.getUTCHours();
+    endMinute = endTime.getUTCMinutes();
+  } else {
+    throw new Error(`Unexpected endTime type: ${typeof endTime}. Value: ${endTime}`);
+  }
+
+  console.log(
+    `✅ [CAL-INTEGRATION] Found availability from Cal.com: ${startHour}:${startMinute.toString().padStart(2, "0")} - ${endHour}:${endMinute.toString().padStart(2, "0")}`
+  );
+
+  return { startHour, startMinute, endHour, endMinute };
+}
+
 async function handleGetEventTypes() {
   try {
     console.log("📅 [CAL-INTEGRATION] Getting event types from Cal.com database");
@@ -363,7 +488,13 @@ async function handleGetAccountInfo() {
     const existingBookings = existingBookingsResult.rows;
     console.log(`📅 [CAL-INTEGRATION] Found ${existingBookings.length} existing bookings`);
 
-    // Generate available slots (M-F, 9 AM - 5 PM UTC)
+    // Get actual working hours from Cal.com availability
+    const workingHours = await getWorkingHours(userId, eventType.id);
+    console.log(
+      `🕐 [CAL-INTEGRATION] Working hours: ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")}`
+    );
+
+    // Generate available slots using actual working hours
     const slots: string[] = [];
     let currentDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
@@ -387,16 +518,25 @@ async function handleGetAccountInfo() {
 
       // Only business days (Monday=1 through Friday=5)
       if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        // Generate slots from 9 AM to 5 PM
-        for (let hour = 9; hour < 17; hour++) {
-          // Create slot based on event length (default 30 minutes)
-          const slotMinutes = eventLength === 60 ? 0 : 30;
+        // Generate slots using actual working hours
+        const startMinutes = workingHours.startHour * 60 + workingHours.startMinute;
+        const endMinutes = workingHours.endHour * 60 + workingHours.endMinute;
+
+        // Generate slots based on event length
+        for (
+          let totalMinutes = startMinutes;
+          totalMinutes < endMinutes;
+          totalMinutes += eventLength
+        ) {
+          const slotMinutes = totalMinutes % 60;
+          const slotHour = Math.floor(totalMinutes / 60);
+
           const slotTime = new Date(
             Date.UTC(
               currentDate.getUTCFullYear(),
               currentDate.getUTCMonth(),
               currentDate.getUTCDate(),
-              hour,
+              slotHour,
               slotMinutes,
               0,
               0
@@ -407,10 +547,14 @@ async function handleGetAccountInfo() {
           if (slotTime > now) {
             const slotEnd = new Date(slotTime.getTime() + eventLength * 60 * 1000);
 
-            // Check if slot is available (not overlapping with existing bookings)
-            if (isSlotAvailable(slotTime, slotEnd)) {
-              slots.push(slotTime.toISOString());
-              if (slots.length >= 10) break;
+            // Don't exceed working hours end time
+            const slotEndMinutes = slotEnd.getUTCHours() * 60 + slotEnd.getUTCMinutes();
+            if (slotEndMinutes <= endMinutes) {
+              // Check if slot is available (not overlapping with existing bookings)
+              if (isSlotAvailable(slotTime, slotEnd)) {
+                slots.push(slotTime.toISOString());
+                if (slots.length >= 10) break;
+              }
             }
           }
         }
@@ -467,11 +611,11 @@ async function handleGetAccountInfo() {
     );
   } catch (error: any) {
     console.error("❌ [CAL-INTEGRATION] Error getting account info:", error);
+    const errorMessage = error.message || "Unknown error";
     return new Response(
       JSON.stringify({
-        result:
-          "I'm having trouble checking our availability right now. Please try again in a moment.",
-        error: error.message,
+        result: `I'm unable to check availability right now. ${errorMessage}`,
+        error: errorMessage,
       }),
       {
         status: 500,
@@ -521,6 +665,12 @@ async function handleGetAvailability(params: any) {
     const existingBookings = existingBookingsResult.rows;
     console.log(`📅 [CAL-INTEGRATION] Found ${existingBookings.length} existing bookings in range`);
 
+    // Get actual working hours from Cal.com availability
+    const workingHours = await getWorkingHours(userId, eventType.id);
+    console.log(
+      `🕐 [CAL-INTEGRATION] Working hours: ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")}`
+    );
+
     // Helper to check if a slot overlaps with existing bookings
     const isSlotAvailable = (slotStart: Date, slotEnd: Date): boolean => {
       return !existingBookings.some((booking: any) => {
@@ -546,16 +696,25 @@ async function handleGetAvailability(params: any) {
 
       // Only business days (Monday=1 through Friday=5)
       if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        // Generate slots from 9 AM to 5 PM (in UTC)
-        for (let hour = 9; hour < 17; hour++) {
-          // Create slot based on event length (default 30 minutes)
-          const slotMinutes = eventLength === 60 ? 0 : 30;
+        // Generate slots using actual working hours
+        const startMinutes = workingHours.startHour * 60 + workingHours.startMinute;
+        const endMinutes = workingHours.endHour * 60 + workingHours.endMinute;
+
+        // Generate slots based on event length
+        for (
+          let totalMinutes = startMinutes;
+          totalMinutes < endMinutes;
+          totalMinutes += eventLength
+        ) {
+          const slotMinutes = totalMinutes % 60;
+          const slotHour = Math.floor(totalMinutes / 60);
+
           const slot = new Date(
             Date.UTC(
               currentDate.getUTCFullYear(),
               currentDate.getUTCMonth(),
               currentDate.getUTCDate(),
-              hour,
+              slotHour,
               slotMinutes,
               0,
               0
@@ -566,9 +725,13 @@ async function handleGetAvailability(params: any) {
           if (slot > now) {
             const slotEnd = new Date(slot.getTime() + eventLength * 60 * 1000);
 
-            // Check if slot is available (not overlapping with existing bookings)
-            if (isSlotAvailable(slot, slotEnd)) {
-              slots.push(slot.toISOString());
+            // Don't exceed working hours end time
+            const slotEndMinutes = slotEnd.getUTCHours() * 60 + slotEnd.getUTCMinutes();
+            if (slotEndMinutes <= endMinutes) {
+              // Check if slot is available (not overlapping with existing bookings)
+              if (isSlotAvailable(slot, slotEnd)) {
+                slots.push(slot.toISOString());
+              }
             }
           }
         }
@@ -626,11 +789,11 @@ async function handleGetAvailability(params: any) {
     );
   } catch (error: any) {
     console.error("❌ [CAL-INTEGRATION] Error getting availability:", error);
+    const errorMessage = error.message || "Unknown error";
     return new Response(
       JSON.stringify({
-        result:
-          "I'm having trouble checking our availability right now. Please try again in a moment.",
-        error: error.message,
+        result: `I'm unable to check availability right now. ${errorMessage}`,
+        error: errorMessage,
       }),
       {
         status: 500,
