@@ -20,8 +20,8 @@ async function processVapiConfig() {
   console.log("🔄 [VAPI-PROCESSOR] Processing VAPI configuration with placeholders...");
 
   try {
-    // Import the Node.js compatible placeholder-utils
-    const { replacePlaceholders } = await import("./placeholder-utils-node.js");
+    // Import the TypeScript placeholder-utils (works in Node.js with ES modules)
+    const { replacePlaceholders } = await import("../src/lib/placeholder-utils.ts");
 
     // Import the assistant config from the VAPI config file
     const configModule = await import("./vapi-assistant-config.js");

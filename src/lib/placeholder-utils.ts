@@ -130,7 +130,20 @@ export function replacePlaceholders(
   // === LEGACY PLACEHOLDER REPLACEMENT ===
   // Extract data from project object and additional data
   const projectId = data?.project?.id;
-  let baseUrl = import.meta.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_PUBLIC_DOMAIN;
+  // Support both Astro (import.meta.env) and Node.js (process.env) environments
+  let baseUrl: string | undefined;
+  try {
+    // Try Astro/Vite environment first
+    if (typeof import.meta !== 'undefined' && import.meta.env?.RAILWAY_PUBLIC_DOMAIN) {
+      baseUrl = import.meta.env.RAILWAY_PUBLIC_DOMAIN;
+    }
+  } catch (e) {
+    // import.meta not available, will use process.env
+  }
+  // Fallback to Node.js process.env if not found
+  if (!baseUrl && typeof process !== 'undefined' && process.env?.RAILWAY_PUBLIC_DOMAIN) {
+    baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN;
+  }
   
   // Debug: Log what we're getting as baseUrl
   if (typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml"))) {
