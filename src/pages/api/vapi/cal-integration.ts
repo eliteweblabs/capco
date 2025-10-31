@@ -258,64 +258,322 @@ async function handleGetUsers() {
 // Throws an error if availability cannot be found - NO FALLBACKS
 async function getWorkingHours(
   userId: number,
-  eventTypeId?: number
+  eventTypeId?: number,
+  username?: string
 ): Promise<{
   startHour: number;
   startMinute: number;
   endHour: number;
   endMinute: number;
 }> {
-  // Try to get availability from Availability table
-  // Cal.com stores availability with days array, start_time, and end_time
-  let availabilityQuery = `
-    SELECT "startTime", "endTime", days
-    FROM "Availability"
-    WHERE "userId" = $1
-  `;
-  const queryParams: any[] = [userId];
+  let availabilityResult: any = null;
+  const errors: string[] = [];
 
-  if (eventTypeId) {
-    availabilityQuery += ` AND ("eventTypeId" = $2 OR "eventTypeId" IS NULL)`;
-    queryParams.push(eventTypeId);
-  }
-
-  availabilityQuery += ` ORDER BY "eventTypeId" NULLS LAST LIMIT 1`;
-
-  let availabilityResult;
-  try {
-    availabilityResult = await calcomDb.query(availabilityQuery, queryParams);
-  } catch (error: any) {
-    // Try alternative table name (lowercase)
-    console.log(
-      `⚠️ [CAL-INTEGRATION] Availability table query failed, trying alternative table name: ${error.message}`
-    );
+  // If username provided, try to resolve userId from username first
+  let resolvedUserId = userId;
+  if (username && !userId) {
     try {
-      availabilityResult = await calcomDb.query(
-        `
-        SELECT "start_time", "end_time", days
-        FROM availability
-        WHERE user_id = $1
-        ORDER BY event_type_id NULLS LAST
-        LIMIT 1
-      `,
-        [userId]
-      );
+      // Try to find user by username
+      let userQuery = `SELECT id FROM "User" WHERE username = $1`;
+      let userResult = await calcomDb.query(userQuery, [username]);
 
-      // Rename fields for consistent handling
-      if (availabilityResult.rows.length > 0) {
-        availabilityResult.rows[0].startTime = availabilityResult.rows[0].start_time;
-        availabilityResult.rows[0].endTime = availabilityResult.rows[0].end_time;
+      if (userResult.rows.length === 0) {
+        // Try lowercase table
+        userQuery = `SELECT id FROM users WHERE username = $1`;
+        userResult = await calcomDb.query(userQuery, [username]);
       }
-    } catch (altError: any) {
-      throw new Error(
-        `Failed to query Cal.com availability: Primary query error: ${error.message}, Alternative query error: ${altError.message}`
+
+      if (userResult.rows.length > 0) {
+        resolvedUserId = userResult.rows[0].id;
+        console.log(
+          `✅ [CAL-INTEGRATION] Resolved username "${username}" to userId ${resolvedUserId}`
+        );
+      }
+    } catch (userError: any) {
+      console.log(
+        `⚠️ [CAL-INTEGRATION] Could not resolve username "${username}": ${userError.message}`
       );
     }
   }
 
+  // Strategy 1: Try Availability table with PascalCase (modern Cal.com)
+  try {
+    let query = `SELECT "startTime", "endTime", days FROM "Availability" WHERE "userId" = $1`;
+    const params: any[] = [resolvedUserId];
+
+    if (eventTypeId) {
+      query += ` AND ("eventTypeId" = $2 OR "eventTypeId" IS NULL)`;
+      params.push(eventTypeId);
+    }
+    query += ` ORDER BY "eventTypeId" NULLS LAST LIMIT 1`;
+
+    availabilityResult = await calcomDb.query(query, params);
+    if (availabilityResult.rows.length > 0) {
+      console.log(`✅ [CAL-INTEGRATION] Found availability in "Availability" table`);
+    }
+  } catch (error: any) {
+    errors.push(`"Availability" table: ${error.message}`);
+  }
+
+  // Strategy 2: Try availability table with snake_case (lowercase)
   if (!availabilityResult || availabilityResult.rows.length === 0) {
+    try {
+      let query = `SELECT start_time, end_time, days FROM availability WHERE user_id = $1`;
+      const params: any[] = [resolvedUserId];
+
+      if (eventTypeId) {
+        query += ` AND (event_type_id = $2 OR event_type_id IS NULL)`;
+        params.push(eventTypeId);
+      }
+      query += ` ORDER BY event_type_id NULLS LAST LIMIT 1`;
+
+      availabilityResult = await calcomDb.query(query, params);
+      if (availabilityResult.rows.length > 0) {
+        console.log(`✅ [CAL-INTEGRATION] Found availability in availability table`);
+        // Rename fields for consistent handling
+        availabilityResult.rows[0].startTime = availabilityResult.rows[0].start_time;
+        availabilityResult.rows[0].endTime = availabilityResult.rows[0].end_time;
+      }
+    } catch (error: any) {
+      errors.push(`availability table: ${error.message}`);
+    }
+  }
+
+  // Strategy 3: Try via EventType slug -> Availability (if availability is linked by event type slug)
+  if ((!availabilityResult || availabilityResult.rows.length === 0) && eventTypeId) {
+    try {
+      // First get the event type slug
+      let eventTypeSlugResult;
+      try {
+        eventTypeSlugResult = await calcomDb.query(`SELECT slug FROM "EventType" WHERE id = $1`, [
+          eventTypeId,
+        ]);
+      } catch (e: any) {
+        eventTypeSlugResult = await calcomDb.query(`SELECT slug FROM event_types WHERE id = $1`, [
+          eventTypeId,
+        ]);
+      }
+
+      if (eventTypeSlugResult.rows.length > 0) {
+        const slug = eventTypeSlugResult.rows[0].slug;
+        // Try availability linked to event type by slug/path
+        try {
+          const slugQuery = `
+            SELECT "startTime", "endTime", days
+            FROM "Availability"
+            WHERE ("userId" = $1 OR "userId" IS NULL)
+            AND ("eventTypeId" = $2 OR "eventTypeId" IN (SELECT id FROM "EventType" WHERE slug = $3))
+            ORDER BY "eventTypeId" NULLS LAST
+            LIMIT 1
+          `;
+          availabilityResult = await calcomDb.query(slugQuery, [resolvedUserId, eventTypeId, slug]);
+          if (availabilityResult.rows.length > 0) {
+            console.log(`✅ [CAL-INTEGRATION] Found availability via EventType slug: ${slug}`);
+          }
+        } catch (slugError: any) {
+          // Try lowercase
+          const slugQuery = `
+            SELECT start_time, end_time, days
+            FROM availability
+            WHERE (user_id = $1 OR user_id IS NULL)
+            AND (event_type_id = $2 OR event_type_id IN (SELECT id FROM event_types WHERE slug = $3))
+            ORDER BY event_type_id NULLS LAST
+            LIMIT 1
+          `;
+          availabilityResult = await calcomDb.query(slugQuery, [resolvedUserId, eventTypeId, slug]);
+          if (availabilityResult.rows.length > 0) {
+            console.log(
+              `✅ [CAL-INTEGRATION] Found availability via event type slug (lowercase): ${slug}`
+            );
+            availabilityResult.rows[0].startTime = availabilityResult.rows[0].start_time;
+            availabilityResult.rows[0].endTime = availabilityResult.rows[0].end_time;
+          }
+        }
+      }
+    } catch (error: any) {
+      errors.push(`EventType slug relationship: ${error.message}`);
+    }
+  }
+
+  // Strategy 4: Try via Schedule -> Availability (if EventType has schedule_id OR check user's default schedule)
+  if ((!availabilityResult || availabilityResult.rows.length === 0) && eventTypeId) {
+    try {
+      // First try via EventType's scheduleId
+      let scheduleQuery = `
+        SELECT a."startTime", a."endTime", a.days
+        FROM "EventType" et
+        JOIN "Schedule" s ON et."scheduleId" = s.id
+        JOIN "Availability" a ON s.id = a."scheduleId"
+        WHERE et.id = $1 AND (a."userId" = $2 OR a."userId" IS NULL)
+        ORDER BY a."eventTypeId" NULLS LAST
+        LIMIT 1
+      `;
+      availabilityResult = await calcomDb.query(scheduleQuery, [eventTypeId, resolvedUserId]);
+      if (availabilityResult.rows.length > 0) {
+        console.log(`✅ [CAL-INTEGRATION] Found availability via EventType Schedule relationship`);
+      } else {
+        // If EventType has no scheduleId, try user's default schedule(s)
+        scheduleQuery = `
+          SELECT a."startTime", a."endTime", a.days
+          FROM "Schedule" s
+          JOIN "Availability" a ON s.id = a."scheduleId"
+          WHERE s."userId" = $1
+          ORDER BY a."eventTypeId" NULLS LAST, s.id
+          LIMIT 1
+        `;
+        availabilityResult = await calcomDb.query(scheduleQuery, [resolvedUserId]);
+        if (availabilityResult.rows.length > 0) {
+          console.log(`✅ [CAL-INTEGRATION] Found availability via user's default Schedule`);
+        }
+      }
+    } catch (error: any) {
+      errors.push(`Schedule relationship: ${error.message}`);
+    }
+  }
+
+  // Strategy 5: Try lowercase schedule relationship
+  if ((!availabilityResult || availabilityResult.rows.length === 0) && eventTypeId) {
+    try {
+      const scheduleQuery = `
+        SELECT a.start_time, a.end_time, a.days
+        FROM event_types et
+        JOIN schedules s ON et.schedule_id = s.id
+        JOIN availability a ON s.id = a.schedule_id
+        WHERE et.id = $1 AND (a.user_id = $2 OR a.user_id IS NULL)
+        ORDER BY a.event_type_id NULLS LAST
+        LIMIT 1
+      `;
+      availabilityResult = await calcomDb.query(scheduleQuery, [eventTypeId, resolvedUserId]);
+      if (availabilityResult.rows.length > 0) {
+        console.log(
+          `✅ [CAL-INTEGRATION] Found availability via schedule relationship (lowercase)`
+        );
+        // Rename fields
+        availabilityResult.rows[0].startTime = availabilityResult.rows[0].start_time;
+        availabilityResult.rows[0].endTime = availabilityResult.rows[0].end_time;
+      }
+    } catch (error: any) {
+      errors.push(`schedule relationship (lowercase): ${error.message}`);
+    }
+  }
+
+  // If still no results, try to get diagnostic info
+  if (!availabilityResult || availabilityResult.rows.length === 0) {
+    let diagnosticInfo = `\n\nDiagnostic queries attempted:\n${errors.join("\n")}\n\n`;
+
+    // Try to check what tables exist
+    try {
+      const tablesCheck = await calcomDb.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND (table_name LIKE '%availability%' OR table_name LIKE '%Availability%' OR table_name LIKE '%schedule%' OR table_name LIKE '%Schedule%')
+        ORDER BY table_name
+      `);
+      diagnosticInfo += `Available tables: ${tablesCheck.rows.map((r: any) => r.table_name).join(", ")}\n`;
+    } catch (diagError: any) {
+      diagnosticInfo += `Could not check tables: ${diagError.message}\n`;
+    }
+
+    // Check if EventType exists and has schedule_id
+    if (eventTypeId) {
+      try {
+        const eventTypeCheck = await calcomDb.query(
+          `
+            SELECT id, "scheduleId", "userId" FROM "EventType" WHERE id = $1
+          `,
+          [eventTypeId]
+        );
+        if (eventTypeCheck.rows.length > 0) {
+          diagnosticInfo += `EventType ${eventTypeId} exists: scheduleId=${eventTypeCheck.rows[0].scheduleId}, userId=${eventTypeCheck.rows[0].userId}\n`;
+        }
+      } catch (etError: any) {
+        try {
+          const eventTypeCheck = await calcomDb.query(
+            `
+              SELECT id, schedule_id, user_id FROM event_types WHERE id = $1
+            `,
+            [eventTypeId]
+          );
+          if (eventTypeCheck.rows.length > 0) {
+            diagnosticInfo += `EventType ${eventTypeId} exists: schedule_id=${eventTypeCheck.rows[0].schedule_id}, user_id=${eventTypeCheck.rows[0].user_id}\n`;
+          }
+        } catch (etError2: any) {
+          diagnosticInfo += `Could not check EventType: ${etError2.message}\n`;
+        }
+      }
+    }
+
+    // Check what's actually in the Availability table for this user
+    try {
+      const availabilityCheck = await calcomDb.query(
+        `SELECT COUNT(*) as count, 
+         MIN("userId") as min_user_id, 
+         MAX("userId") as max_user_id,
+         COUNT(DISTINCT "userId") as distinct_users
+         FROM "Availability" WHERE "userId" = $1`,
+        [resolvedUserId]
+      );
+      if (availabilityCheck.rows.length > 0) {
+        const stats = availabilityCheck.rows[0];
+        diagnosticInfo += `Availability table stats for userId ${resolvedUserId}: count=${stats.count}, distinct_users=${stats.distinct_users}\n`;
+
+        // If no records, check what userIds DO exist
+        if (stats.count === 0) {
+          const allAvailabilityCheck = await calcomDb.query(
+            `SELECT DISTINCT "userId" FROM "Availability" LIMIT 10`
+          );
+          const userIds = allAvailabilityCheck.rows
+            .map((r: any) => r.userId)
+            .filter((id: any) => id !== null);
+          diagnosticInfo += `Available userIds in Availability table: ${userIds.length > 0 ? userIds.join(", ") : "none found"}\n`;
+        }
+      }
+    } catch (availError: any) {
+      diagnosticInfo += `Could not check Availability table contents: ${availError.message}\n`;
+    }
+
+    // Also check if there are any Availability records at all (no userId filter)
+    try {
+      const anyAvailabilityCheck = await calcomDb.query(
+        `SELECT COUNT(*) as count FROM "Availability"`
+      );
+      if (anyAvailabilityCheck.rows.length > 0) {
+        diagnosticInfo += `Total Availability records in database: ${anyAvailabilityCheck.rows[0].count}\n`;
+      }
+    } catch (availError2: any) {
+      diagnosticInfo += `Could not check total Availability count: ${availError2.message}\n`;
+    }
+
+    // Check Schedule table - availability might be linked via Schedule
+    try {
+      const scheduleCheck = await calcomDb.query(
+        `SELECT id, name, "userId" FROM "Schedule" WHERE "userId" = $1 LIMIT 5`,
+        [resolvedUserId]
+      );
+      if (scheduleCheck.rows.length > 0) {
+        const scheduleIds = scheduleCheck.rows.map((r: any) => r.id).join(", ");
+        diagnosticInfo += `Found ${scheduleCheck.rows.length} Schedule(s) for userId ${resolvedUserId}: ids=[${scheduleIds}]\n`;
+
+        // Check if Availability is linked to these schedules
+        for (const schedule of scheduleCheck.rows) {
+          const availViaSchedule = await calcomDb.query(
+            `SELECT COUNT(*) as count FROM "Availability" WHERE "scheduleId" = $1`,
+            [schedule.id]
+          );
+          if (availViaSchedule.rows.length > 0 && availViaSchedule.rows[0].count > 0) {
+            diagnosticInfo += `  Schedule ${schedule.id} (${schedule.name}) has ${availViaSchedule.rows[0].count} availability records\n`;
+          }
+        }
+      } else {
+        diagnosticInfo += `No Schedule records found for userId ${resolvedUserId}\n`;
+      }
+    } catch (scheduleError: any) {
+      diagnosticInfo += `Could not check Schedule table: ${scheduleError.message}\n`;
+    }
+
     throw new Error(
-      `No availability found in Cal.com for userId ${userId}${eventTypeId ? ` and eventTypeId ${eventTypeId}` : ""}. Please configure availability in Cal.com.`
+      `No availability found in Cal.com for userId ${resolvedUserId}${username ? ` (username: ${username})` : ""}${eventTypeId ? ` and eventTypeId ${eventTypeId}` : ""}. Please configure availability in Cal.com.${diagnosticInfo}`
     );
   }
 
@@ -456,18 +714,86 @@ async function handleGetAccountInfo() {
     console.log("📊 [CAL-INTEGRATION] Getting real account info from Cal.com...");
 
     // Get the configured event type for VAPI bookings
+    // Try by ID first, then by slug if VAPI_EVENT_TYPE_ID looks like a slug
     const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2";
-    const eventTypeResult = await calcomDb.query(
-      `SELECT id, length, title, "userId" FROM "EventType" WHERE id = ${VAPI_EVENT_TYPE_ID}`
-    );
+    let eventTypeResult;
+
+    // Check if it's a numeric ID or a slug/path
+    if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
+      // It's a numeric ID
+      eventTypeResult = await calcomDb.query(
+        `SELECT id, length, title, "userId", slug FROM "EventType" WHERE id = $1`,
+        [VAPI_EVENT_TYPE_ID]
+      );
+    } else {
+      // It's a slug/path like "/capco/30min" - extract just the slug part or use full path
+      // Remove leading/trailing slashes for matching
+      const slugPattern = VAPI_EVENT_TYPE_ID.replace(/^\/+|\/+$/g, ""); // Remove leading/trailing slashes
+      const slugParts = slugPattern.split("/"); // ["capco", "30min"]
+      const lastPart = slugParts[slugParts.length - 1]; // "30min"
+
+      // Try both PascalCase and snake_case table names
+      try {
+        eventTypeResult = await calcomDb.query(
+          `SELECT id, length, title, "userId", slug 
+           FROM "EventType" 
+           WHERE slug = $1 
+              OR slug = $2 
+              OR slug LIKE $3 
+              OR slug LIKE $4
+           ORDER BY CASE 
+             WHEN slug = $1 THEN 1
+             WHEN slug = $2 THEN 2
+             ELSE 3
+           END
+           LIMIT 1`,
+          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+        );
+      } catch (error: any) {
+        // Try lowercase table
+        eventTypeResult = await calcomDb.query(
+          `SELECT id, length, title, user_id as "userId", slug 
+           FROM event_types 
+           WHERE slug = $1 
+              OR slug = $2 
+              OR slug LIKE $3 
+              OR slug LIKE $4
+           ORDER BY CASE 
+             WHEN slug = $1 THEN 1
+             WHEN slug = $2 THEN 2
+             ELSE 3
+           END
+           LIMIT 1`,
+          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+        );
+      }
+    }
 
     if (eventTypeResult.rows.length === 0) {
-      throw new Error("No event types configured in Cal.com");
+      throw new Error(`No event types found in Cal.com for ID/slug: ${VAPI_EVENT_TYPE_ID}`);
     }
 
     const eventType = eventTypeResult.rows[0];
     const userId = eventType.userId;
     const eventLength = eventType.length || 30; // Default to 30 minutes
+
+    // Get username if available for better availability lookup
+    let username: string | undefined;
+    try {
+      let userResult = await calcomDb.query(`SELECT username FROM "User" WHERE id = $1`, [userId]);
+      if (userResult.rows.length === 0) {
+        userResult = await calcomDb.query(`SELECT username FROM users WHERE id = $1`, [userId]);
+      }
+      if (userResult.rows.length > 0) {
+        username = userResult.rows[0].username;
+      }
+    } catch (e) {
+      // Ignore - username lookup is optional
+    }
+
+    console.log(
+      `📅 [CAL-INTEGRATION] Using EventType: id=${eventType.id}, slug=${eventType.slug}, userId=${userId}${username ? `, username=${username}` : ""}`
+    );
 
     // Get existing bookings for this event type to exclude them
     const now = new Date();
@@ -489,7 +815,7 @@ async function handleGetAccountInfo() {
     console.log(`📅 [CAL-INTEGRATION] Found ${existingBookings.length} existing bookings`);
 
     // Get actual working hours from Cal.com availability
-    const workingHours = await getWorkingHours(userId, eventType.id);
+    const workingHours = await getWorkingHours(userId, eventType.id, username);
     console.log(
       `🕐 [CAL-INTEGRATION] Working hours: ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")}`
     );
@@ -631,18 +957,86 @@ async function handleGetAvailability(params: any) {
 
   try {
     // Get the configured event type for VAPI bookings
+    // Try by ID first, then by slug if VAPI_EVENT_TYPE_ID looks like a slug
     const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2";
-    const eventTypeResult = await calcomDb.query(
-      `SELECT id, length, title, "userId" FROM "EventType" WHERE id = ${VAPI_EVENT_TYPE_ID}`
-    );
+    let eventTypeResult;
+
+    // Check if it's a numeric ID or a slug/path
+    if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
+      // It's a numeric ID
+      eventTypeResult = await calcomDb.query(
+        `SELECT id, length, title, "userId", slug FROM "EventType" WHERE id = $1`,
+        [VAPI_EVENT_TYPE_ID]
+      );
+    } else {
+      // It's a slug/path like "/capco/30min" - extract just the slug part or use full path
+      // Remove leading/trailing slashes for matching
+      const slugPattern = VAPI_EVENT_TYPE_ID.replace(/^\/+|\/+$/g, ""); // Remove leading/trailing slashes
+      const slugParts = slugPattern.split("/"); // ["capco", "30min"]
+      const lastPart = slugParts[slugParts.length - 1]; // "30min"
+
+      // Try both PascalCase and snake_case table names
+      try {
+        eventTypeResult = await calcomDb.query(
+          `SELECT id, length, title, "userId", slug 
+           FROM "EventType" 
+           WHERE slug = $1 
+              OR slug = $2 
+              OR slug LIKE $3 
+              OR slug LIKE $4
+           ORDER BY CASE 
+             WHEN slug = $1 THEN 1
+             WHEN slug = $2 THEN 2
+             ELSE 3
+           END
+           LIMIT 1`,
+          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+        );
+      } catch (error: any) {
+        // Try lowercase table
+        eventTypeResult = await calcomDb.query(
+          `SELECT id, length, title, user_id as "userId", slug 
+           FROM event_types 
+           WHERE slug = $1 
+              OR slug = $2 
+              OR slug LIKE $3 
+              OR slug LIKE $4
+           ORDER BY CASE 
+             WHEN slug = $1 THEN 1
+             WHEN slug = $2 THEN 2
+             ELSE 3
+           END
+           LIMIT 1`,
+          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+        );
+      }
+    }
 
     if (eventTypeResult.rows.length === 0) {
-      throw new Error("No event types configured in Cal.com");
+      throw new Error(`No event types found in Cal.com for ID/slug: ${VAPI_EVENT_TYPE_ID}`);
     }
 
     const eventType = eventTypeResult.rows[0];
     const userId = eventType.userId;
     const eventLength = eventType.length || 30; // Default to 30 minutes
+
+    // Get username if available for better availability lookup
+    let username: string | undefined;
+    try {
+      let userResult = await calcomDb.query(`SELECT username FROM "User" WHERE id = $1`, [userId]);
+      if (userResult.rows.length === 0) {
+        userResult = await calcomDb.query(`SELECT username FROM users WHERE id = $1`, [userId]);
+      }
+      if (userResult.rows.length > 0) {
+        username = userResult.rows[0].username;
+      }
+    } catch (e) {
+      // Ignore - username lookup is optional
+    }
+
+    console.log(
+      `📅 [CAL-INTEGRATION] Using EventType: id=${eventType.id}, slug=${eventType.slug}, userId=${userId}${username ? `, username=${username}` : ""}`
+    );
 
     // Parse dates and work in UTC to avoid timezone issues
     const startDate = new Date(dateFrom);
@@ -666,7 +1060,7 @@ async function handleGetAvailability(params: any) {
     console.log(`📅 [CAL-INTEGRATION] Found ${existingBookings.length} existing bookings in range`);
 
     // Get actual working hours from Cal.com availability
-    const workingHours = await getWorkingHours(userId, eventType.id);
+    const workingHours = await getWorkingHours(userId, eventType.id, username);
     console.log(
       `🕐 [CAL-INTEGRATION] Working hours: ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")}`
     );
@@ -831,15 +1225,86 @@ async function handleCreateBooking(params: any) {
   try {
     // Get the configured event type for VAPI bookings (must include userId - the owner)
     const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2";
-    const eventTypeResult = await calcomDb.query(
-      `SELECT id, length, title, "userId" FROM "EventType" WHERE id = ${VAPI_EVENT_TYPE_ID}`
-    );
+    let eventTypeResult;
+
+    // Check if it's a numeric ID or a slug/path
+    if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
+      // It's a numeric ID
+      eventTypeResult = await calcomDb.query(
+        `SELECT id, length, title, "userId", slug FROM "EventType" WHERE id = $1`,
+        [VAPI_EVENT_TYPE_ID]
+      );
+    } else {
+      // It's a slug/path like "/capco/30min" - extract just the slug part or use full path
+      // Remove leading/trailing slashes for matching
+      const slugPattern = VAPI_EVENT_TYPE_ID.replace(/^\/+|\/+$/g, ""); // Remove leading/trailing slashes
+      const slugParts = slugPattern.split("/"); // ["capco", "30min"]
+      const lastPart = slugParts[slugParts.length - 1]; // "30min"
+
+      // Try both PascalCase and snake_case table names
+      try {
+        eventTypeResult = await calcomDb.query(
+          `SELECT id, length, title, "userId", slug 
+           FROM "EventType" 
+           WHERE slug = $1 
+              OR slug = $2 
+              OR slug LIKE $3 
+              OR slug LIKE $4
+           ORDER BY CASE 
+             WHEN slug = $1 THEN 1
+             WHEN slug = $2 THEN 2
+             ELSE 3
+           END
+           LIMIT 1`,
+          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+        );
+      } catch (error: any) {
+        // Try lowercase table
+        eventTypeResult = await calcomDb.query(
+          `SELECT id, length, title, user_id as "userId", slug 
+           FROM event_types 
+           WHERE slug = $1 
+              OR slug = $2 
+              OR slug LIKE $3 
+              OR slug LIKE $4
+           ORDER BY CASE 
+             WHEN slug = $1 THEN 1
+             WHEN slug = $2 THEN 2
+             ELSE 3
+           END
+           LIMIT 1`,
+          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+        );
+      }
+    }
 
     if (eventTypeResult.rows.length === 0) {
-      throw new Error("No event types configured in Cal.com");
+      throw new Error(`No event types found in Cal.com for ID/slug: ${VAPI_EVENT_TYPE_ID}`);
     }
 
     const eventType = eventTypeResult.rows[0];
+
+    // Get username if available for better availability lookup
+    let username: string | undefined;
+    try {
+      let userResult = await calcomDb.query(`SELECT username FROM "User" WHERE id = $1`, [
+        eventType.userId,
+      ]);
+      if (userResult.rows.length === 0) {
+        userResult = await calcomDb.query(`SELECT username FROM users WHERE id = $1`, [
+          eventType.userId,
+        ]);
+      }
+      if (userResult.rows.length > 0) {
+        username = userResult.rows[0].username;
+      }
+    } catch (e) {
+      // Ignore - username lookup is optional
+    }
+
+    console.log(
+      `📅 [CAL-INTEGRATION] Using EventType for booking: id=${eventType.id}, slug=${eventType.slug}, userId=${eventType.userId}${username ? `, username=${username}` : ""}`
+    );
 
     // Use the event type's owner (userId) - this ensures bookings show up in the correct user's calendar
     if (!eventType.userId) {
@@ -850,7 +1315,7 @@ async function handleCreateBooking(params: any) {
     const userId = eventType.userId;
 
     // Validate booking time is within working hours
-    const workingHours = await getWorkingHours(userId, eventType.id);
+    const workingHours = await getWorkingHours(eventType.userId, eventType.id, username);
     const bookingHour = startDate.getUTCHours();
     const bookingMinute = startDate.getUTCMinutes();
     const bookingTotalMinutes = bookingHour * 60 + bookingMinute;
