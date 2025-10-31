@@ -849,9 +849,34 @@ async function handleCreateBooking(params: any) {
     }
     const userId = eventType.userId;
 
+    // Validate booking time is within working hours
+    const workingHours = await getWorkingHours(userId, eventType.id);
+    const bookingHour = startDate.getUTCHours();
+    const bookingMinute = startDate.getUTCMinutes();
+    const bookingTotalMinutes = bookingHour * 60 + bookingMinute;
+    const startTotalMinutes = workingHours.startHour * 60 + workingHours.startMinute;
+    const endTotalMinutes = workingHours.endHour * 60 + workingHours.endMinute;
+
+    if (bookingTotalMinutes < startTotalMinutes || bookingTotalMinutes >= endTotalMinutes) {
+      throw new Error(
+        `Booking time ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} is outside working hours (${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")})`
+      );
+    }
+
     // Calculate end time using the event type's actual length (in minutes)
     const eventLengthMinutes = eventType.length || 30; // Default to 30 minutes if not set
     const endDate = new Date(startDate.getTime() + eventLengthMinutes * 60000);
+
+    // Validate end time doesn't exceed working hours
+    const endHour = endDate.getUTCHours();
+    const endMinute = endDate.getUTCMinutes();
+    const bookingEndTotalMinutes = endHour * 60 + endMinute;
+
+    if (bookingEndTotalMinutes > endTotalMinutes) {
+      throw new Error(
+        `Booking end time ${endHour}:${endMinute.toString().padStart(2, "0")} exceeds working hours end time (${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")})`
+      );
+    }
 
     // Generate unique booking reference
     const uid = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
