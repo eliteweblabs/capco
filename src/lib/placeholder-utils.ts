@@ -134,27 +134,32 @@ export function replacePlaceholders(
   let baseUrl: string | undefined;
   try {
     // Try Astro/Vite environment first
-    if (typeof import.meta !== 'undefined' && import.meta.env?.RAILWAY_PUBLIC_DOMAIN) {
+    if (typeof import.meta !== "undefined" && import.meta.env?.RAILWAY_PUBLIC_DOMAIN) {
       baseUrl = import.meta.env.RAILWAY_PUBLIC_DOMAIN;
     }
   } catch (e) {
     // import.meta not available, will use process.env
   }
   // Fallback to Node.js process.env if not found
-  if (!baseUrl && typeof process !== 'undefined' && process.env?.RAILWAY_PUBLIC_DOMAIN) {
+  if (!baseUrl && typeof process !== "undefined" && process.env?.RAILWAY_PUBLIC_DOMAIN) {
     baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN;
   }
-  
+
   // Debug: Log what we're getting as baseUrl
   if (typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml"))) {
-    console.error("🚨 [PLACEHOLDER-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG content:", baseUrl.substring(0, 100) + "...");
-    console.error("🚨 [PLACEHOLDER-UTILS] This will cause malformed URLs. Check your environment variables.");
+    console.error(
+      "🚨 [PLACEHOLDER-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG content:",
+      baseUrl.substring(0, 100) + "..."
+    );
+    console.error(
+      "🚨 [PLACEHOLDER-UTILS] This will cause malformed URLs. Check your environment variables."
+    );
     // Fallback to prevent malformed URLs
     baseUrl = "https://capcofire.com";
   }
-  
+
   // Ensure baseUrl has proper protocol
-  if (typeof baseUrl === "string" && baseUrl && !baseUrl.startsWith('http')) {
+  if (typeof baseUrl === "string" && baseUrl && !baseUrl.startsWith("http")) {
     baseUrl = `https://${baseUrl}`;
   }
   const baseProjectLink = `${baseUrl}/project`;
@@ -368,12 +373,10 @@ export function replacePlaceholders(
   }
 
   // Replace RAILWAY_PROJECT_NAME placeholders
-  if (globalCompanyData().globalCompanyName) {
+  const globalCompanyName = globalCompanyData().globalCompanyName;
+  if (globalCompanyName) {
     const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g,
-      globalCompanyData().globalCompanyName
-    );
+    result = result.replace(/\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g, globalCompanyName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -420,12 +423,10 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COMPANY_WEBSITE placeholders
-  if (globalCompanyData().globalCompanyWebsite) {
+  const globalCompanyWebsite = globalCompanyData().globalCompanyWebsite;
+  if (globalCompanyWebsite) {
     const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*GLOBAL_COMPANY_WEBSITE\s*\}\}/g,
-      globalCompanyData().globalCompanyWebsite
-    );
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_WEBSITE\s*\}\}/g, globalCompanyWebsite);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -658,12 +659,10 @@ export function replacePlaceholders(
     }
   }
 
-  if (globalCompanyData().globalCompanyWebsite) {
+  const companyWebsite = globalCompanyData().globalCompanyWebsite;
+  if (companyWebsite) {
     const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*COMPANY_WEBSITE\s*\}\}/g,
-      globalCompanyData().globalCompanyWebsite
-    );
+    result = result.replace(/\{\{\s*COMPANY_WEBSITE\s*\}\}/g, companyWebsite);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = false;

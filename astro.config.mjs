@@ -19,7 +19,9 @@ const primaryColorRgb = hexToRgb(primaryColor);
 
 // https://astro.build/config
 export default defineConfig({
-  site: env.RAILWAY_PUBLIC_DOMAIN?.startsWith('http') ? env.RAILWAY_PUBLIC_DOMAIN : `https://${env.RAILWAY_PUBLIC_DOMAIN || "capcofire.com"}`, // Set your production domain
+  site: env.RAILWAY_PUBLIC_DOMAIN?.startsWith("http")
+    ? env.RAILWAY_PUBLIC_DOMAIN
+    : `https://${env.RAILWAY_PUBLIC_DOMAIN || "capcofire.com"}`, // Set your production domain
   output: "server",
   adapter: node({
     mode: "standalone",
@@ -59,7 +61,6 @@ export default defineConfig({
       "process.env.FROM_EMAIL": JSON.stringify(env.FROM_EMAIL),
       "process.env.FROM_NAME": JSON.stringify(env.FROM_NAME),
       "process.env.RAILWAY_PROJECT_NAME": JSON.stringify(env.RAILWAY_PROJECT_NAME),
-      "process.env.GLOBAL_COMPANY_SLOGAN": JSON.stringify(env.GLOBAL_COMPANY_SLOGAN),
       "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
       "process.env.GOOGLE_PLACES_API_KEY": JSON.stringify(env.GOOGLE_PLACES_API_KEY),
       "process.env.GOOGLE_PLACES_API_SECRET_KEY": JSON.stringify(env.GOOGLE_PLACES_API_SECRET_KEY),

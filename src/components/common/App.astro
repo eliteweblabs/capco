@@ -70,6 +70,14 @@ const currentRole = currentUser?.profile.role || undefined;
 const projectId = project?.id || undefined;
 const currentUrl = Astro.url.pathname;
 
+// Favicon and OG image sources - use fallback if logo is SVG (SVG can't be used in href attributes)
+const logoSrc = globalCompanyLogo && (globalCompanyLogo.includes("<svg") || globalCompanyLogo.includes("<?xml"))
+  ? "/img/capco-logo.png"
+  : globalCompanyLogo || "/img/capco-logo.png";
+const ogImageSrc = globalCompanyLogo && (globalCompanyLogo.includes("<svg") || globalCompanyLogo.includes("<?xml"))
+  ? "/img/capco-logo.png"
+  : globalCompanyLogo || "/img/capco-logo.png";
+
 // Get navigation data
 import { navigation } from "@/pages/api/utils/navigation";
 import { isBackendPage } from "../../pages/api/utils/backend-page-check";
@@ -199,23 +207,23 @@ const debugData = {
     <link
       rel="apple-touch-icon"
       sizes="180x180"
-      href={globalCompanyLogo || "/img/capco-logo.png"}
+      href={logoSrc}
     />
     <link
       rel="icon"
       type="image/png"
       sizes="32x32"
-      href={globalCompanyLogo || "/img/capco-logo.png"}
+      href={logoSrc}
     />
     <link
       rel="icon"
       type="image/png"
       sizes="16x16"
-      href={globalCompanyLogo || "/img/capco-logo.png"}
+      href={logoSrc}
     />
-    <link rel="icon" type="image/png" href={globalCompanyLogo || "/img/capco-logo.png"} />
+    <link rel="icon" type="image/png" href={logoSrc} />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="mask-icon" href={globalCompanyLogo || "/img/capco-logo.png"} color="#5bbad5" />
+    <link rel="mask-icon" href={logoSrc} color="#5bbad5" />
     <meta name="msapplication-TileColor" content={primaryColor} />
     <meta name="theme-color" content={primaryColor} />
 
@@ -235,7 +243,7 @@ const debugData = {
     <meta property="og:title" content={title + " → " + globalCompanyName} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content={globalCompanyLogo || "/img/capco-logo.png"} />
+    <meta property="og:image" content={ogImageSrc} />
     <meta property="og:image:type" content="image/png" />
 
     <script>
