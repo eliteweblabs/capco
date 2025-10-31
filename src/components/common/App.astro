@@ -58,6 +58,9 @@ const {
   globalCompanyLogoDark,
   globalCompanyLogoLight,
   primaryColor,
+  globalCompanyIcon,
+  globalCompanyIconDark,
+  globalCompanyIconLight,
 } = globalCompanyData();
 
 import { globalClasses } from "../../pages/api/global/global-classes";
@@ -71,12 +74,14 @@ const projectId = project?.id || undefined;
 const currentUrl = Astro.url.pathname;
 
 // Favicon and OG image sources - use fallback if logo is SVG (SVG can't be used in href attributes)
-const logoSrc = globalCompanyLogo && (globalCompanyLogo.includes("<svg") || globalCompanyLogo.includes("<?xml"))
-  ? "/img/capco-logo.png"
-  : globalCompanyLogo || "/img/capco-logo.png";
-const ogImageSrc = globalCompanyLogo && (globalCompanyLogo.includes("<svg") || globalCompanyLogo.includes("<?xml"))
-  ? "/img/capco-logo.png"
-  : globalCompanyLogo || "/img/capco-logo.png";
+const logoSrc =
+  globalCompanyLogo && (globalCompanyLogo.includes("<svg") || globalCompanyLogo.includes("<?xml"))
+    ? "/img/capco-logo.png"
+    : globalCompanyLogo || "/img/capco-logo.png";
+const ogImageSrc =
+  globalCompanyLogo && (globalCompanyLogo.includes("<svg") || globalCompanyLogo.includes("<?xml"))
+    ? "/img/capco-logo.png"
+    : globalCompanyLogo || "/img/capco-logo.png";
 
 // Get navigation data
 import { navigation } from "@/pages/api/utils/navigation";
@@ -174,7 +179,7 @@ const debugData = {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any" />
     <link rel="icon" type="image/png" href="/favicon.png" sizes="any" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content={primaryColor} />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-project-title" content={globalCompanyName} />
@@ -185,18 +190,18 @@ const debugData = {
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
     <meta property="og:title" content={title + " → " + globalCompanyName} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content="/img/capco-logo.png" />
+    <meta property="og:image" content={globalCompanyLogo} />
     <meta property="og:url" content={Astro.url} />
     <meta name="twitter:card" content={description} />
     <meta name="twitter:title" content={title + " → " + globalCompanyName} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content="/img/capco-logo.png" />
+    <meta name="twitter:image" content={globalCompanyLogo} />
 
     <meta name="robots" content="max-image-preview:large" /><link
       rel="canonical"
       href={currentUrl}
     />
-    <meta property="og:site_name" content="CAPCo Fire" /><meta
+    <meta property="og:site_name" content={globalCompanyName} /><meta
       property="og:type"
       content="website"
     />
@@ -204,26 +209,12 @@ const debugData = {
 
     <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
 
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href={logoSrc}
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href={logoSrc}
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href={logoSrc}
-    />
-    <link rel="icon" type="image/png" href={logoSrc} />
+    <link rel="apple-touch-icon" sizes="180x180" href={globalCompanyIcon} />
+    <link rel="icon" type="image/png" sizes="32x32" href={globalCompanyIcon} />
+    <link rel="icon" type="image/png" sizes="16x16" href={globalCompanyIcon} />
+    <link rel="icon" type="image/png" href={globalCompanyIcon} />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="mask-icon" href={logoSrc} color="#5bbad5" />
+    <link rel="mask-icon" href={globalCompanyIcon} color="#5bbad5" />
     <meta name="msapplication-TileColor" content={primaryColor} />
     <meta name="theme-color" content={primaryColor} />
 
@@ -243,7 +234,7 @@ const debugData = {
     <meta property="og:title" content={title + " → " + globalCompanyName} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content={ogImageSrc} />
+    <meta property="og:image" content={globalCompanyLogo} />
     <meta property="og:image:type" content="image/png" />
 
     <script>
@@ -485,20 +476,26 @@ const debugData = {
       (window as any).createUserAvatarPartial = async function (config: any) {
         try {
           const headers = new Headers();
-          
+
           // Handle nested user object
           if (config.user) {
             Object.entries(config.user).forEach(([key, value]) => {
               if (value !== undefined && value !== null) {
-                headers.set(`x-user-avatar-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`, value.toString());
+                headers.set(
+                  `x-user-avatar-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`,
+                  value.toString()
+                );
               }
             });
           }
-          
+
           // Handle other config options
           Object.entries(config).forEach(([key, value]) => {
             if (key !== "user" && value !== undefined && value !== null) {
-              headers.set(`x-user-avatar-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`, value.toString());
+              headers.set(
+                `x-user-avatar-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`,
+                value.toString()
+              );
             }
           });
 

@@ -780,9 +780,11 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       container.querySelectorAll(".save-template-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
+          console.log("🔘 [PDF-SYSTEM] Save button clicked:", e.target);
           const templateId = e.target
             .closest(".save-template-btn")
             .getAttribute("data-template-id");
+          console.log("🔘 [PDF-SYSTEM] Template ID from button:", templateId);
           this.saveTemplate(templateId);
         });
       });
@@ -893,59 +895,177 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
     // Save template
     async saveTemplate(templateId) {
-      const template = this.templates.find((t) => t.id === templateId);
+      // Convert templateId to number if it's a string (from getAttribute)
+      const numericId = typeof templateId === "string" ? parseInt(templateId, 10) : templateId;
+      
+      // Try both string and number matches
+      const template = this.templates.find(
+        (t) => t.id === templateId || t.id === numericId || String(t.id) === String(templateId)
+      );
+      
+      console.log("💾 [PDF-SYSTEM] Saving template:", {
+        templateId,
+        numericId,
+        templateFound: !!template,
+        templateIdType: typeof templateId,
+        templateIds: this.templates.map((t) => ({ id: t.id, type: typeof t.id })),
+      });
+
       if (!template) {
-        window.showNotification("Template not found", "error");
+        window.showNotification({
+          type: "error",
+          title: "Template Not Found",
+          message: `Template not found (ID: ${templateId})`,
+        });
         return;
       }
 
-      const nameInput = document.getElementById(`template-name-${templateId}`);
-      const descriptionInput = document.getElementById(`template-description-${templateId}`);
-      const editor = this.templateEditors?.[templateId];
+      // Get form elements - ensure we're using the correct templateId format
+      const actualTemplateId = template.id; // Use the actual template ID from the data
+      const nameInput = document.getElementById(`template-name-${actualTemplateId}`);
+      const descriptionInput = document.getElementById(`template-description-${actualTemplateId}`);
+      const editor = this.templateEditors?.[actualTemplateId] || this.templateEditors?.[templateId] || this.templateEditors?.[numericId];
 
-      if (!nameInput || !editor) {
-        window.showNotification("Template editor not found", "error");
+      console.log("💾 [PDF-SYSTEM] Form elements:", {
+        actualTemplateId,
+        nameInputFound: !!nameInput,
+        descriptionInputFound: !!descriptionInput,
+        editorFound: !!editor,
+        editorKeys: Object.keys(this.templateEditors || {}),
+      });
+
+      if (!nameInput) {
+        window.showNotification({
+          type: "error",
+          title: "Form Element Not Found",
+          message: `Template name input not found for ID: ${actualTemplateId}`,
+        });
+        return;
+      }
+
+      if (!editor) {
+        window.showNotification({
+          type: "error",
+          title: "Editor Not Found",
+          message: `Template editor not found for ID: ${actualTemplateId}. Available editors: ${Object.keys(this.templateEditors || {}).join(", ")}`,
+        });
         return;
       }
 
       const name = nameInput.value.trim();
       if (!name) {
-        window.showNotification("Template name is required", "error");
+        window.showNotification({
+          type: "error",
+          title: "Validation Error",
+          message: "Template name is required",
+        });
         return;
       }
 
       const description = descriptionInput?.value.trim() || "";
       const content = editor.root.innerHTML;
 
+      console.log("💾 [PDF-SYSTEM] ===== SAVE TEMPLATE - DATA COLLECTION =====");
+      console.log("💾 [PDF-SYSTEM] Template ID (actual):", actualTemplateId);
+      console.log("💾 [PDF-SYSTEM] Name input value:", nameInput.value);
+      console.log("💾 [PDF-SYSTEM] Name (trimmed):", name);
+      console.log("💾 [PDF-SYSTEM] Description input value:", descriptionInput?.value);
+      console.log("💾 [PDF-SYSTEM] Description (trimmed):", description);
+      console.log("💾 [PDF-SYSTEM] Editor root HTML length:", editor.root.innerHTML.length);
+      console.log("💾 [PDF-SYSTEM] Editor root HTML (first 200 chars):", editor.root.innerHTML.substring(0, 200));
+      console.log("💾 [PDF-SYSTEM] Content:", content);
+      console.log("💾 [PDF-SYSTEM] Template data:", {
+        templateType: template.templateType,
+        pageSize: template.pageSize,
+        margins: template.margins,
+      });
+
+      const payload = {
+        id: actualTemplateId,
+        name,
+        description,
+        content,
+        templateType: template.templateType || "body",
+        pageSize: template.pageSize || "8.5x11",
+        margins: template.margins || { top: "1in", right: "1in", bottom: "1in", left: "1in" },
+      };
+
+      console.log("💾 [PDF-SYSTEM] ===== PAYLOAD TO SEND =====");
+      console.log("💾 [PDF-SYSTEM] Full payload:", JSON.stringify(payload, null, 2));
+      console.log("💾 [PDF-SYSTEM] Payload sizes:", {
+        id: String(payload.id).length,
+        name: payload.name.length,
+        description: payload.description.length,
+        content: payload.content.length,
+      });
+
       try {
+        console.log("💾 [PDF-SYSTEM] ===== FETCH REQUEST =====");
+        console.log("💾 [PDF-SYSTEM] URL:", "/api/pdf/templates/upsert");
+        console.log("💾 [PDF-SYSTEM] Method: POST");
+        
         const response = await fetch("/api/pdf/templates/upsert", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            id: templateId,
-            name,
-            description,
-            content,
-            templateType: template.templateType || "body",
-            pageSize: template.pageSize || "8.5x11",
-            margins: template.margins || { top: "1in", right: "1in", bottom: "1in", left: "1in" },
-          }),
+          body: JSON.stringify(payload),
         });
 
-        const data = await response.json();
+        console.log("💾 [PDF-SYSTEM] ===== RESPONSE RECEIVED =====");
+        console.log("💾 [PDF-SYSTEM] Response status:", response.status);
+        console.log("💾 [PDF-SYSTEM] Response ok:", response.ok);
+        console.log("💾 [PDF-SYSTEM] Response headers:", Object.fromEntries(response.headers.entries()));
+
+        const responseText = await response.text();
+        console.log("💾 [PDF-SYSTEM] Response text (raw):", responseText);
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log("💾 [PDF-SYSTEM] Response data (parsed):", data);
+        } catch (parseError) {
+          console.error("❌ [PDF-SYSTEM] Failed to parse response as JSON:", parseError);
+          console.error("❌ [PDF-SYSTEM] Response text was:", responseText);
+          throw new Error("Invalid JSON response from server");
+        }
+
+        console.log("💾 [PDF-SYSTEM] ===== PROCESSING RESPONSE =====");
+        console.log("💾 [PDF-SYSTEM] Data success:", data.success);
+        console.log("💾 [PDF-SYSTEM] Data message:", data.message);
+        console.log("💾 [PDF-SYSTEM] Data error:", data.error);
+        console.log("💾 [PDF-SYSTEM] Full data object:", data);
 
         if (data.success) {
-          window.showNotification("Template saved successfully", "success");
+          console.log("✅ [PDF-SYSTEM] Save successful!");
+          window.showNotification({
+            type: "success",
+            title: "Template Saved",
+            message: "Template saved successfully",
+          });
           // Reload templates to refresh the list
+          console.log("💾 [PDF-SYSTEM] Reloading templates...");
           await this.loadTemplates();
+          console.log("💾 [PDF-SYSTEM] Templates reloaded");
         } else {
-          window.showNotification(data.message || "Failed to save template", "error");
+          console.error("❌ [PDF-SYSTEM] Save failed:", data);
+          window.showNotification({
+            type: "error",
+            title: "Save Failed",
+            message: data.message || data.error || "Failed to save template",
+          });
         }
       } catch (error) {
-        console.error("❌ [PDF-SYSTEM] Error saving template:", error);
-        window.showNotification("Error saving template", "error");
+        console.error("❌ [PDF-SYSTEM] ===== EXCEPTION CAUGHT =====");
+        console.error("❌ [PDF-SYSTEM] Error type:", error?.constructor?.name);
+        console.error("❌ [PDF-SYSTEM] Error message:", error?.message);
+        console.error("❌ [PDF-SYSTEM] Error stack:", error?.stack);
+        console.error("❌ [PDF-SYSTEM] Full error object:", error);
+        window.showNotification({
+          type: "error",
+          title: "Save Error",
+          message: `Error saving template: ${error?.message || "Unknown error"}`,
+        });
       }
     }
 
@@ -963,7 +1083,11 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         });
 
         if (response.ok) {
-          window.showNotification("Template deleted successfully", "success");
+          window.showNotification({
+            type: "success",
+            title: "Template Deleted",
+            message: "Template deleted successfully",
+          });
           // Remove editor instance
           if (this.templateEditors?.[templateId]) {
             delete this.templateEditors[templateId];
@@ -971,16 +1095,20 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           // Reload templates
           await this.loadTemplates();
         } else {
-          const data = await response.json();
-          window.showNotification(data.message || "Failed to delete template", "error");
+          const data = await response.json().catch(() => ({}));
+          window.showNotification({
+            type: "error",
+            title: "Delete Failed",
+            message: data.message || "Failed to delete template",
+          });
         }
       } catch (error) {
         console.error("❌ [PDF-SYSTEM] Error deleting template:", error);
-        // If DELETE endpoint doesn't exist, show message to implement it
-        window.showNotification(
-          "Delete functionality requires a DELETE endpoint. Please implement /api/pdf/templates/[id] DELETE route.",
-          "error"
-        );
+        window.showNotification({
+          type: "error",
+          title: "Delete Error",
+          message: "Error deleting template. Please try again.",
+        });
       }
     }
 
@@ -1005,15 +1133,27 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         const data = await response.json();
 
         if (data.success) {
-          window.showNotification("Template created successfully", "success");
+          window.showNotification({
+            type: "success",
+            title: "Template Created",
+            message: "Template created successfully",
+          });
           // Reload templates to show the new one
           await this.loadTemplates();
         } else {
-          window.showNotification(data.message || "Failed to create template", "error");
+          window.showNotification({
+            type: "error",
+            title: "Create Failed",
+            message: data.message || "Failed to create template",
+          });
         }
       } catch (error) {
         console.error("❌ [PDF-SYSTEM] Error creating template:", error);
-        window.showNotification("Error creating template", "error");
+        window.showNotification({
+          type: "error",
+          title: "Create Error",
+          message: "Error creating template. Please try again.",
+        });
       }
     }
 
