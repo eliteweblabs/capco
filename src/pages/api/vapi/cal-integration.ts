@@ -1234,8 +1234,35 @@ async function handleCreateBooking(params: any) {
     smsReminderNumber,
   });
 
-  // Validate start time is in the future
-  const startDate = new Date(start);
+  // Parse start time - if it's a datetime-local format without timezone, treat as UTC
+  // datetime-local inputs are in format "YYYY-MM-DDTHH:mm" (no timezone)
+  let startDate: Date;
+  if (typeof start === "string") {
+    // Check if it's datetime-local format (YYYY-MM-DDTHH:mm)
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(start)) {
+      // This is a datetime-local format - append 'Z' to treat as UTC
+      startDate = new Date(start + "Z");
+      console.log(
+        `🕐 [CAL-INTEGRATION] Parsed datetime-local "${start}" as UTC: ${startDate.toISOString()}`
+      );
+    } else if (start.includes("T") && !start.endsWith("Z") && !/[+-]\d{2}:?\d{2}$/.test(start)) {
+      // ISO string without timezone indicator - treat as UTC
+      startDate = new Date(start + "Z");
+      console.log(
+        `🕐 [CAL-INTEGRATION] Parsed ISO string "${start}" as UTC: ${startDate.toISOString()}`
+      );
+    } else {
+      // Already has timezone info (Z or +/-offset)
+      startDate = new Date(start);
+      console.log(
+        `🕐 [CAL-INTEGRATION] Parsed datetime with timezone "${start}" as: ${startDate.toISOString()}`
+      );
+    }
+  } else {
+    // Already a Date object
+    startDate = new Date(start);
+  }
+
   const now = new Date();
 
   if (startDate <= now) {
@@ -1350,9 +1377,13 @@ async function handleCreateBooking(params: any) {
     const startTotalMinutes = workingHours.startHour * 60 + workingHours.startMinute;
     const endTotalMinutes = workingHours.endHour * 60 + workingHours.endMinute;
 
+    console.log(
+      `🕐 [CAL-INTEGRATION] Booking validation: ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} UTC (${bookingTotalMinutes} minutes) vs working hours ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC (${startTotalMinutes}-${endTotalMinutes} minutes)`
+    );
+
     if (bookingTotalMinutes < startTotalMinutes || bookingTotalMinutes >= endTotalMinutes) {
       throw new Error(
-        `Booking time ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} is outside working hours (${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")})`
+        `Booking time ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} UTC is outside working hours (${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC)`
       );
     }
 
@@ -1542,10 +1573,16 @@ async function handleCreateBooking(params: any) {
     );
   } catch (error: any) {
     console.error("❌ [CAL-INTEGRATION] Database error:", error);
+    const errorMessage = error.message || "Unknown error";
+    console.error("❌ [CAL-INTEGRATION] Error details:", {
+      message: errorMessage,
+      stack: error.stack,
+      name: error.name,
+    });
     return new Response(
       JSON.stringify({
-        result:
-          "I'm sorry, there was an error creating your booking. Please try again or contact us directly.",
+        result: `I'm sorry, there was an error creating your booking: ${errorMessage}. Please try again or contact us directly.`,
+        error: errorMessage,
       }),
       {
         status: 500,

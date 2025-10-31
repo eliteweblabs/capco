@@ -233,8 +233,10 @@
             return;
           }
 
-          // Convert to ISO string
-          const startDate = new Date(start);
+          // Convert to ISO string - datetime-local is treated as UTC (since label says "UTC")
+          // datetime-local format is "YYYY-MM-DDTHH:mm" - append 'Z' to treat as UTC
+          const hasTimezone = start.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(start);
+          const startDate = hasTimezone ? new Date(start) : new Date(start + 'Z');
 
           const response = await fetch("/api/vapi/cal-integration", {
             method: "POST",
