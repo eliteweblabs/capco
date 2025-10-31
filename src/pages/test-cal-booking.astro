@@ -1,0 +1,286 @@
+---
+// Test page for Cal.com booking integration
+// Access at /test-cal-booking
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cal.com Booking Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">📅 Cal.com Booking Integration Test</h1>
+
+        <!-- Info Box -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+          <p class="text-sm text-gray-700">
+            This page tests the actual Cal.com integration endpoint used by VAPI. 
+            It validates working hours and booking creation against the real Cal.com database.
+          </p>
+        </div>
+
+        <!-- Test Account Info -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">1. Check Account Info</h2>
+          <p class="text-sm text-gray-600 mb-4">
+            Get available slots from Cal.com (checks working hours from Availability table)
+          </p>
+          <button
+            onclick="testAccountInfo()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Get Account Info & Available Slots
+          </button>
+          <div id="accountInfoResult" class="mt-4 hidden">
+            <pre class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto"></pre>
+          </div>
+        </div>
+
+        <!-- Test Availability -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">2. Check Availability</h2>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">From Date:</label>
+              <input
+                type="datetime-local"
+                id="dateFrom"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">To Date:</label>
+              <input
+                type="datetime-local"
+                id="dateTo"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <button
+            onclick="testAvailability()"
+            class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            Check Availability
+          </button>
+          <div id="availabilityResult" class="mt-4 hidden">
+            <pre class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto"></pre>
+          </div>
+        </div>
+
+        <!-- Test Booking Creation -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">3. Create Booking</h2>
+          <p class="text-sm text-gray-600 mb-4">
+            ⚠️ This will create a real booking in Cal.com. Make sure the time is within working hours!
+          </p>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Start Time (UTC):</label>
+              <input
+                type="datetime-local"
+                id="bookingStart"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p class="text-xs text-gray-500 mt-1">Must be within working hours (e.g., 10:30 AM - 5:00 PM)</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Name:</label>
+                <input
+                  type="text"
+                  id="bookingName"
+                  placeholder="John Doe"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email:</label>
+                <input
+                  type="email"
+                  id="bookingEmail"
+                  placeholder="john@example.com"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Phone (optional):</label>
+              <input
+                type="tel"
+                id="bookingPhone"
+                placeholder="+1234567890"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button
+              onclick="testBooking()"
+              class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              Create Booking
+            </button>
+          </div>
+          <div id="bookingResult" class="mt-4 hidden">
+            <pre class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto"></pre>
+          </div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="errorDisplay" class="bg-red-50 border-l-4 border-red-500 p-4 hidden mb-6">
+          <h3 class="font-semibold text-red-800 mb-2">Error:</h3>
+          <pre class="text-sm text-red-700 overflow-x-auto"></pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Set default dates
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(14, 30, 0, 0); // Set to 2:30 PM
+
+      const nextWeek = new Date(tomorrow);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+
+      // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+      function formatDateTimeLocal(date: Date): string {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+
+      // Set defaults
+      (document.getElementById("dateFrom") as HTMLInputElement).value = formatDateTimeLocal(tomorrow);
+      (document.getElementById("dateTo") as HTMLInputElement).value = formatDateTimeLocal(nextWeek);
+      (document.getElementById("bookingStart") as HTMLInputElement).value = formatDateTimeLocal(tomorrow);
+
+      async function testAccountInfo() {
+        try {
+          const response = await fetch("/api/vapi/cal-integration", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              action: "get_account_info",
+            }),
+          });
+
+          const data = await response.json();
+          const resultDiv = document.getElementById("accountInfoResult") as HTMLDivElement;
+          const pre = resultDiv.querySelector("pre") as HTMLPreElement;
+          
+          resultDiv.classList.remove("hidden");
+          pre.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          showError(error);
+        }
+      }
+
+      async function testAvailability() {
+        try {
+          const dateFrom = (document.getElementById("dateFrom") as HTMLInputElement).value;
+          const dateTo = (document.getElementById("dateTo") as HTMLInputElement).value;
+
+          if (!dateFrom || !dateTo) {
+            alert("Please fill in both date fields");
+            return;
+          }
+
+          // Convert to ISO strings
+          const fromDate = new Date(dateFrom);
+          const toDate = new Date(dateTo);
+
+          const response = await fetch("/api/vapi/cal-integration", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              action: "get_availability",
+              dateFrom: fromDate.toISOString(),
+              dateTo: toDate.toISOString(),
+            }),
+          });
+
+          const data = await response.json();
+          const resultDiv = document.getElementById("availabilityResult") as HTMLDivElement;
+          const pre = resultDiv.querySelector("pre") as HTMLPreElement;
+          
+          resultDiv.classList.remove("hidden");
+          pre.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          showError(error);
+        }
+      }
+
+      async function testBooking() {
+        try {
+          const start = (document.getElementById("bookingStart") as HTMLInputElement).value;
+          const name = (document.getElementById("bookingName") as HTMLInputElement).value;
+          const email = (document.getElementById("bookingEmail") as HTMLInputElement).value;
+          const phone = (document.getElementById("bookingPhone") as HTMLInputElement).value;
+
+          if (!start || !name || !email) {
+            alert("Please fill in start time, name, and email");
+            return;
+          }
+
+          // Convert to ISO string
+          const startDate = new Date(start);
+
+          const response = await fetch("/api/vapi/cal-integration", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              action: "create_booking",
+              start: startDate.toISOString(),
+              name: name,
+              email: email,
+              smsReminderNumber: phone || undefined,
+            }),
+          });
+
+          const data = await response.json();
+          const resultDiv = document.getElementById("bookingResult") as HTMLDivElement;
+          const pre = resultDiv.querySelector("pre") as HTMLPreElement;
+          
+          resultDiv.classList.remove("hidden");
+          pre.textContent = JSON.stringify(data, null, 2);
+
+          if (!response.ok || data.error) {
+            showError(data.error || "Booking failed");
+          }
+        } catch (error) {
+          showError(error);
+        }
+      }
+
+      function showError(error: any) {
+        const errorDiv = document.getElementById("errorDisplay") as HTMLDivElement;
+        const pre = errorDiv.querySelector("pre") as HTMLPreElement;
+        
+        errorDiv.classList.remove("hidden");
+        pre.textContent = error.message || JSON.stringify(error, null, 2);
+        
+        // Scroll to error
+        errorDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      // Expose functions to window
+      (window as any).testAccountInfo = testAccountInfo;
+      (window as any).testAvailability = testAvailability;
+      (window as any).testBooking = testBooking;
+    </script>
+  </body>
+</html>
+
