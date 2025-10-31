@@ -1421,7 +1421,7 @@ async function handleCreateBooking(params: any) {
         "iCalSequence",
         metadata,
         "timeZone",
-        references,
+        "references",
         "createdAt",
         "updatedAt"
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
