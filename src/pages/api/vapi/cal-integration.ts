@@ -665,15 +665,9 @@ async function handleCreateBooking(params: any) {
     );
   }
 
-  // Calculate end time (60 minutes after start for consultation)
-  const endDate = new Date(startDate.getTime() + 60 * 60000);
-
   try {
-    // Generate unique booking reference
-    const uid = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     // Get the configured event type for VAPI bookings (must include userId - the owner)
-    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2"; // Default to 30-minute meeting
+    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2";
     const eventTypeResult = await calcomDb.query(
       `SELECT id, length, title, "userId" FROM "EventType" WHERE id = ${VAPI_EVENT_TYPE_ID}`
     );
@@ -692,7 +686,14 @@ async function handleCreateBooking(params: any) {
     }
     const userId = eventType.userId;
 
-    // Insert into Cal.com Booking table
+    // Calculate end time using the event type's actual length (in minutes)
+    const eventLengthMinutes = eventType.length || 30; // Default to 30 minutes if not set
+    const endDate = new Date(startDate.getTime() + eventLengthMinutes * 60000);
+
+    // Generate unique booking reference
+    const uid = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Insert into Cal.com Booking table with all required fields
     const bookingResult = await calcomDb.query(
       `INSERT INTO "Booking" (
         uid, 
@@ -707,9 +708,11 @@ async function handleCreateBooking(params: any) {
         "isRecorded",
         "iCalSequence",
         metadata,
+        "timeZone",
+        references,
         "createdAt",
         "updatedAt"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
       RETURNING id, uid, "startTime", "endTime", status`,
       [
         uid,
@@ -718,8 +721,8 @@ async function handleCreateBooking(params: any) {
         startDate,
         endDate,
         eventType.id,
-        userId, // Assign to the first user (host)
-        "accepted", // Cal.com status: accepted, pending, cancelled, rejected, awaiting_host
+        userId,
+        "ACCEPTED", // Cal.com status: ACCEPTED (uppercase), pending, cancelled, rejected, awaiting_host
         false, // paid
         false, // isRecorded
         0, // iCalSequence
@@ -729,6 +732,8 @@ async function handleCreateBooking(params: any) {
           customerEmail: email,
           customerPhone: smsReminderNumber,
         }),
+        "UTC", // timeZone - use UTC to match our slot generation
+        JSON.stringify([]), // references - empty array for booking references
       ]
     );
 
@@ -759,30 +764,27 @@ async function handleCreateBooking(params: any) {
       })}`;
 
       const emailContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Appointment Confirmation</h2>
+          <h2>Appointment Confirmation</h2>
           
           <p>Dear ${name},</p>
           
-          <p>Thank you for scheduling your appointment with CAPCo Fire Protection. Here are the details:</p>
+          <p>Thank you for scheduling your appointment with ${process.env.RAILWAY_PROJECT_NAME}. Here are the details:</p>
           
-          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #1e40af;">Appointment Details</h3>
-            <p><strong>Date:</strong> ${startDate.toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              timeZone: "UTC",
-            })}</p>
-            <p><strong>Time:</strong> ${startDate.toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-              timeZone: "UTC",
-            })}</p>
-            <p><strong>Duration:</strong> 30 minutes</p>
-            <p><strong>Location:</strong> Online consultation</p>
-            <p><strong>Meeting Type:</strong> Fire protection consultation</p>
-          </div>
+          <h3>Appointment Details</h3>
+          <p><strong>Date:</strong> ${startDate.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            timeZone: "UTC",
+          })}</p>
+          <p><strong>Time:</strong> ${startDate.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone: "UTC",
+          })}</p>
+          <p><strong>Duration:</strong> ${eventLengthMinutes} minute${eventLengthMinutes !== 1 ? "s" : ""}</p>
+          <p><strong>Location:</strong> Online consultation</p>
+          <p><strong>Meeting Type:</strong> Fire protection consultation</p>
           
           <p><strong>Important:</strong> If you can gather your project documents in advance, that will help to expedite our services.</p>
           
@@ -792,8 +794,7 @@ async function handleCreateBooking(params: any) {
           
           <p>Best regards,<br>
           ${process.env.RAILWAY_PROJECT_NAME}</p>
-        </div>
-      `;
+        `;
 
       // Send email using the existing update-delivery API
       const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
