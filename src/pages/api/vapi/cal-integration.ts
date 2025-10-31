@@ -298,18 +298,24 @@ async function getWorkingHours(
 
   // Strategy 1: Try Availability table with PascalCase (modern Cal.com)
   try {
-    let query = `SELECT "startTime", "endTime", days FROM "Availability" WHERE "userId" = $1`;
-    const params: any[] = [resolvedUserId];
-
+    // First try with eventTypeId filter if provided
     if (eventTypeId) {
-      query += ` AND ("eventTypeId" = $2 OR "eventTypeId" IS NULL)`;
-      params.push(eventTypeId);
+      let query = `SELECT "startTime", "endTime", days FROM "Availability" WHERE "userId" = $1 AND ("eventTypeId" = $2 OR "eventTypeId" IS NULL) ORDER BY "eventTypeId" NULLS LAST LIMIT 1`;
+      availabilityResult = await calcomDb.query(query, [resolvedUserId, eventTypeId]);
+      if (availabilityResult.rows.length > 0) {
+        console.log(
+          `✅ [CAL-INTEGRATION] Found availability in "Availability" table (with eventTypeId filter)`
+        );
+      }
     }
-    query += ` ORDER BY "eventTypeId" NULLS LAST LIMIT 1`;
 
-    availabilityResult = await calcomDb.query(query, params);
-    if (availabilityResult.rows.length > 0) {
-      console.log(`✅ [CAL-INTEGRATION] Found availability in "Availability" table`);
+    // If no result, try without eventTypeId filter (availability might not be event-specific)
+    if (!availabilityResult || availabilityResult.rows.length === 0) {
+      let query = `SELECT "startTime", "endTime", days FROM "Availability" WHERE "userId" = $1 ORDER BY "eventTypeId" NULLS LAST LIMIT 1`;
+      availabilityResult = await calcomDb.query(query, [resolvedUserId]);
+      if (availabilityResult.rows.length > 0) {
+        console.log(`✅ [CAL-INTEGRATION] Found availability in "Availability" table (user-level)`);
+      }
     }
   } catch (error: any) {
     errors.push(`"Availability" table: ${error.message}`);
@@ -506,6 +512,16 @@ async function getWorkingHours(
 
     // Check what's actually in the Availability table for this user
     try {
+      // First, let's see the actual table structure
+      const columnCheck = await calcomDb.query(`
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_name = 'Availability' 
+        ORDER BY ordinal_position
+      `);
+      diagnosticInfo += `Availability table columns: ${columnCheck.rows.map((r: any) => `${r.column_name} (${r.data_type})`).join(", ")}\n`;
+
+      // Check for records with userId
       const availabilityCheck = await calcomDb.query(
         `SELECT COUNT(*) as count, 
          MIN("userId") as min_user_id, 
@@ -517,6 +533,18 @@ async function getWorkingHours(
       if (availabilityCheck.rows.length > 0) {
         const stats = availabilityCheck.rows[0];
         diagnosticInfo += `Availability table stats for userId ${resolvedUserId}: count=${stats.count}, distinct_users=${stats.distinct_users}\n`;
+
+        // If we have records, show a sample
+        if (stats.count > 0) {
+          const sampleCheck = await calcomDb.query(
+            `SELECT id, "userId", "startTime", "endTime", days, "scheduleId", "eventTypeId" 
+             FROM "Availability" 
+             WHERE "userId" = $1 
+             LIMIT 3`,
+            [resolvedUserId]
+          );
+          diagnosticInfo += `Sample Availability records: ${JSON.stringify(sampleCheck.rows, null, 2)}\n`;
+        }
 
         // If no records, check what userIds DO exist
         if (stats.count === 0) {
