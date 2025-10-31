@@ -49,8 +49,8 @@ const VAPI_WEBHOOK_URL = `${RAILWAY_PUBLIC_DOMAIN}/api/vapi/webhook`;
 async function processAssistantConfig(config) {
   const processedConfig = JSON.parse(JSON.stringify(config)); // Deep clone
 
-  // Import the Node.js compatible placeholder-utils
-  const { replacePlaceholders } = await import("./placeholder-utils-node.js");
+  // Import the TypeScript placeholder-utils (works in Node.js with ES modules)
+  const { replacePlaceholders } = await import("../src/lib/placeholder-utils.ts");
 
   // Process each message field that might contain placeholders
   const fieldsToProcess = ["name", "firstMessage", "endCallMessage", "chatPlaceholder"];
