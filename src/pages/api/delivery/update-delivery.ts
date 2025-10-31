@@ -279,7 +279,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     // Read email template
     try {
-      const templatePath = join(process.cwd(), "src", "templates-email", "template.html");
+      const templatePath = join(process.cwd(), "src", "templates/email", "template.html");
 
       emailTemplate = readFileSync(templatePath, "utf-8");
 

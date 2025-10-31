@@ -895,20 +895,32 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
     // Save template
     async saveTemplate(templateId) {
+      console.log("💾 [PDF-SYSTEM] ===== SAVE TEMPLATE FUNCTION CALLED =====");
+      console.log("💾 [PDF-SYSTEM] Input templateId:", templateId, "Type:", typeof templateId);
+      console.log("💾 [PDF-SYSTEM] All templates:", this.templates);
+      console.log("💾 [PDF-SYSTEM] Template IDs in array:", this.templates.map((t) => ({ id: t.id, type: typeof t.id, name: t.name })));
+      
       // Convert templateId to number if it's a string (from getAttribute)
       const numericId = typeof templateId === "string" ? parseInt(templateId, 10) : templateId;
+      console.log("💾 [PDF-SYSTEM] Numeric ID:", numericId, "Type:", typeof numericId);
       
       // Try both string and number matches
       const template = this.templates.find(
         (t) => t.id === templateId || t.id === numericId || String(t.id) === String(templateId)
       );
       
-      console.log("💾 [PDF-SYSTEM] Saving template:", {
+      console.log("💾 [PDF-SYSTEM] ===== TEMPLATE LOOKUP =====");
+      console.log("💾 [PDF-SYSTEM] Template found:", !!template);
+      console.log("💾 [PDF-SYSTEM] Template details:", template);
+      console.log("💾 [PDF-SYSTEM] Search comparisons:", {
         templateId,
         numericId,
-        templateFound: !!template,
-        templateIdType: typeof templateId,
-        templateIds: this.templates.map((t) => ({ id: t.id, type: typeof t.id })),
+        matches: this.templates.map((t) => ({
+          id: t.id,
+          matchesString: t.id === templateId,
+          matchesNumber: t.id === numericId,
+          matchesStringCoerce: String(t.id) === String(templateId),
+        })),
       });
 
       if (!template) {
@@ -953,6 +965,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       }
 
       const name = nameInput.value.trim();
+      console.log("💾 [PDF-SYSTEM] Name validation:", {
+        rawValue: nameInput.value,
+        trimmed: name,
+        isEmpty: !name,
+        length: name.length,
+      });
+
       if (!name) {
         window.showNotification({
           type: "error",
@@ -964,6 +983,30 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       const description = descriptionInput?.value.trim() || "";
       const content = editor.root.innerHTML;
+      
+      // Check if content is effectively empty (just whitespace/empty tags)
+      const contentText = editor.getText().trim();
+      const contentIsEmpty = !contentText || contentText.length === 0;
+      const contentIsOnlyEmptyTags = content.replace(/<[^>]*>/g, '').trim().length === 0;
+      
+      console.log("💾 [PDF-SYSTEM] Content validation:", {
+        htmlLength: content.length,
+        htmlPreview: content.substring(0, 100),
+        textLength: contentText.length,
+        textPreview: contentText.substring(0, 50),
+        contentIsEmpty,
+        contentIsOnlyEmptyTags,
+        isEmptyOrWhitespace: contentIsEmpty || contentIsOnlyEmptyTags,
+      });
+
+      if (!content || contentIsEmpty || contentIsOnlyEmptyTags) {
+        window.showNotification({
+          type: "error",
+          title: "Validation Error",
+          message: "Template content is required. Please add some content to the template.",
+        });
+        return;
+      }
 
       console.log("💾 [PDF-SYSTEM] ===== SAVE TEMPLATE - DATA COLLECTION =====");
       console.log("💾 [PDF-SYSTEM] Template ID (actual):", actualTemplateId);
