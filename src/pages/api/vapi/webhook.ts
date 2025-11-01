@@ -163,50 +163,23 @@ async function handleToolCalls(message: any): Promise<Response> {
 
       const data = await response.json();
       console.log(`[---VAPI-WEBHOOK] Result:`, data.result?.substring(0, 50) + "...");
-
-      // Fire-and-forget: send confirmation email when a booking succeeds
+      
+      // Log any errors for debugging
+      if (data.error) {
+        console.error(`❌ [VAPI-WEBHOOK] Error from cal-integration:`, data.error);
+      }
+      
+      // Log booking creation success/failure
       if (functionName === "bookAppointment") {
-        try {
-          const siteUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
-          // Prefer explicit params; fall back to data returned from cal-integration
-          const startTime = params.start || data?.data?.booking?.startTime;
-          const personName = params.name;
-          const personEmail = params.email;
-
-          if (startTime && personName && personEmail) {
-            const start = new Date(startTime);
-            const date = start.toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              timeZone: "UTC",
-            });
-            const time = start.toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-              timeZone: "UTC",
-            });
-
-            fetch(`${siteUrl}/api/vapi/send-confirmation-email`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-Vapi-System": "true" },
-              body: JSON.stringify({
-                name: personName,
-                email: personEmail,
-                appointmentDetails: {
-                  date,
-                  time,
-                  duration: "30 minutes",
-                  location: "Online consultation",
-                  meetingType: "Fire protection consultation",
-                },
-              }),
-            }).catch((e) => console.error("[---VAPI-WEBHOOK] send-confirmation-email error:", e));
-          }
-        } catch (e) {
-          console.error("[---VAPI-WEBHOOK] Failed to queue confirmation email:", e);
+        if (data.data?.booking) {
+          console.log(`✅ [VAPI-WEBHOOK] Booking created successfully:`, data.data.booking);
+        } else {
+          console.warn(`⚠️ [VAPI-WEBHOOK] Booking creation may have failed - no booking data in response`);
         }
       }
+
+      // Email is now sent directly by cal-integration.ts to avoid duplicate sends and date formatting issues
+      // Removed duplicate email sending from webhook - cal-integration handles it with correct UTC formatting
 
       results.push({
         toolCallId: toolCall.id,
@@ -218,14 +191,19 @@ async function handleToolCalls(message: any): Promise<Response> {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[---VAPI-WEBHOOK] Tool error:", error);
+    console.error("[---VAPI-WEBHOOK] Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
     return new Response(
       JSON.stringify({
         results: [
           {
             toolCallId: "error",
-            result: "I'm having trouble accessing that information right now.",
+            result: `I'm having trouble accessing that information right now. ${error.message || ""}`,
           },
         ],
       }),
@@ -341,13 +319,9 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
                   .join(", ")}`
               );
             }
-            // Validate date format (ISO with timezone)
-            if (!isoDateRegex.test(functionCall.parameters.start)) {
-              console.error("❌ [VAPI-WEBHOOK] Invalid date format:", functionCall.parameters);
-              throw new Error(
-                "Start time must be in ISO format with timezone (e.g., 2024-10-24T14:00:00.000Z)"
-              );
-            }
+            // Accept various date formats - cal-integration.ts will handle parsing
+            // Don't validate format here, let cal-integration handle it
+            console.log("📅 [VAPI-WEBHOOK] Received start time:", functionCall.parameters.start);
             // Validate phone number format if provided
             if (functionCall.parameters.smsReminderNumber) {
               const phoneRegex = /^\+\d{10,15}$/;

@@ -18,7 +18,7 @@ interface CalEventResponse {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    console.log("📅 [CAL-INTEGRATION] Creating Cal.com event...");
+    console.log("📅 [---CAL-INTEGRATION] Creating Cal.com event...");
 
     const body: CalEventRequest = await request.json();
     const {
@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
     const calApiKey = import.meta.env.CAL_API_KEY; // You'll need to set this in your environment
 
     if (!calApiKey) {
-      console.warn("⚠️ [CAL-INTEGRATION] Cal.com API key not configured");
+      console.warn("⚠️ [---CAL-INTEGRATION] Cal.com API key not configured");
       return new Response(
         JSON.stringify({
           success: false,
@@ -65,7 +65,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // In a real implementation, you would call the Cal.com API here
     // For now, we'll simulate the API call
-    console.log("📅 [CAL-INTEGRATION] Event data:", eventData);
+    console.log("📅 [---CAL-INTEGRATION] Event data:", eventData);
 
     // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
     const mockEventId = `cal_${Date.now()}_${projectId}`;
     const mockEventUrl = `${calComUrl}/event/${mockEventId}`;
 
-    console.log("✅ [CAL-INTEGRATION] Cal.com event created successfully");
+    console.log("✅ [---CAL-INTEGRATION] Cal.com event created successfully");
 
     const response: CalEventResponse = {
       success: true,
@@ -87,7 +87,7 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("❌ [CAL-INTEGRATION] Error creating Cal.com event:", error);
+    console.error("❌ [---CAL-INTEGRATION] Error creating Cal.com event:", error);
 
     const errorResponse: CalEventResponse = {
       success: false,
