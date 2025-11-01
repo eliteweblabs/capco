@@ -83,6 +83,24 @@ const ogImageSrc =
     ? "/img/capco-logo.png"
     : globalCompanyLogo || "/img/capco-logo.png";
 
+// Icon sources - convert SVG to data URI or use fallback
+let iconSrc = "/img/capco-logo.png"; // default fallback
+if (globalCompanyIcon) {
+  if (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml")) {
+    // Convert SVG to data URI
+    try {
+      const encoded = Buffer.from(globalCompanyIcon).toString("base64");
+      iconSrc = `data:image/svg+xml;base64,${encoded}`;
+    } catch (error) {
+      console.error("🚨 [APP] Failed to encode SVG icon to data URI, using fallback");
+      iconSrc = "/img/capco-logo.png";
+    }
+  } else {
+    // It's already a URL, use it directly
+    iconSrc = globalCompanyIcon;
+  }
+}
+
 // Get navigation data
 import { navigation } from "@/pages/api/utils/navigation";
 import { isBackendPage } from "../../pages/api/utils/backend-page-check";
@@ -195,12 +213,12 @@ const debugData = {
     />
     <link rel="canonical" href={currentUrl} />
     <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
-    <link rel="apple-touch-icon" sizes="180x180" href={globalCompanyIcon} />
-    <link rel="icon" type="image/png" sizes="32x32" href={globalCompanyIcon} />
-    <link rel="icon" type="image/png" sizes="16x16" href={globalCompanyIcon} />
-    <link rel="icon" type="image/png" href={globalCompanyIcon} />
+    <link rel="apple-touch-icon" sizes="180x180" href={iconSrc} />
+    <link rel="icon" type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml") ? "image/svg+xml" : "image/png"} sizes="32x32" href={iconSrc} />
+    <link rel="icon" type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml") ? "image/svg+xml" : "image/png"} sizes="16x16" href={iconSrc} />
+    <link rel="icon" type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml") ? "image/svg+xml" : "image/png"} href={iconSrc} />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="mask-icon" href={globalCompanyIcon} color="#5bbad5" />
+    <link rel="mask-icon" href={iconSrc} color="#5bbad5" />
     <meta name="msapplication-TileColor" content={primaryColor} />
     <meta name="theme-color" content={primaryColor} />
 
