@@ -1233,10 +1233,12 @@ async function handleCreateBooking(params: any) {
     email,
     smsReminderNumber,
   });
-  
+
   // Log the raw start time format for debugging AM/PM issues
   if (typeof start === "string") {
-    console.log(`🔍 [CAL-INTEGRATION] Raw start time format: "${start}" (length: ${start.length}, contains AM: ${start.includes("AM") || start.includes("am")}, contains PM: ${start.includes("PM") || start.includes("pm")})`);
+    console.log(
+      `🔍 [CAL-INTEGRATION] Raw start time format: "${start}" (length: ${start.length}, contains AM: ${start.includes("AM") || start.includes("am")}, contains PM: ${start.includes("PM") || start.includes("pm")})`
+    );
   }
 
   // Parse start time - handle various formats including AM/PM
@@ -1244,43 +1246,155 @@ async function handleCreateBooking(params: any) {
   if (typeof start === "string") {
     // Check if string contains AM/PM (case insensitive)
     const amPmMatch = start.match(/\s*(AM|PM|am|pm)\s*/i);
-    
+
     if (amPmMatch) {
       // Handle AM/PM format - parse the time and convert to 24-hour format
       console.log(`🕐 [CAL-INTEGRATION] Detected AM/PM format in time string: "${start}"`);
-      
+
       // Extract date and time parts
-      // Examples: "2024-11-03 4:30 PM", "Mon, 3 Nov 2024 4:30 PM", "4:30 PM", etc.
+      // Examples: "2024-11-03 4:30 PM", "Mon, 3 Nov 2024 4:30 PM", "Monday at 4:30 PM", "4:30 PM", etc.
       const timeMatch = start.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)/i);
       if (timeMatch) {
         let hour = parseInt(timeMatch[1], 10);
         const minute = parseInt(timeMatch[2], 10);
         const isPM = /pm/i.test(timeMatch[3]);
         const originalHour = hour; // Store for validation
-        
+
         // Convert to 24-hour format
         if (isPM && hour !== 12) {
           hour += 12; // 1 PM -> 13, 2 PM -> 14, etc.
         } else if (!isPM && hour === 12) {
           hour = 0; // 12 AM -> 0 (midnight)
         }
-        
-        // Extract date if present, otherwise use today
-        let dateStr = "";
-        const dateMatch = start.match(/(\d{4}-\d{2}-\d{2})/); // YYYY-MM-DD
-        if (dateMatch) {
-          dateStr = dateMatch[1];
+
+        // Extract date - try multiple formats
+        let targetDate: Date | null = null;
+
+        // 1. Try ISO date format (YYYY-MM-DD)
+        const isoDateMatch = start.match(/(\d{4}-\d{2}-\d{2})/);
+        if (isoDateMatch) {
+          targetDate = new Date(isoDateMatch[1] + "T00:00:00Z");
+          console.log(`📅 [CAL-INTEGRATION] Found ISO date: ${isoDateMatch[1]}`);
         } else {
-          // Try to find date in other formats or use today
-          const today = new Date();
-          dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+          // 2. Try natural language date formats
+          // Match patterns like "Mon, 3 Nov 2024" or "Monday, November 3, 2024" or "3 Nov 2024"
+          const naturalDateMatch = start.match(
+            /(?:Mon|Monday|Tue|Tuesday|Wed|Wednesday|Thu|Thursday|Fri|Friday|Sat|Saturday|Sun|Sunday)?\s*,?\s*(\d{1,2})\s+(Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|September|Oct|October|Nov|November|Dec|December)\s+(?:,?\s*)?(\d{4})?/i
+          );
+
+          if (naturalDateMatch) {
+            const day = parseInt(naturalDateMatch[1], 10);
+            const monthStr = naturalDateMatch[2].toLowerCase();
+            const year = naturalDateMatch[3]
+              ? parseInt(naturalDateMatch[3], 10)
+              : new Date().getUTCFullYear();
+
+            const monthMap: { [key: string]: number } = {
+              jan: 0,
+              january: 0,
+              feb: 1,
+              february: 1,
+              mar: 2,
+              march: 2,
+              apr: 3,
+              april: 3,
+              may: 4,
+              jun: 5,
+              june: 5,
+              jul: 6,
+              july: 6,
+              aug: 7,
+              august: 7,
+              sep: 8,
+              september: 8,
+              oct: 9,
+              october: 9,
+              nov: 10,
+              november: 10,
+              dec: 11,
+              december: 11,
+            };
+
+            const month = monthMap[monthStr];
+            if (month !== undefined) {
+              targetDate = new Date(Date.UTC(year, month, day));
+              console.log(
+                `📅 [CAL-INTEGRATION] Found natural language date: ${day} ${monthStr} ${year} -> ${targetDate.toISOString().split("T")[0]}`
+              );
+            }
+          }
+
+          // 3. Try weekday names to find next occurrence
+          if (!targetDate) {
+            const weekdayMatch = start.match(
+              /(Mon|Monday|Tue|Tuesday|Wed|Wednesday|Thu|Thursday|Fri|Friday|Sat|Saturday|Sun|Sunday)/i
+            );
+            if (weekdayMatch) {
+              const weekdayStr = weekdayMatch[1].toLowerCase();
+              const weekdayMap: { [key: string]: number } = {
+                sun: 0,
+                sunday: 0,
+                mon: 1,
+                monday: 1,
+                tue: 2,
+                tuesday: 2,
+                wed: 3,
+                wednesday: 3,
+                thu: 4,
+                thursday: 4,
+                fri: 5,
+                friday: 5,
+                sat: 6,
+                saturday: 6,
+              };
+
+              const targetWeekday = weekdayMap[weekdayStr];
+              if (targetWeekday !== undefined) {
+                // Find next occurrence of this weekday
+                const today = new Date();
+                const todayUTC = new Date(
+                  Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+                );
+                const daysUntil = (targetWeekday - todayUTC.getUTCDay() + 7) % 7;
+                // If today is the weekday, look for next week unless it's later in the day
+                const daysToAdd =
+                  daysUntil === 0 ? (todayUTC.getUTCHours() >= hour ? 7 : 0) : daysUntil;
+                targetDate = new Date(todayUTC);
+                targetDate.setUTCDate(todayUTC.getUTCDate() + daysToAdd);
+                console.log(
+                  `📅 [CAL-INTEGRATION] Found weekday "${weekdayStr}" (${targetWeekday}), next occurrence: ${targetDate.toISOString().split("T")[0]} (in ${daysToAdd} days)`
+                );
+              }
+            }
+          }
         }
-        
-        // Construct ISO string with converted 24-hour time
-        const isoString = `${dateStr}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00Z`;
+
+        // If we still don't have a date, use the next business day that matches working hours
+        // This should rarely happen, but ensures we don't default to "today"
+        if (!targetDate) {
+          const today = new Date();
+          const todayUTC = new Date(
+            Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+          );
+          // Use today if time hasn't passed, otherwise tomorrow
+          targetDate = new Date(todayUTC);
+          if (todayUTC.getUTCHours() >= hour) {
+            targetDate.setUTCDate(todayUTC.getUTCDate() + 1);
+          }
+          console.log(
+            `⚠️ [CAL-INTEGRATION] No date found in string, using: ${targetDate.toISOString().split("T")[0]} (today or tomorrow)`
+          );
+        }
+
+        // Construct ISO string with converted 24-hour time using the extracted/calculated date
+        const year = targetDate.getUTCFullYear();
+        const month = String(targetDate.getUTCMonth() + 1).padStart(2, "0");
+        const day = String(targetDate.getUTCDate()).padStart(2, "0");
+        const isoString = `${year}-${month}-${day}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00Z`;
         startDate = new Date(isoString);
+
         console.log(
-          `🕐 [CAL-INTEGRATION] Converted AM/PM time "${start}" to UTC: ${startDate.toISOString()} (original: ${originalHour}:${String(minute).padStart(2, "0")} ${isPM ? "PM" : "AM"} -> ${hour}:${String(minute).padStart(2, "0")} 24-hour)`
+          `🕐 [CAL-INTEGRATION] Converted AM/PM time "${start}" to UTC: ${startDate.toISOString()} (original: ${originalHour}:${String(minute).padStart(2, "0")} ${isPM ? "PM" : "AM"} -> ${hour}:${String(minute).padStart(2, "0")} 24-hour, date: ${year}-${month}-${day})`
         );
       } else {
         throw new Error(`Unable to parse AM/PM time format from: "${start}"`);
@@ -1461,32 +1575,32 @@ async function handleCreateBooking(params: any) {
     // Business hours are typically 8 AM - 6 PM, so times before 6 AM or after 10 PM are suspicious
     const suspiciousEarlyHour = bookingHour < 6; // Before 6 AM
     const suspiciousLateHour = bookingHour >= 22; // After 10 PM
-    
+
     // CRITICAL: Reject bookings in the 1-5 AM range - these are almost certainly PM times that were incorrectly formatted
     // Most business appointments are between 8 AM - 6 PM, so 1-5 AM is a red flag
     if (bookingHour >= 1 && bookingHour <= 5) {
       const likelyPMHour = bookingHour + 12; // Convert to PM equivalent (e.g., 4:30 AM -> 4:30 PM = 16:30)
       throw new Error(
         `Invalid booking time: ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} AM UTC is outside normal business hours and appears to be incorrectly formatted. ` +
-        `If you intended ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} PM, the correct UTC time would be ${likelyPMHour}:${bookingMinute.toString().padStart(2, "0")} UTC. ` +
-        `Please check the time format. Valid booking times are between ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC.`
+          `If you intended ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} PM, the correct UTC time would be ${likelyPMHour}:${bookingMinute.toString().padStart(2, "0")} UTC. ` +
+          `Please check the time format. Valid booking times are between ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC.`
       );
     }
-    
+
     console.log(
       `🕐 [CAL-INTEGRATION] Booking validation: ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} UTC (${bookingTotalMinutes} minutes) vs working hours ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC (${startTotalMinutes}-${endTotalMinutes} minutes)`
     );
 
     if (bookingTotalMinutes < startTotalMinutes || bookingTotalMinutes >= endTotalMinutes) {
       let errorMessage = `Booking time ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} UTC is outside working hours (${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC)`;
-      
+
       // Add helpful message if time suggests AM/PM confusion
       if (suspiciousEarlyHour) {
         errorMessage += `. Note: The requested time appears to be in the early morning (${bookingHour}:${bookingMinute.toString().padStart(2, "0")} AM UTC). If you meant PM, please use 24-hour format or include AM/PM indicator.`;
       } else if (suspiciousLateHour) {
         errorMessage += `. Note: The requested time appears to be very late (${bookingHour}:${bookingMinute.toString().padStart(2, "0")} UTC). Please confirm the time is correct.`;
       }
-      
+
       throw new Error(errorMessage);
     }
 
@@ -1766,43 +1880,86 @@ async function handleCreateBooking(params: any) {
     const utcDay = startDate.getUTCDate();
     const utcHour = startDate.getUTCHours();
     const utcMinute = startDate.getUTCMinutes();
-    
+    const utcWeekday = startDate.getUTCDay(); // 0=Sunday, 6=Saturday
+
     // Log the date components for debugging
-    console.log(`📅 [CAL-INTEGRATION] Email date formatting - UTC date components: year=${utcYear}, month=${utcMonth + 1}, day=${utcDay}, hour=${utcHour}, minute=${utcMinute}`);
-    console.log(`📅 [CAL-INTEGRATION] Email date formatting - startDate ISO: ${startDate.toISOString()}`);
-    
+    console.log(
+      `📅 [CAL-INTEGRATION] Email date formatting - UTC date components: year=${utcYear}, month=${utcMonth + 1}, day=${utcDay}, hour=${utcHour}, minute=${utcMinute}, weekday index=${utcWeekday}`
+    );
+    console.log(
+      `📅 [CAL-INTEGRATION] Email date formatting - startDate ISO: ${startDate.toISOString()}`
+    );
+
+    // Verify the weekday calculation first
+    const weekdayNames = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const calculatedWeekday = weekdayNames[utcWeekday];
+    console.log(
+      `📅 [CAL-INTEGRATION] Email date formatting - Calculated weekday: ${calculatedWeekday} (day index: ${utcWeekday})`
+    );
+
+    // Create a UTC date object for formatting (ensures no timezone conversion)
+    // Use Date.UTC to create a date at exactly the UTC time we want
+    const utcDateForFormatting = new Date(
+      Date.UTC(utcYear, utcMonth, utcDay, utcHour, utcMinute, 0, 0)
+    );
+
     // Use Intl.DateTimeFormat for reliable UTC formatting
     // This ensures the weekday is calculated correctly based on UTC date
+    // IMPORTANT: Pass a UTC date to avoid any local timezone conversion
     const dateFormatter = new Intl.DateTimeFormat("en-US", {
       weekday: "long",
       month: "long",
       day: "numeric",
       timeZone: "UTC",
     });
-    
+
     const timeFormatter = new Intl.DateTimeFormat("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
       timeZone: "UTC",
     });
-    
-    const formattedDate = dateFormatter.format(startDate);
-    const formattedTime = timeFormatter.format(startDate);
-    
-    console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted date: ${formattedDate}`);
-    console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted time: ${formattedTime}`);
-    
-    // Verify the weekday is correct
-    const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const calculatedWeekday = weekdayNames[startDate.getUTCDay()];
-    console.log(`📅 [CAL-INTEGRATION] Email date formatting - Calculated weekday: ${calculatedWeekday} (day index: ${startDate.getUTCDay()})`);
+
+    // Format using the UTC date object
+    const formattedDate = dateFormatter.format(utcDateForFormatting);
+    const formattedTime = timeFormatter.format(utcDateForFormatting);
+
+    // Double-check the formatted weekday matches our calculation
+    const formattedWeekday = formattedDate.split(",")[0]; // Extract weekday from "Monday, November 3"
+    let finalFormattedDate = formattedDate; // Default to formatted date
+
+    if (formattedWeekday !== calculatedWeekday) {
+      console.error(
+        `⚠️ [CAL-INTEGRATION] WEEKDAY MISMATCH! Calculated: ${calculatedWeekday}, Formatted: ${formattedWeekday}. Using calculated weekday.`
+      );
+      // Use our calculated weekday instead
+      const monthName = utcDateForFormatting.toLocaleString("en-US", {
+        month: "long",
+        timeZone: "UTC",
+      });
+      finalFormattedDate = `${calculatedWeekday}, ${monthName} ${utcDay}`;
+      console.log(
+        `📅 [CAL-INTEGRATION] Email date formatting - Corrected formatted date: ${finalFormattedDate}`
+      );
+      console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted time: ${formattedTime}`);
+    } else {
+      console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted date: ${formattedDate}`);
+      console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted time: ${formattedTime}`);
+    }
 
     // Send confirmation email automatically
     try {
       console.log("📧 [CAL-INTEGRATION] Sending confirmation email...");
 
-      const emailSubject = `Appointment Confirmation - ${formattedDate}`;
+      const emailSubject = `Appointment Confirmation - ${finalFormattedDate}`;
 
       const emailContent = `
           <h2>Appointment Confirmation</h2>
@@ -1812,7 +1969,7 @@ async function handleCreateBooking(params: any) {
           <p>Thank you for scheduling your appointment with ${process.env.RAILWAY_PROJECT_NAME}. Here are the details:</p>
           
           <h3>Appointment Details</h3>
-          <p><strong>Date:</strong> ${formattedDate}</p>
+          <p><strong>Date:</strong> ${finalFormattedDate}</p>
           <p><strong>Time:</strong> ${formattedTime}</p>
           <p><strong>Duration:</strong> ${eventLengthMinutes} minute${eventLengthMinutes !== 1 ? "s" : ""}</p>
           <p><strong>Location:</strong> Online consultation</p>
@@ -1859,7 +2016,7 @@ async function handleCreateBooking(params: any) {
     }
 
     // Format confirmation message for VAPI to speak using the same formatters
-    const confirmationMessage = `Your appointment has been confirmed for ${formattedDate} at ${formattedTime}. You'll receive a confirmation email at ${email}.`;
+    const confirmationMessage = `Your appointment has been confirmed for ${finalFormattedDate} at ${formattedTime}. You'll receive a confirmation email at ${email}.`;
 
     return new Response(
       JSON.stringify({
