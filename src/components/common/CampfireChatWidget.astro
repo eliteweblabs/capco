@@ -1,0 +1,162 @@
+---
+// Campfire Chat Widget Component
+// Embeds the Campfire Chat widget into the website
+// Typically appears as a floating chat button in the bottom-right corner
+
+interface Props {
+  currentUser?: {
+    id?: string;
+    email?: string;
+    name?: string;
+    profile?: {
+      firstName?: string;
+      lastName?: string;
+      companyName?: string;
+    };
+  };
+  position?: "bottom-right" | "bottom-left";
+  theme?: "light" | "dark" | "auto";
+}
+
+const { currentUser, position = "bottom-right", theme = "auto" } = Astro.props;
+
+// Get Campfire URL from environment variable
+const campfireUrl = import.meta.env.CAMPFIRE_URL || import.meta.env.PUBLIC_CAMPFIRE_URL;
+const campfireWidgetId =
+  import.meta.env.CAMPFIRE_WIDGET_ID || import.meta.env.PUBLIC_CAMPFIRE_WIDGET_ID;
+
+// If no Campfire URL or widget ID is configured, don't render the widget
+if (!campfireUrl && !campfireWidgetId) {
+  console.warn(
+    "⚠️ [CAMPFIRE-WIDGET] Campfire URL or Widget ID not configured. Set CAMPFIRE_URL or CAMPFIRE_WIDGET_ID in environment variables."
+  );
+}
+
+// Determine theme based on preference
+const resolvedTheme =
+  theme === "auto"
+    ? `document.documentElement.classList.contains("dark") || window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"`
+    : theme;
+---
+
+{
+  campfireUrl || campfireWidgetId ? (
+    <div id="campfire-chat-widget-container" data-position={position}>
+      {/* <!-- Campfire Chat Widget will be injected here by the script --> */}
+    </div>
+  ) : null
+}
+
+{
+  campfireUrl || campfireWidgetId ? (
+    <script define:vars={{ campfireUrl, campfireWidgetId, resolvedTheme, currentUser }}>
+      {`
+      (function() {
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initCampfireWidget);
+        } else {
+          initCampfireWidget();
+        }
+
+        function initCampfireWidget() {
+          const container = document.getElementById('campfire-chat-widget-container');
+          if (!container) {
+            console.error('❌ [CAMPFIRE-WIDGET] Container not found');
+            return;
+          }
+
+          // Determine theme
+          const isDark = ${resolvedTheme.includes("dark") ? "true" : `typeof ${resolvedTheme} === "string" ? ${resolvedTheme} : (document.documentElement.classList.contains("dark") || window.matchMedia("(prefers-color-scheme: dark)").matches)`};
+
+          // Method 1: If you have a widget ID (standard Campfire embed)
+          if (campfireWidgetId) {
+            try {
+              // Standard Campfire Chat embed script
+              // This is a placeholder - replace with actual Campfire embed code from your Campfire dashboard
+              const script = document.createElement('script');
+              script.src = \`\${campfireUrl || 'https://app.campfire.so'}/widget.js?id=\${campfireWidgetId}\`;
+              script.async = true;
+              script.onload = () => {
+                console.log('✅ [CAMPFIRE-WIDGET] Campfire widget loaded successfully');
+              };
+              script.onerror = () => {
+                console.error('❌ [CAMPFIRE-WIDGET] Failed to load Campfire widget script');
+              };
+              document.body.appendChild(script);
+            } catch (error) {
+              console.error('❌ [CAMPFIRE-WIDGET] Error loading widget:', error);
+            }
+          }
+          // Method 2: If you have a direct Campfire URL (self-hosted or custom)
+          else if (campfireUrl) {
+            try {
+              // For self-hosted Campfire, you might need to load it differently
+              // This is a placeholder - adjust based on your Campfire deployment
+              const script = document.createElement('script');
+              script.src = \`\${campfireUrl}/widget.js\`;
+              script.async = true;
+              script.setAttribute('data-theme', isDark ? 'dark' : 'light');
+              
+              // Add user info if available
+              if (currentUser) {
+                script.setAttribute('data-user-id', currentUser.id || '');
+                script.setAttribute('data-user-email', currentUser.email || '');
+                script.setAttribute('data-user-name', currentUser.name || currentUser.profile?.companyName || '');
+              }
+
+              script.onload = () => {
+                console.log('✅ [CAMPFIRE-WIDGET] Campfire widget loaded successfully');
+              };
+              script.onerror = () => {
+                console.error('❌ [CAMPFIRE-WIDGET] Failed to load Campfire widget script');
+              };
+              document.body.appendChild(script);
+            } catch (error) {
+              console.error('❌ [CAMPFIRE-WIDGET] Error loading widget:', error);
+            }
+          }
+
+          // Alternative: Iframe approach (for self-hosted instances)
+          // Uncomment and adjust if the script approach doesn't work
+          /*
+          const iframe = document.createElement('iframe');
+          iframe.src = \`\${campfireUrl}/embed\${campfireWidgetId ? '?id=' + campfireWidgetId : ''}\`;
+          iframe.style.width = '100%';
+          iframe.style.height = '600px';
+          iframe.style.border = 'none';
+          iframe.style.borderRadius = '8px';
+          iframe.allow = 'camera; microphone; geolocation';
+          container.appendChild(iframe);
+          */
+        }
+      })();
+    `}
+    </script>
+  ) : null
+}
+
+<!-- <style>
+  #campfire-chat-widget-container {
+    position: fixed;
+    z-index: 9999;
+  }
+
+  #campfire-chat-widget-container[data-position="bottom-right"] {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  #campfire-chat-widget-container[data-position="bottom-left"] {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  /* Ensure widget doesn't interfere with other elements */
+  @media (max-width: 768px) {
+    #campfire-chat-widget-container {
+      bottom: 10px;
+      right: 10px;
+    }
+  }
+</style> -->

@@ -22,15 +22,19 @@ PLAUSIBLE_DB_PASSWORD=your_secure_password_here
 # Plausible Configuration  
 PLAUSIBLE_SECRET_KEY=your_secret_key_here
 PLAUSIBLE_BASE_URL=https://capco-plausible-analytics.railway.app
-PLAUSIBLE_MAILER_EMAIL=admin@capcofire.com
+PLAUSIBLE_MAILER_EMAIL=noreply@capcofire.com
 
-# SMTP Configuration (required - must be integer)
-SMTP_HOST_PORT=25
+# SMTP Configuration (using Resend)
+# Note: SMTP settings are configured in railway-plausible.json
+# You just need to set RESEND_API_KEY (should already exist in your main project)
+RESEND_API_KEY=re_your_resend_api_key_here
 
 # Admin User
 PLAUSIBLE_ADMIN_EMAIL=admin@capcofire.com
 PLAUSIBLE_ADMIN_PASSWORD=your_admin_password_here
 ```
+
+**Note**: The configuration uses Resend's SMTP (`smtp.resend.com` on port `587`) instead of a local mail service. Make sure your `RESEND_API_KEY` is set in Railway.
 
 ### Step 4: Generate Secure Values
 Run these commands to generate secure values:
@@ -67,16 +71,51 @@ PLAUSIBLE_API_KEY=your_api_key_from_plausible
 
 ## 🔧 Troubleshooting
 
-### SMTP_HOST_PORT Error
-**Error**: `Config variable SMTP_HOST_PORT must be an integer. Got ""`
+### Invalid Boolean Value Error
+**Error**: `Invalid boolean value: "". Expected one of: 1, 0, t, f, true, false, y, n, yes, no, on, off`
+
+**Most Common Cause**: `SMTP_HOST_SSL_ENABLED` is set to an empty string `""`
 
 **Solution**: 
 1. Go to Railway Dashboard → Your Project → Variables
-2. Add or verify `SMTP_HOST_PORT` is set to `25` (without quotes in Railway UI)
-3. Ensure it's set at the **project level** (not service level) so all services can access it
-4. Redeploy the service
+2. Find `SMTP_HOST_SSL_ENABLED`
+3. **Change it from empty `""` to `false`**
+   - Port 25 uses unencrypted SMTP, so set to `false`
+   - For SSL/TLS (ports 465/587), use `true`
+4. **Also check these other boolean variables**:
+   - `ENABLE_EMAIL_VERIFICATION` - set to `false` (or remove if not needed)
+   - `DISABLE_REGISTRATION` - set to `true` (required)
+   - `DISABLE_SUBSCRIPTIONS` - set to `true` (or remove if not needed)
+   - `ENABLE_ACCOUNT_CREATION` - set to `false` (or remove if not needed)
+   - `DISABLE_SIGNUPS` - set to `true` (or remove if not needed)
+   - `ENABLE_INVITATIONS` - set to `false` (or remove if not needed)
+   - `SMTP_MX_LOOKUPS` - set to `false`
+   - `SMTP_VERIFY` - set to `false`
+5. **For any empty boolean variable**: Either delete it OR set to `true`/`false`
+6. **DO NOT** leave boolean variables as empty strings `""`
+7. Redeploy the service after fixing
 
-**Note**: Railway environment variables should be set as strings in the UI, but Plausible will parse `SMTP_HOST_PORT` as an integer internally.
+**Quick Fix Checklist**:
+- [ ] Open Railway Dashboard → Variables
+- [ ] Set `SMTP_HOST_SSL_ENABLED=false` (this is likely the culprit!)
+- [ ] Check for any other variables with empty values
+- [ ] Delete empty boolean variables OR set them to `true`/`false`
+- [ ] Ensure `DISABLE_REGISTRATION=true` is set (required)
+- [ ] Redeploy the Plausible service
+
+### SMTP Configuration Notes
+**Current Setup**: The configuration uses Resend's SMTP service:
+- **Host**: `smtp.resend.com` (configured in `railway-plausible.json`)
+- **Port**: `587` (STARTTLS, configured in `railway-plausible.json`)
+- **Username**: `resend` (configured in `railway-plausible.json`)
+- **Password**: Uses `RESEND_API_KEY` environment variable
+
+**If you need to change SMTP settings**:
+1. Edit `railway-plausible.json` 
+2. Update `SMTP_HOST_ADDR`, `SMTP_HOST_PORT`, `SMTP_USER_NAME`, and `SMTP_USER_PASSWORD`
+3. For port 587 (STARTTLS): `SMTP_HOST_SSL_ENABLED=false`
+4. For port 465 (SSL): `SMTP_HOST_SSL_ENABLED=true`
+5. Redeploy the service
 
 ### Services Not Starting
 - Check that all environment variables are set

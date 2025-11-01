@@ -1,0 +1,45 @@
+{
+  "name": "capco-campfire-chat",
+  "services": [
+    {
+      "name": "campfire-db",
+      "image": "postgres:15-alpine",
+      "environment": {
+        "POSTGRES_PASSWORD": "${{CAMPFIRE_DB_PASSWORD}}",
+        "POSTGRES_USER": "campfire",
+        "POSTGRES_DB": "campfire"
+      }
+    },
+    {
+      "name": "campfire-redis",
+      "image": "redis:7-alpine",
+      "environment": {
+        "REDIS_PASSWORD": "${{CAMPFIRE_REDIS_PASSWORD}}"
+      }
+    },
+    {
+      "name": "campfire",
+      "image": "campfirechatapp/campfire:latest",
+      "ports": ["3000"],
+      "environment": {
+        "BASE_URL": "${{CAMPFIRE_BASE_URL}}",
+        "SECRET_KEY": "${{CAMPFIRE_SECRET_KEY}}",
+        "DATABASE_URL": "postgres://campfire:${{CAMPFIRE_DB_PASSWORD}}@campfire-db:5432/campfire",
+        "REDIS_PASSWORD": "${{CAMPFIRE_REDIS_PASSWORD}}",
+        "REDIS_HOST": "campfire-redis",
+        "REDIS_PORT": "6379",
+        "SMTP_HOST": "${{CAMPFIRE_SMTP_HOST}}",
+        "SMTP_PORT": "${{CAMPFIRE_SMTP_PORT}}",
+        "SMTP_USER": "${{CAMPFIRE_SMTP_USER}}",
+        "SMTP_PASSWORD": "${{CAMPFIRE_SMTP_PASSWORD}}",
+        "SMTP_FROM_EMAIL": "${{CAMPFIRE_FROM_EMAIL}}",
+        "DISABLE_REGISTRATION": "${{CAMPFIRE_DISABLE_REGISTRATION}}",
+        "ADMIN_EMAIL": "${{CAMPFIRE_ADMIN_EMAIL}}",
+        "ADMIN_PASSWORD": "${{CAMPFIRE_ADMIN_PASSWORD}}",
+        "VAPID_PUBLIC_KEY": "${{CAMPFIRE_VAPID_PUBLIC_KEY}}",
+        "VAPID_PRIVATE_KEY": "${{CAMPFIRE_VAPID_PRIVATE_KEY}}"
+      },
+      "dependsOn": ["campfire-db", "campfire-redis"]
+    }
+  ]
+}

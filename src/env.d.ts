@@ -35,6 +35,12 @@ interface ImportMetaEnv {
 
   // Development flag
   readonly DEV?: boolean;
+
+  // Campfire Chat
+  readonly CAMPFIRE_URL?: string;
+  readonly CAMPFIRE_WIDGET_ID?: string;
+  readonly PUBLIC_CAMPFIRE_URL?: string;
+  readonly PUBLIC_CAMPFIRE_WIDGET_ID?: string;
 }
 
 interface ImportMeta {
