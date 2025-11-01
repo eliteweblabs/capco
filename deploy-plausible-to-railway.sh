@@ -23,6 +23,7 @@ railway variables set PLAUSIBLE_DB_PASSWORD=$(openssl rand -base64 32)
 railway variables set PLAUSIBLE_SECRET_KEY=$(openssl rand -base64 64)
 railway variables set PLAUSIBLE_BASE_URL="https://capco-plausible-analytics.railway.app"
 railway variables set PLAUSIBLE_MAILER_EMAIL="admin@capcofire.com"
+railway variables set SMTP_HOST_PORT="25"
 railway variables set PLAUSIBLE_ADMIN_EMAIL="admin@capcofire.com"
 railway variables set PLAUSIBLE_ADMIN_PASSWORD=$(openssl rand -base64 32)
 
