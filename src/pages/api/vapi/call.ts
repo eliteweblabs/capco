@@ -57,6 +57,11 @@ export const POST: APIRoute = async ({ request }) => {
           number: customer.number,
           name: customer.name || "User",
         },
+        assistantOverrides: {
+          variableValues: {
+            "assistant.name": "Sarah", // Set assistant name for template replacement
+          },
+        },
         // Use Vapi's phone number service (not Twilio)
         phoneNumberId: "678ddf24-3d7e-4d3a-9e28-620382e71f56",
         // Optional: Add metadata for tracking

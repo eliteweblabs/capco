@@ -742,8 +742,9 @@ async function handleGetAccountInfo() {
     console.log("📊 [CAL-INTEGRATION] Getting real account info from Cal.com...");
 
     // Get the configured event type for VAPI bookings
-    // Try by ID first, then by slug if VAPI_EVENT_TYPE_ID looks like a slug
-    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2";
+    // IMPORTANT: This must match the calLink used in CalComBooking.astro (currently "capco/30min")
+    // If VAPI_EVENT_TYPE_ID is not set, default to "capco/30min" to match the demo page
+    const VAPI_EVENT_TYPE_ID = "capco/30min";
     let eventTypeResult;
 
     // Check if it's a numeric ID or a slug/path
@@ -821,6 +822,9 @@ async function handleGetAccountInfo() {
 
     console.log(
       `📅 [CAL-INTEGRATION] Using EventType: id=${eventType.id}, slug=${eventType.slug}, userId=${userId}${username ? `, username=${username}` : ""}`
+    );
+    console.log(
+      `🔍 [CAL-INTEGRATION] Event type lookup: VAPI_EVENT_TYPE_ID="${VAPI_EVENT_TYPE_ID}" resolved to EventType ID=${eventType.id}, slug="${eventType.slug}"`
     );
 
     // Get existing bookings for this event type to exclude them
@@ -920,7 +924,19 @@ async function handleGetAccountInfo() {
 
     console.log(`✅ [CAL-INTEGRATION] Generated ${slots.length} available slots`);
 
+    // Log the first few slots with full ISO strings for debugging
+    if (slots.length > 0) {
+      console.log(`📅 [CAL-INTEGRATION] First 3 slots (ISO):`, slots.slice(0, 3));
+      slots.slice(0, 3).forEach((slot, idx) => {
+        const date = new Date(slot);
+        console.log(
+          `📅 [CAL-INTEGRATION] Slot ${idx + 1}: ISO=${slot}, Year=${date.getUTCFullYear()}, Month=${date.getUTCMonth() + 1}, Day=${date.getUTCDate()}, Weekday=${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getUTCDay()]}`
+        );
+      });
+    }
+
     // Format slots for speech - group by day for natural reading
+    // IMPORTANT: Include year in the format to avoid ambiguity
     let slotsList = "";
     let lastDay = "";
 
@@ -930,6 +946,7 @@ async function handleGetAccountInfo() {
         weekday: "long",
         month: "long",
         day: "numeric",
+        year: "numeric", // Include year to avoid VAPI confusion
         timeZone: "UTC",
       });
       const timeOnly = date.toLocaleTimeString("en-US", {
@@ -939,7 +956,7 @@ async function handleGetAccountInfo() {
       });
 
       if (dayKey !== lastDay) {
-        // New day - include full date
+        // New day - include full date with year
         if (index > 0) slotsList += ", ";
         slotsList += `${dayKey} at ${timeOnly}`;
         lastDay = dayKey;
@@ -985,8 +1002,9 @@ async function handleGetAvailability(params: any) {
 
   try {
     // Get the configured event type for VAPI bookings
-    // Try by ID first, then by slug if VAPI_EVENT_TYPE_ID looks like a slug
-    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2";
+    // IMPORTANT: This must match the calLink used in CalComBooking.astro (currently "capco/30min")
+    // If VAPI_EVENT_TYPE_ID is not set, default to "capco/30min" to match the demo page
+    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "capco/30min";
     let eventTypeResult;
 
     // Check if it's a numeric ID or a slug/path
@@ -1064,6 +1082,9 @@ async function handleGetAvailability(params: any) {
 
     console.log(
       `📅 [CAL-INTEGRATION] Using EventType: id=${eventType.id}, slug=${eventType.slug}, userId=${userId}${username ? `, username=${username}` : ""}`
+    );
+    console.log(
+      `🔍 [CAL-INTEGRATION] Event type lookup: VAPI_EVENT_TYPE_ID="${VAPI_EVENT_TYPE_ID}" resolved to EventType ID=${eventType.id}, slug="${eventType.slug}"`
     );
 
     // Parse dates and work in UTC to avoid timezone issues
@@ -1226,24 +1247,62 @@ async function handleGetAvailability(params: any) {
 }
 
 async function handleCreateBooking(params: any) {
-  const { start, name, email, smsReminderNumber } = params;
+  const { start: startParam, name, email, smsReminderNumber } = params;
   console.log("📝 [CAL-INTEGRATION] Creating booking:", {
-    start,
+    start: startParam,
     name,
     email,
     smsReminderNumber,
   });
+
+  // Use a mutable variable for start so we can correct the year
+  let start = startParam;
 
   // Log the raw start time format for debugging AM/PM issues
   if (typeof start === "string") {
     console.log(
       `🔍 [CAL-INTEGRATION] Raw start time format: "${start}" (length: ${start.length}, contains AM: ${start.includes("AM") || start.includes("am")}, contains PM: ${start.includes("PM") || start.includes("pm")})`
     );
+
+    // Check for year in the date string
+    const yearMatch = start.match(/(\d{4})/);
+    if (yearMatch) {
+      const yearInString = parseInt(yearMatch[1], 10);
+      const currentYear = new Date().getUTCFullYear();
+      if (yearInString < currentYear) {
+        console.error(
+          `⚠️ [CAL-INTEGRATION] WARNING: Date string contains past year ${yearInString}! Current year is ${currentYear}. This booking will be rejected.`
+        );
+      } else if (yearInString > currentYear + 1) {
+        console.warn(
+          `⚠️ [CAL-INTEGRATION] WARNING: Date string contains future year ${yearInString}! Current year is ${currentYear}.`
+        );
+      }
+    }
   }
 
   // Parse start time - handle various formats including AM/PM
   let startDate: Date;
+  // Store original for logging
+  const originalStart = typeof start === "string" ? start : String(start);
+
   if (typeof start === "string") {
+    // CRITICAL FIX: If VAPI sends a past year (like 2023), correct it to current year
+    const currentYear = new Date().getUTCFullYear();
+    const yearRegex = /^(\d{4})/; // Match year at start of string (more specific)
+    const yearMatch = start.match(yearRegex);
+    if (yearMatch) {
+      const yearInString = parseInt(yearMatch[1], 10);
+      if (yearInString < currentYear) {
+        console.warn(
+          `⚠️ [CAL-INTEGRATION] Correcting past year ${yearInString} to current year ${currentYear} in date string: "${start}"`
+        );
+        // Replace the year at the start of the string
+        start = start.replace(yearRegex, currentYear.toString());
+        console.log(`📅 [CAL-INTEGRATION] Corrected date string: "${start}"`);
+      }
+    }
+
     // Check if string contains AM/PM (case insensitive)
     const amPmMatch = start.match(/\s*(AM|PM|am|pm)\s*/i);
 
@@ -1387,14 +1446,26 @@ async function handleCreateBooking(params: any) {
         }
 
         // Construct ISO string with converted 24-hour time using the extracted/calculated date
+        // Use UTC components directly to avoid any timezone issues
         const year = targetDate.getUTCFullYear();
-        const month = String(targetDate.getUTCMonth() + 1).padStart(2, "0");
-        const day = String(targetDate.getUTCDate()).padStart(2, "0");
-        const isoString = `${year}-${month}-${day}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00Z`;
-        startDate = new Date(isoString);
+        const monthIdx = targetDate.getUTCMonth(); // 0-based (0-11)
+        const day = targetDate.getUTCDate();
+        const month = String(monthIdx + 1).padStart(2, "0");
+
+        // Create the final date using Date.UTC to ensure correct weekday calculation
+        startDate = new Date(Date.UTC(year, monthIdx, day, hour, minute, 0, 0));
+
+        // Verify the weekday is correct
+        const expectedWeekday = targetDate.getUTCDay();
+        const actualWeekday = startDate.getUTCDay();
+        if (expectedWeekday !== actualWeekday) {
+          console.error(
+            `⚠️ [CAL-INTEGRATION] WEEKDAY MISMATCH during date construction! Target date weekday: ${expectedWeekday}, Final date weekday: ${actualWeekday}. Date components: ${year}-${month}-${day} ${hour}:${minute} UTC`
+          );
+        }
 
         console.log(
-          `🕐 [CAL-INTEGRATION] Converted AM/PM time "${start}" to UTC: ${startDate.toISOString()} (original: ${originalHour}:${String(minute).padStart(2, "0")} ${isPM ? "PM" : "AM"} -> ${hour}:${String(minute).padStart(2, "0")} 24-hour, date: ${year}-${month}-${day})`
+          `🕐 [CAL-INTEGRATION] Converted AM/PM time "${start}" to UTC: ${startDate.toISOString()} (original: ${originalHour}:${String(minute).padStart(2, "0")} ${isPM ? "PM" : "AM"} -> ${hour}:${String(minute).padStart(2, "0")} 24-hour, date: ${year}-${month}-${day}, weekday: ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][actualWeekday]})`
         );
       } else {
         throw new Error(`Unable to parse AM/PM time format from: "${start}"`);
@@ -1402,6 +1473,19 @@ async function handleCreateBooking(params: any) {
     } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(start)) {
       // Check if it's datetime-local format (YYYY-MM-DDTHH:mm)
       // This is a datetime-local format - append 'Z' to treat as UTC
+      // CRITICAL: Check if year is in the past and correct it
+      const yearMatch = start.match(/^(\d{4})-/);
+      if (yearMatch) {
+        const yearInString = parseInt(yearMatch[1], 10);
+        const currentYear = new Date().getUTCFullYear();
+        if (yearInString < currentYear) {
+          console.warn(
+            `⚠️ [CAL-INTEGRATION] Correcting past year ${yearInString} to ${currentYear} in datetime string: "${start}"`
+          );
+          start = start.replace(/^\d{4}/, currentYear.toString());
+        }
+      }
+
       // WARNING: Check for suspicious early morning hours that might be PM times
       const hourMatch = start.match(/T(\d{2}):(\d{2})$/);
       if (hourMatch) {
@@ -1434,7 +1518,20 @@ async function handleCreateBooking(params: any) {
         `🕐 [CAL-INTEGRATION] Parsed ISO string "${start}" as UTC: ${startDate.toISOString()}`
       );
     } else {
-      // Already has timezone info (Z or +/-offset)
+      // Already has timezone info (Z or +/-offset) - check for past year
+      const yearMatch = start.match(/(\d{4})/);
+      if (yearMatch) {
+        const yearInString = parseInt(yearMatch[1], 10);
+        const currentYear = new Date().getUTCFullYear();
+        if (yearInString < currentYear) {
+          console.warn(
+            `⚠️ [CAL-INTEGRATION] Correcting past year ${yearInString} to ${currentYear} in ISO string: "${start}"`
+          );
+          // Replace first occurrence of the year
+          start = start.replace(/^\d{4}/, currentYear.toString());
+        }
+      }
+
       startDate = new Date(start);
       const parsedHour = startDate.getUTCHours();
       if (parsedHour >= 1 && parsedHour <= 5) {
@@ -1473,7 +1570,9 @@ async function handleCreateBooking(params: any) {
 
   try {
     // Get the configured event type for VAPI bookings (must include userId - the owner)
-    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "2";
+    // IMPORTANT: This must match the calLink used in CalComBooking.astro (currently "capco/30min")
+    // If VAPI_EVENT_TYPE_ID is not set, default to "capco/30min" to match the demo page
+    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "capco/30min";
     let eventTypeResult;
 
     // Check if it's a numeric ID or a slug/path
@@ -1860,6 +1959,9 @@ async function handleCreateBooking(params: any) {
 
     const booking = bookingResult.rows[0];
     console.log("✅ [CAL-INTEGRATION] Booking inserted into database:", booking.id);
+    console.log(
+      `✅ [CAL-INTEGRATION] Booking created with eventTypeId=${eventType.id} (slug="${eventType.slug}"), userId=${userId}, startTime=${startDate.toISOString()}`
+    );
 
     // Insert attendee information
     await calcomDb.query(
@@ -1889,6 +1991,16 @@ async function handleCreateBooking(params: any) {
     console.log(
       `📅 [CAL-INTEGRATION] Email date formatting - startDate ISO: ${startDate.toISOString()}`
     );
+    console.log(
+      `📅 [CAL-INTEGRATION] Email date formatting - startDate local time: ${startDate.toLocaleString("en-US", { timeZone: "UTC" })}`
+    );
+    // Verify the date is actually what we expect
+    const manualWeekdayCheck = new Date(Date.UTC(utcYear, utcMonth, utcDay)).getUTCDay();
+    if (manualWeekdayCheck !== utcWeekday) {
+      console.error(
+        `⚠️ [CAL-INTEGRATION] WEEKDAY CALCULATION ERROR! Manual check: ${manualWeekdayCheck}, startDate.getUTCDay(): ${utcWeekday}`
+      );
+    }
 
     // Verify the weekday calculation first
     const weekdayNames = [
@@ -1928,32 +2040,26 @@ async function handleCreateBooking(params: any) {
       timeZone: "UTC",
     });
 
-    // Format using the UTC date object
-    const formattedDate = dateFormatter.format(utcDateForFormatting);
+    // Format time using UTC date object
     const formattedTime = timeFormatter.format(utcDateForFormatting);
 
-    // Double-check the formatted weekday matches our calculation
-    const formattedWeekday = formattedDate.split(",")[0]; // Extract weekday from "Monday, November 3"
-    let finalFormattedDate = formattedDate; // Default to formatted date
+    // ALWAYS use calculated weekday for reliability - manually construct the date string
+    const monthFormatter = new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      timeZone: "UTC",
+    });
+    const monthName = monthFormatter.format(utcDateForFormatting);
 
-    if (formattedWeekday !== calculatedWeekday) {
-      console.error(
-        `⚠️ [CAL-INTEGRATION] WEEKDAY MISMATCH! Calculated: ${calculatedWeekday}, Formatted: ${formattedWeekday}. Using calculated weekday.`
-      );
-      // Use our calculated weekday instead
-      const monthName = utcDateForFormatting.toLocaleString("en-US", {
-        month: "long",
-        timeZone: "UTC",
-      });
-      finalFormattedDate = `${calculatedWeekday}, ${monthName} ${utcDay}`;
-      console.log(
-        `📅 [CAL-INTEGRATION] Email date formatting - Corrected formatted date: ${finalFormattedDate}`
-      );
-      console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted time: ${formattedTime}`);
-    } else {
-      console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted date: ${formattedDate}`);
-      console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted time: ${formattedTime}`);
-    }
+    // Construct date string using calculated weekday (most reliable)
+    const finalFormattedDate = `${calculatedWeekday}, ${monthName} ${utcDay}`;
+
+    console.log(
+      `📅 [CAL-INTEGRATION] Email date formatting - Using calculated weekday: ${calculatedWeekday}`
+    );
+    console.log(
+      `📅 [CAL-INTEGRATION] Email date formatting - Final formatted date: ${finalFormattedDate}`
+    );
+    console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted time: ${formattedTime}`);
 
     // Send confirmation email automatically
     try {
