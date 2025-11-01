@@ -24,6 +24,9 @@ PLAUSIBLE_SECRET_KEY=your_secret_key_here
 PLAUSIBLE_BASE_URL=https://capco-plausible-analytics.railway.app
 PLAUSIBLE_MAILER_EMAIL=admin@capcofire.com
 
+# SMTP Configuration (required - must be integer)
+SMTP_HOST_PORT=25
+
 # Admin User
 PLAUSIBLE_ADMIN_EMAIL=admin@capcofire.com
 PLAUSIBLE_ADMIN_PASSWORD=your_admin_password_here
@@ -64,10 +67,22 @@ PLAUSIBLE_API_KEY=your_api_key_from_plausible
 
 ## 🔧 Troubleshooting
 
+### SMTP_HOST_PORT Error
+**Error**: `Config variable SMTP_HOST_PORT must be an integer. Got ""`
+
+**Solution**: 
+1. Go to Railway Dashboard → Your Project → Variables
+2. Add or verify `SMTP_HOST_PORT` is set to `25` (without quotes in Railway UI)
+3. Ensure it's set at the **project level** (not service level) so all services can access it
+4. Redeploy the service
+
+**Note**: Railway environment variables should be set as strings in the UI, but Plausible will parse `SMTP_HOST_PORT` as an integer internally.
+
 ### Services Not Starting
 - Check that all environment variables are set
 - Ensure database passwords match between services
 - Check Railway logs for specific errors
+- Verify `SMTP_HOST_PORT=25` is set (critical for Plausible to start)
 
 ### Database Connection Issues
 - Verify `DATABASE_URL` format
