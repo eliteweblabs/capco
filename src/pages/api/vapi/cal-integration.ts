@@ -1233,20 +1233,88 @@ async function handleCreateBooking(params: any) {
     email,
     smsReminderNumber,
   });
+  
+  // Log the raw start time format for debugging AM/PM issues
+  if (typeof start === "string") {
+    console.log(`🔍 [CAL-INTEGRATION] Raw start time format: "${start}" (length: ${start.length}, contains AM: ${start.includes("AM") || start.includes("am")}, contains PM: ${start.includes("PM") || start.includes("pm")})`);
+  }
 
-  // Parse start time - if it's a datetime-local format without timezone, treat as UTC
-  // datetime-local inputs are in format "YYYY-MM-DDTHH:mm" (no timezone)
+  // Parse start time - handle various formats including AM/PM
   let startDate: Date;
   if (typeof start === "string") {
-    // Check if it's datetime-local format (YYYY-MM-DDTHH:mm)
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(start)) {
+    // Check if string contains AM/PM (case insensitive)
+    const amPmMatch = start.match(/\s*(AM|PM|am|pm)\s*/i);
+    
+    if (amPmMatch) {
+      // Handle AM/PM format - parse the time and convert to 24-hour format
+      console.log(`🕐 [CAL-INTEGRATION] Detected AM/PM format in time string: "${start}"`);
+      
+      // Extract date and time parts
+      // Examples: "2024-11-03 4:30 PM", "Mon, 3 Nov 2024 4:30 PM", "4:30 PM", etc.
+      const timeMatch = start.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)/i);
+      if (timeMatch) {
+        let hour = parseInt(timeMatch[1], 10);
+        const minute = parseInt(timeMatch[2], 10);
+        const isPM = /pm/i.test(timeMatch[3]);
+        const originalHour = hour; // Store for validation
+        
+        // Convert to 24-hour format
+        if (isPM && hour !== 12) {
+          hour += 12; // 1 PM -> 13, 2 PM -> 14, etc.
+        } else if (!isPM && hour === 12) {
+          hour = 0; // 12 AM -> 0 (midnight)
+        }
+        
+        // Extract date if present, otherwise use today
+        let dateStr = "";
+        const dateMatch = start.match(/(\d{4}-\d{2}-\d{2})/); // YYYY-MM-DD
+        if (dateMatch) {
+          dateStr = dateMatch[1];
+        } else {
+          // Try to find date in other formats or use today
+          const today = new Date();
+          dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+        }
+        
+        // Construct ISO string with converted 24-hour time
+        const isoString = `${dateStr}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00Z`;
+        startDate = new Date(isoString);
+        console.log(
+          `🕐 [CAL-INTEGRATION] Converted AM/PM time "${start}" to UTC: ${startDate.toISOString()} (original: ${originalHour}:${String(minute).padStart(2, "0")} ${isPM ? "PM" : "AM"} -> ${hour}:${String(minute).padStart(2, "0")} 24-hour)`
+        );
+      } else {
+        throw new Error(`Unable to parse AM/PM time format from: "${start}"`);
+      }
+    } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(start)) {
+      // Check if it's datetime-local format (YYYY-MM-DDTHH:mm)
       // This is a datetime-local format - append 'Z' to treat as UTC
+      // WARNING: Check for suspicious early morning hours that might be PM times
+      const hourMatch = start.match(/T(\d{2}):(\d{2})$/);
+      if (hourMatch) {
+        const hour = parseInt(hourMatch[1], 10);
+        // If hour is between 1-5 AM, this might be a PM time that was incorrectly sent without AM/PM
+        if (hour >= 1 && hour <= 5) {
+          console.warn(
+            `⚠️ [CAL-INTEGRATION] WARNING: Parsed time "${start}" has hour ${hour} (${hour}:${hourMatch[2]} AM UTC). This might be a PM time that was incorrectly formatted. The booking will be validated against working hours.`
+          );
+        }
+      }
       startDate = new Date(start + "Z");
       console.log(
         `🕐 [CAL-INTEGRATION] Parsed datetime-local "${start}" as UTC: ${startDate.toISOString()}`
       );
     } else if (start.includes("T") && !start.endsWith("Z") && !/[+-]\d{2}:?\d{2}$/.test(start)) {
       // ISO string without timezone indicator - treat as UTC
+      // WARNING: Check for suspicious early morning hours
+      const hourMatch = start.match(/T(\d{2}):(\d{2})/);
+      if (hourMatch) {
+        const hour = parseInt(hourMatch[1], 10);
+        if (hour >= 1 && hour <= 5) {
+          console.warn(
+            `⚠️ [CAL-INTEGRATION] WARNING: Parsed time "${start}" has hour ${hour} (${hour}:${hourMatch[2]} AM UTC). This might be a PM time that was incorrectly formatted. The booking will be validated against working hours.`
+          );
+        }
+      }
       startDate = new Date(start + "Z");
       console.log(
         `🕐 [CAL-INTEGRATION] Parsed ISO string "${start}" as UTC: ${startDate.toISOString()}`
@@ -1254,6 +1322,12 @@ async function handleCreateBooking(params: any) {
     } else {
       // Already has timezone info (Z or +/-offset)
       startDate = new Date(start);
+      const parsedHour = startDate.getUTCHours();
+      if (parsedHour >= 1 && parsedHour <= 5) {
+        console.warn(
+          `⚠️ [CAL-INTEGRATION] WARNING: Parsed time "${start}" results in ${parsedHour}:${String(startDate.getUTCMinutes()).padStart(2, "0")} AM UTC. This might be a PM time that was incorrectly formatted. The booking will be validated against working hours.`
+        );
+      }
       console.log(
         `🕐 [CAL-INTEGRATION] Parsed datetime with timezone "${start}" as: ${startDate.toISOString()}`
       );
@@ -1261,6 +1335,12 @@ async function handleCreateBooking(params: any) {
   } else {
     // Already a Date object
     startDate = new Date(start);
+    const parsedHour = startDate.getUTCHours();
+    if (parsedHour >= 1 && parsedHour <= 5) {
+      console.warn(
+        `⚠️ [CAL-INTEGRATION] WARNING: Date object results in ${parsedHour}:${String(startDate.getUTCMinutes()).padStart(2, "0")} AM UTC. This might be a PM time that was incorrectly formatted.`
+      );
+    }
   }
 
   const now = new Date();
@@ -1377,14 +1457,37 @@ async function handleCreateBooking(params: any) {
     const startTotalMinutes = workingHours.startHour * 60 + workingHours.startMinute;
     const endTotalMinutes = workingHours.endHour * 60 + workingHours.endMinute;
 
+    // Check if booking is in early morning hours (likely AM/PM conversion error)
+    // Business hours are typically 8 AM - 6 PM, so times before 6 AM or after 10 PM are suspicious
+    const suspiciousEarlyHour = bookingHour < 6; // Before 6 AM
+    const suspiciousLateHour = bookingHour >= 22; // After 10 PM
+    
+    // CRITICAL: Reject bookings in the 1-5 AM range - these are almost certainly PM times that were incorrectly formatted
+    // Most business appointments are between 8 AM - 6 PM, so 1-5 AM is a red flag
+    if (bookingHour >= 1 && bookingHour <= 5) {
+      const likelyPMHour = bookingHour + 12; // Convert to PM equivalent (e.g., 4:30 AM -> 4:30 PM = 16:30)
+      throw new Error(
+        `Invalid booking time: ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} AM UTC is outside normal business hours and appears to be incorrectly formatted. ` +
+        `If you intended ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} PM, the correct UTC time would be ${likelyPMHour}:${bookingMinute.toString().padStart(2, "0")} UTC. ` +
+        `Please check the time format. Valid booking times are between ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC.`
+      );
+    }
+    
     console.log(
       `🕐 [CAL-INTEGRATION] Booking validation: ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} UTC (${bookingTotalMinutes} minutes) vs working hours ${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC (${startTotalMinutes}-${endTotalMinutes} minutes)`
     );
 
     if (bookingTotalMinutes < startTotalMinutes || bookingTotalMinutes >= endTotalMinutes) {
-      throw new Error(
-        `Booking time ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} UTC is outside working hours (${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC)`
-      );
+      let errorMessage = `Booking time ${bookingHour}:${bookingMinute.toString().padStart(2, "0")} UTC is outside working hours (${workingHours.startHour}:${workingHours.startMinute.toString().padStart(2, "0")} - ${workingHours.endHour}:${workingHours.endMinute.toString().padStart(2, "0")} UTC)`;
+      
+      // Add helpful message if time suggests AM/PM confusion
+      if (suspiciousEarlyHour) {
+        errorMessage += `. Note: The requested time appears to be in the early morning (${bookingHour}:${bookingMinute.toString().padStart(2, "0")} AM UTC). If you meant PM, please use 24-hour format or include AM/PM indicator.`;
+      } else if (suspiciousLateHour) {
+        errorMessage += `. Note: The requested time appears to be very late (${bookingHour}:${bookingMinute.toString().padStart(2, "0")} UTC). Please confirm the time is correct.`;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     // Calculate end time using the event type's actual length (in minutes)
