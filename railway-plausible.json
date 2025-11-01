@@ -15,10 +15,6 @@
       "image": "clickhouse/clickhouse-server:23.8-alpine"
     },
     {
-      "name": "plausible-mail",
-      "image": "bytemark/smtp"
-    },
-    {
       "name": "plausible",
       "image": "plausible/analytics:latest",
       "ports": ["8000"],
@@ -28,14 +24,17 @@
         "DATABASE_URL": "postgres://plausible:${{PLAUSIBLE_DB_PASSWORD}}@plausible-db:5432/plausible",
         "CLICKHOUSE_DATABASE_URL": "http://plausible-events-db:8123/plausible_events_db",
         "MAILER_EMAIL": "${{PLAUSIBLE_MAILER_EMAIL}}",
-        "SMTP_HOST_ADDR": "plausible-mail",
-        "SMTP_HOST_PORT": "${{SMTP_HOST_PORT}}",
-        "SMTP_USER_NAME": "",
-        "SMTP_USER_PASSWORD": "",
+        "SMTP_HOST_ADDR": "smtp.resend.com",
+        "SMTP_HOST_PORT": "587",
+        "SMTP_HOST_SSL_ENABLED": "false",
+        "SMTP_USER_NAME": "resend",
+        "SMTP_USER_PASSWORD": "${{RESEND_API_KEY}}",
         "SMTP_MX_LOOKUPS": "false",
         "SMTP_RETRIES": "2",
         "SMTP_VERIFY": "false",
         "DISABLE_REGISTRATION": "true",
+        "ENABLE_EMAIL_VERIFICATION": "false",
+        "DISABLE_SUBSCRIPTIONS": "true",
         "ADMIN_USER_EMAIL": "${{PLAUSIBLE_ADMIN_EMAIL}}",
         "ADMIN_USER_NAME": "CAPCo Admin",
         "ADMIN_USER_PWD": "${{PLAUSIBLE_ADMIN_PASSWORD}}"
