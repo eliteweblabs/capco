@@ -8,44 +8,45 @@ export const globalCompanyData = () => {
   const icon =
     '<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512"><defs><style>.fill {fill: #000;} @media (prefers-color-scheme: dark) {.fill {fill: #fff;}}</style></defs><path class="fill" d="M56.9,236.8l1.5,1c27.5,8.8,46.7,2.4,62.9-21.6l4.9-7.3c3.5-5.3,7.1-10.6,10.8-15.7,12.9-18.7,33.4-30.9,56-33.4,8.5-1.2,17-.6,25.5,1.8-15.7,26.8-24.7,58.1-24.7,91.4s10.7,70.2,29.1,98.6c-31.3,6.2-70.7-1.3-90.3-22.8,1.2-.3,2.3-.7,3.4-1,13.3-2.4,22.8-14.4,22.1-28-.5-13.7-7.3-21.2-23.1-23.1-5.4-1-11.3-1-17.2-1h-2c-13.2,0-25.6-3.4-36.3-10.8-10.6-6.7-19-16.5-24.1-28h1.5,0Z"/><path class="fill" d="M404.9,329.7c-9.6,4-20.9,5.9-33.9,5.9s-21.2-1.8-30.2-5.6c-9.2-3.7-17.1-9.2-23.7-16.2-6.7-7.1-11.9-15.5-15.5-25.2-3.6-9.7-5.4-20.6-5.4-32.6s1.8-22.2,5.4-32.1,8.7-18.2,15.5-25.2c6.7-7,14.7-12.3,23.7-16,9.2-3.7,19.2-5.6,30.2-5.6s23.5,2.1,33,6.2c9,3.9,16.6,9.2,22.9,15.8,5.6-17.9,13.8-34.6,24.2-49.7-8.1-5.7-16.7-10.6-26.2-14.5-15.7-6.5-33.7-9.7-53.9-9.7s-36.9,3.3-53,9.9c-16.1,6.6-30.2,15.8-42.3,27.6-12.2,11.7-21.6,25.7-28.2,41.7-6.7,16-10.1,33.2-10.1,51.7s3.3,35.7,10.1,51.7c6.7,16,16.2,30,28.2,42,12.2,12,26.3,21.3,42.5,27.9,16.2,6.6,33.8,9.9,52.8,9.9s39.2-3.2,55.2-9.6c10.5-4.2,20.1-9.7,28.8-16.2-11-14.7-19.8-31.2-26.1-48.8-6.7,7.2-14.7,12.8-24.1,16.7h0Z"/></svg>';
 
-  // Defensive check: ensure RAILWAY_PUBLIC_DOMAIN is not SVG content
-  let website = process.env.RAILWAY_PUBLIC_DOMAIN;
-  if (
-    website &&
-    typeof website === "string" &&
-    (website.includes("<svg") || website.includes("<?xml") || website.includes("xmlns="))
-  ) {
-    console.error(
-      "🚨 [GLOBAL-COMPANY-DATA] RAILWAY_PUBLIC_DOMAIN contains SVG/XML content, using fallback"
-    );
-    website = "https://capcofire.com";
-  }
-  // Ensure website has protocol if it's a valid domain (not a full URL already)
-  if (
-    website &&
-    typeof website === "string" &&
-    !website.includes("<svg") &&
-    !website.includes("<?xml") &&
-    !website.startsWith("http")
-  ) {
-    website = `https://${website}`;
-  }
+  // Website URL - ensure it has protocol
+  const websiteRaw = process.env.RAILWAY_PUBLIC_DOMAIN;
+  const website = websiteRaw?.startsWith("http") ? websiteRaw : `https://${websiteRaw}`;
+
+  // Logo URL for OG images - derived from website
+  const companyLogoUrl = `${website}/img/company-logo.png`;
+
+  // Favicon paths - consistent format with leading slash
+  const faviconSvgPath = "/img/favicon.svg";
+  const faviconPngPath = "/img/favicon.png";
 
   return {
     globalCompanyName: process.env.RAILWAY_PROJECT_NAME,
-    globalCompanySlogan: "Professional Fire Protection Plan Review & Approval",
-    globalCompanyAddress: "335 Washington St, Suite 1114, Woburn, MA 01801",
-    globalCompanyPhone: "(617) 644-0014",
-    globalCompanyEmail: "admin@capcofire.com",
-    globalCompanyWebsite: website || "https://capcofire.com",
+    globalCompanySlogan: process.env.GLOBAL_COMPANY_SLOGAN,
+    globalCompanyAddress: process.env.GLOBAL_COMPANY_ADDRESS,
+    globalCompanyPhone: process.env.GLOBAL_COMPANY_PHONE,
+    globalCompanyEmail: process.env.GLOBAL_COMPANY_EMAIL,
+    globalCompanyWebsite: website,
+
+    // SVG markup for logos (used in UI components)
     globalCompanyLogo: logo,
     globalCompanyLogoDark: logo,
     globalCompanyLogoLight: logo,
+
+    // Logo URL for OG images and social sharing (must be a file path, not SVG markup)
+    globalCompanyLogoURL: companyLogoUrl,
+
+    // SVG markup for icons (used for favicons, converted to data URIs)
+    globalCompanyIcon: icon,
     globalCompanyIconDark: icon,
     globalCompanyIconLight: icon,
-    globalCompanyIcon: icon,
-    primaryColor: process.env.GLOBAL_COLOR_PRIMARY || "#825BDD",
-    secondaryColor: process.env.GLOBAL_COLOR_SECONDARY || "#0EA5E9",
+
+    // Favicon file paths (used in manifest.json and link tags)
+    globalCompanyFaviconSvg: faviconSvgPath,
+    globalCompanyFaviconPng: faviconPngPath,
+
+    // Theme colors
+    primaryColor: process.env.GLOBAL_COLOR_PRIMARY,
+    secondaryColor: process.env.GLOBAL_COLOR_SECONDARY,
   };
 };
 

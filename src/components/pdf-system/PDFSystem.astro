@@ -898,17 +898,20 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       console.log("💾 [PDF-SYSTEM] ===== SAVE TEMPLATE FUNCTION CALLED =====");
       console.log("💾 [PDF-SYSTEM] Input templateId:", templateId, "Type:", typeof templateId);
       console.log("💾 [PDF-SYSTEM] All templates:", this.templates);
-      console.log("💾 [PDF-SYSTEM] Template IDs in array:", this.templates.map((t) => ({ id: t.id, type: typeof t.id, name: t.name })));
-      
+      console.log(
+        "💾 [PDF-SYSTEM] Template IDs in array:",
+        this.templates.map((t) => ({ id: t.id, type: typeof t.id, name: t.name }))
+      );
+
       // Convert templateId to number if it's a string (from getAttribute)
       const numericId = typeof templateId === "string" ? parseInt(templateId, 10) : templateId;
       console.log("💾 [PDF-SYSTEM] Numeric ID:", numericId, "Type:", typeof numericId);
-      
+
       // Try both string and number matches
       const template = this.templates.find(
         (t) => t.id === templateId || t.id === numericId || String(t.id) === String(templateId)
       );
-      
+
       console.log("💾 [PDF-SYSTEM] ===== TEMPLATE LOOKUP =====");
       console.log("💾 [PDF-SYSTEM] Template found:", !!template);
       console.log("💾 [PDF-SYSTEM] Template details:", template);
@@ -936,7 +939,10 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       const actualTemplateId = template.id; // Use the actual template ID from the data
       const nameInput = document.getElementById(`template-name-${actualTemplateId}`);
       const descriptionInput = document.getElementById(`template-description-${actualTemplateId}`);
-      const editor = this.templateEditors?.[actualTemplateId] || this.templateEditors?.[templateId] || this.templateEditors?.[numericId];
+      const editor =
+        this.templateEditors?.[actualTemplateId] ||
+        this.templateEditors?.[templateId] ||
+        this.templateEditors?.[numericId];
 
       console.log("💾 [PDF-SYSTEM] Form elements:", {
         actualTemplateId,
@@ -983,12 +989,12 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       const description = descriptionInput?.value.trim() || "";
       const content = editor.root.innerHTML;
-      
+
       // Check if content is effectively empty (just whitespace/empty tags)
       const contentText = editor.getText().trim();
       const contentIsEmpty = !contentText || contentText.length === 0;
-      const contentIsOnlyEmptyTags = content.replace(/<[^>]*>/g, '').trim().length === 0;
-      
+      const contentIsOnlyEmptyTags = content.replace(/<[^>]*>/g, "").trim().length === 0;
+
       console.log("💾 [PDF-SYSTEM] Content validation:", {
         htmlLength: content.length,
         htmlPreview: content.substring(0, 100),
@@ -1015,7 +1021,10 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       console.log("💾 [PDF-SYSTEM] Description input value:", descriptionInput?.value);
       console.log("💾 [PDF-SYSTEM] Description (trimmed):", description);
       console.log("💾 [PDF-SYSTEM] Editor root HTML length:", editor.root.innerHTML.length);
-      console.log("💾 [PDF-SYSTEM] Editor root HTML (first 200 chars):", editor.root.innerHTML.substring(0, 200));
+      console.log(
+        "💾 [PDF-SYSTEM] Editor root HTML (first 200 chars):",
+        editor.root.innerHTML.substring(0, 200)
+      );
       console.log("💾 [PDF-SYSTEM] Content:", content);
       console.log("💾 [PDF-SYSTEM] Template data:", {
         templateType: template.templateType,
@@ -1046,7 +1055,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         console.log("💾 [PDF-SYSTEM] ===== FETCH REQUEST =====");
         console.log("💾 [PDF-SYSTEM] URL:", "/api/pdf/templates/upsert");
         console.log("💾 [PDF-SYSTEM] Method: POST");
-        
+
         const response = await fetch("/api/pdf/templates/upsert", {
           method: "POST",
           headers: {
@@ -1058,7 +1067,10 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         console.log("💾 [PDF-SYSTEM] ===== RESPONSE RECEIVED =====");
         console.log("💾 [PDF-SYSTEM] Response status:", response.status);
         console.log("💾 [PDF-SYSTEM] Response ok:", response.ok);
-        console.log("💾 [PDF-SYSTEM] Response headers:", Object.fromEntries(response.headers.entries()));
+        console.log(
+          "💾 [PDF-SYSTEM] Response headers:",
+          Object.fromEntries(response.headers.entries())
+        );
 
         const responseText = await response.text();
         console.log("💾 [PDF-SYSTEM] Response text (raw):", responseText);
@@ -2331,7 +2343,12 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           return;
         }
 
-        console.log("📍 [PDF-SYSTEM] Scrolling to field:", field.name, "isReplaced:", field.isReplaced);
+        console.log(
+          "📍 [PDF-SYSTEM] Scrolling to field:",
+          field.name,
+          "isReplaced:",
+          field.isReplaced
+        );
 
         if (!this.editor) {
           console.error("❌ [PDF-SYSTEM] Editor not initialized");
@@ -2376,7 +2393,10 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           if (editorScrollContainer) {
             // Calculate the target scroll position - center the selection
             const containerHeight = editorScrollContainer.clientHeight;
-            const targetScrollTop = Math.max(0, bounds.top - containerHeight / 2 + bounds.height / 2);
+            const targetScrollTop = Math.max(
+              0,
+              bounds.top - containerHeight / 2 + bounds.height / 2
+            );
 
             console.log("📜 [PDF-SYSTEM] Scrolling container:", {
               currentScroll: editorScrollContainer.scrollTop,
@@ -2411,13 +2431,18 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 // Scroll has stopped
                 clearInterval(scrollCheckInterval);
                 clearTimeout(scrollTimeout);
-                
+
                 console.log("✅ [PDF-SYSTEM] Scroll completed, setting selection");
-                
+
                 // Set selection after scroll completes
                 const searchTextLength = searchText.length;
                 this.editor.setSelection(textIndex, searchTextLength);
-                console.log("✅ [PDF-SYSTEM] Selection set at index:", textIndex, "length:", searchTextLength);
+                console.log(
+                  "✅ [PDF-SYSTEM] Selection set at index:",
+                  textIndex,
+                  "length:",
+                  searchTextLength
+                );
 
                 // Apply highlight
                 this.applyFieldHighlight(textIndex, searchTextLength);
@@ -2443,7 +2468,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           } else {
             // Fallback: scroll the root element
             const scrollTop = Math.max(0, bounds.top - this.editor.root.clientHeight / 2);
-            
+
             this.editor.root.scrollTo({
               top: scrollTop,
               behavior: "smooth",
@@ -2522,8 +2547,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       setTimeout(async () => {
         try {
           // Wait a bit more to ensure editor text is fully updated
-          await new Promise(resolve => setTimeout(resolve, 200));
-          
+          await new Promise((resolve) => setTimeout(resolve, 200));
+
           console.log("🔄 [PDF-SYSTEM] Attempting to scroll after field revert");
           await this.scrollToField(fieldId);
           console.log("✅ [PDF-SYSTEM] Field revert complete with scroll");
@@ -2543,10 +2568,14 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               try {
                 const bounds = this.editor.getBounds(altIndex, alternativeSearch.length);
                 if (bounds) {
-                  const editorScrollContainer = this.editor.root.parentElement.querySelector(".ql-editor");
+                  const editorScrollContainer =
+                    this.editor.root.parentElement.querySelector(".ql-editor");
                   if (editorScrollContainer) {
                     const containerHeight = editorScrollContainer.clientHeight;
-                    const targetScrollTop = Math.max(0, bounds.top - containerHeight / 2 + bounds.height / 2);
+                    const targetScrollTop = Math.max(
+                      0,
+                      bounds.top - containerHeight / 2 + bounds.height / 2
+                    );
                     editorScrollContainer.scrollTo({ top: targetScrollTop, behavior: "smooth" });
                     setTimeout(() => {
                       this.editor.setSelection(altIndex, alternativeSearch.length);

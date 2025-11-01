@@ -377,6 +377,8 @@ export function replacePlaceholders(
   if (globalCompanyName) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g, globalCompanyName);
+    result = result.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, globalCompanyName);
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_NAME\s*\}\}/g, globalCompanyName);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;

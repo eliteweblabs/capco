@@ -1759,16 +1759,50 @@ async function handleCreateBooking(params: any) {
     );
     console.log("✅ [CAL-INTEGRATION] Attendee added to booking");
 
+    // Format date using UTC methods to ensure accuracy
+    // Use explicit UTC getters to avoid timezone conversion issues
+    const utcYear = startDate.getUTCFullYear();
+    const utcMonth = startDate.getUTCMonth(); // 0-11
+    const utcDay = startDate.getUTCDate();
+    const utcHour = startDate.getUTCHours();
+    const utcMinute = startDate.getUTCMinutes();
+    
+    // Log the date components for debugging
+    console.log(`📅 [CAL-INTEGRATION] Email date formatting - UTC date components: year=${utcYear}, month=${utcMonth + 1}, day=${utcDay}, hour=${utcHour}, minute=${utcMinute}`);
+    console.log(`📅 [CAL-INTEGRATION] Email date formatting - startDate ISO: ${startDate.toISOString()}`);
+    
+    // Use Intl.DateTimeFormat for reliable UTC formatting
+    // This ensures the weekday is calculated correctly based on UTC date
+    const dateFormatter = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+    
+    const timeFormatter = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "UTC",
+    });
+    
+    const formattedDate = dateFormatter.format(startDate);
+    const formattedTime = timeFormatter.format(startDate);
+    
+    console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted date: ${formattedDate}`);
+    console.log(`📅 [CAL-INTEGRATION] Email date formatting - Formatted time: ${formattedTime}`);
+    
+    // Verify the weekday is correct
+    const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const calculatedWeekday = weekdayNames[startDate.getUTCDay()];
+    console.log(`📅 [CAL-INTEGRATION] Email date formatting - Calculated weekday: ${calculatedWeekday} (day index: ${startDate.getUTCDay()})`);
+
     // Send confirmation email automatically
     try {
       console.log("📧 [CAL-INTEGRATION] Sending confirmation email...");
 
-      const emailSubject = `Appointment Confirmation - ${startDate.toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        timeZone: "UTC",
-      })}`;
+      const emailSubject = `Appointment Confirmation - ${formattedDate}`;
 
       const emailContent = `
           <h2>Appointment Confirmation</h2>
@@ -1778,17 +1812,8 @@ async function handleCreateBooking(params: any) {
           <p>Thank you for scheduling your appointment with ${process.env.RAILWAY_PROJECT_NAME}. Here are the details:</p>
           
           <h3>Appointment Details</h3>
-          <p><strong>Date:</strong> ${startDate.toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            timeZone: "UTC",
-          })}</p>
-          <p><strong>Time:</strong> ${startDate.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            timeZone: "UTC",
-          })}</p>
+          <p><strong>Date:</strong> ${formattedDate}</p>
+          <p><strong>Time:</strong> ${formattedTime}</p>
           <p><strong>Duration:</strong> ${eventLengthMinutes} minute${eventLengthMinutes !== 1 ? "s" : ""}</p>
           <p><strong>Location:</strong> Online consultation</p>
           <p><strong>Meeting Type:</strong> Fire protection consultation</p>
@@ -1833,20 +1858,8 @@ async function handleCreateBooking(params: any) {
       // Don't fail the booking if email fails
     }
 
-    // Format confirmation message for VAPI to speak
-    const confirmationMessage = `Your appointment has been confirmed for ${startDate.toLocaleDateString(
-      "en-US",
-      {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        timeZone: "UTC",
-      }
-    )} at ${startDate.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: "UTC",
-    })}. You'll receive a confirmation email at ${email}.`;
+    // Format confirmation message for VAPI to speak using the same formatters
+    const confirmationMessage = `Your appointment has been confirmed for ${formattedDate} at ${formattedTime}. You'll receive a confirmation email at ${email}.`;
 
     return new Response(
       JSON.stringify({
