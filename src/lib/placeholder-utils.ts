@@ -179,7 +179,7 @@ export function replacePlaceholders(
   const clientLastName = authorProfile?.lastName || "{{BLANK}}";
   // Project data
   const address = data?.project?.address || "Project Address Missing";
-  const title = data?.project?.title || data?.project?.address || "Untitled Project";
+  const projectTitle = data?.project?.title || data?.project?.address || "Untitled Project";
   const projectDescription = data?.project?.description || "No description provided";
   const projectSqFt = data?.project?.sqFt || "N/A";
   const projectNewConstruction = data?.project?.newConstruction ? "Yes" : "No";
@@ -199,7 +199,6 @@ export function replacePlaceholders(
   const estTime = data?.project?.estTime || "Est Time Missing";
 
   // System data
-  const year = new Date().getFullYear();
   const currentDate = new Date().toLocaleDateString();
   const documentId = `DOC-${Date.now()}`;
   const documentVersion = "1.0";
@@ -279,7 +278,7 @@ export function replacePlaceholders(
   if (globalCompanyData().primaryColor) {
     // Ensure primary color starts with # for hexadecimal format
     let hexColor = globalCompanyData().primaryColor;
-    if (!hexColor.startsWith("#")) {
+    if (!hexColor?.startsWith("#")) {
       hexColor = "#" + hexColor;
     }
     const beforeReplace = result;
@@ -294,7 +293,7 @@ export function replacePlaceholders(
   if (globalCompanyData().secondaryColor) {
     // Ensure primary color starts with # for hexadecimal format
     let hexColor = globalCompanyData().secondaryColor;
-    if (!hexColor.startsWith("#")) {
+    if (!hexColor?.startsWith("#")) {
       hexColor = "#" + hexColor;
     }
     const beforeReplace = result;
@@ -399,12 +398,10 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COMPANY_PHONE placeholders
-  if (globalCompanyData().globalCompanyPhone) {
+  const globalCompanyPhone = globalCompanyData().globalCompanyPhone;
+  if (globalCompanyPhone) {
     const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*GLOBAL_COMPANY_PHONE\s*\}\}/g,
-      globalCompanyData().globalCompanyPhone
-    );
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_PHONE\s*\}\}/g, globalCompanyPhone);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -469,9 +466,9 @@ export function replacePlaceholders(
   }
 
   // Replace YEAR placeholders
-  if (year) {
+  if (new Date().getFullYear()) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*YEAR\s*\}\}/g, year.toString());
+    result = result.replace(/\{\{\s*YEAR\s*\}\}/g, new Date().getFullYear().toString());
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -481,9 +478,9 @@ export function replacePlaceholders(
   // === PDF-SPECIFIC PLACEHOLDERS ===
 
   // Project placeholders
-  if (title) {
+  if (projectTitle) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_TITLE\s*\}\}/g, title);
+    result = result.replace(/\{\{\s*PROJECT_TITLE\s*\}\}/g, projectTitle);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -643,9 +640,10 @@ export function replacePlaceholders(
     }
   }
 
-  if (globalCompanyData().globalCompanyPhone) {
+  const companyPhone = globalCompanyData().globalCompanyPhone;
+  if (companyPhone) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*COMPANY_PHONE\s*\}\}/g, globalCompanyData().globalCompanyPhone);
+    result = result.replace(/\{\{\s*COMPANY_PHONE\s*\}\}/g, companyPhone);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;

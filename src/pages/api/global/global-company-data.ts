@@ -21,11 +21,11 @@ export const globalCompanyData = () => {
 
   return {
     globalCompanyName: process.env.RAILWAY_PROJECT_NAME,
-    globalCompanySlogan: process.env.GLOBAL_COMPANY_SLOGAN,
-    globalCompanyAddress: process.env.GLOBAL_COMPANY_ADDRESS,
-    globalCompanyPhone: process.env.GLOBAL_COMPANY_PHONE,
-    globalCompanyEmail: process.env.GLOBAL_COMPANY_EMAIL,
-    globalCompanyWebsite: website,
+    globalCompanySlogan: "Professional Fire Protection Plan Review & Approval",
+    globalCompanyAddress: "34 Walkers Brook Rd., Reading, MA 01867",
+    globalCompanyPhone: process.env.VAPI_PHONE_NUMBER,
+    globalCompanyEmail: "admin@capcofire.com",
+    globalCompanyWebsite: process.env.RAILWAY_PUBLIC_DOMAIN,
 
     // SVG markup for logos (used in UI components)
     globalCompanyLogo: logo,
