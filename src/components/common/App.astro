@@ -57,6 +57,7 @@ const {
   globalCompanyLogo,
   globalCompanyLogoDark,
   globalCompanyLogoLight,
+  globalCompanyLogoURL,
   primaryColor,
   globalCompanyIcon,
   globalCompanyIconDark,
@@ -73,33 +74,20 @@ const currentRole = currentUser?.profile.role || undefined;
 const projectId = project?.id || undefined;
 const currentUrl = Astro.url.pathname;
 
-// Favicon and OG image sources - use fallback if logo is SVG (SVG can't be used in href attributes)
-const logoSrc =
-  globalCompanyLogo && (globalCompanyLogo.includes("<svg") || globalCompanyLogo.includes("<?xml"))
-    ? "/img/capco-logo.png"
-    : globalCompanyLogo || "/img/capco-logo.png";
-const ogImageSrc =
-  globalCompanyLogo && (globalCompanyLogo.includes("<svg") || globalCompanyLogo.includes("<?xml"))
-    ? "/img/capco-logo.png"
-    : globalCompanyLogo || "/img/capco-logo.png";
-
-// Icon sources - convert SVG to data URI or use fallback
-let iconSrc = "/img/capco-logo.png"; // default fallback
-if (globalCompanyIcon) {
-  if (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml")) {
-    // Convert SVG to data URI
-    try {
-      const encoded = Buffer.from(globalCompanyIcon).toString("base64");
-      iconSrc = `data:image/svg+xml;base64,${encoded}`;
-    } catch (error) {
-      console.error("🚨 [APP] Failed to encode SVG icon to data URI, using fallback");
-      iconSrc = "/img/capco-logo.png";
-    }
-  } else {
-    // It's already a URL, use it directly
-    iconSrc = globalCompanyIcon;
-  }
+// Icon sources - convert SVG to data URI
+let iconSrc: string;
+if (
+  globalCompanyIcon &&
+  (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
+) {
+  const encoded = Buffer.from(globalCompanyIcon).toString("base64");
+  iconSrc = `data:image/svg+xml;base64,${encoded}`;
+} else {
+  iconSrc = globalCompanyIcon;
 }
+
+// Logo URL for OG images
+const ogImageSrc = globalCompanyLogoURL;
 
 // Get navigation data
 import { navigation } from "@/pages/api/utils/navigation";
@@ -184,8 +172,6 @@ const debugData = {
       {globalCompanyName + " → " + (title || Astro.url.pathname.replace(/\//g, " ").trim())}
     </title>
     <meta name="description" content={description} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any" />
-    <link rel="icon" type="image/png" href="/favicon.png" sizes="any" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content={primaryColor} />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -197,12 +183,12 @@ const debugData = {
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
     <meta property="og:title" content={title + " → " + globalCompanyName} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={globalCompanyLogo} />
+    <meta property="og:image" content={ogImageSrc} />
     <meta property="og:url" content={Astro.url} />
     <meta name="twitter:card" content={description} />
     <meta name="twitter:title" content={title + " → " + globalCompanyName} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={globalCompanyLogo} />
+    <meta name="twitter:image" content={ogImageSrc} />
     <meta name="robots" content="max-image-preview:large" /><link
       rel="canonical"
       href={currentUrl}
@@ -214,9 +200,29 @@ const debugData = {
     <link rel="canonical" href={currentUrl} />
     <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
     <link rel="apple-touch-icon" sizes="180x180" href={iconSrc} />
-    <link rel="icon" type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml") ? "image/svg+xml" : "image/png"} sizes="32x32" href={iconSrc} />
-    <link rel="icon" type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml") ? "image/svg+xml" : "image/png"} sizes="16x16" href={iconSrc} />
-    <link rel="icon" type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml") ? "image/svg+xml" : "image/png"} href={iconSrc} />
+    <link
+      rel="icon"
+      type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml")
+        ? "image/svg+xml"
+        : "image/png"}
+      sizes="32x32"
+      href={iconSrc}
+    />
+    <link
+      rel="icon"
+      type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml")
+        ? "image/svg+xml"
+        : "image/png"}
+      sizes="16x16"
+      href={iconSrc}
+    />
+    <link
+      rel="icon"
+      type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml")
+        ? "image/svg+xml"
+        : "image/png"}
+      href={iconSrc}
+    />
     <link rel="manifest" href="/manifest.json" />
     <link rel="mask-icon" href={iconSrc} color="#5bbad5" />
     <meta name="msapplication-TileColor" content={primaryColor} />
@@ -238,8 +244,11 @@ const debugData = {
     <meta property="og:title" content={title + " → " + globalCompanyName} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content={globalCompanyLogo} />
-    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image" content={ogImageSrc} />
+    <meta
+      property="og:image:type"
+      content={ogImageSrc?.includes(".svg") ? "image/svg+xml" : "image/png"}
+    />
 
     <script>
       import {

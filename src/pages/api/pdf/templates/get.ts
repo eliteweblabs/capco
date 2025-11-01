@@ -12,6 +12,9 @@ import { supabase } from "../../../../lib/supabase";
 export const GET: APIRoute = async ({ cookies }) => {
   try {
     // Check authentication
+    if (!supabase) {
+      return createErrorResponse("Supabase client not initialized", 500);
+    }
     const {
       data: { user },
       error: authError,

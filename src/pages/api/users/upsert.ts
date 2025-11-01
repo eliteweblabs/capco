@@ -350,7 +350,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             method: "magicLink",
             trackLinks: false,
             usersToNotify: [userData.email],
-            emailSubject: `Welcome to CAPCo Fire Protection Systems → ${displayName}`,
+            emailSubject: `Welcome to ${import.meta.env.RAILWAY_PROJECT_NAME} → ${displayName}`,
             emailContent: userEmailContent,
             buttonText: "Access Your Dashboard",
             buttonLink: "/dashboard",
