@@ -7,7 +7,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Get the Google access token from cookies
     const googleAccessToken = cookies.get("google_access_token")?.value;
-    
+
     // Debug: Check for common cookie names
     const cookieCheck = {
       google_access_token: !!cookies.get("google_access_token"),
@@ -15,10 +15,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       google_user_info: !!cookies.get("google_user_info"),
       sb_access_token: !!cookies.get("sb-access-token"),
     };
-    
+
     console.log("📞 [GOOGLE-CONTACTS] Cookie check:", cookieCheck);
     console.log("📞 [GOOGLE-CONTACTS] Looking for google_access_token:", !!googleAccessToken);
-    
+
     if (!googleAccessToken) {
       console.error("📞 [GOOGLE-CONTACTS] No Google access token found in cookies");
       console.error("📞 [GOOGLE-CONTACTS] Cookie status:", cookieCheck);
@@ -31,10 +31,6 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           requiresAuth: true,
           authButtonText: "Sign in with Google",
           authDescription: "Connect your Google account to search contacts",
-          debug: {
-            cookieCheck: cookieCheck,
-            suggestion: "Visit /api/debug-cookies to see all cookies, or authenticate via /api/google/signin",
-          },
         }),
         {
           status: 401,
@@ -301,7 +297,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     let filteredContacts = contacts;
     if (searchQuery && searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filteredContacts = contacts.filter((contact) => {
+      filteredContacts = contacts.filter((contact: any) => {
         const searchableText = [
           contact.name,
           contact.email,
