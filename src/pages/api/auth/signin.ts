@@ -3,6 +3,7 @@ import type { APIRoute } from "astro";
 import { setAuthCookies } from "../../../lib/auth-cookies";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
+import { getBaseUrl } from "../../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   // Check if Supabase is configured
@@ -16,11 +17,12 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const provider = formData.get("provider")?.toString();
 
   if (provider) {
-    // Use the current request URL to determine the base URL
-    const currentUrl = new URL(request.url);
-    const redirectUrl = `${currentUrl.origin}/api/auth/callback`;
+    // Use getBaseUrl to ensure we use the custom domain (capcofire.com) instead of Supabase URL
+    // This ensures the redirect URL shown in Google's sign-in prompt uses your custom domain
+    const baseUrl = getBaseUrl(request);
+    const redirectUrl = `${baseUrl}/api/auth/callback`;
     // console.log("🔐 [AUTH] OAuth redirect URL:", redirectUrl);
-    // console.log("🔐 [AUTH] Current request origin:", currentUrl.origin);
+    // console.log("🔐 [AUTH] Base URL:", baseUrl);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: provider as Provider,

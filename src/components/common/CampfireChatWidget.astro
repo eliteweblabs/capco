@@ -77,7 +77,6 @@ const themeMode = theme;
 {
   campfireUrl || campfireWidgetId ? (
     <script define:vars={{ campfireUrl, campfireWidgetId, themeMode, currentUser }}>
-      {`
       (function() {
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
@@ -123,11 +122,11 @@ const themeMode = theme;
               // Ensure campfireUrl has protocol and correct format
               let baseUrl = campfireUrl || 'https://app.campfire.so';
               if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
-                baseUrl = \`https://\${baseUrl}\`;
+                baseUrl = `https://${baseUrl}`;
               }
               
               // Try multiple possible widget script paths
-              const widgetScriptUrl = \`\${baseUrl}/widget.js?id=\${campfireWidgetId}\`;
+              const widgetScriptUrl = `${baseUrl}/widget.js?id=${campfireWidgetId}`;
               console.log('[---CAMPFIRE-WIDGET] Attempting to load:', widgetScriptUrl);
               
               const script = document.createElement('script');
@@ -206,7 +205,7 @@ const themeMode = theme;
             
             try {
               const iframe = document.createElement('iframe');
-              const embedUrl = \`\${campfireUrl}/embed\${campfireWidgetId ? '?id=' + campfireWidgetId : ''}\`;
+              const embedUrl = `${campfireUrl}/embed${campfireWidgetId ? '?id=' + campfireWidgetId : ''}`;
               iframe.src = embedUrl;
               iframe.style.width = '400px';
               iframe.style.height = '600px';
@@ -240,14 +239,13 @@ const themeMode = theme;
               
               container.appendChild(iframe);
             } catch (error) {
-              console.error('❌ [CAMPFIRE-WIDGET] Error creating iframe:', error);
+              console.error('[---CAMPFIRE-WIDGET] Error creating iframe:', error);
               container.innerHTML = '<div style="padding: 10px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 12px;">Campfire widget error: ' + error.message + '</div>';
             }
           }
 
         }
       })();
-    `}
     </script>
   ) : null
 }
