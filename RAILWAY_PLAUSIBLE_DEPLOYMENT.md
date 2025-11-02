@@ -12,6 +12,13 @@
 ### Step 2: Configure Services
 Railway will automatically detect the `railway-plausible.json` file and create the services.
 
+**IMPORTANT: Generate Public Domain**
+1. After services are created, go to your Railway project
+2. Click on the **plausible** service
+3. Go to the **Settings** tab → **Networking**
+4. Click **Generate Domain** to create a public URL
+5. This automatically sets `RAILWAY_PUBLIC_DOMAIN` which is used for `BASE_URL`
+
 ### Step 3: Set Environment Variables
 In your Railway project dashboard, go to Variables and add:
 
@@ -21,7 +28,8 @@ PLAUSIBLE_DB_PASSWORD=your_secure_password_here
 
 # Plausible Configuration  
 PLAUSIBLE_SECRET_KEY=your_secret_key_here
-PLAUSIBLE_BASE_URL=https://capco-plausible-analytics.railway.app
+# Note: BASE_URL uses RAILWAY_PUBLIC_DOMAIN automatically (set by Railway)
+# Make sure to generate a public domain for the 'plausible' service
 PLAUSIBLE_MAILER_EMAIL=noreply@capcofire.com
 
 # SMTP Configuration (using Resend)
@@ -117,11 +125,35 @@ PLAUSIBLE_API_KEY=your_api_key_from_plausible
 4. For port 465 (SSL): `SMTP_HOST_SSL_ENABLED=true`
 5. Redeploy the service
 
+### BASE_URL Error
+**Error**: `BASE_URL must start with http or https. Currently configured as plausible-analytics-ce.railway.internal`
+
+**Cause**: `BASE_URL` is using `${{RAILWAY_PRIVATE_DOMAIN}}` instead of `${{RAILWAY_PUBLIC_DOMAIN}}`
+
+**Solution**: 
+1. **Generate a Public Domain** (if not already done):
+   - Go to Railway Dashboard → Your Project → Services → plausible
+   - Click on the service → **Settings** tab → **Networking**
+   - Click **Generate Domain** button
+   - Railway will automatically create `RAILWAY_PUBLIC_DOMAIN`
+
+2. **Verify BASE_URL configuration**:
+   - The `railway-plausible.json` uses `${{RAILWAY_PUBLIC_DOMAIN}}` (not `RAILWAY_PRIVATE_DOMAIN`)
+   - `RAILWAY_PUBLIC_DOMAIN` is automatically set by Railway when you generate a domain
+   - It should resolve to something like `https://plausible-production-xxxx.up.railway.app`
+
+3. **If you manually set BASE_URL variable**:
+   - Make sure it's NOT set to `${{RAILWAY_PRIVATE_DOMAIN}}`
+   - Either delete the BASE_URL variable (let Railway use RAILWAY_PUBLIC_DOMAIN), OR
+   - Set it to a full public URL: `https://your-domain.railway.app`
+
+**Note**: The configuration uses `${{RAILWAY_PUBLIC_DOMAIN}}` which Railway automatically populates when you generate a public domain for the service.
+
 ### Services Not Starting
 - Check that all environment variables are set
 - Ensure database passwords match between services
 - Check Railway logs for specific errors
-- Verify `SMTP_HOST_PORT=25` is set (critical for Plausible to start)
+- Verify `PLAUSIBLE_BASE_URL` starts with `http://` or `https://` (not `.railway.internal`)
 
 ### Database Connection Issues
 - Verify `DATABASE_URL` format
