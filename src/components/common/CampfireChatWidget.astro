@@ -63,7 +63,7 @@ const themeMode = theme;
     </div>
   ) : (
     <script is:inline>
-      console.warn('⚠️ [CAMPFIRE-WIDGET] Widget not rendered - missing environment variables:', {
+      console.warn('[---CAMPFIRE-WIDGET] Widget not rendered - missing environment variables:', {
         hasPublicUrl: false,
         hasUrl: false,
         hasPublicWidgetId: false,
@@ -89,7 +89,7 @@ const themeMode = theme;
         function initCampfireWidget() {
           const container = document.getElementById('campfire-chat-widget-container');
           if (!container) {
-            console.error('❌ [CAMPFIRE-WIDGET] Container not found');
+            console.error('[---CAMPFIRE-WIDGET] Container not found');
             return;
           }
 
@@ -105,7 +105,7 @@ const themeMode = theme;
                      window.matchMedia('(prefers-color-scheme: dark)').matches;
           }
 
-          console.log('🔍 [CAMPFIRE-WIDGET] Initializing...', {
+          console.log('[---CAMPFIRE-WIDGET] Initializing...', {
             campfireUrl: campfireUrl || 'not set',
             campfireWidgetId: campfireWidgetId || 'not set',
             hasCurrentUser: !!currentUser,
@@ -117,7 +117,7 @@ const themeMode = theme;
           // Method 1: If you have a widget ID (standard Campfire embed)
           if (campfireWidgetId) {
             try {
-              console.log('📦 [CAMPFIRE-WIDGET] Loading widget with ID:', campfireWidgetId);
+              console.log('[---CAMPFIRE-WIDGET] Loading widget with ID:', campfireWidgetId);
               
               // Construct widget script URL
               // Ensure campfireUrl has protocol and correct format
@@ -128,7 +128,7 @@ const themeMode = theme;
               
               // Try multiple possible widget script paths
               const widgetScriptUrl = \`\${baseUrl}/widget.js?id=\${campfireWidgetId}\`;
-              console.log('🔗 [CAMPFIRE-WIDGET] Attempting to load:', widgetScriptUrl);
+              console.log('[---CAMPFIRE-WIDGET] Attempting to load:', widgetScriptUrl);
               
               const script = document.createElement('script');
               script.src = widgetScriptUrl;
@@ -141,7 +141,7 @@ const themeMode = theme;
                 script.setAttribute('data-user-id', currentUser.id || '');
                 script.setAttribute('data-user-email', currentUser.email || '');
                 script.setAttribute('data-user-name', currentUser.name || currentUser.profile?.companyName || '');
-                console.log('👤 [CAMPFIRE-WIDGET] Adding user info:', {
+                console.log('[---CAMPFIRE-WIDGET] Adding user info:', {
                   id: currentUser.id,
                   email: currentUser.email,
                   name: currentUser.name || currentUser.profile?.companyName
@@ -151,7 +151,7 @@ const themeMode = theme;
               // Add timeout to detect if script never loads
               const timeoutId = setTimeout(() => {
                 if (!document.querySelector('[data-campfire-loaded="true"]')) {
-                  console.warn('⏱️ [CAMPFIRE-WIDGET] Script load timeout - trying iframe fallback');
+                  console.warn('[---CAMPFIRE-WIDGET] Script load timeout - trying iframe fallback');
                   tryIframeFallback();
                 }
               }, 5000);
@@ -159,13 +159,13 @@ const themeMode = theme;
               script.onload = () => {
                 clearTimeout(timeoutId);
                 script.setAttribute('data-campfire-loaded', 'true');
-                console.log('✅ [CAMPFIRE-WIDGET] Campfire widget script loaded successfully');
+                console.log('[---CAMPFIRE-WIDGET] Campfire widget script loaded successfully');
               };
               
               script.onerror = (error) => {
                 clearTimeout(timeoutId);
-                console.error('❌ [CAMPFIRE-WIDGET] Failed to load Campfire widget script:', widgetScriptUrl, error);
-                console.error('❌ [CAMPFIRE-WIDGET] Error details:', {
+                console.error('[---CAMPFIRE-WIDGET] Failed to load Campfire widget script:', widgetScriptUrl, error);
+                console.error('[---CAMPFIRE-WIDGET] Error details:', {
                   url: widgetScriptUrl,
                   error: error,
                   message: 'Check CORS settings, URL validity, and network connectivity'
@@ -176,30 +176,30 @@ const themeMode = theme;
               
               document.body.appendChild(script);
             } catch (error) {
-              console.error('❌ [CAMPFIRE-WIDGET] Error loading widget:', error);
+              console.error('[---CAMPFIRE-WIDGET] Error loading widget:', error);
               tryIframeFallback();
             }
           }
           // Method 2: If you have a direct Campfire URL (self-hosted)
           else if (campfireUrl) {
             try {
-              console.log('📦 [CAMPFIRE-WIDGET] Loading widget from URL:', campfireUrl);
+              console.log('[---CAMPFIRE-WIDGET] Loading widget from URL:', campfireUrl);
               
               // Try iframe approach first for self-hosted instances
               tryIframeFallback();
             } catch (error) {
-              console.error('❌ [CAMPFIRE-WIDGET] Error loading widget:', error);
+              console.error('[---CAMPFIRE-WIDGET] Error loading widget:', error);
             }
           } else {
-            console.warn('⚠️ [CAMPFIRE-WIDGET] No Campfire URL or Widget ID configured');
+            console.warn('[---CAMPFIRE-WIDGET] No Campfire URL or Widget ID configured');
           }
 
           // Fallback: Iframe approach for self-hosted Campfire
           function tryIframeFallback() {
-            console.log('🔄 [CAMPFIRE-WIDGET] Trying iframe fallback...');
+            console.log('[---CAMPFIRE-WIDGET] Trying iframe fallback...');
             
             if (!campfireUrl) {
-              console.error('❌ [CAMPFIRE-WIDGET] Cannot use iframe fallback - CAMPFIRE_URL is not set');
+              console.error('[---CAMPFIRE-WIDGET] Cannot use iframe fallback - CAMPFIRE_URL is not set');
               container.innerHTML = '<div style="padding: 10px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 12px;">Campfire widget failed to load. Check console for details.</div>';
               return;
             }
@@ -223,17 +223,17 @@ const themeMode = theme;
               
               iframe.onload = () => {
                 iframe.style.display = 'block';
-                console.log('✅ [CAMPFIRE-WIDGET] Campfire iframe loaded successfully:', embedUrl);
+                console.log('[---CAMPFIRE-WIDGET] Campfire iframe loaded successfully:', embedUrl);
               };
               iframe.onerror = (error) => {
-                console.error('❌ [CAMPFIRE-WIDGET] Failed to load Campfire iframe:', embedUrl, error);
+                console.error('[---CAMPFIRE-WIDGET] Failed to load Campfire iframe:', embedUrl, error);
                 container.innerHTML = '<div style="padding: 10px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 12px;">Campfire widget failed to load. URL: ' + embedUrl + '</div>';
               };
               
               // Timeout for iframe load
               setTimeout(() => {
                 if (iframe.style.display === 'none') {
-                  console.warn('⏱️ [CAMPFIRE-WIDGET] Iframe load timeout:', embedUrl);
+                  console.warn('[---CAMPFIRE-WIDGET] Iframe load timeout:', embedUrl);
                   container.innerHTML = '<div style="padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404; font-size: 12px;">Campfire widget is loading slowly. If this persists, check your Campfire deployment.</div>';
                 }
               }, 10000);

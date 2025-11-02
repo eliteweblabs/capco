@@ -2,11 +2,11 @@
 // Toast Notification System -
 ---
 
-<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-full sm:max-w-md">
+<div id="toast-container" class="fixed top-4 left-4 right-4 z-50 space-y-2 max-w-sm mx-auto sm:top-4 sm:right-4 sm:left-auto sm:mx-0 sm:max-w-md">
 </div>
 
 <style>
-  /* Toast slide-in animation */
+  /* Toast slide-in animation - Desktop (from right) */
   @keyframes toast-slide-in {
     0% {
       opacity: 0;
@@ -18,7 +18,19 @@
     }
   }
 
-  /* Toast slide-out animation */
+  /* Toast slide-in animation - Mobile (from top) */
+  @keyframes toast-slide-in-mobile {
+    0% {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Toast slide-out animation - Desktop */
   @keyframes toast-slide-out {
     0% {
       opacity: 1;
@@ -30,7 +42,19 @@
     }
   }
 
-  /* Apply toast animations */
+  /* Toast slide-out animation - Mobile */
+  @keyframes toast-slide-out-mobile {
+    0% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+  }
+
+  /* Apply toast animations - Desktop default */
   .toast-slide-in {
     animation: toast-slide-in 300ms ease-out forwards;
   }
@@ -39,19 +63,63 @@
     animation: toast-slide-out 300ms ease-in forwards;
   }
 
-  /* Initial state for toasts */
+  /* Initial state for toasts - Desktop */
   .toast-element {
     opacity: 0;
     transform: translateX(100%);
   }
 
-  /* Mobile responsive positioning */
+  /* Mobile responsive styles */
   @media (max-width: 640px) {
     #toast-container {
       top: 1rem;
-      right: 1rem;
       left: 1rem;
+      right: 1rem;
       max-width: none;
+      width: auto;
+      margin: 0;
+    }
+
+    /* Mobile toast slide-in from top */
+    .toast-slide-in {
+      animation: toast-slide-in-mobile 300ms ease-out forwards;
+    }
+
+    /* Mobile toast slide-out to top */
+    .toast-slide-out {
+      animation: toast-slide-out-mobile 300ms ease-in forwards;
+    }
+
+    /* Mobile initial state - slide from top */
+    .toast-element {
+      opacity: 0;
+      transform: translateY(-100%);
+      padding: 1rem;
+      font-size: 0.875rem;
+    }
+
+    /* Better touch targets on mobile */
+    .toast-element button {
+      min-height: 44px;
+      min-width: 44px;
+      padding: 0.5rem;
+    }
+
+    /* Adjust icon size on mobile */
+    .toast-element svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    /* Improve text readability on mobile */
+    .toast-element h4 {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+
+    .toast-element .notification-message {
+      font-size: 0.8125rem;
+      line-height: 1.25rem;
     }
   }
 </style>
@@ -277,7 +345,7 @@
         success: {
           iconBg: "text-green-500 bg-green-100 dark:bg-green-800 dark:text-green-200",
           progressColor: "bg-green-500",
-          icon: `<svg class="w-8 h-8" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+          icon: `<svg class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
                  </svg>`,
           label: "Success",
@@ -285,7 +353,7 @@
         error: {
           iconBg: "text-red-500 bg-red-100 dark:bg-red-800 dark:text-red-200",
           progressColor: "bg-red-500",
-          icon: `<svg class="w-8 h-8" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+          icon: `<svg class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z"/>
                  </svg>`,
           label: "Error",
@@ -293,7 +361,7 @@
         warning: {
           iconBg: "text-orange-500 bg-orange-100 dark:bg-orange-700 dark:text-orange-200",
           progressColor: "bg-orange-500",
-          icon: `<svg class="w-8 h-8" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+          icon: `<svg class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM10 15a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0-4a1 1 0 0 1-1-1V6a1 1 0 0 1 2 0v4a1 1 0 0 1-1 1Z"/>
                  </svg>`,
           label: "Warning",
@@ -301,7 +369,7 @@
         info: {
           iconBg: "text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200",
           progressColor: "bg-primary-500",
-          icon: `<svg class="w-8 h-8" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
+          icon: `<svg class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.147 15.085a7.159 7.159 0 0 1-6.189 3.307A6.713 6.713 0 0 1 3.1 15.444c-2.679-4.513.287-8.737.888-9.548A4.373 4.373 0 0 0 5 1.608c1.287.953 6.445 3.218 5.537 10.5 1.5-1.122 2.706-3.01 2.853-6.14 1.433 1.049 3.993 5.395 1.757 9.117Z"/>
                  </svg>`,
           label: "Info",
@@ -332,6 +400,7 @@
       element.className = `
           color-background rounded-lg shadow-lg border border-gray-200 dark:border-gray-700
           toast-element p-4 mb-2
+          sm:p-4
         `.trim();
 
       element.innerHTML = `
@@ -346,23 +415,23 @@
                 : ""
             }
             <div class="flex-shrink-0 mr-3">
-              <div class="inline-flex items-center justify-center w-8 h-8 ${config?.iconBg || "text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200"} rounded-full">
+              <div class="inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 ${config?.iconBg || "text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200"} rounded-full">
                 ${config?.icon || ""}
                 <span class="sr-only">${config?.label || "Notification"}</span>
               </div>
             </div>
-            <div class="flex-1 min-w-0">
-              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">${notification.title}</h4>
-              <div class="notification-message text-sm text-gray-600 dark:text-gray-400">${notification.message}</div>
+            <div class="flex-1 min-w-0 pr-2">
+              <h4 class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-1">${notification.title}</h4>
+              <div class="notification-message text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">${notification.message}</div>
               ${actionsHTML}
             </div>
             <button 
               type="button" 
-              class="flex-shrink-0 ml-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1" 
+              class="flex-shrink-0 ml-2 sm:ml-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2 sm:p-1 touch-manipulation" 
               aria-label="Close"
               onclick="toastNotificationManager.hide('${notification.id}')"
             >
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <svg class="w-5 h-5 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
               </svg>
             </button>
