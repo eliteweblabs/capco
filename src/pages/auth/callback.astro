@@ -55,26 +55,25 @@
       // Import Supabase client (this will be bundled)
       import { createClient } from '@supabase/supabase-js';
 
-      // Use the same env var names as the server-side code
-      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL || '';
-      const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY || '';
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        showError('Supabase configuration missing');
-        return;
-      }
-
-      // Create Supabase client (must be client-side for PKCE)
-      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          flowType: 'pkce',
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          persistSession: true,
-        },
-      });
-
       async function handleCallback() {
+        // Use the same env var names as the server-side code
+        const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL || '';
+        const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY || '';
+
+        if (!supabaseUrl || !supabaseAnonKey) {
+          showError('Supabase configuration missing');
+          return;
+        }
+
+        // Create Supabase client (must be client-side for PKCE)
+        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            flowType: 'pkce',
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            persistSession: true,
+          },
+        });
         try {
           console.log('[AUTH-CALLBACK] Starting PKCE flow...');
           
