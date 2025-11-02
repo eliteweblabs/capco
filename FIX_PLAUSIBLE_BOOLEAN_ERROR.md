@@ -22,8 +22,9 @@ Invalid boolean value: "". Expected one of: 1, 0, t, f, true, false, y, n, yes, 
 
 **Fix**: 
 1. Generate a public domain for your service (Railway Dashboard → Service → Settings → Networking → Generate Domain)
-2. Verify `BASE_URL` uses `${{RAILWAY_PUBLIC_DOMAIN}}` (this is automatically set in `railway-plausible.json`)
-3. If you manually override `BASE_URL`, make sure it's a full public URL starting with `https://`
+2. The `railway-plausible.json` uses `https://${{RAILWAY_PUBLIC_DOMAIN}}` (automatically prepends `https://`)
+3. If you manually set `BASE_URL` variable, it must be the FULL URL: `https://plausible-analytics-ce-production-1436.up.railway.app`
+4. **Common issue**: Railway's `RAILWAY_PUBLIC_DOMAIN` only includes the domain name without `https://` - the config adds it automatically
 
 ## ✅ Immediate Fix Steps
 
@@ -78,12 +79,12 @@ Look through your environment variables and identify any that are:
 5. Redeploy the service
 
 **Option 2: Manually Set BASE_URL**
-1. If you manually set `BASE_URL` variable, make sure it:
-   - Uses `${{RAILWAY_PUBLIC_DOMAIN}}` (not `RAILWAY_PRIVATE_DOMAIN`)
-   - OR is set to a full public URL like `https://your-domain.railway.app`
+1. If you manually set `BASE_URL` variable, it MUST include `https://`:
+   - Full URL: `https://plausible-analytics-ce-production-1436.up.railway.app`
+   - **NOT** just the domain: `plausible-analytics-ce-production-1436.up.railway.app`
 2. **DO NOT** use `${{RAILWAY_PRIVATE_DOMAIN}}` - that resolves to `.railway.internal`
 
-**Note**: The `railway-plausible.json` is already configured to use `${{RAILWAY_PUBLIC_DOMAIN}}`. Just make sure you've generated a public domain!
+**Note**: The `railway-plausible.json` is configured to use `https://${{RAILWAY_PUBLIC_DOMAIN}}` which automatically prepends `https://`. Railway's `RAILWAY_PUBLIC_DOMAIN` only includes the domain name, not the protocol!
 
 ### Step 4: Verify Other Required Variables
 

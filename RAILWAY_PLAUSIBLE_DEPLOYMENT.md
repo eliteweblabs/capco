@@ -44,6 +44,8 @@ PLAUSIBLE_ADMIN_PASSWORD=your_admin_password_here
 
 **Note**: The configuration uses Resend's SMTP (`smtp.resend.com` on port `587`) instead of a local mail service. Make sure your `RESEND_API_KEY` is set in Railway.
 
+**Important**: `BASE_URL` is automatically set to `https://${{RAILWAY_PUBLIC_DOMAIN}}` in the configuration. Railway's `RAILWAY_PUBLIC_DOMAIN` only includes the domain name (e.g., `plausible-analytics-ce-production-1436.up.railway.app`), so we prepend `https://` to create the full URL.
+
 ### Step 4: Generate Secure Values
 Run these commands to generate secure values:
 
@@ -138,9 +140,10 @@ PLAUSIBLE_API_KEY=your_api_key_from_plausible
    - Railway will automatically create `RAILWAY_PUBLIC_DOMAIN`
 
 2. **Verify BASE_URL configuration**:
-   - The `railway-plausible.json` uses `${{RAILWAY_PUBLIC_DOMAIN}}` (not `RAILWAY_PRIVATE_DOMAIN`)
+   - The `railway-plausible.json` uses `https://${{RAILWAY_PUBLIC_DOMAIN}}` (prepends `https://` to the domain)
    - `RAILWAY_PUBLIC_DOMAIN` is automatically set by Railway when you generate a domain
-   - It should resolve to something like `https://plausible-production-xxxx.up.railway.app`
+   - Railway only provides the domain name (e.g., `plausible-analytics-ce-production-1436.up.railway.app`)
+   - The config automatically adds `https://` to create the full URL
 
 3. **If you manually set BASE_URL variable**:
    - Make sure it's NOT set to `${{RAILWAY_PRIVATE_DOMAIN}}`
