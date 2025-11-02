@@ -242,7 +242,36 @@ const themeMode = theme;
             function tryEmbedUrl() {
               if (currentEmbedIndex >= possibleEmbedUrls.length) {
                 console.error('[---CAMPFIRE-WIDGET] All embed URLs failed. The Campfire server may be blocking iframe embedding (X-Frame-Options) or the embed endpoints don\'t exist.');
-                container.innerHTML = '<div style="padding: 10px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 12px;">Campfire widget failed to load. Check that:<br>1. Campfire server allows iframe embedding (remove X-Frame-Options header)<br>2. The embed endpoint exists on your Campfire deployment</div>';
+                console.log('[---CAMPFIRE-WIDGET] Falling back to popup window approach');
+                
+                // Fallback: Create a button that opens Campfire in a popup window
+                const chatUrl = campfireUrl + (campfireWidgetId ? '?widget=' + campfireWidgetId : '');
+                container.innerHTML = `
+                  <button 
+                    onclick="window.open('${chatUrl}', 'campfire-chat', 'width=600,height=800,resizable=yes,scrollbars=yes')"
+                    style="
+                      position: fixed;
+                      bottom: 20px;
+                      right: 20px;
+                      background: #007bff;
+                      color: white;
+                      border: none;
+                      border-radius: 50px;
+                      padding: 16px 24px;
+                      font-size: 16px;
+                      font-weight: 600;
+                      cursor: pointer;
+                      box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+                      z-index: 9999;
+                      transition: all 0.3s ease;
+                    "
+                    onmouseover="this.style.background='#0056b3'; this.style.transform='scale(1.05)'"
+                    onmouseout="this.style.background='#007bff'; this.style.transform='scale(1)'"
+                  >
+                    💬 Open Chat
+                  </button>
+                `;
+                console.log('[---CAMPFIRE-WIDGET] Popup button created. Users can click to open Campfire in a new window.');
                 return;
               }
               
