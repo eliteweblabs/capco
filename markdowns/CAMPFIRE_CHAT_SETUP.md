@@ -16,13 +16,16 @@ In your Railway project dashboard (main app), go to **Variables** and add:
 
 ```bash
 # Campfire Chat Configuration
-CAMPFIRE_URL=https://capco-campfire-chat.railway.app
-CAMPFIRE_WIDGET_ID=your_widget_id_here
-
-# OR use PUBLIC_ prefix if you need client-side access
+# IMPORTANT: Use PUBLIC_ prefix for client-side access (required for widgets)
 PUBLIC_CAMPFIRE_URL=https://capco-campfire-chat.railway.app
 PUBLIC_CAMPFIRE_WIDGET_ID=your_widget_id_here
+
+# Alternative: Non-prefixed vars also work (but PUBLIC_ is preferred for client-side)
+CAMPFIRE_URL=https://capco-campfire-chat.railway.app
+CAMPFIRE_WIDGET_ID=your_widget_id_here
 ```
+
+**Note**: In Astro, variables prefixed with `PUBLIC_` are automatically available on the client-side, which is required for the widget to work. The component checks `PUBLIC_` prefixed vars first, then falls back to non-prefixed vars.
 
 **Note**: 
 - Use `PUBLIC_` prefix if the variables need to be accessible in the browser
