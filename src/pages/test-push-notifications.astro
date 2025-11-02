@@ -111,21 +111,88 @@
         document.getElementById('debug-info').textContent = debugInfo.join('\n');
       }
 
+      // Detect mobile browser
+      function detectMobileBrowser() {
+        const ua = navigator.userAgent.toLowerCase();
+        const isIOS = /iphone|ipad|ipod/.test(ua);
+        const isAndroid = /android/.test(ua);
+        const isMobile = isIOS || isAndroid;
+        
+        let browser = 'Unknown';
+        if (/safari/.test(ua) && !/chrome|crios|fxios/.test(ua)) {
+          browser = 'Safari';
+        } else if (/chrome|crios/.test(ua)) {
+          browser = 'Chrome';
+        } else if (/firefox|fxios/.test(ua)) {
+          browser = 'Firefox';
+        } else if (/edg/.test(ua)) {
+          browser = 'Edge';
+        }
+        
+        // Check if running as PWA
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            (window.navigator as any).standalone === true;
+        
+        return { isMobile, isIOS, isAndroid, browser, isStandalone };
+      }
+
       // 1. Check browser support
       function checkBrowserSupport() {
         const statusDiv = document.getElementById('support-status');
+        const mobileInfo = detectMobileBrowser();
+        
+        // On iOS Safari, Notifications API might not be available in regular browsing
+        // but is available when installed as PWA
+        const hasNotificationAPI = 'Notification' in window;
+        const hasServiceWorker = 'serviceWorker' in navigator;
+        const hasPushManager = hasServiceWorker && 'PushManager' in window;
+        const hasHTTPS = location.protocol === 'https:' || location.hostname === 'localhost';
         
         const features = {
-          'Notifications API': 'Notification' in window,
-          'Service Workers': 'serviceWorker' in navigator,
-          'Push Manager': 'serviceWorker' in navigator && 'PushManager' in window,
-          'HTTPS': location.protocol === 'https:' || location.hostname === 'localhost'
+          'Notifications API': hasNotificationAPI,
+          'Service Workers': hasServiceWorker,
+          'Push Manager': hasPushManager,
+          'HTTPS': hasHTTPS
         };
 
         let allSupported = Object.values(features).every(v => v);
         
-        let html = '<div class="status ' + (allSupported ? 'success' : 'error') + '">';
-        html += '<strong>' + (allSupported ? '✅ All features supported' : '❌ Some features missing') + '</strong><br>';
+        let html = '';
+        
+        // Mobile-specific guidance
+        if (mobileInfo.isMobile) {
+          html += '<div class="status info">';
+          html += `<strong>📱 Mobile Device Detected</strong><br>`;
+          html += `Browser: ${mobileInfo.browser}<br>`;
+          html += `Platform: ${mobileInfo.isIOS ? 'iOS' : 'Android'}<br>`;
+          html += `PWA Mode: ${mobileInfo.isStandalone ? '✅ Installed' : '❌ Not Installed'}<br>`;
+          html += '</div><br>';
+          
+          if (mobileInfo.isIOS && mobileInfo.browser === 'Safari') {
+            if (!mobileInfo.isStandalone) {
+              html += '<div class="status warning">';
+              html += '<strong>⚠️ iOS Safari Push Notification Requirements:</strong><br>';
+              html += 'On iOS Safari, push notifications only work when the site is <strong>added to Home Screen</strong> as a PWA.<br>';
+              html += '<strong>To enable:</strong><br>';
+              html += '1. Tap the Share button (square with arrow)<br>';
+              html += '2. Scroll and tap "Add to Home Screen"<br>';
+              html += '3. Open the app from your Home Screen<br>';
+              html += '4. Grant notification permission<br>';
+              html += '</div>';
+            } else {
+              html += '<div class="status success">';
+              html += '✅ App is installed as PWA! Push notifications should work.';
+              html += '</div>';
+            }
+          } else if (mobileInfo.isAndroid || (mobileInfo.isIOS && mobileInfo.browser !== 'Safari')) {
+            html += '<div class="status success">';
+            html += `✅ ${mobileInfo.browser} on ${mobileInfo.isIOS ? 'iOS' : 'Android'} has good push notification support!`;
+            html += '</div>';
+          }
+        }
+        
+        html += '<div class="status ' + (allSupported ? 'success' : mobileInfo.isMobile ? 'warning' : 'error') + '">';
+        html += '<strong>' + (allSupported ? '✅ All features supported' : mobileInfo.isMobile ? '⚠️ Mobile limitations detected' : '❌ Some features missing') + '</strong><br>';
         
         for (const [name, supported] of Object.entries(features)) {
           html += `<br>${supported ? '✅' : '❌'} ${name}: ${supported ? 'Supported' : 'Not Supported'}`;
@@ -134,6 +201,8 @@
         
         statusDiv.innerHTML = html;
         
+        log(`Browser: ${mobileInfo.browser} on ${mobileInfo.isIOS ? 'iOS' : mobileInfo.isAndroid ? 'Android' : 'Desktop'}`, 'info');
+        log(`PWA Mode: ${mobileInfo.isStandalone ? 'YES' : 'NO'}`, mobileInfo.isStandalone ? 'success' : 'warning');
         log(`Browser support check: ${allSupported ? 'PASS' : 'FAIL'}`, allSupported ? 'success' : 'error');
         for (const [name, supported] of Object.entries(features)) {
           log(`${name}: ${supported}`, supported ? 'success' : 'error');
@@ -144,9 +213,23 @@
       function checkPermission() {
         const statusDiv = document.getElementById('permission-status');
         const btn = document.getElementById('request-permission-btn');
+        const mobileInfo = detectMobileBrowser();
         
         if (!('Notification' in window)) {
-          statusDiv.innerHTML = '<div class="status error">❌ Notifications API not supported</div>';
+          let message = '<div class="status error">❌ Notifications API not supported</div>';
+          
+          // Mobile Safari specific guidance
+          if (mobileInfo.isIOS && mobileInfo.browser === 'Safari' && !mobileInfo.isStandalone) {
+            message = '<div class="status warning">';
+            message += '<strong>⚠️ Notifications API not available in mobile Safari</strong><br>';
+            message += 'This is normal! iOS Safari only supports push notifications when:<br>';
+            message += '1. The site is added to Home Screen (PWA)<br>';
+            message += '2. AND opened from the Home Screen icon<br><br>';
+            message += '<strong>Solution:</strong> Add this site to your Home Screen, then open it from there.';
+            message += '</div>';
+          }
+          
+          statusDiv.innerHTML = message;
           btn.disabled = true;
           return;
         }
