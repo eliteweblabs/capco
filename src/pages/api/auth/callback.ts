@@ -4,49 +4,87 @@ import { supabase } from "../../../lib/supabase";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 
 export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
-  console.log("Auth callback started");
-
-  // Check if Supabase is configured
-  if (!supabase) {
-    console.error("Supabase is not configured");
-    return new Response("Supabase is not configured", { status: 500 });
-  }
+  console.log("🔐 [AUTH-CALLBACK] GET callback started (redirecting to client-side handler for PKCE)");
 
   // Get the auth code from the URL
   const authCode = url.searchParams.get("code");
-  console.log("Auth code received:", authCode ? "present" : "missing");
+  const error = url.searchParams.get("error");
+  const errorDescription = url.searchParams.get("error_description");
 
-  if (!authCode) {
-    console.log("No auth code provided, redirecting to home");
-    return redirect("/");
+  // If there's an error, redirect to client-side callback with error
+  if (error) {
+    console.error("🔐 [AUTH-CALLBACK] OAuth error received:", error, errorDescription);
+    return redirect(`/auth/callback?error=${encodeURIComponent(error)}${errorDescription ? `&error_description=${encodeURIComponent(errorDescription)}` : ''}`);
+  }
+
+  // If there's a code, redirect to client-side callback page which has access to localStorage (code verifier)
+  // The client-side page will handle the PKCE exchange and then POST the tokens back to this endpoint
+  if (authCode) {
+    console.log("🔐 [AUTH-CALLBACK] Redirecting to client-side callback for PKCE exchange");
+    // Preserve all URL parameters for the client-side handler
+    const params = new URLSearchParams(url.search);
+    return redirect(`/auth/callback?${params.toString()}`);
+  }
+
+  // No code or error, redirect to home
+  console.log("🔐 [AUTH-CALLBACK] No auth code or error, redirecting to home");
+  return redirect("/");
+};
+
+export const POST: APIRoute = async ({ request, cookies, url }) => {
+  console.log("🔐 [AUTH-CALLBACK] POST callback started - receiving tokens from client-side PKCE exchange");
+
+  // Check if Supabase is configured
+  if (!supabase) {
+    console.error("❌ [AUTH-CALLBACK] Supabase is not configured");
+    return new Response(JSON.stringify({ error: "Supabase is not configured" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   try {
-    console.log("Attempting to exchange code for session...");
-    console.log("Full URL params:", Object.fromEntries(url.searchParams.entries()));
+    const body = await request.json();
+    const { access_token, refresh_token, expires_in, token_type } = body;
 
-    // Exchange the code for a session directly on the server
-    const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
+    console.log("🔐 [AUTH-CALLBACK] Received tokens from client-side:", {
+      hasAccessToken: !!access_token,
+      hasRefreshToken: !!refresh_token,
+      expiresIn: expires_in,
+      tokenType: token_type,
+    });
 
-    if (error) {
-      console.error("Auth callback error:", error);
-      console.error("Error details:", {
-        message: error.message,
-        status: error.status,
-      });
-
-      // If it's a PKCE error, redirect to home with error message
-      if (error.message.includes("code verifier")) {
-        console.log("PKCE error detected, redirecting to home");
-        return redirect("/?error=oauth_failed");
-      }
-
-      return new Response(`Authentication error: ${error.message}`, {
-        status: 500,
+    if (!access_token || !refresh_token) {
+      console.error("❌ [AUTH-CALLBACK] Missing required tokens");
+      return new Response(JSON.stringify({ error: "Missing access_token or refresh_token" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
       });
     }
 
-    console.log("Session exchange successful:", !!data.session);
+    // Verify the session with Supabase
+    const { data, error } = await supabase.auth.setSession({
+      access_token,
+      refresh_token,
+    });
+
+    if (error) {
+      console.error("❌ [AUTH-CALLBACK] Session verification error:", error);
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (!data.session) {
+      console.error("❌ [AUTH-CALLBACK] No session created");
+      return new Response(JSON.stringify({ error: "Failed to create session" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("✅ [AUTH-CALLBACK] Session verified for user:", data.user?.email);
     console.log("📞 [AUTH-CALLBACK] Session data:", {
       hasSession: !!data.session,
       hasProviderToken: !!data.session?.provider_token,
@@ -54,41 +92,14 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       userMetadata: data.user?.user_metadata,
     });
 
-    if (!data.session) {
-      return new Response("No session created", { status: 400 });
-    }
-
-    const { access_token, refresh_token, provider_token } = data.session;
-    console.log("Tokens received:", {
-      accessToken: !!access_token,
-      refreshToken: !!refresh_token,
-      providerToken: !!provider_token,
-    });
-
-    // Profile will be automatically created by database trigger
-
-    // Download and save Google avatar if present (to avoid rate limiting)
-    console.log("📸 [AUTH-CALLBACK] Checking for Google avatar...");
-    console.log(
-      "📸 [AUTH-CALLBACK] User metadata:",
-      JSON.stringify(data.user?.user_metadata, null, 2)
-    );
-
+    // Download and save Google avatar if present
     const googleAvatarUrl =
       data.user?.user_metadata?.avatarUrl || data.user?.user_metadata?.picture;
-
-    console.log("📸 [AUTH-CALLBACK] Extracted avatar URL:", googleAvatarUrl);
-    console.log("📸 [AUTH-CALLBACK] User ID:", data.user?.id);
 
     if (googleAvatarUrl && data.user?.id) {
       console.log("📸 [AUTH-CALLBACK] Google avatar detected, saving to storage");
       try {
         const baseUrl = url.origin;
-        console.log(
-          "📸 [AUTH-CALLBACK] Calling save-avatar API at:",
-          `${baseUrl}/api/auth/save-avatar`
-        );
-
         const saveAvatarResponse = await fetch(`${baseUrl}/api/auth/save-avatar`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -97,8 +108,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
             avatarUrl: googleAvatarUrl,
           }),
         });
-
-        console.log("📸 [AUTH-CALLBACK] Save avatar response status:", saveAvatarResponse.status);
 
         if (saveAvatarResponse.ok) {
           const result = await saveAvatarResponse.json();
@@ -115,14 +124,10 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         // Don't fail the login if avatar saving fails
         console.error("⚠️ [AUTH-CALLBACK] Avatar save error:", avatarError);
       }
-    } else {
-      console.log(
-        "📸 [AUTH-CALLBACK] No Google avatar found or user ID missing - skipping avatar save"
-      );
     }
 
-    // Use shared utility for consistent cookie handling
-    setAuthCookies(cookies, access_token, refresh_token);
+    // Set auth cookies using the verified session tokens
+    setAuthCookies(cookies, data.session.access_token, data.session.refresh_token);
 
     // Log the successful login
     try {
@@ -137,77 +142,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       // Don't fail the auth flow if logging fails
     }
 
-    console.log("Cookies set, redirecting to dashboard");
-    // return redirect("/project/dashboard?success=oauth_success");
-    return redirect("/project/dashboard");
-  } catch (error) {
-    console.error("Unexpected error in auth callback:", error);
-    return new Response(
-      `Internal server error: ${error instanceof Error ? error.message : "Unknown error"}`,
-      { status: 500 }
-    );
-  }
-};
-
-export const POST: APIRoute = async ({ request, cookies, redirect }) => {
-  console.log("🔐 [MAGIC-LINK] POST callback started");
-
-  // Check if Supabase is configured
-  if (!supabase) {
-    console.error("❌ [MAGIC-LINK] Supabase is not configured");
-    return new Response(JSON.stringify({ error: "Supabase is not configured" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  try {
-    const body = await request.json();
-    const { access_token, refresh_token, expires_in, token_type } = body;
-
-    console.log("🔐 [MAGIC-LINK] Received tokens:", {
-      hasAccessToken: !!access_token,
-      hasRefreshToken: !!refresh_token,
-      expiresIn: expires_in,
-      tokenType: token_type,
-    });
-
-    if (!access_token || !refresh_token) {
-      console.error("❌ [MAGIC-LINK] Missing required tokens");
-      return new Response(JSON.stringify({ error: "Missing access_token or refresh_token" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Verify the session with Supabase
-    const { data, error } = await supabase.auth.setSession({
-      access_token,
-      refresh_token,
-    });
-
-    if (error) {
-      console.error("❌ [MAGIC-LINK] Session verification error:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    if (!data.session) {
-      console.error("❌ [MAGIC-LINK] No session created");
-      return new Response(JSON.stringify({ error: "Failed to create session" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    console.log("✅ [MAGIC-LINK] Session verified for user:", data.user?.email);
-
-    // Set auth cookies using the verified session tokens
-    setAuthCookies(cookies, data.session.access_token, data.session.refresh_token);
-
-    console.log("✅ [MAGIC-LINK] Auth cookies set successfully");
+    console.log("✅ [AUTH-CALLBACK] Auth cookies set successfully");
 
     return new Response(
       JSON.stringify({
@@ -220,7 +155,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       }
     );
   } catch (error) {
-    console.error("❌ [MAGIC-LINK] Unexpected error:", error);
+    console.error("❌ [AUTH-CALLBACK] Unexpected error:", error);
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",
