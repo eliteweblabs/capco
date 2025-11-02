@@ -78,6 +78,13 @@ const themeMode = theme;
   campfireUrl || campfireWidgetId ? (
     <script define:vars={{ campfireUrl, campfireWidgetId, themeMode, currentUser }}>
       (function() {
+        // Prevent duplicate initialization
+        if (window.campfireWidgetInitialized) {
+          console.log('[---CAMPFIRE-WIDGET] Widget already initialized, skipping');
+          return;
+        }
+        window.campfireWidgetInitialized = true;
+        
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', initCampfireWidget);
@@ -126,54 +133,72 @@ const themeMode = theme;
               }
               
               // Try multiple possible widget script paths
-              const widgetScriptUrl = `${baseUrl}/widget.js?id=${campfireWidgetId}`;
-              console.log('[---CAMPFIRE-WIDGET] Attempting to load:', widgetScriptUrl);
+              // Campfire might use different paths: /widget.js, /widget/embed.js, /embed.js, etc.
+              const possiblePaths = [
+                `${baseUrl}/widget.js?id=${campfireWidgetId}`,
+                `${baseUrl}/widget/embed.js?id=${campfireWidgetId}`,
+                `${baseUrl}/embed.js?id=${campfireWidgetId}`,
+                `${baseUrl}/widget?id=${campfireWidgetId}`,
+              ];
               
-              const script = document.createElement('script');
-              script.src = widgetScriptUrl;
-              script.async = true;
-              script.setAttribute('data-widget-id', campfireWidgetId);
-              script.setAttribute('data-theme', isDark ? 'dark' : 'light');
+              // Try loading widget script with multiple URL paths
+              let currentPathIndex = 0;
               
-              // Add user info if available
-              if (currentUser) {
-                script.setAttribute('data-user-id', currentUser.id || '');
-                script.setAttribute('data-user-email', currentUser.email || '');
-                script.setAttribute('data-user-name', currentUser.name || currentUser.profile?.companyName || '');
-                console.log('[---CAMPFIRE-WIDGET] Adding user info:', {
-                  id: currentUser.id,
-                  email: currentUser.email,
-                  name: currentUser.name || currentUser.profile?.companyName
-                });
-              }
-
-              // Add timeout to detect if script never loads
-              const timeoutId = setTimeout(() => {
-                if (!document.querySelector('[data-campfire-loaded="true"]')) {
-                  console.warn('[---CAMPFIRE-WIDGET] Script load timeout - trying iframe fallback');
+              function tryLoadScript() {
+                if (currentPathIndex >= possiblePaths.length) {
+                  console.warn('[---CAMPFIRE-WIDGET] All widget script paths failed, trying iframe fallback');
                   tryIframeFallback();
+                  return;
                 }
-              }, 5000);
+                
+                const widgetScriptUrl = possiblePaths[currentPathIndex];
+                console.log('[---CAMPFIRE-WIDGET] Attempting to load (attempt ' + (currentPathIndex + 1) + '/' + possiblePaths.length + '):', widgetScriptUrl);
+                
+                const script = document.createElement('script');
+                script.src = widgetScriptUrl;
+                script.async = true;
+                script.setAttribute('data-widget-id', campfireWidgetId);
+                script.setAttribute('data-theme', isDark ? 'dark' : 'light');
+                
+                // Add user info if available
+                if (currentUser) {
+                  script.setAttribute('data-user-id', currentUser.id || '');
+                  script.setAttribute('data-user-email', currentUser.email || '');
+                  script.setAttribute('data-user-name', currentUser.name || currentUser.profile?.companyName || '');
+                  console.log('[---CAMPFIRE-WIDGET] Adding user info:', {
+                    id: currentUser.id,
+                    email: currentUser.email,
+                    name: currentUser.name || currentUser.profile?.companyName
+                  });
+                }
+
+                // Add timeout to detect if script never loads
+                const timeoutId = setTimeout(() => {
+                  if (!document.querySelector('[data-campfire-loaded="true"]')) {
+                    console.warn('[---CAMPFIRE-WIDGET] Script load timeout for:', widgetScriptUrl);
+                    currentPathIndex++;
+                    tryLoadScript(); // Try next path
+                  }
+                }, 3000); // Reduced timeout for faster fallback
+                
+                script.onload = () => {
+                  clearTimeout(timeoutId);
+                  script.setAttribute('data-campfire-loaded', 'true');
+                  console.log('[---CAMPFIRE-WIDGET] Campfire widget script loaded successfully from:', widgetScriptUrl);
+                };
+                
+                script.onerror = (error) => {
+                  clearTimeout(timeoutId);
+                  console.warn('[---CAMPFIRE-WIDGET] Failed to load script from:', widgetScriptUrl);
+                  currentPathIndex++;
+                  tryLoadScript(); // Try next path
+                };
+                
+                document.body.appendChild(script);
+              }
               
-              script.onload = () => {
-                clearTimeout(timeoutId);
-                script.setAttribute('data-campfire-loaded', 'true');
-                console.log('[---CAMPFIRE-WIDGET] Campfire widget script loaded successfully');
-              };
-              
-              script.onerror = (error) => {
-                clearTimeout(timeoutId);
-                console.error('[---CAMPFIRE-WIDGET] Failed to load Campfire widget script:', widgetScriptUrl, error);
-                console.error('[---CAMPFIRE-WIDGET] Error details:', {
-                  url: widgetScriptUrl,
-                  error: error,
-                  message: 'Check CORS settings, URL validity, and network connectivity'
-                });
-                // Fallback: try iframe approach
-                tryIframeFallback();
-              };
-              
-              document.body.appendChild(script);
+              // Start trying to load the script
+              tryLoadScript();
             } catch (error) {
               console.error('[---CAMPFIRE-WIDGET] Error loading widget:', error);
               tryIframeFallback();
