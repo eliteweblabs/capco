@@ -23,9 +23,9 @@ const { currentUser, position = "bottom-right", theme = "auto" } = Astro.props;
 // Get Campfire URL from environment variable
 // In Astro, PUBLIC_ prefixed vars are available client-side
 // Check both regular and PUBLIC_ prefixed versions
-let campfireUrl = import.meta.env.PUBLIC_CAMPFIRE_URL || import.meta.env.CAMPFIRE_URL || undefined;
+let campfireUrl = import.meta.env.PUBLIC_CAMPFIRE_URL;
 let campfireWidgetId =
-  import.meta.env.PUBLIC_CAMPFIRE_WIDGET_ID || import.meta.env.CAMPFIRE_WIDGET_ID || undefined;
+  import.meta.env.PUBLIC_CAMPFIRE_WIDGET_ID;
 
 // Log what we found (server-side only, won't expose in client)
 if (import.meta.env.NODE_ENV === "development") {
@@ -39,17 +39,17 @@ if (import.meta.env.NODE_ENV === "development") {
   });
 }
 
-// Ensure URL has protocol (required for script loading)
-if (campfireUrl && !campfireUrl.startsWith("http://") && !campfireUrl.startsWith("https://")) {
-  campfireUrl = `https://${campfireUrl}`;
-}
+// // Ensure URL has protocol (required for script loading)
+// if (campfireUrl && !campfireUrl.startsWith("http://") && !campfireUrl.startsWith("https://")) {
+//   campfireUrl = `https://${campfireUrl}`;
+// }
 
-// If no Campfire URL or widget ID is configured, don't render the widget
-if (!campfireUrl && !campfireWidgetId) {
-  console.warn(
-    "⚠️ [CAMPFIRE-WIDGET] Campfire URL or Widget ID not configured. Set PUBLIC_CAMPFIRE_URL or PUBLIC_CAMPFIRE_WIDGET_ID in environment variables."
-  );
-}
+// // If no Campfire URL or widget ID is configured, don't render the widget
+// if (!campfireUrl && !campfireWidgetId) {
+//   console.warn(
+//     "⚠️ [CAMPFIRE-WIDGET] Campfire URL or Widget ID not configured. Set PUBLIC_CAMPFIRE_URL or PUBLIC_CAMPFIRE_WIDGET_ID in environment variables."
+//   );
+// }
 
 // Determine theme - pass as string for client-side evaluation
 const themeMode = theme;
