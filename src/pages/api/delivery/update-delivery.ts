@@ -586,7 +586,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Log failed email delivery
             try {
               await SimpleProjectLogger.addLogEntry(
-                project.id,
+                project?.id || 0,
                 "emailFailed",
                 `Email delivery failed to ${userEmail} - Type: ${method}, Subject: ${emailSubject}, Error: ${errorText}`,
                 { method, emailSubject, error: errorText, status: response.status }
@@ -602,7 +602,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             // Log successful email delivery
             try {
               await SimpleProjectLogger.addLogEntry(
-                project.id,
+                project?.id || 0,
                 "emailSent",
                 `Email sent successfully to ${userEmail} - Type: ${method}, Subject: ${emailSubject}`,
                 { method, emailSubject, responseId: responseData.id }
@@ -631,25 +631,16 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
           // Log failed email delivery (catch block)
           try {
-            if (project?.id) {
-              await SimpleProjectLogger.addLogEntry(
-                project.id,
-                "emailFailed",
-                `Email delivery error to ${userEmail} - Type: ${method}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
-                {
-                  method,
-                  emailSubject,
-                  error: userError instanceof Error ? userError.message : "Unknown error",
-                }
-              );
-            } else {
-              console.log("📧 [EMAIL-DELIVERY] Email delivery error (no project context):", {
-                userEmail,
+            await SimpleProjectLogger.addLogEntry(
+              project?.id || 0,
+              "emailFailed",
+              `Email delivery error to ${userEmail} - Type: ${method}, Subject: ${emailSubject}, Error: ${userError instanceof Error ? userError.message : "Unknown error"}`,
+              {
                 method,
                 emailSubject,
                 error: userError instanceof Error ? userError.message : "Unknown error",
-              });
-            }
+              }
+            );
           } catch (logError) {
             console.error("📧 [EMAIL-DELIVERY] Error logging email delivery error:", logError);
           }
@@ -685,39 +676,29 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         currentUser,
       });
 
-      if (project?.id) {
-        console.log("📧 [EMAIL-DELIVERY] Logging email delivery to database:", {
-          projectId: project.id,
-          method,
-          totalSent: sentEmails.length,
-          totalFailed: failedEmails.length,
-        });
+      console.log("📧 [EMAIL-DELIVERY] Logging email delivery to database:", {
+        projectId: project?.id || 0,
+        method,
+        totalSent: sentEmails.length,
+        totalFailed: failedEmails.length,
+      });
 
-        try {
-          await SimpleProjectLogger.addLogEntry(
-            project.id,
-            "emailSent",
-            `Email delivery batch completed - Type: ${method}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
-            {
-              method,
-              totalSent: sentEmails.length,
-              totalFailed: failedEmails.length,
-              sentEmails: sentEmails,
-              failedEmails: failedEmails,
-            }
-          );
-          console.log("📧 [EMAIL-DELIVERY] Successfully logged to database");
-        } catch (logError) {
-          console.error("📧 [EMAIL-DELIVERY] Failed to log to database:", logError);
-        }
-      } else {
-        console.log("📧 [EMAIL-DELIVERY] Email delivery batch completed (no project context):", {
-          method,
-          totalSent: sentEmails.length,
-          totalFailed: failedEmails.length,
-          sentEmails: sentEmails,
-          failedEmails: failedEmails,
-        });
+      try {
+        await SimpleProjectLogger.addLogEntry(
+          project?.id || 0,
+          "emailSent",
+          `Email delivery batch completed - Type: ${method}, Total sent: ${sentEmails.length}, Total failed: ${failedEmails.length}`,
+          {
+            method,
+            totalSent: sentEmails.length,
+            totalFailed: failedEmails.length,
+            sentEmails: sentEmails,
+            failedEmails: failedEmails,
+          }
+        );
+        console.log("📧 [EMAIL-DELIVERY] Successfully logged to database");
+      } catch (logError) {
+        console.error("📧 [EMAIL-DELIVERY] Failed to log to database:", logError);
       }
     } catch (logError) {
       console.error("📧 [EMAIL-DELIVERY] Error logging email delivery completion:", logError);
@@ -853,28 +834,18 @@ async function sendBrowserNotification(
 
     // Log browser notification delivery
     try {
-      if (context.project?.id) {
-        await SimpleProjectLogger.addLogEntry(
-          context.project.id,
-          "browserNotificationSent",
-          `Browser push notification sent - Title: ${preferences.browserNotificationTitle || context.emailSubject}`,
-          {
-            method: "browser",
-            title: preferences.browserNotificationTitle || context.emailSubject,
-            body: preferences.browserNotificationBody || context.emailContent,
-            icon: preferences.browserNotificationIcon || "/favicon.png",
-            url: context.buttonLink,
-          }
-        );
-      } else {
-        console.log("🔔 [BROWSER-NOTIFICATION] Browser notification sent (no project context):", {
+      await SimpleProjectLogger.addLogEntry(
+        context.project?.id || 0,
+        "browserNotificationSent",
+        `Browser push notification sent - Title: ${preferences.browserNotificationTitle || context.emailSubject}`,
+        {
           method: "browser",
           title: preferences.browserNotificationTitle || context.emailSubject,
           body: preferences.browserNotificationBody || context.emailContent,
           icon: preferences.browserNotificationIcon || "/favicon.png",
           url: context.buttonLink,
-        });
-      }
+        }
+      );
     } catch (logError) {
       console.error("🔔 [BROWSER-NOTIFICATION] Error logging browser notification:", logError);
     }
@@ -972,30 +943,19 @@ async function sendInternalNotification(
 
     // Log internal notification delivery
     try {
-      if (context.project?.id) {
-        await SimpleProjectLogger.addLogEntry(
-          context.project.id,
-          "internalNotificationSent",
-          `Internal notification sent to ${userIds.length} users - Title: ${context.emailSubject}`,
-          {
-            method: "internal",
-            userIds: userIds,
-            notificationCount: notifications.length,
-            title: context.emailSubject,
-            type: preferences.internalNotificationType || "info",
-            priority: preferences.internalNotificationPriority || "normal",
-          }
-        );
-      } else {
-        console.log("🔔 [INTERNAL-NOTIFICATION] Internal notification sent (no project context):", {
+      await SimpleProjectLogger.addLogEntry(
+        context.project?.id || 0,
+        "internalNotificationSent",
+        `Internal notification sent to ${userIds.length} users - Title: ${context.emailSubject}`,
+        {
           method: "internal",
           userIds: userIds,
           notificationCount: notifications.length,
           title: context.emailSubject,
           type: preferences.internalNotificationType || "info",
           priority: preferences.internalNotificationPriority || "normal",
-        });
-      }
+        }
+      );
     } catch (logError) {
       console.error("🔔 [INTERNAL-NOTIFICATION] Error logging internal notification:", logError);
     }
@@ -1048,28 +1008,18 @@ async function sendSMSNotification(
 
     // Log SMS notification delivery
     try {
-      if (context.project?.id) {
-        await SimpleProjectLogger.addLogEntry(
-          context.project.id,
-          "smsNotificationSent",
-          `SMS notification queued for ${context.usersToNotify.length} users - Provider: ${preferences.smsProvider || "twilio"}`,
-          {
-            method: "sms",
-            users: context.usersToNotify,
-            provider: preferences.smsProvider || "twilio",
-            message: context.emailContent,
-            queuedAt: new Date().toISOString(),
-          }
-        );
-      } else {
-        console.log("🔔 [SMS-NOTIFICATION] SMS notification queued (no project context):", {
+      await SimpleProjectLogger.addLogEntry(
+        context.project?.id || 0,
+        "smsNotificationSent",
+        `SMS notification queued for ${context.usersToNotify.length} users - Provider: ${preferences.smsProvider || "twilio"}`,
+        {
           method: "sms",
           users: context.usersToNotify,
           provider: preferences.smsProvider || "twilio",
           message: context.emailContent,
           queuedAt: new Date().toISOString(),
-        });
-      }
+        }
+      );
     } catch (logError) {
       console.error("🔔 [SMS-NOTIFICATION] Error logging SMS notification:", logError);
     }
@@ -1109,25 +1059,11 @@ async function sendAllNotifications(
 
     // Log all notifications delivery
     try {
-      if (context.project?.id) {
-        await SimpleProjectLogger.addLogEntry(
-          context.project.id,
-          "allNotificationsSent",
-          `All notification types sent - ${successCount}/3 successful - Title: ${context.emailSubject}`,
-          {
-            method: "all",
-            successCount: successCount,
-            totalTypes: 3,
-            title: context.emailSubject,
-            results: results.map((result, index) => ({
-              type: ["browser", "internal", "sms"][index],
-              success: result.status === "fulfilled" && result.value.success,
-              error: result.status === "rejected" ? result.reason : null,
-            })),
-          }
-        );
-      } else {
-        console.log("🔔 [ALL-NOTIFICATIONS] All notification types sent (no project context):", {
+      await SimpleProjectLogger.addLogEntry(
+        context.project?.id || 0,
+        "allNotificationsSent",
+        `All notification types sent - ${successCount}/3 successful - Title: ${context.emailSubject}`,
+        {
           method: "all",
           successCount: successCount,
           totalTypes: 3,
@@ -1137,8 +1073,8 @@ async function sendAllNotifications(
             success: result.status === "fulfilled" && result.value.success,
             error: result.status === "rejected" ? result.reason : null,
           })),
-        });
-      }
+        }
+      );
     } catch (logError) {
       console.error("🔔 [ALL-NOTIFICATIONS] Error logging all notifications:", logError);
     }
