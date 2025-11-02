@@ -228,45 +228,103 @@ const themeMode = theme;
               return;
             }
             
-            try {
-              const iframe = document.createElement('iframe');
-              const embedUrl = `${campfireUrl}/embed${campfireWidgetId ? '?id=' + campfireWidgetId : ''}`;
-              iframe.src = embedUrl;
-              iframe.style.width = '400px';
-              iframe.style.height = '600px';
-              iframe.style.border = 'none';
-              iframe.style.borderRadius = '8px';
-              iframe.style.position = 'fixed';
-              iframe.style.bottom = '20px';
-              iframe.style.right = '20px';
-              iframe.style.zIndex = '9999';
-              iframe.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-              iframe.style.display = 'none'; // Start hidden, show on load
-              iframe.allow = 'camera; microphone; geolocation';
-              iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox');
+            // Try multiple possible embed URLs
+            const possibleEmbedUrls = [
+              `${campfireUrl}/embed${campfireWidgetId ? '?id=' + campfireWidgetId : ''}`,
+              `${campfireUrl}/widget${campfireWidgetId ? '?id=' + campfireWidgetId : ''}`,
+              `${campfireUrl}/chat${campfireWidgetId ? '?id=' + campfireWidgetId : ''}`,
+              `${campfireUrl}${campfireWidgetId ? '?widget=' + campfireWidgetId : ''}`,
+              `${campfireUrl}${campfireWidgetId ? '?embed=' + campfireWidgetId : ''}`,
+            ];
+            
+            let currentEmbedIndex = 0;
+            
+            function tryEmbedUrl() {
+              if (currentEmbedIndex >= possibleEmbedUrls.length) {
+                console.error('[---CAMPFIRE-WIDGET] All embed URLs failed. The Campfire server may be blocking iframe embedding (X-Frame-Options) or the embed endpoints don\'t exist.');
+                container.innerHTML = '<div style="padding: 10px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 12px;">Campfire widget failed to load. Check that:<br>1. Campfire server allows iframe embedding (remove X-Frame-Options header)<br>2. The embed endpoint exists on your Campfire deployment</div>';
+                return;
+              }
               
-              iframe.onload = () => {
-                iframe.style.display = 'block';
-                console.log('[---CAMPFIRE-WIDGET] Campfire iframe loaded successfully:', embedUrl);
-              };
-              iframe.onerror = (error) => {
-                console.error('[---CAMPFIRE-WIDGET] Failed to load Campfire iframe:', embedUrl, error);
-                container.innerHTML = '<div style="padding: 10px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 12px;">Campfire widget failed to load. URL: ' + embedUrl + '</div>';
-              };
+              const embedUrl = possibleEmbedUrls[currentEmbedIndex];
+              console.log('[---CAMPFIRE-WIDGET] Trying embed URL (' + (currentEmbedIndex + 1) + '/' + possibleEmbedUrls.length + '):', embedUrl);
               
-              // Timeout for iframe load
-              setTimeout(() => {
-                if (iframe.style.display === 'none') {
-                  console.warn('[---CAMPFIRE-WIDGET] Iframe load timeout:', embedUrl);
-                  container.innerHTML = '<div style="padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404; font-size: 12px;">Campfire widget is loading slowly. If this persists, check your Campfire deployment.</div>';
-                }
-              }, 10000);
-              
-              container.appendChild(iframe);
-            } catch (error) {
-              console.error('[---CAMPFIRE-WIDGET] Error creating iframe:', error);
-              container.innerHTML = '<div style="padding: 10px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 12px;">Campfire widget error: ' + error.message + '</div>';
+              try {
+                const iframe = document.createElement('iframe');
+                iframe.src = embedUrl;
+                iframe.style.width = '400px';
+                iframe.style.height = '600px';
+                iframe.style.border = 'none';
+                iframe.style.borderRadius = '8px';
+                iframe.style.position = 'fixed';
+                iframe.style.bottom = '20px';
+                iframe.style.right = '20px';
+                iframe.style.zIndex = '9999';
+                iframe.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                iframe.style.display = 'none';
+                iframe.allow = 'camera; microphone; geolocation';
+                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox');
+                
+                let loadVerified = false;
+                
+                // Check if iframe actually loaded content (not just the onload event)
+                const verifyLoad = () => {
+                  try {
+                    // Try to access iframe content - if blocked by X-Frame-Options, this will throw
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                    if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML) {
+                      loadVerified = true;
+                      iframe.style.display = 'block';
+                      console.log('[---CAMPFIRE-WIDGET] Campfire iframe loaded and verified:', embedUrl);
+                      return true;
+                    }
+                  } catch (e) {
+                    // Cross-origin or X-Frame-Options blocked
+                    console.warn('[---CAMPFIRE-WIDGET] Cannot verify iframe content (may be blocked by X-Frame-Options):', e.message);
+                  }
+                  return false;
+                };
+                
+                iframe.onload = () => {
+                  setTimeout(() => {
+                    if (!verifyLoad()) {
+                      // onload fired but content not accessible - likely blocked
+                      console.warn('[---CAMPFIRE-WIDGET] Iframe onload fired but content not accessible - trying next URL');
+                      container.removeChild(iframe);
+                      currentEmbedIndex++;
+                      tryEmbedUrl();
+                    }
+                  }, 500);
+                };
+                
+                iframe.onerror = (error) => {
+                  console.warn('[---CAMPFIRE-WIDGET] Iframe load error:', embedUrl);
+                  if (container.contains(iframe)) {
+                    container.removeChild(iframe);
+                  }
+                  currentEmbedIndex++;
+                  tryEmbedUrl();
+                };
+                
+                // Check for X-Frame-Options blocking after a delay
+                setTimeout(() => {
+                  if (!loadVerified && container.contains(iframe)) {
+                    console.warn('[---CAMPFIRE-WIDGET] Iframe may be blocked by X-Frame-Options, trying next URL');
+                    container.removeChild(iframe);
+                    currentEmbedIndex++;
+                    tryEmbedUrl();
+                  }
+                }, 2000);
+                
+                container.appendChild(iframe);
+              } catch (error) {
+                console.error('[---CAMPFIRE-WIDGET] Error creating iframe:', error);
+                currentEmbedIndex++;
+                tryEmbedUrl();
+              }
             }
+            
+            tryEmbedUrl();
           }
 
         }
