@@ -255,7 +255,7 @@ If they immediately mention a consultation need: "I'd be happy to help you sched
 - All Consultations: Project address, contact information, general project scope
 
 ### Policies
-- Consultations available Monday-Friday, 9 AM - 5 PM
+- Consultations available by calling tool get_availability()
 - Same-day appointments available for urgent needs
 - Phone consultations available if in-person isn't possible
 - Confirmation emails sent automatically after booking
