@@ -17,11 +17,18 @@ const currentRole = currentUser?.profile?.role;
 const { id } = Astro.params;
 
 // Handle special routes that shouldn't be treated as project IDs
-if (id === "dashboard") {
-  return Astro.redirect("/project/dashboard");
-}
-if (id === "new") {
-  return Astro.redirect("/project/new");
+// Check BEFORE any other processing to avoid invalid project ID errors
+if (!id || id === "dashboard" || id === "new") {
+  if (id === "dashboard") {
+    return Astro.redirect("/project/dashboard");
+  }
+  if (id === "new") {
+    return Astro.redirect("/project/new");
+  }
+  // If id is undefined/null, redirect to dashboard
+  if (!id) {
+    return Astro.redirect("/project/dashboard");
+  }
 }
 
 console.log("🏗️ [PROJECT] Project ID:", id);

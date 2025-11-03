@@ -435,36 +435,46 @@ const displayText = selectedOption?.label || placeholder;
           const result = await response.clone().json();
           const slotMachineId = this.id || "unknown";
           console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] ===== API SUCCESS RESPONSE =====`);
-          console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] Result modal data:`, result.modalData);
-          console.log(
-            `🎰 [SLOT-MACHINE-${slotMachineId}] showModal function available:`,
-            typeof window.showModal
-          );
-          console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] Calling showModal...`);
-
-          if (typeof window.showModal === "function") {
+          
+          // Check if result exists and has modalData
+          if (result && result.modalData) {
+            console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] Result modal data:`, result.modalData);
             console.log(
-              `🎰 [SLOT-MACHINE-${slotMachineId}] About to call showModal with:`,
-              result.modalData
+              `🎰 [SLOT-MACHINE-${slotMachineId}] showModal function available:`,
+              typeof window.showModal
             );
-            // Add a small delay to ensure UnifiedNotification is ready
-            setTimeout(async () => {
-              try {
-                await window.showModal(result.modalData);
-                console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] showModal call completed`);
-              } catch (modalError) {
-                console.error(
-                  `🎰 [SLOT-MACHINE-${slotMachineId}] Error calling showModal:`,
-                  modalError
-                );
-              }
-            }, 100);
+            console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] Calling showModal...`);
+
+            if (typeof window.showModal === "function") {
+              console.log(
+                `🎰 [SLOT-MACHINE-${slotMachineId}] About to call showModal with:`,
+                result.modalData
+              );
+              // Add a small delay to ensure UnifiedNotification is ready
+              setTimeout(async () => {
+                try {
+                  await window.showModal(result.modalData);
+                  console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] showModal call completed`);
+                } catch (modalError) {
+                  console.error(
+                    `🎰 [SLOT-MACHINE-${slotMachineId}] Error calling showModal:`,
+                    modalError
+                  );
+                }
+              }, 100);
+            } else {
+              console.error(`🎰 [SLOT-MACHINE-${slotMachineId}] showModal function not available!`);
+            }
           } else {
-            console.error(`🎰 [SLOT-MACHINE-${slotMachineId}] showModal function not available!`);
+            console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] Success response received but no modalData in result:`, result);
           }
         } catch (error) {
           const slotMachineId = this.id || "unknown";
-          console.error(`🎰 [SLOT-MACHINE-${slotMachineId}] Error in success handler:`, error);
+          console.error(`🎰 [SLOT-MACHINE-${slotMachineId}] Error parsing success response:`, error);
+          // Response was OK but JSON parsing failed or result is invalid
+          if (window.showModal) {
+            window.showModal("error", "Error", "Received invalid response from server.", 5000);
+          }
         }
 
         // if (result.notificationData && window.showModal && showNotification) {
@@ -681,9 +691,9 @@ const displayText = selectedOption?.label || placeholder;
           optionsList.appendChild(li);
         });
       } else {
-        // const messageLi = createMessageElement("No results found");
-        // document.getElementById("no-results-message").innerHTML = noResultsText;
-        // optionsList.appendChild(messageLi);
+        // Show empty state message when no options are available
+        const messageLi = createMessageElement(noResultsText || "No results found");
+        optionsList.appendChild(messageLi);
       }
 
       // Handle single item case - if there's only one option and no selection, select it by default
@@ -994,8 +1004,35 @@ const displayText = selectedOption?.label || placeholder;
           throw new Error(`Fetch failed: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log(`🔄 [SLOT-MACHINE] Load data response:`, data);
+        let data;
+        try {
+          data = await response.json();
+          console.log(`🔄 [SLOT-MACHINE] Load data response:`, data);
+        } catch (jsonError) {
+          console.error(`🔄 [SLOT-MACHINE] Error parsing JSON response:`, jsonError);
+          // Try to get response as text for debugging
+          try {
+            const responseClone = response.clone();
+            const textResponse = await responseClone.text();
+            console.error(`🔄 [SLOT-MACHINE] Response as text:`, textResponse);
+            throw new Error(`Invalid JSON response: ${textResponse.substring(0, 100)}`);
+          } catch (textError) {
+            throw new Error(`Failed to parse response: ${jsonError.message}`);
+          }
+        }
+
+        // Check if data exists
+        if (!data) {
+          console.warn(`🔄 [SLOT-MACHINE] Empty or null response received`);
+          if (optionsList) {
+            const messageLi = createMessageElement(noResultsText || "No results found");
+            optionsList.innerHTML = "";
+            optionsList.appendChild(messageLi);
+            selectedIndex = -1;
+            updateSelection();
+          }
+          return;
+        }
 
         // Transform data if transform function exists
         let transformedData = data;
@@ -1030,9 +1067,27 @@ const displayText = selectedOption?.label || placeholder;
           selectedIndex = newSelectedIndex;
           updateSelection();
           centerSelectedItem();
+        } else {
+          // Show empty state when no options are returned
+          console.log(`🔄 [SLOT-MACHINE] No options returned from API`);
+          if (optionsList) {
+            const messageLi = createMessageElement(noResultsText || "No results found");
+            optionsList.innerHTML = "";
+            optionsList.appendChild(messageLi);
+            selectedIndex = -1;
+            updateSelection();
+          }
         }
       } catch (error) {
         console.error(`🔄 [SLOT-MACHINE] Error fetching data on load:`, error);
+        // Show error message in the options list
+        if (optionsList) {
+          const errorLi = createMessageElement("Error loading results", true);
+          optionsList.innerHTML = "";
+          optionsList.appendChild(errorLi);
+          selectedIndex = -1;
+          updateSelection();
+        }
       }
 
       // Focus search input after fetchOnLoad data is populated

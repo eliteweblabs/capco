@@ -59,7 +59,7 @@ export class SimpleProjectLogger {
    */
   private static checkClient(client: any): any {
     if (!client) {
-      console.error("Database client not available");
+      console.error("📝 [SIMPLE-LOGGER] Database client not available - check SUPABASE_SECRET or SUPABASE_ADMIN_KEY environment variable");
       return null;
     }
     return client;
