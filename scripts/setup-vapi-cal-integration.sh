@@ -23,7 +23,7 @@ check_env_var "VAPI_API_KEY"
 check_env_var "CAL_API_KEY"
 check_env_var "RAILWAY_PUBLIC_DOMAIN"
 check_env_var "PUBLIC_SUPABASE_URL"
-check_env_var "SUPABASE_ANON_KEY"
+check_env_var "PUBLIC_SUPABASE_ANON_KEY"
 
 echo "✅ All required environment variables are set"
 

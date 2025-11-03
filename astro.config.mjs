@@ -74,10 +74,10 @@ export default defineConfig({
         env.PUBLIC_SUPABASE_URL || env.PUBLIC_SUPABASE_URL
       ),
       "process.env.PUBLIC_SUPABASE_ANON_KEY": JSON.stringify(
-        env.PUBLIC_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY
+        env.PUBLIC_SUPABASE_ANON_KEY || env.PUBLIC_SUPABASE_ANON_KEY
       ),
       "process.env.STRIPE_PUBLISHABLE_KEY": JSON.stringify(env.STRIPE_PUBLISHABLE_KEY),
-      "process.env.SUPABASE_ANON_KEY": JSON.stringify(env.SUPABASE_ANON_KEY),
+      "process.env.PUBLIC_SUPABASE_ANON_KEY": JSON.stringify(env.PUBLIC_SUPABASE_ANON_KEY),
       "process.env.PUBLIC_SUPABASE_URL": JSON.stringify(env.PUBLIC_SUPABASE_URL),
       "process.env.RESEND_WEBHOOK_SECRET": JSON.stringify(env.RESEND_WEBHOOK_SECRET),
       "process.env.GLOBAL_COLOR_SECONDARY": JSON.stringify(env.GLOBAL_COLOR_SECONDARY),
@@ -86,7 +86,7 @@ export default defineConfig({
       ),
       "process.env.STRIPE_DOMAIN_ID": JSON.stringify(env.STRIPE_DOMAIN_ID),
       "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),
-      "process.env.SUPABASE_ANON_KEY": JSON.stringify(env.SUPABASE_ANON_KEY),
+      "process.env.PUBLIC_SUPABASE_ANON_KEY": JSON.stringify(env.PUBLIC_SUPABASE_ANON_KEY),
       "process.env.PUBLIC_SUPABASE_URL": JSON.stringify(env.PUBLIC_SUPABASE_URL),
       "process.env.YEAR": JSON.stringify(env.YEAR),
     },

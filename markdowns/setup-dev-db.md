@@ -51,8 +51,8 @@ Then update these lines in `.env`:
 ```bash
 # DEVELOPMENT Supabase Configuration
 PUBLIC_SUPABASE_URL=https://[your-new-dev-project].supabase.co
-SUPABASE_ANON_KEY=[your-new-dev-anon-key]
-SUPABASE_ANON_KEY=[your-new-dev-service-role-key]
+PUBLIC_SUPABASE_ANON_KEY=[your-new-dev-anon-key]
+PUBLIC_SUPABASE_ANON_KEY=[your-new-dev-service-role-key]
 
 # Make sure these are set
 NODE_ENV=development
@@ -264,8 +264,8 @@ Save your production config in `.env.production` for easy switching:
 # Copy current production values to a separate file
 echo "# Production Supabase Config" > .env.production
 echo "PUBLIC_SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co" >> .env.production
-echo "SUPABASE_ANON_KEY=[production-anon-key]" >> .env.production
-echo "SUPABASE_ANON_KEY=[production-service-role-key]" >> .env.production
+echo "PUBLIC_SUPABASE_ANON_KEY=[production-anon-key]" >> .env.production
+echo "PUBLIC_SUPABASE_ANON_KEY=[production-service-role-key]" >> .env.production
 echo "NODE_ENV=production" >> .env.production
 echo "RAILWAY_PUBLIC_DOMAIN=https://capcofire.com" >> .env.production
 ```

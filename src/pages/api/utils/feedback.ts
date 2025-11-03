@@ -41,7 +41,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Create a client with the user's session
         const supabaseUser = createClient(
           supabaseUrl!,
-          import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY!,
+          import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.PUBLIC_SUPABASE_ANON_KEY!,
           {
             global: {
               headers: {

@@ -114,7 +114,7 @@ FROM_NAME=Your App Name        # Sender display name
 
 # Optional
 PUBLIC_SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_key
+PUBLIC_SUPABASE_ANON_KEY=your_key
 ```
 
 ## Usage Examples

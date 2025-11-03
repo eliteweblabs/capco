@@ -7,10 +7,10 @@ echo "🔧 Restoring complete .env file with all necessary keys..."
 cat > .env << 'EOF'
 # Supabase Database Configuration
 PUBLIC_SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key_here
+PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 PUBLIC_SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key_here
-SUPABASE_ANON_KEY=your_SUPABASE_ANON_KEY_here
+PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+PUBLIC_SUPABASE_ANON_KEY=your_SUPABASE_ANON_KEY_here
 
 # Site Configuration
 RAILWAY_PUBLIC_DOMAIN=http://localhost:4321

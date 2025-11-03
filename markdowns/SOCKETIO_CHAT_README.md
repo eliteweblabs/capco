@@ -40,7 +40,7 @@ Make sure your `.env` file contains:
 
 ```bash
 PUBLIC_SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_service_role_key
+PUBLIC_SUPABASE_ANON_KEY=your_service_role_key
 ```
 
 ### CORS Settings
@@ -140,7 +140,7 @@ Check the browser console for Socket.io connection logs:
 Make sure your production environment has:
 
 - `PUBLIC_SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
+- `PUBLIC_SUPABASE_ANON_KEY`
 
 ## 🔒 Security
 
