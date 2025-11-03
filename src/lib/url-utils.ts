@@ -26,10 +26,25 @@ export function ensureProtocol(url?: string | null, defaultUrl: string = "http:/
 
 /**
  * Get the base URL for the current environment
- * Uses RAILWAY_PUBLIC_DOMAIN environment variable, with request URL fallback for development
+ * Prioritizes localhost/development detection, then uses RAILWAY_PUBLIC_DOMAIN, then request URL
  */
 export function getBaseUrl(request?: Request): string {
-  // Check for RAILWAY_PUBLIC_DOMAIN environment variable first
+  // First, check if we're in development (localhost) by examining the request
+  if (request) {
+    try {
+      const url = new URL(request.url);
+      const hostname = url.hostname;
+      
+      // If we're on localhost, always use the request URL (even if RAILWAY_PUBLIC_DOMAIN is set)
+      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
+        return `${url.protocol}//${url.host}`;
+      }
+    } catch (e) {
+      console.error("🚨 [URL-UTILS] Failed to parse request URL:", e);
+    }
+  }
+
+  // Check for RAILWAY_PUBLIC_DOMAIN environment variable (for production)
   let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
   
   if (baseUrl) {
@@ -54,7 +69,7 @@ export function getBaseUrl(request?: Request): string {
     }
   }
 
-  // Fallback to request URL in development
+  // Fallback to request URL if available
   if (request) {
     try {
       const url = new URL(request.url);
@@ -71,10 +86,25 @@ export function getBaseUrl(request?: Request): string {
 
 /**
  * Get the base URL for API calls
- * Uses RAILWAY_PUBLIC_DOMAIN environment variable, with request URL fallback for development
+ * Prioritizes localhost/development detection, then uses RAILWAY_PUBLIC_DOMAIN, then request URL
  */
 export function getApiBaseUrl(request?: Request): string {
-  // Check for RAILWAY_PUBLIC_DOMAIN environment variable first
+  // First, check if we're in development (localhost) by examining the request
+  if (request) {
+    try {
+      const url = new URL(request.url);
+      const hostname = url.hostname;
+      
+      // If we're on localhost, always use the request URL (even if RAILWAY_PUBLIC_DOMAIN is set)
+      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
+        return `${url.protocol}//${url.host}`;
+      }
+    } catch (e) {
+      console.error("🚨 [URL-UTILS] Failed to parse request URL:", e);
+    }
+  }
+
+  // Check for RAILWAY_PUBLIC_DOMAIN environment variable (for production)
   let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
   
   if (baseUrl) {
@@ -99,7 +129,7 @@ export function getApiBaseUrl(request?: Request): string {
     }
   }
 
-  // Fallback to request URL in development
+  // Fallback to request URL if available
   if (request) {
     try {
       const url = new URL(request.url);
