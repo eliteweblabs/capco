@@ -1,9 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Try PUBLIC_ first (for client-side), fallback to non-PUBLIC (for server-side)
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL;
-const supabaseAnonKey =
-  import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+// Try PUBLIC_ first (for client-side)
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
 // Debug logging (always log in production to help diagnose Railway issues)
 // Use [--- prefix for server-side logs that should be visible in production
