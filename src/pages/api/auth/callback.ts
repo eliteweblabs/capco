@@ -3,35 +3,21 @@ import { setAuthCookies } from "../../../lib/auth-cookies";
 import { supabase } from "../../../lib/supabase";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 
-export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
+// GET handler - Legacy fallback for old redirect URLs
+// OAuth should now redirect directly to /auth/callback (client-side)
+// This handler redirects any requests that still hit /api/auth/callback to the client-side handler
+export const GET: APIRoute = async ({ url, redirect }) => {
   console.log(
-    "[---AUTH-CALLBACK] GET callback started (redirecting to client-side handler for PKCE)"
+    "[---AUTH-CALLBACK] GET callback received (legacy redirect - should use /auth/callback directly)"
   );
 
-  // Get the auth code from the URL
-  const authCode = url.searchParams.get("code");
-  const error = url.searchParams.get("error");
-  const errorDescription = url.searchParams.get("error_description");
-
-  // If there's an error, redirect to client-side callback with error
-  if (error) {
-    console.error("[---AUTH-CALLBACK] OAuth error received:", error, errorDescription);
-    return redirect(
-      `/auth/callback?error=${encodeURIComponent(error)}${errorDescription ? `&error_description=${encodeURIComponent(errorDescription)}` : ""}`
-    );
-  }
-
-  // If there's a code, redirect to client-side callback page which has access to localStorage (code verifier)
-  // The client-side page will handle the PKCE exchange and then POST the tokens back to this endpoint
-  if (authCode) {
-    console.log("[---AUTH-CALLBACK] Redirecting to client-side callback for PKCE exchange");
-    // Preserve all URL parameters for the client-side handler
-    const params = new URLSearchParams(url.search);
+  // Preserve all URL parameters and redirect to client-side callback
+  const params = new URLSearchParams(url.search);
+  if (params.toString()) {
     return redirect(`/auth/callback?${params.toString()}`);
   }
 
-  // No code or error, redirect to home
-  console.log("[---AUTH-CALLBACK] No auth code or error, redirecting to home");
+  // No parameters, redirect to home
   return redirect("/");
 };
 

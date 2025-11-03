@@ -20,8 +20,9 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   if (provider) {
     // Use getBaseUrl to ensure we use the custom domain (capcofire.com) instead of Supabase URL
     // This ensures the redirect URL shown in Google's sign-in prompt uses your custom domain
+    // Redirect directly to client-side callback for PKCE (code verifier is in localStorage)
     const baseUrl = getBaseUrl(request);
-    const redirectUrl = `${baseUrl}/api/auth/callback`;
+    const redirectUrl = `${baseUrl}/auth/callback`;
     console.log("[---AUTH-SIGNIN] OAuth redirect URL:", redirectUrl);
     console.log("[---AUTH-SIGNIN] Base URL:", baseUrl);
 
