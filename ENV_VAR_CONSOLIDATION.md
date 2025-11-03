@@ -41,7 +41,7 @@ PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 
 ```bash
 PUBLIC_SUPABASE_URL=https://your-project.supabase.co  # Fallback only
-SUPABASE_ANON_KEY=your_anon_key_here            # Fallback only
+PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here            # Fallback only
 ```
 
 ## Migration Notes

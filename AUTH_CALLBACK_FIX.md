@@ -21,17 +21,17 @@ PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 ```
 
-**Important:** Use the **exact same values** as your existing `PUBLIC_SUPABASE_URL` and `SUPABASE_ANON_KEY` variables - just copy them:
+**Important:** Use the **exact same values** as your existing `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` variables - just copy them:
 
 - If `PUBLIC_SUPABASE_URL` = `https://qudlxlryegnainztkrtk.supabase.co`
 - Then set `PUBLIC_SUPABASE_URL` = `https://qudlxlryegnainztkrtk.supabase.co` (same value)
 
-- If `SUPABASE_ANON_KEY` = `eyJhbGc...` (long string)
+- If `PUBLIC_SUPABASE_ANON_KEY` = `eyJhbGc...` (long string)
 - Then set `PUBLIC_SUPABASE_ANON_KEY` = `eyJhbGc...` (same value)
 
 5. Click **Save** or **Deploy** - Railway will automatically redeploy with the new variables
 
-**Note:** These `PUBLIC_` prefixed variables are required for client-side code (browser) to access Supabase. The regular `PUBLIC_SUPABASE_URL` and `SUPABASE_ANON_KEY` are only available server-side.
+**Note:** These `PUBLIC_` prefixed variables are required for client-side code (browser) to access Supabase. The regular `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` are only available server-side.
 
 ### Step 2: Re-add Redirect URL in Supabase (Production)
 
