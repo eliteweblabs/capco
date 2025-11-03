@@ -7,6 +7,8 @@ import {
   EncryptionOptions,
   validateEncryptionOptions,
 } from "../../../lib/pdf-encryption";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
 
 /**
  * Generate PDF API
@@ -111,6 +113,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Generate HTML content
     const htmlContent = generateHTMLContent(template, project, headerTemplate, footerTemplate);
+
+    // Optionally save HTML to local templates directory for preview purposes
+    if (import.meta.env.SAVE_HTML_TEMPLATES === "true" || import.meta.env.SAVE_HTML_TEMPLATES === "1") {
+      try {
+        await saveHTMLTemplate(htmlContent, projectId, templateId, template.name);
+      } catch (htmlSaveError) {
+        // Don't fail the entire operation if HTML saving fails
+        console.warn("⚠️ [PDF-GENERATE] Failed to save HTML template (non-fatal):", htmlSaveError);
+      }
+    }
 
     // Generate PDF using Puppeteer
     const pdfBuffer = await generatePDFFromHTML(htmlContent, pageSize, orientation);
@@ -282,6 +294,37 @@ function generateHTMLContent(
     </body>
     </html>
   `;
+}
+
+/**
+ * Save HTML template to local templates directory for preview purposes
+ */
+async function saveHTMLTemplate(
+  htmlContent: string,
+  projectId: number,
+  templateId: number,
+  templateName: string
+): Promise<void> {
+  try {
+    const templatesDir = join(process.cwd(), "src", "components", "pdf-system", "templates");
+    
+    // Ensure directory exists
+    await mkdir(templatesDir, { recursive: true });
+
+    // Create a safe filename
+    const safeTemplateName = templateName.replace(/[^a-zA-Z0-9]/g, "_");
+    const timestamp = Date.now();
+    const fileName = `project-${projectId}_template-${templateId}_${safeTemplateName}_${timestamp}.html`;
+    const filePath = join(templatesDir, fileName);
+
+    // Write HTML file
+    await writeFile(filePath, htmlContent, "utf-8");
+
+    console.log("✅ [PDF-GENERATE] HTML template saved locally:", fileName);
+  } catch (error) {
+    console.error("❌ [PDF-GENERATE] Error saving HTML template:", error);
+    throw error;
+  }
 }
 
 /**

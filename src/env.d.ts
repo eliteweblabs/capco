@@ -7,6 +7,10 @@ interface ImportMetaEnv {
   readonly SUPABASE_ANON_KEY: string;
   readonly SUPABASE_ADMIN_KEY: string;
 
+  // Supabase - Public (for client-side access)
+  readonly PUBLIC_SUPABASE_URL?: string;
+  readonly PUBLIC_SUPABASE_ANON_KEY?: string;
+
   // Supabase - Alternative names (optional, fallback to above)
   readonly SUPABASE_URI?: string;
 
