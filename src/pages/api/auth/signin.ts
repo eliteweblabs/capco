@@ -8,6 +8,7 @@ import { getBaseUrl } from "../../../lib/url-utils";
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   // Check if Supabase is configured
   if (!supabase) {
+    console.error("[---AUTH-SIGNIN] Supabase is not configured - check [---SUPABASE-CLIENT] logs");
     return new Response("Supabase is not configured", { status: 500 });
   }
 
@@ -21,8 +22,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     // This ensures the redirect URL shown in Google's sign-in prompt uses your custom domain
     const baseUrl = getBaseUrl(request);
     const redirectUrl = `${baseUrl}/api/auth/callback`;
-    // console.log("🔐 [AUTH] OAuth redirect URL:", redirectUrl);
-    // console.log("🔐 [AUTH] Base URL:", baseUrl);
+    console.log("[---AUTH-SIGNIN] OAuth redirect URL:", redirectUrl);
+    console.log("[---AUTH-SIGNIN] Base URL:", baseUrl);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: provider as Provider,
@@ -48,7 +49,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
           { provider, error: error.message }
         );
       } catch (logError) {
-        console.error("Error logging failed OAuth login:", logError);
+        console.error("[---AUTH-SIGNIN] Error logging failed OAuth login:", logError);
       }
 
       return new Response(error.message, { status: 500 });
@@ -63,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         { provider, initiated: true }
       );
     } catch (logError) {
-      console.error("Error logging OAuth login initiation:", logError);
+      console.error("[---AUTH-SIGNIN] Error logging OAuth login initiation:", logError);
     }
 
     return redirect(data.url);
@@ -88,7 +89,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         { error: error.message, email: email || "unknown" }
       );
     } catch (logError) {
-      console.error("Error logging failed login:", logError);
+      console.error("[---AUTH-SIGNIN] Error logging failed login:", logError);
     }
 
     // Redirect to login page with error parameter
@@ -111,7 +112,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       }
     );
   } catch (logError) {
-    console.error("Error logging successful login:", logError);
+    console.error("[---AUTH-SIGNIN] Error logging successful login:", logError);
   }
 
   const { access_token, refresh_token } = data.session;
