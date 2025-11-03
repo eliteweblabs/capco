@@ -64,27 +64,33 @@
 
       async function handleCallback() {
         // Client-side code can ONLY access PUBLIC_ variables (Astro restriction)
-        // Non-PUBLIC variables are not available in the browser
+        // Use new Supabase API keys: PUBLIC_SUPABASE_PUBLISHABLE (replaces PUBLIC_SUPABASE_ANON_KEY)
         const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-        const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "";
+        const supabasePublishableKey =
+          import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE ||
+          import.meta.env.PUBLIC_SUPABASE_ANON_KEY ||
+          "";
 
         // Client-side logging (no prefix needed for browser console)
         console.log("[AUTH-CALLBACK] Environment check:", {
           hasPublicUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
-          hasPublicKey: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+          hasPublishableKey: !!import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE,
+          hasLegacyKey: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
           finalUrl: !!supabaseUrl,
-          finalKey: !!supabaseAnonKey,
+          finalKey: !!supabasePublishableKey,
           urlValue: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : "missing",
-          keyPreview: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : "missing",
+          keyPreview: supabasePublishableKey
+            ? `${supabasePublishableKey.substring(0, 20)}...`
+            : "missing",
         });
 
-        if (!supabaseUrl || !supabaseAnonKey) {
+        if (!supabaseUrl || !supabasePublishableKey) {
           showError("Supabase configuration missing");
           return;
         }
 
         // Create Supabase client (must be client-side for PKCE)
-        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        const supabase = createClient(supabaseUrl, supabasePublishableKey, {
           auth: {
             flowType: "pkce",
             autoRefreshToken: true,
@@ -185,7 +191,7 @@
         }
       }
 
-      function showError(message) {
+      function showError(message: string) {
         const errorDiv = document.getElementById("error");
         if (errorDiv) {
           errorDiv.textContent = message;

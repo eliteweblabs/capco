@@ -2,14 +2,14 @@
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
-  // Supabase - Primary (required)
+  // Supabase - New API Keys (preferred)
   readonly PUBLIC_SUPABASE_URL: string;
-  readonly PUBLIC_SUPABASE_ANON_KEY: string;
-  readonly SUPABASE_ADMIN_KEY: string;
+  readonly PUBLIC_SUPABASE_PUBLISHABLE?: string; // New publishable key (replaces PUBLIC_SUPABASE_ANON_KEY)
+  readonly SUPABASE_SECRET?: string; // New secret key (replaces SUPABASE_ADMIN_KEY)
 
-  // Supabase - Public (for client-side access)
-  readonly PUBLIC_SUPABASE_URL?: string;
+  // Supabase - Legacy keys (fallback for backwards compatibility)
   readonly PUBLIC_SUPABASE_ANON_KEY?: string;
+  readonly SUPABASE_ADMIN_KEY?: string;
 
   // Supabase - Alternative names (optional, fallback to above)
   readonly SUPABASE_URI?: string;
