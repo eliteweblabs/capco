@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Server-side Supabase client using the secret key (replaces SUPABASE_ADMIN_KEY)
+// Server-side Supabase client using the secret key (SUPABASE_SECRET)
 // Note: This file must ONLY be imported from server code (e.g., API routes)
 // For server-side, also check process.env as Railway might expose them there
 const supabaseUrl =
@@ -9,21 +9,16 @@ const supabaseUrl =
   import.meta.env.SUPABASE_URI ||
   (typeof process !== "undefined" ? process.env.SUPABASE_URI : undefined);
 
-// Use new SUPABASE_SECRET, fallback to legacy SUPABASE_ADMIN_KEY for backwards compatibility
+// Use SUPABASE_SECRET
 const supabaseSecretKey =
   import.meta.env.SUPABASE_SECRET ||
-  (typeof process !== "undefined" ? process.env.SUPABASE_SECRET : undefined) ||
-  import.meta.env.SUPABASE_ADMIN_KEY ||
-  (typeof process !== "undefined" ? process.env.SUPABASE_ADMIN_KEY : undefined);
+  (typeof process !== "undefined" ? process.env.SUPABASE_SECRET : undefined);
 
 // Debug logging for server-side
 if (typeof window === "undefined") {
   const envCheck = {
     hasSecretKey: !!import.meta.env.SUPABASE_SECRET,
     hasSecretKeyProcess: typeof process !== "undefined" ? !!process.env.SUPABASE_SECRET : false,
-    hasLegacyAdminKey: !!import.meta.env.SUPABASE_ADMIN_KEY,
-    hasLegacyAdminKeyProcess:
-      typeof process !== "undefined" ? !!process.env.SUPABASE_ADMIN_KEY : false,
     finalUrl: !!supabaseUrl,
     finalKey: !!supabaseSecretKey,
   };

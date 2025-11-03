@@ -5,8 +5,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Get Supabase client
     const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-    // Use new SUPABASE_SECRET, fallback to legacy SUPABASE_ADMIN_KEY
-    const supabaseServiceKey = import.meta.env.SUPABASE_SECRET || import.meta.env.SUPABASE_ADMIN_KEY;
+    // Use SUPABASE_SECRET
+    const supabaseServiceKey = import.meta.env.SUPABASE_SECRET;
 
     if (!supabaseUrl || !supabaseServiceKey) {
       return new Response(JSON.stringify({ error: "Supabase configuration missing" }), {
@@ -40,10 +40,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (accessToken && refreshToken && !anonymous) {
       try {
         // Create a client with the user's session
-        // Use new PUBLIC_SUPABASE_PUBLISHABLE, fallback to legacy PUBLIC_SUPABASE_ANON_KEY
+        // Use PUBLIC_SUPABASE_PUBLISHABLE
         const supabaseUser = createClient(
           supabaseUrl!,
-          import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "",
+          import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || "",
           {
             global: {
               headers: {

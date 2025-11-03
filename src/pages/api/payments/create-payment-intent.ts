@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (invoiceId) {
       if (!supabase) {
         console.error(
-          "Supabase is not configured. Missing DATABASE_URL and PUBLIC_SUPABASE_PUBLISHABLE (or PUBLIC_SUPABASE_ANON_KEY) environment variables."
+          "Supabase is not configured. Missing DATABASE_URL and PUBLIC_SUPABASE_PUBLISHABLE environment variables."
         );
         return new Response(
           JSON.stringify({
@@ -129,7 +129,7 @@ export const POST: APIRoute = async ({ request }) => {
       // Original invoice-based payment
       if (!supabase) {
         console.error(
-          "Supabase is not configured. Missing DATABASE_URL and PUBLIC_SUPABASE_PUBLISHABLE (or PUBLIC_SUPABASE_ANON_KEY) environment variables."
+          "Supabase is not configured. Missing DATABASE_URL and PUBLIC_SUPABASE_PUBLISHABLE environment variables."
         );
         return new Response(
           JSON.stringify({
