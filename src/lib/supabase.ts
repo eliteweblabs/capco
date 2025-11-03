@@ -1,23 +1,24 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Try PUBLIC_ first (for client-side)
+// Use new Supabase API keys: PUBLIC_SUPABASE_PUBLISHABLE (replaces PUBLIC_SUPABASE_ANON_KEY)
+// Fallback to legacy keys for backwards compatibility
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabasePublishableKey =
+  import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
 // Debug logging (always log in production to help diagnose Railway issues)
 // Use [--- prefix for server-side logs that should be visible in production
 if (typeof window === "undefined") {
   const envCheck = {
     hasPublicUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
-    hasPublicKey: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-    hasUrl: !!import.meta.env.SUPABASE_URL,
-    hasKey: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+    hasPublishableKey: !!import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE,
+    hasLegacyKey: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
     finalUrl: !!supabaseUrl,
-    finalKey: !!supabaseAnonKey,
+    finalKey: !!supabasePublishableKey,
     urlPreview: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : "MISSING",
   };
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabasePublishableKey) {
     console.error(
       "[---SUPABASE-CLIENT] Supabase not configured - missing environment variables:",
       envCheck
@@ -32,8 +33,8 @@ if (typeof window === "undefined") {
 
 // Only create client if environment variables are available
 export const supabase =
-  supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey, {
+  supabaseUrl && supabasePublishableKey
+    ? createClient(supabaseUrl, supabasePublishableKey, {
         auth: {
           flowType: "pkce",
           autoRefreshToken: true,
