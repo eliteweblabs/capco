@@ -16,6 +16,7 @@ export interface ButtonStyleConfig {
     | "selected"
     | "anchor"
     | "tab";
+  collapsed?: boolean;
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   fullWidth?: boolean;
   className?: string;
