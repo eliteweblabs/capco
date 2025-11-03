@@ -59,7 +59,8 @@ export class SimpleProjectLogger {
    */
   private static checkClient(client: any): any {
     if (!client) {
-      console.error("📝 [SIMPLE-LOGGER] Database client not available - check SUPABASE_SECRET or SUPABASE_ADMIN_KEY environment variable");
+      // Logging failures are non-critical - don't break application flow
+      console.warn("📝 [SIMPLE-LOGGER] Database client not available - logging skipped (non-critical). Check SUPABASE_SECRET or SUPABASE_ADMIN_KEY environment variable");
       return null;
     }
     return client;
