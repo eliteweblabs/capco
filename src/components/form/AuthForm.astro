@@ -7,13 +7,12 @@ const { globalInputClasses } = Astro.props;
 ---
 
 <!-- <div class="mx-auto my-4 w-full max-w-lg md:my-8 lg:my-12"> -->
-<form action="/api/auth/signin" method="post" class="mt-6 flex w-full flex-col gap-2">
+<div class="mt-6 flex w-full flex-col gap-2">
   <Button
-    type="submit"
+    type="button"
+    id="google-signin-button"
     variant="secondary"
     fullWidth
-    name="provider"
-    value="google"
     class="flex items-center justify-center gap-2"
   >
     <svg
@@ -41,7 +40,7 @@ const { globalInputClasses } = Astro.props;
     </svg>
     Sign in with Google
   </Button>
-</form>
+</div>
 <!-- </div> -->
 
 <hr class="mt-14 h-0 border-t border-zinc-300 dark:border-zinc-600" />
@@ -101,16 +100,83 @@ const { globalInputClasses } = Astro.props;
   </p>
 </div>
 <script>
-  // Handle form submission with client-side validation feedback
-  document.addEventListener("DOMContentLoaded", () => {
+  import { createClient } from "@supabase/supabase-js";
+
+  // Handle client-side OAuth for PKCE (code verifier must be stored in browser)
+  document.addEventListener("DOMContentLoaded", async () => {
+    const googleSignInButton = document.getElementById("google-signin-button");
+    
+    if (googleSignInButton) {
+      googleSignInButton.addEventListener("click", async (e) => {
+        e.preventDefault();
+        
+        console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
+        
+        // Get Supabase config from environment
+        const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+        const supabasePublishableKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || "";
+        
+        if (!supabaseUrl || !supabasePublishableKey) {
+          console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
+          if (window.showModal) {
+            window.showModal("error", "Configuration Error", "Supabase is not configured. Please contact support.");
+          }
+          return;
+        }
+        
+        // Create Supabase client client-side (required for PKCE)
+        // Use explicit localStorage to ensure code verifier is stored correctly
+        const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+          auth: {
+            flowType: "pkce",
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            persistSession: true,
+            storage: window.localStorage, // Explicitly use localStorage
+          },
+        });
+        
+        // Get the redirect URL based on current origin
+        const redirectUrl = `${window.location.origin}/auth/callback`;
+        console.log("[GOOGLE-SIGNIN] Redirect URL:", redirectUrl);
+        
+        // Initiate OAuth (this will store code verifier in localStorage)
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: redirectUrl,
+            queryParams: {
+              access_type: "offline",
+              prompt: "consent",
+              scope: "openid email profile",
+            },
+          },
+        });
+        
+        if (error) {
+          console.error("[GOOGLE-SIGNIN] OAuth error:", error);
+          if (window.showModal) {
+            window.showModal("error", "Authentication Error", error.message);
+          }
+          return;
+        }
+        
+        if (data?.url) {
+          console.log("[GOOGLE-SIGNIN] Redirecting to OAuth provider...");
+          // Redirect to Google OAuth
+          window.location.href = data.url;
+        }
+      });
+    }
+    
+    // Handle email/password form submission
     const loginForm = document.querySelector('form[action="/api/auth/signin"]');
     if (loginForm) {
       loginForm.addEventListener("submit", (e) => {
         const email = (loginForm.querySelector("#email") as HTMLInputElement)?.value;
         const password = (loginForm.querySelector("#password") as HTMLInputElement)?.value;
 
-        // Only validate if this is the email/password login form (not Google sign-in)
-        // Google sign-in forms won't have email/password fields
+        // Only validate if this is the email/password login form
         if (email !== undefined && password !== undefined) {
           // Basic client-side validation
           if (!email || !password) {
@@ -125,17 +191,15 @@ const { globalInputClasses } = Astro.props;
         }
 
         // Show loading notification for regular login
-        if (!loginForm.querySelector('[name="provider"]')) {
-          if (window.showModal) {
-            window.showModal(
-              "info",
-              "Signing In...",
-              "Please wait while we authenticate your account.",
-              3000
-            );
-          } else {
-            console.log("🔔 [Signing In...] Please wait while we authenticate your account.");
-          }
+        if (window.showModal) {
+          window.showModal(
+            "info",
+            "Signing In...",
+            "Please wait while we authenticate your account.",
+            3000
+          );
+        } else {
+          console.log("🔔 [Signing In...] Please wait while we authenticate your account.");
         }
       });
     }
