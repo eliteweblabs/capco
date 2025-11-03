@@ -26,7 +26,7 @@ echo "📝 Creating Cal.com environment file..."
 cat > .env.calcom << EOF
 # Cal.com Environment Variables
 # Copy your Supabase database URL here
-DATABASE_URL=${SUPABASE_URL}
+DATABASE_URL=${PUBLIC_SUPABASE_URL}
 
 # Generate a random secret for NextAuth
 NEXTAUTH_SECRET=$(openssl rand -base64 32)

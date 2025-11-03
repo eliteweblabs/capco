@@ -6,9 +6,9 @@ echo "🔧 Restoring complete .env file with all necessary keys..."
 # Create a complete .env template
 cat > .env << 'EOF'
 # Supabase Database Configuration
-SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co
+PUBLIC_SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co
 SUPABASE_ANON_KEY=your_supabase_anon_key_here
-SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co
+PUBLIC_SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co
 SUPABASE_ANON_KEY=your_supabase_anon_key_here
 SUPABASE_ANON_KEY=your_SUPABASE_ANON_KEY_here
 

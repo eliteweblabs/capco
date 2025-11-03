@@ -19,7 +19,7 @@ You need to create the `chat_messages` table in your Supabase database. You have
 
 1. Set your environment variables:
    ```bash
-   export SUPABASE_URL="https://your-project.supabase.co"
+   export PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
    export SUPABASE_ANON_KEY="your-service-role-key"
    ```
 2. Run the setup script:
@@ -32,7 +32,7 @@ You need to create the `chat_messages` table in your Supabase database. You have
 Make sure your chat server has access to these environment variables:
 
 ```bash
-export SUPABASE_URL="https://your-project.supabase.co"
+export PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_ANON_KEY="your-service-role-key"
 ```
 

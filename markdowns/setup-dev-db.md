@@ -50,7 +50,7 @@ Then update these lines in `.env`:
 
 ```bash
 # DEVELOPMENT Supabase Configuration
-SUPABASE_URL=https://[your-new-dev-project].supabase.co
+PUBLIC_SUPABASE_URL=https://[your-new-dev-project].supabase.co
 SUPABASE_ANON_KEY=[your-new-dev-anon-key]
 SUPABASE_ANON_KEY=[your-new-dev-service-role-key]
 
@@ -263,7 +263,7 @@ Save your production config in `.env.production` for easy switching:
 ```bash
 # Copy current production values to a separate file
 echo "# Production Supabase Config" > .env.production
-echo "SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co" >> .env.production
+echo "PUBLIC_SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co" >> .env.production
 echo "SUPABASE_ANON_KEY=[production-anon-key]" >> .env.production
 echo "SUPABASE_ANON_KEY=[production-service-role-key]" >> .env.production
 echo "NODE_ENV=production" >> .env.production

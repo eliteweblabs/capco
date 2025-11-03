@@ -4,7 +4,7 @@ import type { APIRoute } from "astro";
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Get Supabase client
-    const supabaseUrl = import.meta.env.SUPABASE_URL;
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = import.meta.env.SUPABASE_ADMIN_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
@@ -39,13 +39,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (accessToken && refreshToken && !anonymous) {
       try {
         // Create a client with the user's session
-        const supabaseUser = createClient(supabaseUrl!, import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY!, {
-          global: {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
+        const supabaseUser = createClient(
+          supabaseUrl!,
+          import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY!,
+          {
+            global: {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
             },
-          },
-        });
+          }
+        );
 
         const {
           data: { user },

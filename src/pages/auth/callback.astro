@@ -10,7 +10,10 @@
     <title>Signing you in...</title>
     <style>
       body {
-        font-family: system-ui, -apple-system, sans-serif;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -32,8 +35,12 @@
         margin: 0 auto 1rem;
       }
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
       .error {
         color: #dc3545;
@@ -53,125 +60,127 @@
 
     <script>
       // Import Supabase client (this will be bundled)
-      import { createClient } from '@supabase/supabase-js';
+      import { createClient } from "@supabase/supabase-js";
 
       async function handleCallback() {
         // Use the same env var names as the server-side code
-        const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL || '';
-        const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY || '';
+        const supabaseUrl =
+          import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.PUBLIC_SUPABASE_URL || "";
+        const supabaseAnonKey =
+          import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY || "";
 
         if (!supabaseUrl || !supabaseAnonKey) {
-          showError('Supabase configuration missing');
+          showError("Supabase configuration missing");
           return;
         }
 
         // Create Supabase client (must be client-side for PKCE)
         const supabase = createClient(supabaseUrl, supabaseAnonKey, {
           auth: {
-            flowType: 'pkce',
+            flowType: "pkce",
             autoRefreshToken: true,
             detectSessionInUrl: true,
             persistSession: true,
           },
         });
         try {
-          console.log('[AUTH-CALLBACK] Starting PKCE flow...');
-          
+          console.log("[AUTH-CALLBACK] Starting PKCE flow...");
+
           // Get the code from URL parameters
           const urlParams = new URLSearchParams(window.location.search);
-          const code = urlParams.get('code');
-          const error = urlParams.get('error');
-          const errorDescription = urlParams.get('error_description');
+          const code = urlParams.get("code");
+          const error = urlParams.get("error");
+          const errorDescription = urlParams.get("error_description");
 
           if (error) {
-            console.error('[AUTH-CALLBACK] OAuth error:', error, errorDescription);
+            console.error("[AUTH-CALLBACK] OAuth error:", error, errorDescription);
             showError(`Authentication failed: ${errorDescription || error}`);
             setTimeout(() => {
-              window.location.href = '/auth/login?error=oauth_failed';
+              window.location.href = "/auth/login?error=oauth_failed";
             }, 3000);
             return;
           }
 
           if (!code) {
-            console.error('[AUTH-CALLBACK] No authorization code in URL');
-            showError('No authorization code received');
+            console.error("[AUTH-CALLBACK] No authorization code in URL");
+            showError("No authorization code received");
             setTimeout(() => {
-              window.location.href = '/auth/login?error=no_code';
+              window.location.href = "/auth/login?error=no_code";
             }, 3000);
             return;
           }
 
-          console.log('[AUTH-CALLBACK] Exchanging code for session (client-side)...');
-          
+          console.log("[AUTH-CALLBACK] Exchanging code for session (client-side)...");
+
           // Exchange code for session (client-side has access to code verifier)
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
           if (exchangeError) {
-            console.error('[AUTH-CALLBACK] Session exchange error:', exchangeError);
+            console.error("[AUTH-CALLBACK] Session exchange error:", exchangeError);
             showError(`Session exchange failed: ${exchangeError.message}`);
             setTimeout(() => {
-              window.location.href = '/auth/login?error=session_exchange_failed';
+              window.location.href = "/auth/login?error=session_exchange_failed";
             }, 3000);
             return;
           }
 
           if (!data.session) {
-            console.error('[AUTH-CALLBACK] No session created');
-            showError('No session created');
+            console.error("[AUTH-CALLBACK] No session created");
+            showError("No session created");
             setTimeout(() => {
-              window.location.href = '/auth/login?error=no_session';
+              window.location.href = "/auth/login?error=no_session";
             }, 3000);
             return;
           }
 
-          console.log('[AUTH-CALLBACK] Session created successfully:', {
+          console.log("[AUTH-CALLBACK] Session created successfully:", {
             userId: data.user?.id,
             email: data.user?.email,
           });
 
           // Send session tokens to server to set cookies
-          console.log('[AUTH-CALLBACK] Sending tokens to server...');
-          const response = await fetch('/api/auth/callback', {
-            method: 'POST',
+          console.log("[AUTH-CALLBACK] Sending tokens to server...");
+          const response = await fetch("/api/auth/callback", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               access_token: data.session.access_token,
               refresh_token: data.session.refresh_token,
               expires_in: data.session.expires_in,
-              token_type: data.session.token_type || 'bearer',
+              token_type: data.session.token_type || "bearer",
             }),
           });
 
           if (!response.ok) {
             const errorText = await response.text();
-            console.error('[AUTH-CALLBACK] Server callback error:', response.status, errorText);
-            showError('Failed to set authentication cookies');
+            console.error("[AUTH-CALLBACK] Server callback error:", response.status, errorText);
+            showError("Failed to set authentication cookies");
             setTimeout(() => {
-              window.location.href = '/auth/login?error=cookie_set_failed';
+              window.location.href = "/auth/login?error=cookie_set_failed";
             }, 3000);
             return;
           }
 
-          console.log('[AUTH-CALLBACK] Authentication successful, redirecting to dashboard...');
-          
+          console.log("[AUTH-CALLBACK] Authentication successful, redirecting to dashboard...");
+
           // Redirect to dashboard
-          window.location.href = '/project/dashboard';
+          window.location.href = "/project/dashboard";
         } catch (err) {
-          console.error('[AUTH-CALLBACK] Unexpected error:', err);
-          showError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          console.error("[AUTH-CALLBACK] Unexpected error:", err);
+          showError(`Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`);
           setTimeout(() => {
-            window.location.href = '/auth/login?error=unexpected_error';
+            window.location.href = "/auth/login?error=unexpected_error";
           }, 3000);
         }
       }
 
       function showError(message) {
-        const errorDiv = document.getElementById('error');
+        const errorDiv = document.getElementById("error");
         if (errorDiv) {
           errorDiv.textContent = message;
-          errorDiv.style.display = 'block';
+          errorDiv.style.display = "block";
         }
       }
 
@@ -180,4 +189,3 @@
     </script>
   </body>
 </html>
-
