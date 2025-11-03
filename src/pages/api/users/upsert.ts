@@ -21,7 +21,6 @@ import { replacePlaceholders } from "@/lib/placeholder-utils";
  * - email: string
  * - role: "Admin" | "Staff" | "Client"
  * - phone?: string
- * - address?: string
  *
  * Examples:
  * - Create: POST /api/users/upsert { firstName, lastName, email, role }
@@ -67,7 +66,6 @@ interface UserData {
   email: string;
   role: "Admin" | "Staff" | "Client";
   phone?: string;
-  address?: string;
   smsAlerts?: boolean;
   mobileCarrier?: string;
   password?: string;
@@ -191,7 +189,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       email: userData.email.trim(),
       role: userData.role,
       phone: userData.phone?.trim() || null,
-      address: userData.address?.trim() || null,
       updatedAt: new Date().toISOString(),
     };
 
