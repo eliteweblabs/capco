@@ -26,6 +26,9 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     console.log("[---AUTH-SIGNIN] OAuth redirect URL:", redirectUrl);
     console.log("[---AUTH-SIGNIN] Base URL:", baseUrl);
 
+    console.log("[---AUTH-SIGNIN] Request URL:", request.url);
+    console.log("[---AUTH-SIGNIN] Request hostname:", request.url ? new URL(request.url).hostname : "unknown");
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: provider as Provider,
       options: {
@@ -39,6 +42,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         },
       },
     });
+    
+    console.log("[---AUTH-SIGNIN] Supabase OAuth response URL:", data?.url);
 
     if (error) {
       // Log failed OAuth login attempt
