@@ -2,12 +2,12 @@
 
 ## Issues
 
-1. **Missing PUBLIC_ environment variables** - Client-side code needs `PUBLIC_` prefixed variables
+1. **Missing PUBLIC\_ environment variables** - Client-side code needs `PUBLIC_` prefixed variables
 2. **Missing redirect URL in Supabase** - OAuth requires the callback URL to be registered
 
 ## Solution
 
-### Step 1: Add PUBLIC_ Environment Variables to Railway
+### Step 1: Add PUBLIC\_ Environment Variables to Railway
 
 **For Production (Railway):**
 
@@ -21,9 +21,9 @@ PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 ```
 
-**Important:** Use the **exact same values** as your existing `SUPABASE_URL` and `SUPABASE_ANON_KEY` variables - just copy them:
+**Important:** Use the **exact same values** as your existing `PUBLIC_SUPABASE_URL` and `SUPABASE_ANON_KEY` variables - just copy them:
 
-- If `SUPABASE_URL` = `https://qudlxlryegnainztkrtk.supabase.co`
+- If `PUBLIC_SUPABASE_URL` = `https://qudlxlryegnainztkrtk.supabase.co`
 - Then set `PUBLIC_SUPABASE_URL` = `https://qudlxlryegnainztkrtk.supabase.co` (same value)
 
 - If `SUPABASE_ANON_KEY` = `eyJhbGc...` (long string)
@@ -31,7 +31,7 @@ PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 
 5. Click **Save** or **Deploy** - Railway will automatically redeploy with the new variables
 
-**Note:** These `PUBLIC_` prefixed variables are required for client-side code (browser) to access Supabase. The regular `SUPABASE_URL` and `SUPABASE_ANON_KEY` are only available server-side.
+**Note:** These `PUBLIC_` prefixed variables are required for client-side code (browser) to access Supabase. The regular `PUBLIC_SUPABASE_URL` and `SUPABASE_ANON_KEY` are only available server-side.
 
 ### Step 2: Re-add Redirect URL in Supabase (Production)
 
@@ -49,6 +49,7 @@ PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 ### Step 3: Verify Site URL
 
 In the same **URL Configuration** section, ensure **Site URL** is set to:
+
 ```
 https://capcofire.com
 ```
@@ -58,6 +59,7 @@ https://capcofire.com
 ### Step 4: Redeploy on Railway
 
 After adding the environment variables in Railway:
+
 1. Railway should automatically detect the changes and redeploy
 2. Or manually trigger a redeploy from the Railway dashboard
 3. Wait for the deployment to complete (usually 2-5 minutes)
@@ -65,6 +67,7 @@ After adding the environment variables in Railway:
 ### Step 5: Clear Browser Cache
 
 After the redeploy:
+
 1. Clear your browser cache/cookies for capcofire.com
 2. Or use an incognito/private window
 3. Try logging in again
@@ -78,7 +81,7 @@ After the redeploy:
 ## Testing
 
 After fixing:
+
 1. Clear your browser cache/cookies for capcofire.com
 2. Try logging in again
 3. The callback should now work with the redirect URL registered
-

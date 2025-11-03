@@ -22,7 +22,7 @@ echo "🔍 Checking environment variables..."
 check_env_var "VAPI_API_KEY"
 check_env_var "CAL_API_KEY"
 check_env_var "RAILWAY_PUBLIC_DOMAIN"
-check_env_var "SUPABASE_URL"
+check_env_var "PUBLIC_SUPABASE_URL"
 check_env_var "SUPABASE_ANON_KEY"
 
 echo "✅ All required environment variables are set"
@@ -35,11 +35,11 @@ npm install
 echo "🗄️ Running database migration..."
 if command -v psql &> /dev/null; then
     echo "Running SQL migration..."
-    psql "$SUPABASE_URL" -f sql-queriers/create-appointments-table.sql
+    psql "$PUBLIC_SUPABASE_URL" -f sql-queriers/create-appointments-table.sql
     echo "✅ Database migration completed"
 else
     echo "⚠️ psql not found. Please run the SQL migration manually:"
-    echo "   psql \"$SUPABASE_URL\" -f sql-queriers/create-appointments-table.sql"
+    echo "   psql \"$PUBLIC_SUPABASE_URL\" -f sql-queriers/create-appointments-table.sql"
 fi
 
 # Configure Vapi.ai assistant

@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Create a Supabase admin client for public endpoints
     const { createClient } = await import("@supabase/supabase-js");
     const supabaseAdmin = createClient(
-      import.meta.env.SUPABASE_URL || "",
+      import.meta.env.PUBLIC_SUPABASE_URL || "",
       import.meta.env.SUPABASE_ADMIN_KEY || "",
       {
         auth: {

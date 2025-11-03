@@ -113,7 +113,7 @@ FROM_EMAIL=noreply@domain.com  # Sender email address
 FROM_NAME=Your App Name        # Sender display name
 
 # Optional
-SUPABASE_URL=your_supabase_url
+PUBLIC_SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_key
 ```
 
