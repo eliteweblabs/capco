@@ -135,20 +135,57 @@ export async function encryptPDF(
     if (!options.permissions.documentAssembly) userProtectionFlag |= 0x400; // No document assembly
 
     // Use muhammara to encrypt the PDF
+    // Note: muhammara operations are synchronous and can be CPU-intensive
+    // We wrap it in a promise to avoid blocking, but it still runs synchronously
+    console.log("🔐 [PDF-ENCRYPTION] Starting muhammara encryption (PDF size:", pdfBuffer.length, "bytes)...");
+    
     const encryptedBuffer = await new Promise<Buffer>((resolve, reject) => {
+      // Set a timeout to prevent hanging
+      const timeout = setTimeout(() => {
+        reject(new Error("PDF encryption timed out after 60 seconds"));
+      }, 60000); // 60 second timeout
+
       try {
         const { PDFRStreamForBuffer, PDFWStreamForBuffer, recrypt } = muhammara;
+        
+        console.log("🔐 [PDF-ENCRYPTION] Creating streams...");
         const input = new PDFRStreamForBuffer(pdfBuffer);
         const output = new PDFWStreamForBuffer();
 
-        recrypt(input, output, {
-          userPassword: options.userPassword || "",
-          ownerPassword: options.ownerPassword || options.userPassword || "",
-          userProtectionFlag: userProtectionFlag,
-        });
+        console.log("🔐 [PDF-ENCRYPTION] Calling recrypt (this may take a moment for large PDFs)...");
+        
+        // recrypt is synchronous, so we need to wrap it
+        // Use setImmediate to allow other operations to continue
+        setImmediate(() => {
+          try {
+            recrypt(input, output, {
+              userPassword: options.userPassword || "",
+              ownerPassword: options.ownerPassword || options.userPassword || "",
+              userProtectionFlag: userProtectionFlag,
+            });
 
-        resolve(output.buffer);
+            clearTimeout(timeout);
+            console.log("🔐 [PDF-ENCRYPTION] Recrypt completed, accessing buffer...");
+            
+            // Access the buffer
+            const buffer = output.buffer;
+            console.log("🔐 [PDF-ENCRYPTION] Buffer retrieved, size:", buffer.length, "bytes");
+            
+            if (!buffer || buffer.length === 0) {
+              reject(new Error("Encrypted PDF buffer is empty"));
+              return;
+            }
+            
+            resolve(buffer);
+          } catch (recryptError) {
+            clearTimeout(timeout);
+            console.error("❌ [PDF-ENCRYPTION] Recrypt error:", recryptError);
+            reject(recryptError);
+          }
+        });
       } catch (error) {
+        clearTimeout(timeout);
+        console.error("❌ [PDF-ENCRYPTION] Muhammara setup error:", error);
         reject(error);
       }
     });
