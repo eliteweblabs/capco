@@ -1,6 +1,8 @@
 import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../../lib/_api-optimization";
 import { supabase } from "../../../../lib/supabase";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
 
 /**
  * Upsert PDF Template API
@@ -32,6 +34,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       templateType = "body",
       pageSize = "8.5x11",
       margins = { top: "1in", right: "1in", bottom: "1in", left: "1in" },
+      saveHtml = false, // Checkbox value from UI
     } = body;
 
     if (!name || !content) {
@@ -95,6 +98,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.log("✅ [PDF-TEMPLATES-UPSERT] Template created:", data.id);
     }
 
+    // Save HTML version to templates directory if checkbox is checked
+    if (saveHtml && content) {
+      try {
+        await saveHTMLTemplateToFile(content, result.id, name);
+      } catch (htmlSaveError) {
+        // Don't fail the entire operation if HTML saving fails
+        console.warn("⚠️ [PDF-TEMPLATES-UPSERT] Failed to save HTML template (non-fatal):", htmlSaveError);
+      }
+    }
+
     return createSuccessResponse({
       template: result,
       message: id ? "Template updated successfully" : "Template created successfully",
@@ -104,3 +117,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return createErrorResponse("Internal server error", 500);
   }
 };
+
+/**
+ * Save HTML template to local templates directory
+ */
+async function saveHTMLTemplateToFile(
+  htmlContent: string,
+  templateId: number,
+  templateName: string
+): Promise<void> {
+  try {
+    const templatesDir = join(process.cwd(), "src", "components", "pdf-system", "templates");
+    
+    // Ensure directory exists
+    await mkdir(templatesDir, { recursive: true });
+
+    // Create a safe filename
+    const safeTemplateName = templateName.replace(/[^a-zA-Z0-9]/g, "_");
+    const timestamp = Date.now();
+    const fileName = `template-${templateId}_${safeTemplateName}_${timestamp}.html`;
+    const filePath = join(templatesDir, fileName);
+
+    // Write HTML file
+    await writeFile(filePath, htmlContent, "utf-8");
+
+    console.log("✅ [PDF-TEMPLATES-UPSERT] HTML template saved locally:", fileName);
+  } catch (error) {
+    console.error("❌ [PDF-TEMPLATES-UPSERT] Error saving HTML template:", error);
+    throw error;
+  }
+}
