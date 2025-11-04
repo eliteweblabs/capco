@@ -20,16 +20,15 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     <h1 class="text-3xl font-bold mb-6">Certify PDF with IdenTrust Certificate</h1>
 
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-      <h2 class="text-lg font-semibold text-blue-900 mb-2">About PDF Certification</h2>
+      <h2 class="text-lg font-semibold text-blue-900 mb-2">About PDF Certification & Encryption</h2>
       <p class="text-blue-800 text-sm">
-        This tool signs PDFs with your IdenTrust certificate, providing digital authentication and
-        proving document integrity. The certificate proves the document was certified by you and
-        hasn't been tampered with.
+        This tool can <strong>sign</strong> PDFs with your IdenTrust certificate (proves authenticity) and/or
+        <strong>encrypt</strong> them with passwords (restricts access). You can use both together for maximum security.
       </p>
-      <p class="text-blue-800 text-sm mt-2">
-        <strong>Note:</strong> This provides authentication (signing), not encryption. For
-        encryption, use the password-based encryption features in the PDF system.
-      </p>
+      <ul class="text-blue-800 text-sm mt-2 list-disc list-inside space-y-1">
+        <li><strong>Signing:</strong> Proves the document was certified by you and hasn't been tampered with</li>
+        <li><strong>Encryption:</strong> Requires a password to open/view the PDF and restricts what recipients can do</li>
+      </ul>
     </div>
 
     <form id="certify-pdf-form" class="space-y-6">
@@ -121,6 +120,140 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
         />
       </div>
 
+      <!-- Encryption Section -->
+      <div class="border-t pt-6 mt-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Encryption Options (Optional)</h2>
+        
+        <div class="flex items-center mb-4">
+          <input
+            type="checkbox"
+            id="encryption-enabled"
+            name="encryption-enabled"
+            value="true"
+            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label for="encryption-enabled" class="ml-2 block text-sm font-medium text-gray-700">
+            Enable password encryption
+          </label>
+        </div>
+
+        <div id="encryption-options" class="hidden space-y-4">
+          <!-- Encryption Preset -->
+          <div>
+            <label for="encryption-preset" class="block text-sm font-medium text-gray-700 mb-2">
+              Security Preset
+            </label>
+            <select
+              id="encryption-preset"
+              name="encryption-preset"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="default">Default Security</option>
+              <option value="high">High Security (Maximum Restrictions)</option>
+              <option value="low">Low Security (Permissive)</option>
+            </select>
+          </div>
+
+          <!-- Passwords -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="user-password" class="block text-sm font-medium text-gray-700 mb-2">
+                User Password (Required to Open)
+              </label>
+              <input
+                type="password"
+                id="user-password"
+                name="user-password"
+                placeholder="Password to open PDF"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label for="owner-password" class="block text-sm font-medium text-gray-700 mb-2">
+                Owner Password (Optional)
+              </label>
+              <input
+                type="password"
+                id="owner-password"
+                name="owner-password"
+                placeholder="Password for permissions (optional)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              id="generate-passwords-btn"
+              class="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              Generate Secure Passwords
+            </button>
+          </div>
+
+          <!-- Permissions -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="allow-printing"
+                  name="allow-printing"
+                  value="true"
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label for="allow-printing" class="ml-2 block text-sm text-gray-700">Allow Printing</label>
+              </div>
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="allow-copying"
+                  name="allow-copying"
+                  value="true"
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label for="allow-copying" class="ml-2 block text-sm text-gray-700">Allow Copying</label>
+              </div>
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="allow-modifying"
+                  name="allow-modifying"
+                  value="true"
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label for="allow-modifying" class="ml-2 block text-sm text-gray-700">Allow Modifying</label>
+              </div>
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="allow-annotating"
+                  name="allow-annotating"
+                  value="true"
+                  checked
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label for="allow-annotating" class="ml-2 block text-sm text-gray-700">Allow Annotating</label>
+              </div>
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="allow-filling-forms"
+                  name="allow-filling-forms"
+                  value="true"
+                  checked
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label for="allow-filling-forms" class="ml-2 block text-sm text-gray-700">Allow Filling Forms</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Submit Button -->
       <div class="flex gap-4">
         <button
@@ -128,7 +261,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
           id="submit-btn"
           class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Certify PDF
+          <span id="submit-btn-text">Certify PDF</span>
         </button>
         <button
           type="button"
@@ -193,6 +326,75 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
         }
       });
 
+      // Toggle encryption options visibility
+      const encryptionEnabled = document.getElementById("encryption-enabled") as HTMLInputElement;
+      const encryptionOptions = document.getElementById("encryption-options") as HTMLDivElement;
+      const generatePasswordsBtn = document.getElementById("generate-passwords-btn") as HTMLButtonElement;
+
+      encryptionEnabled.addEventListener("change", () => {
+        if (encryptionEnabled.checked) {
+          encryptionOptions.classList.remove("hidden");
+        } else {
+          encryptionOptions.classList.add("hidden");
+        }
+      });
+
+      // Generate secure passwords
+      generatePasswordsBtn.addEventListener("click", () => {
+        const userPassword = generateSecurePassword(12);
+        const ownerPassword = generateSecurePassword(16);
+        (document.getElementById("user-password") as HTMLInputElement).value = userPassword;
+        (document.getElementById("owner-password") as HTMLInputElement).value = ownerPassword;
+      });
+
+      function generateSecurePassword(length: number = 12): string {
+        const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        let password = "";
+        for (let i = 0; i < length; i++) {
+          password += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+        return password;
+      }
+
+      // Update permissions based on preset
+      const presetSelect = document.getElementById("encryption-preset") as HTMLSelectElement;
+      presetSelect.addEventListener("change", () => {
+        updatePermissionsFromPreset(presetSelect.value);
+      });
+
+      function updatePermissionsFromPreset(preset: string) {
+        const allowPrinting = document.getElementById("allow-printing") as HTMLInputElement;
+        const allowCopying = document.getElementById("allow-copying") as HTMLInputElement;
+        const allowModifying = document.getElementById("allow-modifying") as HTMLInputElement;
+        const allowAnnotating = document.getElementById("allow-annotating") as HTMLInputElement;
+        const allowFillingForms = document.getElementById("allow-filling-forms") as HTMLInputElement;
+
+        switch (preset) {
+          case "high":
+            allowPrinting.checked = false;
+            allowCopying.checked = false;
+            allowModifying.checked = false;
+            allowAnnotating.checked = false;
+            allowFillingForms.checked = false;
+            break;
+          case "low":
+            allowPrinting.checked = true;
+            allowCopying.checked = true;
+            allowModifying.checked = true;
+            allowAnnotating.checked = true;
+            allowFillingForms.checked = true;
+            break;
+          case "default":
+          default:
+            allowPrinting.checked = true;
+            allowCopying.checked = false;
+            allowModifying.checked = false;
+            allowAnnotating.checked = true;
+            allowFillingForms.checked = true;
+            break;
+        }
+      }
+
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -200,12 +402,17 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
         resultsSection.classList.add("hidden");
         errorSection.classList.add("hidden");
         submitBtn.disabled = true;
-        submitBtn.textContent = "Certifying...";
+        const submitBtnText = document.getElementById("submit-btn-text") as HTMLSpanElement;
+        submitBtnText.textContent = "Processing...";
 
         try {
           const formData = new FormData(form);
 
-          const response = await fetch("/api/pdf/sign", {
+          // Determine which endpoint to use based on encryption setting
+          const encryptionEnabled = formData.get("encryption-enabled") === "true";
+          const endpoint = encryptionEnabled ? "/api/pdf/sign-encrypt" : "/api/pdf/sign";
+
+          const response = await fetch(endpoint, {
             method: "POST",
             body: formData,
           });
@@ -213,19 +420,37 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
           const data = await response.json();
 
           if (!response.ok) {
-            throw new Error(data.error || "Failed to certify PDF");
+            throw new Error(data.error || "Failed to process PDF");
           }
 
           // Show success
           if (data.success && data.data) {
             const metadata = data.data.metadata || {};
-            resultsContent.innerHTML = `
+            const isEncrypted = metadata.encrypted || false;
+            const isSigned = metadata.signed || false;
+            
+            let metadataHtml = `
               <p><strong>File:</strong> ${data.data.fileName}</p>
-              <p><strong>Signed by:</strong> ${metadata.signer || "Unknown"}</p>
-              <p><strong>Signed at:</strong> ${new Date(metadata.signedAt || Date.now()).toLocaleString()}</p>
-              <p><strong>Reason:</strong> ${metadata.reason || "N/A"}</p>
-              <p><strong>Location:</strong> ${metadata.location || "N/A"}</p>
             `;
+            
+            if (isSigned) {
+              metadataHtml += `
+                <p><strong>Signed by:</strong> ${metadata.signer || "Unknown"}</p>
+                <p><strong>Signed at:</strong> ${new Date(metadata.signedAt || Date.now()).toLocaleString()}</p>
+                <p><strong>Reason:</strong> ${metadata.reason || "N/A"}</p>
+                <p><strong>Location:</strong> ${metadata.location || "N/A"}</p>
+              `;
+            }
+            
+            if (isEncrypted) {
+              metadataHtml += `
+                <p class="mt-2"><strong>Encryption:</strong> Enabled</p>
+                <p><strong>User Password:</strong> ${metadata.hasUserPassword ? "Required" : "Not set"}</p>
+                <p><strong>Owner Password:</strong> ${metadata.hasOwnerPassword ? "Set" : "Not set"}</p>
+              `;
+            }
+            
+            resultsContent.innerHTML = metadataHtml;
 
             if (data.data.downloadUrl) {
               downloadLink.href = data.data.downloadUrl;
@@ -243,13 +468,14 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
             throw new Error("Unexpected response format");
           }
         } catch (error) {
-          console.error("Error certifying PDF:", error);
+          console.error("Error processing PDF:", error);
           errorMessage.textContent =
             error instanceof Error ? error.message : "Unknown error occurred";
           errorSection.classList.remove("hidden");
         } finally {
           submitBtn.disabled = false;
-          submitBtn.textContent = "Certify PDF";
+          const submitBtnText = document.getElementById("submit-btn-text") as HTMLSpanElement;
+          submitBtnText.textContent = "Certify PDF";
         }
       });
 
