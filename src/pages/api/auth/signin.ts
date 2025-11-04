@@ -126,5 +126,37 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   // Use shared utility for consistent cookie handling
   setAuthCookies(cookies, access_token, refresh_token);
 
+  // Store Campfire auto-login flag for Staff and Admin users
+  // We'll handle the actual Campfire login client-side to avoid cross-domain cookie issues
+  try {
+    const { shouldAutoAuthCampfire } = await import("../../../lib/campfire-auth");
+    
+    // Get user profile to check role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    const userRole = profile?.role || data.user.user_metadata?.role || "Client";
+    
+    if (shouldAutoAuthCampfire(userRole)) {
+      // Store a flag in a cookie that the client-side script can read
+      // This tells the dashboard to attempt Campfire auto-login
+      cookies.set("campfire-auto-login", "true", {
+        path: "/",
+        httpOnly: false, // Client-side script needs to read this
+        secure: import.meta.env.PROD,
+        sameSite: "lax",
+        maxAge: 300, // 5 minutes - just long enough for redirect
+      });
+      
+      console.log(`✅ [AUTH-SIGNIN] Set Campfire auto-login flag for ${userRole} user`);
+    }
+  } catch (campfireError) {
+    console.error(`❌ [AUTH-SIGNIN] Error setting Campfire auto-login flag:`, campfireError);
+    // Don't fail the main login if this fails
+  }
+
   return redirect("/dashboard");
 };
