@@ -114,7 +114,7 @@ export function createSignAndEncryptOptionsFromForm(formData: FormData): SignAnd
   // Signing options
   const signing: SigningOptions = {
     reason: (formData.get("reason") as string) || "Document certification",
-    location: (formData.get("location") as string) || "Certified by CAPCo Design Group",
+    location: (formData.get("location") as string) || "Certified by CAPCO Design Group",
     contactInfo: (formData.get("contactInfo") as string) || "",
     visible: formData.get("visible") === "true",
     pageNumber: formData.get("pageNumber")
@@ -135,7 +135,8 @@ export function createSignAndEncryptOptionsFromForm(formData: FormData): SignAnd
     permissions: {
       printing:
         formData.get("allow-printing") === "true"
-          ? (formData.get("printing-quality") as "lowResolution" | "highResolution") || "highResolution"
+          ? (formData.get("printing-quality") as "lowResolution" | "highResolution") ||
+            "highResolution"
           : false,
       modifying: formData.get("allow-modifying") === "true",
       copying: formData.get("allow-copying") === "true",
@@ -151,4 +152,3 @@ export function createSignAndEncryptOptionsFromForm(formData: FormData): SignAnd
     encryption,
   };
 }
-
