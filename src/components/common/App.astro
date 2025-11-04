@@ -87,7 +87,7 @@ if (
 }
 
 // Logo URL for OG images
-const ogImageSrc = globalCompanyLogoURL;
+const ogImageSrc = "/videos/CACPCO-share-preview.gif";
 
 // Get navigation data
 import { navigation } from "@/pages/api/utils/navigation";
@@ -181,24 +181,64 @@ const debugData = {
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none" />
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
-    <meta property="og:title" content={title + " → " + globalCompanyName} />
-    <meta property="og:description" content={description} />
-    <meta property="og:image" content={ogImageSrc} />
-    <meta property="og:url" content={Astro.url} />
-    <meta name="twitter:card" content={description} />
-    <meta name="twitter:title" content={title + " → " + globalCompanyName} />
-    <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImageSrc} />
-    <meta name="robots" content="max-image-preview:large" /><link
-      rel="canonical"
-      href={currentUrl}
-    />
-    <meta property="og:site_name" content={globalCompanyName} /><meta
-      property="og:type"
-      content="website"
-    />
-    <link rel="canonical" href={currentUrl} />
+    <!-- Open Graph / Facebook / iOS Preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={globalCompanyName} />
+    <meta property="og:url" content={Astro.url.href} />
+    <meta property="og:title" content={(title || "Home") + " → " + globalCompanyName} />
+    <meta property="og:description" content={description || globalCompanySlogan || ""} />
+    {
+      ogImageSrc && (
+        <>
+          <meta property="og:image" content={ogImageSrc} />
+          <meta property="og:image:secure_url" content={ogImageSrc} />
+          <meta
+            property="og:image:type"
+            content={
+              ogImageSrc?.includes(".gif")
+                ? "image/gif"
+                : ogImageSrc?.includes(".svg")
+                  ? "image/svg+xml"
+                  : ogImageSrc?.includes(".png")
+                    ? "image/png"
+                    : ogImageSrc?.includes(".jpg") || ogImageSrc?.includes(".jpeg")
+                      ? "image/jpeg"
+                      : ogImageSrc?.includes(".webp")
+                        ? "image/webp"
+                        : "image/png"
+            }
+          />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta
+            property="og:image:alt"
+            content={globalCompanyName + " - " + (description || globalCompanySlogan || "")}
+          />
+        </>
+      )
+    }
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={(title || "Home") + " → " + globalCompanyName} />
+    <meta name="twitter:description" content={description || globalCompanySlogan || ""} />
+    {ogImageSrc && <meta name="twitter:image" content={ogImageSrc} />}
+    {
+      ogImageSrc && (
+        <meta
+          name="twitter:image:alt"
+          content={globalCompanyName + " - " + (description || globalCompanySlogan || "")}
+        />
+      )
+    }
+
+    <!-- iOS / iMessage Preview -->
+    <meta name="robots" content="max-image-preview:large" />
+
+    <link rel="canonical" href={Astro.url.href} />
     <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
+
+    <!-- Favicons and App Icons -->
     <link rel="apple-touch-icon" sizes="180x180" href={iconSrc} />
     <link
       rel="icon"
@@ -227,28 +267,6 @@ const debugData = {
     <link rel="mask-icon" href={iconSrc} color="#5bbad5" />
     <meta name="msapplication-TileColor" content={primaryColor} />
     <meta name="theme-color" content={primaryColor} />
-
-    <!-- Twitter -->
-    <!-- <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@" />
-    <meta name="twitter:creator" content="@" />
-    <meta name="twitter:title" content="Tailwind CSS Dashboard - Flowbite" />
-    <meta
-      name="twitter:description"
-      content="Get started with a premium admin dashboard interface built with Tailwind CSS and Flowbite featuring over 50 example pages of charts, calendars, kanban boards, dashboards, CRUD pages, mailing systems, and more."
-    />
-    <meta name="twitter:image" content="https://flowbite.com/application-ui/demo/" /> -->
-
-    <!-- Facebook -->
-    <meta property="og:url" content={currentUrl} />
-    <meta property="og:title" content={title + " → " + globalCompanyName} />
-    <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content={ogImageSrc} />
-    <meta
-      property="og:image:type"
-      content={ogImageSrc?.includes(".svg") ? "image/svg+xml" : "image/png"}
-    />
 
     <script>
       import {
