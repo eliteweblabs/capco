@@ -93,7 +93,7 @@ BEGIN
   RAISE NOTICE '   1. Welcome message (Client Visible)';
   RAISE NOTICE '';
   RAISE NOTICE '⚙️  Author ID: d807fb34-a10c-4d76-bc20-13b421c44bf7';
-  RAISE NOTICE '⚙️  Company Name: CAPCo Design Group';
+  RAISE NOTICE '⚙️  Company Name: CAPCO Design Group';
   RAISE NOTICE '';
   RAISE NOTICE '💡 To customize, edit the default_author_id and default_company_name variables at the top of the function.';
 END $$;

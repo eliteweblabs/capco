@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const reason = (formData.get("reason") as string) || "Document certification";
-    const location = (formData.get("location") as string) || "Certified by CAPCo Design Group";
+    const location = (formData.get("location") as string) || "Certified by CAPCO Design Group";
     const contactInfo = (formData.get("contactInfo") as string) || "";
     const visible = formData.get("visible") === "true";
     const pageNumberStr = formData.get("pageNumber") as string;
@@ -130,4 +130,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

@@ -76,7 +76,7 @@ export async function signPDF(
       signer: certData.commonName,
       signedAt: new Date(),
       reason: options.reason || "Document certification",
-      location: options.location || "Certified by CAPCo Design Group",
+      location: options.location || "Certified by CAPCO Design Group",
     };
 
     // Add metadata to PDF
@@ -84,8 +84,8 @@ export async function signPDF(
     pdfDoc.setSubject(
       `Certified document signed by ${certData.commonName} on ${signingMetadata.signedAt.toISOString()}`
     );
-    pdfDoc.setProducer("CAPCo Design Group - Certified PDF System");
-    pdfDoc.setCreator("CAPCo Design Group");
+    pdfDoc.setProducer("CAPCO Design Group - Certified PDF System");
+    pdfDoc.setCreator("CAPCO Design Group");
 
     // Embed certificate information in custom metadata
     const customMetadata = {
