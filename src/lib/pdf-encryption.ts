@@ -1,10 +1,12 @@
 import { PDFDocument } from "pdf-lib";
+import muhammara from "muhammara";
 
 /**
  * PDF Encryption Library
  *
- * Provides password-based encryption for PDFs using pdf-lib
+ * Provides password-based encryption for PDFs using muhammara
  * Supports AES-256 encryption with granular permission controls
+ * Note: pdf-lib doesn't support encryption, so we use muhammara for encryption
  */
 
 export interface EncryptionOptions {
@@ -119,23 +121,39 @@ export async function encryptPDF(
       throw new Error("Owner password must be at least 6 characters long");
     }
 
-    // Load the PDF document
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    console.log("🔐 [PDF-ENCRYPTION] Applying encryption using muhammara...");
 
-    console.log("🔐 [PDF-ENCRYPTION] PDF loaded, applying encryption...");
+    // Convert permissions to protection flag
+    // PDF protection flags: https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf
+    let userProtectionFlag = 0;
+    if (!options.permissions.printing) userProtectionFlag |= 0x04; // No printing
+    if (!options.permissions.modifying) userProtectionFlag |= 0x08; // No modifying
+    if (!options.permissions.copying) userProtectionFlag |= 0x10; // No copying
+    if (!options.permissions.annotating) userProtectionFlag |= 0x20; // No annotating
+    if (!options.permissions.fillingForms) userProtectionFlag |= 0x100; // No form filling
+    if (!options.permissions.contentAccessibility) userProtectionFlag |= 0x200; // No content extraction
+    if (!options.permissions.documentAssembly) userProtectionFlag |= 0x400; // No document assembly
 
-    // Apply encryption
-    await pdfDoc.encrypt({
-      userPassword: options.userPassword,
-      ownerPassword: options.ownerPassword,
-      permissions: options.permissions,
+    // Use muhammara to encrypt the PDF
+    const encryptedBuffer = await new Promise<Buffer>((resolve, reject) => {
+      try {
+        const { PDFRStreamForBuffer, PDFWStreamForBuffer, recrypt } = muhammara;
+        const input = new PDFRStreamForBuffer(pdfBuffer);
+        const output = new PDFWStreamForBuffer();
+
+        recrypt(input, output, {
+          userPassword: options.userPassword || "",
+          ownerPassword: options.ownerPassword || options.userPassword || "",
+          userProtectionFlag: userProtectionFlag,
+        });
+
+        resolve(output.buffer);
+      } catch (error) {
+        reject(error);
+      }
     });
 
     console.log("🔐 [PDF-ENCRYPTION] Encryption applied successfully");
-
-    // Save the encrypted PDF
-    const encryptedBytes = await pdfDoc.save();
-    const encryptedBuffer = Buffer.from(encryptedBytes);
 
     console.log("🔐 [PDF-ENCRYPTION] Encrypted PDF saved, size:", encryptedBuffer.length, "bytes");
 
