@@ -104,6 +104,43 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
 </style>
 
 <script>
+  // Campfire Auto-Login for Staff and Admin
+  (() => {
+    // Check if auto-login flag is set
+    const campfireAutoLogin = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("campfire-auto-login="))
+      ?.split("=")[1];
+
+    if (campfireAutoLogin === "true") {
+      console.log("[CAMPFIRE-AUTO-LOGIN] Flag detected, attempting auto-login...");
+      
+      // Get user email from page (we'll need to pass it from server)
+      const userEmail = (window as any).currentUserEmail || "";
+      
+      // Prompt user for password or use stored password (if available)
+      // For security, we'll need to ask user once or use a secure storage method
+      // For now, we'll attempt auto-login if password is available
+      
+      // Remove the flag cookie
+      document.cookie = "campfire-auto-login=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      
+      // Note: Since we can't securely store passwords client-side,
+      // we'll need to either:
+      // 1. Ask user to enter Campfire password once and store it encrypted server-side
+      // 2. Use SSO/SAML integration
+      // 3. Open Campfire and let user login manually (current approach)
+      
+      console.log("[CAMPFIRE-AUTO-LOGIN] Opening Campfire...");
+      const campfireUrl = import.meta.env.PUBLIC_CAMPFIRE_URL || "https://campfire-production-8c1a.up.railway.app";
+      window.open(
+        campfireUrl,
+        "campfire-chat",
+        "width=800,height=600,resizable=yes,scrollbars=yes"
+      );
+    }
+  })();
+
   // Request push notification permission
   (window as any).requestPushNotificationPermission = function () {
     // Check if we're on mobile Safari

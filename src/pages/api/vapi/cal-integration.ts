@@ -936,7 +936,8 @@ async function handleGetAccountInfo() {
     }
 
     // Format slots for speech - group by day for natural reading
-    // IMPORTANT: Include year in the format to avoid ambiguity
+    // IMPORTANT: Format times in America/New_York timezone so VAPI speaks Eastern time
+    // This matches what users expect and what Cal.com displays
     let slotsList = "";
     let lastDay = "";
 
@@ -947,12 +948,12 @@ async function handleGetAccountInfo() {
         month: "long",
         day: "numeric",
         year: "numeric", // Include year to avoid VAPI confusion
-        timeZone: "UTC",
+        timeZone: "America/New_York", // Use Eastern timezone for user-facing display
       });
       const timeOnly = date.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
-        timeZone: "UTC",
+        timeZone: "America/New_York", // Use Eastern timezone for user-facing display
       });
 
       if (dayKey !== lastDay) {
@@ -1445,15 +1446,88 @@ async function handleCreateBooking(params: any) {
           );
         }
 
-        // Construct ISO string with converted 24-hour time using the extracted/calculated date
-        // Use UTC components directly to avoid any timezone issues
+        // CRITICAL: VAPI repeats times in Eastern timezone (America/New_York)
+        // because we format availability slots in Eastern timezone
+        // So when VAPI says "11:00 AM", it means 11:00 AM Eastern, not UTC
+        // We need to parse it as Eastern time and convert to UTC for storage
+
         const year = targetDate.getUTCFullYear();
         const monthIdx = targetDate.getUTCMonth(); // 0-based (0-11)
         const day = targetDate.getUTCDate();
         const month = String(monthIdx + 1).padStart(2, "0");
 
-        // Create the final date using Date.UTC to ensure correct weekday calculation
-        startDate = new Date(Date.UTC(year, monthIdx, day, hour, minute, 0, 0));
+        // Create date in Eastern timezone, then convert to UTC
+        // Use a library-like approach: create a date string in Eastern timezone and parse it
+        // Format: "YYYY-MM-DD HH:MM:SS" in Eastern time
+        const easternDateString = `${year}-${month}-${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+
+        // Parse as Eastern time by creating a date and using timezone offset
+        // We'll use a workaround: create the date assuming it's UTC, then adjust for Eastern offset
+        // EST is UTC-5, EDT is UTC-4 (DST runs roughly March-November)
+        // For November, we're likely in EST (UTC-5) since DST ends first Sunday of November
+        const tempDate = new Date(
+          `${year}-${month}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`
+        );
+
+        // Check if DST is in effect for this date in Eastern timezone
+        // Create a date object in Eastern timezone to determine offset
+        // Use Intl.DateTimeFormat to get the timezone offset
+        const easternFormatter = new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/New_York",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+
+        // Convert Eastern time to UTC
+        // Strategy: Create a date string in Eastern timezone, then use Date to parse it
+        // We'll create a date assuming the time is UTC, then calculate the offset and adjust
+
+        // First, create a test date at the target time (assume UTC for now)
+        const testDateUtc = new Date(Date.UTC(year, monthIdx, day, hour, minute, 0, 0));
+
+        // Get what this UTC time would be in Eastern timezone
+        const easternParts = easternFormatter.formatToParts(testDateUtc);
+        const easternHourFromUtc = parseInt(
+          easternParts.find((p) => p.type === "hour")?.value || "0"
+        );
+
+        // Calculate the offset: if UTC time shows as X in Eastern, and we want Y in Eastern,
+        // then we need to adjust UTC by (Y - X) hours
+        // Example: If 16:00 UTC = 11:00 Eastern, and we want 11:00 Eastern, we need 16:00 UTC
+        // So offset = 11 - 11 = 0, meaning we use 16:00 UTC directly
+        // But wait, that's backwards. Let's think differently:
+        // If we want 11 AM Eastern, and 11 AM Eastern = 16:00 UTC (in EST), then offset = 16 - 11 = 5
+        // So: UTC hour = Eastern hour + offset
+        const offsetHours = hour - easternHourFromUtc;
+
+        // If offset is negative, we need to add hours to UTC to get the Eastern time we want
+        // Actually, let's use a more direct approach: try different UTC hours until we get the Eastern time we want
+        let foundUtcHour = hour;
+        for (let testUtcHour = hour; testUtcHour < hour + 10; testUtcHour++) {
+          const testUtc = new Date(Date.UTC(year, monthIdx, day, testUtcHour, minute, 0, 0));
+          const testEasternParts = easternFormatter.formatToParts(testUtc);
+          const testEasternHour = parseInt(
+            testEasternParts.find((p) => p.type === "hour")?.value || "0"
+          );
+          if (testEasternHour === hour) {
+            foundUtcHour = testUtcHour;
+            break;
+          }
+        }
+
+        const utcDate = new Date(Date.UTC(year, monthIdx, day, foundUtcHour, minute, 0, 0));
+
+        // Verify: the UTC date should display as the Eastern time we want
+        const verifyEastern = easternFormatter.format(utcDate);
+        console.log(
+          `🕐 [CAL-INTEGRATION] Parsed "${hour}:${String(minute).padStart(2, "0")} ${isPM ? "PM" : "AM"}" Eastern time -> UTC: ${utcDate.toISOString()} (UTC hour: ${foundUtcHour}, verify Eastern: ${verifyEastern})`
+        );
+
+        startDate = utcDate;
 
         // Verify the weekday is correct
         const expectedWeekday = targetDate.getUTCDay();
@@ -1918,7 +1992,7 @@ async function handleCreateBooking(params: any) {
     const values = [
       uid,
       `${eventType.title} with ${name}`,
-      `Fire protection consultation booking via VAPI`,
+      `Fire protection consultation booked via caller`,
       startDate,
       endDate,
       eventType.id,
@@ -1937,7 +2011,9 @@ async function handleCreateBooking(params: any) {
 
     if (columnMap.timeZone) {
       columns.push(columnMap.timeZone);
-      values.push("UTC");
+      // Store timezone as America/New_York so Cal.com displays times correctly
+      // The startTime/endTime are still stored in UTC, but timeZone tells Cal.com how to interpret them
+      values.push("America/New_York");
     }
 
     if (columnMap.references) {
@@ -2017,41 +2093,45 @@ async function handleCreateBooking(params: any) {
       `📅 [CAL-INTEGRATION] Email date formatting - Calculated weekday: ${calculatedWeekday} (day index: ${utcWeekday})`
     );
 
-    // Create a UTC date object for formatting (ensures no timezone conversion)
-    // Use Date.UTC to create a date at exactly the UTC time we want
-    const utcDateForFormatting = new Date(
-      Date.UTC(utcYear, utcMonth, utcDay, utcHour, utcMinute, 0, 0)
-    );
+    // Create date object for formatting in Eastern timezone
+    // The startDate is already in UTC, we'll format it in Eastern timezone
+    const dateForFormatting = startDate;
 
-    // Use Intl.DateTimeFormat for reliable UTC formatting
-    // This ensures the weekday is calculated correctly based on UTC date
-    // IMPORTANT: Pass a UTC date to avoid any local timezone conversion
+    // Use Intl.DateTimeFormat for reliable formatting in Eastern timezone
+    // This matches what users expect and what Cal.com displays
+    // IMPORTANT: Format in America/New_York timezone to match booking timezone
     const dateFormatter = new Intl.DateTimeFormat("en-US", {
       weekday: "long",
       month: "long",
       day: "numeric",
-      timeZone: "UTC",
+      timeZone: "America/New_York", // Use Eastern timezone for user-facing display
     });
 
     const timeFormatter = new Intl.DateTimeFormat("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-      timeZone: "UTC",
+      timeZone: "America/New_York", // Use Eastern timezone for user-facing display
     });
 
-    // Format time using UTC date object
-    const formattedTime = timeFormatter.format(utcDateForFormatting);
+    // Format time using Eastern timezone
+    const formattedTime = timeFormatter.format(dateForFormatting);
 
     // ALWAYS use calculated weekday for reliability - manually construct the date string
     const monthFormatter = new Intl.DateTimeFormat("en-US", {
       month: "long",
-      timeZone: "UTC",
+      timeZone: "America/New_York", // Use Eastern timezone
     });
-    const monthName = monthFormatter.format(utcDateForFormatting);
+    const monthName = monthFormatter.format(dateForFormatting);
 
-    // Construct date string using calculated weekday (most reliable)
-    const finalFormattedDate = `${calculatedWeekday}, ${monthName} ${utcDay}`;
+    // Get the day in Eastern timezone (might differ from UTC if crossing midnight)
+    const easternDay = dateForFormatting.toLocaleDateString("en-US", {
+      day: "numeric",
+      timeZone: "America/New_York",
+    });
+
+    // Construct date string using calculated weekday and Eastern timezone
+    const finalFormattedDate = `${calculatedWeekday}, ${monthName} ${easternDay}`;
 
     console.log(
       `📅 [CAL-INTEGRATION] Email date formatting - Using calculated weekday: ${calculatedWeekday}`
