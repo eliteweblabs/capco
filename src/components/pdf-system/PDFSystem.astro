@@ -213,17 +213,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         </div>
       </div>
 
-      <!-- Create New Template Button -->
-      <div class="mb-4 flex justify-end">
-        <button
-          id="create-template-btn"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-        >
-          <SimpleIcon name="plus" class="w-4 h-4 inline mr-2" />
-          Create New Template
-        </button>
-      </div>
-
       <!-- Template List -->
       <div id="templates-list" class="space-y-4">
         <!-- Templates will be loaded here -->
@@ -462,11 +451,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       document.getElementById("cancel-template-btn")?.addEventListener("click", () => {
         this.closeTemplateEditor();
-      });
-
-      // Create new template button
-      document.getElementById("create-template-btn")?.addEventListener("click", () => {
-        this.createNewTemplate();
       });
 
       // Listen for user selection from SlotMachineModal (Google Contacts)
@@ -1163,51 +1147,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           type: "error",
           title: "Delete Error",
           message: "Error deleting template. Please try again.",
-        });
-      }
-    }
-
-    // Create new template
-    async createNewTemplate() {
-      try {
-        const response = await fetch("/api/pdf/templates/upsert", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: "New Template",
-            description: "",
-            content: "<p>Start editing your template...</p>",
-            templateType: "body",
-            pageSize: "8.5x11",
-            margins: { top: "1in", right: "1in", bottom: "1in", left: "1in" },
-          }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          window.showNotification({
-            type: "success",
-            title: "Template Created",
-            message: "Template created successfully",
-          });
-          // Reload templates to show the new one
-          await this.loadTemplates();
-        } else {
-          window.showNotification({
-            type: "error",
-            title: "Create Failed",
-            message: data.message || "Failed to create template",
-          });
-        }
-      } catch (error) {
-        console.error("❌ [PDF-SYSTEM] Error creating template:", error);
-        window.showNotification({
-          type: "error",
-          title: "Create Error",
-          message: "Error creating template. Please try again.",
         });
       }
     }
