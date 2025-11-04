@@ -2121,8 +2121,9 @@ async function handleCreateBooking(params: any) {
       // Don't fail the booking if email fails
     }
 
-    // Format confirmation message for VAPI to speak using the same formatters
-    const confirmationMessage = `Your appointment has been confirmed for ${finalFormattedDate} at ${formattedTime}. You'll receive a confirmation email at ${email}.`;
+    // Format confirmation message for VAPI to speak - include mandatory follow-up phrases
+    // VAPI will read this entire result verbatim, so include everything that should be said
+    const confirmationMessage = `Your appointment has been confirmed for ${finalFormattedDate} at ${formattedTime}. You'll receive a confirmation email at ${email}. If you can gather your project documents in advance that will help to expedite services. Is there anything else I can help you with today?`;
 
     return new Response(
       JSON.stringify({

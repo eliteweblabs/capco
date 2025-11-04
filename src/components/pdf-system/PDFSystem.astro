@@ -194,6 +194,24 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             </div>
           </div>
 
+          <!-- Save Options -->
+          <div class="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                id="save-html-template-checkbox"
+                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Save HTML version to templates directory
+              </span>
+            </label>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
+              Saves the OCR'd/extracted content as an HTML file in the templates folder for preview
+              purposes
+            </p>
+          </div>
+
           <!-- Save Template -->
           <div class="flex justify-end space-x-4 mt-6">
             <button
@@ -287,6 +305,21 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         <select id="template-select" class={globalInputClasses}>
           <option value="">Choose a template...</option>
         </select>
+      </div>
+
+      <!-- Placeholder Mapping Section -->
+      <div id="placeholder-mapping-section" class="mb-6 hidden">
+        <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
+          <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
+            Map Template Placeholders to Contact Data
+          </h4>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Map each placeholder to a Google contact field or enter a value manually.
+          </p>
+          <div id="placeholder-mappings-list" class="space-y-3">
+            <!-- Placeholder mappings will be rendered here -->
+          </div>
+        </div>
       </div>
 
       <!-- User Results -->
@@ -404,12 +437,15 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       this.currentUser = null; // Will be set when needed
       this.selectedTemplate = null;
       this.selectedUser = null;
+      this.selectedContactData = null; // Store Google contact data
       this.templates = [];
       this.users = [];
       this.editor = null;
       this.templateEditors = {}; // Store Quill editors for each template
       this.templateNameInput = null;
       this.templateTypeSelect = null;
+      this.placeholderMappings = {}; // Store mappings: { placeholder: { source: 'contact'|'manual', value: string } }
+      this.ocrResultsByPage = []; // Store OCR results with layout data for each page
 
       this.init();
     }
@@ -461,10 +497,18 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         const detail = (ce && ce.detail) || {};
         if (detail.componentId !== "user-search") return;
 
-        // Additional PDF-system specific logic can go here
-        // The contact preview is automatically rendered by SlotMachineModalFunction
-        console.log("📄 [PDF-SYSTEM] Contact selected:", detail.label);
+        // Store the contact data for placeholder mapping
+        this.selectedContactData = detail.data || null;
+        console.log("📄 [PDF-SYSTEM] Contact selected:", detail.label, detail.data);
+
+        // Check if template is also selected, if so show mapping UI
+        if (this.selectedTemplate) {
+          this.updatePlaceholderMappingUI();
+        }
       });
+
+      // Listen for template selection changes (set up after templates are loaded)
+      // The listener will be attached in loadTemplatesForGeneration()
 
       // Generate PDF
       document.getElementById("search-users-btn")?.addEventListener("click", () => {
@@ -1495,12 +1539,45 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               const page = await pdf.getPage(i);
               const textContent = await page.getTextContent();
 
+              console.log(
+                `🔍 [PDF-SYSTEM] Page ${i}: ${textContent.items.length} text items found`
+              );
+
+              // Debug: Log first few items to see what we're getting
+              if (textContent.items.length > 0) {
+                console.log(
+                  `🔍 [PDF-SYSTEM] First 3 items:`,
+                  textContent.items.slice(0, 3).map((item) => ({
+                    str: item.str?.substring(0, 50),
+                    hasText: !!item.str?.trim(),
+                  }))
+                );
+              }
+
               // Enhanced text extraction with structure detection
               const structuredText = self.extractStructuredText(textContent.items);
+              console.log(
+                `🔍 [PDF-SYSTEM] Page ${i} extracted text length:`,
+                structuredText.length
+              );
               fullText += structuredText + "\n";
             }
 
             console.log("🔍 [PDF-SYSTEM] PDF text extracted:", fullText.length, "characters");
+            console.log("🔍 [PDF-SYSTEM] Extracted text preview:", fullText.substring(0, 200));
+
+            // Check if we got meaningful text (more than just whitespace or very few characters)
+            const meaningfulText = fullText.trim().length > 50;
+
+            if (!meaningfulText) {
+              console.log(
+                "⚠️ [PDF-SYSTEM] Minimal text extracted from PDF. PDF may be scanned/image-based. Converting PDF pages to images for OCR..."
+              );
+              // Convert PDF pages to images and run OCR
+              await self.processPDFWithOCR(file);
+              resolve({ success: true, text: "", ocrUsed: true });
+              return;
+            }
 
             // Replace detected fields with placeholders
             const textWithPlaceholders = self.replaceFieldsWithPlaceholders(fullText);
@@ -1518,10 +1595,12 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             if (self.editor) {
               const delta = self.editor.clipboard.convert(htmlContent);
               self.editor.setContents(delta);
+              console.log("✅ [PDF-SYSTEM] Content set in Quill editor");
             } else {
               const textarea = document.getElementById("template-content-textarea");
               if (textarea) {
                 textarea.value = htmlContent;
+                console.log("✅ [PDF-SYSTEM] Content set in textarea");
               }
             }
 
@@ -1547,13 +1626,18 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       let inList = false;
       let listType = null;
 
+      if (!items || items.length === 0) {
+        console.log("⚠️ [PDF-SYSTEM] No text items found in PDF page");
+        return "";
+      }
+
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const text = item.str;
+        const text = item.str || "";
         const nextItem = items[i + 1];
 
         // Skip empty items
-        if (!text.trim()) continue;
+        if (!text || !text.trim()) continue;
 
         // Detect list items (bullet points, numbers, dashes)
         const isListItem = this.detectListItem(text, item, nextItem);
@@ -1740,6 +1824,353 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       // Short lines that might be headers
       if (line.length < 30 && /^[A-Z]/.test(line)) return true;
+
+      return false;
+    }
+
+    async processPDFWithOCR(file) {
+      return new Promise((resolve, reject) => {
+        const fileReader = new FileReader();
+        const self = this;
+        fileReader.onload = async function (e) {
+          try {
+            console.log("🔍 [PDF-SYSTEM] Converting PDF to images for OCR...");
+            const typedarray = new Uint8Array(e.target.result);
+            const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+            const numPages = pdf.numPages;
+
+            let allExtractedText = "";
+
+            // Show loading state
+            const loadingContent = `
+              <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h2>Processing PDF with OCR...</h2>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                  <p>Converting ${numPages} page(s) to images and running OCR...</p>
+                  <p>Please wait...</p>
+                </div>
+              </div>
+            `;
+
+            if (self.editor) {
+              const delta = self.editor.clipboard.convert(loadingContent);
+              self.editor.setContents(delta);
+            }
+
+            // Process each page
+            for (let i = 1; i <= numPages; i++) {
+              console.log(`🔍 [PDF-SYSTEM] Processing page ${i}/${numPages} with OCR...`);
+
+              const page = await pdf.getPage(i);
+              const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+
+              // Create canvas to render PDF page
+              const canvas = document.createElement("canvas");
+              const context = canvas.getContext("2d");
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+
+              // Render PDF page to canvas
+              await page.render({
+                canvasContext: context,
+                viewport: viewport,
+              }).promise;
+
+              // Convert canvas to blob
+              const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+
+              // Create a File object from the blob
+              const imageFile = new File([blob], `page-${i}.png`, { type: "image/png" });
+
+              // Run OCR on this page
+              try {
+                const ocrResult = await self.runOCROnImage(imageFile, i);
+                if (ocrResult && ocrResult.text) {
+                  // Store both text and structured data
+                  allExtractedText += `\n--- Page ${i} ---\n${ocrResult.text}\n`;
+                  // Store structured OCR data for layout preservation
+                  if (!self.ocrResultsByPage) {
+                    self.ocrResultsByPage = [];
+                  }
+                  self.ocrResultsByPage.push({
+                    page: i,
+                    text: ocrResult.text,
+                    words: ocrResult.words,
+                    rawResult: ocrResult.rawResult,
+                  });
+                }
+              } catch (ocrError) {
+                console.error(`❌ [PDF-SYSTEM] OCR failed for page ${i}:`, ocrError);
+              }
+            }
+
+            if (allExtractedText.trim().length > 0) {
+              console.log(
+                "🔍 [PDF-SYSTEM] OCR completed. Total text length:",
+                allExtractedText.length
+              );
+
+              // Try to preserve layout using OCR word positions
+              let htmlContent = "";
+
+              if (self.ocrResultsByPage && self.ocrResultsByPage.length > 0) {
+                // Use structured OCR data with positions
+                console.log("🔍 [PDF-SYSTEM] Using structured OCR data to preserve layout...");
+
+                let structuredHTML = "";
+                self.ocrResultsByPage.forEach((pageData) => {
+                  if (pageData.words && pageData.words.length > 0) {
+                    const pageHTML = self.convertOCRToStructuredHTML(pageData.words);
+                    structuredHTML += `<div class="ocr-page" style="margin-bottom: 2em; page-break-after: always;">
+                      <h4 style="color: #666; font-size: 0.9em; margin-bottom: 1em;">Page ${pageData.page}</h4>
+                      ${pageHTML}
+                    </div>`;
+                  } else {
+                    // Fallback to plain text if no word positions
+                    structuredHTML += `<div class="ocr-page" style="margin-bottom: 2em;">
+                      <h4 style="color: #666; font-size: 0.9em; margin-bottom: 1em;">Page ${pageData.page}</h4>
+                      <div style="white-space: pre-wrap; font-family: monospace;">${pageData.text.replace(/\n/g, "<br>")}</div>
+                    </div>`;
+                  }
+                });
+
+                // Replace detected fields with placeholders in the structured HTML
+                const textWithPlaceholders = self.replaceFieldsWithPlaceholders(allExtractedText);
+
+                // Merge structured layout with placeholders (simplified - could be improved)
+                htmlContent = `
+                  <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto;">
+                    <h2 style="margin-bottom: 1em;">Extracted from PDF (OCR with Layout Preservation)</h2>
+                    <div style="background: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                      ${structuredHTML}
+                    </div>
+                  </div>
+                `;
+              } else {
+                // Fallback: Use plain text with structure detection
+                const structuredText = self.extractStructuredTextFromString(allExtractedText);
+                const textWithPlaceholders = self.replaceFieldsWithPlaceholders(allExtractedText);
+
+                htmlContent = `
+                  <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <h2>Extracted from PDF (OCR)</h2>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                      ${textWithPlaceholders}
+                    </div>
+                  </div>
+                `;
+              }
+
+              // Set content in editor
+              if (self.editor) {
+                const delta = self.editor.clipboard.convert(htmlContent);
+                self.editor.setContents(delta);
+                console.log("✅ [PDF-SYSTEM] OCR content set in Quill editor");
+              }
+
+              // Extract fields
+              const fields = self.extractFieldsFromText(allExtractedText);
+              if (fields && fields.length > 0) {
+                self.displayExtractedFields(fields);
+              }
+
+              resolve({ success: true, text: allExtractedText });
+            } else {
+              throw new Error("OCR did not extract any text from the PDF");
+            }
+          } catch (error) {
+            console.error("❌ [PDF-SYSTEM] PDF OCR processing error:", error);
+            reject(error);
+          }
+        };
+        fileReader.readAsArrayBuffer(file);
+      });
+    }
+
+    async runOCROnImage(imageFile, pageNum = null) {
+      return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        formData.append("language", "eng");
+        formData.append("isOverlayRequired", "true"); // Get position data for layout preservation
+        formData.append("OCREngine", "2");
+        formData.append("detectOrientation", "true"); // Better for rotated/scanned documents
+        formData.append("scale", "true"); // Scale for better quality
+
+        fetch("https://api.ocr.space/parse/image", {
+          method: "POST",
+          headers: {
+            apikey: "K81932338788957",
+          },
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.IsErroredOnProcessing) {
+              reject(new Error(data.ErrorMessage || "OCR processing failed"));
+              return;
+            }
+
+            if (data.ParsedResults && data.ParsedResults[0]) {
+              const result = data.ParsedResults[0];
+              const extractedText = result.ParsedText ? result.ParsedText.trim() : "";
+
+              // Get structured data with word positions for layout preservation
+              // OCR.space returns WordsOverlay with Lines array, each containing Words array
+              let wordOverlay = [];
+              if (result.WordsOverlay && result.WordsOverlay.Lines) {
+                wordOverlay = result.WordsOverlay.Lines;
+              } else if (result.WordsOverlay && Array.isArray(result.WordsOverlay)) {
+                // Alternative structure
+                wordOverlay = result.WordsOverlay;
+              }
+
+              console.log("🔍 [PDF-SYSTEM] OCR word overlay structure:", {
+                hasWordsOverlay: !!result.WordsOverlay,
+                hasLines: !!(result.WordsOverlay && result.WordsOverlay.Lines),
+                linesCount: wordOverlay.length,
+              });
+
+              // Return both text and layout information
+              resolve({
+                text: extractedText,
+                words: wordOverlay,
+                rawResult: result,
+              });
+            } else {
+              reject(new Error("No text extracted from OCR"));
+            }
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      });
+    }
+
+    // Convert OCR words with positions to HTML with preserved layout
+    convertOCRToStructuredHTML(ocrResults) {
+      if (!ocrResults || !Array.isArray(ocrResults) || ocrResults.length === 0) {
+        return "";
+      }
+
+      // Group words by Y position to detect lines
+      const lines = [];
+      const yTolerance = 5; // Pixels tolerance for same line
+
+      ocrResults.forEach((word, index) => {
+        if (!word.Words || word.Words.length === 0) return;
+
+        word.Words.forEach((w) => {
+          const wordText = w.WordText || "";
+          if (!wordText.trim()) return;
+
+          const y = Math.round(w.Top);
+          const x = Math.round(w.Left);
+
+          // Find existing line at similar Y position
+          let foundLine = false;
+          for (let i = 0; i < lines.length; i++) {
+            if (Math.abs(lines[i].y - y) <= yTolerance) {
+              lines[i].words.push({ text: wordText, x: x, width: w.Width || 0 });
+              foundLine = true;
+              break;
+            }
+          }
+
+          if (!foundLine) {
+            lines.push({ y: y, words: [{ text: wordText, x: x, width: w.Width || 0 }] });
+          }
+        });
+      });
+
+      // Sort lines by Y position
+      lines.sort((a, b) => a.y - b.y);
+
+      // Sort words within each line by X position
+      lines.forEach((line) => {
+        line.words.sort((a, b) => a.x - b.x);
+      });
+
+      // Convert to HTML with structure detection
+      let html = "";
+      let currentParagraph = [];
+      let lastLineY = null;
+      const paragraphSpacing = 15; // Pixels between lines to consider new paragraph
+
+      lines.forEach((line, index) => {
+        const lineText = line.words.map((w) => w.text).join(" ");
+        const lineY = line.y;
+
+        // Detect paragraph breaks based on Y spacing
+        if (lastLineY !== null && lineY - lastLineY > paragraphSpacing) {
+          // New paragraph
+          if (currentParagraph.length > 0) {
+            html += this.formatParagraph(currentParagraph.join(" "));
+            currentParagraph = [];
+          }
+        }
+
+        // Detect headers (all caps, short lines, centered-ish)
+        const isHeader = this.detectHeaderFromOCR(line);
+        if (isHeader) {
+          // Close current paragraph if any
+          if (currentParagraph.length > 0) {
+            html += this.formatParagraph(currentParagraph.join(" "));
+            currentParagraph = [];
+          }
+          html += `<h3 style="margin-top: 1em; margin-bottom: 0.5em;">${lineText}</h3>\n`;
+        } else {
+          currentParagraph.push(lineText);
+        }
+
+        lastLineY = lineY;
+      });
+
+      // Close last paragraph
+      if (currentParagraph.length > 0) {
+        html += this.formatParagraph(currentParagraph.join(" "));
+      }
+
+      return html;
+    }
+
+    formatParagraph(text) {
+      if (!text || !text.trim()) return "";
+      // Detect list items
+      if (this.detectListItemFromString(text.trim())) {
+        const listType = this.detectListTypeFromString(text.trim());
+        return `<li>${text.trim()}</li>\n`;
+      }
+      return `<p style="margin: 0.5em 0; line-height: 1.6;">${text.trim()}</p>\n`;
+    }
+
+    detectHeaderFromOCR(line) {
+      const lineText = line.words.map((w) => w.text).join(" ");
+      const text = lineText.trim();
+
+      // All caps and short
+      if (text === text.toUpperCase() && text.length < 50 && text.length > 3) return true;
+
+      // Common header patterns
+      if (
+        /^(INTRODUCTION|SUMMARY|CONCLUSION|APPENDIX|REFERENCES|BIBLIOGRAPHY|AFFIDAVIT|CERTIFICATE|DECLARATION)/i.test(
+          text
+        )
+      )
+        return true;
+
+      // Short lines that might be headers
+      if (text.length < 30 && /^[A-Z]/.test(text)) return true;
+
+      // Check if line is mostly centered (words spread out more)
+      if (line.words.length > 0) {
+        const firstWordX = line.words[0].x;
+        const lastWordX =
+          line.words[line.words.length - 1].x + (line.words[line.words.length - 1].width || 0);
+        const lineWidth = lastWordX - firstWordX;
+        // If words are spread out (centered-ish), might be a header
+        // This is a heuristic - headers often have more spacing
+      }
 
       return false;
     }
@@ -2616,6 +3047,11 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       const content = this.editor
         ? this.editor.root.innerHTML
         : document.getElementById("template-content-textarea")?.value;
+      const saveHtmlCheckbox = document.getElementById("save-html-template-checkbox");
+      const saveHtml =
+        saveHtmlCheckbox && saveHtmlCheckbox instanceof HTMLInputElement
+          ? saveHtmlCheckbox.checked
+          : false;
 
       if (!name || !content) {
         this.showNotification("Please fill in all required fields", "error");
@@ -2634,6 +3070,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             content,
             templateType: type,
             pageSize: "8.5x11",
+            saveHtml: saveHtml, // Include the checkbox value
           }),
         });
 
@@ -2665,6 +3102,21 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 `<option value="${template.id}">${template.name} (${template.templateType})</option>`
             )
             .join("");
+
+        // Set up template selection listener if not already set
+        if (!select.dataset.listenerAttached) {
+          select.addEventListener("change", (e) => {
+            const templateId = e.target.value;
+            this.selectedTemplate = templateId || null;
+
+            if (this.selectedTemplate && this.selectedContactData) {
+              this.updatePlaceholderMappingUI();
+            } else {
+              this.hidePlaceholderMappingUI();
+            }
+          });
+          select.dataset.listenerAttached = "true";
+        }
       }
     }
 
@@ -2752,6 +3204,374 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Open preview in new window
       const previewUrl = `/api/pdf/preview?templateId=${this.selectedTemplate}&userId=${this.selectedUser}`;
       window.open(previewUrl, "_blank");
+    }
+
+    // Extract all placeholders from template content
+    extractPlaceholdersFromTemplate(template) {
+      if (!template) return [];
+
+      // Get content from template (could be HTML or plain text)
+      let content = template.html_content || template.content || "";
+
+      // If content is HTML, extract text content to find placeholders
+      // Placeholders might be in HTML attributes or text nodes
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = content;
+
+      // Get all text content including from HTML
+      const textContent = tempDiv.textContent || tempDiv.innerText || content;
+
+      // Also check the raw HTML for placeholders in attributes
+      const fullContent = textContent + " " + content;
+
+      // Match placeholders: {{PLACEHOLDER_NAME}}
+      const placeholderRegex = /\{\{([^}]+)\}\}/g;
+      const placeholders = new Set();
+      let match;
+
+      // Search in both text content and raw HTML
+      while ((match = placeholderRegex.exec(fullContent)) !== null) {
+        const placeholder = match[1].trim();
+        // Skip empty placeholders
+        if (placeholder) {
+          placeholders.add(placeholder);
+        }
+      }
+
+      return Array.from(placeholders);
+    }
+
+    // Get available Google contact fields for mapping
+    getAvailableContactFields(contactData) {
+      if (!contactData) return [];
+
+      const fields = [
+        { key: "name", label: "Full Name", value: contactData.name || contactData.fullName },
+        { key: "firstName", label: "First Name", value: contactData.firstName },
+        { key: "lastName", label: "Last Name", value: contactData.lastName },
+        { key: "email", label: "Email", value: contactData.email || contactData.emailAddress },
+        { key: "phone", label: "Phone", value: contactData.phone || contactData.phoneNumber },
+        {
+          key: "organization",
+          label: "Organization",
+          value: contactData.organization || contactData.company,
+        },
+        {
+          key: "address",
+          label: "Address",
+          value: contactData.address || contactData.streetAddress,
+        },
+        { key: "jobTitle", label: "Job Title", value: contactData.jobTitle },
+        { key: "biography", label: "Biography", value: contactData.biography },
+      ];
+
+      // Filter out fields with no value
+      return fields.filter((field) => field.value);
+    }
+
+    // Show placeholder mapping UI
+    async updatePlaceholderMappingUI() {
+      if (!this.selectedTemplate || !this.selectedContactData) {
+        this.hidePlaceholderMappingUI();
+        return;
+      }
+
+      // Find the selected template
+      const template = this.templates.find((t) => t.id === this.selectedTemplate);
+      if (!template) {
+        this.hidePlaceholderMappingUI();
+        return;
+      }
+
+      // Extract placeholders from template
+      const placeholders = this.extractPlaceholdersFromTemplate(template);
+      if (placeholders.length === 0) {
+        this.hidePlaceholderMappingUI();
+        return;
+      }
+
+      // Get available contact fields
+      const contactFields = this.getAvailableContactFields(this.selectedContactData);
+
+      // Show the mapping section
+      const mappingSection = document.getElementById("placeholder-mapping-section");
+      const mappingsList = document.getElementById("placeholder-mappings-list");
+      if (!mappingSection || !mappingsList) return;
+
+      mappingSection.classList.remove("hidden");
+
+      // Render mapping UI for each placeholder
+      mappingsList.innerHTML = placeholders
+        .map((placeholder) => {
+          const currentMapping = this.placeholderMappings[placeholder];
+          const isManual = currentMapping?.source === "manual";
+          const manualValue = isManual ? currentMapping.value : "";
+
+          // Try to auto-match placeholder to contact field
+          let autoMatch = null;
+          const placeholderUpper = placeholder.toUpperCase();
+          if (!currentMapping) {
+            // Try to find a matching field
+            if (
+              placeholderUpper.includes("NAME") &&
+              !placeholderUpper.includes("FIRST") &&
+              !placeholderUpper.includes("LAST")
+            ) {
+              autoMatch = "name";
+            } else if (
+              placeholderUpper.includes("FIRST") ||
+              placeholderUpper.includes("FIRSTNAME")
+            ) {
+              autoMatch = "firstName";
+            } else if (placeholderUpper.includes("LAST") || placeholderUpper.includes("LASTNAME")) {
+              autoMatch = "lastName";
+            } else if (placeholderUpper.includes("EMAIL")) {
+              autoMatch = "email";
+            } else if (placeholderUpper.includes("PHONE") || placeholderUpper.includes("TEL")) {
+              autoMatch = "phone";
+            } else if (
+              placeholderUpper.includes("ADDRESS") ||
+              placeholderUpper.includes("STREET")
+            ) {
+              autoMatch = "address";
+            } else if (
+              placeholderUpper.includes("COMPANY") ||
+              placeholderUpper.includes("ORGANIZATION") ||
+              placeholderUpper.includes("ORG")
+            ) {
+              autoMatch = "organization";
+            } else if (placeholderUpper.includes("TITLE") || placeholderUpper.includes("JOB")) {
+              autoMatch = "jobTitle";
+            }
+          }
+
+          const selectedField =
+            currentMapping?.source === "contact" ? currentMapping.fieldKey : autoMatch || "";
+          const selectedValue =
+            currentMapping?.source === "contact"
+              ? contactFields.find((f) => f.key === currentMapping.fieldKey)?.value || ""
+              : autoMatch
+                ? contactFields.find((f) => f.key === autoMatch)?.value || ""
+                : "";
+
+          return `
+          <div class="border border-gray-200 dark:border-gray-700 rounded-md p-3" data-placeholder="${placeholder}">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <span class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">{{${placeholder}}}</span>
+                </label>
+                <div class="mt-2 space-y-2">
+                  <!-- Source selection: Contact field or manual -->
+                  <div class="flex items-center space-x-4">
+                    <label class="flex items-center">
+                      <input 
+                        type="radio" 
+                        name="source-${placeholder}" 
+                        value="contact" 
+                        class="mr-2"
+                        ${!isManual ? "checked" : ""}
+                        onchange="window.pdfSystem?.setPlaceholderSource('${placeholder}', 'contact')"
+                      >
+                      <span class="text-sm text-gray-700 dark:text-gray-300">From Contact</span>
+                    </label>
+                    <label class="flex items-center">
+                      <input 
+                        type="radio" 
+                        name="source-${placeholder}" 
+                        value="manual" 
+                        class="mr-2"
+                        ${isManual ? "checked" : ""}
+                        onchange="window.pdfSystem?.setPlaceholderSource('${placeholder}', 'manual')"
+                      >
+                      <span class="text-sm text-gray-700 dark:text-gray-300">Manual Entry</span>
+                    </label>
+                  </div>
+                  
+                  <!-- Contact field dropdown (shown when source is contact) -->
+                  <div id="contact-field-${placeholder}" class="${isManual ? "hidden" : ""}">
+                    <select 
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      onchange="window.pdfSystem?.setPlaceholderField('${placeholder}', this.value)"
+                    >
+                      <option value="">Select a contact field...</option>
+                      ${contactFields
+                        .map(
+                          (field) => `
+                        <option value="${field.key}" ${selectedField === field.key ? "selected" : ""}>
+                          ${field.label}${field.value ? ` (${field.value.substring(0, 30)}${field.value.length > 30 ? "..." : ""})` : ""}
+                        </option>
+                      `
+                        )
+                        .join("")}
+                    </select>
+                    ${
+                      selectedValue
+                        ? `
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Preview: ${selectedValue.substring(0, 50)}${selectedValue.length > 50 ? "..." : ""}
+                      </p>
+                    `
+                        : ""
+                    }
+                  </div>
+                  
+                  <!-- Manual entry input (shown when source is manual) -->
+                  <div id="manual-field-${placeholder}" class="${!isManual ? "hidden" : ""}">
+                    <input 
+                      type="text" 
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Enter value manually..."
+                      value="${manualValue}"
+                      onchange="window.pdfSystem?.setPlaceholderManual('${placeholder}', this.value)"
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        })
+        .join("");
+
+      // Initialize mappings with auto-matched values
+      placeholders.forEach((placeholder) => {
+        if (!this.placeholderMappings[placeholder]) {
+          const placeholderUpper = placeholder.toUpperCase();
+          let autoMatch = null;
+
+          if (
+            placeholderUpper.includes("NAME") &&
+            !placeholderUpper.includes("FIRST") &&
+            !placeholderUpper.includes("LAST")
+          ) {
+            autoMatch = "name";
+          } else if (placeholderUpper.includes("FIRST") || placeholderUpper.includes("FIRSTNAME")) {
+            autoMatch = "firstName";
+          } else if (placeholderUpper.includes("LAST") || placeholderUpper.includes("LASTNAME")) {
+            autoMatch = "lastName";
+          } else if (placeholderUpper.includes("EMAIL")) {
+            autoMatch = "email";
+          } else if (placeholderUpper.includes("PHONE") || placeholderUpper.includes("TEL")) {
+            autoMatch = "phone";
+          } else if (placeholderUpper.includes("ADDRESS") || placeholderUpper.includes("STREET")) {
+            autoMatch = "address";
+          } else if (
+            placeholderUpper.includes("COMPANY") ||
+            placeholderUpper.includes("ORGANIZATION") ||
+            placeholderUpper.includes("ORG")
+          ) {
+            autoMatch = "organization";
+          } else if (placeholderUpper.includes("TITLE") || placeholderUpper.includes("JOB")) {
+            autoMatch = "jobTitle";
+          }
+
+          if (autoMatch) {
+            const field = contactFields.find((f) => f.key === autoMatch);
+            if (field && field.value) {
+              this.placeholderMappings[placeholder] = {
+                source: "contact",
+                fieldKey: autoMatch,
+                value: field.value,
+              };
+            }
+          }
+        }
+      });
+
+      // Update the UI to reflect initialized mappings
+      this.refreshPlaceholderMappingUI();
+    }
+
+    // Set placeholder source (contact or manual)
+    setPlaceholderSource(placeholder, source) {
+      if (!this.placeholderMappings[placeholder]) {
+        this.placeholderMappings[placeholder] = { source, value: "" };
+      } else {
+        this.placeholderMappings[placeholder].source = source;
+      }
+
+      // Show/hide appropriate inputs
+      const contactDiv = document.getElementById(`contact-field-${placeholder}`);
+      const manualDiv = document.getElementById(`manual-field-${placeholder}`);
+
+      if (contactDiv) contactDiv.classList.toggle("hidden", source === "manual");
+      if (manualDiv) manualDiv.classList.toggle("hidden", source === "contact");
+
+      // Update radio buttons
+      const radios = document.querySelectorAll(`input[name="source-${placeholder}"]`);
+      radios.forEach((radio) => {
+        radio.checked = radio.value === source;
+      });
+    }
+
+    // Set placeholder field from contact
+    setPlaceholderField(placeholder, fieldKey) {
+      if (!fieldKey) {
+        if (this.placeholderMappings[placeholder]) {
+          this.placeholderMappings[placeholder].value = "";
+        }
+        this.refreshPlaceholderMappingUI();
+        return;
+      }
+
+      const contactFields = this.getAvailableContactFields(this.selectedContactData);
+      const field = contactFields.find((f) => f.key === fieldKey);
+
+      if (field) {
+        this.placeholderMappings[placeholder] = {
+          source: "contact",
+          fieldKey: fieldKey,
+          value: field.value || "",
+        };
+        this.refreshPlaceholderMappingUI();
+      }
+    }
+
+    // Set placeholder manual value
+    setPlaceholderManual(placeholder, value) {
+      if (!this.placeholderMappings[placeholder]) {
+        this.placeholderMappings[placeholder] = { source: "manual", value: "" };
+      }
+      this.placeholderMappings[placeholder].source = "manual";
+      this.placeholderMappings[placeholder].value = value;
+    }
+
+    // Refresh the mapping UI to show current values
+    refreshPlaceholderMappingUI() {
+      if (!this.selectedTemplate || !this.selectedContactData) return;
+
+      const template = this.templates.find((t) => t.id === this.selectedTemplate);
+      if (!template) return;
+
+      const placeholders = this.extractPlaceholdersFromTemplate(template);
+      const contactFields = this.getAvailableContactFields(this.selectedContactData);
+
+      placeholders.forEach((placeholder) => {
+        const mapping = this.placeholderMappings[placeholder];
+        if (!mapping) return;
+
+        // Update preview text if source is contact
+        if (mapping.source === "contact" && mapping.fieldKey) {
+          const field = contactFields.find((f) => f.key === mapping.fieldKey);
+          if (field && field.value) {
+            const preview = document.querySelector(`[data-placeholder="${placeholder}"] p.text-xs`);
+            if (preview) {
+              const previewText =
+                field.value.substring(0, 50) + (field.value.length > 50 ? "..." : "");
+              preview.textContent = `Preview: ${previewText}`;
+            }
+          }
+        }
+      });
+    }
+
+    // Hide placeholder mapping UI
+    hidePlaceholderMappingUI() {
+      const mappingSection = document.getElementById("placeholder-mapping-section");
+      if (mappingSection) {
+        mappingSection.classList.add("hidden");
+      }
     }
 
     async generatePDF() {

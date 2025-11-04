@@ -123,6 +123,46 @@ const themeMode = theme;
             isDark: isDark
           });
 
+          // Create popup button function (defined early for use in fallbacks)
+          function createPopupButton() {
+            if (!campfireUrl) {
+              console.error('[---CAMPFIRE-WIDGET] Cannot create popup button - CAMPFIRE_URL is not set');
+              container.innerHTML = '<div style="padding: 10px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 12px;">Campfire widget failed to load. Check console for details.</div>';
+              return;
+            }
+            
+            console.log('[---CAMPFIRE-WIDGET] Creating popup button (skipping iframe attempts)');
+            
+            // Create a button that opens Campfire in a popup window
+            const chatUrl = campfireUrl + (campfireWidgetId ? '?widget=' + campfireWidgetId : '');
+            container.innerHTML = `
+              <button 
+                onclick="window.open('${chatUrl}', 'campfire-chat', 'width=600,height=800,resizable=yes,scrollbars=yes')"
+                style="
+                  position: fixed;
+                  bottom: 20px;
+                  right: 20px;
+                  background: #007bff;
+                  color: white;
+                  border: none;
+                  border-radius: 50px;
+                  padding: 16px 24px;
+                  font-size: 16px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+                  z-index: 9999;
+                  transition: all 0.3s ease;
+                "
+                onmouseover="this.style.background='#0056b3'; this.style.transform='scale(1.05)'"
+                onmouseout="this.style.background='#007bff'; this.style.transform='scale(1)'"
+              >
+                💬 Open Chat
+              </button>
+            `;
+            console.log('[---CAMPFIRE-WIDGET] Popup button created. Users can click to open Campfire in a new window.');
+          }
+
           // Method 1: If you have a widget ID (standard Campfire embed)
           if (campfireWidgetId) {
             try {
@@ -149,8 +189,8 @@ const themeMode = theme;
               
               function tryLoadScript() {
                 if (currentPathIndex >= possiblePaths.length) {
-                  console.warn('[---CAMPFIRE-WIDGET] All widget script paths failed, trying iframe fallback');
-                  tryIframeFallback();
+                  console.warn('[---CAMPFIRE-WIDGET] All widget script paths failed, using popup button');
+                  createPopupButton();
                   return;
                 }
                 
@@ -204,7 +244,7 @@ const themeMode = theme;
               tryLoadScript();
             } catch (error) {
               console.error('[---CAMPFIRE-WIDGET] Error loading widget:', error);
-              tryIframeFallback();
+              createPopupButton();
             }
           }
           // Method 2: If you have a direct Campfire URL (self-hosted)
@@ -212,151 +252,14 @@ const themeMode = theme;
             try {
               console.log('[---CAMPFIRE-WIDGET] Loading widget from URL:', campfireUrl);
               
-              // Try iframe approach first for self-hosted instances
-              tryIframeFallback();
+              // Use popup button directly (no iframe attempts)
+              createPopupButton();
             } catch (error) {
               console.error('[---CAMPFIRE-WIDGET] Error loading widget:', error);
+              createPopupButton();
             }
           } else {
             console.warn('[---CAMPFIRE-WIDGET] No Campfire URL or Widget ID configured');
-          }
-
-          // Fallback: Iframe approach for self-hosted Campfire
-          function tryIframeFallback() {
-            console.log('[---CAMPFIRE-WIDGET] Trying iframe fallback...');
-            
-            if (!campfireUrl) {
-              console.error('[---CAMPFIRE-WIDGET] Cannot use iframe fallback - CAMPFIRE_URL is not set');
-              container.innerHTML = '<div style="padding: 10px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 12px;">Campfire widget failed to load. Check console for details.</div>';
-              return;
-            }
-            
-            // Try multiple possible embed URLs
-            const possibleEmbedUrls = [
-              `${campfireUrl}/embed${campfireWidgetId ? '?id=' + campfireWidgetId : ''}`,
-              `${campfireUrl}/widget${campfireWidgetId ? '?id=' + campfireWidgetId : ''}`,
-              `${campfireUrl}/chat${campfireWidgetId ? '?id=' + campfireWidgetId : ''}`,
-              `${campfireUrl}${campfireWidgetId ? '?widget=' + campfireWidgetId : ''}`,
-              `${campfireUrl}${campfireWidgetId ? '?embed=' + campfireWidgetId : ''}`,
-            ];
-            
-            let currentEmbedIndex = 0;
-            
-            function tryEmbedUrl() {
-              if (currentEmbedIndex >= possibleEmbedUrls.length) {
-                console.error('[---CAMPFIRE-WIDGET] All embed URLs failed. The Campfire server may be blocking iframe embedding (X-Frame-Options) or the embed endpoints don\'t exist.');
-                console.log('[---CAMPFIRE-WIDGET] Falling back to popup window approach');
-                
-                // Fallback: Create a button that opens Campfire in a popup window
-                const chatUrl = campfireUrl + (campfireWidgetId ? '?widget=' + campfireWidgetId : '');
-                container.innerHTML = `
-                  <button 
-                    onclick="window.open('${chatUrl}', 'campfire-chat', 'width=600,height=800,resizable=yes,scrollbars=yes')"
-                    style="
-                      position: fixed;
-                      bottom: 20px;
-                      right: 20px;
-                      background: #007bff;
-                      color: white;
-                      border: none;
-                      border-radius: 50px;
-                      padding: 16px 24px;
-                      font-size: 16px;
-                      font-weight: 600;
-                      cursor: pointer;
-                      box-shadow: 0 4px 12px rgba(0,123,255,0.3);
-                      z-index: 9999;
-                      transition: all 0.3s ease;
-                    "
-                    onmouseover="this.style.background='#0056b3'; this.style.transform='scale(1.05)'"
-                    onmouseout="this.style.background='#007bff'; this.style.transform='scale(1)'"
-                  >
-                    💬 Open Chat
-                  </button>
-                `;
-                console.log('[---CAMPFIRE-WIDGET] Popup button created. Users can click to open Campfire in a new window.');
-                return;
-              }
-              
-              const embedUrl = possibleEmbedUrls[currentEmbedIndex];
-              console.log('[---CAMPFIRE-WIDGET] Trying embed URL (' + (currentEmbedIndex + 1) + '/' + possibleEmbedUrls.length + '):', embedUrl);
-              
-              try {
-                const iframe = document.createElement('iframe');
-                iframe.src = embedUrl;
-                iframe.style.width = '400px';
-                iframe.style.height = '600px';
-                iframe.style.border = 'none';
-                iframe.style.borderRadius = '8px';
-                iframe.style.position = 'fixed';
-                iframe.style.bottom = '20px';
-                iframe.style.right = '20px';
-                iframe.style.zIndex = '9999';
-                iframe.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-                iframe.style.display = 'none';
-                iframe.allow = 'camera; microphone; geolocation';
-                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox');
-                
-                let loadVerified = false;
-                
-                // Check if iframe actually loaded content (not just the onload event)
-                const verifyLoad = () => {
-                  try {
-                    // Try to access iframe content - if blocked by X-Frame-Options, this will throw
-                    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                    if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML) {
-                      loadVerified = true;
-                      iframe.style.display = 'block';
-                      console.log('[---CAMPFIRE-WIDGET] Campfire iframe loaded and verified:', embedUrl);
-                      return true;
-                    }
-                  } catch (e) {
-                    // Cross-origin or X-Frame-Options blocked
-                    console.warn('[---CAMPFIRE-WIDGET] Cannot verify iframe content (may be blocked by X-Frame-Options):', e.message);
-                  }
-                  return false;
-                };
-                
-                iframe.onload = () => {
-                  setTimeout(() => {
-                    if (!verifyLoad()) {
-                      // onload fired but content not accessible - likely blocked
-                      console.warn('[---CAMPFIRE-WIDGET] Iframe onload fired but content not accessible - trying next URL');
-                      container.removeChild(iframe);
-                      currentEmbedIndex++;
-                      tryEmbedUrl();
-                    }
-                  }, 500);
-                };
-                
-                iframe.onerror = (error) => {
-                  console.warn('[---CAMPFIRE-WIDGET] Iframe load error:', embedUrl);
-                  if (container.contains(iframe)) {
-                    container.removeChild(iframe);
-                  }
-                  currentEmbedIndex++;
-                  tryEmbedUrl();
-                };
-                
-                // Check for X-Frame-Options blocking after a delay
-                setTimeout(() => {
-                  if (!loadVerified && container.contains(iframe)) {
-                    console.warn('[---CAMPFIRE-WIDGET] Iframe may be blocked by X-Frame-Options, trying next URL');
-                    container.removeChild(iframe);
-                    currentEmbedIndex++;
-                    tryEmbedUrl();
-                  }
-                }, 2000);
-                
-                container.appendChild(iframe);
-              } catch (error) {
-                console.error('[---CAMPFIRE-WIDGET] Error creating iframe:', error);
-                currentEmbedIndex++;
-                tryEmbedUrl();
-              }
-            }
-            
-            tryEmbedUrl();
           }
 
         }
