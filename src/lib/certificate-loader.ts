@@ -36,7 +36,9 @@ async function loadFromKeychain(
   certificateName: string = "IdenTrust"
 ): Promise<CertificateLoadResult> {
   try {
-    console.log(`🔐 [CERT-LOADER] Attempting to load certificate from Keychain: ${certificateName}`);
+    console.log(
+      `🔐 [CERT-LOADER] Attempting to load certificate from Keychain: ${certificateName}`
+    );
 
     // Try to find the certificate in Keychain
     let keychainCert: string;
@@ -88,10 +90,7 @@ async function loadFromKeychain(
 /**
  * Load certificate from PKCS#12 file (.p12/.pfx)
  */
-async function loadFromP12File(
-  filePath: string,
-  password: string
-): Promise<CertificateLoadResult> {
+async function loadFromP12File(filePath: string, password: string): Promise<CertificateLoadResult> {
   try {
     console.log(`🔐 [CERT-LOADER] Loading certificate from file: ${filePath}`);
 
@@ -103,7 +102,8 @@ async function loadFromP12File(
     }
 
     const p12Buffer = readFileSync(filePath);
-    const p12Der = forge.util.decodeBinary(p12Buffer.toString("binary"));
+    // Convert Buffer to binary string for forge
+    const p12Der = p12Buffer.toString("binary");
 
     // Parse PKCS#12
     const p12Asn1 = forge.asn1.fromDer(p12Der);
@@ -113,14 +113,17 @@ async function loadFromP12File(
     const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
     const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
 
-    if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
+    if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag]?.length === 0) {
       return {
         success: false,
         error: "No certificate found in PKCS#12 file",
       };
     }
 
-    if (!keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || keyBags[forge.pki.oids.pkcs8ShroudedKeyBag].length === 0) {
+    if (
+      !keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] ||
+      keyBags[forge.pki.oids.pkcs8ShroudedKeyBag]?.length === 0
+    ) {
       return {
         success: false,
         error: "No private key found in PKCS#12 file",
@@ -178,10 +181,20 @@ async function loadFromBase64(
 ): Promise<CertificateLoadResult> {
   try {
     console.log(`🔐 [CERT-LOADER] Loading certificate from base64 environment variable...`);
+    console.log(`🔐 [CERT-LOADER] Base64 length: ${base64Cert.length} characters`);
+    console.log(`🔐 [CERT-LOADER] Password length: ${password ? password.length : 0} characters`);
+
+    // Clean the base64 string (remove whitespace, newlines, etc.)
+    const cleanedBase64 = base64Cert.replace(/\s+/g, "").trim();
+    console.log(`🔐 [CERT-LOADER] Cleaned base64 length: ${cleanedBase64.length} characters`);
 
     // Decode base64 to buffer
-    const certBuffer = Buffer.from(base64Cert, "base64");
-    const certDer = forge.util.decodeBinary(certBuffer.toString("binary"));
+    const certBuffer = Buffer.from(cleanedBase64, "base64");
+    console.log(`🔐 [CERT-LOADER] Decoded buffer size: ${certBuffer.length} bytes`);
+
+    // Convert Buffer to forge-compatible format
+    // forge expects binary string, not binary buffer
+    const certDer = certBuffer.toString("binary");
 
     // Parse PKCS#12
     const p12Asn1 = forge.asn1.fromDer(certDer);
@@ -191,14 +204,17 @@ async function loadFromBase64(
     const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
     const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
 
-    if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
+    if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag]?.length === 0) {
       return {
         success: false,
         error: "No certificate found in PKCS#12 data",
       };
     }
 
-    if (!keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || keyBags[forge.pki.oids.pkcs8ShroudedKeyBag].length === 0) {
+    if (
+      !keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] ||
+      keyBags[forge.pki.oids.pkcs8ShroudedKeyBag]?.length === 0
+    ) {
       return {
         success: false,
         error: "No private key found in PKCS#12 data",
@@ -255,13 +271,35 @@ export async function loadCertificate(): Promise<CertificateLoadResult> {
   const base64Cert = process.env.CERT_BASE64;
   const certPassword = process.env.CERT_PASSWORD;
 
+  console.log(`🔐 [CERT-LOADER] Environment check:`, {
+    hasCERT_BASE64: !!base64Cert,
+    hasCERT_PASSWORD: !!certPassword,
+    base64Length: base64Cert?.length || 0,
+    base64Preview: base64Cert ? `${base64Cert.substring(0, 50)}...` : "none",
+  });
+
   if (base64Cert && certPassword) {
+    // Clean up the base64 (remove quotes, whitespace, etc. that Railway might add)
+    const cleanedBase64 = base64Cert
+      .replace(/^["']|["']$/g, "") // Remove surrounding quotes
+      .replace(/\s+/g, "") // Remove all whitespace/newlines
+      .trim();
+
+    const cleanedPassword = certPassword
+      .replace(/^["']|["']$/g, "") // Remove surrounding quotes
+      .trim();
+
     console.log(`🔐 [CERT-LOADER] Loading certificate from base64 environment variable...`);
-    const result = await loadFromBase64(base64Cert, certPassword);
+    console.log(`🔐 [CERT-LOADER] Cleaned base64 length: ${cleanedBase64.length}`);
+
+    const result = await loadFromBase64(cleanedBase64, cleanedPassword);
     if (result.success) {
       return result;
     }
-    console.warn(`⚠️ [CERT-LOADER] Failed to load from base64, trying other sources...`);
+    console.warn(`⚠️ [CERT-LOADER] Failed to load from base64:`, result.error);
+    console.warn(`⚠️ [CERT-LOADER] Trying other sources...`);
+  } else {
+    console.warn(`⚠️ [CERT-LOADER] CERT_BASE64 or CERT_PASSWORD not set`);
   }
 
   // Try environment variable path (for local development)
@@ -338,4 +376,3 @@ export function validateCertificate(certData: CertificateData): {
     errors,
   };
 }
-
