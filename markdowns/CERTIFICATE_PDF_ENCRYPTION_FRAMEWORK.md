@@ -225,14 +225,67 @@ const CERT_PASSWORD = await getSecretFromVault("certificate-password");
 
 ---
 
-## Next Steps
+## Implementation Status
 
-1. **Determine certificate format**: Check if you have `.p12`/`.pfx` or need to export
-2. **Choose library**: Research and test Node.js libraries that support certificate encryption
-3. **Design storage**: Decide on certificate storage strategy (secrets manager vs files)
-4. **Implement loader**: Create certificate loading/parsing module
-5. **Extend encryption**: Add certificate-based encryption alongside existing password encryption
-6. **Testing**: Test on localhost first, then staging, then production
+✅ **Completed:**
+
+1. Certificate loader module (`src/lib/certificate-loader.ts`)
+2. PDF signing module (`src/lib/pdf-signing.ts`)
+3. API endpoint for PDF signing (`src/pages/api/pdf/sign.ts`)
+4. Admin page for PDF certification (`src/pages/admin/certify-pdf.astro`)
+
+## Setup Instructions
+
+### 1. Export Certificate from Keychain Access
+
+1. Open **Keychain Access** on macOS
+2. Select **"login"** keychain
+3. Click **"My Certificates"** (or search for "IdenTrust")
+4. Find your IdenTrust certificate
+5. **Right-click → Export "IdenTrust"...**
+6. Choose **"Personal Information Exchange (.p12)"** format
+7. Save to `certs/identrust.p12` in your project root
+8. Set a password when prompted (you'll need this for the app)
+
+### 2. Set Environment Variables
+
+Add to your `.env` file:
+
+```bash
+CERT_PATH=./certs/identrust.p12
+CERT_PASSWORD=your_certificate_password_here
+```
+
+Or for production:
+
+```bash
+CERT_PATH=/secure/path/to/identrust.p12
+CERT_PASSWORD=your_certificate_password_here
+```
+
+### 3. Access the Certification Page
+
+Navigate to: `/admin/certify-pdf`
+
+- Requires **Admin** or **Staff** role
+- Upload a PDF file
+- Fill in signing details (reason, location, etc.)
+- Click "Certify PDF"
+- Download the certified PDF
+
+### 4. How It Works
+
+- **Signing**: Embeds certificate metadata and digital signature into PDF
+- **Authentication**: Proves document integrity and signer identity
+- **Note**: This provides **signing/authentication**, not encryption
+- For encryption, use the existing password-based encryption features
+
+## Next Steps (Future Enhancements)
+
+1. **Full Cryptographic Signing**: Integrate `node-signpdf` for complete PKCS#7 signing
+2. **Visible Signatures**: Add visual signature stamps to PDFs
+3. **Signature Validation**: Add endpoint to verify PDF signatures
+4. **Certificate-Based Encryption**: Implement full certificate-based encryption (requires different library)
 
 ---
 
