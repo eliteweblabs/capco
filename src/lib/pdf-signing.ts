@@ -100,11 +100,16 @@ export async function signPDF(
     };
 
     // Store metadata in PDF (as custom properties)
-    // Note: pdf-lib doesn't support custom properties directly, so we'll add it to producer metadata
+    // Note: pdf-lib doesn't support custom properties directly, so we'll add it to keywords
     const metadataString = JSON.stringify(customMetadata);
-    pdfDoc.setKeywords(
-      `certified,signed,${certData.commonName},${signingMetadata.signedAt.toISOString()}`
-    );
+    // pdf-lib setKeywords expects an array, not a string
+    const keywordArray = [
+      "certified",
+      "signed",
+      certData.commonName,
+      signingMetadata.signedAt.toISOString(),
+    ];
+    pdfDoc.setKeywords(keywordArray);
 
     // For visible signature, add a signature field
     if (options.visible && options.pageNumber !== undefined) {
@@ -113,9 +118,7 @@ export async function signPDF(
 
       // Create signature annotation (simplified - pdf-lib doesn't fully support signature widgets)
       // This is a placeholder - full signature support would require node-signpdf
-      console.log(
-        `✍️ [PDF-SIGNING] Adding visible signature on page ${options.pageNumber + 1}`
-      );
+      console.log(`✍️ [PDF-SIGNING] Adding visible signature on page ${options.pageNumber + 1}`);
     }
 
     // Save the signed PDF
@@ -178,7 +181,9 @@ export async function extractSignatureMetadata(pdfBuffer: Buffer): Promise<{
     const keywords = pdfDoc.getKeywords();
 
     // Check if PDF has certification keywords
-    if (keywords && keywords.includes("certified")) {
+    // keywords can be string or array depending on PDF version
+    const keywordStr = Array.isArray(keywords) ? keywords.join(",") : keywords || "";
+    if (keywordStr.includes("certified")) {
       // Parse metadata from keywords or custom properties
       return {
         signed: true,
@@ -197,4 +202,3 @@ export async function extractSignatureMetadata(pdfBuffer: Buffer): Promise<{
     return { signed: false };
   }
 }
-
