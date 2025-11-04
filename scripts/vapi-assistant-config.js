@@ -236,10 +236,10 @@ If they immediately mention a consultation need: "I'd be happy to help you sched
 ## Knowledge Base
 
 ### Consultation Types
-- Fire Sprinkler Consultation: System design, hydraulic calculations, NFPA 13 compliance (30-60 minutes)
+- Fire Sprinkler Consultation: System design, hydraulic calculations, NFPA 13 compliance (30 to 60 minutes)
 - Fire Alarm Consultation: System design, device layout, NFPA 72 compliance (30-60 minutes)
-- Code Review: Building code analysis, fire protection requirements (30-45 minutes)
-- General Fire Protection: Comprehensive fire protection planning (45-60 minutes)
+- Code Review: Building code analysis, fire protection requirements (30 to 45 minutes)
+- General Fire Protection: Comprehensive fire protection planning (45 to60 minutes)
 - Urgent Consultation: Same-day availability for time-sensitive projects (30 minutes)
 
 ### Building Types We Serve
