@@ -366,8 +366,8 @@ const { globalInputClasses } = globalClasses();
 <script>
   // Fallback AOS initialization in case onload doesn't work
   document.addEventListener("DOMContentLoaded", function () {
-    if (typeof window !== "undefined" && window.AOS && !window.AOS.refresh) {
-      window.AOS.init({
+    if (typeof window !== "undefined" && (window as any).AOS && !(window as any).AOS.refresh) {
+      (window as any).AOS.init({
         duration: 1000,
         once: true,
         offset: 100,
@@ -383,18 +383,18 @@ const { globalInputClasses } = globalClasses();
 
     if (emailInput && nextBtn) {
       // Email validation function
-      function isValidEmail(email) {
+      function isValidEmail(email: string) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
       }
 
       // Show/hide next button based on email validity
       function toggleNextButton() {
-        const email = emailInput.value.trim();
+        const email = (emailInput as HTMLInputElement)?.value?.trim();
         if (isValidEmail(email)) {
-          nextBtn.classList.remove("hidden");
+          nextBtn?.classList.remove("hidden");
         } else {
-          nextBtn.classList.add("hidden");
+          nextBtn?.classList.add("hidden");
         }
       }
 
@@ -404,7 +404,7 @@ const { globalInputClasses } = globalClasses();
 
       // Handle next button click
       nextBtn.addEventListener("click", function () {
-        const email = emailInput.value.trim();
+        const email = (emailInput as HTMLInputElement)?.value.trim();
         if (isValidEmail(email)) {
           const encodedEmail = encodeURIComponent(email);
           window.location.href = `/auth/register&email=${encodedEmail}`;
