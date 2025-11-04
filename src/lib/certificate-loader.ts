@@ -169,13 +169,103 @@ async function loadFromP12File(
 }
 
 /**
+ * Load certificate from base64 encoded string in environment variable
+ * Useful for Railway/deployment where files aren't available
+ */
+async function loadFromBase64(
+  base64Cert: string,
+  password: string
+): Promise<CertificateLoadResult> {
+  try {
+    console.log(`🔐 [CERT-LOADER] Loading certificate from base64 environment variable...`);
+
+    // Decode base64 to buffer
+    const certBuffer = Buffer.from(base64Cert, "base64");
+    const certDer = forge.util.decodeBinary(certBuffer.toString("binary"));
+
+    // Parse PKCS#12
+    const p12Asn1 = forge.asn1.fromDer(certDer);
+    const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, password);
+
+    // Extract certificate and private key
+    const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+    const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+
+    if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
+      return {
+        success: false,
+        error: "No certificate found in PKCS#12 data",
+      };
+    }
+
+    if (!keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || keyBags[forge.pki.oids.pkcs8ShroudedKeyBag].length === 0) {
+      return {
+        success: false,
+        error: "No private key found in PKCS#12 data",
+      };
+    }
+
+    const cert = certBags[forge.pki.oids.certBag][0].cert!;
+    const privateKey = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag][0].key!;
+    const publicKey = cert.publicKey;
+
+    const certificateData: CertificateData = {
+      certificate: cert,
+      privateKey,
+      publicKey,
+      commonName: cert.subject.getField("CN")?.value || "Unknown",
+      issuer: cert.issuer.getField("CN")?.value || "Unknown",
+      validFrom: cert.validity.notBefore,
+      validTo: cert.validity.notAfter,
+    };
+
+    // Validate certificate expiration
+    const now = new Date();
+    if (now < certificateData.validFrom) {
+      return {
+        success: false,
+        error: `Certificate not yet valid. Valid from: ${certificateData.validFrom.toISOString()}`,
+      };
+    }
+
+    if (now > certificateData.validTo) {
+      return {
+        success: false,
+        error: `Certificate has expired. Expired on: ${certificateData.validTo.toISOString()}`,
+      };
+    }
+
+    console.log(`✅ [CERT-LOADER] Certificate loaded from base64: ${certificateData.commonName}`);
+    return { success: true, data: certificateData };
+  } catch (error) {
+    console.error(`❌ [CERT-LOADER] Error loading from base64:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error loading certificate",
+    };
+  }
+}
+
+/**
  * Main function to load certificate
  * Tries multiple sources in order of preference
  */
 export async function loadCertificate(): Promise<CertificateLoadResult> {
-  // Try environment variable path first (most explicit)
-  const certPath = process.env.CERT_PATH || process.env.DEV_CERT_PATH;
+  // Try base64 encoded certificate first (best for Railway/deployment)
+  const base64Cert = process.env.CERT_BASE64;
   const certPassword = process.env.CERT_PASSWORD;
+
+  if (base64Cert && certPassword) {
+    console.log(`🔐 [CERT-LOADER] Loading certificate from base64 environment variable...`);
+    const result = await loadFromBase64(base64Cert, certPassword);
+    if (result.success) {
+      return result;
+    }
+    console.warn(`⚠️ [CERT-LOADER] Failed to load from base64, trying other sources...`);
+  }
+
+  // Try environment variable path (for local development)
+  const certPath = process.env.CERT_PATH || process.env.DEV_CERT_PATH;
 
   if (certPath && certPassword) {
     console.log(`🔐 [CERT-LOADER] Loading certificate from environment variable path: ${certPath}`);
@@ -210,9 +300,10 @@ export async function loadCertificate(): Promise<CertificateLoadResult> {
     success: false,
     error:
       "Certificate not found. Please either:\n" +
-      "1. Export certificate as .p12 from Keychain Access and save to certs/identrust.p12\n" +
-      "2. Set CERT_PATH and CERT_PASSWORD environment variables\n" +
-      "3. Ensure certificate is installed in macOS Keychain",
+      "1. Set CERT_BASE64 (base64 encoded .p12) and CERT_PASSWORD environment variables (recommended for Railway)\n" +
+      "2. Export certificate as .p12 from Keychain Access and save to certs/identrust.p12\n" +
+      "3. Set CERT_PATH and CERT_PASSWORD environment variables\n" +
+      "4. Ensure certificate is installed in macOS Keychain",
   };
 }
 
