@@ -135,6 +135,12 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
     }
 
     console.log("[---AUTH-CALLBACK] Auth cookies set successfully");
+    console.log("[---AUTH-CALLBACK] Cookie details:", {
+      hasAccessToken: !!cookies.get("sb-access-token"),
+      hasRefreshToken: !!cookies.get("sb-refresh-token"),
+      accessTokenValue: cookies.get("sb-access-token")?.value?.substring(0, 20) + "...",
+      refreshTokenValue: cookies.get("sb-refresh-token")?.value?.substring(0, 20) + "...",
+    });
 
     return new Response(
       JSON.stringify({
@@ -143,7 +149,11 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          // Ensure cookies are sent with the response
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
       }
     );
   } catch (error) {

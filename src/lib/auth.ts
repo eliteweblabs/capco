@@ -22,6 +22,17 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
   const accessToken = cookies.get("sb-access-token");
   const refreshToken = cookies.get("sb-refresh-token");
+  
+  // Debug logging for localhost OAuth issues
+  if (typeof window === "undefined") {
+    // Server-side only
+    console.log("🔐 [AUTH] Cookie check:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      accessTokenValue: accessToken?.value ? `${accessToken.value.substring(0, 20)}...` : "missing",
+      refreshTokenValue: refreshToken?.value ? `${refreshToken.value.substring(0, 20)}...` : "missing",
+    });
+  }
 
   // Check for custom session cookies first
   const customSessionToken = cookies.get("custom-session-token");
