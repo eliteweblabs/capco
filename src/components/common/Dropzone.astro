@@ -95,15 +95,16 @@ const browseBtnId = `${id}-browse-btn`;
 </style>
 
 <script define:vars={{ dropzoneId: id, acceptType: accept, allowMultiple: multiple, maxFileSize: maxSize }}>
-  interface DropzoneProps {
-    id: string;
-    accept?: string;
-    multiple?: boolean;
-    maxSize?: number;
-    onFileSelect?: (files: FileList | null) => void;
-    onError?: (error: string) => void;
-  }
-
+  /**
+   * Initialize a dropzone component
+   * @param {Object} config - Configuration object
+   * @param {string} config.id - Dropzone ID
+   * @param {string} [config.accept] - Accepted file types
+   * @param {boolean} [config.multiple=false] - Allow multiple files
+   * @param {number} [config.maxSize] - Maximum file size in MB
+   * @param {Function} [config.onFileSelect] - Callback for file selection
+   * @param {Function} [config.onError] - Callback for errors
+   */
   function initializeDropzone({
     id,
     accept,
@@ -111,10 +112,10 @@ const browseBtnId = `${id}-browse-btn`;
     maxSize,
     onFileSelect,
     onError,
-  }: DropzoneProps) {
+  }) {
     const dropzone = document.getElementById(id);
-    const input = document.getElementById(`${id}-input`) as HTMLInputElement;
-    const browseBtn = document.getElementById(`${id}-browse-btn`) as HTMLButtonElement;
+    const input = document.getElementById(`${id}-input`);
+    const browseBtn = document.getElementById(`${id}-browse-btn`);
 
     if (!dropzone || !input || !browseBtn) {
       console.error(`Dropzone elements not found for ID: ${id}`);
@@ -133,7 +134,7 @@ const browseBtnId = `${id}-browse-btn`;
     // Dropzone click handler (click anywhere on dropzone to browse)
     dropzone.addEventListener("click", (e) => {
       // Don't trigger if clicking the browse button (it has its own handler)
-      if (e.target === browseBtn || browseBtn.contains(e.target as Node)) {
+      if (e.target === browseBtn || browseBtn.contains(e.target)) {
         return;
       }
       if (!input.disabled) {
@@ -143,7 +144,7 @@ const browseBtnId = `${id}-browse-btn`;
 
     // File input change handler
     input.addEventListener("change", (e) => {
-      const target = e.target as HTMLInputElement;
+      const target = e.target;
       const files = target.files;
       handleFiles(files);
     });
@@ -174,7 +175,7 @@ const browseBtnId = `${id}-browse-btn`;
       handleFiles(files);
     });
 
-    function handleFiles(files: FileList | null) {
+    function handleFiles(files) {
       if (!files || files.length === 0) return;
 
       // Validate file count
@@ -251,8 +252,8 @@ const browseBtnId = `${id}-browse-btn`;
     }
 
     // Expose method to get files programmatically
-    (dropzone as any).getFiles = () => input.files;
-    (dropzone as any).clearFiles = () => {
+    dropzone.getFiles = () => input.files;
+    dropzone.clearFiles = () => {
       input.value = "";
     };
   }

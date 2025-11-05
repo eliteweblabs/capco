@@ -167,7 +167,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           </div>
 
           <!-- Save Options -->
-          <div class="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md">
+          <div class="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md hidden">
             <label class="flex items-center space-x-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -649,8 +649,21 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
         const data = await response.json();
         if (data.success) {
-          this.templates = data.data.templates || [];
-          this.renderTemplates();
+          const newTemplates = data.data.templates || [];
+
+          // Only re-render if templates actually changed
+          const templatesChanged =
+            JSON.stringify(this.templates?.map((t) => t.id).sort()) !==
+            JSON.stringify(newTemplates.map((t) => t.id).sort());
+
+          this.templates = newTemplates;
+
+          if (templatesChanged) {
+            console.log("📄 [PDF-SYSTEM] Templates changed, re-rendering...");
+            this.renderTemplates();
+          } else {
+            console.log("📄 [PDF-SYSTEM] Templates unchanged, skipping re-render");
+          }
         } else {
           console.error("❌ [PDF-SYSTEM] Error loading templates:", data.error);
         }
@@ -662,6 +675,30 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     renderTemplates() {
       const container = document.getElementById("templates-list");
       if (!container) return;
+
+      // Destroy existing Quill editors before replacing HTML
+      if (this.templateEditors) {
+        console.log("🗑️ [PDF-SYSTEM] Destroying existing template editors before re-rendering...");
+        Object.keys(this.templateEditors).forEach((templateId) => {
+          const editor = this.templateEditors[templateId];
+          if (editor) {
+            try {
+              // Quill doesn't have a built-in destroy method, but we can clear the container
+              const editorContainer = document.getElementById(`template-editor-${templateId}`);
+              if (editorContainer) {
+                editorContainer.innerHTML = "";
+              }
+            } catch (error) {
+              console.warn(
+                `⚠️ [PDF-SYSTEM] Error destroying editor for template ${templateId}:`,
+                error
+              );
+            }
+          }
+        });
+        // Clear the editors object so they can be recreated
+        this.templateEditors = {};
+      }
 
       if (this.templates.length === 0) {
         container.innerHTML = `
@@ -2725,21 +2762,21 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             </div>
             <div class="flex items-center gap-2">
               <button 
-                onclick="event.stopPropagation(); window.pdfSystem.revertField('${field.id}')"
+                onclick='event.stopPropagation(); window.pdfSystem.revertField(${JSON.stringify(field.id)})'
                 class="px-3 py-1 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors"
                 title="Toggle between original text and placeholder, then locate in document"
               >
                 Show Original
               </button>
               <button 
-                onclick="event.stopPropagation(); window.pdfSystem.toggleFieldVisibility('${field.id}')"
+                onclick='event.stopPropagation(); window.pdfSystem.toggleFieldVisibility(${JSON.stringify(field.id)})'
                 class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
                 title="Show/hide in document"
               >
                 ${field.isVisible ? "Hide" : "Show"}
               </button>
               <button 
-                onclick="event.stopPropagation(); window.pdfSystem.removeField('${field.id}')"
+                onclick='event.stopPropagation(); window.pdfSystem.removeField(${JSON.stringify(field.id)})'
                 class="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
                 title="Remove this field detection"
               >
@@ -2751,6 +2788,39 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           )
           .join("");
       }
+    }
+
+    // Helper function to find which editor contains the field
+    findEditorForField(field) {
+      // First check the main editor
+      if (this.editor) {
+        const mainEditorText = this.editor.getText();
+        const searchText = field.isReplaced ? field.placeholder : field.originalText;
+        if (mainEditorText.indexOf(searchText) !== -1) {
+          return this.editor;
+        }
+      }
+
+      // Check all template-specific editors
+      if (this.templateEditors) {
+        for (const [templateId, editor] of Object.entries(this.templateEditors)) {
+          if (editor) {
+            try {
+              const editorText = editor.getText();
+              const searchText = field.isReplaced ? field.placeholder : field.originalText;
+              if (editorText.indexOf(searchText) !== -1) {
+                console.log(`✅ [PDF-SYSTEM] Found field in template editor ${templateId}`);
+                return editor;
+              }
+            } catch (error) {
+              console.warn(`⚠️ [PDF-SYSTEM] Error checking template editor ${templateId}:`, error);
+            }
+          }
+        }
+      }
+
+      // Fallback to main editor if available
+      return this.editor || null;
     }
 
     scrollToField(fieldId) {
@@ -2769,14 +2839,16 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           field.isReplaced
         );
 
-        if (!this.editor) {
-          console.error("❌ [PDF-SYSTEM] Editor not initialized");
+        // Find the correct editor that contains this field
+        const editor = this.findEditorForField(field);
+        if (!editor) {
+          console.error("❌ [PDF-SYSTEM] Editor not found for field");
           reject(new Error("Editor not initialized"));
           return;
         }
 
         // Get the Quill editor's text content to find the position
-        const text = this.editor.getText();
+        const text = editor.getText();
         // Search for what's currently in the document: placeholder if replaced, original text if not
         const searchText = field.isReplaced ? field.placeholder : field.originalText;
         const textIndex = text.indexOf(searchText);
@@ -2793,11 +2865,11 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
         try {
           // Focus the editor first
-          this.editor.focus();
+          editor.focus();
 
           // Get the bounds of the selection first (before setting selection)
           const searchTextLength = searchText.length;
-          const bounds = this.editor.getBounds(textIndex, searchTextLength);
+          const bounds = editor.getBounds(textIndex, searchTextLength);
 
           if (!bounds) {
             reject(new Error("Could not get bounds"));
@@ -2807,7 +2879,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           console.log("📐 [PDF-SYSTEM] Bounds:", bounds);
 
           // Get the Quill editor's scrolling element (.ql-editor)
-          const editorScrollContainer = this.editor.root.parentElement.querySelector(".ql-editor");
+          const editorScrollContainer = editor.root.parentElement.querySelector(".ql-editor");
 
           if (editorScrollContainer) {
             // Calculate the target scroll position - center the selection
@@ -2855,7 +2927,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
                 // Set selection after scroll completes
                 const searchTextLength = searchText.length;
-                this.editor.setSelection(textIndex, searchTextLength);
+                editor.setSelection(textIndex, searchTextLength);
                 console.log(
                   "✅ [PDF-SYSTEM] Selection set at index:",
                   textIndex,
@@ -2864,7 +2936,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 );
 
                 // Apply highlight
-                this.applyFieldHighlight(textIndex, searchTextLength);
+                this.applyFieldHighlight(textIndex, searchTextLength, editor);
                 console.log("✅ [PDF-SYSTEM] Applied highlight");
 
                 resolve();
@@ -2879,16 +2951,16 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 clearInterval(scrollCheckInterval);
                 console.log("⏱️ [PDF-SYSTEM] Scroll timeout, applying selection anyway");
                 const searchTextLength = searchText.length;
-                this.editor.setSelection(textIndex, searchTextLength);
-                this.applyFieldHighlight(textIndex, searchTextLength);
+                editor.setSelection(textIndex, searchTextLength);
+                this.applyFieldHighlight(textIndex, searchTextLength, editor);
                 resolve();
               }, estimatedScrollTime + 500);
             }, 100);
           } else {
             // Fallback: scroll the root element
-            const scrollTop = Math.max(0, bounds.top - this.editor.root.clientHeight / 2);
+            const scrollTop = Math.max(0, bounds.top - editor.root.clientHeight / 2);
 
-            this.editor.root.scrollTo({
+            editor.root.scrollTo({
               top: scrollTop,
               behavior: "smooth",
             });
@@ -2896,8 +2968,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             // Wait for scroll to complete (fallback)
             setTimeout(() => {
               const searchTextLength = searchText.length;
-              this.editor.setSelection(textIndex, searchTextLength);
-              this.applyFieldHighlight(textIndex, searchTextLength);
+              editor.setSelection(textIndex, searchTextLength);
+              this.applyFieldHighlight(textIndex, searchTextLength, editor);
               resolve();
             }, 800); // Longer timeout for fallback
           }
@@ -2908,11 +2980,17 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       });
     }
 
-    applyFieldHighlight(textIndex, length) {
+    applyFieldHighlight(textIndex, length, editor = null) {
+      const targetEditor = editor || this.editor;
+      if (!targetEditor) {
+        console.warn("⚠️ [PDF-SYSTEM] No editor available for highlight");
+        return;
+      }
+
       try {
         // Temporarily highlight the placeholder
-        const originalFormat = this.editor.getFormat(textIndex, length);
-        this.editor.formatText(textIndex, length, {
+        const originalFormat = targetEditor.getFormat(textIndex, length);
+        targetEditor.formatText(textIndex, length, {
           background: "#ffeb3b",
           color: "#000",
         });
@@ -2921,7 +2999,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
         // Remove highlight after 2 seconds
         setTimeout(() => {
-          this.editor.formatText(textIndex, length, originalFormat);
+          targetEditor.formatText(textIndex, length, originalFormat);
           console.log("🎨 [PDF-SYSTEM] Removed highlight");
         }, 2000);
       } catch (error) {
@@ -2935,8 +3013,15 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       console.log("🔄 [PDF-SYSTEM] Toggling field:", field.name, "isReplaced:", field.isReplaced);
 
+      // Find the correct editor that contains this field
+      const editor = this.findEditorForField(field);
+      if (!editor) {
+        console.error("❌ [PDF-SYSTEM] Could not find editor for field");
+        return;
+      }
+
       // Get current editor content
-      const content = this.editor.root.innerHTML;
+      const content = editor.root.innerHTML;
       let updatedContent;
 
       if (field.isReplaced) {
@@ -2955,8 +3040,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       }
 
       // Update editor
-      const delta = this.editor.clipboard.convert(updatedContent);
-      this.editor.setContents(delta);
+      const delta = editor.clipboard.convert(updatedContent);
+      editor.setContents(delta);
 
       // Update button text to reflect current state
       this.updateRevertButton(fieldId, field.isReplaced);
@@ -2976,19 +3061,26 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           // Try one more time with original text search if placeholder search failed
           const field = this.trackedFields.find((f) => f.id === fieldId);
           if (field) {
+            // Find the correct editor again (in case it changed)
+            const retryEditor = this.findEditorForField(field);
+            if (!retryEditor) {
+              console.error("❌ [PDF-SYSTEM] Could not find editor for retry");
+              return;
+            }
+
             console.log("🔄 [PDF-SYSTEM] Retrying with alternative search...");
             // Try searching for the opposite (what we just switched to)
-            const text = this.editor.getText();
+            const text = retryEditor.getText();
             const alternativeSearch = field.isReplaced ? field.originalText : field.placeholder;
             const altIndex = text.indexOf(alternativeSearch);
             if (altIndex !== -1) {
               console.log("✅ [PDF-SYSTEM] Found text with alternative search, scrolling...");
               // Force a direct scroll to the found text
               try {
-                const bounds = this.editor.getBounds(altIndex, alternativeSearch.length);
+                const bounds = retryEditor.getBounds(altIndex, alternativeSearch.length);
                 if (bounds) {
                   const editorScrollContainer =
-                    this.editor.root.parentElement.querySelector(".ql-editor");
+                    retryEditor.root.parentElement.querySelector(".ql-editor");
                   if (editorScrollContainer) {
                     const containerHeight = editorScrollContainer.clientHeight;
                     const targetScrollTop = Math.max(
@@ -2997,8 +3089,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                     );
                     editorScrollContainer.scrollTo({ top: targetScrollTop, behavior: "smooth" });
                     setTimeout(() => {
-                      this.editor.setSelection(altIndex, alternativeSearch.length);
-                      this.applyFieldHighlight(altIndex, alternativeSearch.length);
+                      retryEditor.setSelection(altIndex, alternativeSearch.length);
+                      this.applyFieldHighlight(altIndex, alternativeSearch.length, retryEditor);
                     }, 800);
                   }
                 }
