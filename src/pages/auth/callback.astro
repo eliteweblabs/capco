@@ -59,43 +59,23 @@
     </div>
 
     <script>
-      // Import Supabase client (this will be bundled)
-      import { createClient } from "@supabase/supabase-js";
+      // Use singleton Supabase client to avoid multiple instances
+      import { getSupabaseClient } from "../../lib/supabase-client";
 
       async function handleCallback() {
-        // Client-side code can ONLY access PUBLIC_ variables (Astro restriction)
-        // Use PUBLIC_SUPABASE_PUBLISHABLE
-        const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-        const supabasePublishableKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || "";
-
         // Client-side logging (no prefix needed for browser console)
         console.log("[AUTH-CALLBACK] Environment check:", {
           hasPublicUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
           hasPublishableKey: !!import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE,
-          finalUrl: !!supabaseUrl,
-          finalKey: !!supabasePublishableKey,
-          urlValue: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : "missing",
-          keyPreview: supabasePublishableKey
-            ? `${supabasePublishableKey.substring(0, 20)}...`
-            : "missing",
         });
 
-        if (!supabaseUrl || !supabasePublishableKey) {
+        // Get singleton Supabase client (prevents multiple GoTrueClient instances)
+        const supabase = getSupabaseClient();
+
+        if (!supabase) {
           showError("Supabase configuration missing");
           return;
         }
-
-        // Create Supabase client (must be client-side for PKCE)
-        // Use the same configuration as OAuth initiation to ensure code verifier is found
-        const supabase = createClient(supabaseUrl, supabasePublishableKey, {
-          auth: {
-            flowType: "pkce",
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
-            persistSession: true,
-            storage: window.localStorage, // Explicitly use localStorage
-          },
-        });
         
         // Give Supabase client a moment to initialize
         await new Promise(resolve => setTimeout(resolve, 50));
