@@ -2,11 +2,7 @@ import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { supabase } from "../../../lib/supabase";
 import puppeteer from "puppeteer";
-import {
-  encryptPDF,
-  EncryptionOptions,
-  validateEncryptionOptions,
-} from "../../../lib/pdf-encryption";
+import { encryptPDF, validateEncryptionOptions } from "../../../lib/pdf-encryption";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
@@ -18,6 +14,9 @@ import { join } from "path";
  * Generates a PDF from a template and project data
  */
 export const POST: APIRoute = async ({ request, cookies }) => {
+  if (!supabase) {
+    return createErrorResponse("Supabase client not initialized", 500);
+  }
   try {
     // Check authentication
     const {
@@ -115,7 +114,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const htmlContent = generateHTMLContent(template, project, headerTemplate, footerTemplate);
 
     // Optionally save HTML to local templates directory for preview purposes
-    if (import.meta.env.SAVE_HTML_TEMPLATES === "true" || import.meta.env.SAVE_HTML_TEMPLATES === "1") {
+    if (
+      import.meta.env.SAVE_HTML_TEMPLATES === "true" ||
+      import.meta.env.SAVE_HTML_TEMPLATES === "1"
+    ) {
       try {
         await saveHTMLTemplate(htmlContent, projectId, templateId, template.name);
       } catch (htmlSaveError) {
@@ -133,7 +135,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (encryptionOptions) {
       console.log("🔐 [PDF-GENERATE] Applying encryption to PDF...");
-      const encryptionResult = await encryptPDF(pdfBuffer, encryptionOptions);
+      const encryptionResult = await encryptPDF(pdfBuffer as Buffer, encryptionOptions);
 
       if (!encryptionResult.success) {
         console.error("❌ [PDF-GENERATE] Encryption failed:", encryptionResult.error);
@@ -307,7 +309,7 @@ async function saveHTMLTemplate(
 ): Promise<void> {
   try {
     const templatesDir = join(process.cwd(), "src", "components", "pdf-system", "templates");
-    
+
     // Ensure directory exists
     await mkdir(templatesDir, { recursive: true });
 
