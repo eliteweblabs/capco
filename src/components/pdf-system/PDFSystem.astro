@@ -307,6 +307,76 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         </select>
       </div>
 
+      <!-- Template Preview Section (for interactive placeholder mapping) -->
+      <div id="template-preview-section" class="mb-6 hidden">
+        <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-1">
+                Map Placeholders
+              </h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                <span id="placeholder-progress">0 of 0</span> placeholders mapped
+              </p>
+            </div>
+            <button
+              id="skip-mapping-btn"
+              class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            >
+              Skip for now
+            </button>
+          </div>
+          <div
+            id="template-preview-container"
+            class="border border-gray-300 dark:border-gray-600 rounded-md p-6 bg-white dark:bg-gray-800 max-h-96 overflow-y-auto"
+            style="min-height: 300px;"
+          >
+            <!-- Template content with highlighted placeholders will be rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Placeholder Mapping Tooltip (positioned absolutely) -->
+      <div
+        id="placeholder-tooltip"
+        class="hidden fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-4 max-w-md"
+        style="display: none;"
+      >
+        <div class="flex items-center justify-between mb-3">
+          <h5 class="text-sm font-semibold text-gray-900 dark:text-white">
+            Select value for <span
+              id="tooltip-placeholder-name"
+              class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"></span>
+          </h5>
+          <button
+            id="close-tooltip-btn"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            ×
+          </button>
+        </div>
+        <div id="tooltip-contact-fields" class="space-y-2 max-h-64 overflow-y-auto mb-3">
+          <!-- Contact field options will be rendered here -->
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Or enter manually:
+          </label>
+          <input
+            type="text"
+            id="tooltip-manual-input"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+            placeholder="Enter value..."
+          />
+          <button
+            id="tooltip-apply-btn"
+            class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+
       <!-- Placeholder Mapping Section -->
       <div id="placeholder-mapping-section" class="mb-6 hidden">
         <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
@@ -446,6 +516,10 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       this.templateTypeSelect = null;
       this.placeholderMappings = {}; // Store mappings: { placeholder: { source: 'contact'|'manual', value: string } }
       this.ocrResultsByPage = []; // Store OCR results with layout data for each page
+      this.currentPlaceholderIndex = 0; // Track current placeholder being mapped
+      this.placeholderElements = []; // Store DOM elements for placeholders in template preview
+      this.placeholdersList = []; // Store list of placeholders to map
+      this.tooltipListenersSetup = false; // Track if tooltip listeners are set up
 
       this.init();
     }
@@ -491,7 +565,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       // Listen for user selection from SlotMachineModal (Google Contacts)
       // The preview rendering is now handled by SlotMachineModalFunction.astro
-      // This listener can be used for additional PDF-system specific logic if needed
       window.addEventListener("slot-select", (event) => {
         const ce = /** @type {CustomEvent} */ (event);
         const detail = (ce && ce.detail) || {};
@@ -501,11 +574,24 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         this.selectedContactData = detail.data || null;
         console.log("📄 [PDF-SYSTEM] Contact selected:", detail.label, detail.data);
 
+        // Update selectedUser from the value
+        if (detail.value) {
+          this.selectUser(detail.value);
+        }
+
         // Check if template is also selected, if so show mapping UI
         if (this.selectedTemplate) {
           this.updatePlaceholderMappingUI();
+
+          // Check if both template and user are selected, trigger mapping workflow
+          if (this.selectedTemplate && this.selectedUser && this.selectedContactData) {
+            this.startPlaceholderMappingWorkflow();
+          }
         }
       });
+
+      // Watch for changes to the hidden input value from SlotMachineModalFunction
+      this.setupUserInputWatcher();
 
       // Listen for template selection changes (set up after templates are loaded)
       // The listener will be attached in loadTemplatesForGeneration()
@@ -3045,14 +3131,14 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Get name directly from DOM (in case templateNameInput wasn't initialized)
       const nameInput = this.templateNameInput || document.getElementById("template-name");
       const name = nameInput?.value?.trim() || "";
-      
+
       const typeSelect = this.templateTypeSelect || document.getElementById("template-type");
       const type = typeSelect?.value || "body";
-      
+
       const content = this.editor
         ? this.editor.root.innerHTML
         : document.getElementById("template-content-textarea")?.value || "";
-      
+
       // Helper function to check if HTML content is empty (only whitespace/empty tags)
       const isContentEmpty = (html) => {
         if (!html || !html.trim()) return true;
@@ -3062,7 +3148,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         const emptyPatterns = /^(<p><br><\/p>|<p><\/p>|<br\s*\/?>|\s*)*$/i;
         return !textContent || emptyPatterns.test(html);
       };
-      
+
       const saveHtmlCheckbox = document.getElementById("save-html-template-checkbox");
       const saveHtml =
         saveHtmlCheckbox && saveHtmlCheckbox instanceof HTMLInputElement
@@ -3070,15 +3156,20 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           : false;
 
       // Debug logging
-      console.log("💾 [PDF-SYSTEM] Saving template - Name:", name, "Content length:", content?.length || 0);
-      
+      console.log(
+        "💾 [PDF-SYSTEM] Saving template - Name:",
+        name,
+        "Content length:",
+        content?.length || 0
+      );
+
       // Improved validation with specific error messages
       if (!name) {
         console.warn("⚠️ [PDF-SYSTEM] Validation failed: Template name is empty");
         this.showNotification("Please enter a template name", "error");
         return;
       }
-      
+
       if (isContentEmpty(content)) {
         console.warn("⚠️ [PDF-SYSTEM] Validation failed: Template content is empty");
         this.showNotification("Please add content to the template", "error");
@@ -3138,6 +3229,11 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
             if (this.selectedTemplate && this.selectedContactData) {
               this.updatePlaceholderMappingUI();
+
+              // Check if both template and user are selected, trigger mapping workflow
+              if (this.selectedTemplate && this.selectedUser && this.selectedContactData) {
+                this.startPlaceholderMappingWorkflow();
+              }
             } else {
               this.hidePlaceholderMappingUI();
             }
@@ -3175,51 +3271,63 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       }
     }
 
-    renderUserResults() {
-      const container = document.getElementById("user-results");
-      if (!container) return;
+    setupUserInputWatcher() {
+      // Watch for changes to the hidden input value from SlotMachineModalFunction
+      // The hidden input has id="user-search-value" (component id + "-value")
+      const hiddenInput = document.getElementById("user-search-value");
 
-      if (this.users.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No users found</p>';
+      if (!hiddenInput) {
+        // Retry if input doesn't exist yet (component might not be initialized)
+        setTimeout(() => this.setupUserInputWatcher(), 100);
         return;
       }
 
-      container.innerHTML = `
-        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Search Results</h4>
-        <div class="space-y-2">
-          ${this.users
-            .map(
-              (user) => `
-            <div class="flex items-center justify-between p-3 color-background rounded-md">
-              <div>
-                <h5 class="font-medium text-gray-900 dark:text-white">${user.title}</h5>
-                <p class="text-sm text-gray-600 dark:text-gray-400">${user.address || "No address"}</p>
-              </div>
-              <button 
-                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm select-user-btn"
-                data-user-id="${user.id}"
-              >
-                Select
-              </button>
-            </div>
-          `
-            )
-            .join("")}
-        </div>
-      `;
-
-      // Add event listeners to the select buttons
-      container.querySelectorAll(".select-user-btn").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          const userId = e.target.getAttribute("data-user-id");
-          this.selectUser(userId);
-        });
+      // Use MutationObserver to watch for value changes
+      const observer = new MutationObserver(() => {
+        const value = hiddenInput.value;
+        if (value && value !== this.selectedUser) {
+          this.selectUser(value);
+        }
       });
+
+      // Watch for changes to the value attribute
+      observer.observe(hiddenInput, {
+        attributes: true,
+        attributeFilter: ["value"],
+      });
+
+      // Also watch for direct value property changes using input event
+      hiddenInput.addEventListener("input", () => {
+        const value = hiddenInput.value;
+        if (value && value !== this.selectedUser) {
+          this.selectUser(value);
+        }
+      });
+
+      // Also watch for change events
+      hiddenInput.addEventListener("change", () => {
+        const value = hiddenInput.value;
+        if (value && value !== this.selectedUser) {
+          this.selectUser(value);
+        }
+      });
+
+      // Initial check in case value is already set
+      if (hiddenInput.value && hiddenInput.value !== this.selectedUser) {
+        this.selectUser(hiddenInput.value);
+      }
+
+      console.log("✅ [PDF-SYSTEM] User input watcher set up for user-search-value");
     }
 
     selectUser(userId) {
       this.selectedUser = userId;
       this.showNotification("User selected", "success");
+
+      // Check if both template and user are selected, trigger mapping workflow
+      if (this.selectedTemplate && this.selectedUser && this.selectedContactData) {
+        this.startPlaceholderMappingWorkflow();
+      }
     }
 
     async previewPDF() {
@@ -3266,6 +3374,410 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       }
 
       return Array.from(placeholders);
+    }
+
+    // Start the interactive placeholder mapping workflow
+    async startPlaceholderMappingWorkflow() {
+      console.log("🎯 [PDF-SYSTEM] Starting placeholder mapping workflow");
+
+      // Ensure templates are loaded
+      if (!this.templates || this.templates.length === 0) {
+        console.log("🔄 [PDF-SYSTEM] Templates not loaded, loading now...");
+        await this.loadTemplatesForGeneration();
+      }
+
+      // Find the selected template - try both string and number comparison
+      let template = this.templates.find((t) => t.id === this.selectedTemplate);
+      
+      // If not found, try converting IDs to strings for comparison
+      if (!template) {
+        template = this.templates.find(
+          (t) => String(t.id) === String(this.selectedTemplate)
+        );
+      }
+      
+      // If still not found, try loading template directly from API
+      if (!template && this.selectedTemplate) {
+        console.log("🔄 [PDF-SYSTEM] Template not in cache, fetching from API...");
+        try {
+          const response = await fetch(`/api/pdf/templates/get?id=${this.selectedTemplate}`, {
+            credentials: "include",
+          });
+          const data = await response.json();
+          if (data.success && data.data && data.data.templates && data.data.templates.length > 0) {
+            template = data.data.templates[0];
+            // Add to templates array if not already there
+            if (!this.templates.find((t) => String(t.id) === String(template.id))) {
+              this.templates.push(template);
+            }
+          }
+        } catch (error) {
+          console.error("❌ [PDF-SYSTEM] Error fetching template:", error);
+        }
+      }
+
+      if (!template) {
+        console.error("❌ [PDF-SYSTEM] Template not found:", {
+          selectedTemplate: this.selectedTemplate,
+          templatesCount: this.templates?.length || 0,
+          templateIds: this.templates?.map((t) => ({ id: t.id, type: typeof t.id })) || [],
+        });
+        this.showNotification("Template not found. Please try selecting the template again.", "error");
+        return;
+      }
+
+      // Extract placeholders
+      const placeholders = this.extractPlaceholdersFromTemplate(template);
+      if (placeholders.length === 0) {
+        this.showNotification("No placeholders found in template", "info");
+        return;
+      }
+
+      // Store placeholders for workflow
+      this.placeholdersList = placeholders;
+      this.currentPlaceholderIndex = 0;
+
+      // Show template preview section
+      const previewSection = document.getElementById("template-preview-section");
+      if (previewSection) {
+        previewSection.classList.remove("hidden");
+      }
+
+      // Render template with highlighted placeholders
+      await this.renderTemplatePreview(template);
+
+      // Setup tooltip event listeners
+      this.setupPlaceholderTooltipListeners();
+
+      // Handle already-mapped placeholders (show them as green)
+      Object.keys(this.placeholderMappings).forEach((placeholderName) => {
+        const mapping = this.placeholderMappings[placeholderName];
+        const elements = this.placeholderElements.filter(
+          (el) => el.dataset.placeholder === placeholderName
+        );
+        elements.forEach((el) => {
+          el.classList.remove(
+            "bg-yellow-200",
+            "dark:bg-yellow-900",
+            "border-yellow-400",
+            "dark:border-yellow-600"
+          );
+          el.classList.add(
+            "bg-green-200",
+            "dark:bg-green-900",
+            "border-green-400",
+            "dark:border-green-600"
+          );
+          el.textContent = mapping.value;
+          el.title = `Mapped from ${mapping.source === "contact" ? "contact field" : "manual entry"}`;
+        });
+      });
+
+      // Start with first placeholder
+      this.highlightNextPlaceholder();
+    }
+
+    // Render template preview with placeholders highlighted
+    async renderTemplatePreview(template) {
+      const container = document.getElementById("template-preview-container");
+      if (!container) return;
+
+      let content = template.html_content || template.content || "";
+
+      // Create a temporary div to parse HTML
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = content;
+
+      // Find and replace placeholders with highlighted spans
+      const placeholderRegex = /\{\{([^}]+)\}\}/g;
+      const processedContent = content.replace(placeholderRegex, (match, placeholderName) => {
+        const trimmedName = placeholderName.trim();
+        return `<span 
+          class="placeholder-highlight bg-yellow-200 dark:bg-yellow-900 border-2 border-yellow-400 dark:border-yellow-600 rounded px-1 cursor-pointer" 
+          data-placeholder="${trimmedName}"
+          data-placeholder-raw="${match}"
+        >${match}</span>`;
+      });
+
+      container.innerHTML = processedContent;
+
+      // Store placeholder elements
+      this.placeholderElements = Array.from(container.querySelectorAll(".placeholder-highlight"));
+
+      // Update progress
+      this.updatePlaceholderProgress();
+    }
+
+    // Highlight next placeholder and scroll to it
+    highlightNextPlaceholder() {
+      if (!this.placeholdersList || this.currentPlaceholderIndex >= this.placeholdersList.length) {
+        // All placeholders processed
+        const unmappedCount = this.placeholdersList.filter(
+          (p) => !this.placeholderMappings[p]
+        ).length;
+
+        if (unmappedCount === 0) {
+          this.showNotification("All placeholders mapped!", "success");
+        } else {
+          this.showNotification(`${unmappedCount} placeholders skipped`, "info");
+        }
+        this.finishPlaceholderMapping();
+        return;
+      }
+
+      const currentPlaceholder = this.placeholdersList[this.currentPlaceholderIndex];
+
+      // Skip if already mapped
+      if (this.placeholderMappings[currentPlaceholder]) {
+        this.currentPlaceholderIndex++;
+        this.highlightNextPlaceholder();
+        return;
+      }
+
+      const placeholderElement = this.placeholderElements.find(
+        (el) => el.dataset.placeholder === currentPlaceholder
+      );
+
+      if (!placeholderElement) {
+        // Move to next if element not found
+        this.currentPlaceholderIndex++;
+        this.highlightNextPlaceholder();
+        return;
+      }
+
+      // Remove previous highlights
+      this.placeholderElements.forEach((el) => {
+        el.classList.remove("ring-4", "ring-blue-500", "ring-offset-2");
+      });
+
+      // Highlight current placeholder
+      placeholderElement.classList.add("ring-4", "ring-blue-500", "ring-offset-2");
+
+      // Scroll to placeholder
+      this.scrollToPlaceholder(placeholderElement);
+
+      // Show tooltip
+      this.showPlaceholderTooltip(placeholderElement, currentPlaceholder);
+    }
+
+    // Scroll to placeholder element
+    scrollToPlaceholder(element) {
+      const container = document.getElementById("template-preview-container");
+      if (!container) return;
+
+      // Calculate position
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+
+      // Scroll to center the element in the container
+      const scrollTop =
+        container.scrollTop +
+        (elementRect.top - containerRect.top) -
+        containerRect.height / 2 +
+        elementRect.height / 2;
+
+      container.scrollTo({
+        top: Math.max(0, scrollTop),
+        behavior: "smooth",
+      });
+    }
+
+    // Show tooltip with contact field options
+    showPlaceholderTooltip(element, placeholderName) {
+      const tooltip = document.getElementById("placeholder-tooltip");
+      if (!tooltip) return;
+
+      // Set placeholder name
+      const nameSpan = document.getElementById("tooltip-placeholder-name");
+      if (nameSpan) {
+        nameSpan.textContent = `{{${placeholderName}}}`;
+      }
+
+      // Get contact fields
+      const contactFields = this.getAvailableContactFields(this.selectedContactData);
+
+      // Render contact field options
+      const fieldsContainer = document.getElementById("tooltip-contact-fields");
+      if (fieldsContainer) {
+        if (contactFields.length === 0) {
+          fieldsContainer.innerHTML =
+            '<p class="text-sm text-gray-500 dark:text-gray-400">No contact fields available</p>';
+        } else {
+          fieldsContainer.innerHTML = contactFields
+            .map(
+              (field) => `
+            <button
+              class="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors border border-gray-200 dark:border-gray-700 placeholder-field-btn"
+              data-field-key="${field.key}"
+              data-field-value="${field.value || ""}"
+            >
+              <div class="font-medium text-sm text-gray-900 dark:text-white">${field.label}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">${field.value || "No value"}</div>
+            </button>
+          `
+            )
+            .join("");
+        }
+      }
+
+      // Position tooltip near the placeholder element
+      this.positionTooltip(tooltip, element);
+
+      // Show tooltip
+      tooltip.classList.remove("hidden");
+      tooltip.style.display = "block";
+
+      // Store current placeholder being mapped
+      this.currentMappingPlaceholder = placeholderName;
+    }
+
+    // Position tooltip relative to placeholder element
+    positionTooltip(tooltip, element) {
+      const rect = element.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+
+      // Try to position below, fallback to above if not enough space
+      let top = rect.bottom + 10;
+      let left = rect.left;
+
+      // Check if tooltip would go off screen
+      if (top + tooltipRect.height > window.innerHeight) {
+        top = rect.top - tooltipRect.height - 10;
+      }
+
+      if (left + tooltipRect.width > window.innerWidth) {
+        left = window.innerWidth - tooltipRect.width - 20;
+      }
+
+      tooltip.style.top = `${top}px`;
+      tooltip.style.left = `${left}px`;
+    }
+
+    // Setup tooltip event listeners (only once)
+    setupPlaceholderTooltipListeners() {
+      // Check if already set up
+      if (this.tooltipListenersSetup) return;
+      this.tooltipListenersSetup = true;
+
+      // Close tooltip button
+      document.getElementById("close-tooltip-btn")?.addEventListener("click", () => {
+        this.closePlaceholderTooltip();
+        this.currentPlaceholderIndex++;
+        this.highlightNextPlaceholder();
+      });
+
+      // Skip mapping button
+      document.getElementById("skip-mapping-btn")?.addEventListener("click", () => {
+        this.closePlaceholderTooltip();
+        this.finishPlaceholderMapping();
+      });
+
+      // Contact field buttons (use event delegation)
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".placeholder-field-btn")) {
+          const btn = e.target.closest(".placeholder-field-btn");
+          const fieldKey = btn.dataset.fieldKey;
+          const fieldValue = btn.dataset.fieldValue;
+          this.applyPlaceholderMapping(fieldKey, fieldValue, "contact");
+        }
+      });
+
+      // Manual input apply button
+      document.getElementById("tooltip-apply-btn")?.addEventListener("click", () => {
+        const manualInput = document.getElementById("tooltip-manual-input");
+        if (manualInput && manualInput.value.trim()) {
+          this.applyPlaceholderMapping(null, manualInput.value.trim(), "manual");
+          manualInput.value = "";
+        }
+      });
+
+      // Allow Enter key in manual input
+      document.getElementById("tooltip-manual-input")?.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          document.getElementById("tooltip-apply-btn")?.click();
+        }
+      });
+    }
+
+    // Apply placeholder mapping
+    applyPlaceholderMapping(fieldKey, value, source) {
+      if (!this.currentMappingPlaceholder) return;
+
+      // Store mapping
+      this.placeholderMappings[this.currentMappingPlaceholder] = {
+        source,
+        fieldKey: fieldKey || null,
+        value: value,
+      };
+
+      // Update template preview to show mapped value
+      const placeholderElements = this.placeholderElements.filter(
+        (el) => el.dataset.placeholder === this.currentMappingPlaceholder
+      );
+
+      placeholderElements.forEach((el) => {
+        el.classList.remove(
+          "bg-yellow-200",
+          "dark:bg-yellow-900",
+          "border-yellow-400",
+          "dark:border-yellow-600"
+        );
+        el.classList.add(
+          "bg-green-200",
+          "dark:bg-green-900",
+          "border-green-400",
+          "dark:border-green-600"
+        );
+        el.textContent = value;
+        el.title = `Mapped from ${source === "contact" ? "contact field" : "manual entry"}`;
+      });
+
+      // Close tooltip
+      this.closePlaceholderTooltip();
+
+      // Update progress
+      this.updatePlaceholderProgress();
+
+      // Move to next placeholder
+      this.currentPlaceholderIndex++;
+      setTimeout(() => {
+        this.highlightNextPlaceholder();
+      }, 300);
+    }
+
+    // Close placeholder tooltip
+    closePlaceholderTooltip() {
+      const tooltip = document.getElementById("placeholder-tooltip");
+      if (tooltip) {
+        tooltip.classList.add("hidden");
+        tooltip.style.display = "none";
+      }
+      this.currentMappingPlaceholder = null;
+    }
+
+    // Update placeholder progress
+    updatePlaceholderProgress() {
+      const progressEl = document.getElementById("placeholder-progress");
+      if (progressEl && this.placeholdersList) {
+        const mappedCount = Object.keys(this.placeholderMappings).length;
+        progressEl.textContent = `${mappedCount} of ${this.placeholdersList.length}`;
+      }
+    }
+
+    // Finish placeholder mapping workflow
+    finishPlaceholderMapping() {
+      this.closePlaceholderTooltip();
+      const previewSection = document.getElementById("template-preview-section");
+      if (previewSection) {
+        previewSection.classList.add("hidden");
+      }
+
+      // Update the old mapping UI as well
+      if (this.selectedTemplate && this.selectedContactData) {
+        this.updatePlaceholderMappingUI();
+      }
+
+      this.showNotification("Placeholder mapping complete", "success");
     }
 
     // Get available Google contact fields for mapping

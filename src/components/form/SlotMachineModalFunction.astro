@@ -1325,6 +1325,78 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       populateOptionsList(finalOptions);
     }
 
+    // Fetch all options when modal opens if using API endpoint
+    if (fetchApiEndpoint && optionsList) {
+      (async () => {
+        try {
+          console.log(`🔄 [SLOT-MACHINE] Fetching all options on modal open for: ${fetchApiEndpoint}`);
+
+          // Build URL with API params (empty or minimal query to get all results)
+          const searchParams = new URLSearchParams({
+            input: "", // Empty query to fetch all
+            ...apiParams,
+          });
+
+          const response = await fetch(`${fetchApiEndpoint}?${searchParams}`, {
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            throw new Error(`Fetch failed: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log(`🔄 [SLOT-MACHINE] Initial load data response:`, data);
+
+          // Transform data if transform function exists
+          let transformedData = data;
+          if (dataTransform && typeof window[dataTransform] === "function") {
+            transformedData = window[dataTransform](data);
+            console.log(`🔄 [SLOT-MACHINE] Transformed initial load data:`, transformedData);
+          }
+
+          // Handle different data formats
+          let optionsArray = [];
+          if (Array.isArray(transformedData)) {
+            optionsArray = transformedData;
+          } else if (transformedData && Array.isArray(transformedData.predictions)) {
+            // Google Places format
+            optionsArray = transformedData.predictions;
+          } else if (transformedData && Array.isArray(transformedData.results)) {
+            // Alternative format
+            optionsArray = transformedData.results;
+          } else if (transformedData && Array.isArray(transformedData.contacts)) {
+            // Google Contacts format
+            optionsArray = transformedData.contacts;
+          } else if (
+            transformedData &&
+            transformedData.data &&
+            Array.isArray(transformedData.data)
+          ) {
+            // Wrapped format
+            optionsArray = transformedData.data;
+          }
+
+          console.log(`🔄 [SLOT-MACHINE] Initial load options array:`, optionsArray);
+
+          // Update options list with fetched data
+          if (optionsArray.length > 0) {
+            // Store as originalOptions for search restoration
+            originalOptions = [...optionsArray];
+            const newSelectedIndex = populateOptionsList(optionsArray);
+            selectedIndex = newSelectedIndex;
+            updateSelection();
+            centerSelectedItem();
+          } else {
+            console.log(`🔄 [SLOT-MACHINE] No options returned from initial fetch`);
+          }
+        } catch (error) {
+          console.error(`🔄 [SLOT-MACHINE] Error fetching data on modal open:`, error);
+          // Don't show error message - let the user search instead
+        }
+      })();
+    }
+
     // Slot machine functionality
 
     // Add event listener to select button from the partial
