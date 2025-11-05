@@ -1723,23 +1723,32 @@ const debugData = {
         window.addEventListener('error', function(event) {
           const message = event.message || '';
           const filename = event.filename || '';
+          const target = event.target;
           
-          // Suppress errors related to aborted requests or cookies
+          // Suppress errors related to aborted requests, cookies, or failed image loads
           if (message.includes('NS_BINDING_ABORTED') ||
               message.includes('_cf_bm') ||
               message.includes('__cf_bm') ||
               message.includes('Cookie') && message.includes('rejected') ||
-              filename.includes('supabase.co') && message.includes('Failed')) {
+              filename.includes('supabase.co') && message.includes('Failed') ||
+              (target && target.tagName === 'IMG' && target.src && target.src.includes('supabase.co/storage'))) {
             event.preventDefault();
             event.stopPropagation();
             return false;
           }
         }, true); // Use capture phase to catch early
         
-        // Intercept fetch to suppress aborted request errors
+        // Intercept fetch to suppress aborted request errors and failed avatar requests
         const originalFetch = window.fetch;
         window.fetch = function(...args) {
-          const abortController = new AbortController();
+          const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+          const method = args[1]?.method || 'GET';
+          
+          // Suppress HEAD requests to Supabase storage avatars (we know they'll fail)
+          if (method === 'HEAD' && url.includes('supabase.co/storage') && url.includes('/avatars/')) {
+            return Promise.resolve(new Response(null, { status: 404, statusText: 'Not Found' }));
+          }
+          
           let fetchPromise = originalFetch.apply(this, args);
           
           // Wrap to catch and suppress abort errors
@@ -1753,23 +1762,55 @@ const debugData = {
             throw error;
           });
           
+          // Also suppress 400 responses for avatar images
+          fetchPromise = fetchPromise.then(function(response) {
+            if (!response.ok && 
+                response.status === 400 && 
+                url.includes('supabase.co/storage') && 
+                url.includes('/avatars/')) {
+              // Return a silent failure - don't throw, just return a 404-like response
+              return new Response(null, { status: 404, statusText: 'Not Found' });
+            }
+            return response;
+          });
+          
           return fetchPromise;
         };
         
-        // Intercept XMLHttpRequest to suppress aborted errors
+        // Intercept XMLHttpRequest to suppress aborted errors and failed avatar requests
         const originalXHROpen = XMLHttpRequest.prototype.open;
         const originalXHRSend = XMLHttpRequest.prototype.send;
         
         XMLHttpRequest.prototype.open = function(...args) {
           this._suppressAbortError = false;
+          this._url = args[1]; // Store URL for later check
           return originalXHROpen.apply(this, args);
         };
         
         XMLHttpRequest.prototype.send = function(...args) {
           const xhr = this;
-          const originalOnError = xhr.onerror;
+          const url = xhr._url || '';
           
+          // Suppress 400 errors for avatar images
+          const originalOnLoad = xhr.onload;
+          xhr.onload = function(event) {
+            if (xhr.status === 400 && 
+                url.includes('supabase.co/storage') && 
+                url.includes('/avatars/')) {
+              // Silently fail - don't trigger error handlers
+              return;
+            }
+            if (originalOnLoad) {
+              originalOnLoad.call(xhr, event);
+            }
+          };
+          
+          const originalOnError = xhr.onerror;
           xhr.onerror = function(event) {
+            // Suppress errors for avatar images
+            if (url.includes('supabase.co/storage') && url.includes('/avatars/')) {
+              return;
+            }
             // Suppress aborted errors
             if (xhr.status === 0 && xhr.readyState === 0) {
               // Likely an aborted request

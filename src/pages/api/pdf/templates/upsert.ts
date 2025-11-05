@@ -132,10 +132,17 @@ async function saveHTMLTemplateToFile(
     // Ensure directory exists
     await mkdir(templatesDir, { recursive: true });
 
-    // Create a safe filename
-    const safeTemplateName = templateName.replace(/[^a-zA-Z0-9]/g, "_");
-    const timestamp = Date.now();
-    const fileName = `template-${templateId}_${safeTemplateName}_${timestamp}.html`;
+    // Create a safe filename - use template name as primary identifier for easier searching
+    // Replace spaces and special chars with hyphens for better readability
+    const safeTemplateName = templateName
+      .replace(/[^a-zA-Z0-9\s-]/g, "") // Remove special chars except spaces and hyphens
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+      .toLowerCase()
+      .trim();
+    
+    // Use template name as primary identifier, with ID and timestamp as suffix for uniqueness
+    const fileName = `${safeTemplateName}_template-${templateId}_${Date.now()}.html`;
     const filePath = join(templatesDir, fileName);
 
     // Write HTML file

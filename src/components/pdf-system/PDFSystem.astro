@@ -3042,19 +3042,46 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     }
 
     async saveTemplate() {
-      const name = this.templateNameInput?.value;
-      const type = this.templateTypeSelect?.value;
+      // Get name directly from DOM (in case templateNameInput wasn't initialized)
+      const nameInput = this.templateNameInput || document.getElementById("template-name");
+      const name = nameInput?.value?.trim() || "";
+      
+      const typeSelect = this.templateTypeSelect || document.getElementById("template-type");
+      const type = typeSelect?.value || "body";
+      
       const content = this.editor
         ? this.editor.root.innerHTML
-        : document.getElementById("template-content-textarea")?.value;
+        : document.getElementById("template-content-textarea")?.value || "";
+      
+      // Helper function to check if HTML content is empty (only whitespace/empty tags)
+      const isContentEmpty = (html) => {
+        if (!html || !html.trim()) return true;
+        // Remove HTML tags and check if only whitespace remains
+        const textContent = html.replace(/<[^>]*>/g, "").trim();
+        // Also check for common empty Quill patterns like <p><br></p> or <p></p>
+        const emptyPatterns = /^(<p><br><\/p>|<p><\/p>|<br\s*\/?>|\s*)*$/i;
+        return !textContent || emptyPatterns.test(html);
+      };
+      
       const saveHtmlCheckbox = document.getElementById("save-html-template-checkbox");
       const saveHtml =
         saveHtmlCheckbox && saveHtmlCheckbox instanceof HTMLInputElement
           ? saveHtmlCheckbox.checked
           : false;
 
-      if (!name || !content) {
-        this.showNotification("Please fill in all required fields", "error");
+      // Debug logging
+      console.log("💾 [PDF-SYSTEM] Saving template - Name:", name, "Content length:", content?.length || 0);
+      
+      // Improved validation with specific error messages
+      if (!name) {
+        console.warn("⚠️ [PDF-SYSTEM] Validation failed: Template name is empty");
+        this.showNotification("Please enter a template name", "error");
+        return;
+      }
+      
+      if (isContentEmpty(content)) {
+        console.warn("⚠️ [PDF-SYSTEM] Validation failed: Template content is empty");
+        this.showNotification("Please add content to the template", "error");
         return;
       }
 

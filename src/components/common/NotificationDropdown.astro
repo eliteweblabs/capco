@@ -417,11 +417,12 @@ if (!currentUser || currentRole === "Client") {
       if (this.viewedNotifications.size === 0) return;
 
       try {
-        const response = await fetch("/api/notifications/get", {
+        const response = await fetch("/api/notifications/upsert", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             notificationIds: Array.from(this.viewedNotifications),
+            viewed: true,
           }),
         });
 
@@ -431,6 +432,13 @@ if (!currentUser || currentRole === "Client") {
           this.updateBadge(unreadCount);
           this.viewedNotifications.clear();
           await this.loadNotifications(); // Refresh to update counts
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error(
+            "❌ [NOTIFICATIONS] Error marking notifications as read:",
+            response.status,
+            errorData
+          );
         }
       } catch (error) {
         console.error("❌ [NOTIFICATIONS] Error marking notifications as read:", error);
@@ -486,16 +494,26 @@ if (!currentUser || currentRole === "Client") {
 
         if (unreadIds.length === 0) return;
 
-        const response = await fetch("/api/notifications/get", {
+        const response = await fetch("/api/notifications/upsert", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ notificationIds: unreadIds }),
+          body: JSON.stringify({
+            notificationIds: unreadIds,
+            viewed: true,
+          }),
         });
 
         if (response.ok) {
           // Update badge immediately for better UX
           this.updateBadge(0);
           await this.loadNotifications();
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error(
+            "❌ [NOTIFICATIONS] Error marking all as read:",
+            response.status,
+            errorData
+          );
         }
       } catch (error) {
         console.error("❌ [NOTIFICATIONS] Error marking all as read:", error);
