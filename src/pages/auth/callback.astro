@@ -213,6 +213,7 @@
             headers: {
               "Content-Type": "application/json",
             },
+            credentials: "include", // Ensure cookies are sent and received
             body: JSON.stringify({
               access_token: data.session.access_token,
               refresh_token: data.session.refresh_token,
@@ -232,9 +233,17 @@
           }
 
           console.log("[AUTH-CALLBACK] Authentication successful, redirecting to dashboard...");
+          console.log("[AUTH-CALLBACK] Response status:", response.status);
+          console.log("[AUTH-CALLBACK] Response headers:", Object.fromEntries(response.headers.entries()));
 
-          // Redirect to dashboard
-          window.location.href = "/project/dashboard";
+          // Small delay to ensure cookies are set before redirect
+          // This is especially important for localhost development
+          // Increased delay to ensure browser has time to process Set-Cookie headers
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          // Use replace instead of href to ensure proper navigation with cookies
+          // This ensures the browser includes cookies in the redirect
+          window.location.replace("/project/dashboard");
         } catch (err) {
           console.error("[AUTH-CALLBACK] Unexpected error:", err);
           showError(`Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`);
