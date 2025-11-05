@@ -12,10 +12,11 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
 
   // Get redirect URL from query parameter, or use referer from request
   const redirectTo = url.searchParams.get("redirect") || url.searchParams.get("return_to") || null;
-  
+
   // Generate a random state parameter for security and encode redirect URL
-  const randomState = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  
+  const randomState =
+    Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
   // Encode redirect URL in state (base64 encode to preserve URL structure)
   const stateData = {
     random: randomState,
@@ -23,7 +24,7 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
   };
   const state = Buffer.from(JSON.stringify(stateData)).toString("base64url");
 
-  // Store state in a cookie for verification
+  // Store state in a cookie for verification yes
   const redirectUrl = `${url.origin}/api/google/oauth-callback`;
 
   // Build Google OAuth URL
