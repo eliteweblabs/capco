@@ -24,8 +24,9 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
   };
   const state = Buffer.from(JSON.stringify(stateData)).toString("base64url");
 
-  // Store state in a cookie for verification yes
-  const redirectUrl = `${url.origin}/api/google/oauth-callback`;
+  // Store state in a cookie for verification
+  // Use /api/auth/callback so the GET handler can process Google OAuth server-side
+  const redirectUrl = `${url.origin}/api/auth/callback`;
 
   // Build Google OAuth URL
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
