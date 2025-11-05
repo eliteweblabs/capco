@@ -1639,25 +1639,154 @@ const debugData = {
       });
     </script>
 
+    <!-- Global Console Error Suppression for Development -->
+    <!-- This MUST run early, before any other scripts -->
+    <script is:inline>
+      // Aggressively suppress harmless console errors in development
+      (function() {
+        const isDev = window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1' || 
+                     window.location.hostname.startsWith('192.168.');
+        
+        if (!isDev) return;
+        
+        // Suppress Cloudflare cookie warnings and errors
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        const originalLog = console.log;
+        
+        // Override console.warn
+        console.warn = function(...args) {
+          const message = String(args[0] || '');
+          const fullMessage = args.join(' ');
+          
+          // Suppress Cloudflare cookie warnings
+          if (message.includes('_cf_bm') || 
+              message.includes('__cf_bm') ||
+              fullMessage.includes('Cookie') && fullMessage.includes('rejected') ||
+              fullMessage.includes('invalid domain') ||
+              fullMessage.includes('NS_BINDING_ABORTED')) {
+            return; // Silent fail
+          }
+          originalWarn.apply(console, args);
+        };
+        
+        // Override console.error
+        console.error = function(...args) {
+          const message = String(args[0] || '');
+          const fullMessage = args.join(' ');
+          
+          // Suppress Cloudflare cookie errors
+          if (message.includes('_cf_bm') || 
+              message.includes('__cf_bm') ||
+              fullMessage.includes('Cookie') && fullMessage.includes('rejected') ||
+              fullMessage.includes('invalid domain') ||
+              fullMessage.includes('NS_BINDING_ABORTED')) {
+            return; // Silent fail
+          }
+          originalError.apply(console, args);
+        };
+        
+        // Override console.log to suppress network errors
+        console.log = function(...args) {
+          const message = String(args[0] || '');
+          const fullMessage = args.join(' ');
+          
+          if (fullMessage.includes('NS_BINDING_ABORTED') || 
+              fullMessage.includes('net::ERR_') ||
+              fullMessage.includes('_cf_bm') ||
+              fullMessage.includes('__cf_bm')) {
+            return; // Silent fail
+          }
+          originalLog.apply(console, args);
+        };
+        
+        // Suppress unhandled promise rejections for aborted requests
+        window.addEventListener('unhandledrejection', function(event) {
+          const reason = event.reason;
+          const message = reason?.message || String(reason || '');
+          
+          if (message.includes('aborted') || 
+              message.includes('NS_BINDING_ABORTED') ||
+              message.includes('AbortError') ||
+              reason?.name === 'AbortError') {
+            event.preventDefault(); // Prevent console error
+            return;
+          }
+        });
+        
+        // Suppress global error events for network errors
+        window.addEventListener('error', function(event) {
+          const message = event.message || '';
+          const filename = event.filename || '';
+          
+          // Suppress errors related to aborted requests or cookies
+          if (message.includes('NS_BINDING_ABORTED') ||
+              message.includes('_cf_bm') ||
+              message.includes('__cf_bm') ||
+              message.includes('Cookie') && message.includes('rejected') ||
+              filename.includes('supabase.co') && message.includes('Failed')) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+          }
+        }, true); // Use capture phase to catch early
+        
+        // Intercept fetch to suppress aborted request errors
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+          const abortController = new AbortController();
+          let fetchPromise = originalFetch.apply(this, args);
+          
+          // Wrap to catch and suppress abort errors
+          fetchPromise = fetchPromise.catch(function(error) {
+            if (error?.name === 'AbortError' || 
+                error?.message?.includes('aborted') ||
+                error?.message?.includes('NS_BINDING_ABORTED')) {
+              // Return a silent rejection
+              return Promise.reject(new Error('Request aborted (suppressed)'));
+            }
+            throw error;
+          });
+          
+          return fetchPromise;
+        };
+        
+        // Intercept XMLHttpRequest to suppress aborted errors
+        const originalXHROpen = XMLHttpRequest.prototype.open;
+        const originalXHRSend = XMLHttpRequest.prototype.send;
+        
+        XMLHttpRequest.prototype.open = function(...args) {
+          this._suppressAbortError = false;
+          return originalXHROpen.apply(this, args);
+        };
+        
+        XMLHttpRequest.prototype.send = function(...args) {
+          const xhr = this;
+          const originalOnError = xhr.onerror;
+          
+          xhr.onerror = function(event) {
+            // Suppress aborted errors
+            if (xhr.status === 0 && xhr.readyState === 0) {
+              // Likely an aborted request
+              return;
+            }
+            if (originalOnError) {
+              originalOnError.call(xhr, event);
+            }
+          };
+          
+          return originalXHRSend.apply(this, args);
+        };
+      })();
+    </script>
+
     <!-- Global Image Error Handler -->
     <script>
       // Global error handler for broken image URLs (especially Supabase storage)
       document.addEventListener("DOMContentLoaded", () => {
         // Suppress expected console errors in development
         const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        
-        if (isDev) {
-          // Suppress Cloudflare cookie warnings (harmless in dev)
-          const originalWarn = console.warn;
-          console.warn = function(...args: any[]) {
-            const message = args[0]?.toString() || '';
-            // Suppress Cloudflare cookie warnings
-            if (message.includes('_cf_bm') || message.includes('Cookie') && message.includes('rejected')) {
-              return; // Silent fail in dev
-            }
-            originalWarn.apply(console, args);
-          };
-        }
 
         // Handle all img elements with error handling
         const images = document.querySelectorAll("img");
