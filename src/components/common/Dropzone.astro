@@ -67,6 +67,10 @@ const browseBtnId = `${id}-browse-btn`;
     required={required}
     disabled={disabled}
     class="hidden"
+    data-dropzone-id={id}
+    data-accept={accept}
+    data-multiple={multiple}
+    data-max-size={maxSize}
   />
 </div>
 
@@ -90,7 +94,7 @@ const browseBtnId = `${id}-browse-btn`;
   }
 </style>
 
-<script>
+<script define:vars={{ dropzoneId: id, acceptType: accept, allowMultiple: multiple, maxFileSize: maxSize }}>
   interface DropzoneProps {
     id: string;
     accept?: string;
@@ -255,47 +259,14 @@ const browseBtnId = `${id}-browse-btn`;
 
   // Initialize on DOM ready
   if (typeof window !== "undefined") {
-    const dropzoneId = document.currentScript?.getAttribute("data-dropzone-id") || id;
-    
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => {
-        initializeDropzone({
-          id: dropzoneId,
-          accept,
-          multiple,
-          maxSize,
-          onFileSelect: (files) => {
-            // Dispatch custom event for file selection
-            const dropzone = document.getElementById(dropzoneId);
-            if (dropzone) {
-              const event = new CustomEvent("dropzone-files-selected", {
-                detail: { files, dropzoneId },
-                bubbles: true,
-              });
-              dropzone.dispatchEvent(event);
-            }
-          },
-          onError: (error) => {
-            // Dispatch custom event for errors
-            const dropzone = document.getElementById(dropzoneId);
-            if (dropzone) {
-              const event = new CustomEvent("dropzone-error", {
-                detail: { error, dropzoneId },
-                bubbles: true,
-              });
-              dropzone.dispatchEvent(event);
-            }
-          },
-        });
-      });
-    } else {
-      // DOM already loaded
+    const initialize = () => {
       initializeDropzone({
         id: dropzoneId,
-        accept,
-        multiple,
-        maxSize,
+        accept: acceptType,
+        multiple: allowMultiple,
+        maxSize: maxFileSize,
         onFileSelect: (files) => {
+          // Dispatch custom event for file selection
           const dropzone = document.getElementById(dropzoneId);
           if (dropzone) {
             const event = new CustomEvent("dropzone-files-selected", {
@@ -306,6 +277,7 @@ const browseBtnId = `${id}-browse-btn`;
           }
         },
         onError: (error) => {
+          // Dispatch custom event for errors
           const dropzone = document.getElementById(dropzoneId);
           if (dropzone) {
             const event = new CustomEvent("dropzone-error", {
@@ -316,6 +288,13 @@ const browseBtnId = `${id}-browse-btn`;
           }
         },
       });
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initialize);
+    } else {
+      // DOM already loaded
+      initialize();
     }
   }
 </script>
