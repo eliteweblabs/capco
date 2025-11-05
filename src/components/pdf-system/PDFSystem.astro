@@ -1,6 +1,7 @@
 ---
 import Alert from "../partials/Alert.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
+import Dropzone from "../common/Dropzone.astro";
 
 export interface Props {
   currentUser?: any;
@@ -98,18 +99,16 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     <div class="mb-6">
       <div class="flex justify-between items-center mb-4">
         <!-- <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Template Management</h3> -->
-        <button
-          id="new-template-btn"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
-        >
-          <SimpleIcon name="plus" class="w-4 h-4 inline mr-2" />
-          New Template
-          <SimpleIcon
-            id="accordion-icon"
-            name="chevron-down"
-            class="w-4 h-4 ml-2 transition-transform"
+        <div class="w-full">
+          <Dropzone
+            id="new-template-dropzone"
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+            maxSize={50}
+            label="Drop a document here or click to browse"
+            description="Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF"
+            required={false}
           />
-        </button>
+        </div>
       </div>
 
       <!-- Template Editor Accordion (hidden by default) -->
@@ -118,33 +117,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         class="hidden mb-6 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
       >
         <div class="color-background p-6">
-          <!-- File Upload Section -->
-          <div id="file-upload-section" class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Upload Document (Image, PDF, DOC, DOCX)
-            </label>
-            <div
-              class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center"
-            >
-              <input
-                type="file"
-                id="template-file-upload"
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
-                class="hidden"
-              />
-              <button
-                id="upload-file-btn"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                <SimpleIcon name="upload" class="w-4 h-4 inline mr-2" />
-                Choose File
-              </button>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF
-              </p>
-            </div>
-          </div>
-
           <!-- Template Form -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
@@ -540,20 +512,26 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         });
       });
 
-      // New template button
-      document.getElementById("new-template-btn")?.addEventListener("click", () => {
-        this.openTemplateEditor();
-      });
+      // Dropzone for new template file upload
+      const dropzone = document.getElementById("new-template-dropzone");
+      if (dropzone) {
+        dropzone.addEventListener("dropzone-files-selected", (e) => {
+          const { files } = e.detail;
+          if (files && files.length > 0) {
+            // Open the accordion and process the file
+            this.openTemplateEditor();
+            // Wait for editor to initialize before processing file
+            setTimeout(() => {
+              this.handleFileUpload(files[0]);
+            }, 200);
+          }
+        });
 
-      // Template editor close is handled by cancel button
-
-      document.getElementById("upload-file-btn")?.addEventListener("click", () => {
-        document.getElementById("template-file-upload")?.click();
-      });
-
-      document.getElementById("template-file-upload")?.addEventListener("change", (e) => {
-        this.handleFileUpload(e.target.files[0]);
-      });
+        dropzone.addEventListener("dropzone-error", (e) => {
+          const { error } = e.detail;
+          this.showNotification(error || "Error uploading file", "error");
+        });
+      }
 
       document.getElementById("save-template-btn")?.addEventListener("click", () => {
         this.saveTemplate();
@@ -1286,7 +1264,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
     openTemplateEditor(templateId = null) {
       const accordion = document.getElementById("template-editor-accordion");
-      const icon = document.getElementById("accordion-icon");
 
       if (accordion) {
         const isHidden = accordion.classList.contains("hidden");
@@ -1294,7 +1271,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         if (isHidden) {
           // Open accordion
           accordion.classList.remove("hidden");
-          icon?.classList.add("rotate-180");
 
           this.selectedTemplate = templateId;
 
@@ -1322,11 +1298,9 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
     closeTemplateEditor() {
       const accordion = document.getElementById("template-editor-accordion");
-      const icon = document.getElementById("accordion-icon");
 
       if (accordion) {
         accordion.classList.add("hidden");
-        icon?.classList.remove("rotate-180");
         this.selectedTemplate = null;
 
         // Properly destroy the editor
@@ -1482,12 +1456,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       console.log("📄 [PDF-SYSTEM] Processing uploaded file:", file.name);
 
       try {
-        // Show loading state
-        const uploadBtn = document.getElementById("upload-file-btn");
-        const originalText = uploadBtn.textContent;
-        uploadBtn.textContent = "Processing...";
-        uploadBtn.disabled = true;
-
         // Process file directly with PDF.js
         await this.runClientSideOCR(file);
 
@@ -1495,11 +1463,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       } catch (error) {
         console.error("❌ [PDF-SYSTEM] Error processing file:", error);
         this.showNotification("Error processing file", "error");
-      } finally {
-        // Reset button
-        const uploadBtn = document.getElementById("upload-file-btn");
-        uploadBtn.textContent = "Choose File";
-        uploadBtn.disabled = false;
       }
     }
 
