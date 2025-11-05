@@ -1,5 +1,6 @@
 ---
 import App from "../../components/common/App.astro";
+import Dropzone from "../../components/common/Dropzone.astro";
 import { checkAuth } from "../../lib/auth";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
@@ -42,18 +43,18 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     <form id="certify-pdf-form" class="space-y-6">
       <!-- File Upload -->
       <div>
-        <label for="pdf-file" class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="pdf-dropzone" class="block text-sm font-medium text-gray-700 mb-2">
           Select PDF File
         </label>
-        <input
-          type="file"
-          id="pdf-file"
-          name="file"
+        <Dropzone
+          id="pdf-dropzone"
           accept=".pdf"
-          required
-          class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          maxSize={50}
+          label="Drop PDF file here or click to browse"
+          description="PDF files only"
+          required={true}
         />
-        <p class="mt-1 text-sm text-gray-500">Maximum file size: 50MB</p>
+        <input type="file" id="pdf-file" name="file" accept=".pdf" required class="hidden" />
       </div>
 
       <!-- Signing Options -->
@@ -334,6 +335,32 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       const pageNumberContainer = document.getElementById(
         "page-number-container"
       ) as HTMLDivElement;
+      const pdfFileInput = document.getElementById("pdf-file") as HTMLInputElement;
+      const pdfDropzone = document.getElementById("pdf-dropzone");
+
+      // Sync dropzone file selection with hidden input
+      if (pdfDropzone && pdfFileInput) {
+        pdfDropzone.addEventListener("dropzone-files-selected", (e: any) => {
+          const { files } = e.detail;
+          if (files && files.length > 0) {
+            // Create a new DataTransfer object to set files on the input
+            const dataTransfer = new DataTransfer();
+            for (let i = 0; i < files.length; i++) {
+              dataTransfer.items.add(files[i]);
+            }
+            pdfFileInput.files = dataTransfer.files;
+            
+            // Trigger change event for form validation
+            pdfFileInput.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        });
+
+        pdfDropzone.addEventListener("dropzone-error", (e: any) => {
+          const { error } = e.detail;
+          errorMessage.textContent = error;
+          errorSection.classList.remove("hidden");
+        });
+      }
 
       // Toggle page number input based on visible signature checkbox
       visibleSignatureCheckbox.addEventListener("change", () => {

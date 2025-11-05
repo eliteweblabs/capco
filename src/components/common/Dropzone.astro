@@ -1,0 +1,322 @@
+---
+export interface Props {
+  id?: string;
+  accept?: string; // e.g., ".pdf", "image/*", etc.
+  multiple?: boolean;
+  maxSize?: number; // in MB
+  label?: string;
+  description?: string;
+  required?: boolean;
+  disabled?: boolean;
+  class?: string;
+}
+
+const {
+  id = `dropzone-${Math.random().toString(36).substr(2, 9)}`,
+  accept = "*/*",
+  multiple = false,
+  maxSize,
+  label = "Drop files here or click to browse",
+  description,
+  required = false,
+  disabled = false,
+  class: className = "",
+} = Astro.props;
+
+const inputId = `${id}-input`;
+const browseBtnId = `${id}-browse-btn`;
+---
+
+<div id={id} class={`dropzone-container ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500`}>
+  <div class="dropzone-content space-y-4">
+    <div class="mx-auto h-12 w-12 text-gray-400">
+      <svg class="h-full w-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+        />
+      </svg>
+    </div>
+    <div>
+      <p class="font-medium text-gray-600 dark:text-gray-300">{label}</p>
+      {description && (
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>
+      )}
+      {maxSize && (
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Maximum file size: {maxSize}MB
+        </p>
+      )}
+    </div>
+    <button
+      type="button"
+      id={browseBtnId}
+      class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold text-sm transition-colors dark:bg-blue-900/20 dark:hover:bg-blue-900/40 dark:text-blue-400"
+      disabled={disabled}
+    >
+      Browse Files
+    </button>
+  </div>
+  <input
+    type="file"
+    id={inputId}
+    accept={accept}
+    multiple={multiple}
+    required={required}
+    disabled={disabled}
+    class="hidden"
+  />
+</div>
+
+<style>
+  .dropzone-container {
+    position: relative;
+  }
+
+  .dropzone-container.drag-over {
+    border-color: rgb(59 130 246);
+    background-color: rgb(239 246 255);
+  }
+
+  .dark .dropzone-container.drag-over {
+    border-color: rgb(96 165 250);
+    background-color: rgb(30 58 138 / 0.2);
+  }
+
+  .dropzone-container:has(input:disabled) {
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  interface DropzoneProps {
+    id: string;
+    accept?: string;
+    multiple?: boolean;
+    maxSize?: number;
+    onFileSelect?: (files: FileList | null) => void;
+    onError?: (error: string) => void;
+  }
+
+  function initializeDropzone({
+    id,
+    accept,
+    multiple = false,
+    maxSize,
+    onFileSelect,
+    onError,
+  }: DropzoneProps) {
+    const dropzone = document.getElementById(id);
+    const input = document.getElementById(`${id}-input`) as HTMLInputElement;
+    const browseBtn = document.getElementById(`${id}-browse-btn`) as HTMLButtonElement;
+
+    if (!dropzone || !input || !browseBtn) {
+      console.error(`Dropzone elements not found for ID: ${id}`);
+      return;
+    }
+
+    // Browse button click handler
+    browseBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!input.disabled) {
+        input.click();
+      }
+    });
+
+    // Dropzone click handler (click anywhere on dropzone to browse)
+    dropzone.addEventListener("click", (e) => {
+      // Don't trigger if clicking the browse button (it has its own handler)
+      if (e.target === browseBtn || browseBtn.contains(e.target as Node)) {
+        return;
+      }
+      if (!input.disabled) {
+        input.click();
+      }
+    });
+
+    // File input change handler
+    input.addEventListener("change", (e) => {
+      const target = e.target as HTMLInputElement;
+      const files = target.files;
+      handleFiles(files);
+    });
+
+    // Drag and drop handlers
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!input.disabled) {
+        dropzone.classList.add("drag-over");
+      }
+    });
+
+    dropzone.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove("drag-over");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove("drag-over");
+
+      if (input.disabled) return;
+
+      const files = e.dataTransfer.files;
+      handleFiles(files);
+    });
+
+    function handleFiles(files: FileList | null) {
+      if (!files || files.length === 0) return;
+
+      // Validate file count
+      if (!multiple && files.length > 1) {
+        const errorMsg = "Please select only one file";
+        if (onError) {
+          onError(errorMsg);
+        } else {
+          alert(errorMsg);
+        }
+        return;
+      }
+
+      // Validate file types
+      if (accept && accept !== "*/*") {
+        const acceptTypes = accept.split(",").map((type) => type.trim());
+        const fileArray = Array.from(files);
+
+        for (const file of fileArray) {
+          const isValidType = acceptTypes.some((acceptType) => {
+            if (acceptType.startsWith(".")) {
+              // Extension match
+              return file.name.toLowerCase().endsWith(acceptType.toLowerCase());
+            } else if (acceptType.includes("/*")) {
+              // MIME type wildcard match
+              const baseType = acceptType.split("/")[0];
+              return file.type.startsWith(baseType + "/");
+            } else {
+              // Exact MIME type match
+              return file.type === acceptType;
+            }
+          });
+
+          if (!isValidType) {
+            const errorMsg = `File "${file.name}" is not an accepted file type. Accepted types: ${accept}`;
+            if (onError) {
+              onError(errorMsg);
+            } else {
+              alert(errorMsg);
+            }
+            return;
+          }
+        }
+      }
+
+      // Validate file sizes
+      if (maxSize) {
+        const maxSizeBytes = maxSize * 1024 * 1024; // Convert MB to bytes
+        const fileArray = Array.from(files);
+
+        for (const file of fileArray) {
+          if (file.size > maxSizeBytes) {
+            const errorMsg = `File "${file.name}" exceeds maximum size of ${maxSize}MB`;
+            if (onError) {
+              onError(errorMsg);
+            } else {
+              alert(errorMsg);
+            }
+            return;
+          }
+        }
+      }
+
+      // All validations passed, trigger callback
+      if (onFileSelect) {
+        onFileSelect(files);
+      } else {
+        // Fallback: dispatch custom event
+        const event = new CustomEvent("dropzone-files-selected", {
+          detail: { files, dropzoneId: id },
+        });
+        dropzone.dispatchEvent(event);
+      }
+    }
+
+    // Expose method to get files programmatically
+    (dropzone as any).getFiles = () => input.files;
+    (dropzone as any).clearFiles = () => {
+      input.value = "";
+    };
+  }
+
+  // Initialize on DOM ready
+  if (typeof window !== "undefined") {
+    const dropzoneId = document.currentScript?.getAttribute("data-dropzone-id") || id;
+    
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        initializeDropzone({
+          id: dropzoneId,
+          accept,
+          multiple,
+          maxSize,
+          onFileSelect: (files) => {
+            // Dispatch custom event for file selection
+            const dropzone = document.getElementById(dropzoneId);
+            if (dropzone) {
+              const event = new CustomEvent("dropzone-files-selected", {
+                detail: { files, dropzoneId },
+                bubbles: true,
+              });
+              dropzone.dispatchEvent(event);
+            }
+          },
+          onError: (error) => {
+            // Dispatch custom event for errors
+            const dropzone = document.getElementById(dropzoneId);
+            if (dropzone) {
+              const event = new CustomEvent("dropzone-error", {
+                detail: { error, dropzoneId },
+                bubbles: true,
+              });
+              dropzone.dispatchEvent(event);
+            }
+          },
+        });
+      });
+    } else {
+      // DOM already loaded
+      initializeDropzone({
+        id: dropzoneId,
+        accept,
+        multiple,
+        maxSize,
+        onFileSelect: (files) => {
+          const dropzone = document.getElementById(dropzoneId);
+          if (dropzone) {
+            const event = new CustomEvent("dropzone-files-selected", {
+              detail: { files, dropzoneId },
+              bubbles: true,
+            });
+            dropzone.dispatchEvent(event);
+          }
+        },
+        onError: (error) => {
+          const dropzone = document.getElementById(dropzoneId);
+          if (dropzone) {
+            const event = new CustomEvent("dropzone-error", {
+              detail: { error, dropzoneId },
+              bubbles: true,
+            });
+            dropzone.dispatchEvent(event);
+          }
+        },
+      });
+    }
+  }
+</script>
+
