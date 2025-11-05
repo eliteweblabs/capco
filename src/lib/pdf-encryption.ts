@@ -1,13 +1,14 @@
 import { PDFDocument } from "pdf-lib";
-// Temporarily disabled muhammara - may have native dependency issues on Railway
-// import muhammara from "muhammara";
 
 /**
  * PDF Encryption Library
  *
- * Provides password-based encryption for PDFs using muhammara
+ * Provides password-based encryption for PDFs
  * Supports AES-256 encryption with granular permission controls
- * Note: pdf-lib doesn't support encryption, so we use muhammara for encryption
+ * 
+ * NOTE: Encryption is temporarily disabled.
+ * pdf-lib doesn't support encryption natively.
+ * We need to find an alternative library that works on Railway.
  */
 
 export interface EncryptionOptions {
@@ -122,7 +123,7 @@ export async function encryptPDF(
       throw new Error("Owner password must be at least 6 characters long");
     }
 
-    console.log("🔐 [PDF-ENCRYPTION] Applying encryption using muhammara...");
+    console.log("🔐 [PDF-ENCRYPTION] Encryption requested but temporarily unavailable...");
 
     // Convert permissions to protection flag
     // PDF protection flags: https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf
@@ -135,15 +136,13 @@ export async function encryptPDF(
     if (!options.permissions.contentAccessibility) userProtectionFlag |= 0x200; // No content extraction
     if (!options.permissions.documentAssembly) userProtectionFlag |= 0x400; // No document assembly
 
-    // Use muhammara to encrypt the PDF
-    // Note: muhammara operations are synchronous and can be CPU-intensive
-    // We wrap it in a promise to avoid blocking, but it still runs synchronously
-    // TEMPORARILY DISABLED: muhammara has native dependencies that may not build on Railway
-    // Returning error until we find a better encryption solution
+    // TEMPORARILY DISABLED: PDF encryption is not available
+    // pdf-lib doesn't support encryption, and alternative libraries have compatibility issues
+    // Please disable encryption for now, or use signing only
     throw new Error(
       "PDF encryption is temporarily unavailable. " +
-      "Muhammara library has compatibility issues. " +
-      "Please disable encryption for now, or use signing only."
+      "Please disable encryption in the form and use signing only, " +
+      "or try again later once encryption support is restored."
     );
     
     /* DISABLED CODE - Muhammara encryption
