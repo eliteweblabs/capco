@@ -1643,6 +1643,22 @@ const debugData = {
     <script>
       // Global error handler for broken image URLs (especially Supabase storage)
       document.addEventListener("DOMContentLoaded", () => {
+        // Suppress expected console errors in development
+        const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isDev) {
+          // Suppress Cloudflare cookie warnings (harmless in dev)
+          const originalWarn = console.warn;
+          console.warn = function(...args: any[]) {
+            const message = args[0]?.toString() || '';
+            // Suppress Cloudflare cookie warnings
+            if (message.includes('_cf_bm') || message.includes('Cookie') && message.includes('rejected')) {
+              return; // Silent fail in dev
+            }
+            originalWarn.apply(console, args);
+          };
+        }
+
         // Handle all img elements with error handling
         const images = document.querySelectorAll("img");
 
@@ -1653,7 +1669,10 @@ const debugData = {
 
             // Check if it's a Supabase storage URL that's failing
             if (src && src.includes("supabase.co/storage")) {
-              console.warn("⚠️ [IMAGE-ERROR] Supabase storage image failed to load:", src);
+              // Only log in production, silent in dev to reduce console noise
+              if (!isDev) {
+                console.warn("⚠️ [IMAGE-ERROR] Supabase storage image failed to load:", src);
+              }
 
               // Hide the broken image and show a fallback
               target.style.display = "none";

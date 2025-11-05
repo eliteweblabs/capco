@@ -24,24 +24,22 @@ const { currentUser, position = "bottom-right", theme = "auto" } = Astro.props;
 if (!currentUser) {
   return null;
 }
+
+// Skip Campfire widget in development to avoid localhost errors
+// Set ENABLE_CAMPFIRE_IN_DEV=true if you want to test it locally
+const isDevelopment = import.meta.env.DEV || import.meta.env.NODE_ENV === "development";
+const enableInDev = import.meta.env.PUBLIC_ENABLE_CAMPFIRE_IN_DEV === "true";
+
+if (isDevelopment && !enableInDev) {
+  return null;
+}
+
 // Get Campfire URL from environment variable
 // In Astro, PUBLIC_ prefixed vars are available client-side
 // Check both regular and PUBLIC_ prefixed versions
 let campfireUrl = import.meta.env.PUBLIC_CAMPFIRE_URL;
 let campfireWidgetId =
   import.meta.env.PUBLIC_CAMPFIRE_WIDGET_ID;
-
-// Log what we found (server-side only, won't expose in client)
-if (import.meta.env.NODE_ENV === "development") {
-  console.log("[---CAMPFIRE-WIDGET] Environment check:", {
-    hasPublicUrl: !!import.meta.env.PUBLIC_CAMPFIRE_URL,
-    hasUrl: !!import.meta.env.CAMPFIRE_URL,
-    hasPublicWidgetId: !!import.meta.env.PUBLIC_CAMPFIRE_WIDGET_ID,
-    hasWidgetId: !!import.meta.env.CAMPFIRE_WIDGET_ID,
-    finalUrl: campfireUrl ? `${campfireUrl.substring(0, 20)}...` : "not set",
-    finalWidgetId: campfireWidgetId ? "set" : "not set",
-  });
-}
 
 // // Ensure URL has protocol (required for script loading)
 // if (campfireUrl && !campfireUrl.startsWith("http://") && !campfireUrl.startsWith("https://")) {
