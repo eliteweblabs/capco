@@ -100,7 +100,8 @@ const { globalInputClasses } = Astro.props;
   </p>
 </div>
 <script>
-  import { createClient } from "@supabase/supabase-js";
+  // Use singleton Supabase client to avoid multiple instances
+  import { getSupabaseClient } from "../../lib/supabase-client";
 
   // Handle client-side OAuth for PKCE (code verifier must be stored in browser)
   document.addEventListener("DOMContentLoaded", async () => {
@@ -112,29 +113,16 @@ const { globalInputClasses } = Astro.props;
         
         console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
         
-        // Get Supabase config from environment
-        const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-        const supabasePublishableKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || "";
+        // Get singleton Supabase client (prevents multiple GoTrueClient instances)
+        const supabase = getSupabaseClient();
         
-        if (!supabaseUrl || !supabasePublishableKey) {
+        if (!supabase) {
           console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
           if (window.showModal) {
             window.showModal("error", "Configuration Error", "Supabase is not configured. Please contact support.");
           }
           return;
         }
-        
-        // Create Supabase client client-side (required for PKCE)
-        // Use explicit localStorage to ensure code verifier is stored correctly
-        const supabase = createClient(supabaseUrl, supabasePublishableKey, {
-          auth: {
-            flowType: "pkce",
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
-            persistSession: true,
-            storage: window.localStorage, // Explicitly use localStorage
-          },
-        });
         
         // Get the redirect URL based on current origin
         const redirectUrl = `${window.location.origin}/auth/callback`;
