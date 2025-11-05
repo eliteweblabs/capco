@@ -3,15 +3,45 @@ import { setAuthCookies } from "../../../lib/auth-cookies";
 import { supabase } from "../../../lib/supabase";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 
-// GET handler - Legacy fallback for old redirect URLs
-// OAuth should now redirect directly to /auth/callback (client-side)
-// This handler redirects any requests that still hit /api/auth/callback to the client-side handler
-export const GET: APIRoute = async ({ url, redirect }) => {
-  console.log(
-    "[---AUTH-CALLBACK] GET callback received (legacy redirect - should use /auth/callback directly)"
-  );
+// GET handler - Handles both Supabase OAuth and Google People API OAuth
+export const GET: APIRoute = async ({ url, redirect, cookies }) => {
+  console.log("[---AUTH-CALLBACK] GET callback received");
 
-  // Preserve all URL parameters and redirect to client-side callback
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const error = url.searchParams.get("error");
+
+  // Check if this is a Google People API OAuth callback
+  // We can detect this by checking if GOOGLE_PEOPLE_CLIENT_ID is configured
+  // and if the state contains our encoded redirect data
+  const googlePeopleClientId = import.meta.env.GOOGLE_PEOPLE_CLIENT_ID;
+  const googlePeopleClientSecret = import.meta.env.GOOGLE_PEOPLE_CLIENT_SECRET;
+
+  if (googlePeopleClientId && googlePeopleClientSecret && code) {
+    // Try to decode state to see if it's our Google People API OAuth
+    let isGooglePeopleOAuth = false;
+    if (state) {
+      try {
+        const stateData = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
+        // If state has a redirect field, it's likely our Google People API OAuth
+        if (stateData.redirect) {
+          isGooglePeopleOAuth = true;
+        }
+      } catch (e) {
+        // Not our state format, probably Supabase
+      }
+    }
+
+    if (isGooglePeopleOAuth) {
+      console.log("[---AUTH-CALLBACK] Detected Google People API OAuth, processing...");
+      // Import and use the Google OAuth callback logic
+      const { GET: googleOAuthCallback } = await import("../google/____oauth-callback");
+      return googleOAuthCallback({ url, cookies, redirect } as any);
+    }
+  }
+
+  // Otherwise, this is Supabase OAuth - redirect to client-side handler
+  console.log("[---AUTH-CALLBACK] Supabase OAuth detected, redirecting to client-side handler");
   const params = new URLSearchParams(url.search);
   if (params.toString()) {
     return redirect(`/auth/callback?${params.toString()}`);
@@ -149,7 +179,7 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
       }),
       {
         status: 200,
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           // Ensure cookies are sent with the response
           "Cache-Control": "no-cache, no-store, must-revalidate",
