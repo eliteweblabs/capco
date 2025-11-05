@@ -264,6 +264,19 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     // Send to individual user
     let targetUserId = userId;
 
+    // Validate userId is not "all" or other invalid values
+    if (userId && (userId === "all" || userId === "allUsers" || !userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid userId. Use 'allUsers: true' for all users or 'groupType' for role groups" 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // If userEmail is provided, look up the user ID
     if (userEmail && !userId) {
       const { data: userData, error: userError } = await supabaseAdmin
@@ -280,6 +293,17 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       }
 
       targetUserId = userData.id;
+    }
+
+    // Validate we have a valid UUID before inserting
+    if (!targetUserId || !targetUserId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid userId format. Must be a valid UUID." }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Create the notification

@@ -342,7 +342,18 @@ if (supabaseAdmin) {
 
         if (individualSelections.length > 0) {
           // Send to specific users
-          const individualNotifications = individualSelections.map((option: HTMLOptionElement) => ({
+          // Filter out any invalid values like "all" that might have slipped through
+          const validIndividualSelections = individualSelections.filter(
+            (option: HTMLOptionElement) => {
+              const value = option.value;
+              // Must be a valid UUID format (not "all" or other invalid values)
+              return value && 
+                     value !== "all" && 
+                     value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+            }
+          );
+          
+          const individualNotifications = validIndividualSelections.map((option: HTMLOptionElement) => ({
             userId: option.value,
             title: formData.get("title"),
             message: formData.get("message"),
