@@ -47,9 +47,11 @@ interface NotificationRequest {
  * - Mark Viewed: POST /api/notifications/upsert { notificationIds: [1,2,3], viewed: true }
  */
 export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
+  console.log("🔔 [NOTIFICATIONS-UPSERT] API endpoint called");
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
+    console.log("🔔 [NOTIFICATIONS-UPSERT] Auth check:", { isAuth, hasUser: !!currentUser });
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
@@ -101,6 +103,19 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     }
 
     // Handle creating/updating notifications
+    console.log("🔔 [NOTIFICATIONS-UPSERT] Request body:", {
+      hasUserId: !!body.userId,
+      hasUserEmail: !!body.userEmail,
+      hasAllUsers: !!body.allUsers,
+      hasGroupType: !!body.groupType,
+      hasTitle: !!body.title,
+      hasMessage: !!body.message,
+      userId: body.userId,
+      userEmail: body.userEmail,
+      allUsers: body.allUsers,
+      groupType: body.groupType,
+    });
+    
     const {
       userId,
       userEmail,
@@ -307,27 +322,79 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     }
 
     // Create the notification
-    const { data, error } = await supabaseAdmin
+    // Try camelCase first (if table was migrated), fallback to snake_case
+    console.log("🔔 [NOTIFICATIONS] Attempting to create notification:", {
+      targetUserId,
+      title: title?.substring(0, 50),
+      hasActionUrl: !!actionUrl,
+      hasActionText: !!actionText,
+    });
+
+    let data, error;
+    
+    // First try camelCase (preferred)
+    const insertData = {
+      userId: targetUserId,
+      title,
+      message,
+      type,
+      priority,
+      actionUrl: actionUrl || null,
+      actionText: actionText || null,
+      viewed: false,
+    };
+
+    const result = await supabaseAdmin
       .from("notifications")
-      .insert({
-        userId: targetUserId,
-        title,
-        message,
-        type,
-        priority,
-        actionUrl: actionUrl,
-        actionText: actionText,
-        viewed: false,
-      })
+      .insert(insertData)
       .select()
       .single();
 
+    data = result.data;
+    error = result.error;
+
+    // If camelCase fails, try snake_case (legacy table format)
+    if (error && error.code === '42703') { // Column doesn't exist error
+      console.log("🔔 [NOTIFICATIONS] camelCase failed, trying snake_case...");
+      const snakeCaseResult = await supabaseAdmin
+        .from("notifications")
+        .insert({
+          user_id: targetUserId,
+          title,
+          message,
+          type,
+          priority,
+          action_url: actionUrl || null,
+          action_text: actionText || null,
+          viewed: false,
+        })
+        .select()
+        .single();
+      
+      data = snakeCaseResult.data;
+      error = snakeCaseResult.error;
+    }
+
     if (error) {
-      console.error("❌ [NOTIFICATIONS] Error creating notification:", error);
-      return new Response(JSON.stringify({ error: "Failed to create notification" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
+      console.error("❌ [NOTIFICATIONS] Error creating notification:", {
+        error: error,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        targetUserId,
       });
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to create notification",
+          details: error.message,
+          code: error.code,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     console.log(`✅ [NOTIFICATIONS] Created notification ${data.id} for user ${targetUserId}`);

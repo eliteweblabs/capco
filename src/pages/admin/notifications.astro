@@ -387,11 +387,16 @@ if (supabaseAdmin) {
             `✅ Successfully sent ${successful} notification(s)${failed > 0 ? `, ${failed} failed` : ""}`
           );
 
+          // Log to system project (0) for notification sending
           await SimpleProjectLogger.addLogEntry(
-            "notificationsSent",
-            "emailSent",
-            "notificationsSent",
-            `Notifications sent successfully to ${successful} users${failed > 0 ? `, ${failed} failed` : ""}`
+            0, // System project for notification logs
+            "allNotificationsSent",
+            `Notifications sent successfully to ${successful} users${failed > 0 ? `, ${failed} failed` : ""}`,
+            {
+              successful,
+              failed,
+              total: notifications.length,
+            }
           );
 
           if (e.target) {
