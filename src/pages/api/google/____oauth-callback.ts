@@ -54,7 +54,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
         client_secret: import.meta.env.GOOGLE_PEOPLE_CLIENT_SECRET,
         code: code,
         grant_type: "authorization_code",
-        redirect_uri: `${url.origin}/api/google/oauth-callback`,
+        redirect_uri: `${url.origin}/api/auth/callback`,
       }),
     });
 
