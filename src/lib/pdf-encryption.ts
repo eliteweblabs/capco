@@ -1,5 +1,6 @@
 import { PDFDocument } from "pdf-lib";
-import muhammara from "muhammara";
+// Temporarily disabled muhammara - may have native dependency issues on Railway
+// import muhammara from "muhammara";
 
 /**
  * PDF Encryption Library
@@ -137,6 +138,15 @@ export async function encryptPDF(
     // Use muhammara to encrypt the PDF
     // Note: muhammara operations are synchronous and can be CPU-intensive
     // We wrap it in a promise to avoid blocking, but it still runs synchronously
+    // TEMPORARILY DISABLED: muhammara has native dependencies that may not build on Railway
+    // Returning error until we find a better encryption solution
+    throw new Error(
+      "PDF encryption is temporarily unavailable. " +
+      "Muhammara library has compatibility issues. " +
+      "Please disable encryption for now, or use signing only."
+    );
+    
+    /* DISABLED CODE - Muhammara encryption
     console.log("🔐 [PDF-ENCRYPTION] Starting muhammara encryption (PDF size:", pdfBuffer.length, "bytes)...");
     
     const encryptedBuffer = await new Promise<Buffer>((resolve, reject) => {
@@ -189,6 +199,10 @@ export async function encryptPDF(
         reject(error);
       }
     });
+    */
+    
+    // Placeholder - this code won't execute due to throw above
+    const encryptedBuffer = pdfBuffer;
 
     console.log("🔐 [PDF-ENCRYPTION] Encryption applied successfully");
 
