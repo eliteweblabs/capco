@@ -21,12 +21,15 @@ export function validateAvatarUrl(avatarUrl: string): AvatarValidationResult {
     };
   }
 
-  // Check if it's a Supabase storage URL that might be broken
+  // Check if it's a Supabase storage URL
+  // We'll still try to load it, but we know it might fail if file doesn't exist
+  // The component will handle the error gracefully with fallback
   if (avatarUrl.includes("supabase.co/storage")) {
-    // These URLs are known to have connection issues
+    // Allow the request to proceed, but expect it might fail
+    // The image error handler will catch 400s and show fallback
     return {
-      isValid: false,
-      shouldUseFallback: true,
+      isValid: true,
+      shouldUseFallback: false,
     };
   }
 

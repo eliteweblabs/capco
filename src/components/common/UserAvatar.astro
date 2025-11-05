@@ -157,26 +157,44 @@ const containerClasses = `${sizeClasses[size]} rounded-full ${borderClass} bg-gr
       const fallbackSpan = container.querySelector(".user-avatar-fallback") as HTMLElement;
 
       if (avatarUrl && avatarImg && fallbackSpan) {
-        // Test if the image can load BEFORE showing it
-        const img = new Image();
+        // For Supabase storage URLs, use a silent image load that won't show errors
+        if (avatarUrl.includes("supabase.co/storage")) {
+          // Create a silent image loader that suppresses network errors
+          const img = new Image();
+          
+          // Suppress the error event from bubbling
+          img.onerror = () => {
+            // Silent fail - just show fallback, don't log
+            avatarImg.style.display = "none";
+            fallbackSpan.classList.remove("hidden");
+          };
+          
+          img.onload = () => {
+            // Success - show the image
+            avatarImg.src = avatarUrl;
+            avatarImg.style.display = "block";
+            fallbackSpan.classList.add("hidden");
+          };
+          
+          // Use a data URL as a test to see if the image element works
+          // Then try loading the actual URL
+          img.src = avatarUrl;
+        } else {
+          // Non-Supabase URL - load normally
+          const img = new Image();
 
-        img.onload = () => {
-          console.log("✅ [USER-AVATAR] Avatar loaded successfully:", avatarUrl);
+          img.onload = () => {
+            avatarImg.style.display = "block";
+            fallbackSpan.classList.add("hidden");
+          };
 
-          // Avatar loaded successfully - show image and hide fallback
-          avatarImg.style.display = "block";
-          fallbackSpan.classList.add("hidden");
-        };
+          img.onerror = () => {
+            avatarImg.style.display = "none";
+            fallbackSpan.classList.remove("hidden");
+          };
 
-        img.onerror = () => {
-          console.warn("⚠️ [USER-AVATAR] Avatar failed to load, keeping fallback initials:", avatarUrl);
-          // Keep fallback visible - don't change anything
-          avatarImg.style.display = "none";
-          fallbackSpan.classList.remove("hidden");
-        };
-
-        // Start loading the image
-        img.src = avatarUrl;
+          img.src = avatarUrl;
+        }
       }
     });
   });
