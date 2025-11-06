@@ -8,10 +8,11 @@
 
 import { PDFDocument } from "pdf-lib";
 import { loadCertificate, type CertificateData } from "./certificate-loader";
-import forge from "node-forge";
 import { SignPdf } from "@signpdf/signpdf";
-import { Signer } from "@signpdf/utils";
+import { P12Signer } from "@signpdf/signer-p12";
 import { plainAddPlaceholder } from "@signpdf/placeholder-plain";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
 
 export interface SigningOptions {
   reason?: string; // Reason for signing (e.g., "Document certification")
@@ -35,66 +36,58 @@ export interface SigningResult {
 }
 
 /**
- * Create a custom signer for @signpdf using forge certificate and private key
- * Extends the Signer class from @signpdf/utils
+ * Get P12 buffer and password for P12Signer
+ * Returns the raw P12 buffer and password from environment or file
  */
-class ForgeSigner extends Signer {
-  private certData: CertificateData;
+function getP12BufferAndPassword(): { p12Buffer: Buffer; password: string } | null {
+  // Try base64 first (for Railway/deployment)
+  const base64Cert = process.env.CERT_BASE64;
+  const certPassword = process.env.CERT_PASSWORD;
 
-  constructor(certData: CertificateData) {
-    super();
-    this.certData = certData;
+  if (base64Cert && certPassword) {
+    const cleanedBase64 = base64Cert
+      .replace(/^["']|["']$/g, "")
+      .replace(/\s+/g, "")
+      .trim();
+    const cleanedPassword = certPassword.replace(/^["']|["']$/g, "").trim();
+    
+    try {
+      const p12Buffer = Buffer.from(cleanedBase64, "base64");
+      return { p12Buffer, password: cleanedPassword };
+    } catch (error) {
+      console.error("❌ [PDF-SIGNING] Failed to decode base64 certificate:", error);
+      return null;
+    }
   }
 
-  async sign(data: Buffer): Promise<Buffer> {
-    // Create PKCS#7 signature using forge
-    // Note: The authenticatedAttributes order is critical for correct signature validation
-    // See: https://ec.europa.eu/digital-building-blocks/DSS/webapp-demo/validation
-    const p7 = forge.pkcs7.createSignedData();
-    p7.content = forge.util.createBuffer(data.toString("binary"));
-    
-    // Add certificate
-    p7.addCertificate(this.certData.certificate);
-    
-    // Add signer with correct attribute order:
-    // 1. contentType (required)
-    // 2. signingTime (required)
-    // 3. messageDigest (auto-populated, no value needed)
-    p7.addSigner({
-      key: this.certData.privateKey,
-      certificate: this.certData.certificate,
-      digestAlgorithm: forge.pki.oids.sha256,
-      authenticatedAttributes: [
-        {
-          type: forge.pki.oids.contentType,
-          value: forge.pki.oids.data,
-        },
-        {
-          type: forge.pki.oids.signingTime,
-          value: new Date(),
-        },
-        {
-          type: forge.pki.oids.messageDigest,
-          // value will be auto-populated at signing time
-        },
-      ],
-    });
-    
-    // Sign in detached mode (required for PDF signatures)
-    p7.sign({ detached: true });
-    
-    // Convert to DER format (binary)
-    const derBuffer = Buffer.from(forge.asn1.toDer(p7.toAsn1()).getBytes(), "binary");
-    
-    return derBuffer;
+  // Try file path (for local development)
+  const certPath = process.env.CERT_PATH || process.env.DEV_CERT_PATH;
+  if (certPath && certPassword && existsSync(certPath)) {
+    try {
+      const p12Buffer = readFileSync(certPath);
+      const cleanedPassword = certPassword.replace(/^["']|["']$/g, "").trim();
+      return { p12Buffer, password: cleanedPassword };
+    } catch (error) {
+      console.error("❌ [PDF-SIGNING] Failed to read certificate file:", error);
+      return null;
+    }
   }
-}
 
-/**
- * Create a signer instance
- */
-function createForgeSigner(certData: CertificateData): ForgeSigner {
-  return new ForgeSigner(certData);
+  // Try default certs directory
+  const defaultCertsDir = join(process.cwd(), "certs");
+  const defaultCertPath = join(defaultCertsDir, "identrust.p12");
+  if (existsSync(defaultCertPath) && certPassword) {
+    try {
+      const p12Buffer = readFileSync(defaultCertPath);
+      const cleanedPassword = certPassword.replace(/^["']|["']$/g, "").trim();
+      return { p12Buffer, password: cleanedPassword };
+    } catch (error) {
+      console.error("❌ [PDF-SIGNING] Failed to read default certificate:", error);
+      return null;
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -149,10 +142,21 @@ export async function signPDF(
       location: signingMetadata.location,
     });
 
-    console.log("✍️ [PDF-SIGNING] Creating signer from certificate...");
+    console.log("✍️ [PDF-SIGNING] Creating signer from P12 certificate...");
     
-    // Step 2: Create custom signer using forge certificate
-    const signer = createForgeSigner(certData);
+    // Step 2: Use P12Signer directly (proven implementation from @signpdf)
+    // This ensures proper certificate chain handling and signature format
+    const p12Data = getP12BufferAndPassword();
+    if (!p12Data) {
+      return {
+        success: false,
+        error: "Failed to load P12 certificate buffer. Please ensure CERT_BASE64/CERT_PASSWORD or CERT_PATH/CERT_PASSWORD are set.",
+      };
+    }
+
+    const signer = new P12Signer(p12Data.p12Buffer, {
+      passphrase: p12Data.password,
+    });
 
     console.log("✍️ [PDF-SIGNING] Creating PKCS#7 signature...");
     
