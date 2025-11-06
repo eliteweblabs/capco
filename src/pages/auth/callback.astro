@@ -113,6 +113,15 @@
           console.log("[AUTH-CALLBACK] Code from URL:", code);
           
           // Check if code verifier exists in localStorage (PKCE requirement)
+          const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+          if (!supabaseUrl) {
+            console.error("[AUTH-CALLBACK] PUBLIC_SUPABASE_URL not configured");
+            showError("Configuration error: Supabase URL not found");
+            setTimeout(() => {
+              window.location.href = "/auth/login?error=config_missing";
+            }, 3000);
+            return;
+          }
           const supabaseProjectRef = supabaseUrl.split('//')[1].split('.')[0];
           const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
           const codeVerifier = localStorage.getItem(codeVerifierKey);
