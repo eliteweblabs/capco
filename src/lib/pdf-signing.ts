@@ -48,13 +48,18 @@ class ForgeSigner extends Signer {
 
   async sign(data: Buffer): Promise<Buffer> {
     // Create PKCS#7 signature using forge
+    // Note: The authenticatedAttributes order is critical for correct signature validation
+    // See: https://ec.europa.eu/digital-building-blocks/DSS/webapp-demo/validation
     const p7 = forge.pkcs7.createSignedData();
     p7.content = forge.util.createBuffer(data.toString("binary"));
     
     // Add certificate
     p7.addCertificate(this.certData.certificate);
     
-    // Add signer
+    // Add signer with correct attribute order:
+    // 1. contentType (required)
+    // 2. signingTime (required)
+    // 3. messageDigest (auto-populated, no value needed)
     p7.addSigner({
       key: this.certData.privateKey,
       certificate: this.certData.certificate,
@@ -65,16 +70,17 @@ class ForgeSigner extends Signer {
           value: forge.pki.oids.data,
         },
         {
-          type: forge.pki.oids.messageDigest,
-        },
-        {
           type: forge.pki.oids.signingTime,
           value: new Date(),
+        },
+        {
+          type: forge.pki.oids.messageDigest,
+          // value will be auto-populated at signing time
         },
       ],
     });
     
-    // Sign
+    // Sign in detached mode (required for PDF signatures)
     p7.sign({ detached: true });
     
     // Convert to DER format (binary)
