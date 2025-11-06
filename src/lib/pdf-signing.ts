@@ -1,14 +1,17 @@
 /**
  * PDF Signing Module
  *
- * Signs PDFs with IdenTrust certificate using digital signatures
- * Note: This provides authentication/provenance, not encryption
+ * Signs PDFs with IdenTrust certificate using cryptographic digital signatures
+ * Uses @signpdf/signpdf for PKCS#7 signature embedding
  * For encryption, use the existing password-based encryption module
  */
 
 import { PDFDocument } from "pdf-lib";
 import { loadCertificate, type CertificateData } from "./certificate-loader";
 import forge from "node-forge";
+import { SignPdf } from "@signpdf/signpdf";
+import { Signer } from "@signpdf/utils";
+import { plainAddPlaceholder } from "@signpdf/placeholder-plain";
 
 export interface SigningOptions {
   reason?: string; // Reason for signing (e.g., "Document certification")
@@ -32,11 +35,64 @@ export interface SigningResult {
 }
 
 /**
- * Sign a PDF with a digital certificate
- *
- * Note: pdf-lib doesn't natively support certificate-based signing.
- * This implementation adds a signature field and embeds certificate info.
- * For full cryptographic signing, consider using node-signpdf or external tools.
+ * Create a custom signer for @signpdf using forge certificate and private key
+ * Extends the Signer class from @signpdf/utils
+ */
+class ForgeSigner extends Signer {
+  private certData: CertificateData;
+
+  constructor(certData: CertificateData) {
+    super();
+    this.certData = certData;
+  }
+
+  async sign(data: Buffer): Promise<Buffer> {
+    // Create PKCS#7 signature using forge
+    const p7 = forge.pkcs7.createSignedData();
+    p7.content = forge.util.createBuffer(data.toString("binary"));
+    
+    // Add certificate
+    p7.addCertificate(this.certData.certificate);
+    
+    // Add signer
+    p7.addSigner({
+      key: this.certData.privateKey,
+      certificate: this.certData.certificate,
+      digestAlgorithm: forge.pki.oids.sha256,
+      authenticatedAttributes: [
+        {
+          type: forge.pki.oids.contentType,
+          value: forge.pki.oids.data,
+        },
+        {
+          type: forge.pki.oids.messageDigest,
+        },
+        {
+          type: forge.pki.oids.signingTime,
+          value: new Date(),
+        },
+      ],
+    });
+    
+    // Sign
+    p7.sign({ detached: true });
+    
+    // Convert to DER format (binary)
+    const derBuffer = Buffer.from(forge.asn1.toDer(p7.toAsn1()).getBytes(), "binary");
+    
+    return derBuffer;
+  }
+}
+
+/**
+ * Create a signer instance
+ */
+function createForgeSigner(certData: CertificateData): ForgeSigner {
+  return new ForgeSigner(certData);
+}
+
+/**
+ * Sign a PDF with a digital certificate using cryptographic PKCS#7 signature
  */
 export async function signPDF(
   pdfBuffer: Buffer,
@@ -66,10 +122,6 @@ export async function signPDF(
       };
     }
 
-    // Load PDF document
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
-    console.log("✍️ [PDF-SIGNING] PDF loaded, page count:", pdfDoc.getPageCount());
-
     // Create signature metadata
     const signingMetadata = {
       signed: true,
@@ -79,57 +131,43 @@ export async function signPDF(
       location: options.location || "Certified by CAPCO Design Group",
     };
 
-    // Add metadata to PDF
-    pdfDoc.setTitle(`${pdfDoc.getTitle() || "Document"} - Certified`);
-    pdfDoc.setSubject(
-      `Certified document signed by ${certData.commonName} on ${signingMetadata.signedAt.toISOString()}`
-    );
-    pdfDoc.setProducer("CAPCO Design Group - Certified PDF System");
-    pdfDoc.setCreator("CAPCO Design Group");
-
-    // Embed certificate information in custom metadata
-    const customMetadata = {
-      signed: "true",
-      signer: certData.commonName,
-      issuer: certData.issuer,
-      signedAt: signingMetadata.signedAt.toISOString(),
+    console.log("✍️ [PDF-SIGNING] Adding placeholder for signature...");
+    
+    // Step 1: Add placeholder for signature FIRST (on original PDF)
+    // This must be done before any pdf-lib modifications to avoid breaking PDF structure
+    const pdfWithPlaceholder = plainAddPlaceholder({
+      pdfBuffer,
       reason: signingMetadata.reason,
+      contactInfo: options.contactInfo || "",
+      name: certData.commonName,
       location: signingMetadata.location,
-      certificateValidFrom: certData.validFrom.toISOString(),
-      certificateValidTo: certData.validTo.toISOString(),
-    };
+    });
 
-    // Store metadata in PDF (as custom properties)
-    // Note: pdf-lib doesn't support custom properties directly, so we'll add it to keywords
-    const metadataString = JSON.stringify(customMetadata);
-    // pdf-lib setKeywords expects an array, not a string
-    const keywordArray = [
-      "certified",
-      "signed",
-      certData.commonName,
-      signingMetadata.signedAt.toISOString(),
-    ];
-    pdfDoc.setKeywords(keywordArray);
+    console.log("✍️ [PDF-SIGNING] Creating signer from certificate...");
+    
+    // Step 2: Create custom signer using forge certificate
+    const signer = createForgeSigner(certData);
 
-    // For visible signature, add a signature field
-    if (options.visible && options.pageNumber !== undefined) {
-      const page = pdfDoc.getPage(options.pageNumber);
-      const { width, height } = page.getSize();
+    console.log("✍️ [PDF-SIGNING] Creating PKCS#7 signature...");
+    
+    // Step 3: Sign the PDF with cryptographic signature
+    const signPdfInstance = new SignPdf();
+    const signedPdfBuffer = await signPdfInstance.sign(pdfWithPlaceholder, signer);
 
-      // Create signature annotation (simplified - pdf-lib doesn't fully support signature widgets)
-      // This is a placeholder - full signature support would require node-signpdf
-      console.log(`✍️ [PDF-SIGNING] Adding visible signature on page ${options.pageNumber + 1}`);
+    console.log("✅ [PDF-SIGNING] PDF cryptographically signed successfully, size:", signedPdfBuffer.length, "bytes");
+    
+    // Verify signature was embedded by checking for signature dictionary
+    const pdfString = signedPdfBuffer.toString("binary");
+    const hasSignature = pdfString.includes("/Type/Sig") || pdfString.includes("/ByteRange");
+    console.log(`🔍 [PDF-SIGNING] Signature verification: ${hasSignature ? "✅ Signature dictionary found" : "⚠️ Signature dictionary not found"}`);
+    
+    if (!hasSignature) {
+      console.warn("⚠️ [PDF-SIGNING] Warning: Signature dictionary not detected in PDF. PDF may not be properly signed.");
     }
-
-    // Save the signed PDF
-    const signedBytes = await pdfDoc.save();
-    const signedBuffer = Buffer.from(signedBytes);
-
-    console.log("✅ [PDF-SIGNING] PDF signed successfully, size:", signedBuffer.length, "bytes");
 
     return {
       success: true,
-      signedBuffer,
+      signedBuffer: signedPdfBuffer,
       metadata: signingMetadata,
     };
   } catch (error) {
