@@ -76,9 +76,20 @@ export async function signAndEncryptPDF(
     const encryptionResult = await encryptPDF(signingResult.signedBuffer, options.encryption);
 
     if (!encryptionResult.success || !encryptionResult.encryptedBuffer) {
+      // Encryption failed, but signing succeeded - fall back to signing-only
+      console.warn("⚠️ [PDF-SIGN-ENCRYPT] Encryption failed, falling back to signing-only:", encryptionResult.error);
       return {
-        success: false,
-        error: `PDF encryption failed: ${encryptionResult.error || "Unknown error"}`,
+        success: true,
+        signedAndEncryptedBuffer: signingResult.signedBuffer,
+        error: `Encryption unavailable: ${encryptionResult.error || "Unknown error"}. PDF was signed successfully but not encrypted.`,
+        metadata: {
+          signed: true,
+          encrypted: false,
+          signer: signingResult.metadata?.signer,
+          signedAt: signingResult.metadata?.signedAt,
+          hasUserPassword: false,
+          hasOwnerPassword: false,
+        },
       };
     }
 

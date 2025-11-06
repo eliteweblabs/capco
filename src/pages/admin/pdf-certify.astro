@@ -477,14 +477,25 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
             const metadata = data.data.metadata || {};
             const isEncrypted = metadata.encrypted || false;
             const isSigned = metadata.signed || false;
+            const warning = data.data.warning;
 
             let metadataHtml = `
               <p><strong>File:</strong> ${data.data.fileName}</p>
             `;
 
+            // Show warning if encryption failed but signing succeeded
+            if (warning) {
+              metadataHtml += `
+                <div class="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
+                  <p class="text-yellow-800 dark:text-yellow-200 font-semibold">⚠️ Warning</p>
+                  <p class="text-yellow-700 dark:text-yellow-300 text-sm">${warning}</p>
+                </div>
+              `;
+            }
+
             if (isSigned) {
               metadataHtml += `
-                <p><strong>Signed by:</strong> ${metadata.signer || "Unknown"}</p>
+                <p class="mt-2"><strong>Signed by:</strong> ${metadata.signer || "Unknown"}</p>
                 <p><strong>Signed at:</strong> ${new Date(metadata.signedAt || Date.now()).toLocaleString()}</p>
                 <p><strong>Reason:</strong> ${metadata.reason || "N/A"}</p>
                 <p><strong>Location:</strong> ${metadata.location || "N/A"}</p>

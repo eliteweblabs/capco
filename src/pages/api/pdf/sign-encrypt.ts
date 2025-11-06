@@ -72,6 +72,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Check if encryption failed but signing succeeded
+    const encryptionFailed = result.error && result.error.includes("Encryption unavailable");
+    if (encryptionFailed) {
+      console.warn("⚠️ [PDF-SIGN-ENCRYPT] Encryption failed, but signing succeeded:", result.error);
+    }
+
     console.log("✅ [PDF-SIGN-ENCRYPT] PDF signed and encrypted successfully");
 
     // Save PDF to storage
@@ -102,13 +108,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("❌ [PDF-SIGN-ENCRYPT] Error creating signed URL:", urlError);
     }
 
+    const message = encryptionFailed
+      ? `PDF signed successfully. Warning: ${result.error}`
+      : `PDF ${result.metadata?.encrypted ? "signed and encrypted" : "signed"} successfully`;
+
     return createSuccessResponse({
       success: true,
       fileName,
       filePath,
       downloadUrl: urlData?.signedUrl || null,
       metadata: result.metadata,
-      message: `PDF ${result.metadata?.encrypted ? "signed and encrypted" : "signed"} successfully`,
+      message,
+      warning: encryptionFailed ? result.error : undefined,
     });
   } catch (error) {
     console.error("❌ [PDF-SIGN-ENCRYPT] Unexpected error:", error);
