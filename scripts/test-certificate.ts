@@ -67,12 +67,43 @@ async function testCertificate() {
   } else {
     console.log("✅ Certificate is issued by a CA (not self-signed)");
   }
+
+  // Check certificate chain in P12 file
+  console.log("\n📋 Test 3b: Checking certificate chain in P12 file...");
+  const p12Data = getP12BufferAndPassword();
+  if (p12Data) {
+    try {
+      const p12Asn1 = forge.asn1.fromDer(p12Data.p12Buffer.toString("binary"));
+      const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, p12Data.password);
+      const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+      const certificates = certBags[forge.pki.oids.certBag] || [];
+      
+      console.log(`   Certificates in P12 file: ${certificates.length}`);
+      
+      if (certificates.length === 1) {
+        console.warn("⚠️  WARNING: Only one certificate found in P12 file");
+        console.warn("   Missing intermediate CA certificates may cause validation issues");
+        console.warn("   Adobe Reader needs the full certificate chain to validate properly");
+        console.warn("   Solution: Re-export the certificate from Keychain with 'Include all certificates'");
+      } else {
+        console.log("✅ Multiple certificates found (full chain may be present)");
+        certificates.forEach((bag, index) => {
+          const cert = bag.cert;
+          if (cert) {
+            const cn = cert.subject.getField("CN")?.value || "Unknown";
+            const issuer = cert.issuer.getField("CN")?.value || "Unknown";
+            console.log(`   Certificate ${index + 1}: ${cn} (Issued by: ${issuer})`);
+          }
+        });
+      }
+    } catch (error) {
+      console.warn("⚠️  Could not analyze P12 certificate chain:", error);
+    }
+  }
   console.log();
 
   // Test 4: Get P12 buffer and test P12Signer
   console.log("📋 Test 4: Testing P12Signer initialization...");
-  const p12Data = getP12BufferAndPassword();
-  
   if (!p12Data) {
     console.error("❌ FAILED: Could not load P12 buffer");
     console.error("   Please ensure CERT_BASE64/CERT_PASSWORD or CERT_PATH/CERT_PASSWORD are set");

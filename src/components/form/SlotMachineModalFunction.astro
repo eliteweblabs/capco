@@ -788,6 +788,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       return false;
     }
   }
+  // Store last search queries per slot machine instance
+  const searchQueryCache = {};
+
   // Generic slot machine modal function
   async function showSlotMachineModal(config) {
     const {
@@ -1021,9 +1024,22 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
     // Focus search input after modal is fully rendered (only for non-fetchOnLoad modals)
     if (searchInput) {
+      // Restore previous search query if it exists
+      const cachedQuery = searchQueryCache[id];
+      if (cachedQuery) {
+        searchInput.value = cachedQuery;
+      }
+
       // Use setTimeout to ensure the modal is fully rendered
       setTimeout(() => {
         searchInput.focus();
+
+        // If there's a cached query, trigger the search
+        if (cachedQuery && fetchApiEndpoint && cachedQuery.length >= 2) {
+          // Trigger input event to perform search
+          const inputEvent = new Event("input", { bubbles: true });
+          searchInput.dispatchEvent(inputEvent);
+        }
       }, 100);
     }
 
@@ -1034,6 +1050,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
       searchInput.addEventListener("input", (e) => {
         const query = e.target.value.trim();
+
+        // Cache the search query for this slot machine instance
+        searchQueryCache[id] = query;
+
         console.log(
           `🔍 [SLOT-MACHINE] Search input changed: "${query}", originalOptions: ${originalOptions.length}`
         );
@@ -1329,7 +1349,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     if (fetchApiEndpoint && optionsList) {
       (async () => {
         try {
-          console.log(`🔄 [SLOT-MACHINE] Fetching all options on modal open for: ${fetchApiEndpoint}`);
+          console.log(
+            `🔄 [SLOT-MACHINE] Fetching all options on modal open for: ${fetchApiEndpoint}`
+          );
 
           // Build URL with API params (empty or minimal query to get all results)
           const searchParams = new URLSearchParams({
