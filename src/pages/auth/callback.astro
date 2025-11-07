@@ -1,6 +1,7 @@
 ---
 // Client-side OAuth callback handler for PKCE flow
 // This page runs in the browser where the code verifier is stored in localStorage
+import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
 ---
 
 <html>
@@ -53,7 +54,7 @@
   </head>
   <body>
     <div class="container">
-      <div class="spinner"></div>
+      <LoadingSpinner />
       <p>Signing you in...</p>
       <div id="error" class="error" style="display: none;"></div>
     </div>
@@ -76,13 +77,16 @@
           showError("Supabase configuration missing");
           return;
         }
-        
+
         // Give Supabase client a moment to initialize
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
         try {
           console.log("[AUTH-CALLBACK] Starting PKCE flow...");
-          console.log("[AUTH-CALLBACK] Supabase client initialized with storage:", supabase.auth.storage ? "available" : "missing");
+          console.log(
+            "[AUTH-CALLBACK] Supabase client initialized with storage:",
+            supabase.auth.storage ? "available" : "missing"
+          );
 
           // Get the code from URL parameters
           const urlParams = new URLSearchParams(window.location.search);
@@ -111,7 +115,7 @@
           console.log("[AUTH-CALLBACK] Exchanging code for session (client-side)...");
           console.log("[AUTH-CALLBACK] Current URL:", window.location.href);
           console.log("[AUTH-CALLBACK] Code from URL:", code);
-          
+
           // Check if code verifier exists in localStorage (PKCE requirement)
           const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
           if (!supabaseUrl) {
@@ -122,31 +126,37 @@
             }, 3000);
             return;
           }
-          const supabaseProjectRef = supabaseUrl.split('//')[1].split('.')[0];
+          const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
           const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
           const codeVerifier = localStorage.getItem(codeVerifierKey);
           console.log("[AUTH-CALLBACK] Code verifier key:", codeVerifierKey);
-          console.log("[AUTH-CALLBACK] Code verifier in localStorage:", codeVerifier ? "found" : "missing");
+          console.log(
+            "[AUTH-CALLBACK] Code verifier in localStorage:",
+            codeVerifier ? "found" : "missing"
+          );
           console.log("[AUTH-CALLBACK] Code verifier length:", codeVerifier?.length || 0);
-          console.log("[AUTH-CALLBACK] All localStorage keys:", Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('sb-')));
+          console.log(
+            "[AUTH-CALLBACK] All localStorage keys:",
+            Object.keys(localStorage).filter((k) => k.includes("supabase") || k.includes("sb-"))
+          );
 
           // Try automatic session detection first (with detectSessionInUrl: true, Supabase should handle this)
           // If that doesn't work, fall back to manual exchange
           let data, exchangeError;
-          
+
           // Wait a moment for automatic detection to work
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
           // Try getting session (automatic detection)
           const { data: autoData, error: autoError } = await supabase.auth.getSession();
-          
+
           if (autoData?.session && !autoError) {
             console.log("[AUTH-CALLBACK] Session detected automatically");
             data = autoData;
           } else {
             console.log("[AUTH-CALLBACK] Automatic detection failed, trying manual exchange...");
             console.log("[AUTH-CALLBACK] Auto error:", autoError?.message);
-            
+
             // Manual exchange - Try with explicit code verifier if available
             // The code verifier key format is: sb-{project-ref}-auth-token-code-verifier
             if (codeVerifier) {
@@ -155,11 +165,11 @@
               // but if it doesn't, we might need to pass it explicitly (though the API doesn't support this)
               // So we rely on Supabase's internal retrieval
             }
-            
+
             const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
             data = exchangeResult.data;
             exchangeError = exchangeResult.error;
-            
+
             if (exchangeError && codeVerifier) {
               console.error("[AUTH-CALLBACK] Exchange failed even with code verifier present");
               console.error("[AUTH-CALLBACK] Code length:", code.length);
@@ -223,12 +233,15 @@
 
           console.log("[AUTH-CALLBACK] Authentication successful, redirecting to dashboard...");
           console.log("[AUTH-CALLBACK] Response status:", response.status);
-          console.log("[AUTH-CALLBACK] Response headers:", Object.fromEntries(response.headers.entries()));
+          console.log(
+            "[AUTH-CALLBACK] Response headers:",
+            Object.fromEntries(response.headers.entries())
+          );
 
           // Small delay to ensure cookies are set before redirect
           // This is especially important for localhost development
           // Increased delay to ensure browser has time to process Set-Cookie headers
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise((resolve) => setTimeout(resolve, 300));
 
           // Use replace instead of href to ensure proper navigation with cookies
           // This ensures the browser includes cookies in the redirect

@@ -391,7 +391,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
         };
 
         pauseBtn.addEventListener("click", () => {
-          this.isScrolling = !this.isScrolling;
+          if (this.isScrolling) {
+            // Pause scrolling
+            this.stopContinuousScroll();
+          } else {
+            // Resume scrolling
+            this.startContinuousScroll();
+          }
           updateButtonState();
         });
 
@@ -421,26 +427,33 @@ const { currentUser } = await checkAuth(Astro.cookies);
     addCustomNodes(delay = 1500) {
       // Start continuous scrolling immediately
       this.startContinuousScroll();
-      // this.startContinuousNodeAddition(1000);
 
       const screenWidth = window.innerWidth || 0;
       const screenHeight = window.innerHeight || 0;
+      const connectDelay = 100;
 
-      // Add some sample nodes with their original specific positioning
-      setTimeout(() => {
-        this.addNodeWithCenterMaintenance({
+      // Node definitions with their timing and positioning
+      const nodeDefinitions: Array<{
+        id: string;
+        icon: string;
+        title: string;
+        subtitle?: string;
+        status: string;
+        x: number;
+        y: number;
+        delayMultiplier: number; // How many delays to wait before adding this node
+      }> = [
+        {
           id: "create-account",
           icon: "user",
           title: "Create Account",
           subtitle: "<a href='/auth/login?register=true'>Register</a>",
           status: "2 Minutes",
           x: screenWidth,
-          y: screenHeight * 0.2,
-        });
-      }, delay);
-
-      setTimeout(() => {
-        this.addNodeWithCenterMaintenance({
+          y: screenHeight * 0.25,
+          delayMultiplier: 1,
+        },
+        {
           id: "login",
           icon: "log-in",
           title: "Login",
@@ -448,212 +461,222 @@ const { currentUser } = await checkAuth(Astro.cookies);
           status: "2 Seconds",
           x: screenWidth,
           y: screenHeight * 0.5,
-        });
-      }, delay + delay);
-
-      setTimeout(
-        () => {
-          this.addConnection("create-account", "login", "right", "left");
+          delayMultiplier: 2,
         },
-        delay + delay + 200
-      ); // After login is created
+        {
+          id: "upload-files",
+          icon: "upload",
+          title: "Upload Files",
+          status: "PDF, jpeg, png, autocad, revit, dwg",
+          x: screenWidth,
+          y: screenHeight * 0.15,
+          delayMultiplier: 3,
+        },
+        {
+          id: "request-review",
+          icon: "file-text",
+          title: "Request Review",
+          status: "2-4 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.65,
+          delayMultiplier: 4,
+        },
+        {
+          id: "generating-proposal",
+          icon: "file-text",
+          title: "Generating Proposal",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.5,
+          delayMultiplier: 5,
+        },
 
-      setTimeout(
-        () => {
+        {
+          id: "request-revision",
+          icon: "edit-3",
+          title: "Request Revision",
+          status: "2-4 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.25,
+          delayMultiplier: 6,
+        },
+        {
+          id: "approve-revisions",
+          icon: "file-text",
+          title: "Approve Revisions",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.25,
+          delayMultiplier: 7,
+        },
+        {
+          id: "approve-proposal",
+          icon: "check-circle",
+          title: "Approve Proposal",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.5,
+          delayMultiplier: 8.5,
+        },
+        {
+          id: "sign-off-proposal",
+          icon: "file-text",
+          title: "Sign Off Proposal",
+          status: "2-4 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.75,
+          delayMultiplier: 10,
+        },
+        {
+          id: "generating-final-documents",
+          icon: "file-text",
+          title: "Generating Final Documents",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.25,
+          delayMultiplier: 11,
+        },
+        {
+          id: "delivering-final-documents",
+          icon: "file-text",
+          title: "Delivering Final Documents",
+          status: "2 minutes to complete",
+          x: screenWidth,
+          y: screenHeight * 0.65,
+          delayMultiplier: 13,
+        },
+      ];
+
+      // Connection definitions
+      const connectionDefinitions: Array<{
+        from: string;
+        to: string;
+        fromSide?: string;
+        toSide?: string;
+        delayMultiplier: number; // How many delays to wait before adding this connection
+      }> = [
+        {
+          from: "create-account",
+          to: "login",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 2.2, // After login is created (2 delays + 200ms)
+        },
+        {
+          from: "login",
+          to: "upload-files",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 3.1, // After upload-files is created
+        },
+        {
+          from: "upload-files",
+          to: "submit-files",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 4.1,
+        },
+        {
+          from: "submit-files",
+          to: "generate-proposal",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 5.1,
+        },
+        {
+          from: "generate-proposal",
+          to: "approve-proposal",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 6.1,
+        },
+        {
+          from: "generate-proposal",
+          to: "proposal-request-revision",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 6.1,
+        },
+        {
+          from: "proposal-request-revision",
+          to: "approve-revisions",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 7.1,
+        },
+        {
+          from: "approve-revisions",
+          to: "sign-off-proposal",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 7.1,
+        },
+        {
+          from: "approve-proposal",
+          to: "sign-off-proposal",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 9.1,
+        },
+        {
+          from: "approve-proposal",
+          to: "sign-off-proposal",
+          fromSide: "right",
+          toSide: "top",
+          delayMultiplier: 6.1,
+        },
+
+        {
+          from: "sign-off-proposal",
+          to: "generating-final-documents",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 8.1,
+        },
+        // {
+        //   from: "approve-revisions",
+        //   to: "final-documents",
+        //   fromSide: "right",
+        //   toSide: "left",
+        //   delayMultiplier: 8.1,
+        // },
+        {
+          from: "generating-final-documents",
+          to: "final-documents-delivered",
+          fromSide: "right",
+          toSide: "left",
+          delayMultiplier: 9.1,
+        },
+      ];
+
+      // Add all nodes
+      nodeDefinitions.forEach((nodeDef) => {
+        const nodeDelay = delay * nodeDef.delayMultiplier;
+        setTimeout(() => {
           this.addNodeWithCenterMaintenance({
-            id: "upload-files",
-            icon: "upload",
-            title: "Upload Files",
-            status: "PDF, jpeg, png, autocad, revit, dwg",
-            x: screenWidth,
-            y: screenHeight * 0.25,
+            id: nodeDef.id,
+            icon: nodeDef.icon,
+            title: nodeDef.title,
+            subtitle: nodeDef.subtitle,
+            status: nodeDef.status,
+            x: nodeDef.x,
+            y: nodeDef.y,
           });
-        },
-        delay + delay + delay
-      );
+        }, nodeDelay);
+      });
 
-      setTimeout(
-        () => {
-          this.addConnection("login", "upload-files", "right", "left");
-        },
-        delay + delay + delay + 10
-      ); // After upload-files is created
-
-      setTimeout(
-        () => {
-          this.addNodeWithCenterMaintenance({
-            id: "submit-files",
-            icon: "file-text",
-            title: "Request Review",
-            status: "2-4 hours to complete",
-            x: screenWidth,
-            y: screenHeight * 0.65,
-          });
-        },
-        delay + delay + delay + delay
-      );
-
-      setTimeout(
-        () => {
-          this.addConnection("upload-files", "submit-files", "right", "left");
-        },
-        delay + delay + delay + delay + 10
-      ); // After upload-files is created
-
-      setTimeout(
-        () => {
-          this.addNodeWithCenterMaintenance({
-            id: "generate-proposal",
-            icon: "file-text",
-            title: "Generating Proposal",
-            status: "24 hours to complete",
-            x: screenWidth,
-            y: screenHeight * 0.5,
-          });
-        },
-        delay + delay + delay + delay + delay
-      );
-
-      setTimeout(
-        () => {
-          this.addConnection("submit-files", "generate-proposal", "right", "left");
-        },
-        delay + delay + delay + delay + delay + 10
-      ); // After upload-files is created
-
-      setTimeout(
-        () => {
-          this.addNodeWithCenterMaintenance({
-            id: "proposal-approved",
-            icon: "check-circle",
-            title: "Approve Proposal",
-            status: "24 hours to complete",
-            x: screenWidth,
-            y: screenHeight * 0.25,
-          });
-        },
-        delay + delay + delay + delay + delay + delay + delay
-      );
-
-      setTimeout(
-        () => {
-          this.addNodeWithCenterMaintenance({
-            id: "proposal-request-revision",
-            icon: "edit-3",
-            title: "Request Revision",
-            status: "2-4 hours to complete",
-            x: screenWidth,
-            y: screenHeight * 0.65,
-          });
-        },
-        delay + delay + delay + delay + delay + delay + delay
-      );
-
-      setTimeout(
-        () => {
-          this.addConnection("generate-proposal", "proposal-approved", "right", "left");
-        },
-        delay + delay + delay + delay + delay + delay + delay + 10
-      ); // After upload-files is created
-
-      setTimeout(
-        () => {
-          this.addConnection("generate-proposal", "proposal-request-revision", "right", "left");
-        },
-        delay + delay + delay + delay + delay + delay + delay + 10
-      ); // After upload-files is created
-
-      setTimeout(
-        () => {
-          this.addNodeWithCenterMaintenance({
-            id: "approve-revisions",
-            icon: "file-text",
-            title: "Approve Revisions",
-            status: "24 hours to complete",
-            x: screenWidth,
-            y: screenHeight * 0.45,
-          });
-        },
-        delay + delay + delay + delay + delay + delay + delay + delay
-      );
-
-      setTimeout(
-        () => {
-          this.addNodeWithCenterMaintenance({
-            id: "sign-off-proposal",
-            icon: "file-text",
-            title: "Sign Off Proposal",
-            status: "2-4 hours to complete",
-            x: screenWidth,
-            y: screenHeight * 0.75,
-          });
-        },
-        delay + delay + delay + delay + delay + delay + delay + delay + delay
-      );
-
-      setTimeout(
-        () => {
-          this.addConnection("approve-revisions", "sign-off-proposal", "right", "left");
-        },
-        delay + delay + delay + delay + delay + delay + delay + delay + delay + 100
-      ); // After upload-files is created
-
-      setTimeout(
-        () => {
-          this.addConnection("proposal-request-revision", "approve-revisions", "right", "left");
-        },
-        delay + delay + delay + delay + delay + delay + delay + delay + delay + 100
-      ); // After upload-fil
-      // es is created
-
-      setTimeout(
-        () => {
-          this.addConnection("approve-revisions", "sign-off-proposal", "right", "left");
-        },
-        delay + delay + delay + delay + delay + delay + delay + delay + delay + 100
-      ); // After upload-fil
-
-      setTimeout(
-        () => {
-          this.addNodeWithCenterMaintenance({
-            id: "final-documents",
-            icon: "file-text",
-            title: "Generating Final Documents",
-            status: "24 hours to complete",
-            x: screenWidth,
-            y: screenHeight * 0.25,
-          });
-        },
-        delay + delay + delay + delay + delay + delay + delay + delay + delay + delay
-      );
-
-      setTimeout(
-        () => {
-          this.addConnection("approve-revisions", "final-documents", "right", "left");
-        },
-        delay + delay + delay + delay + delay + delay + delay + delay + delay + delay + 100
-      ); // After upload-files is created
-
-      setTimeout(
-        () => {
-          this.addNodeWithCenterMaintenance({
-            id: "final-documents-delivered",
-            icon: "file-text",
-            title: "Delivering Final Documents",
-            status: "2 minutes to complete",
-            x: screenWidth,
-            y: screenHeight * 0.25,
-          });
-        },
-        delay + delay + delay + delay + delay + delay + delay + delay + delay + delay + delay
-      );
-
-      setTimeout(
-        () => {
-          this.addConnection("final-documents", "final-documents-delivered", "right", "left");
-        },
-        delay + delay + delay + delay + delay + delay + delay + delay + delay + delay + delay + 100
-      ); // After upload-files is created
+      // Add all connections
+      connectionDefinitions.forEach((connDef) => {
+        const connDelay = delay * connDef.delayMultiplier + connectDelay;
+        setTimeout(() => {
+          this.addConnection(
+            connDef.from,
+            connDef.to,
+            connDef.fromSide || "right",
+            connDef.toSide || "left"
+          );
+        }, connDelay);
+      });
     }
 
     addNode(options: NodeOptions = {}) {
@@ -894,8 +917,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
       const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
 
       // Handle both MouseEvent and TouchEvent
-      const clientX = e instanceof TouchEvent ? (e.touches[0]?.clientX ?? 0) : e.clientX;
-      const clientY = e instanceof TouchEvent ? (e.touches[0]?.clientY ?? 0) : e.clientY;
+      // Check for TouchEvent safely (not available in SSR)
+      const isTouchEvent = typeof TouchEvent !== "undefined" && e instanceof TouchEvent;
+      const clientX =
+        isTouchEvent && "touches" in e ? (e.touches[0]?.clientX ?? 0) : (e as MouseEvent).clientX;
+      const clientY =
+        isTouchEvent && "touches" in e ? (e.touches[0]?.clientY ?? 0) : (e as MouseEvent).clientY;
 
       this.dragOffset = {
         x: clientX - rect.left,
@@ -944,11 +971,18 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
     handleCanvasMouseMove(e: MouseEvent | TouchEvent) {
       // Helper to get coordinates from either MouseEvent or TouchEvent
+      // Check for TouchEvent safely (not available in SSR)
       const getClientX = (evt: MouseEvent | TouchEvent): number => {
-        return evt instanceof TouchEvent ? (evt.touches[0]?.clientX ?? 0) : evt.clientX;
+        const isTouch = typeof TouchEvent !== "undefined" && evt instanceof TouchEvent;
+        return isTouch && "touches" in evt
+          ? (evt.touches[0]?.clientX ?? 0)
+          : (evt as MouseEvent).clientX;
       };
       const getClientY = (evt: MouseEvent | TouchEvent): number => {
-        return evt instanceof TouchEvent ? (evt.touches[0]?.clientY ?? 0) : evt.clientY;
+        const isTouch = typeof TouchEvent !== "undefined" && evt instanceof TouchEvent;
+        return isTouch && "touches" in evt
+          ? (evt.touches[0]?.clientY ?? 0)
+          : (evt as MouseEvent).clientY;
       };
 
       if (this.draggedNode) {
@@ -1013,20 +1047,22 @@ const { currentUser } = await checkAuth(Astro.cookies);
     handleCanvasMouseUp(e: MouseEvent | TouchEvent) {
       // Helper to get coordinates from either MouseEvent or TouchEvent
       const getClientX = (evt: MouseEvent | TouchEvent): number => {
-        if (evt instanceof TouchEvent) {
+        const isTouch = typeof TouchEvent !== "undefined" && evt instanceof TouchEvent;
+        if (isTouch && "touches" in evt) {
           return evt.changedTouches.length > 0
             ? (evt.changedTouches[0]?.clientX ?? 0)
             : (evt.touches[0]?.clientX ?? 0);
         }
-        return evt.clientX;
+        return (evt as MouseEvent).clientX;
       };
       const getClientY = (evt: MouseEvent | TouchEvent): number => {
-        if (evt instanceof TouchEvent) {
+        const isTouch = typeof TouchEvent !== "undefined" && evt instanceof TouchEvent;
+        if (isTouch && "touches" in evt) {
           return evt.changedTouches.length > 0
             ? (evt.changedTouches[0]?.clientY ?? 0)
             : (evt.touches[0]?.clientY ?? 0);
         }
-        return evt.clientY;
+        return (evt as MouseEvent).clientY;
       };
 
       if (this.draggedNode) {
@@ -1190,7 +1226,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
       // Check if connection should be animated (hasn't been rendered yet, or is still in animation period)
       const age = Date.now() - (connection.createdAt || 0);
-      const animationDuration = 2500; // Total animation time (1500ms draw + 1000ms for arrow)
+      const animationDuration = 500; // Total animation time (1500ms draw + connectDelay00ms for arrow)
       const shouldAnimate = !connection.animated && age < animationDuration;
 
       if (shouldAnimate) {

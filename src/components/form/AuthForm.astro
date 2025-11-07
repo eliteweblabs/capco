@@ -79,26 +79,24 @@ const { globalInputClasses } = Astro.props;
     />
   </div>
   <Button type="submit" variant="outline" size="lg" fullWidth class="mt-6"> Sign In </Button>
+  <div id="skip-to-login" class="text-center pointer-events-none">
+    <p
+      class="text-sm text-gray-600 dark:text-gray-400 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm inline-block px-6 py-3 rounded-full shadow-lg pointer-events-auto"
+    >
+      Don't have an account?
+      <a
+        href="/auth/register"
+        class="font-medium text-primary-600 underline hover:text-primary-500 ml-1"
+      >
+        Create an account
+      </a>
+    </p>
+  </div>
 </form>
 
 <ForgotPasswordModal message="Forgot Password?" {globalInputClasses} />
 <!-- </div> -->
-<div
-  id="skip-to-login"
-  class="fixed bottom-4 left-1/2 -translate-x-1/2 text-center pointer-events-none"
->
-  <p
-    class="text-sm text-gray-600 dark:text-gray-400 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm inline-block px-6 py-3 rounded-full shadow-lg pointer-events-auto"
-  >
-    Don't have an account?
-    <a
-      href="/auth/register"
-      class="font-medium text-primary-600 underline hover:text-primary-500 ml-1"
-    >
-      Create an account
-    </a>
-  </p>
-</div>
+
 <script>
   // Use singleton Supabase client to avoid multiple instances
   import { getSupabaseClient } from "../../lib/supabase-client";
@@ -106,28 +104,32 @@ const { globalInputClasses } = Astro.props;
   // Handle client-side OAuth for PKCE (code verifier must be stored in browser)
   document.addEventListener("DOMContentLoaded", async () => {
     const googleSignInButton = document.getElementById("google-signin-button");
-    
+
     if (googleSignInButton) {
       googleSignInButton.addEventListener("click", async (e) => {
         e.preventDefault();
-        
+
         console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
-        
+
         // Get singleton Supabase client (prevents multiple GoTrueClient instances)
         const supabase = getSupabaseClient();
-        
+
         if (!supabase) {
           console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
           if (window.showModal) {
-            window.showModal("error", "Configuration Error", "Supabase is not configured. Please contact support.");
+            window.showModal(
+              "error",
+              "Configuration Error",
+              "Supabase is not configured. Please contact support."
+            );
           }
           return;
         }
-        
+
         // Get the redirect URL based on current origin
         const redirectUrl = `${window.location.origin}/auth/callback`;
         console.log("[GOOGLE-SIGNIN] Redirect URL:", redirectUrl);
-        
+
         // Initiate OAuth (this will store code verifier in localStorage)
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
@@ -140,7 +142,7 @@ const { globalInputClasses } = Astro.props;
             },
           },
         });
-        
+
         if (error) {
           console.error("[GOOGLE-SIGNIN] OAuth error:", error);
           if (window.showModal) {
@@ -148,7 +150,7 @@ const { globalInputClasses } = Astro.props;
           }
           return;
         }
-        
+
         if (data?.url) {
           console.log("[GOOGLE-SIGNIN] Redirecting to OAuth provider...");
           // Redirect to Google OAuth
@@ -156,7 +158,7 @@ const { globalInputClasses } = Astro.props;
         }
       });
     }
-    
+
     // Handle email/password form submission
     const loginForm = document.querySelector('form[action="/api/auth/signin"]');
     if (loginForm) {
