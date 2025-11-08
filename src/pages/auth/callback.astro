@@ -78,8 +78,15 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
           return;
         }
 
-        // Give Supabase client a moment to initialize
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        // Give Supabase client a moment to initialize and ensure storage is ready
+        // This is critical for PKCE flow where code verifier must be accessible
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        
+        // Verify storage is available
+        if (!supabase.auth.storage) {
+          console.warn("[AUTH-CALLBACK] Storage not available, waiting longer...");
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
 
         try {
           console.log("[AUTH-CALLBACK] Starting PKCE flow...");
@@ -128,7 +135,19 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
           }
           const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
           const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
-          const codeVerifier = localStorage.getItem(codeVerifierKey);
+          
+          // Wait for code verifier to be available (with retry logic)
+          // This handles race conditions where localStorage might not be ready yet
+          let codeVerifier = localStorage.getItem(codeVerifierKey);
+          const maxRetries = 10;
+          const retryDelay = 100; // Start with 100ms
+          
+          for (let attempt = 0; attempt < maxRetries && !codeVerifier; attempt++) {
+            console.log(`[AUTH-CALLBACK] Waiting for code verifier (attempt ${attempt + 1}/${maxRetries})...`);
+            await new Promise((resolve) => setTimeout(resolve, retryDelay * (attempt + 1)));
+            codeVerifier = localStorage.getItem(codeVerifierKey);
+          }
+          
           console.log("[AUTH-CALLBACK] Code verifier key:", codeVerifierKey);
           console.log(
             "[AUTH-CALLBACK] Code verifier in localStorage:",
@@ -139,6 +158,14 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
             "[AUTH-CALLBACK] All localStorage keys:",
             Object.keys(localStorage).filter((k) => k.includes("supabase") || k.includes("sb-"))
           );
+
+          // If code verifier is still missing, wait a bit more and try one more time
+          // Sometimes the Supabase client needs more time to initialize its storage
+          if (!codeVerifier) {
+            console.warn("[AUTH-CALLBACK] Code verifier still missing, waiting additional time for Supabase storage initialization...");
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            codeVerifier = localStorage.getItem(codeVerifierKey);
+          }
 
           // Try automatic session detection first (with detectSessionInUrl: true, Supabase should handle this)
           // If that doesn't work, fall back to manual exchange
@@ -166,14 +193,39 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               // So we rely on Supabase's internal retrieval
             }
 
-            const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
-            data = exchangeResult.data;
-            exchangeError = exchangeResult.error;
+            // If code verifier is missing, provide a helpful error
+            if (!codeVerifier) {
+              console.error("[AUTH-CALLBACK] Code verifier missing after retries");
+              console.error("[AUTH-CALLBACK] This usually means:");
+              console.error("[AUTH-CALLBACK] 1. The OAuth flow was initiated from a different browser/tab");
+              console.error("[AUTH-CALLBACK] 2. localStorage was cleared between OAuth initiation and callback");
+              console.error("[AUTH-CALLBACK] 3. The Supabase client storage hasn't initialized yet");
+              
+              // Try one more time after a longer wait
+              console.log("[AUTH-CALLBACK] Attempting final retry after extended wait...");
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              codeVerifier = localStorage.getItem(codeVerifierKey);
+              
+              if (!codeVerifier) {
+                exchangeError = {
+                  message: "Code verifier not found. Please try signing in again.",
+                  status: 400,
+                } as any;
+              }
+            }
 
-            if (exchangeError && codeVerifier) {
-              console.error("[AUTH-CALLBACK] Exchange failed even with code verifier present");
-              console.error("[AUTH-CALLBACK] Code length:", code.length);
-              console.error("[AUTH-CALLBACK] Code verifier length:", codeVerifier.length);
+            if (!exchangeError) {
+              const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
+              data = exchangeResult.data;
+              exchangeError = exchangeResult.error;
+
+              // If exchange fails with code verifier present, log detailed info
+              if (exchangeError && codeVerifier) {
+                console.error("[AUTH-CALLBACK] Exchange failed even with code verifier present");
+                console.error("[AUTH-CALLBACK] Code length:", code.length);
+                console.error("[AUTH-CALLBACK] Code verifier length:", codeVerifier.length);
+                console.error("[AUTH-CALLBACK] Error:", exchangeError);
+              }
             }
           }
 
