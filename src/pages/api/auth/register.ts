@@ -13,6 +13,9 @@ import { setAuthCookies } from "../../../lib/auth-cookies";
  * - lastName: string
  * - companyName?: string
  * - role?: string (default: "Client")
+ * - phone?: string
+ * - smsAlerts?: boolean (string "true"/"false" from FormData)
+ * - mobileCarrier?: string
  *
  * Example:
  * - POST /api/auth/register { "email": "user@example.com", "password": "password123", "firstName": "John", "lastName": "Doe" }
@@ -25,6 +28,9 @@ interface RegisterData {
   lastName: string;
   companyName?: string;
   role?: string;
+  phone?: string;
+  smsAlerts?: boolean;
+  mobileCarrier?: string;
 }
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -39,6 +45,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Handle FormData (from forms)
       const formData = await request.formData();
+      const smsAlertsValue = formData.get("smsAlerts");
+      const smsAlerts =
+        smsAlertsValue === "on" || smsAlertsValue === "true" || smsAlertsValue === "true"
+          ? true
+          : false;
+
       registerData = {
         email: formData.get("email")?.toString() || "",
         password: formData.get("password")?.toString() || "",
@@ -46,6 +58,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         lastName: formData.get("lastName")?.toString() || "",
         companyName: formData.get("companyName")?.toString() || "",
         role: formData.get("role")?.toString() || "Client",
+        phone: formData.get("phone")?.toString() || undefined,
+        smsAlerts: smsAlerts || undefined,
+        mobileCarrier: smsAlerts
+          ? formData.get("mobileCarrier")?.toString() || undefined
+          : undefined,
       };
     }
 
@@ -123,21 +140,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
+    // Prepare profile data with phone and SMS settings
+    const profilePayload: any = {
+      id: authData.user.id,
+      firstName: registerData.firstName.trim(),
+      lastName: registerData.lastName.trim(),
+      companyName: registerData.companyName?.trim() || "",
+      email: registerData.email.trim(),
+      role: registerData.role || "Client",
+      phone: registerData.phone?.trim() || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Handle SMS alerts and mobile carrier
+    if (registerData.smsAlerts && registerData.mobileCarrier) {
+      const { SMS_UTILS } = await import("../../../lib/sms-utils");
+      const carrierInfo = SMS_UTILS.getCarrierInfo(registerData.mobileCarrier);
+      if (carrierInfo) {
+        profilePayload.mobileCarrier = `@${carrierInfo.gateway}`;
+      } else if (registerData.mobileCarrier.startsWith("@")) {
+        // Already a gateway domain
+        profilePayload.mobileCarrier = registerData.mobileCarrier;
+      } else {
+        profilePayload.mobileCarrier = null;
+      }
+    } else {
+      profilePayload.mobileCarrier = null;
+    }
+
     // Create user profile
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .insert([
-        {
-          id: authData.user.id,
-          firstName: registerData.firstName.trim(),
-          lastName: registerData.lastName.trim(),
-          companyName: registerData.companyName?.trim() || "",
-          email: registerData.email.trim(),
-          role: registerData.role || "Client",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ])
+      .insert([profilePayload])
       .select()
       .single();
 
