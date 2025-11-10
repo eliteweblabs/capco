@@ -314,7 +314,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         class="hidden fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-4 max-w-md"
         style="display: none;"
       >
-        <div class="flex items-center justify-between mb-3">
+        <div id="tooltip-drag-handle" class="flex items-center justify-between mb-3 cursor-move select-none">
           <h5 class="text-sm font-semibold text-gray-900 dark:text-white">
             Select value for <span
               id="tooltip-placeholder-name"
@@ -322,7 +322,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           </h5>
           <button
             id="close-tooltip-btn"
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
           >
             ×
           </button>
@@ -3830,6 +3830,139 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         if (e.key === "Enter") {
           document.getElementById("tooltip-apply-btn")?.click();
         }
+      });
+
+      // Make tooltip draggable
+      this.setupTooltipDrag();
+    }
+
+    // Setup drag functionality for tooltip
+    setupTooltipDrag() {
+      const tooltip = document.getElementById("placeholder-tooltip");
+      const dragHandle = document.getElementById("tooltip-drag-handle");
+      
+      if (!tooltip || !dragHandle) return;
+
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+      let initialX = 0;
+      let initialY = 0;
+
+      // Prevent dragging when clicking on buttons or inputs
+      const preventDrag = (e) => {
+        // Don't drag if clicking on close button or any button/input
+        if (e.target.closest("#close-tooltip-btn") || 
+            e.target.closest("button") || 
+            e.target.closest("input") ||
+            e.target.tagName === "BUTTON" ||
+            e.target.tagName === "INPUT") {
+          return true;
+        }
+        return false;
+      };
+
+      dragHandle.addEventListener("mousedown", (e) => {
+        if (preventDrag(e)) return;
+        
+        // Get current tooltip position
+        const rect = tooltip.getBoundingClientRect();
+        initialX = rect.left;
+        initialY = rect.top;
+        
+        // Get mouse position relative to viewport
+        startX = e.clientX;
+        startY = e.clientY;
+
+        isDragging = true;
+        tooltip.style.cursor = "grabbing";
+        dragHandle.style.cursor = "grabbing";
+        e.preventDefault();
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+
+        e.preventDefault();
+
+        // Calculate new position
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        let newX = initialX + deltaX;
+        let newY = initialY + deltaY;
+
+        // Get tooltip dimensions
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const maxX = window.innerWidth - tooltipRect.width;
+        const maxY = window.innerHeight - tooltipRect.height;
+
+        // Constrain to viewport
+        newX = Math.max(0, Math.min(newX, maxX));
+        newY = Math.max(0, Math.min(newY, maxY));
+
+        tooltip.style.top = `${newY}px`;
+        tooltip.style.left = `${newX}px`;
+        tooltip.style.transform = "none"; // Remove any transform
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (isDragging) {
+          isDragging = false;
+          tooltip.style.cursor = "";
+          dragHandle.style.cursor = "move";
+        }
+      });
+
+      // Touch support for mobile
+      dragHandle.addEventListener("touchstart", (e) => {
+        if (preventDrag(e)) return;
+        
+        const touch = e.touches[0];
+        
+        // Get current tooltip position
+        const rect = tooltip.getBoundingClientRect();
+        initialX = rect.left;
+        initialY = rect.top;
+        
+        // Get touch position relative to viewport
+        startX = touch.clientX;
+        startY = touch.clientY;
+
+        isDragging = true;
+        e.preventDefault();
+      });
+
+      document.addEventListener("touchmove", (e) => {
+        if (!isDragging) return;
+
+        e.preventDefault();
+
+        const touch = e.touches[0];
+        
+        // Calculate new position
+        const deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+
+        let newX = initialX + deltaX;
+        let newY = initialY + deltaY;
+
+        // Get tooltip dimensions
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const maxX = window.innerWidth - tooltipRect.width;
+        const maxY = window.innerHeight - tooltipRect.height;
+
+        // Constrain to viewport
+        newX = Math.max(0, Math.min(newX, maxX));
+        newY = Math.max(0, Math.min(newY, maxY));
+
+        tooltip.style.top = `${newY}px`;
+        tooltip.style.left = `${newX}px`;
+        tooltip.style.transform = "none";
+      });
+
+      document.addEventListener("touchend", () => {
+        isDragging = false;
       });
     }
 

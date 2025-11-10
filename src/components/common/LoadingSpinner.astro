@@ -1,10 +1,37 @@
+---
+const { size = "md", borderColor = "primary", loadingText = "Loading..." } = Astro.props;
+
+const sizeClasses = {
+  sm: "h-4 w-4",
+  md: "h-6 w-6",
+  lg: "h-8 w-8",
+};
+
+const borderClasses = {
+  sm: "border-2",
+  md: "border-4",
+  lg: "border-6",
+};
+
+const borderColorClasses = {
+  primary: "border-gray-200 border-t-primary-500",
+  secondary: "border-gray-200 border-t-secondary-500",
+  success: "border-gray-200 border-t-success-500",
+  warning: "border-gray-200 border-t-warning-500",
+  danger: "border-gray-200 border-t-danger-500",
+  info: "border-gray-200 border-t-info-500",
+};
+---
+
 <div class="flex flex-col items-center space-y-4">
   <!-- Spinning loader -->
   <div class="relative">
-    <div class="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-primary-500">
+    <div
+      class={`h-12 w-12 animate-spin rounded-full ${borderClasses[size as keyof typeof borderClasses]} ${borderColorClasses[borderColor as keyof typeof borderColorClasses]}`}
+    >
     </div>
   </div>
 
   <!-- Loading text -->
-  <p class="text-sm text-gray-600 dark:text-gray-400">Loading...</p>
+  <p class="text-sm text-gray-600 dark:text-gray-400">{loadingText}</p>
 </div>

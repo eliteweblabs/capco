@@ -38,320 +38,335 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
 
 <aside
   id="sidebar"
-  class="w-64 h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out sm:translate-x-0 shadow-sm border-r color-border color-background z-10 flex flex-col"
+  class="w-64 transition-all duration-300 ease-in-out sm:translate-x-0 shadow-sm border-r color-border color-background z-10 flex flex-col"
   aria-label="Sidebar"
 >
-  <div class="flex-1 px-3 py-4 overflow-y-auto overflow-x-hidden">
-    <ul
-      class={`space-y-2 text-xs font-medium uppercase tracking-wider ${primaryTextClasses}`}
-      id="sidebar-menu"
-    >
-      <li>
-        <a href="/dashboard" type="button" class={`${anchorClasses}`}>
-          <SimpleIcon name="dashboard" class={svgClasses} />
+  <div class="flex-1 px-3 py-4 overflow-x-hidden sticky top-16 max-h-[calc(100vh-4rem)]">
+    <div class="overflow-y-auto overflow-x-hidden h-full">
+      <ul
+        class={`space-y-2 text-xs font-medium uppercase tracking-wider ${primaryTextClasses}`}
+        id="sidebar-menu"
+      >
+        <li>
+          <a href="/dashboard" type="button" class={`${anchorClasses}`}>
+            <SimpleIcon name="dashboard" class={svgClasses} />
 
-          <span
-            data-sidebar-collapse-hide=""
-            class="ml-3 flex-1 whitespace-nowrap text-left"
-            data-sidebar-collapse-hide="">Dashboard</span
+            <span
+              data-sidebar-collapse-hide=""
+              class="ml-3 flex-1 whitespace-nowrap text-left"
+              data-sidebar-collapse-hide="">Dashboard</span
+            >
+          </a>
+        </li>
+
+        <li>
+          <a href="/admin/discussions" class={`${anchorClasses}`} data-sidebar-collapse-item="">
+            <SimpleIcon name="discussions" class={svgClasses} />
+
+            <span
+              data-sidebar-collapse-hide=""
+              class="ml-3 flex-1 whitespace-nowrap text-left"
+              data-sidebar-collapse-hide=""
+            >
+              All Discussions
+            </span>
+          </a>
+        </li>
+
+        {
+          currentRole !== "Client" && (
+            <>
+              <li>
+                <a href="/admin/calendar" class={`${anchorClasses}`} data-sidebar-collapse-item="">
+                  <SimpleIcon name="calendar" class={svgClasses} />
+
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
+                  >
+                    Calendar
+                  </span>
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="/admin/pdf-system"
+                  class={`${anchorClasses}`}
+                  data-sidebar-collapse-item=""
+                >
+                  <SimpleIcon name="adobe" class={svgClasses} />
+
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
+                  >
+                    PDF System
+                  </span>
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="/admin/pdf-certify"
+                  class={`${anchorClasses}`}
+                  data-sidebar-collapse-item=""
+                >
+                  <SimpleIcon name="certificate" class={svgClasses} />
+
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
+                  >
+                    PDF Certify
+                  </span>
+                </a>
+              </li>
+
+              <li>
+                <a href="/admin/analytics" class={`${anchorClasses}`} data-sidebar-collapse-item="">
+                  <SimpleIcon name="bar-chart-3" class={svgClasses} />
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
+                  >
+                    Analytics
+                  </span>
+                </a>
+              </li>
+
+              <li>
+                <a href="/admin/finance" class={`${anchorClasses}`} data-sidebar-collapse-item="">
+                  <SimpleIcon name="finance" class={svgClasses} />
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
+                  >
+                    Finance
+                  </span>
+                </a>
+              </li>
+
+              <AssignedProjects currentUser={currentUser} projects={projects} />
+
+              <li>
+                <a
+                  id="notification-bell"
+                  href="#"
+                  class={`${anchorClasses} hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2`}
+                  data-sidebar-collapse-item=""
+                  data-modal-target="notificationsModal"
+                  data-modal-toggle="notificationsModal"
+                  data-user-id={currentUser.id}
+                >
+                  <SimpleIcon name="bell" class="mr-2" />
+                  <span data-sidebar-collapse-hide="">View notifications</span>
+                </a>
+              </li>
+            </>
+          )
+        }
+
+        {
+          currentRole === "Admin" && (
+            <>
+              <li>
+                <a
+                  href="/admin/global-activity"
+                  class={`${anchorClasses}`}
+                  data-sidebar-collapse-item=""
+                >
+                  <SimpleIcon name="activity" class={svgClasses} />
+
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
+                  >
+                    Global Activity
+                  </span>
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="/admin/notifications"
+                  class={`${anchorClasses}`}
+                  data-sidebar-collapse-item=""
+                >
+                  <SimpleIcon name="zap" class={svgClasses} />
+                  <span
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
+                  >
+                    Send Notifications
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="/admin/users" class={`${anchorClasses}`} data-sidebar-collapse-item="">
+                  <SimpleIcon name="users" class={svgClasses} />
+
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
+                  >
+                    Users
+                  </span>
+                </a>
+              </li>
+            </>
+          )
+        }
+
+        {
+          currentRole === "Admin" && currentUser.email === "tom@tomsens.com" && (
+            <li>
+              <a href="/admin/update-test" class={`${anchorClasses}`} data-sidebar-collapse-item="">
+                <SimpleIcon name="alert" class={svgClasses} />
+
+                <span
+                  data-sidebar-collapse-hide=""
+                  class="ml-3 flex-1 whitespace-nowrap text-left"
+                  data-sidebar-collapse-hide=""
+                >
+                  Update Msg Test
+                </span>
+              </a>
+            </li>
+          )
+        }
+
+        {
+          currentRole === "Admin" && (
+            <>
+              <li>
+                <a href="/admin/calendar" class={`${anchorClasses}`} data-sidebar-collapse-item="">
+                  <SimpleIcon name="calendar" class={svgClasses} />
+
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
+                  >
+                    Calendar
+                  </span>
+                </a>
+              </li>
+            </>
+          )
+        }
+
+        <li>
+          <a
+            type="button"
+            class={`${anchorClasses}`}
+            aria-controls="dropdown-projects"
+            data-collapse-toggle="dropdown-projects"
+            data-sidebar-collapse-item=""
+            href="/project/dashboard/"
           >
-        </a>
-      </li>
+            <SimpleIcon
+              name="folder"
+              class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
+            />
 
-      <li>
-        <a href="/admin/discussions" class={`${anchorClasses}`} data-sidebar-collapse-item="">
-          <SimpleIcon name="discussions" class={svgClasses} />
+            <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide=""
+              >Projects</span
+            >
+            <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
+          </a>
 
-          <span
-            data-sidebar-collapse-hide=""
-            class="ml-3 flex-1 whitespace-nowrap text-left"
-            data-sidebar-collapse-hide=""
-          >
-            All Discussions
-          </span>
-        </a>
-      </li>
-
-      {
-        currentRole !== "Client" && (
-          <>
-            <li>
-              <a href="/admin/calendar" class={`${anchorClasses}`} data-sidebar-collapse-item="">
-                <SimpleIcon name="calendar" class={svgClasses} />
-
-                <span
-                  data-sidebar-collapse-hide=""
-                  class="ml-3 flex-1 whitespace-nowrap text-left"
-                  data-sidebar-collapse-hide=""
-                >
-                  Calendar
-                </span>
-              </a>
-            </li>
-
-            <li>
-              <a href="/admin/pdf-system" class={`${anchorClasses}`} data-sidebar-collapse-item="">
-                <SimpleIcon name="adobe" class={svgClasses} />
-
-                <span
-                  data-sidebar-collapse-hide=""
-                  class="ml-3 flex-1 whitespace-nowrap text-left"
-                  data-sidebar-collapse-hide=""
-                >
-                  PDF System
-                </span>
-              </a>
-            </li>
-
-            <li>
-              <a href="/admin/pdf-certify" class={`${anchorClasses}`} data-sidebar-collapse-item="">
-                <SimpleIcon name="certificate" class={svgClasses} />
-
-                <span
-                  data-sidebar-collapse-hide=""
-                  class="ml-3 flex-1 whitespace-nowrap text-left"
-                  data-sidebar-collapse-hide=""
-                >
-                  PDF Certify
-                </span>
-              </a>
-            </li>
-
-            <li>
-              <a href="/admin/analytics" class={`${anchorClasses}`} data-sidebar-collapse-item="">
-                <SimpleIcon name="bar-chart-3" class={svgClasses} />
-                <span
-                  data-sidebar-collapse-hide=""
-                  class="ml-3 flex-1 whitespace-nowrap text-left"
-                  data-sidebar-collapse-hide=""
-                >
-                  Analytics
-                </span>
-              </a>
-            </li>
-
-            <li>
-              <a href="/admin/finance" class={`${anchorClasses}`} data-sidebar-collapse-item="">
-                <SimpleIcon name="finance" class={svgClasses} />
-                <span
-                  data-sidebar-collapse-hide=""
-                  class="ml-3 flex-1 whitespace-nowrap text-left"
-                  data-sidebar-collapse-hide=""
-                >
-                  Finance
-                </span>
-              </a>
-            </li>
-
-            <AssignedProjects currentUser={currentUser} projects={projects} />
-
+          <ul id="dropdown-projects" class="hidden space-y-2 py-2">
             <li>
               <a
-                id="notification-bell"
-                href="#"
-                class={`${anchorClasses} hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2`}
-                data-sidebar-collapse-item=""
-                data-modal-target="notificationsModal"
-                data-modal-toggle="notificationsModal"
-                data-user-id={currentUser.id}
-              >
-                <SimpleIcon name="bell" class="mr-2" />
-                <span data-sidebar-collapse-hide="">View notifications</span>
-              </a>
-            </li>
-          </>
-        )
-      }
-
-      {
-        currentRole === "Admin" && (
-          <>
-            <li>
-              <a
-                href="/admin/global-activity"
+                href="/project/dashboard/"
                 class={`${anchorClasses}`}
-                data-sidebar-collapse-item=""
+                data-sidebar-collapse-subitem="">Dashboard</a
               >
-                <SimpleIcon name="activity" class={svgClasses} />
+            </li>
+            <li>
+              <a href="/project/new" class={`${anchorClasses}`} data-sidebar-collapse-subitem=""
+                >New</a
+              >
+            </li>
+            <li>
+              <a
+                href="/project/proposals"
+                class={`${anchorClasses}`}
+                data-sidebar-collapse-subitem="">Proposals</a
+              >
+            </li>
+          </ul>
+        </li>
 
-                <span
-                  data-sidebar-collapse-hide=""
-                  class="ml-3 flex-1 whitespace-nowrap text-left"
-                  data-sidebar-collapse-hide=""
-                >
-                  Global Activity
-                </span>
-              </a>
+        <li>
+          <a
+            type="button"
+            class={`${anchorClasses}`}
+            aria-controls="dropdown-tests"
+            data-collapse-toggle="dropdown-tests"
+            data-sidebar-collapse-item=""
+            href="#"
+          >
+            <SimpleIcon
+              name="folder"
+              class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
+            />
+
+            <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide=""
+              >Tests</span
+            >
+            <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
+          </a>
+
+          <ul id="dropdown-tests" class="hidden space-y-2 py-2">
+            <li>
+              <a
+                href="/tests/cal-booking/"
+                class={`${anchorClasses}`}
+                data-sidebar-collapse-subitem="">Cal.com Booking</a
+              >
+            </li>
+            <li>
+              <a
+                href="/tests/push-notifications/"
+                class={`${anchorClasses}`}
+                data-sidebar-collapse-subitem="">Push Notifications</a
+              >
+            </li>
+            <li>
+              <a
+                href="/tests/vapi-booking/"
+                class={`${anchorClasses}`}
+                data-sidebar-collapse-subitem="">VAPI Booking</a
+              >
             </li>
 
             <li>
               <a
-                href="/admin/notifications"
+                href="/tests/google-signin/"
                 class={`${anchorClasses}`}
-                data-sidebar-collapse-item=""
+                data-sidebar-collapse-subitem="">Google Sign-In</a
               >
-                <SimpleIcon name="zap" class={svgClasses} />
-                <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide="">
-                  Send Notifications
-                </span>
-              </a>
             </li>
-            <li>
-              <a href="/admin/users" class={`${anchorClasses}`} data-sidebar-collapse-item="">
-                <SimpleIcon name="users" class={svgClasses} />
-
-                <span
-                  data-sidebar-collapse-hide=""
-                  class="ml-3 flex-1 whitespace-nowrap text-left"
-                  data-sidebar-collapse-hide=""
-                >
-                  Users
-                </span>
-              </a>
-            </li>
-          </>
-        )
-      }
-
-      {
-        currentRole === "Admin" && currentUser.email === "tom@tomsens.com" && (
-          <li>
-            <a href="/admin/update-test" class={`${anchorClasses}`} data-sidebar-collapse-item="">
-              <SimpleIcon name="alert" class={svgClasses} />
-
-              <span
-                data-sidebar-collapse-hide=""
-                class="ml-3 flex-1 whitespace-nowrap text-left"
-                data-sidebar-collapse-hide=""
-              >
-                Update Msg Test
-              </span>
-            </a>
-          </li>
-        )
-      }
-
-      {
-        currentRole === "Admin" && (
-          <>
-            <li>
-              <a href="/admin/calendar" class={`${anchorClasses}`} data-sidebar-collapse-item="">
-                <SimpleIcon name="calendar" class={svgClasses} />
-
-                <span
-                  data-sidebar-collapse-hide=""
-                  class="ml-3 flex-1 whitespace-nowrap text-left"
-                  data-sidebar-collapse-hide=""
-                >
-                  Calendar
-                </span>
-              </a>
-            </li>
-          </>
-        )
-      }
-
-      <li>
-        <a
-          type="button"
-          class={`${anchorClasses}`}
-          aria-controls="dropdown-projects"
-          data-collapse-toggle="dropdown-projects"
-          data-sidebar-collapse-item=""
-          href="/project/dashboard/"
-        >
-          <SimpleIcon
-            name="folder"
-            class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
-          />
-
-          <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide=""
-            >Projects</span
-          >
-          <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
-        </a>
-
-        <ul id="dropdown-projects" class="hidden space-y-2 py-2">
-          <li>
-            <a
-              href="/project/dashboard/"
-              class={`${anchorClasses}`}
-              data-sidebar-collapse-subitem="">Dashboard</a
-            >
-          </li>
-          <li>
-            <a href="/project/new" class={`${anchorClasses}`} data-sidebar-collapse-subitem=""
-              >New</a
-            >
-          </li>
-          <li>
-            <a href="/project/proposals" class={`${anchorClasses}`} data-sidebar-collapse-subitem=""
-              >Proposals</a
-            >
-          </li>
-        </ul>
-      </li>
-
-      <li>
-        <a
-          type="button"
-          class={`${anchorClasses}`}
-          aria-controls="dropdown-tests"
-          data-collapse-toggle="dropdown-tests"
-          data-sidebar-collapse-item=""
-          href="#"
-        >
-          <SimpleIcon
-            name="folder"
-            class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
-          />
-
-          <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide=""
-            >Tests</span
-          >
-          <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
-        </a>
-
-        <ul id="dropdown-tests" class="hidden space-y-2 py-2">
-          <li>
-            <a
-              href="/tests/cal-booking/"
-              class={`${anchorClasses}`}
-              data-sidebar-collapse-subitem="">Cal.com Booking</a
-            >
-          </li>
-          <li>
-            <a
-              href="/tests/push-notifications/"
-              class={`${anchorClasses}`}
-              data-sidebar-collapse-subitem="">Push Notifications</a
-            >
-          </li>
-          <li>
-            <a
-              href="/tests/vapi-booking/"
-              class={`${anchorClasses}`}
-              data-sidebar-collapse-subitem="">VAPI Booking</a
-            >
-          </li>
-
-          <li>
-            <a
-              href="/tests/google-signin/"
-              class={`${anchorClasses}`}
-              data-sidebar-collapse-subitem="">Google Sign-In</a
-            >
-          </li>
-        </ul>
-      </li>
-      <li data-sidebar-collapse-hide="" id="online-count">0 online</li>
-    </ul>
-    <div data-sidebar-collapse-hide="">
-      <!-- <iframe
+          </ul>
+        </li>
+        <li data-sidebar-collapse-hide="" id="online-count">0 online</li>
+      </ul>
+      <div data-sidebar-collapse-hide="">
+        <!-- <iframe
         src="https://campfire-production-8c1a.up.railway.app/rooms/3"
         width="100%"
         height="100%"></iframe> -->
-      <!-- <HttpChatWidget {currentUser} {currentRole} {globalInputClasses} /> -->
+        <!-- <HttpChatWidget {currentUser} {currentRole} {globalInputClasses} /> -->
+      </div>
     </div>
   </div>
 </aside>
