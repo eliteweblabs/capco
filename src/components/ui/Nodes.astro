@@ -430,20 +430,32 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
       const screenWidth = window.innerWidth || 0;
       const screenHeight = window.innerHeight || 0;
-      const connectDelay = 100;
+      const CONNECTION_DELAY = 100; // Constant delay after node creation before adding connection
 
-      // Node definitions with their timing and positioning
-      const nodeDefinitions: Array<{
-        id: string;
-        icon: string;
-        title: string;
-        subtitle?: string;
-        status: string;
-        x: number;
-        y: number;
-        delayMultiplier: number; // How many delays to wait before adding this node
-      }> = [
+      // Unified array containing both nodes and connections
+      const workflowData: Array<
+        | {
+            type: "node";
+            id: string;
+            icon: string;
+            title: string;
+            subtitle?: string;
+            status: string;
+            x: number;
+            y: number;
+            delayMultiplier: number;
+          }
+        | {
+            type: "connection";
+            from: string;
+            to: string;
+            fromSide?: string;
+            toSide?: string;
+          }
+      > = [
+        // Nodes
         {
+          type: "node",
           id: "create-account",
           icon: "user",
           title: "Create Account",
@@ -454,6 +466,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           delayMultiplier: 1,
         },
         {
+          type: "node",
           id: "login",
           icon: "log-in",
           title: "Login",
@@ -464,6 +477,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
           delayMultiplier: 2,
         },
         {
+          type: "connection",
+          from: "create-account",
+          to: "login",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
           id: "upload-files",
           icon: "upload",
           title: "Upload Files",
@@ -473,43 +494,106 @@ const { currentUser } = await checkAuth(Astro.cookies);
           delayMultiplier: 3,
         },
         {
+          type: "connection",
+          from: "login",
+          to: "upload-files",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "connection",
+          from: "upload-files",
+          to: "submit-files",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
+          id: "submit-files",
+          icon: "file-text",
+          title: "Submit Files",
+          status: "",
+          x: screenWidth,
+          y: screenHeight * 0.65,
+          delayMultiplier: 4,
+        },
+        {
+          type: "node",
           id: "request-review",
           icon: "file-text",
           title: "Request Review",
           status: "2-4 hours to complete",
           x: screenWidth,
           y: screenHeight * 0.65,
-          delayMultiplier: 4,
+          delayMultiplier: 5,
         },
         {
+          type: "connection",
+          from: "submit-files",
+          to: "generate-proposal",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
           id: "generating-proposal",
           icon: "file-text",
           title: "Generating Proposal",
           status: "24 hours to complete",
           x: screenWidth,
           y: screenHeight * 0.5,
-          delayMultiplier: 5,
+          delayMultiplier: 6,
         },
-
         {
+          type: "connection",
+          from: "generate-proposal",
+          to: "approve-proposal",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "connection",
+          from: "generate-proposal",
+          to: "proposal-request-revision",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
           id: "request-revision",
           icon: "edit-3",
           title: "Request Revision",
           status: "2-4 hours to complete",
           x: screenWidth,
           y: screenHeight * 0.25,
-          delayMultiplier: 6,
+          delayMultiplier: 7,
         },
         {
+          type: "node",
           id: "approve-revisions",
           icon: "file-text",
           title: "Approve Revisions",
           status: "24 hours to complete",
           x: screenWidth,
           y: screenHeight * 0.25,
-          delayMultiplier: 7,
+          delayMultiplier: 8,
         },
         {
+          type: "connection",
+          from: "proposal-request-revision",
+          to: "approve-revisions",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "connection",
+          from: "approve-revisions",
+          to: "sign-off-proposal",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
           id: "approve-proposal",
           icon: "check-circle",
           title: "Approve Proposal",
@@ -519,6 +603,15 @@ const { currentUser } = await checkAuth(Astro.cookies);
           delayMultiplier: 8.5,
         },
         {
+          type: "connection",
+          from: "approve-proposal",
+          to: "sign-off-proposal",
+          fromSide: "right",
+          toSide: "left",
+        },
+
+        {
+          type: "node",
           id: "sign-off-proposal",
           icon: "file-text",
           title: "Sign Off Proposal",
@@ -528,6 +621,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
           delayMultiplier: 10,
         },
         {
+          type: "connection",
+          from: "sign-off-proposal",
+          to: "generating-final-documents",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
           id: "generating-final-documents",
           icon: "file-text",
           title: "Generating Final Documents",
@@ -537,6 +638,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
           delayMultiplier: 11,
         },
         {
+          type: "connection",
+          from: "generating-final-documents",
+          to: "final-documents-delivered",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
           id: "delivering-final-documents",
           icon: "file-text",
           title: "Delivering Final Documents",
@@ -547,135 +656,46 @@ const { currentUser } = await checkAuth(Astro.cookies);
         },
       ];
 
-      // Connection definitions
-      const connectionDefinitions: Array<{
-        from: string;
-        to: string;
-        fromSide?: string;
-        toSide?: string;
-        delayMultiplier: number; // How many delays to wait before adding this connection
-      }> = [
-        {
-          from: "create-account",
-          to: "login",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 2.2, // After login is created (2 delays + 200ms)
-        },
-        {
-          from: "login",
-          to: "upload-files",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 3.1, // After upload-files is created
-        },
-        {
-          from: "upload-files",
-          to: "submit-files",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 4.1,
-        },
-        {
-          from: "submit-files",
-          to: "generate-proposal",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 5.1,
-        },
-        {
-          from: "generate-proposal",
-          to: "approve-proposal",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 6.1,
-        },
-        {
-          from: "generate-proposal",
-          to: "proposal-request-revision",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 6.1,
-        },
-        {
-          from: "proposal-request-revision",
-          to: "approve-revisions",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 7.1,
-        },
-        {
-          from: "approve-revisions",
-          to: "sign-off-proposal",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 7.1,
-        },
-        {
-          from: "approve-proposal",
-          to: "sign-off-proposal",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 9.1,
-        },
-        {
-          from: "approve-proposal",
-          to: "sign-off-proposal",
-          fromSide: "right",
-          toSide: "top",
-          delayMultiplier: 6.1,
-        },
-
-        {
-          from: "sign-off-proposal",
-          to: "generating-final-documents",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 8.1,
-        },
-        // {
-        //   from: "approve-revisions",
-        //   to: "final-documents",
-        //   fromSide: "right",
-        //   toSide: "left",
-        //   delayMultiplier: 8.1,
-        // },
-        {
-          from: "generating-final-documents",
-          to: "final-documents-delivered",
-          fromSide: "right",
-          toSide: "left",
-          delayMultiplier: 9.1,
-        },
-      ];
-
-      // Add all nodes
-      nodeDefinitions.forEach((nodeDef) => {
-        const nodeDelay = delay * nodeDef.delayMultiplier;
-        setTimeout(() => {
-          this.addNodeWithCenterMaintenance({
-            id: nodeDef.id,
-            icon: nodeDef.icon,
-            title: nodeDef.title,
-            subtitle: nodeDef.subtitle,
-            status: nodeDef.status,
-            x: nodeDef.x,
-            y: nodeDef.y,
-          });
-        }, nodeDelay);
+      // Build a map of node delay multipliers for connection scheduling
+      const nodeDelayMap = new Map<string, number>();
+      workflowData.forEach((item) => {
+        if (item.type === "node") {
+          nodeDelayMap.set(item.id, item.delayMultiplier);
+        }
       });
 
-      // Add all connections
-      connectionDefinitions.forEach((connDef) => {
-        const connDelay = delay * connDef.delayMultiplier + connectDelay;
-        setTimeout(() => {
-          this.addConnection(
-            connDef.from,
-            connDef.to,
-            connDef.fromSide || "right",
-            connDef.toSide || "left"
-          );
-        }, connDelay);
+      // Process all items in the unified array
+      workflowData.forEach((item) => {
+        if (item.type === "node") {
+          const nodeDelay = delay * item.delayMultiplier;
+          setTimeout(() => {
+            this.addNodeWithCenterMaintenance({
+              id: item.id,
+              icon: item.icon,
+              title: item.title,
+              subtitle: item.subtitle,
+              status: item.status,
+              x: item.x,
+              y: item.y,
+            });
+          }, nodeDelay);
+        } else {
+          // Connection - add it after the "to" node is created + constant delay
+          const toNodeMultiplier = nodeDelayMap.get(item.to);
+          if (toNodeMultiplier !== undefined) {
+            const toNodeDelay = delay * toNodeMultiplier;
+            const connectionDelay = toNodeDelay + CONNECTION_DELAY;
+
+            setTimeout(() => {
+              this.addConnection(
+                item.from,
+                item.to,
+                item.fromSide || "right",
+                item.toSide || "left"
+              );
+            }, connectionDelay);
+          }
+        }
       });
     }
 
