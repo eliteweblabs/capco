@@ -81,18 +81,8 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
         // This is critical for PKCE flow where code verifier must be accessible
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Verify storage is available
-        if (!supabase.auth.storage) {
-          console.warn("[AUTH-CALLBACK] Storage not available, waiting longer...");
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        }
-
         try {
           console.log("[AUTH-CALLBACK] Starting PKCE flow...");
-          console.log(
-            "[AUTH-CALLBACK] Supabase client initialized with storage:",
-            supabase.auth.storage ? "available" : "missing"
-          );
 
           // Get the code from URL parameters
           const urlParams = new URLSearchParams(window.location.search);
@@ -262,8 +252,8 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
           }
 
           console.log("[AUTH-CALLBACK] Session created successfully:", {
-            userId: data.user?.id,
-            email: data.user?.email,
+            userId: data.session.user?.id,
+            email: data.session.user?.email,
           });
 
           // Send session tokens to server to set cookies
