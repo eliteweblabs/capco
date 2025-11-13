@@ -2,7 +2,10 @@
 // Toast Notification System -
 ---
 
-<div id="toast-container" class="fixed top-4 left-4 right-4 z-50 space-y-2 max-w-sm mx-auto sm:top-4 sm:right-4 sm:left-auto sm:mx-0 sm:max-w-md">
+<div
+  id="toast-container"
+  class="fixed top-4 left-4 right-4 z-50 space-y-2 max-w-sm mx-auto sm:top-4 sm:right-4 sm:left-auto sm:mx-0 sm:max-w-md"
+>
 </div>
 
 <style>
@@ -215,18 +218,18 @@
         // Handle both toast and modal elements
         const toastElement = document.getElementById(`toast-${id}`);
         const modalElement = document.getElementById(`modal-${id}`);
-        
+
         if (toastElement) {
           toastElement.classList.add("toast-slide-out");
           setTimeout(() => toastElement.remove(), 300);
         }
-        
+
         if (modalElement) {
           // Remove modal backdrop and element
           const backdrop = document.getElementById(`modal-backdrop-${id}`);
           if (backdrop) backdrop.remove();
           modalElement.remove();
-          
+
           // Unlock body scroll if needed
           if (window.unlockBodyScroll) {
             window.unlockBodyScroll();
@@ -240,22 +243,22 @@
           const toastElement = document.getElementById(`toast-${notificationId}`);
           const modalElement = document.getElementById(`modal-${notificationId}`);
           const backdrop = document.getElementById(`modal-backdrop-${notificationId}`);
-          
+
           if (toastElement) {
             toastElement.classList.add("toast-slide-out");
             setTimeout(() => toastElement.remove(), 300);
           }
-          
+
           if (modalElement) {
             if (backdrop) backdrop.remove();
             modalElement.remove();
           }
         });
-        
+
         this.notifications.clear();
         this.clearAllRedirectTimers();
         this.container.innerHTML = "";
-        
+
         // Unlock body scroll
         if (window.unlockBodyScroll) {
           window.unlockBodyScroll();
@@ -314,7 +317,7 @@
         const toastElement = document.getElementById(`toast-${id}`);
         const modalElement = document.getElementById(`modal-${id}`);
         const element = toastElement || modalElement;
-        
+
         if (!element) {
           console.log("🔔 [TOAST] No element found for ID:", id);
           return;
@@ -390,7 +393,7 @@
       if (notification.modal === true) {
         return await this.renderModal(notification);
       }
-      
+
       // Otherwise render as toast (default behavior)
       return await this.renderToast(notification);
     }
@@ -582,7 +585,8 @@
       // Create modal element
       const modalElement = document.createElement("div");
       modalElement.id = `modal-${notification.id}`;
-      modalElement.className = "fixed inset-0 z-50 flex items-center justify-center p-4";
+      modalElement.className =
+        "fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm";
       modalElement.setAttribute("role", "dialog");
       modalElement.setAttribute("aria-modal", "true");
       modalElement.setAttribute("aria-labelledby", `modal-title-${notification.id}`);
@@ -623,7 +627,11 @@
       document.body.appendChild(modalElement);
 
       // Handle auto-hide for modals
-      if (!notification.redirect && notification.duration !== undefined && notification.duration > 0) {
+      if (
+        !notification.redirect &&
+        notification.duration !== undefined &&
+        notification.duration > 0
+      ) {
         setTimeout(() => {
           const element = document.getElementById(`modal-${notification.id}`);
           if (element) {
