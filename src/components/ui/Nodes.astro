@@ -500,13 +500,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           fromSide: "right",
           toSide: "left",
         },
-        {
-          type: "connection",
-          from: "upload-files",
-          to: "submit-files",
-          fromSide: "right",
-          toSide: "left",
-        },
+
         {
           type: "node",
           id: "submit-files",
@@ -518,19 +512,26 @@ const { currentUser } = await checkAuth(Astro.cookies);
           delayMultiplier: 4,
         },
         {
+          type: "connection",
+          from: "upload-files",
+          to: "submit-files",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
           type: "node",
           id: "request-review",
           icon: "file-text",
           title: "Request Review",
           status: "2-4 hours to complete",
           x: screenWidth,
-          y: screenHeight * 0.65,
+          y: screenHeight * 0.5,
           delayMultiplier: 5,
         },
         {
           type: "connection",
           from: "submit-files",
-          to: "generate-proposal",
+          to: "request-review",
           fromSide: "right",
           toSide: "left",
         },
@@ -546,34 +547,36 @@ const { currentUser } = await checkAuth(Astro.cookies);
         },
         {
           type: "connection",
-          from: "generate-proposal",
-          to: "approve-proposal",
+          from: "request-review",
+          to: "generating-proposal",
           fromSide: "right",
           toSide: "left",
+        },
+
+        {
+          type: "node",
+          id: "proposal-ready-for-review",
+          icon: "file-text",
+          title: "Proposal Ready for Review",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.5,
+          delayMultiplier: 7,
         },
         {
           type: "connection",
-          from: "generate-proposal",
-          to: "proposal-request-revision",
+          from: "request-review",
+          to: "proposal-ready-for-review",
           fromSide: "right",
           toSide: "left",
         },
+
         {
           type: "node",
           id: "request-revision",
           icon: "edit-3",
           title: "Request Revision",
           status: "2-4 hours to complete",
-          x: screenWidth,
-          y: screenHeight * 0.25,
-          delayMultiplier: 7,
-        },
-        {
-          type: "node",
-          id: "approve-revisions",
-          icon: "file-text",
-          title: "Approve Revisions",
-          status: "24 hours to complete",
           x: screenWidth,
           y: screenHeight * 0.25,
           delayMultiplier: 8,
@@ -585,6 +588,17 @@ const { currentUser } = await checkAuth(Astro.cookies);
           fromSide: "right",
           toSide: "left",
         },
+        {
+          type: "node",
+          id: "approve-revisions",
+          icon: "file-text",
+          title: "Approve Revisions",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.25,
+          delayMultiplier: 9,
+        },
+
         {
           type: "connection",
           from: "approve-revisions",
@@ -600,7 +614,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           status: "24 hours to complete",
           x: screenWidth,
           y: screenHeight * 0.5,
-          delayMultiplier: 8.5,
+          delayMultiplier: 10,
         },
         {
           type: "connection",
@@ -618,15 +632,9 @@ const { currentUser } = await checkAuth(Astro.cookies);
           status: "2-4 hours to complete",
           x: screenWidth,
           y: screenHeight * 0.75,
-          delayMultiplier: 10,
+          delayMultiplier: 11,
         },
-        {
-          type: "connection",
-          from: "sign-off-proposal",
-          to: "generating-final-documents",
-          fromSide: "right",
-          toSide: "left",
-        },
+
         {
           type: "node",
           id: "generating-final-documents",
@@ -635,15 +643,16 @@ const { currentUser } = await checkAuth(Astro.cookies);
           status: "24 hours to complete",
           x: screenWidth,
           y: screenHeight * 0.25,
-          delayMultiplier: 11,
+          delayMultiplier: 12,
         },
         {
           type: "connection",
-          from: "generating-final-documents",
-          to: "final-documents-delivered",
+          from: "sign-off-proposal",
+          to: "generating-final-documents",
           fromSide: "right",
           toSide: "left",
         },
+
         {
           type: "node",
           id: "delivering-final-documents",
@@ -653,6 +662,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
           x: screenWidth,
           y: screenHeight * 0.65,
           delayMultiplier: 13,
+        },
+        {
+          type: "connection",
+          from: "generating-final-documents",
+          to: "delivering-final-documents",
+          fromSide: "right",
+          toSide: "left",
         },
       ];
 
