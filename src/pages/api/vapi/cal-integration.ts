@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (action) {
       case "get_account_info":
-        return await handleGetAccountInfo();
+        return await handlegetStaffSchedule();
 
       case "get_users":
         return await handleGetUsers();
@@ -737,7 +737,7 @@ async function handleGetEventTypes() {
 }
 
 // Get account info with real Cal.com availability
-async function handleGetAccountInfo() {
+async function handlegetStaffSchedule() {
   try {
     console.log("📊 [CAL-INTEGRATION] Getting real account info from Cal.com...");
 
@@ -751,7 +751,7 @@ async function handleGetAccountInfo() {
     if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
       // It's a numeric ID
       eventTypeResult = await calcomDb.query(
-        `SELECT id, length, title, "userId", slug FROM "EventType" WHERE id = $1`,
+        `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit" FROM "EventType" WHERE id = $1`,
         [VAPI_EVENT_TYPE_ID]
       );
     } else {
@@ -764,7 +764,7 @@ async function handleGetAccountInfo() {
       // Try both PascalCase and snake_case table names
       try {
         eventTypeResult = await calcomDb.query(
-          `SELECT id, length, title, "userId", slug 
+          `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit"
            FROM "EventType" 
            WHERE slug = $1 
               OR slug = $2 
@@ -781,7 +781,7 @@ async function handleGetAccountInfo() {
       } catch (error: any) {
         // Try lowercase table
         eventTypeResult = await calcomDb.query(
-          `SELECT id, length, title, user_id as "userId", slug 
+          `SELECT id, length, title, user_id as "userId", slug, minimum_booking_notice as "minimumBookingNotice", minimum_booking_notice_unit as "minimumBookingNoticeUnit"
            FROM event_types 
            WHERE slug = $1 
               OR slug = $2 
@@ -805,6 +805,18 @@ async function handleGetAccountInfo() {
     const eventType = eventTypeResult.rows[0];
     const userId = eventType.userId;
     const eventLength = eventType.length || 30; // Default to 30 minutes
+
+    // Get minimum booking notice from event type (defaults to 120 minutes if not set)
+    const minimumBookingNotice = eventType.minimumBookingNotice || 120;
+    const minimumBookingNoticeUnit = eventType.minimumBookingNoticeUnit || "minute";
+
+    // Convert to minutes for calculation
+    const minimumBookingNoticeMinutes =
+      minimumBookingNoticeUnit === "hour" ? minimumBookingNotice * 60 : minimumBookingNotice;
+
+    console.log(
+      `⏰ [CAL-INTEGRATION] Minimum booking notice: ${minimumBookingNotice} ${minimumBookingNoticeUnit} (${minimumBookingNoticeMinutes} minutes)`
+    );
 
     // Get username if available for better availability lookup
     let username: string | undefined;
@@ -903,15 +915,21 @@ async function handleGetAccountInfo() {
 
           // Only include future slots
           if (slotTime > now) {
-            const slotEnd = new Date(slotTime.getTime() + eventLength * 60 * 1000);
+            // Check minimum booking notice - slot must be at least X minutes in the future
+            const timeUntilSlot = slotTime.getTime() - now.getTime();
+            const minutesUntilSlot = timeUntilSlot / (1000 * 60);
 
-            // Don't exceed working hours end time
-            const slotEndMinutes = slotEnd.getUTCHours() * 60 + slotEnd.getUTCMinutes();
-            if (slotEndMinutes <= endMinutes) {
-              // Check if slot is available (not overlapping with existing bookings)
-              if (isSlotAvailable(slotTime, slotEnd)) {
-                slots.push(slotTime.toISOString());
-                if (slots.length >= 10) break;
+            if (minutesUntilSlot >= minimumBookingNoticeMinutes) {
+              const slotEnd = new Date(slotTime.getTime() + eventLength * 60 * 1000);
+
+              // Don't exceed working hours end time
+              const slotEndMinutes = slotEnd.getUTCHours() * 60 + slotEnd.getUTCMinutes();
+              if (slotEndMinutes <= endMinutes) {
+                // Check if slot is available (not overlapping with existing bookings)
+                if (isSlotAvailable(slotTime, slotEnd)) {
+                  slots.push(slotTime.toISOString());
+                  if (slots.length >= 10) break;
+                }
               }
             }
           }
@@ -1012,7 +1030,7 @@ async function handleGetAvailability(params: any) {
     if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
       // It's a numeric ID
       eventTypeResult = await calcomDb.query(
-        `SELECT id, length, title, "userId", slug FROM "EventType" WHERE id = $1`,
+        `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit" FROM "EventType" WHERE id = $1`,
         [VAPI_EVENT_TYPE_ID]
       );
     } else {
@@ -1025,7 +1043,7 @@ async function handleGetAvailability(params: any) {
       // Try both PascalCase and snake_case table names
       try {
         eventTypeResult = await calcomDb.query(
-          `SELECT id, length, title, "userId", slug 
+          `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit"
            FROM "EventType" 
            WHERE slug = $1 
               OR slug = $2 
@@ -1042,7 +1060,7 @@ async function handleGetAvailability(params: any) {
       } catch (error: any) {
         // Try lowercase table
         eventTypeResult = await calcomDb.query(
-          `SELECT id, length, title, user_id as "userId", slug 
+          `SELECT id, length, title, user_id as "userId", slug, minimum_booking_notice as "minimumBookingNotice", minimum_booking_notice_unit as "minimumBookingNoticeUnit"
            FROM event_types 
            WHERE slug = $1 
               OR slug = $2 
@@ -1066,6 +1084,18 @@ async function handleGetAvailability(params: any) {
     const eventType = eventTypeResult.rows[0];
     const userId = eventType.userId;
     const eventLength = eventType.length || 30; // Default to 30 minutes
+
+    // Get minimum booking notice from event type (defaults to 120 minutes if not set)
+    const minimumBookingNotice = eventType.minimumBookingNotice || 120;
+    const minimumBookingNoticeUnit = eventType.minimumBookingNoticeUnit || "minute";
+
+    // Convert to minutes for calculation
+    const minimumBookingNoticeMinutes =
+      minimumBookingNoticeUnit === "hour" ? minimumBookingNotice * 60 : minimumBookingNotice;
+
+    console.log(
+      `⏰ [CAL-INTEGRATION] Minimum booking notice: ${minimumBookingNotice} ${minimumBookingNoticeUnit} (${minimumBookingNoticeMinutes} minutes)`
+    );
 
     // Get username if available for better availability lookup
     let username: string | undefined;
@@ -1167,14 +1197,20 @@ async function handleGetAvailability(params: any) {
 
           // Only include future slots
           if (slot > now) {
-            const slotEnd = new Date(slot.getTime() + eventLength * 60 * 1000);
+            // Check minimum booking notice - slot must be at least X minutes in the future
+            const timeUntilSlot = slot.getTime() - now.getTime();
+            const minutesUntilSlot = timeUntilSlot / (1000 * 60);
 
-            // Don't exceed working hours end time
-            const slotEndMinutes = slotEnd.getUTCHours() * 60 + slotEnd.getUTCMinutes();
-            if (slotEndMinutes <= endMinutes) {
-              // Check if slot is available (not overlapping with existing bookings)
-              if (isSlotAvailable(slot, slotEnd)) {
-                slots.push(slot.toISOString());
+            if (minutesUntilSlot >= minimumBookingNoticeMinutes) {
+              const slotEnd = new Date(slot.getTime() + eventLength * 60 * 1000);
+
+              // Don't exceed working hours end time
+              const slotEndMinutes = slotEnd.getUTCHours() * 60 + slotEnd.getUTCMinutes();
+              if (slotEndMinutes <= endMinutes) {
+                // Check if slot is available (not overlapping with existing bookings)
+                if (isSlotAvailable(slot, slotEnd)) {
+                  slots.push(slot.toISOString());
+                }
               }
             }
           }
@@ -1653,7 +1689,7 @@ async function handleCreateBooking(params: any) {
     if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
       // It's a numeric ID
       eventTypeResult = await calcomDb.query(
-        `SELECT id, length, title, "userId", slug FROM "EventType" WHERE id = $1`,
+        `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit" FROM "EventType" WHERE id = $1`,
         [VAPI_EVENT_TYPE_ID]
       );
     } else {
@@ -1666,7 +1702,7 @@ async function handleCreateBooking(params: any) {
       // Try both PascalCase and snake_case table names
       try {
         eventTypeResult = await calcomDb.query(
-          `SELECT id, length, title, "userId", slug 
+          `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit"
            FROM "EventType" 
            WHERE slug = $1 
               OR slug = $2 
@@ -1683,7 +1719,7 @@ async function handleCreateBooking(params: any) {
       } catch (error: any) {
         // Try lowercase table
         eventTypeResult = await calcomDb.query(
-          `SELECT id, length, title, user_id as "userId", slug 
+          `SELECT id, length, title, user_id as "userId", slug, minimum_booking_notice as "minimumBookingNotice", minimum_booking_notice_unit as "minimumBookingNoticeUnit"
            FROM event_types 
            WHERE slug = $1 
               OR slug = $2 

@@ -13,7 +13,7 @@ async function createTool() {
       type: "function",
       async: false,
       function: {
-        name: "getAccountInfo",
+        name: "getStaffSchedule",
         description: "Get Cal.com account information",
         parameters: {
           type: "object",

@@ -1,0 +1,593 @@
+/**
+ * Vapi.ai Assistant Configuration for Cal.com Integration - The Barber's Edge
+ *
+ * This script configures a Vapi.ai assistant to handle Cal.com operations
+ * including reading/writing appointments, users, and availability for multiple barbers
+ *
+ * TEMPLATE VARIABLES:
+ * - {{company.name}} - Company name (set via assistantOverrides.variableValues)
+ * - {{assistant.name}} - Assistant name (set via assistantOverrides.variableValues)
+ * - {{customer.number}} - Customer phone number (set via customer.number in call request)
+ * - {{now}}, {{date}}, {{time}} - Built-in VAPI variables for current date/time
+ *
+ * EMAIL FUNCTIONALITY:
+ * - After booking appointments, the assistant automatically sends confirmation emails
+ * - Uses the existing update-delivery.ts API for consistent email formatting
+ * - Emails include appointment details and helpful preparation tips
+ *
+ * BARBER SELECTION:
+ * - Available barbers: Abraham, Henry, TJ, JC, Horell, Christian, Maddy
+ * - getStaffSchedule() should return availability for all barbers
+ * - bookAppointment() requires a barber parameter
+ *
+ * To use these variables, provide them when initiating a call:
+ * {
+ *   "assistantId": "your-assistant-id",
+ *   "customer": { "number": "+1234567890" },
+ *   "assistantOverrides": {
+ *     "variableValues": {
+ *       "company.name": "The Barber's Edge",
+ *       "assistant.name": "Kylie"
+ *     }
+ *   }
+ * }
+ */
+
+import "dotenv/config";
+import fetch from "node-fetch";
+
+const VAPI_API_KEY = process.env.VAPI_API_KEY;
+const BARBERS_EDGE_PHONE = "+19787208194";
+
+// do not change this url or this script will fail, the web hook url needs to be the live url of the site
+const BARBERS_EDGE_WEBHOOK_DOMAIN =
+  process.env.BARBERS_EDGE_WEBHOOK_DOMAIN || "https://capcofire.com";
+const VAPI_WEBHOOK_URL = `${BARBERS_EDGE_WEBHOOK_DOMAIN}/api/vapi/webhook`;
+
+// Available barbers at The Barber's Edge
+const AVAILABLE_BARBERS = ["Abraham", "Henry", "TJ", "JC", "Horell", "Christian", "Maddy"];
+
+// Simple placeholder replacement for this script
+// Only replaces {{COMPANY_NAME}} - other placeholders like {{assistant.name}}
+// and {{customer.number}} are VAPI template variables that VAPI replaces at runtime
+function replacePlaceholders(text) {
+  if (!text || typeof text !== "string") {
+    return text;
+  }
+
+  // Replace {{COMPANY_NAME}} with actual value
+  const companyName = process.env.BARBERS_EDGE_COMPANY_NAME || "The Barber's Edge";
+  const replaced = text.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, companyName);
+
+  // Log if there are still unreplaced COMPANY_NAME placeholders (shouldn't happen)
+  if (replaced.includes("{{COMPANY_NAME}}")) {
+    console.warn("⚠️ [VAPI-BARBERS-EDGE] Some {{COMPANY_NAME}} placeholders were not replaced");
+  }
+
+  return replaced;
+}
+
+// Process the assistant config to replace placeholders
+function processAssistantConfig(config) {
+  const processedConfig = JSON.parse(JSON.stringify(config)); // Deep clone
+
+  // Process each message field that might contain placeholders
+  const fieldsToProcess = ["name", "firstMessage", "endCallMessage", "chatPlaceholder"];
+
+  for (const field of fieldsToProcess) {
+    if (processedConfig[field] && typeof processedConfig[field] === "string") {
+      processedConfig[field] = replacePlaceholders(processedConfig[field]);
+    }
+  }
+
+  // Process nested model.messages content
+  if (processedConfig.model && processedConfig.model.messages) {
+    for (const message of processedConfig.model.messages) {
+      if (message.content && typeof message.content === "string") {
+        message.content = replacePlaceholders(message.content);
+      }
+    }
+  }
+
+  // Process any nested objects that might contain placeholders
+  if (processedConfig.assistantOverrides && processedConfig.assistantOverrides.variableValues) {
+    const variableValues = processedConfig.assistantOverrides.variableValues;
+
+    for (const [key, value] of Object.entries(variableValues)) {
+      if (typeof value === "string") {
+        variableValues[key] = replacePlaceholders(value);
+      }
+    }
+  }
+
+  return processedConfig;
+}
+
+// Assistant configuration
+// remember to update the iNote shared with the client.
+const assistantConfig = {
+  name: "{{COMPANY_NAME}}",
+  serverUrl: VAPI_WEBHOOK_URL,
+  functions: [], // Clear old functions array
+  model: {
+    provider: "anthropic",
+    model: "claude-3-5-sonnet-20241022",
+    temperature: 0.7,
+    maxTokens: 1000,
+    messages: [
+      {
+        role: "system",
+        content: `# {{COMPANY_NAME}} Appointment Scheduling Assistant
+
+You are Kylie, an appointment scheduling voice assistant for {{COMPANY_NAME}}, a premium barbershop located in downtown Beverly, Massachusetts. We offer quality haircuts from well-trained professionals in a welcoming and relaxing environment. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about our services, barbers, and pricing.
+
+## Voice & Persona
+
+### Personality
+- Sound friendly, warm, and professional
+- Project a welcoming and relaxed demeanor
+- Maintain a conversational but efficient tone
+- Be enthusiastic about our barbers and services
+- Show genuine interest in helping customers find the right barber and service
+- Do not need to say the year in the date or time. Just say the month, day, and time.
+
+### Speech Characteristics
+- Use clear, friendly language with natural contractions
+- Speak at a comfortable pace, especially when confirming dates, times, and barber selections
+- Include conversational elements like "Let me check availability for you" or "I'll find the perfect time slot"
+- Pronounce barber names correctly: "Abraham" (AY-bruh-ham), "Henry" (HEN-ree), "TJ" (TEE-JAY), "JC" (JAY-SEE), "Horell" (huh-RELL), "Christian" (KRIS-chun), "Maddy" (MAD-ee)
+
+## Conversation Flow
+
+### Introduction
+Start with: "Thank you for calling {{COMPANY_NAME}}. This is Kylie, your scheduling assistant. How may I help you today?"
+
+If they immediately mention booking: "I'd be happy to help you schedule an appointment. We have several talented barbers available and Christian. Let me check our availability for you."
+
+### Service & Barber Selection
+1. Service identification: "What type of service are you looking for today? We offer haircuts, beard trims, hot towel shaves, and more."
+2. Barber preference: "Do you have a preferred barber, or would you like me to find the next available appointment? Our barbers are Abraham, Henry, TJ, JC, Horell, Christian, and Maddy."
+3. If no preference: "No problem! Let me check availability across all our barbers and find you the best time slot."
+
+### Scheduling Process
+1. Collect client information:
+   - For new clients: "I'll need to collect some basic information. Could I have your full name, email address, and phone number?"
+   - For returning clients: "To access your records, may I have your name and the barber you usually see?"
+
+2. Offer available times:
+   - "I have availability with [barber name] on [date] at [time], or [barber name] on [date] at [time]. Would either of those work for you?"
+   - If specific barber requested: "For [barber name], I have availability on [date] at [time], or [date] at [time]."
+   - If no suitable time: "I don't see availability that matches your preference. Would you be open to a different day or barber?"
+
+3. Confirm selection:
+   - "Perfect! I've reserved an appointment with [barber name] on [day], [date] at [time]. Does that work for you?"
+
+4. Provide preparation instructions:
+   - "Great! Your appointment is confirmed. We're located at 324 Rantoul Street in downtown Beverly. Please arrive a few minutes early, and feel free to relax in our lounge area while you wait."
+
+### Confirmation and Wrap-up
+1. Summarize details: "To confirm, you're scheduled with [barber name] on [day], [date] at [time]."
+2. Set expectations: "Your appointment will last approximately [service duration]. You'll receive a confirmation email with all the details."
+3. Optional reminders: "Would you like SMS reminders as well?"
+4. Close politely: "Thank you for scheduling with {{COMPANY_NAME}}. Is there anything else I can help you with today?"
+
+## Response Guidelines
+
+- Keep responses concise and focused on scheduling information
+- Use explicit confirmation for dates, times, barbers, and addresses: "That's an appointment with Henry on Wednesday, February 15th at 2:30 PM. Is that correct?"
+- Ask only one question at a time
+- Provide clear time estimates for services
+- Always wait for the customer to explicitly end the call
+- Be enthusiastic about our barbers and services
+
+## CRITICAL INSTRUCTIONS - FOLLOW EXACTLY
+
+### Initial Call Setup
+- The FIRST thing you do when call starts: Call getStaffSchedule() to get available appointment slots for all barbers
+- Do NOT say 'let me check' or 'I'll help you' before calling the tool - just call getStaffSchedule() immediately
+- The function returns availability for all barbers - use this to offer options
+
+### Meeting/Appointment Route
+**Triggers**: 'appointment', 'schedule', 'book', 'haircut', 'cut', 'trim', 'shave', 'barber', 'see [barber name]'
+
+**Process**:
+1. Read the getStaffSchedule() tool results as soon as call starts - it shows availability for all barbers
+2. If they mention a specific barber: "I see you'd like to book with [barber name]. Let me check their availability."
+3. If interrupted while listing times: Stop and say 'Ok, so [last time you mentioned] with [barber name] works for you?'
+4. To book: Get name, email, then ask 'Can I use {{customer.number}} for SMS reminders?'
+5. **CRITICAL**: You MUST get the barber name before booking. If not specified, ask: "Which barber would you like to book with? We have Abraham, Henry, TJ, JC, Horell, Christian, and Maddy available."
+6. Call bookAppointment(time, name, email, phone, barber) with the barber parameter and speak the result
+7. **ABSOLUTELY MANDATORY - IMMEDIATELY after speaking the booking result:**
+   - Say EXACTLY: "Your appointment is confirmed. We're located at 324 Rantoul Street in downtown Beverly. Please arrive a few minutes early."
+   - IMMEDIATELY follow with: "Is there anything else I can help you with today?"
+   - **STOP TALKING** - wait silently for their response
+   - **NEVER say "Done", "All set", "That's it", "Finished", or any closing phrase**
+   - **NEVER end the conversation** - you MUST wait for them to respond or explicitly say goodbye
+8. **FORBIDDEN PHRASES AFTER BOOKING**: "done", "all set", "that's it", "finished", "you're all set", "we're all set", "that's all"
+9. **CRITICAL**: After asking "Is there anything else I can help you with today?", you MUST remain silent until they respond. The call is NOT over.
+
+## ⚠️ CRITICAL POST-BOOKING RULE - NEVER VIOLATE ⚠️
+
+**AFTER SUCCESSFULLY BOOKING AN APPOINTMENT:**
+1. Say the booking confirmation result (including barber name)
+2. IMMEDIATELY say: "Your appointment is confirmed. We're located at 324 Rantoul Street in downtown Beverly. Please arrive a few minutes early."
+3. IMMEDIATELY ask: "Is there anything else I can help you with today?"
+4. **STOP TALKING** - wait silently for their response
+5. **NEVER say "Done", "All set", "That's it", "Finished", or any closing phrase**
+6. **NEVER end the call** - you MUST wait for them to respond or explicitly say goodbye
+7. The call is NOT over until they explicitly end it
+
+### Service/Pricing Route  
+**Triggers**: 'services', 'pricing', 'prices', 'cost', 'fees', 'how much', 'what do you offer'
+
+**Process**:
+1. Provide service information: "We offer haircuts, beard trims, hot towel shaves, and styling services. Our prices vary by service type."
+2. For specific pricing: "For exact pricing, I'd recommend checking our website at www.thebarbersedge.com/services or calling the shop at (978) 720-8194."
+3. Offer to schedule: "Would you like to schedule an appointment? I can check availability for you."
+4. Ask: "Is there anything else I can help you with?"
+
+### Website/Information Route  
+**Triggers**: 'website', 'hours', 'location', 'address', 'phone', 'contact'
+
+**Process**:
+1. Provide information: "You can visit our website at www.thebarbersedge.com"
+2. For hours: "Our hours are Monday 10am to 3pm, Tuesday through Friday 9am to 6pm, and Saturday 8am to 4pm. We're closed on Sundays."
+3. For location: "We're located at 324 Rantoul Street in downtown Beverly, Massachusetts."
+4. For phone: "You can reach the shop at (978) 720-8194"
+5. Ask: "Is there anything specific you need help with?"
+
+### General Support Route
+**Triggers**: 'help', 'support', 'question', 'information'
+
+**Process**:
+1. Listen to their specific need
+2. Provide helpful information about our barbershop and services
+3. Offer to schedule an appointment if appropriate
+4. Ask: "Is there anything else I can assist you with today?"
+
+## Knowledge Base
+
+### Available Barbers
+- **Abraham** - Experienced barber specializing in classic and modern cuts
+- **Henry** - Skilled in fades, tapers, and precision cuts
+- **TJ** - Expert in beard grooming and hot towel shaves
+- **JC** - Versatile stylist for all hair types
+- **Horell** - Owner/Master Barber with years of experience
+- **Christian** - Specializes in contemporary styles
+- **Maddy** - Skilled in precision cuts and styling
+
+### Services We Provide
+- Haircuts (various styles: classic, modern, fades, tapers)
+- Beard Trims
+- Hot Towel Shaves
+- Styling Services
+- Hair and Beard Packages
+
+**Note**: For exact pricing, direct customers to check www.thebarbersedge.com/services or call (978) 720-8194
+
+### Business Hours
+- **Monday**: 10:00 AM - 3:00 PM
+- **Tuesday - Friday**: 9:00 AM - 6:00 PM
+- **Saturday**: 8:00 AM - 4:00 PM
+- **Sunday**: Closed
+
+### Location & Contact
+- **Address**: 324 Rantoul Street, Beverly, Massachusetts 01915
+- **Phone**: (978) 720-8194
+- **Email**: barbersedge350@gmail.com
+- **Website**: www.thebarbersedge.com
+
+### Policies
+- Walk-ins welcome, but appointments recommended
+- Confirmation emails sent automatically after booking
+- SMS reminders available upon request
+- Lounge area with TV, WiFi, beverages, and toys for children
+
+## Response Refinement
+
+- When discussing available times, offer no more than 2-3 options initially to avoid overwhelming the caller
+- When a specific barber is requested, prioritize their availability but offer alternatives if needed
+- When confirming complex information: "Let me make sure I have everything correct. You're scheduling with [barber name] on [date] at [time]. Have I understood everything correctly?"
+- Be enthusiastic: "We have some great barbers here! [Barber name] is excellent at [service type]."
+
+## Call Management
+
+- If you need time to check schedules: "I'm checking our availability across all barbers. This will take just a moment." (you should already have called getStaffSchedule() before this message)
+- If there are technical difficulties: "I apologize, but I'm experiencing a brief delay with our scheduling system. Could you bear with me for a moment while I resolve this?"
+- If the caller wants multiple services: "I understand you'd like to book multiple services. Let's schedule them one at a time to ensure everything is booked correctly."
+
+## Barber Selection Logic
+
+- **If barber specified**: Use that barber's availability only
+- **If no barber specified**: Offer availability from all barbers, mentioning the barber name with each time slot
+- **If preferred barber unavailable**: "I don't see availability with [barber] at that time, but I have openings with [other barber] on [date] at [time]. Would that work?"
+- **Always confirm barber name** before finalizing booking
+
+Remember that your ultimate goal is to match customers with the right barber and service as efficiently as possible while ensuring they have all the information they need for a great experience. Be friendly, professional, and enthusiastic about our barbershop!
+
+**FINAL REMINDER**: After booking, you MUST say the location/arrival phrase, ask if there's anything else, then WAIT SILENTLY. Never say "Done" or end the call yourself.`,
+      },
+    ],
+    toolIds: [
+      "0b17d3bc-a697-432b-8386-7ed1235fd111", // getStaffSchedule (should return all barbers' availability)
+      "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment (needs barber parameter)
+    ],
+  },
+  voice: {
+    provider: "vapi",
+    voiceId: "Kylie",
+  },
+  firstMessage:
+    "Thank you for calling {{COMPANY_NAME}}. This is Kylie, your scheduling assistant. How may I help you today?",
+  maxDurationSeconds: 300,
+  endCallMessage:
+    "Perfect! Thanks for calling {{COMPANY_NAME}}. We'll see you soon. Have a wonderful day!",
+  endCallPhrases: ["goodbye", "bye", "that's all", "finished", "end call", "hangup"],
+  backgroundSound: "office",
+  silenceTimeoutSeconds: 15,
+};
+
+// Create the assistant
+async function createAssistant() {
+  try {
+    console.log("🤖 [VAPI-BARBERS-EDGE] Creating Vapi.ai assistant...");
+
+    // Process the config to replace placeholders with actual company data
+    const processedConfig = processAssistantConfig(assistantConfig);
+    console.log("🔄 [VAPI-BARBERS-EDGE] Processed placeholders in configuration");
+
+    // Log summary of replacements
+    const companyName = process.env.BARBERS_EDGE_COMPANY_NAME || "The Barber's Edge";
+    console.log(`📝 [VAPI-BARBERS-EDGE] Company name set to: "${companyName}"`);
+    console.log(`📝 [VAPI-BARBERS-EDGE] Available barbers: ${AVAILABLE_BARBERS.join(", ")}`);
+    console.log(
+      `📝 [VAPI-BARBERS-EDGE] Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
+    );
+
+    // Count remaining placeholders in content (should only be VAPI runtime variables)
+    const content = processedConfig.model?.messages?.[0]?.content || "";
+    const remainingCompanyPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || [])
+      .length;
+    if (remainingCompanyPlaceholders > 0) {
+      console.warn(
+        `⚠️ [VAPI-BARBERS-EDGE] Found ${remainingCompanyPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
+      );
+    }
+
+    const response = await fetch("https://api.vapi.ai/assistant", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${VAPI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(processedConfig),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to create assistant: ${response.status} ${error}`);
+    }
+
+    const assistant = await response.json();
+    console.log("✅ [VAPI-BARBERS-EDGE] Assistant created successfully:", assistant.id);
+
+    return assistant;
+  } catch (error) {
+    console.error("❌ [VAPI-BARBERS-EDGE] Error creating assistant:", error);
+    throw error;
+  }
+}
+
+// Update the assistant
+async function updateAssistant(assistantId) {
+  try {
+    console.log("🤖 [VAPI-BARBERS-EDGE] Updating Vapi.ai assistant:", assistantId);
+
+    // Process the config to replace placeholders with actual company data
+    const processedConfig = processAssistantConfig(assistantConfig);
+    console.log("🔄 [VAPI-BARBERS-EDGE] Processed placeholders in configuration");
+
+    // Log summary of replacements
+    const companyName = process.env.BARBERS_EDGE_COMPANY_NAME || "The Barber's Edge";
+    console.log(`📝 [VAPI-BARBERS-EDGE] Company name set to: "${companyName}"`);
+    console.log(`📝 [VAPI-BARBERS-EDGE] Available barbers: ${AVAILABLE_BARBERS.join(", ")}`);
+    console.log(
+      `📝 [VAPI-BARBERS-EDGE] Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
+    );
+
+    // Count remaining placeholders in content (should only be VAPI runtime variables)
+    const content = processedConfig.model?.messages?.[0]?.content || "";
+    const remainingCompanyPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || [])
+      .length;
+    if (remainingCompanyPlaceholders > 0) {
+      console.warn(
+        `⚠️ [VAPI-BARBERS-EDGE] Found ${remainingCompanyPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
+      );
+    }
+
+    const response = await fetch(`https://api.vapi.ai/assistant/${assistantId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${VAPI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(processedConfig),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to update assistant: ${response.status} ${error}`);
+    }
+
+    const assistant = await response.json();
+    console.log("✅ [VAPI-BARBERS-EDGE] Assistant updated successfully");
+
+    return assistant;
+  } catch (error) {
+    console.error("❌ [VAPI-BARBERS-EDGE] Error updating assistant:", error);
+    throw error;
+  }
+}
+
+// Get assistant details
+async function getAssistant(assistantId) {
+  try {
+    const response = await fetch(`https://api.vapi.ai/assistant/${assistantId}`, {
+      headers: {
+        Authorization: `Bearer ${VAPI_API_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get assistant: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("❌ [VAPI-BARBERS-EDGE] Error getting assistant:", error);
+    throw error;
+  }
+}
+
+// Test the assistant
+async function testAssistant(assistantId) {
+  try {
+    console.log("🤖 [VAPI-BARBERS-EDGE] Testing assistant:", assistantId);
+
+    const response = await fetch("https://api.vapi.ai/call", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${VAPI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        assistantId: assistantId,
+        customer: {
+          number: "+1234567890", // Test number
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to test assistant: ${response.status} ${error}`);
+    }
+
+    const call = await response.json();
+    console.log("✅ [VAPI-BARBERS-EDGE] Test call initiated:", call.id);
+
+    return call;
+  } catch (error) {
+    console.error("❌ [VAPI-BARBERS-EDGE] Error testing assistant:", error);
+    throw error;
+  }
+}
+
+// Verify assistant access before updating
+async function verifyAssistantAccess(assistantId) {
+  try {
+    console.log("🔍 [VAPI-BARBERS-EDGE] Verifying access to assistant:", assistantId);
+    const assistant = await getAssistant(assistantId);
+    console.log(
+      "✅ [VAPI-BARBERS-EDGE] Successfully accessed assistant:",
+      assistant.name || assistantId
+    );
+    return true;
+  } catch (error) {
+    console.error("❌ [VAPI-BARBERS-EDGE] Cannot access assistant:", error.message);
+    console.error("💡 [VAPI-BARBERS-EDGE] Possible issues:");
+    console.error("   1. The assistant ID belongs to a different VAPI workspace/team");
+    console.error("   2. The API key doesn't have permission to access this assistant");
+    console.error("   3. The API key is from a different account");
+    console.error("   4. The assistant was deleted or doesn't exist");
+    console.error("\n💡 [VAPI-BARBERS-EDGE] Solutions:");
+    console.error(
+      "   - Verify you're using the correct API key for the workspace containing this assistant"
+    );
+    console.error("   - Check the VAPI dashboard to confirm the assistant ID");
+    console.error("   - Or create a new assistant by removing VAPI_BARBERS_EDGE_ASSISTANT_ID");
+    return false;
+  }
+}
+
+// Main execution
+async function main() {
+  // Use environment variable if set, otherwise use the hardcoded assistant ID
+  const assistantId =
+    process.env.VAPI_BARBERS_EDGE_ASSISTANT_ID || "99d7d682-573f-47e1-9440-66e1b045bc2a";
+
+  if (!VAPI_API_KEY) {
+    console.warn("⚠️ [VAPI-BARBERS-EDGE] VAPI_API_KEY environment variable not found");
+    console.warn("⚠️ [VAPI-BARBERS-EDGE] Skipping VAPI assistant configuration update");
+    console.warn(
+      "⚠️ [VAPI-BARBERS-EDGE] This is normal during build process - assistant will use existing configuration"
+    );
+    return;
+  }
+
+  if (!VAPI_WEBHOOK_URL) {
+    console.error(
+      "❌ [VAPI-BARBERS-EDGE] BARBERS_EDGE_WEBHOOK_DOMAIN environment variable is required"
+    );
+    console.error(
+      "❌ [VAPI-BARBERS-EDGE] Please set BARBERS_EDGE_WEBHOOK_DOMAIN in Railway global variables:"
+    );
+    console.error("   - BARBERS_EDGE_WEBHOOK_DOMAIN=https://capcofire.com");
+    process.exit(1);
+  }
+
+  try {
+    if (assistantId) {
+      // Verify access first
+      const hasAccess = await verifyAssistantAccess(assistantId);
+      if (!hasAccess) {
+        console.error("\n❌ [VAPI-BARBERS-EDGE] Cannot proceed without assistant access");
+        process.exit(1);
+      }
+
+      console.log("🤖 [VAPI-BARBERS-EDGE] Updating existing assistant:", assistantId);
+      await updateAssistant(assistantId);
+    } else {
+      console.log("🤖 [VAPI-BARBERS-EDGE] Creating new assistant");
+      const assistant = await createAssistant();
+      console.log("📝 [VAPI-BARBERS-EDGE] Save this assistant ID:", assistant.id);
+      console.log(
+        "📝 [VAPI-BARBERS-EDGE] Add to your .env file: VAPI_BARBERS_EDGE_ASSISTANT_ID=" +
+          assistant.id
+      );
+    }
+
+    console.log("✅ [VAPI-BARBERS-EDGE] Configuration complete!");
+    console.log(
+      "📋 [VAPI-BARBERS-EDGE] IMPORTANT: Update backend functions to support barber parameter:"
+    );
+    console.log("   - getStaffSchedule() should return availability for all barbers");
+    console.log("   - bookAppointment() should accept 'barber' parameter");
+  } catch (error) {
+    console.error("❌ [VAPI-BARBERS-EDGE] Configuration failed:", error);
+    if (error.message && error.message.includes("Key doesn't allow")) {
+      console.error(
+        "\n💡 [VAPI-BARBERS-EDGE] This error means your API key doesn't have access to this assistant."
+      );
+      console.error(
+        "   Check that you're using the correct API key for the workspace containing assistant:",
+        assistantId
+      );
+    }
+    process.exit(1);
+  }
+}
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}
+
+export {
+  createAssistant,
+  updateAssistant,
+  getAssistant,
+  testAssistant,
+  assistantConfig,
+  AVAILABLE_BARBERS,
+};

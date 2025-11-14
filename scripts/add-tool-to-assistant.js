@@ -33,7 +33,7 @@ async function addToolToAssistant() {
             {
               role: "system",
               content:
-                "You are a helpful assistant for CAPCO Fire Protection Systems. When the call starts, immediately call getAccountInfo() to get account information, then read the result to the user.",
+                "You are a helpful assistant for CAPCO Fire Protection Systems. When the call starts, immediately call getStaffSchedule() to get account information, then read the result to the user.",
             },
           ],
         },
