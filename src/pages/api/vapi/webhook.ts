@@ -143,6 +143,17 @@ async function handleToolCalls(message: any): Promise<Response> {
           smsReminderNumber: args.phone, // Map phone to smsReminderNumber
         };
         console.log(`[---VAPI-WEBHOOK] Booking params:`, params);
+      } else if (functionName === "lookupClient") {
+        action = "lookup_client";
+        // Parse arguments if they're a string
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+        params = {
+          nameOrPhone: args.nameOrPhone || args.name || args.phone,
+        };
+        console.log(`[---VAPI-WEBHOOK] Lookup client params:`, params);
       }
 
       const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
@@ -174,6 +185,15 @@ async function handleToolCalls(message: any): Promise<Response> {
           console.warn(
             `⚠️ [VAPI-WEBHOOK] Booking creation may have failed - no booking data in response`
           );
+        }
+      }
+
+      // Log client lookup results
+      if (functionName === "lookupClient") {
+        if (data.data?.found) {
+          console.log(`✅ [VAPI-WEBHOOK] Client found:`, data.data.name, `Preferred barber:`, data.data.preferredBarber);
+        } else {
+          console.log(`ℹ️ [VAPI-WEBHOOK] Client not found, proceeding as new client`);
         }
       }
 
@@ -247,7 +267,7 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
     }
 
     // Route Cal.com function calls to the integration API
-    const calcomFunctions = ["getStaffSchedule", "checkAvailability", "bookAppointment"];
+    const calcomFunctions = ["getStaffSchedule", "checkAvailability", "bookAppointment", "lookupClient"];
     if (calcomFunctions.includes(functionCall.name)) {
       console.log("🤖 [VAPI-WEBHOOK] Routing to Cal.com integration:", functionCall.name);
 
@@ -338,6 +358,20 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
               name: functionCall.parameters.name,
               email: functionCall.parameters.email,
               smsReminderNumber: functionCall.parameters.smsReminderNumber,
+            };
+            break;
+          case "lookupClient":
+            // Validate required parameters
+            if (!functionCall.parameters.nameOrPhone && !functionCall.parameters.name && !functionCall.parameters.phone) {
+              console.error(
+                "❌ [VAPI-WEBHOOK] Missing required parameters for lookupClient:",
+                functionCall.parameters
+              );
+              throw new Error("Missing required parameter: nameOrPhone, name, or phone");
+            }
+            action = "lookup_client";
+            params = {
+              nameOrPhone: functionCall.parameters.nameOrPhone || functionCall.parameters.name || functionCall.parameters.phone,
             };
             break;
         }
