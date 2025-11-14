@@ -137,6 +137,9 @@ export const POST: APIRoute = async ({ request }) => {
       case "get_database_url":
         return await handleGetDatabaseUrl();
 
+      case "lookup_client":
+        return await handleLookupClient(params);
+
       default:
         return new Response(
           JSON.stringify({
@@ -2398,6 +2401,116 @@ async function handleGetDatabaseUrl() {
       }),
       {
         status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
+// Lookup client by name or phone number (placeholder implementation)
+async function handleLookupClient(params: any) {
+  try {
+    const { nameOrPhone } = params;
+    console.log("🔍 [CAL-INTEGRATION] Looking up client:", nameOrPhone);
+
+    // TODO: Replace with actual database lookup
+    // For now, return placeholder data for testing
+    
+    // Mock client data for testing
+    // In production, this would query your client database
+    const mockClients: Array<{
+      name: string;
+      phone: string;
+      email: string;
+      preferredBarber: string;
+      lastVisit: string;
+    }> = [
+      {
+        name: "John Smith",
+        phone: "+19781234567",
+        email: "john.smith@example.com",
+        preferredBarber: "Henry",
+        lastVisit: "2024-11-01",
+      },
+      {
+        name: "Sarah Johnson",
+        phone: "+19787654321",
+        email: "sarah.j@example.com",
+        preferredBarber: "Abraham",
+        lastVisit: "2024-10-28",
+      },
+      {
+        name: "Mike Davis",
+        phone: "+19785556677",
+        email: "mike.davis@example.com",
+        preferredBarber: "TJ",
+        lastVisit: "2024-10-25",
+      },
+    ];
+
+    // Normalize the search input
+    const searchTerm = (nameOrPhone || "").toLowerCase().trim();
+    
+    // Try to find a matching client
+    const foundClient = mockClients.find(
+      (client) =>
+        client.name.toLowerCase().includes(searchTerm) ||
+        client.phone.replace(/\D/g, "").includes(searchTerm.replace(/\D/g, "")) ||
+        searchTerm.includes(client.name.toLowerCase()) ||
+        searchTerm.includes(client.phone.replace(/\D/g, ""))
+    );
+
+    if (foundClient) {
+      console.log("✅ [CAL-INTEGRATION] Client found:", foundClient.name);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          result: `I found your account! Your name is ${foundClient.name}, and I see you usually see ${foundClient.preferredBarber}. Your last visit was ${foundClient.lastVisit}. Would you like to book with ${foundClient.preferredBarber} again?`,
+          data: {
+            found: true,
+            name: foundClient.name,
+            email: foundClient.email,
+            phone: foundClient.phone,
+            preferredBarber: foundClient.preferredBarber,
+            lastVisit: foundClient.lastVisit,
+          },
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } else {
+      console.log("⚠️ [CAL-INTEGRATION] Client not found for:", nameOrPhone);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          result: "I don't see a record with that information. Let me collect your details for this appointment.",
+          data: {
+            found: false,
+            message: "No client found with that information",
+          },
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Error looking up client:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        result: "I'm having trouble looking up your information right now. Let me collect your details for this appointment.",
+        error: error.message || "Failed to lookup client",
+        data: {
+          found: false,
+          message: "Error looking up client",
+        },
+      }),
+      {
+        status: 200, // Return 200 so VAPI can continue the conversation
         headers: { "Content-Type": "application/json" },
       }
     );
