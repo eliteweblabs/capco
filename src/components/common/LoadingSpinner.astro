@@ -1,17 +1,42 @@
 ---
-const { size = "md", borderColor = "primary", loadingText = "Loading..." } = Astro.props;
+interface Props {
+  size?: "sm" | "md" | "lg";
+  borderColor?: "primary" | "secondary" | "success" | "warning" | "danger" | "info";
+  color?: "primary" | "secondary" | "success" | "warning" | "danger" | "info"; // Alias for borderColor
+  loadingText?: string;
+  className?: string;
+  id?: string;
+}
 
+const {
+  size: sizeProp = "md",
+  borderColor: borderColorProp,
+  color,
+  loadingText = "loading...",
+  className = "",
+  id,
+} = Astro.props;
+
+// Normalize size - ensure it's a valid key
+// Note: Tailwind only has border-2, border-4, and border-8 (no border-6)
 const sizeClasses = {
-  sm: "h-4 w-4",
-  md: "h-6 w-6",
-  lg: "h-8 w-8",
+  sm: "h-4 w-4 border-2",
+  md: "h-6 w-6 border-4",
+  lg: "h-12 w-12 border-8",
 };
 
-const borderClasses = {
-  sm: "border-2",
-  md: "border-4",
-  lg: "border-6",
-};
+// Validate and normalize size - explicitly check against valid values
+type SizeKey = keyof typeof sizeClasses;
+// Normalize the prop to a string and check directly
+const sizePropStr = sizeProp ? String(sizeProp).trim() : "";
+// Check if it's one of the valid sizes
+let size: SizeKey = "md"; // default
+if (sizePropStr === "sm" || sizePropStr === "md" || sizePropStr === "lg") {
+  size = sizePropStr as SizeKey;
+}
+
+// Normalize borderColor - use color prop as fallback
+const borderColor = borderColorProp || color || "primary";
 
 const borderColorClasses = {
   primary: "border-gray-200 border-t-primary-500",
@@ -21,15 +46,17 @@ const borderColorClasses = {
   danger: "border-gray-200 border-t-danger-500",
   info: "border-gray-200 border-t-info-500",
 };
+
+// Get classes - size is guaranteed to be a valid key
+const sizeClass = sizeClasses[size];
+const borderColorClass =
+  borderColorClasses[borderColor as keyof typeof borderColorClasses] || borderColorClasses.primary;
 ---
 
-<div class="flex flex-col items-center space-y-4">
+<div {id} class={`flex flex-col items-center space-y-4 ${className}`}>
   <!-- Spinning loader -->
   <div class="relative">
-    <div
-      class={`h-12 w-12 animate-spin rounded-full ${borderClasses[size as keyof typeof borderClasses]} ${borderColorClasses[borderColor as keyof typeof borderColorClasses]}`}
-    >
-    </div>
+    <div class={`animate-spin rounded-full ${sizeClass} ${borderColorClass}`}></div>
   </div>
 
   <!-- Loading text -->
