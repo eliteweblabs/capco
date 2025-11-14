@@ -26,7 +26,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
         text-align: center;
         padding: 2rem;
       }
-      .spinner {
+      /* .spinner {
         border: 4px solid #f3f3f3;
         border-top: 4px solid #007bff;
         border-radius: 50%;
@@ -42,7 +42,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
         100% {
           transform: rotate(360deg);
         }
-      }
+      } */
       .error {
         color: #dc3545;
         padding: 1rem;
@@ -54,7 +54,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
   </head>
   <body>
     <div class="container">
-      <LoadingSpinner size="lg" color="primary" loadingText="Signing you in..." />
+      <LoadingSpinner size="lg" color="primary" loadingText="signing you in..." />
       <div id="error" class="error" style="display: none;"></div>
     </div>
 
@@ -79,7 +79,8 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
 
         // Give Supabase client a moment to initialize and ensure storage is ready
         // This is critical for PKCE flow where code verifier must be accessible
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        // Increased delay for first attempt to handle race conditions
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         try {
           console.log("[AUTH-CALLBACK] Starting PKCE flow...");
