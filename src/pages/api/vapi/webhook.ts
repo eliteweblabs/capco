@@ -127,7 +127,7 @@ async function handleToolCalls(message: any): Promise<Response> {
       let params: any = {};
 
       // Route to appropriate action based on function name
-      if (functionName === "getAccountInfo") {
+      if (functionName === "getStaffSchedule") {
         action = "get_account_info";
       } else if (functionName === "bookAppointment") {
         action = "create_booking";
@@ -146,35 +146,34 @@ async function handleToolCalls(message: any): Promise<Response> {
       }
 
       const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
-      const response = await fetch(
-        `${baseUrl}/api/vapi/cal-integration`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Vapi-System": "true",
-          },
-          body: JSON.stringify({
-            action,
-            ...params,
-          }),
-        }
-      );
+      const response = await fetch(`${baseUrl}/api/vapi/cal-integration`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Vapi-System": "true",
+        },
+        body: JSON.stringify({
+          action,
+          ...params,
+        }),
+      });
 
       const data = await response.json();
       console.log(`[---VAPI-WEBHOOK] Result:`, data.result?.substring(0, 50) + "...");
-      
+
       // Log any errors for debugging
       if (data.error) {
         console.error(`❌ [VAPI-WEBHOOK] Error from cal-integration:`, data.error);
       }
-      
+
       // Log booking creation success/failure
       if (functionName === "bookAppointment") {
         if (data.data?.booking) {
           console.log(`✅ [VAPI-WEBHOOK] Booking created successfully:`, data.data.booking);
         } else {
-          console.warn(`⚠️ [VAPI-WEBHOOK] Booking creation may have failed - no booking data in response`);
+          console.warn(
+            `⚠️ [VAPI-WEBHOOK] Booking creation may have failed - no booking data in response`
+          );
         }
       }
 
@@ -248,7 +247,7 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
     }
 
     // Route Cal.com function calls to the integration API
-    const calcomFunctions = ["getAccountInfo", "checkAvailability", "bookAppointment"];
+    const calcomFunctions = ["getStaffSchedule", "checkAvailability", "bookAppointment"];
     if (calcomFunctions.includes(functionCall.name)) {
       console.log("🤖 [VAPI-WEBHOOK] Routing to Cal.com integration:", functionCall.name);
 
@@ -262,7 +261,7 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
         let params = {};
 
         switch (functionCall.name) {
-          case "getAccountInfo":
+          case "getStaffSchedule":
             action = "get_account_info";
             params = {};
             break;
@@ -343,22 +342,21 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
             break;
         }
 
-        const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
-        const response = await fetch(
-          `${baseUrl}/api/vapi/cal-integration`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Vapi-System": "true",
-            },
-            body: JSON.stringify({
-              action,
-              ...params,
-            }),
-            signal: controller.signal,
-          }
+        const baseUrl = ensureProtocol(
+          process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"
         );
+        const response = await fetch(`${baseUrl}/api/vapi/cal-integration`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Vapi-System": "true",
+          },
+          body: JSON.stringify({
+            action,
+            ...params,
+          }),
+          signal: controller.signal,
+        });
 
         clearTimeout(timeoutId);
 

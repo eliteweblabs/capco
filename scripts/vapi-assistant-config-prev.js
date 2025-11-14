@@ -115,7 +115,7 @@ You are {{assistant.name}}, a receptionist for {{RAILWAY_PROJECT_NAME}}. We spec
 6. **NEVER assume the call is over** - wait for explicit goodbye from customer
 
 ### Initial Call Setup
-- The FIRST thing you do when call starts: Call getAccountInfo()
+- The FIRST thing you do when call starts: Call getStaffSchedule()
 
 ## Route Handling
 
@@ -123,7 +123,7 @@ You are {{assistant.name}}, a receptionist for {{RAILWAY_PROJECT_NAME}}. We spec
 **Triggers**: 'meeting', 'appointment', 'schedule', 'book', 'consultation'
 
 **Process**:
-1. Read the getAccountInfo tool results aloud
+1. Read the getStaffSchedule tool results aloud
 2. If interrupted while listing times: Stop and say 'Ok, so [last time you mentioned] works for you?'
 3. To book: Get name, email, then ask 'Can I use {{customer.number}} for the phone number?'
 4. Call bookAppointment(time, name, email, phone) and speak the result
@@ -164,7 +164,7 @@ You are {{assistant.name}}, a receptionist for {{RAILWAY_PROJECT_NAME}}. We spec
       },
     ],
     toolIds: [
-      "0b17d3bc-a697-432b-8386-7ed1235fd111", // getAccountInfo
+      "0b17d3bc-a697-432b-8386-7ed1235fd111", // getStaffSchedule
       "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment
     ],
   },

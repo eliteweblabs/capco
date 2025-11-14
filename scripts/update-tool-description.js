@@ -15,8 +15,9 @@ async function updateTool() {
       },
       body: JSON.stringify({
         function: {
-          name: "getAccountInfo",
-          description: "Get Cal.com staff list and next 10 available appointment slots. Call this at the start of every call.",
+          name: "getStaffSchedule",
+          description:
+            "Get Cal.com staff list and next 10 available appointment slots. Call this at the start of every call.",
           parameters: {
             type: "object",
             properties: {},

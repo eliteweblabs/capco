@@ -3,17 +3,17 @@ import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
-const TOOL_ID = "0b17d3bc-a697-432b-8386-7ed1235fd111"; // getAccountInfo tool ID
+const TOOL_ID = "0b17d3bc-a697-432b-8386-7ed1235fd111"; // getStaffSchedule tool ID
 
 // Update the tool to remove interfering messages
 async function updateTool() {
   try {
-    console.log("🔧 Updating getAccountInfo tool to remove status messages...");
+    console.log("🔧 Updating getStaffSchedule tool to remove status messages...");
 
     const toolConfig = {
       async: false,
       function: {
-        name: "getAccountInfo",
+        name: "getStaffSchedule",
         description:
           "Get current date/time and available appointment slots. Call this IMMEDIATELY when the call starts without waiting for user input.",
         parameters: {
@@ -45,7 +45,7 @@ async function updateTool() {
     }
 
     const tool = await response.json();
-    console.log("✅ getAccountInfo tool updated!");
+    console.log("✅ getStaffSchedule tool updated!");
     console.log("📋 Messages removed - assistant will now speak result directly");
 
     return tool;
