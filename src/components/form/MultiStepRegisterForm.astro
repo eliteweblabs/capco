@@ -172,18 +172,18 @@ const { globalInputClasses } = Astro.props;
           size="lg"
           class="prev-step"
           dataAttributes={{ "data-prev": "1" }}
-        >
-          <SimpleIcon name="arrow-left" size="lg" />
-        </Button>
+          icon="arrow-left"
+          iconPosition="left"
+        />
         <Button
           type="button"
           variant="primary"
           size="lg"
           class="next-step"
+          icon="arrow-right"
+          iconPosition="right"
           dataAttributes={{ "data-next": "3" }}
-        >
-          <SimpleIcon name="arrow-right" size="lg" />
-        </Button>
+        />
       </div>
     </div>
   </div>
@@ -221,20 +221,20 @@ const { globalInputClasses } = Astro.props;
           type="button"
           variant="outline"
           size="lg"
-          class="prev-step px-12 text-lg"
+          class="prev-step"
+          icon="arrow-left"
+          iconPosition="left"
           dataAttributes={{ "data-prev": "2" }}
-        >
-          <SimpleIcon name="arrow-left" size="lg" />
-        </Button>
+        />
         <Button
           type="button"
           variant="primary"
           size="lg"
           class="next-step"
+          icon="arrow-right"
+          iconPosition="right"
           dataAttributes={{ "data-next": "4" }}
-        >
-          <SimpleIcon name="arrow-right" size="lg" />
-        </Button>
+        />
       </div>
     </div>
   </div>
@@ -276,20 +276,20 @@ const { globalInputClasses } = Astro.props;
           type="button"
           variant="outline"
           size="lg"
-          class="prev-step px-12 text-lg"
+          class="prev-step"
           dataAttributes={{ "data-prev": "3" }}
-        >
-          <SimpleIcon name="arrow-left" size="lg" />
-        </Button>
+          icon="arrow-left"
+          iconPosition="left"
+        />
         <Button
           type="button"
           variant="primary"
           size="lg"
           class="next-step"
+          icon="arrow-right"
+          iconPosition="right"
           dataAttributes={{ "data-next": "5" }}
-        >
-          <SimpleIcon name="arrow-right" size="lg" />
-        </Button>
+        />
       </div>
     </div>
   </div>
@@ -327,18 +327,18 @@ const { globalInputClasses } = Astro.props;
           size="lg"
           class="prev-step px-12 text-lg"
           dataAttributes={{ "data-prev": "4" }}
-        >
-          <SimpleIcon name="arrow-left" size="lg" />
-        </Button>
+          icon="arrow-left"
+          iconPosition="left"
+        />
         <Button
           type="button"
           variant="primary"
           size="lg"
           class="next-step"
+          icon="arrow-right"
+          iconPosition="right"
           dataAttributes={{ "data-next": "6" }}
-        >
-          <SimpleIcon name="arrow-right" size="lg" />
-        </Button>
+        />
       </div>
     </div>
   </div>
@@ -457,16 +457,16 @@ const { globalInputClasses } = Astro.props;
           class="prev-step px-12 text-lg"
           dataAttributes={{ "data-prev": "5" }}
           icon="arrow-left"
-          iconPosition="left">Back to Review</Button
-        >
+          iconPosition="left"
+        />
         <Button
           type="button"
           variant="primary"
           size="lg"
           class="next-step submit-registration"
           icon="arrow-right"
-          iconPosition="right">Create Account</Button
-        >
+          iconPosition="right"
+        />
       </div>
     </div>
   </div>
@@ -554,25 +554,27 @@ const { globalInputClasses } = Astro.props;
         if (supabaseUrl) {
           const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
           const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
-          
+
           // Wait for code verifier to be stored (with retry)
           let codeVerifier = localStorage.getItem(codeVerifierKey);
           let attempts = 0;
           const maxAttempts = 10;
-          
+
           while (!codeVerifier && attempts < maxAttempts) {
             await new Promise((resolve) => setTimeout(resolve, 50));
             codeVerifier = localStorage.getItem(codeVerifierKey);
             attempts++;
           }
-          
+
           if (codeVerifier) {
             console.log("[GOOGLE-SIGNUP] Code verifier confirmed in localStorage, redirecting...");
           } else {
-            console.warn("[GOOGLE-SIGNUP] Code verifier not found after waiting, but proceeding with redirect...");
+            console.warn(
+              "[GOOGLE-SIGNUP] Code verifier not found after waiting, but proceeding with redirect..."
+            );
           }
         }
-        
+
         console.log("[GOOGLE-SIGNUP] Redirecting to OAuth provider...");
         // Redirect to Google OAuth
         window.location.href = data.url;
