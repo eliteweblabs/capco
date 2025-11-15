@@ -302,20 +302,6 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     columns: 1, // Half width
   },
 
-  {
-    id: "nfpa-version-input",
-    name: "nfpaVersion",
-    type: "field",
-    elementType: "text",
-    label: "NFPA Version",
-    placeholder: "NFPA Version",
-    value: "13, 13R, 13D",
-    dataField: "nfpaVersion",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    // hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
-    columns: 2, // Half width
-  },
   // {
   //   id: "hazardous-material-input",
   //   name: "hazardousMaterial",
@@ -570,6 +556,39 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
   },
 
   // Building Type button group
+
+  // {
+  //   id: "nfpa-version-input",
+  //   name: "nfpaVersion",
+  //   type: "field",
+  //   elementType: "text",
+  //   label: "NFPA Version",
+  //   placeholder: "NFPA Version",
+  //   value: "13, 13R, 13D",
+  //   dataField: "nfpaVersion",
+  //   allow: ["Admin", "Staff"], // Only admin and staff can see architect
+  //   // hideAtStatus: [], // Hide after proposal is signed off
+  //   readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
+  //   columns: 2, // Half width
+  // },
+  {
+    id: "nfpa-version-input",
+    name: "nfpaVersion",
+    type: "button-group",
+    elementType: "button-group",
+    label: "NFPA Version",
+    groupType: "radio",
+    cssClass: "nfpa-version-radio",
+    allow: ["Admin", "Staff"],
+    readOnlyAtStatus: standardReadOnlyStatus,
+    options: [
+      { value: "13", label: "13" },
+      { value: "13R", label: "13R" },
+      { value: "13D", label: "13D" },
+    ],
+    columns: 1,
+  },
+
   {
     id: "building-type",
     name: "building",
