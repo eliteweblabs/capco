@@ -18,8 +18,8 @@
         <!-- Info Box -->
         <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
           <p class="text-sm text-gray-700">
-            This page tests the actual Cal.com integration endpoint used by VAPI. 
-            It validates working hours and booking creation against the real Cal.com database.
+            This page tests the actual Cal.com integration endpoint used by VAPI. It validates
+            working hours and booking creation against the real Cal.com database.
           </p>
         </div>
 
@@ -76,7 +76,8 @@
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 class="text-xl font-semibold text-gray-800 mb-4">3. Create Booking</h2>
           <p class="text-sm text-gray-600 mb-4">
-            ⚠️ This will create a real booking in Cal.com. Make sure the time is within working hours!
+            ⚠️ This will create a real booking in Cal.com. Make sure the time is within working
+            hours!
           </p>
           <div class="space-y-4">
             <div>
@@ -86,7 +87,9 @@
                 id="bookingStart"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p class="text-xs text-gray-500 mt-1">Must be within working hours (e.g., 10:30 AM - 5:00 PM)</p>
+              <p class="text-xs text-gray-500 mt-1">
+                Must be within working hours (e.g., 10:30 AM - 5:00 PM)
+              </p>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
@@ -157,9 +160,11 @@
       }
 
       // Set defaults
-      (document.getElementById("dateFrom") as HTMLInputElement).value = formatDateTimeLocal(tomorrow);
+      (document.getElementById("dateFrom") as HTMLInputElement).value =
+        formatDateTimeLocal(tomorrow);
       (document.getElementById("dateTo") as HTMLInputElement).value = formatDateTimeLocal(nextWeek);
-      (document.getElementById("bookingStart") as HTMLInputElement).value = formatDateTimeLocal(tomorrow);
+      (document.getElementById("bookingStart") as HTMLInputElement).value =
+        formatDateTimeLocal(tomorrow);
 
       async function testAccountInfo() {
         try {
@@ -169,14 +174,14 @@
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              action: "get_account_info",
+              action: "get_staff_schedule",
             }),
           });
 
           const data = await response.json();
           const resultDiv = document.getElementById("accountInfoResult") as HTMLDivElement;
           const pre = resultDiv.querySelector("pre") as HTMLPreElement;
-          
+
           resultDiv.classList.remove("hidden");
           pre.textContent = JSON.stringify(data, null, 2);
         } catch (error) {
@@ -213,7 +218,7 @@
           const data = await response.json();
           const resultDiv = document.getElementById("availabilityResult") as HTMLDivElement;
           const pre = resultDiv.querySelector("pre") as HTMLPreElement;
-          
+
           resultDiv.classList.remove("hidden");
           pre.textContent = JSON.stringify(data, null, 2);
         } catch (error) {
@@ -235,8 +240,8 @@
 
           // Convert to ISO string - datetime-local is treated as UTC (since label says "UTC")
           // datetime-local format is "YYYY-MM-DDTHH:mm" - append 'Z' to treat as UTC
-          const hasTimezone = start.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(start);
-          const startDate = hasTimezone ? new Date(start) : new Date(start + 'Z');
+          const hasTimezone = start.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(start);
+          const startDate = hasTimezone ? new Date(start) : new Date(start + "Z");
 
           const response = await fetch("/api/vapi/cal-integration", {
             method: "POST",
@@ -255,7 +260,7 @@
           const data = await response.json();
           const resultDiv = document.getElementById("bookingResult") as HTMLDivElement;
           const pre = resultDiv.querySelector("pre") as HTMLPreElement;
-          
+
           resultDiv.classList.remove("hidden");
           pre.textContent = JSON.stringify(data, null, 2);
 
@@ -270,10 +275,10 @@
       function showError(error: any) {
         const errorDiv = document.getElementById("errorDisplay") as HTMLDivElement;
         const pre = errorDiv.querySelector("pre") as HTMLPreElement;
-        
+
         errorDiv.classList.remove("hidden");
         pre.textContent = error.message || JSON.stringify(error, null, 2);
-        
+
         // Scroll to error
         errorDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
@@ -285,4 +290,3 @@
     </script>
   </body>
 </html>
-

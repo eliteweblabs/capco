@@ -108,13 +108,16 @@ function generateMockAvailability(dateFrom: string, dateTo: string): CalComAvail
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { action, ...params } = body;
+    const { action, calendarType = 'calcom', ...params } = body;
+    
+    // calendarType is passed from webhook (extracted from URL query parameter in config files)
+    const effectiveCalendarType = calendarType;
 
-    console.log("🔗 [CAL-INTEGRATION] Received request:", { action, params });
+    console.log("🔗 [CAL-INTEGRATION] Received request:", { action, calendarType: effectiveCalendarType, params });
 
     switch (action) {
-      case "get_account_info":
-        return await handlegetStaffSchedule();
+      case "get_staff_schedule":
+        return await handlegetStaffSchedule(params, effectiveCalendarType);
 
       case "get_users":
         return await handleGetUsers();
@@ -126,7 +129,7 @@ export const POST: APIRoute = async ({ request }) => {
         return await handleGetAvailability(params);
 
       case "create_booking":
-        return await handleCreateBooking(params);
+        return await handleCreateBooking(params, effectiveCalendarType);
 
       case "get_bookings":
         return await handleGetBookings(params);
@@ -740,69 +743,175 @@ async function handleGetEventTypes() {
 }
 
 // Get account info with real Cal.com availability
-async function handlegetStaffSchedule() {
+async function handlegetStaffSchedule(params: any = {}, calendarType: string = 'calcom') {
   try {
-    console.log("📊 [CAL-INTEGRATION] Getting real account info from Cal.com...");
+    // Route to appropriate calendar handler based on calendar type
+    switch (calendarType.toLowerCase()) {
+      case 'google':
+        return await handleGoogleCalendarGetStaffSchedule(params);
+      case 'ical':
+        return await handleICalGetStaffSchedule(params);
+      case 'calcom':
+      default:
+        return await handleCalComGetStaffSchedule(params);
+    }
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Error in handlegetStaffSchedule:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Failed to get staff schedule",
+        message: error.message || "Unknown error occurred",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
+// Cal.com implementation
+async function handleCalComGetStaffSchedule(params: any = {}) {
+  try {
+    const { username: usernameParam, calname } = params;
+    // Support both username and calname parameters
+    const providedUsername = usernameParam || calname;
+
+    console.log(
+      "📊 [CAL-INTEGRATION] Getting real account info from Cal.com...",
+      providedUsername ? `for username: ${providedUsername}` : ""
+    );
+
+    // If username/calname is provided, resolve it to userId and find event types for that user
+    let targetUserId: number | undefined;
+    if (providedUsername) {
+      try {
+        // Try to find user by username
+        let userQuery = `SELECT id FROM "User" WHERE username = $1`;
+        let userResult = await calcomDb.query(userQuery, [providedUsername]);
+
+        if (userResult.rows.length === 0) {
+          // Try lowercase table
+          userQuery = `SELECT id FROM users WHERE username = $1`;
+          userResult = await calcomDb.query(userQuery, [providedUsername]);
+        }
+
+        if (userResult.rows.length > 0) {
+          targetUserId = userResult.rows[0].id;
+          console.log(
+            `✅ [CAL-INTEGRATION] Resolved username "${providedUsername}" to userId ${targetUserId}`
+          );
+        } else {
+          console.warn(
+            `⚠️ [CAL-INTEGRATION] Could not resolve username "${providedUsername}", falling back to default event type`
+          );
+        }
+      } catch (userError: any) {
+        console.warn(
+          `⚠️ [CAL-INTEGRATION] Error resolving username "${providedUsername}": ${userError.message}, falling back to default event type`
+        );
+      }
+    }
 
     // Get the configured event type for VAPI bookings
     // IMPORTANT: This must match the calLink used in CalComBooking.astro (currently "capco/30min")
     // If VAPI_EVENT_TYPE_ID is not set, default to "capco/30min" to match the demo page
-    const VAPI_EVENT_TYPE_ID = "capco/30min";
-    let eventTypeResult;
+    const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "capco/30min";
+    let eventTypeResult: any = null;
 
-    // Check if it's a numeric ID or a slug/path
-    if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
-      // It's a numeric ID
-      eventTypeResult = await calcomDb.query(
-        `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit" FROM "EventType" WHERE id = $1`,
-        [VAPI_EVENT_TYPE_ID]
-      );
-    } else {
-      // It's a slug/path like "/capco/30min" - extract just the slug part or use full path
-      // Remove leading/trailing slashes for matching
-      const slugPattern = VAPI_EVENT_TYPE_ID.replace(/^\/+|\/+$/g, ""); // Remove leading/trailing slashes
-      const slugParts = slugPattern.split("/"); // ["capco", "30min"]
-      const lastPart = slugParts[slugParts.length - 1]; // "30min"
-
-      // Try both PascalCase and snake_case table names
+    // If we have a targetUserId, find event types for that user
+    if (targetUserId) {
       try {
+        // Try PascalCase table first
         eventTypeResult = await calcomDb.query(
           `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit"
            FROM "EventType" 
-           WHERE slug = $1 
-              OR slug = $2 
-              OR slug LIKE $3 
-              OR slug LIKE $4
-           ORDER BY CASE 
-             WHEN slug = $1 THEN 1
-             WHEN slug = $2 THEN 2
-             ELSE 3
-           END
+           WHERE "userId" = $1
+           ORDER BY id ASC
            LIMIT 1`,
-          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+          [targetUserId]
         );
       } catch (error: any) {
         // Try lowercase table
         eventTypeResult = await calcomDb.query(
           `SELECT id, length, title, user_id as "userId", slug, minimum_booking_notice as "minimumBookingNotice", minimum_booking_notice_unit as "minimumBookingNoticeUnit"
            FROM event_types 
-           WHERE slug = $1 
-              OR slug = $2 
-              OR slug LIKE $3 
-              OR slug LIKE $4
-           ORDER BY CASE 
-             WHEN slug = $1 THEN 1
-             WHEN slug = $2 THEN 2
-             ELSE 3
-           END
+           WHERE user_id = $1
+           ORDER BY id ASC
            LIMIT 1`,
-          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+          [targetUserId]
         );
+      }
+
+      if (eventTypeResult.rows.length === 0) {
+        console.warn(
+          `⚠️ [CAL-INTEGRATION] No event types found for user ${targetUserId} (username: ${providedUsername}), falling back to default event type`
+        );
+        // Fall through to default event type lookup
+        targetUserId = undefined;
+        eventTypeResult = null;
       }
     }
 
-    if (eventTypeResult.rows.length === 0) {
-      throw new Error(`No event types found in Cal.com for ID/slug: ${VAPI_EVENT_TYPE_ID}`);
+    // If no username provided or no event types found for that user, use default event type lookup
+    if (!targetUserId || !eventTypeResult || eventTypeResult.rows.length === 0) {
+      // Check if it's a numeric ID or a slug/path
+      if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
+        // It's a numeric ID
+        eventTypeResult = await calcomDb.query(
+          `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit" FROM "EventType" WHERE id = $1`,
+          [VAPI_EVENT_TYPE_ID]
+        );
+      } else {
+        // It's a slug/path like "/capco/30min" - extract just the slug part or use full path
+        // Remove leading/trailing slashes for matching
+        const slugPattern = VAPI_EVENT_TYPE_ID.replace(/^\/+|\/+$/g, ""); // Remove leading/trailing slashes
+        const slugParts = slugPattern.split("/"); // ["capco", "30min"]
+        const lastPart = slugParts[slugParts.length - 1]; // "30min"
+
+        // Try both PascalCase and snake_case table names
+        try {
+          eventTypeResult = await calcomDb.query(
+            `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit"
+             FROM "EventType" 
+             WHERE slug = $1 
+                OR slug = $2 
+                OR slug LIKE $3 
+                OR slug LIKE $4
+             ORDER BY CASE 
+               WHEN slug = $1 THEN 1
+               WHEN slug = $2 THEN 2
+               ELSE 3
+             END
+             LIMIT 1`,
+            [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+          );
+        } catch (error: any) {
+          // Try lowercase table
+          eventTypeResult = await calcomDb.query(
+            `SELECT id, length, title, user_id as "userId", slug, minimum_booking_notice as "minimumBookingNotice", minimum_booking_notice_unit as "minimumBookingNoticeUnit"
+             FROM event_types 
+             WHERE slug = $1 
+                OR slug = $2 
+                OR slug LIKE $3 
+                OR slug LIKE $4
+             ORDER BY CASE 
+               WHEN slug = $1 THEN 1
+               WHEN slug = $2 THEN 2
+               ELSE 3
+             END
+             LIMIT 1`,
+            [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+          );
+        }
+      }
+    }
+
+    if (!eventTypeResult || eventTypeResult.rows.length === 0) {
+      throw new Error(
+        `No event types found in Cal.com${providedUsername ? ` for username: ${providedUsername}` : ""}${!providedUsername ? ` for ID/slug: ${VAPI_EVENT_TYPE_ID}` : ""}`
+      );
     }
 
     const eventType = eventTypeResult.rows[0];
@@ -821,8 +930,8 @@ async function handlegetStaffSchedule() {
       `⏰ [CAL-INTEGRATION] Minimum booking notice: ${minimumBookingNotice} ${minimumBookingNoticeUnit} (${minimumBookingNoticeMinutes} minutes)`
     );
 
-    // Get username if available for better availability lookup
-    let username: string | undefined;
+    // Get username if available for better availability lookup (use provided username or lookup from userId)
+    let username: string | undefined = providedUsername;
     try {
       let userResult = await calcomDb.query(`SELECT username FROM "User" WHERE id = $1`, [userId]);
       if (userResult.rows.length === 0) {
@@ -1003,12 +1112,128 @@ async function handlegetStaffSchedule() {
       }
     );
   } catch (error: any) {
-    console.error("❌ [CAL-INTEGRATION] Error getting account info:", error);
+    console.error("❌ [CAL-INTEGRATION] Error getting Cal.com account info:", error);
     const errorMessage = error.message || "Unknown error";
     return new Response(
       JSON.stringify({
         result: `I'm unable to check availability right now. ${errorMessage}`,
         error: errorMessage,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
+// Google Calendar implementation for get_staff_schedule
+async function handleGoogleCalendarGetStaffSchedule(params: any = {}) {
+  try {
+    const { username: usernameParam, calname } = params;
+    const providedUsername = usernameParam || calname;
+
+    console.log(
+      "📊 [CAL-INTEGRATION] Getting staff schedule from Google Calendar...",
+      providedUsername ? `for username: ${providedUsername}` : ""
+    );
+
+    // TODO: Implement Google Calendar API integration
+    // This would use Google Calendar API to:
+    // 1. Authenticate using service account or OAuth
+    // 2. List calendars for the user/organization
+    // 3. Get availability slots from free/busy API
+    // 4. Format response similar to Cal.com format
+
+    // Placeholder implementation
+    const googleCalendarId = process.env.GOOGLE_CALENDAR_ID || providedUsername || 'primary';
+    const googleApiKey = process.env.GOOGLE_CALENDAR_API_KEY;
+    
+    if (!googleApiKey) {
+      throw new Error("Google Calendar API key not configured. Please set GOOGLE_CALENDAR_API_KEY environment variable.");
+    }
+
+    // Example: Use Google Calendar Freebusy API
+    // const freebusyUrl = `https://www.googleapis.com/calendar/v3/freeBusy?key=${googleApiKey}`;
+    // ... implementation here
+
+    return new Response(
+      JSON.stringify({
+        result: "Google Calendar integration is not yet fully implemented. Please use Cal.com for now.",
+        data: {
+          calendarType: 'google',
+          message: "Google Calendar support coming soon",
+        },
+      }),
+      {
+        status: 501, // Not Implemented
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Error getting Google Calendar account info:", error);
+    return new Response(
+      JSON.stringify({
+        result: `I'm unable to check Google Calendar availability right now. ${error.message || "Unknown error"}`,
+        error: error.message || "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
+// iCal implementation for get_staff_schedule
+async function handleICalGetStaffSchedule(params: any = {}) {
+  try {
+    const { username: usernameParam, calname } = params;
+    const providedUsername = usernameParam || calname;
+
+    console.log(
+      "📊 [CAL-INTEGRATION] Getting staff schedule from iCal...",
+      providedUsername ? `for username: ${providedUsername}` : ""
+    );
+
+    // TODO: Implement iCal integration
+    // This would:
+    // 1. Fetch iCal feed URL (from environment or params)
+    // 2. Parse iCal format (.ics file)
+    // 3. Extract events and free/busy times
+    // 4. Calculate available slots
+    // 5. Format response similar to Cal.com format
+
+    const icalUrl = process.env.ICAL_URL || params.icalUrl;
+    
+    if (!icalUrl) {
+      throw new Error("iCal URL not configured. Please set ICAL_URL environment variable or provide icalUrl parameter.");
+    }
+
+    // Example: Fetch and parse iCal
+    // const icalResponse = await fetch(icalUrl);
+    // const icalData = await icalResponse.text();
+    // ... parse iCal format and extract availability
+
+    return new Response(
+      JSON.stringify({
+        result: "iCal integration is not yet fully implemented. Please use Cal.com for now.",
+        data: {
+          calendarType: 'ical',
+          message: "iCal support coming soon",
+        },
+      }),
+      {
+        status: 501, // Not Implemented
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Error getting iCal account info:", error);
+    return new Response(
+      JSON.stringify({
+        result: `I'm unable to check iCal availability right now. ${error.message || "Unknown error"}`,
+        error: error.message || "Unknown error",
       }),
       {
         status: 500,
@@ -1286,13 +1511,52 @@ async function handleGetAvailability(params: any) {
   }
 }
 
-async function handleCreateBooking(params: any) {
-  const { start: startParam, name, email, smsReminderNumber } = params;
-  console.log("📝 [CAL-INTEGRATION] Creating booking:", {
+async function handleCreateBooking(params: any, calendarType: string = 'calcom') {
+  try {
+    // Route to appropriate calendar handler based on calendar type
+    switch (calendarType.toLowerCase()) {
+      case 'google':
+        return await handleGoogleCalendarCreateBooking(params);
+      case 'ical':
+        return await handleICalCreateBooking(params);
+      case 'calcom':
+      default:
+        return await handleCalComCreateBooking(params);
+    }
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Error in handleCreateBooking:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Failed to create booking",
+        message: error.message || "Unknown error occurred",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
+// Cal.com implementation for create_booking
+async function handleCalComCreateBooking(params: any) {
+  const {
     start: startParam,
     name,
     email,
     smsReminderNumber,
+    username: usernameParam,
+    calname,
+  } = params;
+  // Support both username and calname parameters
+  const username = usernameParam || calname;
+  console.log("📝 [CAL-INTEGRATION] Creating booking in Cal.com:", {
+    start: startParam,
+    name,
+    email,
+    smsReminderNumber,
+    username,
   });
 
   // Use a mutable variable for start so we can correct the year
@@ -1682,89 +1946,161 @@ async function handleCreateBooking(params: any) {
   }
 
   try {
+    // If username/calname is provided, resolve it to userId and find event types for that user
+    let targetUserId: number | undefined;
+    if (username) {
+      try {
+        // Try to find user by username
+        let userQuery = `SELECT id FROM "User" WHERE username = $1`;
+        let userResult = await calcomDb.query(userQuery, [username]);
+
+        if (userResult.rows.length === 0) {
+          // Try lowercase table
+          userQuery = `SELECT id FROM users WHERE username = $1`;
+          userResult = await calcomDb.query(userQuery, [username]);
+        }
+
+        if (userResult.rows.length > 0) {
+          targetUserId = userResult.rows[0].id;
+          console.log(
+            `✅ [CAL-INTEGRATION] Resolved username "${username}" to userId ${targetUserId}`
+          );
+        } else {
+          console.warn(
+            `⚠️ [CAL-INTEGRATION] Could not resolve username "${username}", falling back to default event type`
+          );
+        }
+      } catch (userError: any) {
+        console.warn(
+          `⚠️ [CAL-INTEGRATION] Error resolving username "${username}": ${userError.message}, falling back to default event type`
+        );
+      }
+    }
+
     // Get the configured event type for VAPI bookings (must include userId - the owner)
     // IMPORTANT: This must match the calLink used in CalComBooking.astro (currently "capco/30min")
     // If VAPI_EVENT_TYPE_ID is not set, default to "capco/30min" to match the demo page
     const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "capco/30min";
     let eventTypeResult;
 
-    // Check if it's a numeric ID or a slug/path
-    if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
-      // It's a numeric ID
-      eventTypeResult = await calcomDb.query(
-        `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit" FROM "EventType" WHERE id = $1`,
-        [VAPI_EVENT_TYPE_ID]
-      );
-    } else {
-      // It's a slug/path like "/capco/30min" - extract just the slug part or use full path
-      // Remove leading/trailing slashes for matching
-      const slugPattern = VAPI_EVENT_TYPE_ID.replace(/^\/+|\/+$/g, ""); // Remove leading/trailing slashes
-      const slugParts = slugPattern.split("/"); // ["capco", "30min"]
-      const lastPart = slugParts[slugParts.length - 1]; // "30min"
-
-      // Try both PascalCase and snake_case table names
+    // If we have a targetUserId, find event types for that user
+    if (targetUserId) {
       try {
+        // Try PascalCase table first
         eventTypeResult = await calcomDb.query(
           `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit"
            FROM "EventType" 
-           WHERE slug = $1 
-              OR slug = $2 
-              OR slug LIKE $3 
-              OR slug LIKE $4
-           ORDER BY CASE 
-             WHEN slug = $1 THEN 1
-             WHEN slug = $2 THEN 2
-             ELSE 3
-           END
+           WHERE "userId" = $1
+           ORDER BY id ASC
            LIMIT 1`,
-          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+          [targetUserId]
         );
       } catch (error: any) {
         // Try lowercase table
         eventTypeResult = await calcomDb.query(
           `SELECT id, length, title, user_id as "userId", slug, minimum_booking_notice as "minimumBookingNotice", minimum_booking_notice_unit as "minimumBookingNoticeUnit"
            FROM event_types 
-           WHERE slug = $1 
-              OR slug = $2 
-              OR slug LIKE $3 
-              OR slug LIKE $4
-           ORDER BY CASE 
-             WHEN slug = $1 THEN 1
-             WHEN slug = $2 THEN 2
-             ELSE 3
-           END
+           WHERE user_id = $1
+           ORDER BY id ASC
            LIMIT 1`,
-          [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+          [targetUserId]
         );
+      }
+
+      if (eventTypeResult.rows.length === 0) {
+        console.warn(
+          `⚠️ [CAL-INTEGRATION] No event types found for user ${targetUserId} (username: ${username}), falling back to default event type`
+        );
+        // Fall through to default event type lookup
+        targetUserId = undefined;
+        eventTypeResult = null;
       }
     }
 
-    if (eventTypeResult.rows.length === 0) {
-      throw new Error(`No event types found in Cal.com for ID/slug: ${VAPI_EVENT_TYPE_ID}`);
+    // If no username provided or no event types found for that user, use default event type lookup
+    if (!targetUserId || !eventTypeResult || eventTypeResult.rows.length === 0) {
+      // Check if it's a numeric ID or a slug/path
+      if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
+        // It's a numeric ID
+        eventTypeResult = await calcomDb.query(
+          `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit" FROM "EventType" WHERE id = $1`,
+          [VAPI_EVENT_TYPE_ID]
+        );
+      } else {
+        // It's a slug/path like "/capco/30min" - extract just the slug part or use full path
+        // Remove leading/trailing slashes for matching
+        const slugPattern = VAPI_EVENT_TYPE_ID.replace(/^\/+|\/+$/g, ""); // Remove leading/trailing slashes
+        const slugParts = slugPattern.split("/"); // ["capco", "30min"]
+        const lastPart = slugParts[slugParts.length - 1]; // "30min"
+
+        // Try both PascalCase and snake_case table names
+        try {
+          eventTypeResult = await calcomDb.query(
+            `SELECT id, length, title, "userId", slug, "minimumBookingNotice", "minimumBookingNoticeUnit"
+             FROM "EventType" 
+             WHERE slug = $1 
+                OR slug = $2 
+                OR slug LIKE $3 
+                OR slug LIKE $4
+             ORDER BY CASE 
+               WHEN slug = $1 THEN 1
+               WHEN slug = $2 THEN 2
+               ELSE 3
+             END
+             LIMIT 1`,
+            [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+          );
+        } catch (error: any) {
+          // Try lowercase table
+          eventTypeResult = await calcomDb.query(
+            `SELECT id, length, title, user_id as "userId", slug, minimum_booking_notice as "minimumBookingNotice", minimum_booking_notice_unit as "minimumBookingNoticeUnit"
+             FROM event_types 
+             WHERE slug = $1 
+                OR slug = $2 
+                OR slug LIKE $3 
+                OR slug LIKE $4
+             ORDER BY CASE 
+               WHEN slug = $1 THEN 1
+               WHEN slug = $2 THEN 2
+               ELSE 3
+             END
+             LIMIT 1`,
+            [VAPI_EVENT_TYPE_ID, slugPattern, `%/${lastPart}`, `%${lastPart}%`]
+          );
+        }
+      }
+    }
+
+    if (!eventTypeResult || eventTypeResult.rows.length === 0) {
+      throw new Error(
+        `No event types found in Cal.com${username ? ` for username: ${username}` : ""}${!username ? ` for ID/slug: ${VAPI_EVENT_TYPE_ID}` : ""}`
+      );
     }
 
     const eventType = eventTypeResult.rows[0];
 
-    // Get username if available for better availability lookup
-    let username: string | undefined;
-    try {
-      let userResult = await calcomDb.query(`SELECT username FROM "User" WHERE id = $1`, [
-        eventType.userId,
-      ]);
-      if (userResult.rows.length === 0) {
-        userResult = await calcomDb.query(`SELECT username FROM users WHERE id = $1`, [
+    // Get username if available for better availability lookup (use provided username or lookup from userId)
+    let resolvedUsername: string | undefined = username;
+    if (!resolvedUsername) {
+      try {
+        let userResult = await calcomDb.query(`SELECT username FROM "User" WHERE id = $1`, [
           eventType.userId,
         ]);
+        if (userResult.rows.length === 0) {
+          userResult = await calcomDb.query(`SELECT username FROM users WHERE id = $1`, [
+            eventType.userId,
+          ]);
+        }
+        if (userResult.rows.length > 0) {
+          resolvedUsername = userResult.rows[0].username;
+        }
+      } catch (e) {
+        // Ignore - username lookup is optional
       }
-      if (userResult.rows.length > 0) {
-        username = userResult.rows[0].username;
-      }
-    } catch (e) {
-      // Ignore - username lookup is optional
     }
 
     console.log(
-      `📅 [CAL-INTEGRATION] Using EventType for booking: id=${eventType.id}, slug=${eventType.slug}, userId=${eventType.userId}${username ? `, username=${username}` : ""}`
+      `📅 [CAL-INTEGRATION] Using EventType for booking: id=${eventType.id}, slug=${eventType.slug}, userId=${eventType.userId}${resolvedUsername ? `, username=${resolvedUsername}` : ""}`
     );
 
     // Use the event type's owner (userId) - this ensures bookings show up in the correct user's calendar
@@ -1776,7 +2112,7 @@ async function handleCreateBooking(params: any) {
     const userId = eventType.userId;
 
     // Validate booking time is within working hours
-    const workingHours = await getWorkingHours(eventType.userId, eventType.id, username);
+    const workingHours = await getWorkingHours(eventType.userId, eventType.id, resolvedUsername);
     const bookingHour = startDate.getUTCHours();
     const bookingMinute = startDate.getUTCMinutes();
     const bookingTotalMinutes = bookingHour * 60 + bookingMinute;
@@ -2283,6 +2619,165 @@ async function handleCreateBooking(params: any) {
   }
 }
 
+// Google Calendar implementation for create_booking
+async function handleGoogleCalendarCreateBooking(params: any) {
+  try {
+    const {
+      start: startParam,
+      name,
+      email,
+      smsReminderNumber,
+      username: usernameParam,
+      calname,
+    } = params;
+    const username = usernameParam || calname;
+
+    console.log("📝 [CAL-INTEGRATION] Creating booking in Google Calendar:", {
+      start: startParam,
+      name,
+      email,
+      smsReminderNumber,
+      username,
+    });
+
+    // TODO: Implement Google Calendar API integration
+    // This would use Google Calendar API to:
+    // 1. Authenticate using service account or OAuth
+    // 2. Create event in the specified calendar
+    // 3. Add attendees (email)
+    // 4. Set reminders (SMS if smsReminderNumber provided)
+    // 5. Return confirmation
+
+    const googleCalendarId = process.env.GOOGLE_CALENDAR_ID || username || 'primary';
+    const googleApiKey = process.env.GOOGLE_CALENDAR_API_KEY;
+    
+    if (!googleApiKey) {
+      throw new Error("Google Calendar API key not configured. Please set GOOGLE_CALENDAR_API_KEY environment variable.");
+    }
+
+    // Parse start time
+    const startDate = new Date(startParam);
+    const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // Default 30 min duration
+
+    // Example: Use Google Calendar Events API
+    // const eventUrl = `https://www.googleapis.com/calendar/v3/calendars/${googleCalendarId}/events?key=${googleApiKey}`;
+    // const eventData = {
+    //   summary: `Appointment with ${name}`,
+    //   start: { dateTime: startDate.toISOString() },
+    //   end: { dateTime: endDate.toISOString() },
+    //   attendees: [{ email }],
+    //   reminders: { useDefault: false, overrides: [{ method: 'email', minutes: 24 * 60 }] }
+    // };
+    // ... create event
+
+    return new Response(
+      JSON.stringify({
+        result: "Google Calendar integration is not yet fully implemented. Please use Cal.com for now.",
+        success: false,
+        data: {
+          calendarType: 'google',
+          message: "Google Calendar support coming soon",
+        },
+      }),
+      {
+        status: 501, // Not Implemented
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Error creating Google Calendar booking:", error);
+    return new Response(
+      JSON.stringify({
+        result: `I'm sorry, I couldn't book that appointment in Google Calendar. ${error.message || "Unknown error"}`,
+        success: false,
+        error: error.message || "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
+// iCal implementation for create_booking
+async function handleICalCreateBooking(params: any) {
+  try {
+    const {
+      start: startParam,
+      name,
+      email,
+      smsReminderNumber,
+      username: usernameParam,
+      calname,
+    } = params;
+    const username = usernameParam || calname;
+
+    console.log("📝 [CAL-INTEGRATION] Creating booking in iCal:", {
+      start: startParam,
+      name,
+      email,
+      smsReminderNumber,
+      username,
+    });
+
+    // TODO: Implement iCal integration
+    // This would:
+    // 1. Parse iCal feed URL (from environment or params)
+    // 2. Create new event in iCal format
+    // 3. Post/update iCal feed (if writable)
+    // 4. Or use iCal-compatible API (like CalDAV)
+    // 5. Return confirmation
+
+    const icalUrl = process.env.ICAL_URL || params.icalUrl;
+    
+    if (!icalUrl) {
+      throw new Error("iCal URL not configured. Please set ICAL_URL environment variable or provide icalUrl parameter.");
+    }
+
+    // Parse start time
+    const startDate = new Date(startParam);
+    const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // Default 30 min duration
+
+    // Example: Generate iCal event
+    // const icalEvent = `BEGIN:VEVENT
+    // DTSTART:${formatICalDate(startDate)}
+    // DTEND:${formatICalDate(endDate)}
+    // SUMMARY:Appointment with ${name}
+    // ATTENDEE:mailto:${email}
+    // END:VEVENT`;
+    // ... create/update iCal
+
+    return new Response(
+      JSON.stringify({
+        result: "iCal integration is not yet fully implemented. Please use Cal.com for now.",
+        success: false,
+        data: {
+          calendarType: 'ical',
+          message: "iCal support coming soon",
+        },
+      }),
+      {
+        status: 501, // Not Implemented
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ [CAL-INTEGRATION] Error creating iCal booking:", error);
+    return new Response(
+      JSON.stringify({
+        result: `I'm sorry, I couldn't book that appointment in iCal. ${error.message || "Unknown error"}`,
+        success: false,
+        error: error.message || "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
 async function handleGetBookings(params: any) {
   try {
     const { userId, startDate, endDate } = params;
@@ -2415,7 +2910,7 @@ async function handleLookupClient(params: any) {
 
     // TODO: Replace with actual database lookup
     // For now, return placeholder data for testing
-    
+
     // Mock client data for testing
     // In production, this would query your client database
     const mockClients: Array<{
@@ -2450,7 +2945,7 @@ async function handleLookupClient(params: any) {
 
     // Normalize the search input
     const searchTerm = (nameOrPhone || "").toLowerCase().trim();
-    
+
     // Try to find a matching client
     const foundClient = mockClients.find(
       (client) =>
@@ -2485,7 +2980,8 @@ async function handleLookupClient(params: any) {
       return new Response(
         JSON.stringify({
           success: true,
-          result: "I don't see a record with that information. Let me collect your details for this appointment.",
+          result:
+            "I don't see a record with that information. Let me collect your details for this appointment.",
           data: {
             found: false,
             message: "No client found with that information",
@@ -2502,7 +2998,8 @@ async function handleLookupClient(params: any) {
     return new Response(
       JSON.stringify({
         success: false,
-        result: "I'm having trouble looking up your information right now. Let me collect your details for this appointment.",
+        result:
+          "I'm having trouble looking up your information right now. Let me collect your details for this appointment.",
         error: error.message || "Failed to lookup client",
         data: {
           found: false,
