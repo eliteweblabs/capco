@@ -149,19 +149,21 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
 
       // Get form data for validation
       const formData = new FormData(form as HTMLFormElement);
-      
+
       // Get role from hidden input (SlotMachineModalStaff creates role-value input)
       const roleInput = document.getElementById("role-value") as HTMLInputElement;
-      const role = roleInput?.value || formData.get("role") as string;
-      
+      const role = roleInput?.value || (formData.get("role") as string);
+
       // Get SMS fields
       const smsAlertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;
       const smsAlerts = smsAlertsCheckbox?.checked || false;
-      const mobileCarrierInput = document.getElementById("mobile-carrier-phone-value") as HTMLInputElement;
+      const mobileCarrierInput = document.getElementById(
+        "mobile-carrier-phone-value"
+      ) as HTMLInputElement;
       const mobileCarrier = mobileCarrierInput?.value?.trim() || "";
-      
+
       const passwordValue = (formData.get("password") as string)?.trim();
-      
+
       const userData: any = {
         email: formData.get("email") as string,
         phone: formData.get("phone") as string,
@@ -172,7 +174,7 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
         smsAlerts: smsAlerts,
         mobileCarrier: mobileCarrier || undefined,
       };
-      
+
       // Only include password if it's provided
       if (passwordValue) {
         userData.password = passwordValue;
@@ -231,6 +233,9 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
         const result = await response.json();
 
         if (response.ok && result.success) {
+          // Logging is handled by the API endpoint, but we verify it succeeded
+          console.log("✅ [CREATE-USER] User created successfully:", result.data);
+
           // Show notification if provided by API
           if (result.notification && (window as any).showModal) {
             (window as any).showModal(
