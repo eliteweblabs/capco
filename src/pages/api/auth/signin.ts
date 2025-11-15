@@ -18,62 +18,21 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const provider = formData.get("provider")?.toString();
 
   if (provider) {
-    // Use getBaseUrl to ensure we use the custom domain (capcofire.com) instead of Supabase URL
-    // This ensures the redirect URL shown in Google's sign-in prompt uses your custom domain
-    // Redirect directly to client-side callback for PKCE (code verifier is in localStorage)
+    // IMPORTANT: OAuth must be initiated client-side for PKCE to work
+    // Server-side OAuth initiation doesn't store code verifier in browser localStorage
+    // Redirect to a client-side OAuth initiation page instead
     const baseUrl = getBaseUrl(request);
     const redirectUrl = `${baseUrl}/auth/callback`;
+    
+    console.log("[---AUTH-SIGNIN] OAuth provider requested:", provider);
+    console.log("[---AUTH-SIGNIN] Redirecting to client-side OAuth initiation...");
     console.log("[---AUTH-SIGNIN] OAuth redirect URL:", redirectUrl);
-    console.log("[---AUTH-SIGNIN] Base URL:", baseUrl);
-
-    console.log("[---AUTH-SIGNIN] Request URL:", request.url);
-    console.log("[---AUTH-SIGNIN] Request hostname:", request.url ? new URL(request.url).hostname : "unknown");
     
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: provider as Provider,
-      options: {
-        redirectTo: redirectUrl,
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent",
-          // Note: contacts.readonly scope is ONLY for standalone PDF system (/api/google/signin)
-          // Regular authentication does NOT need contacts access
-          scope: "openid email profile",
-        },
-      },
-    });
-    
-    console.log("[---AUTH-SIGNIN] Supabase OAuth response URL:", data?.url);
-
-    if (error) {
-      // Log failed OAuth login attempt
-      try {
-        await SimpleProjectLogger.addLogEntry(
-          0, // System log
-          "error",
-          `OAuth ${provider} failed: ${error.message}`,
-          { provider, error: error.message }
-        );
-      } catch (logError) {
-        console.error("[---AUTH-SIGNIN] Error logging failed OAuth login:", logError);
-      }
-
-      return new Response(error.message, { status: 500 });
-    }
-
-    // Log OAuth login initiation (we'll log success in the callback)
-    try {
-      await SimpleProjectLogger.addLogEntry(
-        0, // System log
-        "userLogin",
-        `User logged in via OAuth ${provider} ${email || "oauth_user"}`,
-        { provider, initiated: true }
-      );
-    } catch (logError) {
-      console.error("[---AUTH-SIGNIN] Error logging OAuth login initiation:", logError);
-    }
-
-    return redirect(data.url);
+    // Store provider in a temporary session/cookie so client-side can use it
+    // Or redirect to a page that initiates OAuth client-side
+    // For now, redirect to login page with provider parameter
+    // The login page should handle client-side OAuth initiation
+    return redirect(`/auth/login?provider=${provider}&oauth=true`);
   }
 
   if (!email || !password) {

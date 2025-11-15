@@ -125,89 +125,111 @@ const { globalInputClasses } = Astro.props;
 
   // Handle client-side OAuth for PKCE (code verifier must be stored in browser)
   document.addEventListener("DOMContentLoaded", async () => {
+    // Check if OAuth should be auto-triggered from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const provider = urlParams.get("provider");
+    const oauth = urlParams.get("oauth");
+    
+    // Auto-trigger OAuth if provider and oauth params are present
+    if (provider === "google" && oauth === "true") {
+      console.log("[GOOGLE-SIGNIN] Auto-triggering OAuth from URL params...");
+      // Remove params from URL to prevent re-triggering
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Trigger OAuth immediately
+      await triggerGoogleOAuth();
+      return;
+    }
+
     const googleSignInButton = document.getElementById("google-signin-button");
 
     if (googleSignInButton) {
       googleSignInButton.addEventListener("click", async (e) => {
+        await triggerGoogleOAuth(e);
+      });
+    }
+
+    // Extract OAuth initiation logic into a reusable function
+    async function triggerGoogleOAuth(e?: Event) {
+      if (e) {
         e.preventDefault();
+      }
 
-        console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
+      console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
 
-        // Get singleton Supabase client (prevents multiple GoTrueClient instances)
-        const supabase = getSupabaseClient();
+      // Get singleton Supabase client (prevents multiple GoTrueClient instances)
+      const supabase = getSupabaseClient();
 
-        if (!supabase) {
-          console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
-          if (window.showModal) {
-            window.showModal(
-              "error",
-              "Configuration Error",
-              "Supabase is not configured. Please contact support."
+      if (!supabase) {
+        console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
+        if (window.showModal) {
+          window.showModal(
+            "error",
+            "Configuration Error",
+            "Supabase is not configured. Please contact support."
+          );
+        }
+        return;
+      }
+
+      // Get the redirect URL based on current origin
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      console.log("[GOOGLE-SIGNIN] Redirect URL:", redirectUrl);
+
+      // Initiate OAuth (this will store code verifier in localStorage)
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+            scope: "openid email profile",
+          },
+        },
+      });
+
+      if (error) {
+        console.error("[GOOGLE-SIGNIN] OAuth error:", error);
+        if (window.showModal) {
+          window.showModal("error", "Authentication Error", error.message);
+        }
+        return;
+      }
+
+      if (data?.url) {
+        // Verify code verifier is stored in localStorage before redirecting
+        // This prevents race conditions where the callback page loads before storage is ready
+        const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+        if (supabaseUrl) {
+          const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+          const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
+
+          // Wait for code verifier to be stored (with retry)
+          let codeVerifier = localStorage.getItem(codeVerifierKey);
+          let attempts = 0;
+          const maxAttempts = 10;
+
+          while (!codeVerifier && attempts < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            codeVerifier = localStorage.getItem(codeVerifierKey);
+            attempts++;
+          }
+
+          if (codeVerifier) {
+            console.log(
+              "[GOOGLE-SIGNIN] Code verifier confirmed in localStorage, redirecting..."
+            );
+          } else {
+            console.warn(
+              "[GOOGLE-SIGNIN] Code verifier not found after waiting, but proceeding with redirect..."
             );
           }
-          return;
         }
 
-        // Get the redirect URL based on current origin
-        const redirectUrl = `${window.location.origin}/auth/callback`;
-        console.log("[GOOGLE-SIGNIN] Redirect URL:", redirectUrl);
-
-        // Initiate OAuth (this will store code verifier in localStorage)
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: redirectUrl,
-            queryParams: {
-              access_type: "offline",
-              prompt: "consent",
-              scope: "openid email profile",
-            },
-          },
-        });
-
-        if (error) {
-          console.error("[GOOGLE-SIGNIN] OAuth error:", error);
-          if (window.showModal) {
-            window.showModal("error", "Authentication Error", error.message);
-          }
-          return;
-        }
-
-        if (data?.url) {
-          // Verify code verifier is stored in localStorage before redirecting
-          // This prevents race conditions where the callback page loads before storage is ready
-          const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-          if (supabaseUrl) {
-            const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-            const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
-
-            // Wait for code verifier to be stored (with retry)
-            let codeVerifier = localStorage.getItem(codeVerifierKey);
-            let attempts = 0;
-            const maxAttempts = 10;
-
-            while (!codeVerifier && attempts < maxAttempts) {
-              await new Promise((resolve) => setTimeout(resolve, 50));
-              codeVerifier = localStorage.getItem(codeVerifierKey);
-              attempts++;
-            }
-
-            if (codeVerifier) {
-              console.log(
-                "[GOOGLE-SIGNIN] Code verifier confirmed in localStorage, redirecting..."
-              );
-            } else {
-              console.warn(
-                "[GOOGLE-SIGNIN] Code verifier not found after waiting, but proceeding with redirect..."
-              );
-            }
-          }
-
-          console.log("[GOOGLE-SIGNIN] Redirecting to OAuth provider...");
-          // Redirect to Google OAuth
-          window.location.href = data.url;
-        }
-      });
+        console.log("[GOOGLE-SIGNIN] Redirecting to OAuth provider...");
+        // Redirect to Google OAuth
+        window.location.href = data.url;
+      }
     }
 
     // Handle email/password form submission

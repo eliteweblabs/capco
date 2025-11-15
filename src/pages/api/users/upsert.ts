@@ -316,9 +316,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             },
           },
         });
+      } else {
+        // Fallback welcome message if template doesn't exist
+        userEmailContent = `
+          <h2>Welcome to ${import.meta.env.RAILWAY_PROJECT_NAME || "the platform"}!</h2>
+          <p>Your account has been created successfully. You can now access your dashboard using the link below.</p>
+        `;
       }
 
       const emailFooterContent = `
+      <br><hr><br>
+      <b>Account Details:</b><br>
       <b>Company Name:</b> ${displayName}<br>
       <b>Email:</b> ${userData.email}<br>
       <b>First Name:</b> ${userData.firstName}<br>
@@ -340,22 +348,42 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
 
       try {
+        const emailPayload = {
+          method: "magicLink",
+          trackLinks: false,
+          usersToNotify: [userData.email.trim().toLowerCase()],
+          emailSubject: `Welcome to ${import.meta.env.RAILWAY_PROJECT_NAME || "the platform"} → ${displayName}`,
+          emailContent: userEmailContent,
+          buttonText: "Access Your Dashboard",
+          buttonLink: "/dashboard",
+        };
+
+        console.log("📧 [USERS-UPSERT] Sending welcome email with payload:", {
+          method: emailPayload.method,
+          usersToNotify: emailPayload.usersToNotify,
+          emailSubject: emailPayload.emailSubject,
+          hasContent: !!emailPayload.emailContent,
+        });
+
         const userEmailResponse = await fetch(`${apiBaseUrl}/api/delivery/update-delivery`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            method: "magicLink",
-            trackLinks: false,
-            usersToNotify: [userData.email],
-            emailSubject: `Welcome to ${import.meta.env.RAILWAY_PROJECT_NAME} → ${displayName}`,
-            emailContent: userEmailContent,
-            buttonText: "Access Your Dashboard",
-            buttonLink: "/dashboard",
-          }),
+          body: JSON.stringify(emailPayload),
         });
 
+        const emailResult = await userEmailResponse.json();
+        
         if (!userEmailResponse.ok) {
-          console.error("❌ [USERS-UPSERT] Failed to send welcome email");
+          console.error("❌ [USERS-UPSERT] Failed to send welcome email:", {
+            status: userEmailResponse.status,
+            error: emailResult.error,
+            details: emailResult.details,
+          });
+        } else {
+          console.log("✅ [USERS-UPSERT] Welcome email sent successfully:", {
+            sentEmails: emailResult.sentEmails,
+            totalSent: emailResult.totalSent,
+          });
         }
       } catch (emailError) {
         console.error("❌ [USERS-UPSERT] Error sending welcome email:", emailError);
@@ -365,41 +393,77 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const adminEmailContent = `A new user account has been created successfully:<br><br>${emailFooterContent}`;
 
       try {
+        const adminEmailPayload = {
+          method: "internal",
+          rolesToNotify: ["Admin", "Staff"],
+          emailSubject: `New User → ${displayName} → ${userData.role}`,
+          emailContent: adminEmailContent,
+          buttonText: "View Users",
+          buttonLink: "/admin/users",
+          trackLinks: false,
+        };
+
+        console.log("📧 [USERS-UPSERT] Sending admin notification with payload:", {
+          method: adminEmailPayload.method,
+          rolesToNotify: adminEmailPayload.rolesToNotify,
+          emailSubject: adminEmailPayload.emailSubject,
+        });
+
         const adminEmailResponse = await fetch(`${apiBaseUrl}/api/delivery/update-delivery`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            method: "internal",
-            rolesToNotify: ["Admin", "Staff"],
-            emailSubject: `New User → ${displayName} → ${userData.role}`,
-            emailContent: adminEmailContent,
-            buttonText: "View Users",
-            buttonLink: "/admin/users",
-            trackLinks: false,
-          }),
+          body: JSON.stringify(adminEmailPayload),
         });
 
+        const adminEmailResult = await adminEmailResponse.json();
+        
         if (!adminEmailResponse.ok) {
-          console.error("❌ [USERS-UPSERT] Failed to send admin notifications");
+          console.error("❌ [USERS-UPSERT] Failed to send admin notifications:", {
+            status: adminEmailResponse.status,
+            error: adminEmailResult.error,
+            details: adminEmailResult.details,
+          });
+        } else {
+          console.log("✅ [USERS-UPSERT] Admin notifications sent successfully:", {
+            message: adminEmailResult.message,
+            totalSent: adminEmailResult.totalSent,
+          });
         }
       } catch (adminError) {
         console.error("❌ [USERS-UPSERT] Error sending admin notifications:", adminError);
       }
 
-      // Log the user creation
+      // Log the user creation to system (projectId 0)
       try {
-        await SimpleProjectLogger.addLogEntry(0, "userRegistration", "New user created", {
+        console.log("📝 [USERS-UPSERT] Logging user creation to system:", {
           userId: authData.user.id,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          companyName: userData.companyName,
+          email: userData.email,
           role: userData.role,
-          phone: userData.phone || null,
-          smsAlerts: userData.smsAlerts,
-          mobileCarrier: userData.mobileCarrier || null,
         });
+
+        await SimpleProjectLogger.addLogEntry(
+          0, // System project ID
+          "userRegistration",
+          `New user created: ${userData.firstName} ${userData.lastName} (${userData.email})`,
+          {
+            userId: authData.user.id,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            companyName: userData.companyName,
+            email: userData.email,
+            role: userData.role,
+            phone: userData.phone || null,
+            smsAlerts: userData.smsAlerts || false,
+            mobileCarrier: userData.mobileCarrier || null,
+            createdBy: currentUser?.email || "System",
+          },
+          cookies
+        );
+
+        console.log("✅ [USERS-UPSERT] User creation logged to system successfully");
       } catch (logError) {
         console.error("❌ [USERS-UPSERT] Error logging user creation:", logError);
+        // Don't fail the entire operation if logging fails
       }
     }
 

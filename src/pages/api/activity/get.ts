@@ -145,8 +145,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       `
       )
       .not("log", "is", null)
-      .neq("log", "[]")
-      .neq("id", 0); // Exclude system log project
+      .neq("log", "[]");
+      // Include system log project (id 0) for user registrations and system activities
 
     if (projectsError) {
       console.error("❌ [GET-ACTIVITY] Error fetching projects with logs:", projectsError);
