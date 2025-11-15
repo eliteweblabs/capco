@@ -69,16 +69,20 @@ interface VapiWebhookData {
 
 export const POST: APIRoute = async ({ request }): Promise<Response> => {
   try {
+    // Extract calendarType from URL query parameter
+    const url = new URL(request.url);
+    const calendarType = url.searchParams.get('calendarType') || 'calcom';
+    
     const body: VapiWebhookData = await request.json();
     const messageType = body.message?.type || "unknown";
 
-    console.log(`[---VAPI-WEBHOOK] ${messageType}`);
+    console.log(`[---VAPI-WEBHOOK] ${messageType}`, calendarType ? `(calendarType: ${calendarType})` : '');
 
     // Only process function calls and call end status
     if (body.message?.type === "function-call") {
-      return await handleFunctionCall(body.message.functionCall);
+      return await handleFunctionCall(body.message.functionCall, calendarType);
     } else if (body.message?.type === "tool-calls") {
-      return await handleToolCalls(body.message);
+      return await handleToolCalls(body.message, calendarType);
     }
 
     // Acknowledge all other messages without processing
@@ -104,7 +108,7 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
 };
 
 // Handle tool calls (VAPI Custom Tools format)
-async function handleToolCalls(message: any): Promise<Response> {
+async function handleToolCalls(message: any, calendarType: string = 'calcom'): Promise<Response> {
   try {
     console.log("[---VAPI-WEBHOOK] Processing tool calls...");
 
@@ -128,7 +132,16 @@ async function handleToolCalls(message: any): Promise<Response> {
 
       // Route to appropriate action based on function name
       if (functionName === "getStaffSchedule") {
-        action = "get_account_info";
+        action = "get_staff_schedule";
+        // Parse arguments if they're a string
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+        params = {
+          username: args.username || args.calname, // Support both username and calname
+        };
+        console.log(`[---VAPI-WEBHOOK] Get staff schedule params:`, params);
       } else if (functionName === "bookAppointment") {
         action = "create_booking";
         // Parse arguments if they're a string
@@ -141,6 +154,7 @@ async function handleToolCalls(message: any): Promise<Response> {
           name: args.name,
           email: args.email,
           smsReminderNumber: args.phone, // Map phone to smsReminderNumber
+          username: args.username || args.calname, // Support both username and calname
         };
         console.log(`[---VAPI-WEBHOOK] Booking params:`, params);
       } else if (functionName === "lookupClient") {
@@ -165,6 +179,7 @@ async function handleToolCalls(message: any): Promise<Response> {
         },
         body: JSON.stringify({
           action,
+          calendarType,
           ...params,
         }),
       });
@@ -191,7 +206,12 @@ async function handleToolCalls(message: any): Promise<Response> {
       // Log client lookup results
       if (functionName === "lookupClient") {
         if (data.data?.found) {
-          console.log(`✅ [VAPI-WEBHOOK] Client found:`, data.data.name, `Preferred barber:`, data.data.preferredBarber);
+          console.log(
+            `✅ [VAPI-WEBHOOK] Client found:`,
+            data.data.name,
+            `Preferred barber:`,
+            data.data.preferredBarber
+          );
         } else {
           console.log(`ℹ️ [VAPI-WEBHOOK] Client not found, proceeding as new client`);
         }
@@ -235,7 +255,7 @@ async function handleToolCalls(message: any): Promise<Response> {
 }
 
 // Handle function calls from Vapi.ai (legacy format)
-async function handleFunctionCall(functionCall: any): Promise<Response> {
+async function handleFunctionCall(functionCall: any, calendarType: string = 'calcom'): Promise<Response> {
   if (!functionCall) {
     return new Response(JSON.stringify({ success: false, error: "No function call provided" }), {
       status: 400,
@@ -267,7 +287,12 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
     }
 
     // Route Cal.com function calls to the integration API
-    const calcomFunctions = ["getStaffSchedule", "checkAvailability", "bookAppointment", "lookupClient"];
+    const calcomFunctions = [
+      "getStaffSchedule",
+      "checkAvailability",
+      "bookAppointment",
+      "lookupClient",
+    ];
     if (calcomFunctions.includes(functionCall.name)) {
       console.log("🤖 [VAPI-WEBHOOK] Routing to Cal.com integration:", functionCall.name);
 
@@ -282,8 +307,10 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
 
         switch (functionCall.name) {
           case "getStaffSchedule":
-            action = "get_account_info";
-            params = {};
+            action = "get_staff_schedule";
+            params = {
+              username: functionCall.parameters.username || functionCall.parameters.calname, // Support both username and calname
+            };
             break;
           case "checkAvailability":
             // Validate required parameters
@@ -358,11 +385,16 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
               name: functionCall.parameters.name,
               email: functionCall.parameters.email,
               smsReminderNumber: functionCall.parameters.smsReminderNumber,
+              username: functionCall.parameters.username || functionCall.parameters.calname, // Support both username and calname
             };
             break;
           case "lookupClient":
             // Validate required parameters
-            if (!functionCall.parameters.nameOrPhone && !functionCall.parameters.name && !functionCall.parameters.phone) {
+            if (
+              !functionCall.parameters.nameOrPhone &&
+              !functionCall.parameters.name &&
+              !functionCall.parameters.phone
+            ) {
               console.error(
                 "❌ [VAPI-WEBHOOK] Missing required parameters for lookupClient:",
                 functionCall.parameters
@@ -371,7 +403,10 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
             }
             action = "lookup_client";
             params = {
-              nameOrPhone: functionCall.parameters.nameOrPhone || functionCall.parameters.name || functionCall.parameters.phone,
+              nameOrPhone:
+                functionCall.parameters.nameOrPhone ||
+                functionCall.parameters.name ||
+                functionCall.parameters.phone,
             };
             break;
         }
@@ -387,6 +422,7 @@ async function handleFunctionCall(functionCall: any): Promise<Response> {
           },
           body: JSON.stringify({
             action,
+            calendarType,
             ...params,
           }),
           signal: controller.signal,

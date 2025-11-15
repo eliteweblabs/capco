@@ -1,8 +1,8 @@
 /**
- * Vapi.ai Assistant Configuration for Cal.com Integration - The Barber's Edge
+ * Vapi.ai Assistant Configuration
  *
- * This script configures a Vapi.ai assistant to handle Cal.com operations
- * including reading/writing appointments, users, and availability for multiple barbers
+ * This script configures a Vapi.ai assistant to handle calendar operations
+ * including reading/writing appointments, users, and availability
  *
  * TEMPLATE VARIABLES:
  * - {{company.name}} - Company name (set via assistantOverrides.variableValues)
@@ -15,19 +15,14 @@
  * - Uses the existing update-delivery.ts API for consistent email formatting
  * - Emails include appointment details and helpful preparation tips
  *
- * BARBER SELECTION:
- * - Available barbers: Abraham, Henry, TJ, JC, Horell, Christian, Maddy
- * - getStaffSchedule() should return availability for all barbers
- * - bookAppointment() requires a barber parameter
- *
  * To use these variables, provide them when initiating a call:
  * {
  *   "assistantId": "your-assistant-id",
  *   "customer": { "number": "+1234567890" },
  *   "assistantOverrides": {
  *     "variableValues": {
- *       "company.name": "The Barber's Edge",
- *       "assistant.name": "Kylie"
+ *       "company.name": "Your Company Name",
+ *       "assistant.name": "Assistant Name"
  *     }
  *   }
  * }
@@ -36,16 +31,41 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 
-const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const BARBERS_EDGE_PHONE = "+19787208194";
+// ============================================================================
+// CLIENT-SPECIFIC CONFIGURATION - MODIFY THESE VALUES PER CLIENT
+// ============================================================================
 
-// do not change this url or this script will fail, the web hook url needs to be the live url of the site
-const BARBERS_EDGE_WEBHOOK_DOMAIN =
-  process.env.BARBERS_EDGE_WEBHOOK_DOMAIN || "https://capcofire.com";
-const VAPI_WEBHOOK_URL = `${BARBERS_EDGE_WEBHOOK_DOMAIN}/api/vapi/webhook`;
+// Calendar system type - Options: 'calcom', 'google', 'iCal', 'booksy', 'custom'
+const CALENDAR_TYPE = "calcom";
 
-// Available barbers at The Barber's Edge
+// Client phone number (optional - for reference)
+const CLIENT_PHONE = "+19787208194";
+
+// Webhook domain - the live URL where the webhook is hosted
+const WEBHOOK_DOMAIN = process.env.BARBERS_EDGE_WEBHOOK_DOMAIN || "https://capcofire.com";
+
+// Company name environment variable name (used for placeholder replacement)
+const COMPANY_NAME_ENV_VAR = "BARBERS_EDGE_COMPANY_NAME";
+
+// Default company name (fallback if env var not set)
+const DEFAULT_COMPANY_NAME = "The Barber's Edge";
+
+// Assistant ID (hardcoded per client)
+const ASSISTANT_ID =
+  process.env.VAPI_BARBERS_EDGE_ASSISTANT_ID || "99d7d682-573f-47e1-9440-66e1b045bc2a";
+
+// Logging prefix for this client
+const LOG_PREFIX = "[VAPI-BARBERS-EDGE]";
+
+// Client-specific constants (if needed)
 const AVAILABLE_BARBERS = ["Abraham", "Henry", "TJ", "JC", "Horell", "Christian", "Maddy"];
+
+// ============================================================================
+// END CLIENT-SPECIFIC CONFIGURATION
+// ============================================================================
+
+const VAPI_API_KEY = process.env.VAPI_API_KEY;
+const VAPI_WEBHOOK_URL = `${WEBHOOK_DOMAIN}/api/vapi/webhook?calendarType=${CALENDAR_TYPE}`;
 
 // Simple placeholder replacement for this script
 // Only replaces {{COMPANY_NAME}} - other placeholders like {{assistant.name}}
@@ -55,13 +75,13 @@ function replacePlaceholders(text) {
     return text;
   }
 
-  // Replace {{COMPANY_NAME}} with actual value
-  const companyName = process.env.BARBERS_EDGE_COMPANY_NAME || "The Barber's Edge";
+  // Replace {{COMPANY_NAME}} with actual value from env
+  const companyName = process.env[COMPANY_NAME_ENV_VAR] || DEFAULT_COMPANY_NAME;
   const replaced = text.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, companyName);
 
   // Log if there are still unreplaced COMPANY_NAME placeholders (shouldn't happen)
   if (replaced.includes("{{COMPANY_NAME}}")) {
-    console.warn("⚠️ [VAPI-BARBERS-EDGE] Some {{COMPANY_NAME}} placeholders were not replaced");
+    console.warn(`${LOG_PREFIX} Some {{COMPANY_NAME}} placeholders were not replaced`);
   }
 
   return replaced;
@@ -391,27 +411,28 @@ Remember that your ultimate goal is to match customers with the right barber and
 // Create the assistant
 async function createAssistant() {
   try {
-    console.log("🤖 [VAPI-BARBERS-EDGE] Creating Vapi.ai assistant...");
+    console.log(`🤖 ${LOG_PREFIX} Creating Vapi.ai assistant...`);
 
     // Process the config to replace placeholders with actual company data
     const processedConfig = processAssistantConfig(assistantConfig);
-    console.log("🔄 [VAPI-BARBERS-EDGE] Processed placeholders in configuration");
+    console.log(`🔄 ${LOG_PREFIX} Processed placeholders in configuration`);
 
     // Log summary of replacements
-    const companyName = process.env.BARBERS_EDGE_COMPANY_NAME || "The Barber's Edge";
-    console.log(`📝 [VAPI-BARBERS-EDGE] Company name set to: "${companyName}"`);
-    console.log(`📝 [VAPI-BARBERS-EDGE] Available barbers: ${AVAILABLE_BARBERS.join(", ")}`);
+    const companyName = process.env[COMPANY_NAME_ENV_VAR] || DEFAULT_COMPANY_NAME;
+    console.log(`📝 ${LOG_PREFIX} Company name set to: "${companyName}"`);
+    if (AVAILABLE_BARBERS) {
+      console.log(`📝 ${LOG_PREFIX} Available barbers: ${AVAILABLE_BARBERS.join(", ")}`);
+    }
     console.log(
-      `📝 [VAPI-BARBERS-EDGE] Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
+      `📝 ${LOG_PREFIX} Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
     );
 
     // Count remaining placeholders in content (should only be VAPI runtime variables)
     const content = processedConfig.model?.messages?.[0]?.content || "";
-    const remainingCompanyPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || [])
-      .length;
-    if (remainingCompanyPlaceholders > 0) {
+    const remainingPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || []).length;
+    if (remainingPlaceholders > 0) {
       console.warn(
-        `⚠️ [VAPI-BARBERS-EDGE] Found ${remainingCompanyPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
+        `⚠️ ${LOG_PREFIX} Found ${remainingPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
       );
     }
 
@@ -430,11 +451,11 @@ async function createAssistant() {
     }
 
     const assistant = await response.json();
-    console.log("✅ [VAPI-BARBERS-EDGE] Assistant created successfully:", assistant.id);
+    console.log(`✅ ${LOG_PREFIX} Assistant created successfully:`, assistant.id);
 
     return assistant;
   } catch (error) {
-    console.error("❌ [VAPI-BARBERS-EDGE] Error creating assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error creating assistant:`, error);
     throw error;
   }
 }
@@ -442,27 +463,28 @@ async function createAssistant() {
 // Update the assistant
 async function updateAssistant(assistantId) {
   try {
-    console.log("🤖 [VAPI-BARBERS-EDGE] Updating Vapi.ai assistant:", assistantId);
+    console.log(`🤖 ${LOG_PREFIX} Updating Vapi.ai assistant:`, assistantId);
 
     // Process the config to replace placeholders with actual company data
     const processedConfig = processAssistantConfig(assistantConfig);
-    console.log("🔄 [VAPI-BARBERS-EDGE] Processed placeholders in configuration");
+    console.log(`🔄 ${LOG_PREFIX} Processed placeholders in configuration`);
 
     // Log summary of replacements
-    const companyName = process.env.BARBERS_EDGE_COMPANY_NAME || "The Barber's Edge";
-    console.log(`📝 [VAPI-BARBERS-EDGE] Company name set to: "${companyName}"`);
-    console.log(`📝 [VAPI-BARBERS-EDGE] Available barbers: ${AVAILABLE_BARBERS.join(", ")}`);
+    const companyName = process.env[COMPANY_NAME_ENV_VAR] || DEFAULT_COMPANY_NAME;
+    console.log(`📝 ${LOG_PREFIX} Company name set to: "${companyName}"`);
+    if (AVAILABLE_BARBERS) {
+      console.log(`📝 ${LOG_PREFIX} Available barbers: ${AVAILABLE_BARBERS.join(", ")}`);
+    }
     console.log(
-      `📝 [VAPI-BARBERS-EDGE] Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
+      `📝 ${LOG_PREFIX} Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
     );
 
     // Count remaining placeholders in content (should only be VAPI runtime variables)
     const content = processedConfig.model?.messages?.[0]?.content || "";
-    const remainingCompanyPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || [])
-      .length;
-    if (remainingCompanyPlaceholders > 0) {
+    const remainingPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || []).length;
+    if (remainingPlaceholders > 0) {
       console.warn(
-        `⚠️ [VAPI-BARBERS-EDGE] Found ${remainingCompanyPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
+        `⚠️ ${LOG_PREFIX} Found ${remainingPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
       );
     }
 
@@ -481,11 +503,11 @@ async function updateAssistant(assistantId) {
     }
 
     const assistant = await response.json();
-    console.log("✅ [VAPI-BARBERS-EDGE] Assistant updated successfully");
+    console.log(`✅ ${LOG_PREFIX} Assistant updated successfully`);
 
     return assistant;
   } catch (error) {
-    console.error("❌ [VAPI-BARBERS-EDGE] Error updating assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error updating assistant:`, error);
     throw error;
   }
 }
@@ -505,7 +527,7 @@ async function getAssistant(assistantId) {
 
     return await response.json();
   } catch (error) {
-    console.error("❌ [VAPI-BARBERS-EDGE] Error getting assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error getting assistant:`, error);
     throw error;
   }
 }
@@ -513,7 +535,7 @@ async function getAssistant(assistantId) {
 // Test the assistant
 async function testAssistant(assistantId) {
   try {
-    console.log("🤖 [VAPI-BARBERS-EDGE] Testing assistant:", assistantId);
+    console.log(`🤖 ${LOG_PREFIX} Testing assistant:`, assistantId);
 
     const response = await fetch("https://api.vapi.ai/call", {
       method: "POST",
@@ -535,104 +557,86 @@ async function testAssistant(assistantId) {
     }
 
     const call = await response.json();
-    console.log("✅ [VAPI-BARBERS-EDGE] Test call initiated:", call.id);
+    console.log(`✅ ${LOG_PREFIX} Test call initiated:`, call.id);
 
     return call;
   } catch (error) {
-    console.error("❌ [VAPI-BARBERS-EDGE] Error testing assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error testing assistant:`, error);
     throw error;
   }
 }
 
-// Verify assistant access before updating
+// Verify assistant access before updating (optional - client-specific)
 async function verifyAssistantAccess(assistantId) {
   try {
-    console.log("🔍 [VAPI-BARBERS-EDGE] Verifying access to assistant:", assistantId);
+    console.log(`🔍 ${LOG_PREFIX} Verifying access to assistant:`, assistantId);
     const assistant = await getAssistant(assistantId);
-    console.log(
-      "✅ [VAPI-BARBERS-EDGE] Successfully accessed assistant:",
-      assistant.name || assistantId
-    );
+    console.log(`✅ ${LOG_PREFIX} Successfully accessed assistant:`, assistant.name || assistantId);
     return true;
   } catch (error) {
-    console.error("❌ [VAPI-BARBERS-EDGE] Cannot access assistant:", error.message);
-    console.error("💡 [VAPI-BARBERS-EDGE] Possible issues:");
+    console.error(`❌ ${LOG_PREFIX} Cannot access assistant:`, error.message);
+    console.error(`💡 ${LOG_PREFIX} Possible issues:`);
     console.error("   1. The assistant ID belongs to a different VAPI workspace/team");
     console.error("   2. The API key doesn't have permission to access this assistant");
     console.error("   3. The API key is from a different account");
     console.error("   4. The assistant was deleted or doesn't exist");
-    console.error("\n💡 [VAPI-BARBERS-EDGE] Solutions:");
+    console.error(`\n💡 ${LOG_PREFIX} Solutions:`);
     console.error(
       "   - Verify you're using the correct API key for the workspace containing this assistant"
     );
     console.error("   - Check the VAPI dashboard to confirm the assistant ID");
-    console.error("   - Or create a new assistant by removing VAPI_BARBERS_EDGE_ASSISTANT_ID");
+    console.error(`   - Or create a new assistant by removing ASSISTANT_ID from this config file`);
     return false;
   }
 }
 
 // Main execution
 async function main() {
-  // Use environment variable if set, otherwise use the hardcoded assistant ID
-  const assistantId =
-    process.env.VAPI_BARBERS_EDGE_ASSISTANT_ID || "99d7d682-573f-47e1-9440-66e1b045bc2a";
-
   if (!VAPI_API_KEY) {
-    console.warn("⚠️ [VAPI-BARBERS-EDGE] VAPI_API_KEY environment variable not found");
-    console.warn("⚠️ [VAPI-BARBERS-EDGE] Skipping VAPI assistant configuration update");
+    console.warn(`⚠️ ${LOG_PREFIX} VAPI_API_KEY environment variable not found`);
+    console.warn(`⚠️ ${LOG_PREFIX} Skipping VAPI assistant configuration update`);
     console.warn(
-      "⚠️ [VAPI-BARBERS-EDGE] This is normal during build process - assistant will use existing configuration"
+      `⚠️ ${LOG_PREFIX} This is normal during build process - assistant will use existing configuration`
     );
     return;
   }
 
   if (!VAPI_WEBHOOK_URL) {
+    console.error(`❌ ${LOG_PREFIX} WEBHOOK_DOMAIN environment variable is required`);
     console.error(
-      "❌ [VAPI-BARBERS-EDGE] BARBERS_EDGE_WEBHOOK_DOMAIN environment variable is required"
+      `❌ ${LOG_PREFIX} Please set ${COMPANY_NAME_ENV_VAR} or WEBHOOK_DOMAIN in Railway global variables`
     );
-    console.error(
-      "❌ [VAPI-BARBERS-EDGE] Please set BARBERS_EDGE_WEBHOOK_DOMAIN in Railway global variables:"
-    );
-    console.error("   - BARBERS_EDGE_WEBHOOK_DOMAIN=https://capcofire.com");
     process.exit(1);
   }
 
   try {
-    if (assistantId) {
-      // Verify access first
-      const hasAccess = await verifyAssistantAccess(assistantId);
+    if (ASSISTANT_ID) {
+      // Optional: Verify access first (can be removed if not needed)
+      const hasAccess = await verifyAssistantAccess(ASSISTANT_ID);
       if (!hasAccess) {
-        console.error("\n❌ [VAPI-BARBERS-EDGE] Cannot proceed without assistant access");
+        console.error(`\n❌ ${LOG_PREFIX} Cannot proceed without assistant access`);
         process.exit(1);
       }
 
-      console.log("🤖 [VAPI-BARBERS-EDGE] Updating existing assistant:", assistantId);
-      await updateAssistant(assistantId);
+      console.log(`🤖 ${LOG_PREFIX} Updating existing assistant:`, ASSISTANT_ID);
+      await updateAssistant(ASSISTANT_ID);
     } else {
-      console.log("🤖 [VAPI-BARBERS-EDGE] Creating new assistant");
+      console.log(`🤖 ${LOG_PREFIX} Creating new assistant`);
       const assistant = await createAssistant();
-      console.log("📝 [VAPI-BARBERS-EDGE] Save this assistant ID:", assistant.id);
-      console.log(
-        "📝 [VAPI-BARBERS-EDGE] Add to your .env file: VAPI_BARBERS_EDGE_ASSISTANT_ID=" +
-          assistant.id
-      );
+      console.log(`📝 ${LOG_PREFIX} Save this assistant ID:`, assistant.id);
+      console.log(`📝 ${LOG_PREFIX} Add ASSISTANT_ID to this config file`);
     }
 
-    console.log("✅ [VAPI-BARBERS-EDGE] Configuration complete!");
-    console.log("📋 [VAPI-BARBERS-EDGE] IMPORTANT: Update backend functions to support:");
-    console.log("   - getStaffSchedule() should return availability for all barbers");
-    console.log("   - bookAppointment() should accept 'barber' parameter");
-    console.log("   - lookupClient() needs to be created and connected to client database");
-    console.log("   - lookupClient tool ID placeholder: 00000000-0000-0000-0000-000000000000");
+    console.log(`✅ ${LOG_PREFIX} Configuration complete!`);
   } catch (error) {
-    console.error("❌ [VAPI-BARBERS-EDGE] Configuration failed:", error);
+    console.error(`❌ ${LOG_PREFIX} Configuration failed:`, error);
     if (error.message && error.message.includes("Key doesn't allow")) {
       console.error(
-        "\n💡 [VAPI-BARBERS-EDGE] This error means your API key doesn't have access to this assistant."
+        `\n💡 ${LOG_PREFIX} This error means your API key doesn't have access to this assistant.`
       );
       console.error(
-        "   Check that you're using the correct API key for the workspace containing assistant:",
-        assistantId
+        `   Check that you're using the correct API key for the workspace containing assistant:`,
+        ASSISTANT_ID
       );
     }
     process.exit(1);

@@ -1,7 +1,7 @@
 /**
- * Vapi.ai Assistant Configuration for Cal.com Integration - Barry R. Levine Law Office
+ * Vapi.ai Assistant Configuration
  *
- * This script configures a Vapi.ai assistant to handle Cal.com operations
+ * This script configures a Vapi.ai assistant to handle calendar operations
  * including reading/writing appointments, users, and availability
  *
  * TEMPLATE VARIABLES:
@@ -21,8 +21,8 @@
  *   "customer": { "number": "+1234567890" },
  *   "assistantOverrides": {
  *     "variableValues": {
- *       "company.name": "Law Office of Barry R. Levine",
- *       "assistant.name": "Sarah"
+ *       "company.name": "Your Company Name",
+ *       "assistant.name": "Assistant Name"
  *     }
  *   }
  * }
@@ -31,13 +31,37 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 
-const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const BARRY_PHONE = "+19783479161";
+// ============================================================================
+// CLIENT-SPECIFIC CONFIGURATION - MODIFY THESE VALUES PER CLIENT
+// ============================================================================
 
-// do not change this url or this script will fail, the web hook url needs to be the live url of the site
-// const BARRY_WEBHOOK_DOMAIN = process.env.BARRY_WEBHOOK_DOMAIN || "http://levineslaw.com";
-const BARRY_WEBHOOK_DOMAIN = "https://capcofire.com";
-const VAPI_WEBHOOK_URL = `${BARRY_WEBHOOK_DOMAIN}/api/vapi/webhook`;
+// Calendar system type - Options: 'calcom', 'google', 'iCal', 'booksy', 'custom'
+const CALENDAR_TYPE = "calcom";
+
+// Client phone number (optional - for reference)
+const CLIENT_PHONE = "+19783479161";
+
+// Webhook domain - the live URL where the webhook is hosted
+const WEBHOOK_DOMAIN = process.env.BARRY_WEBHOOK_DOMAIN || "https://capcofire.com";
+
+// Company name environment variable name (used for placeholder replacement)
+const COMPANY_NAME_ENV_VAR = "BARRY_COMPANY_NAME";
+
+// Default company name (fallback if env var not set)
+const DEFAULT_COMPANY_NAME = "Law Office of Barry R. Levine";
+
+// Assistant ID (hardcoded per client)
+const ASSISTANT_ID = "2395f91f-41e9-42da-bb04-d4117db5971c";
+
+// Logging prefix for this client
+const LOG_PREFIX = "[VAPI-BARRY]";
+
+// ============================================================================
+// END CLIENT-SPECIFIC CONFIGURATION
+// ============================================================================
+
+const VAPI_API_KEY = process.env.VAPI_API_KEY;
+const VAPI_WEBHOOK_URL = `${WEBHOOK_DOMAIN}/api/vapi/webhook?calendarType=${CALENDAR_TYPE}`;
 
 // Simple placeholder replacement for this script
 // Only replaces {{COMPANY_NAME}} - other placeholders like {{assistant.name}}
@@ -47,13 +71,13 @@ function replacePlaceholders(text) {
     return text;
   }
 
-  // Replace {{COMPANY_NAME}} with actual value
-  const companyName = process.env.BARRY_COMPANY_NAME || "Law Office of Barry R. Levine";
+  // Replace {{COMPANY_NAME}} with actual value from env
+  const companyName = process.env[COMPANY_NAME_ENV_VAR] || DEFAULT_COMPANY_NAME;
   const replaced = text.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, companyName);
 
   // Log if there are still unreplaced COMPANY_NAME placeholders (shouldn't happen)
   if (replaced.includes("{{COMPANY_NAME}}")) {
-    console.warn("⚠️ [VAPI-BARRY] Some {{COMPANY_NAME}} placeholders were not replaced");
+    console.warn(`${LOG_PREFIX} Some {{COMPANY_NAME}} placeholders were not replaced`);
   }
 
   return replaced;
@@ -300,26 +324,25 @@ Remember that your ultimate goal is to match clients with the appropriate consul
 // Create the assistant
 async function createAssistant() {
   try {
-    console.log("🤖 [VAPI-BARRY] Creating Vapi.ai assistant...");
+    console.log(`🤖 ${LOG_PREFIX} Creating Vapi.ai assistant...`);
 
     // Process the config to replace placeholders with actual company data
     const processedConfig = processAssistantConfig(assistantConfig);
-    console.log("🔄 [VAPI-BARRY] Processed placeholders in configuration");
+    console.log(`🔄 ${LOG_PREFIX} Processed placeholders in configuration`);
 
     // Log summary of replacements
-    const companyName = process.env.BARRY_COMPANY_NAME || "Law Office of Barry R. Levine";
-    console.log(`📝 [VAPI-BARRY] Company name set to: "${companyName}"`);
+    const companyName = process.env[COMPANY_NAME_ENV_VAR] || DEFAULT_COMPANY_NAME;
+    console.log(`📝 ${LOG_PREFIX} Company name set to: "${companyName}"`);
     console.log(
-      `📝 [VAPI-BARRY] Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
+      `📝 ${LOG_PREFIX} Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
     );
 
     // Count remaining placeholders in content (should only be VAPI runtime variables)
     const content = processedConfig.model?.messages?.[0]?.content || "";
-    const remainingCompanyPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || [])
-      .length;
-    if (remainingCompanyPlaceholders > 0) {
+    const remainingPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || []).length;
+    if (remainingPlaceholders > 0) {
       console.warn(
-        `⚠️ [VAPI-BARRY] Found ${remainingCompanyPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
+        `⚠️ ${LOG_PREFIX} Found ${remainingPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
       );
     }
 
@@ -338,11 +361,11 @@ async function createAssistant() {
     }
 
     const assistant = await response.json();
-    console.log("✅ [VAPI-BARRY] Assistant created successfully:", assistant.id);
+    console.log(`✅ ${LOG_PREFIX} Assistant created successfully:`, assistant.id);
 
     return assistant;
   } catch (error) {
-    console.error("❌ [VAPI-BARRY] Error creating assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error creating assistant:`, error);
     throw error;
   }
 }
@@ -350,26 +373,25 @@ async function createAssistant() {
 // Update the assistant
 async function updateAssistant(assistantId) {
   try {
-    console.log("🤖 [VAPI-BARRY] Updating Vapi.ai assistant:", assistantId);
+    console.log(`🤖 ${LOG_PREFIX} Updating Vapi.ai assistant:`, assistantId);
 
     // Process the config to replace placeholders with actual company data
     const processedConfig = processAssistantConfig(assistantConfig);
-    console.log("🔄 [VAPI-BARRY] Processed placeholders in configuration");
+    console.log(`🔄 ${LOG_PREFIX} Processed placeholders in configuration`);
 
     // Log summary of replacements
-    const companyName = process.env.BARRY_COMPANY_NAME || "Law Office of Barry R. Levine";
-    console.log(`📝 [VAPI-BARRY] Company name set to: "${companyName}"`);
+    const companyName = process.env[COMPANY_NAME_ENV_VAR] || DEFAULT_COMPANY_NAME;
+    console.log(`📝 ${LOG_PREFIX} Company name set to: "${companyName}"`);
     console.log(
-      `📝 [VAPI-BARRY] Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
+      `📝 ${LOG_PREFIX} Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
     );
 
     // Count remaining placeholders in content (should only be VAPI runtime variables)
     const content = processedConfig.model?.messages?.[0]?.content || "";
-    const remainingCompanyPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || [])
-      .length;
-    if (remainingCompanyPlaceholders > 0) {
+    const remainingPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || []).length;
+    if (remainingPlaceholders > 0) {
       console.warn(
-        `⚠️ [VAPI-BARRY] Found ${remainingCompanyPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
+        `⚠️ ${LOG_PREFIX} Found ${remainingPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
       );
     }
 
@@ -388,11 +410,11 @@ async function updateAssistant(assistantId) {
     }
 
     const assistant = await response.json();
-    console.log("✅ [VAPI-BARRY] Assistant updated successfully");
+    console.log(`✅ ${LOG_PREFIX} Assistant updated successfully`);
 
     return assistant;
   } catch (error) {
-    console.error("❌ [VAPI-BARRY] Error updating assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error updating assistant:`, error);
     throw error;
   }
 }
@@ -412,7 +434,7 @@ async function getAssistant(assistantId) {
 
     return await response.json();
   } catch (error) {
-    console.error("❌ [VAPI-BARRY] Error getting assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error getting assistant:`, error);
     throw error;
   }
 }
@@ -420,7 +442,7 @@ async function getAssistant(assistantId) {
 // Test the assistant
 async function testAssistant(assistantId) {
   try {
-    console.log("🤖 [VAPI-BARRY] Testing assistant:", assistantId);
+    console.log(`🤖 ${LOG_PREFIX} Testing assistant:`, assistantId);
 
     const response = await fetch("https://api.vapi.ai/call", {
       method: "POST",
@@ -442,49 +464,48 @@ async function testAssistant(assistantId) {
     }
 
     const call = await response.json();
-    console.log("✅ [VAPI-BARRY] Test call initiated:", call.id);
+    console.log(`✅ ${LOG_PREFIX} Test call initiated:`, call.id);
 
     return call;
   } catch (error) {
-    console.error("❌ [VAPI-BARRY] Error testing assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error testing assistant:`, error);
     throw error;
   }
 }
 
 // Main execution
 async function main() {
-  const assistantId = "2395f91f-41e9-42da-bb04-d4117db5971c"; // Hardcoded assistant ID for Barry's law office
-
   if (!VAPI_API_KEY) {
-    console.warn("⚠️ [VAPI-BARRY] VAPI_API_KEY environment variable not found");
-    console.warn("⚠️ [VAPI-BARRY] Skipping VAPI assistant configuration update");
+    console.warn(`⚠️ ${LOG_PREFIX} VAPI_API_KEY environment variable not found`);
+    console.warn(`⚠️ ${LOG_PREFIX} Skipping VAPI assistant configuration update`);
     console.warn(
-      "⚠️ [VAPI-BARRY] This is normal during build process - assistant will use existing configuration"
+      `⚠️ ${LOG_PREFIX} This is normal during build process - assistant will use existing configuration`
     );
     return;
   }
 
   if (!VAPI_WEBHOOK_URL) {
-    console.error("❌ [VAPI-BARRY] BARRY_WEBHOOK_DOMAIN environment variable is required");
-    console.error("❌ [VAPI-BARRY] Please set BARRY_WEBHOOK_DOMAIN in Railway global variables:");
-    console.error("   - BARRY_WEBHOOK_DOMAIN=http://levineslaw.com");
+    console.error(`❌ ${LOG_PREFIX} WEBHOOK_DOMAIN environment variable is required`);
+    console.error(
+      `❌ ${LOG_PREFIX} Please set ${COMPANY_NAME_ENV_VAR} or WEBHOOK_DOMAIN in Railway global variables`
+    );
     process.exit(1);
   }
 
   try {
-    if (assistantId) {
-      console.log("🤖 [VAPI-BARRY] Updating existing assistant:", assistantId);
-      await updateAssistant(assistantId);
+    if (ASSISTANT_ID) {
+      console.log(`🤖 ${LOG_PREFIX} Updating existing assistant:`, ASSISTANT_ID);
+      await updateAssistant(ASSISTANT_ID);
     } else {
-      console.log("🤖 [VAPI-BARRY] Creating new assistant");
+      console.log(`🤖 ${LOG_PREFIX} Creating new assistant`);
       const assistant = await createAssistant();
-      console.log("📝 [VAPI-BARRY] Save this assistant ID:", assistant.id);
-      console.log("📝 [VAPI-BARRY] Add to your .env file: VAPI_BARRY_ASSISTANT_ID=" + assistant.id);
+      console.log(`📝 ${LOG_PREFIX} Save this assistant ID:`, assistant.id);
+      console.log(`📝 ${LOG_PREFIX} Add ASSISTANT_ID to this config file`);
     }
 
-    console.log("✅ [VAPI-BARRY] Configuration complete!");
+    console.log(`✅ ${LOG_PREFIX} Configuration complete!`);
   } catch (error) {
-    console.error("❌ [VAPI-BARRY] Configuration failed:", error);
+    console.error(`❌ ${LOG_PREFIX} Configuration failed:`, error);
     process.exit(1);
   }
 }

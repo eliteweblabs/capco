@@ -1,15 +1,7 @@
 /**
- * npm run update-vapi
- * npm run update-vapi
- * npm run update-vapi
- * npm run update-vapi
- * npm run update-vapi
- * npm run update-vapi
- * npm run update-vapi
+ * Vapi.ai Assistant Configuration
  *
- * Vapi.ai Assistant Configuration for Cal.com Integration
- *
- * This script configures a Vapi.ai assistant to handle Cal.com operations
+ * This script configures a Vapi.ai assistant to handle calendar operations
  * including reading/writing appointments, users, and availability
  *
  * TEMPLATE VARIABLES:
@@ -29,42 +21,63 @@
  *   "customer": { "number": "+1234567890" },
  *   "assistantOverrides": {
  *     "variableValues": {
- *       "company.name": "CAPCo Fire Protection",
- *       "assistant.name": "Sarah"
+ *       "company.name": "Your Company Name",
+ *       "assistant.name": "Assistant Name"
  *     }
  *   }
  * }
- *
- * SETUP INSTRUCTIONS:
- * 1. Run: node scripts/create-vapi-email-tool.js
- * 2. Copy the generated Tool ID
- * 3. Replace 'email-confirmation-tool-id' in toolIds array with the actual Tool ID
- * 4. Update the assistant configuration
  */
 
 import "dotenv/config";
 import fetch from "node-fetch";
 
+// ============================================================================
+// CLIENT-SPECIFIC CONFIGURATION - MODIFY THESE VALUES PER CLIENT
+// ============================================================================
+
+// Calendar system type - Options: 'calcom', 'google', 'iCal', 'booksy', 'custom'
+const CALENDAR_TYPE = "calcom";
+
+// Client phone number (optional - for reference)
+const CLIENT_PHONE = undefined; // e.g., "+19783479161"
+
+// Webhook domain - the live URL where the webhook is hosted
+const WEBHOOK_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com";
+
+// Company name environment variable name (used for placeholder replacement)
+const COMPANY_NAME_ENV_VAR = "RAILWAY_PROJECT_NAME";
+
+// Default company name (fallback if env var not set)
+const DEFAULT_COMPANY_NAME = "CAPCo Fire Protection";
+
+// Assistant ID (hardcoded per client)
+const ASSISTANT_ID = "3ae002d5-fe9c-4870-8034-4c66a9b43b51";
+
+// Logging prefix for this client
+const LOG_PREFIX = "[VAPI-CAPCO]";
+
+// ============================================================================
+// END CLIENT-SPECIFIC CONFIGURATION
+// ============================================================================
+
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-// do not change this url or this script will fail, the web hook url needs to be the live url of the site
-// const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
-const VAPI_WEBHOOK_URL = `${process.env.RAILWAY_PUBLIC_DOMAIN}/api/vapi/webhook`;
+const VAPI_WEBHOOK_URL = `${WEBHOOK_DOMAIN}/api/vapi/webhook?calendarType=${CALENDAR_TYPE}`;
 
 // Simple placeholder replacement for this script
-// Only replaces {{RAILWAY_PROJECT_NAME}} - other placeholders like {{assistant.name}}
+// Only replaces {{COMPANY_NAME}} - other placeholders like {{assistant.name}}
 // and {{customer.number}} are VAPI template variables that VAPI replaces at runtime
 function replacePlaceholders(text) {
   if (!text || typeof text !== "string") {
     return text;
   }
 
-  // Replace {{RAILWAY_PROJECT_NAME}} with actual value from env
-  const companyName = process.env.RAILWAY_PROJECT_NAME || "CAPCo Fire Protection";
-  const replaced = text.replace(/\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g, companyName);
+  // Replace {{COMPANY_NAME}} with actual value from env
+  const companyName = process.env[COMPANY_NAME_ENV_VAR] || DEFAULT_COMPANY_NAME;
+  const replaced = text.replace(/\{\{\s*COMPANY_NAME\s*\}\}/g, companyName);
 
-  // Log if there are still unreplaced RAILWAY_PROJECT_NAME placeholders (shouldn't happen)
-  if (replaced.includes("{{RAILWAY_PROJECT_NAME}}")) {
-    console.warn("⚠️ [VAPI-CONFIG] Some {{RAILWAY_PROJECT_NAME}} placeholders were not replaced");
+  // Log if there are still unreplaced COMPANY_NAME placeholders (shouldn't happen)
+  if (replaced.includes("{{COMPANY_NAME}}")) {
+    console.warn(`${LOG_PREFIX} Some {{COMPANY_NAME}} placeholders were not replaced`);
   }
 
   return replaced;
@@ -108,7 +121,7 @@ function processAssistantConfig(config) {
 
 // Assistant configuration
 const assistantConfig = {
-  name: "{{RAILWAY_PROJECT_NAME}} Receptionist",
+  name: "{{COMPANY_NAME}} Receptionist",
   serverUrl: VAPI_WEBHOOK_URL,
   functions: [], // Clear old functions array
   model: {
@@ -119,9 +132,9 @@ const assistantConfig = {
     messages: [
       {
         role: "system",
-        content: `# {{RAILWAY_PROJECT_NAME}} Appointment Scheduling Assistant
+        content: `# {{COMPANY_NAME}} Appointment Scheduling Assistant
 
-You are Kylie, an appointment scheduling voice assistant for {{RAILWAY_PROJECT_NAME}}. We specialize in crafting fire sprinkler and alarm legal documents, fire protection system design, and code compliance consultations. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel consultations while providing clear information about our services and ensuring a smooth booking experience.
+You are Kylie, an appointment scheduling voice assistant for {{COMPANY_NAME}}. We specialize in crafting fire sprinkler and alarm legal documents, fire protection system design, and code compliance consultations. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel consultations while providing clear information about our services and ensuring a smooth booking experience.
 
 ## Voice & Persona
 
@@ -142,7 +155,7 @@ You are Kylie, an appointment scheduling voice assistant for {{RAILWAY_PROJECT_N
 ## Conversation Flow
 
 ### Introduction
-Start with: "Thank you for calling {{RAILWAY_PROJECT_NAME}}. This is Lily, your scheduling assistant. How may I help you today?"
+Start with: "Thank you for calling {{COMPANY_NAME}}. This is Lily, your scheduling assistant. How may I help you today?"
 
 If they immediately mention a consultation need: "I'd be happy to help you schedule a consultation. Let me get some information from you so we can find the right appointment time."
 
@@ -171,7 +184,7 @@ If they immediately mention a consultation need: "I'd be happy to help you sched
 1. Summarize details: "To confirm, you're scheduled for a [consultation type] consultation on [day], [date] at [time]."
 2. Set expectations: "The consultation will last approximately 30 minutes. Please remember to bring [specific documents]."
 3. Optional reminders: "You'll receive a confirmation email with all the details. Would you like SMS reminders as well?"
-4. Close politely: "Thank you for scheduling with {{RAILWAY_PROJECT_NAME}}. Is there anything else I can help you with today?"
+4. Close politely: "Thank you for scheduling with {{COMPANY_NAME}}. Is there anything else I can help you with today?"
 
 ## Response Guidelines
 
@@ -184,17 +197,17 @@ If they immediately mention a consultation need: "I'd be happy to help you sched
 ## CRITICAL INSTRUCTIONS - FOLLOW EXACTLY
 
 ### Initial Call Setup
-- The FIRST thing you do when call starts: Call getStaffSchedule() to get available appointment slots
-- Do NOT say 'let me check' or 'I'll help you' before calling the tool - just call getStaffSchedule() immediately and speak the result
+- The FIRST thing you do when call starts: Call getStaffSchedule with username: 'capco' to get available appointment slots
+- Do NOT say 'let me check' or 'I'll help you' before calling the tool - just call getStaffSchedule({ username: 'capco' }) immediately and speak the result
 
 ### Meeting/Appointment Route
 **Triggers**: 'meeting', 'appointment', 'schedule', 'book', 'consultation', 'consult', 'design', 'review'
 
 **Process**:
-1. Read the getStaffSchedule() tool results as soon as call starts without waiting for user input to have them ready
+1. Read the getStaffSchedule({ username: 'capco' }) tool results as soon as call starts without waiting for user input to have them ready
 2. If interrupted while listing times: Stop and say 'Ok, so [last time you mentioned] works for you?'
 3. To book: Get name, email, then ask 'Can I use {{customer.number}} for SMS reminders?'
-4. Call bookAppointment(time, name, email, phone) and speak the result
+4. Call bookAppointment({ username: 'capco', start: time, name: name, email: email, phone: phone }) and speak the result
 5. **ABSOLUTELY MANDATORY - IMMEDIATELY after speaking the booking result:**
    - Say EXACTLY: "If you can gather your project documents in advance that will help to expedite services."
    - IMMEDIATELY follow with: "Is there anything else I can help you with today?"
@@ -279,18 +292,18 @@ Remember that your ultimate goal is to match clients with the appropriate consul
       },
     ],
     toolIds: [
-      "0b17d3bc-a697-432b-8386-7ed1235fd111", // getStaffSchedule
-      "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment
+      "0b17d3bc-a697-432b-8386-7ed1235fd111", // getStaffSchedule({ username: 'capco' })
+      "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment({ username: 'capco', start, name, email, phone })
     ],
   },
   voice: {
     provider: "vapi",
     voiceId: "Kylie",
   },
-  firstMessage: "Thank you for calling {{RAILWAY_PROJECT_NAME}}. How may I assist you today?",
+  firstMessage: "Thank you for calling {{COMPANY_NAME}}. How may I assist you today?",
   maxDurationSeconds: 300,
   endCallMessage:
-    "Perfect! Thanks for calling {{RAILWAY_PROJECT_NAME}}. We'll see you soon. Have a wonderful day!",
+    "Perfect! Thanks for calling {{COMPANY_NAME}}. We'll see you soon. Have a wonderful day!",
   endCallPhrases: ["goodbye", "bye", "that's all", "finished", "end call", "hangup"],
   backgroundSound: "office",
   silenceTimeoutSeconds: 15,
@@ -299,27 +312,25 @@ Remember that your ultimate goal is to match clients with the appropriate consul
 // Create the assistant
 async function createAssistant() {
   try {
-    console.log("🤖 [VAPI-CONFIG] Creating Vapi.ai assistant...");
+    console.log(`🤖 ${LOG_PREFIX} Creating Vapi.ai assistant...`);
 
     // Process the config to replace placeholders with actual company data
     const processedConfig = processAssistantConfig(assistantConfig);
-    console.log("🔄 [VAPI-CONFIG] Processed placeholders in configuration");
+    console.log(`🔄 ${LOG_PREFIX} Processed placeholders in configuration`);
 
     // Log summary of replacements
-    const companyName = process.env.RAILWAY_PROJECT_NAME || "CAPCo Fire Protection";
-    console.log(`📝 [VAPI-CONFIG] Company name set to: "${companyName}"`);
+    const companyName = process.env[COMPANY_NAME_ENV_VAR] || DEFAULT_COMPANY_NAME;
+    console.log(`📝 ${LOG_PREFIX} Company name set to: "${companyName}"`);
     console.log(
-      `📝 [VAPI-CONFIG] Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
+      `📝 ${LOG_PREFIX} Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
     );
 
     // Count remaining placeholders in content (should only be VAPI runtime variables)
     const content = processedConfig.model?.messages?.[0]?.content || "";
-    const remainingRailwayPlaceholders = (
-      content.match(/\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g) || []
-    ).length;
-    if (remainingRailwayPlaceholders > 0) {
+    const remainingPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || []).length;
+    if (remainingPlaceholders > 0) {
       console.warn(
-        `⚠️ [VAPI-CONFIG] Found ${remainingRailwayPlaceholders} unreplaced {{RAILWAY_PROJECT_NAME}} placeholders`
+        `⚠️ ${LOG_PREFIX} Found ${remainingPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
       );
     }
 
@@ -338,11 +349,11 @@ async function createAssistant() {
     }
 
     const assistant = await response.json();
-    console.log("✅ [VAPI-CONFIG] Assistant created successfully:", assistant.id);
+    console.log(`✅ ${LOG_PREFIX} Assistant created successfully:`, assistant.id);
 
     return assistant;
   } catch (error) {
-    console.error("❌ [VAPI-CONFIG] Error creating assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error creating assistant:`, error);
     throw error;
   }
 }
@@ -350,27 +361,25 @@ async function createAssistant() {
 // Update the assistant
 async function updateAssistant(assistantId) {
   try {
-    console.log("🤖 [VAPI-CONFIG] Updating Vapi.ai assistant:", assistantId);
+    console.log(`🤖 ${LOG_PREFIX} Updating Vapi.ai assistant:`, assistantId);
 
     // Process the config to replace placeholders with actual company data
     const processedConfig = processAssistantConfig(assistantConfig);
-    console.log("🔄 [VAPI-CONFIG] Processed placeholders in configuration");
+    console.log(`🔄 ${LOG_PREFIX} Processed placeholders in configuration`);
 
     // Log summary of replacements
-    const companyName = process.env.RAILWAY_PROJECT_NAME || "CAPCo Fire Protection";
-    console.log(`📝 [VAPI-CONFIG] Company name set to: "${companyName}"`);
+    const companyName = process.env[COMPANY_NAME_ENV_VAR] || DEFAULT_COMPANY_NAME;
+    console.log(`📝 ${LOG_PREFIX} Company name set to: "${companyName}"`);
     console.log(
-      `📝 [VAPI-CONFIG] Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
+      `📝 ${LOG_PREFIX} Note: {{assistant.name}} must be provided at call time via assistantOverrides.variableValues`
     );
 
     // Count remaining placeholders in content (should only be VAPI runtime variables)
     const content = processedConfig.model?.messages?.[0]?.content || "";
-    const remainingRailwayPlaceholders = (
-      content.match(/\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g) || []
-    ).length;
-    if (remainingRailwayPlaceholders > 0) {
+    const remainingPlaceholders = (content.match(/\{\{\s*COMPANY_NAME\s*\}\}/g) || []).length;
+    if (remainingPlaceholders > 0) {
       console.warn(
-        `⚠️ [VAPI-CONFIG] Found ${remainingRailwayPlaceholders} unreplaced {{RAILWAY_PROJECT_NAME}} placeholders`
+        `⚠️ ${LOG_PREFIX} Found ${remainingPlaceholders} unreplaced {{COMPANY_NAME}} placeholders`
       );
     }
 
@@ -389,11 +398,11 @@ async function updateAssistant(assistantId) {
     }
 
     const assistant = await response.json();
-    console.log("✅ [VAPI-CONFIG] Assistant updated successfully");
+    console.log(`✅ ${LOG_PREFIX} Assistant updated successfully`);
 
     return assistant;
   } catch (error) {
-    console.error("❌ [VAPI-CONFIG] Error updating assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error updating assistant:`, error);
     throw error;
   }
 }
@@ -413,7 +422,7 @@ async function getAssistant(assistantId) {
 
     return await response.json();
   } catch (error) {
-    console.error("❌ [VAPI-CONFIG] Error getting assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error getting assistant:`, error);
     throw error;
   }
 }
@@ -421,7 +430,7 @@ async function getAssistant(assistantId) {
 // Test the assistant
 async function testAssistant(assistantId) {
   try {
-    console.log("🤖 [VAPI-CONFIG] Testing assistant:", assistantId);
+    console.log(`🤖 ${LOG_PREFIX} Testing assistant:`, assistantId);
 
     const response = await fetch("https://api.vapi.ai/call", {
       method: "POST",
@@ -443,49 +452,48 @@ async function testAssistant(assistantId) {
     }
 
     const call = await response.json();
-    console.log("✅ [VAPI-CONFIG] Test call initiated:", call.id);
+    console.log(`✅ ${LOG_PREFIX} Test call initiated:`, call.id);
 
     return call;
   } catch (error) {
-    console.error("❌ [VAPI-CONFIG] Error testing assistant:", error);
+    console.error(`❌ ${LOG_PREFIX} Error testing assistant:`, error);
     throw error;
   }
 }
 
 // Main execution
 async function main() {
-  const assistantId = "3ae002d5-fe9c-4870-8034-4c66a9b43b51"; // Hardcoded assistant ID
-
   if (!VAPI_API_KEY) {
-    console.warn("⚠️ [VAPI-CONFIG] VAPI_API_KEY environment variable not found");
-    console.warn("⚠️ [VAPI-CONFIG] Skipping VAPI assistant configuration update");
+    console.warn(`⚠️ ${LOG_PREFIX} VAPI_API_KEY environment variable not found`);
+    console.warn(`⚠️ ${LOG_PREFIX} Skipping VAPI assistant configuration update`);
     console.warn(
-      "⚠️ [VAPI-CONFIG] This is normal during build process - assistant will use existing configuration"
+      `⚠️ ${LOG_PREFIX} This is normal during build process - assistant will use existing configuration`
     );
     return;
   }
 
   if (!VAPI_WEBHOOK_URL) {
-    console.error("❌ [VAPI-CONFIG] RAILWAY_PUBLIC_DOMAIN environment variable is required");
-    console.error("❌ [VAPI-CONFIG] Please set RAILWAY_PUBLIC_DOMAIN in Railway global variables:");
-    console.error("   - RAILWAY_PUBLIC_DOMAIN=https://capcofire.com");
+    console.error(`❌ ${LOG_PREFIX} WEBHOOK_DOMAIN environment variable is required`);
+    console.error(
+      `❌ ${LOG_PREFIX} Please set ${COMPANY_NAME_ENV_VAR} or WEBHOOK_DOMAIN in Railway global variables`
+    );
     process.exit(1);
   }
 
   try {
-    if (assistantId) {
-      console.log("🤖 [VAPI-CONFIG] Updating existing assistant:", assistantId);
-      await updateAssistant(assistantId);
+    if (ASSISTANT_ID) {
+      console.log(`🤖 ${LOG_PREFIX} Updating existing assistant:`, ASSISTANT_ID);
+      await updateAssistant(ASSISTANT_ID);
     } else {
-      console.log("🤖 [VAPI-CONFIG] Creating new assistant");
+      console.log(`🤖 ${LOG_PREFIX} Creating new assistant`);
       const assistant = await createAssistant();
-      console.log("📝 [VAPI-CONFIG] Save this assistant ID:", assistant.id);
-      console.log("📝 [VAPI-CONFIG] Add to your .env file: VAPI_ASSISTANT_ID=" + assistant.id);
+      console.log(`📝 ${LOG_PREFIX} Save this assistant ID:`, assistant.id);
+      console.log(`📝 ${LOG_PREFIX} Add ASSISTANT_ID to this config file`);
     }
 
-    console.log("✅ [VAPI-CONFIG] Configuration complete!");
+    console.log(`✅ ${LOG_PREFIX} Configuration complete!`);
   } catch (error) {
-    console.error("❌ [VAPI-CONFIG] Configuration failed:", error);
+    console.error(`❌ ${LOG_PREFIX} Configuration failed:`, error);
     process.exit(1);
   }
 }
