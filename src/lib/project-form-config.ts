@@ -180,7 +180,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Title",
     placeholder: "Title",
     dataField: "title",
-    allow: ["Admin", "Staff"],
+    allow: ["Admin", "Staff", "Client"],
     hideAtStatus: [],
     readOnlyAtStatus: standardReadOnlyStatus,
     columns: 1, // Half width
@@ -226,7 +226,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     required: false,
     min: 0,
     max: 50000,
-    step: 100,
+    step: 5,
     component: "UnitSlider",
     componentProps: {
       required: false,
@@ -247,7 +247,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     required: false,
     min: 0,
     max: 50000,
-    step: 100,
+    step: 5,
     component: "UnitSlider",
     componentProps: {
       required: false,
@@ -273,6 +273,21 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     readOnlyAtStatus: standardReadOnlyStatus,
     columns: 1, // Half width
   },
+
+  // Description field
+  // {
+  //   id: "deliverable-date-input",
+  //   name: "description",
+  //   type: "date",
+  //   elementType: "textarea",
+  //   label: "Description",
+  //   placeholder: "Project description...",
+  //   dataField: "description",
+  //   allow: ["Admin", "Staff"],
+  //   // hideAtStatus: [50, 60, 70, 80, 90],
+  //   readOnlyAtStatus: standardReadOnlyStatus,
+  //   columns: 1, // Half width
+  // },
   {
     id: "description-input",
     name: "description",
