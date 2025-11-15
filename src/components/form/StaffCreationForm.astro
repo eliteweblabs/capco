@@ -149,15 +149,34 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
 
       // Get form data for validation
       const formData = new FormData(form as HTMLFormElement);
-      const userData = {
+      
+      // Get role from hidden input (SlotMachineModalStaff creates role-value input)
+      const roleInput = document.getElementById("role-value") as HTMLInputElement;
+      const role = roleInput?.value || formData.get("role") as string;
+      
+      // Get SMS fields
+      const smsAlertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;
+      const smsAlerts = smsAlertsCheckbox?.checked || false;
+      const mobileCarrierInput = document.getElementById("mobile-carrier-phone-value") as HTMLInputElement;
+      const mobileCarrier = mobileCarrierInput?.value?.trim() || "";
+      
+      const passwordValue = (formData.get("password") as string)?.trim();
+      
+      const userData: any = {
         email: formData.get("email") as string,
-        password: formData.get("password") as string,
         phone: formData.get("phone") as string,
-        role: formData.get("role") as string,
+        role: role,
         firstName: formData.get("firstName") as string,
         lastName: formData.get("lastName") as string,
         companyName: formData.get("companyName") as string,
+        smsAlerts: smsAlerts,
+        mobileCarrier: mobileCarrier || undefined,
       };
+      
+      // Only include password if it's provided
+      if (passwordValue) {
+        userData.password = passwordValue;
+      }
 
       // Validate required fields
       if (
@@ -201,10 +220,12 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
       setFormLoading(true);
 
       try {
-        const formData = new FormData(form as HTMLFormElement);
         const response = await fetch("/api/users/upsert", {
           method: "POST",
-          body: formData,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(userData),
         });
 
         const result = await response.json();
