@@ -432,7 +432,8 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     allow: ["Admin", "Staff"],
     readOnlyAtStatus: standardReadOnlyStatus,
     options: [
-      { value: "Pump & Tank", label: "Pump & Tank" },
+      { value: "Pump & Tank 300", label: "Pump & Tank 300" },
+      { value: "Pump & Tank 600", label: "Pump & Tank 600" },
       { value: "2' Copper", label: "2' Copper" },
       { value: "4' Ductile", label: "4' Ductile" },
       { value: "6' Ductile", label: "6' Ductile" },
