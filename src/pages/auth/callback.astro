@@ -84,12 +84,32 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
 
         try {
           console.log("[AUTH-CALLBACK] Starting PKCE flow...");
+          console.log("[AUTH-CALLBACK] Full URL:", window.location.href);
+          console.log("[AUTH-CALLBACK] Search params:", window.location.search);
+          console.log("[AUTH-CALLBACK] Hash:", window.location.hash);
 
-          // Get the code from URL parameters
+          // Get the code from URL parameters (check both query params and hash)
           const urlParams = new URLSearchParams(window.location.search);
-          const code = urlParams.get("code");
-          const error = urlParams.get("error");
-          const errorDescription = urlParams.get("error_description");
+          const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove # from hash
+          
+          // Check query params first, then hash
+          let code = urlParams.get("code") || hashParams.get("code");
+          let error = urlParams.get("error") || hashParams.get("error");
+          let errorDescription = urlParams.get("error_description") || hashParams.get("error_description");
+          
+          // Also check for Supabase-specific error formats
+          if (!error) {
+            const errorParam = urlParams.get("error") || hashParams.get("error");
+            if (errorParam) error = errorParam;
+          }
+
+          console.log("[AUTH-CALLBACK] Extracted params:", {
+            code: code ? `${code.substring(0, 20)}...` : null,
+            error,
+            errorDescription,
+            hasQueryCode: !!urlParams.get("code"),
+            hasHashCode: !!hashParams.get("code"),
+          });
 
           if (error) {
             console.error("[AUTH-CALLBACK] OAuth error:", error, errorDescription);
@@ -102,10 +122,17 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
 
           if (!code) {
             console.error("[AUTH-CALLBACK] No authorization code in URL");
-            showError("No authorization code received");
+            console.error("[AUTH-CALLBACK] Debug info:", {
+              fullUrl: window.location.href,
+              search: window.location.search,
+              hash: window.location.hash,
+              allSearchParams: Object.fromEntries(urlParams.entries()),
+              allHashParams: Object.fromEntries(hashParams.entries()),
+            });
+            showError("No authorization code received. Please check the browser console for details.");
             setTimeout(() => {
               window.location.href = "/auth/login?error=no_code";
-            }, 3000);
+            }, 5000);
             return;
           }
 
