@@ -309,41 +309,41 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     elementType: "text",
     label: "NFPA Version",
     placeholder: "NFPA Version",
-    value: "13",
+    value: "13, 13R, 13D",
     dataField: "nfpaVersion",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect
     // hideAtStatus: [], // Hide after proposal is signed off
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
-  {
-    id: "hazardous-material-input",
-    name: "hazardousMaterial",
-    type: "field",
-    elementType: "text",
-    label: "Hazardous Material Usage and Storage",
-    placeholder: "None in excess of exempt amounts allowed by 780 CMR §307.1",
-    value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
-    dataField: "hazardousMaterial",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    // hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
-    columns: 2, // Half width
-  },
-  {
-    id: "hps-commodities-input",
-    name: "hpsCommodities",
-    type: "field",
-    elementType: "text",
-    label: "HPS Commodities",
-    placeholder: "High-Piled Storage (over 12 ft.) of Commodities",
-    value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
-    dataField: "hpsCommodities",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    // hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
-    columns: 2, // Half width
-  },
+  // {
+  //   id: "hazardous-material-input",
+  //   name: "hazardousMaterial",
+  //   type: "field",
+  //   elementType: "text",
+  //   label: "Hazardous Material Usage and Storage",
+  //   placeholder: "None in excess of exempt amounts allowed by 780 CMR §307.1",
+  //   value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
+  //   dataField: "hazardousMaterial",
+  //   allow: ["Admin", "Staff"], // Only admin and staff can see architect
+  //   // hideAtStatus: [], // Hide after proposal is signed off
+  //   readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
+  //   columns: 2, // Half width
+  // },
+  // {
+  //   id: "hps-commodities-input",
+  //   name: "hpsCommodities",
+  //   type: "field",
+  //   elementType: "text",
+  //   label: "HPS Commodities",
+  //   placeholder: "High-Piled Storage (over 12 ft.) of Commodities",
+  //   value: "None in excess of exempt amounts allowed by 780 CMR §307.1",
+  //   dataField: "hpsCommodities",
+  //   allow: ["Admin", "Staff"], // Only admin and staff can see architect
+  //   // hideAtStatus: [], // Hide after proposal is signed off
+  //   readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
+  //   columns: 2, // Half width
+  // },
   {
     id: "site-access-input",
     name: "siteAccess",
@@ -358,33 +358,34 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     columns: 2, // Half width
   },
 
-  {
-    id: "exterior-beacon-input",
-    name: "exteriorBeacon",
-    type: "field",
-    elementType: "text",
-    label: "Exterior Beacon",
-    placeholder: "An exterior fire alarm beacon ... visible from __________",
-    dataField: "site_exterior_access",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    // hideAtStatus: [0], // Hide after proposal is signed off
-    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
-    columns: 2, // Half width
-  },
+  // {
+  //   id: "exterior-beacon-input",
+  //   name: "exteriorBeacon",
+  //   type: "field",
+  //   elementType: "text",
+  //   label: "Exterior Beacon",
+  //   placeholder: "An exterior fire alarm beacon ... visible from __________",
+  //   dataField: "site_exterior_access",
+  //   allow: ["Admin", "Staff"], // Only admin and staff can see architect
+  //   // hideAtStatus: [0], // Hide after proposal is signed off
+  //   readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
+  //   columns: 2, // Half width
+  // },
 
-  {
-    id: "fire-sprinkler-installation-input",
-    name: "fireSprinklerInstallation",
-    type: "field",
-    elementType: "text",
-    label: "Fire Sprinkler Installation",
-    placeholder: "The fire sprinkler contractor will install: _______",
-    dataField: "fireSprinklerInstallation",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    // hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
-    columns: 2, // Half width
-  },
+  // {
+  //   id: "fire-sprinkler-installation-input",
+  //   name: "fireSprinklerInstallation",
+  //   type: "field",
+  //   elementType: "text",
+  //   label: "Fire Sprinkler Installation",
+  //   placeholder: "The fire sprinkler contractor will install: _______",
+  //   dataField: "fireSprinklerInstallation",
+  //   allow: ["Admin", "Staff"], // Only admin and staff can see architect
+  //   // hideAtStatus: [], // Hide after proposal is signed off
+  //   readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
+  //   columns: 2, // Half width
+  // },
+
   {
     id: "commencement-of-construction-input",
     name: "commencementOfConstruction",
@@ -574,7 +575,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     name: "building",
     type: "button-group",
     elementType: "button-group",
-    label: "Building",
+    label: "Building Type",
     groupType: "multi-select",
     cssClass: "building-type-radio",
     allow: ["Admin", "Staff"],
@@ -595,7 +596,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     name: "building",
     type: "button-group",
     elementType: "button-group",
-    label: "Building",
+    label: "Building Type",
     groupType: "multi-select",
     cssClass: "building-type-radio",
     allow: ["Client"],
