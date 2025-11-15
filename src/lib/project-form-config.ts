@@ -385,19 +385,19 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
     columns: 2, // Half width
   },
-  {
-    id: "suppression-detection-systems-input",
-    name: "suppressionDetectionSystems",
-    type: "field",
-    elementType: "text",
-    label: "Suppression & Detection Systems",
-    placeholder: "Suppression & Detection Systems",
-    dataField: "commencementOfConstruction",
-    allow: ["Admin", "Staff"], // Only admin and staff can see architect
-    // hideAtStatus: [], // Hide after proposal is signed off
-    readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
-    columns: 2, // Half width
-  },
+  // {
+  //   id: "suppression-detection-systems-input",
+  //   name: "suppressionDetectionSystems",
+  //   type: "field",
+  //   elementType: "text",
+  //   label: "Suppression & Detection Systems",
+  //   placeholder: "Suppression & Detection Systems",
+  //   dataField: "commencementOfConstruction",
+  //   allow: ["Admin", "Staff"], // Only admin and staff can see architect
+  //   // hideAtStatus: [], // Hide after proposal is signed off
+  //   readOnlyAtStatus: standardReadOnlyStatus, // Read-only after proposal is viewed but before signed off
+  //   columns: 2, // Half width
+  // },
   // Building height field
   {
     id: "building-height-input",
