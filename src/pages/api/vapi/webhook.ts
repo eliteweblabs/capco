@@ -69,20 +69,25 @@ interface VapiWebhookData {
 
 export const POST: APIRoute = async ({ request }): Promise<Response> => {
   try {
-    // Extract calendarType from URL query parameter
+    // Extract calendarType and defaultUsername from URL query parameters
     const url = new URL(request.url);
-    const calendarType = url.searchParams.get('calendarType') || 'calcom';
-    
+    const calendarType = url.searchParams.get("calendarType") || "calcom";
+    const defaultUsername = url.searchParams.get("defaultUsername") || undefined;
+
     const body: VapiWebhookData = await request.json();
     const messageType = body.message?.type || "unknown";
 
-    console.log(`[---VAPI-WEBHOOK] ${messageType}`, calendarType ? `(calendarType: ${calendarType})` : '');
+    console.log(
+      `[---VAPI-WEBHOOK] ${messageType}`,
+      calendarType ? `(calendarType: ${calendarType})` : "",
+      defaultUsername ? `(defaultUsername: ${defaultUsername})` : ""
+    );
 
     // Only process function calls and call end status
     if (body.message?.type === "function-call") {
-      return await handleFunctionCall(body.message.functionCall, calendarType);
+      return await handleFunctionCall(body.message.functionCall, calendarType, defaultUsername);
     } else if (body.message?.type === "tool-calls") {
-      return await handleToolCalls(body.message, calendarType);
+      return await handleToolCalls(body.message, calendarType, defaultUsername);
     }
 
     // Acknowledge all other messages without processing
@@ -108,7 +113,11 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
 };
 
 // Handle tool calls (VAPI Custom Tools format)
-async function handleToolCalls(message: any, calendarType: string = 'calcom'): Promise<Response> {
+async function handleToolCalls(
+  message: any,
+  calendarType: string = "calcom",
+  defaultUsername?: string
+): Promise<Response> {
   try {
     console.log("[---VAPI-WEBHOOK] Processing tool calls...");
 
@@ -139,7 +148,7 @@ async function handleToolCalls(message: any, calendarType: string = 'calcom'): P
             ? JSON.parse(toolCall.function.arguments)
             : toolCall.function?.arguments || {};
         params = {
-          username: args.username || args.calname, // Support both username and calname
+          username: args.username || args.calname || defaultUsername, // Support both username and calname, fallback to defaultUsername
         };
         console.log(`[---VAPI-WEBHOOK] Get staff schedule params:`, params);
       } else if (functionName === "bookAppointment") {
@@ -154,7 +163,7 @@ async function handleToolCalls(message: any, calendarType: string = 'calcom'): P
           name: args.name,
           email: args.email,
           smsReminderNumber: args.phone, // Map phone to smsReminderNumber
-          username: args.username || args.calname, // Support both username and calname
+          username: args.username || args.calname || defaultUsername, // Support both username and calname, fallback to defaultUsername
         };
         console.log(`[---VAPI-WEBHOOK] Booking params:`, params);
       } else if (functionName === "lookupClient") {
@@ -255,7 +264,11 @@ async function handleToolCalls(message: any, calendarType: string = 'calcom'): P
 }
 
 // Handle function calls from Vapi.ai (legacy format)
-async function handleFunctionCall(functionCall: any, calendarType: string = 'calcom'): Promise<Response> {
+async function handleFunctionCall(
+  functionCall: any,
+  calendarType: string = "calcom",
+  defaultUsername?: string
+): Promise<Response> {
   if (!functionCall) {
     return new Response(JSON.stringify({ success: false, error: "No function call provided" }), {
       status: 400,
@@ -309,7 +322,10 @@ async function handleFunctionCall(functionCall: any, calendarType: string = 'cal
           case "getStaffSchedule":
             action = "get_staff_schedule";
             params = {
-              username: functionCall.parameters.username || functionCall.parameters.calname, // Support both username and calname
+              username:
+                functionCall.parameters.username ||
+                functionCall.parameters.calname ||
+                defaultUsername, // Support both username and calname, fallback to defaultUsername
             };
             break;
           case "checkAvailability":
@@ -385,7 +401,10 @@ async function handleFunctionCall(functionCall: any, calendarType: string = 'cal
               name: functionCall.parameters.name,
               email: functionCall.parameters.email,
               smsReminderNumber: functionCall.parameters.smsReminderNumber,
-              username: functionCall.parameters.username || functionCall.parameters.calname, // Support both username and calname
+              username:
+                functionCall.parameters.username ||
+                functionCall.parameters.calname ||
+                defaultUsername, // Support both username and calname, fallback to defaultUsername
             };
             break;
           case "lookupClient":
