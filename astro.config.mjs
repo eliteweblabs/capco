@@ -36,7 +36,7 @@ export default defineConfig({
   },
   // Server configuration
   server: {
-    host: process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost",
+    host: true, // Allow network access in development
     port: process.env.PORT ? parseInt(process.env.PORT) : 4321,
     ...(process.env.NODE_ENV === "development" && {
       allowedHosts: ["capco-fire-dev.loca.lt", ".loca.lt"],
