@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Deploy Cal.com to Railway
+# Deploy Cal.com to Railway (separate project)
 echo "🚀 Deploying Cal.com to Railway..."
 
 # Check if Railway CLI is installed
@@ -15,10 +15,15 @@ if ! railway whoami &> /dev/null; then
     railway login
 fi
 
-# Check if we're in a Cal.com project or need to create/link one
-echo "🔗 Linking to Cal.com Railway project..."
-echo "   (If you don't have a Cal.com project yet, create one in Railway dashboard first)"
-railway link
+# Create new project for Cal.com (separate from main project)
+echo "🏗️  Creating Railway project for Cal.com..."
+PROJECT_NAME=${CALCOM_PROJECT_NAME:-calcom-app}
+echo "   Project name: $PROJECT_NAME"
+echo "   (Set CALCOM_PROJECT_NAME env var to use a different name)"
+railway project create "$PROJECT_NAME" 2>/dev/null || {
+    echo "   Project may already exist, linking instead..."
+    railway link
+}
 
 # Set environment variables
 echo "🔧 Setting up environment variables..."
@@ -38,27 +43,28 @@ echo "   railway variables set EMAIL_FROM=noreply@yourdomain.com"
 echo "   railway variables set EMAIL_FROM_NAME=Cal.com"
 echo ""
 
-# Temporarily rename railway-calcom.json to railway.json for deployment
+# Temporarily swap railway-calcom.json to railway.json for deployment
+# (Railway CLI reads railway.json from current directory)
 if [ -f "railway-calcom.json" ]; then
     echo "📋 Using railway-calcom.json configuration..."
-    cp railway-calcom.json railway.json.tmp
-    mv railway.json railway.json.backup 2>/dev/null || true
-    mv railway.json.tmp railway.json
-fi
-
-# Deploy
-echo "🚀 Deploying to Railway..."
-railway up --detach
-
-# Restore original railway.json if it existed
-if [ -f "railway.json.backup" ]; then
-    mv railway.json.backup railway.json
-    rm -f railway.json.tmp
-elif [ -f "railway.json" ]; then
-    # If there was no backup, check if we should keep or remove
-    if grep -q "calcom-web-app" railway.json 2>/dev/null; then
-        echo "⚠️  Note: railway.json now contains Cal.com config. Restore from railway-calcom.json if needed."
-    fi
+    # Backup existing railway.json if it exists
+    [ -f "railway.json" ] && mv railway.json railway.json.main-backup
+    
+    # Use Cal.com config for deployment
+    cp railway-calcom.json railway.json
+    
+    # Deploy
+    echo "🚀 Deploying Cal.com Docker image to Railway..."
+    railway up --detach
+    
+    # Restore original railway.json
+    rm railway.json
+    [ -f "railway.json.main-backup" ] && mv railway.json.main-backup railway.json
+    
+    echo "✅ Restored original railway.json"
+else
+    echo "❌ Error: railway-calcom.json not found!"
+    exit 1
 fi
 
 echo ""

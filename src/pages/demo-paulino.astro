@@ -1,0 +1,24 @@
+---
+import { checkAuth } from "../lib/auth";
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
+const currentRole = currentUser?.profile?.role || "Client";
+
+import App from "../components/common/App.astro";
+import CalComBooking from "../components/common/CalComBooking.astro";
+import Hero from "../components/common/Hero.astro";
+---
+
+<App
+  title="Book a Demo"
+  description="Schedule a personalized demo of our fire protection system management platform. See how we can streamline your workflow."
+>
+  <!-- Hero Section -->
+  <Hero
+    title="Book a Demo"
+    description="Schedule a personalized demo of our fire protection system management platform. See how we can streamline your workflow."
+  />
+  <!-- Cal.com Booking Section -->
+  <CalComBooking {currentUser} />
+</App>
