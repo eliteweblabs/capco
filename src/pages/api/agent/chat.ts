@@ -194,12 +194,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Initialize AI agent
-    const apiKey =
-      import.meta.env.ANTHROPIC_API_KEY ||
-      (typeof process !== "undefined" ? process.env.ANTHROPIC_API_KEY : undefined);
+    const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
       console.error("❌ [AGENT-CHAT] AI API key not configured");
+      console.error("❌ [AGENT-CHAT] Available env vars:", Object.keys(process.env).filter(k => k.includes('ANTHROPIC') || k.includes('API')));
       return new Response(JSON.stringify({ error: "AI API key not configured" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },

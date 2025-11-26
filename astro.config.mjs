@@ -47,6 +47,7 @@ export default defineConfig({
     define: {
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "production"),
       // Environment variables in alphabetical order
+      "process.env.ANTHROPIC_API_KEY": JSON.stringify(env.ANTHROPIC_API_KEY),
       // "process.env.BIRD_ACCESS_KEY": JSON.stringify(env.BIRD_ACCESS_KEY),
       // "process.env.BIRD_IDENTITY_SIGNING_KEY": JSON.stringify(env.BIRD_IDENTITY_SIGNING_KEY),
       // "process.env.BIRD_ISSUER": JSON.stringify(env.BIRD_ISSUER),
