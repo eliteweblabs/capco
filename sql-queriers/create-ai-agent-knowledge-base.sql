@@ -79,6 +79,13 @@ CREATE TRIGGER update_ai_project_memory_updated_at_trigger
 -- RLS Policies
 ALTER TABLE ai_agent_knowledge ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for idempotent migrations)
+DROP POLICY IF EXISTS "Admins can manage all knowledge" ON ai_agent_knowledge;
+DROP POLICY IF EXISTS "Users can view active knowledge" ON ai_agent_knowledge;
+DROP POLICY IF EXISTS "Users can create knowledge" ON ai_agent_knowledge;
+DROP POLICY IF EXISTS "Users can update own knowledge" ON ai_agent_knowledge;
+DROP POLICY IF EXISTS "Users can delete own knowledge" ON ai_agent_knowledge;
+
 -- Admins can do everything
 CREATE POLICY "Admins can manage all knowledge"
   ON ai_agent_knowledge
@@ -122,6 +129,11 @@ CREATE POLICY "Users can delete own knowledge"
 
 -- RLS for project memory
 ALTER TABLE ai_agent_project_memory ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist (for idempotent migrations)
+DROP POLICY IF EXISTS "Admins can manage all project memory" ON ai_agent_project_memory;
+DROP POLICY IF EXISTS "Users can view project memory" ON ai_agent_project_memory;
+DROP POLICY IF EXISTS "Users can manage own project memory" ON ai_agent_project_memory;
 
 -- Admins can manage all project memory
 CREATE POLICY "Admins can manage all project memory"
