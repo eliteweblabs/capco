@@ -39,7 +39,7 @@ export interface AgentResponse {
 
 export class UnifiedFireProtectionAgent {
   private client: Anthropic;
-  private model: string = 'claude-3-5-sonnet-20241022'; // Using latest Sonnet for better performance/cost
+  private model: string = 'claude-3-5-sonnet-20240620'; // Latest Claude 3.5 Sonnet model
 
   constructor(apiKey: string) {
     if (!apiKey) {
