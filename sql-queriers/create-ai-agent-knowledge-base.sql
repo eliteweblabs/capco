@@ -145,7 +145,7 @@ CREATE POLICY "Users can view project memory"
       SELECT 1 FROM projects
       WHERE projects.id = ai_agent_project_memory."projectId"
       AND (
-        projects.author_id = auth.uid()
+        projects."authorId" = auth.uid()
         OR EXISTS (
           SELECT 1 FROM profiles
           WHERE id = auth.uid() AND role = 'Admin'
@@ -163,14 +163,14 @@ CREATE POLICY "Users can manage own project memory"
     EXISTS (
       SELECT 1 FROM projects
       WHERE projects.id = ai_agent_project_memory."projectId"
-      AND projects.author_id = auth.uid()
+      AND projects."authorId" = auth.uid()
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM projects
       WHERE projects.id = ai_agent_project_memory."projectId"
-      AND projects.author_id = auth.uid()
+      AND projects."authorId" = auth.uid()
     )
   );
 
