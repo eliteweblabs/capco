@@ -4,9 +4,10 @@
 
 interface Props {
   currentUser?: any;
+  calLink?: string;
 }
 
-const { currentUser } = Astro.props;
+const { calLink = "capco/30min", currentUser } = Astro.props;
 import LoadingSpinner from "./LoadingSpinner.astro";
 ---
 
@@ -17,7 +18,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
   </div>
 </div>
 
-<script>
+<script define:vars={{ calLink, currentUser }} type="module">
   document.addEventListener("DOMContentLoaded", function () {
     const calEmbedContainer = document.getElementById("cal-com-embed");
 
@@ -27,7 +28,6 @@ import LoadingSpinner from "./LoadingSpinner.astro";
     }
 
     // Get calLink from data attribute
-    const calLink = "capco/30min";
 
     // Check for dark mode preference
     const isDarkMode =
@@ -48,12 +48,9 @@ import LoadingSpinner from "./LoadingSpinner.astro";
       baseUrl: "https://calcom-web-app-production-0b16.up.railway.app",
       // Optional: Pre-fill form data if user is logged in
       prefill: {
-        name:
-          (window as any).currentUser?.profile?.firstName +
-            " " +
-            (window as any).currentUser?.profile?.lastName || "",
-        email: (window as any).currentUser?.email || "",
-        company: (window as any).currentUser?.profile?.companyName || "",
+        name: currentUser?.profile?.firstName + " " + currentUser?.profile?.lastName || "",
+        email: currentUser?.email || "",
+        company: currentUser?.profile?.companyName || "",
       },
     };
 
