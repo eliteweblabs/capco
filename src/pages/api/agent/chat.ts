@@ -194,12 +194,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Initialize AI agent
+    // Railway exposes env vars via process.env at runtime
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
       console.error("❌ [AGENT-CHAT] AI API key not configured");
-      console.error("❌ [AGENT-CHAT] Available env vars:", Object.keys(process.env).filter(k => k.includes('ANTHROPIC') || k.includes('API')));
-      return new Response(JSON.stringify({ error: "AI API key not configured" }), {
+      console.error("❌ [AGENT-CHAT] Checking environment variables...");
+      console.error("❌ [AGENT-CHAT] process.env.ANTHROPIC_API_KEY:", process.env.ANTHROPIC_API_KEY ? "***exists***" : "undefined");
+      console.error("❌ [AGENT-CHAT] import.meta.env.ANTHROPIC_API_KEY:", import.meta.env.ANTHROPIC_API_KEY ? "***exists***" : "undefined");
+      console.error("❌ [AGENT-CHAT] Available env vars with 'ANTHROPIC':", Object.keys(process.env).filter(k => k.includes('ANTHROPIC')));
+      console.error("❌ [AGENT-CHAT] Available env vars with 'API':", Object.keys(process.env).filter(k => k.includes('API')).slice(0, 10));
+      
+      return new Response(JSON.stringify({ 
+        error: "AI API key not configured",
+        hint: "Please ensure ANTHROPIC_API_KEY is set in Railway environment variables"
+      }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
