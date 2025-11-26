@@ -1,0 +1,595 @@
+---
+// AI Agent Chat Component
+// Chat interface for interacting with the AI agent (similar to Claude.ai)
+
+interface Props {
+  currentUser?: any;
+  projectId?: number;
+}
+
+const { currentUser, projectId } = Astro.props;
+---
+
+<div id="ai-chat-agent" class="flex h-full flex-col bg-white dark:bg-gray-800" data-project-id={projectId || ""}>
+  <!-- Header -->
+  <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+    <div class="flex items-center space-x-3">
+      <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30">
+        <svg
+          class="h-6 w-6 text-primary-600 dark:text-primary-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+          />
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Fire Protection Expert</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <!-- Conversation selector -->
+      <select
+        id="conversation-selector"
+        class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+      >
+        <option value="">New Conversation</option>
+      </select>
+      <button
+        id="new-conversation-btn"
+        class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+        title="New Conversation"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+      <button
+        id="delete-conversation-btn"
+        class="rounded-lg p-1.5 text-gray-400 hover:bg-red-200 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-300"
+        title="Delete Conversation"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages Container -->
+  <div
+    id="ai-chat-messages"
+    class="flex-1 space-y-4 overflow-y-auto p-4"
+    style="max-height: calc(100vh - 200px);"
+  >
+    <!-- Welcome message -->
+    <div id="welcome-message" class="flex justify-center">
+      <div class="max-w-2xl rounded-lg bg-gray-50 p-6 text-center dark:bg-gray-700/50">
+        <div class="mb-4 flex justify-center">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+            <svg
+              class="h-8 w-8 text-primary-600 dark:text-primary-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
+            </svg>
+          </div>
+        </div>
+        <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+          Welcome to AI Assistant
+        </h3>
+        <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+          I'm your fire protection engineering assistant. I can help you with:
+        </p>
+        <div class="grid grid-cols-1 gap-2 text-left sm:grid-cols-2">
+          <div class="rounded-lg bg-white p-3 dark:bg-gray-800">
+            <p class="text-xs font-medium text-gray-900 dark:text-white">📄 Document Generation</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Create inspection reports, certificates</p>
+          </div>
+          <div class="rounded-lg bg-white p-3 dark:bg-gray-800">
+            <p class="text-xs font-medium text-gray-900 dark:text-white">📊 Project Analysis</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Analyze projects and provide insights</p>
+          </div>
+          <div class="rounded-lg bg-white p-3 dark:bg-gray-800">
+            <p class="text-xs font-medium text-gray-900 dark:text-white">✅ Code Compliance</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Check NFPA compliance</p>
+          </div>
+          <div class="rounded-lg bg-white p-3 dark:bg-gray-800">
+            <p class="text-xs font-medium text-gray-900 dark:text-white">💡 General Assistance</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Answer questions and provide guidance</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="border-t border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+    <div class="flex items-end space-x-2">
+      <div class="flex-1">
+        <textarea
+          id="ai-chat-input"
+          rows="1"
+          placeholder="Ask me anything about fire protection..."
+          class="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+          style="max-height: 120px;"
+        ></textarea>
+        <div class="mt-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <span>Press Enter to send, Shift+Enter for new line</span>
+          <span id="token-count" class="hidden">0 tokens</span>
+        </div>
+      </div>
+      <button
+        id="ai-chat-send"
+        class="rounded-lg bg-primary-600 px-4 py-3 text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled
+      >
+        <svg
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  #ai-chat-messages {
+    scroll-behavior: smooth;
+  }
+
+  .message-user {
+    @apply flex justify-end;
+  }
+
+  .message-assistant {
+    @apply flex justify-start;
+  }
+
+  .message-bubble {
+    @apply max-w-3xl rounded-lg px-4 py-3 shadow-sm;
+  }
+
+  .message-user .message-bubble {
+    @apply bg-primary-600 text-white;
+  }
+
+  .message-assistant .message-bubble {
+    @apply bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white;
+  }
+
+  .message-content {
+    @apply whitespace-pre-wrap break-words;
+  }
+
+  .message-meta {
+    @apply mt-1 text-xs opacity-75;
+  }
+
+  .typing-indicator {
+    @apply flex space-x-1;
+  }
+
+  .typing-dot {
+    @apply h-2 w-2 rounded-full bg-gray-400;
+    animation: typing 1.4s infinite;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes typing {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.7;
+    }
+    30% {
+      transform: translateY(-10px);
+      opacity: 1;
+    }
+  }
+</style>
+
+<script>
+  interface Message {
+    role: "user" | "assistant";
+    content: string;
+    timestamp: string;
+    metadata?: any;
+  }
+
+  class AIChatAgent {
+    private currentConversationId: string | null = null;
+    private messages: Message[] = [];
+    private conversations: Array<{ id: string; title: string; updatedAt: string }> = [];
+    private isProcessing = false;
+
+    constructor() {
+      this.initialize();
+    }
+
+    private initialize() {
+      const input = document.getElementById("ai-chat-input") as HTMLTextAreaElement;
+      const sendBtn = document.getElementById("ai-chat-send") as HTMLButtonElement;
+      const newConvBtn = document.getElementById("new-conversation-btn");
+      const deleteConvBtn = document.getElementById("delete-conversation-btn");
+      const conversationSelector = document.getElementById("conversation-selector") as HTMLSelectElement;
+
+      // Auto-resize textarea
+      input?.addEventListener("input", () => {
+        this.adjustTextareaHeight(input);
+        sendBtn.disabled = !input.value.trim() || this.isProcessing;
+      });
+
+      // Send on Enter (Shift+Enter for new line)
+      input?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          if (!sendBtn.disabled) {
+            this.sendMessage();
+          }
+        }
+      });
+
+      // Send button
+      sendBtn?.addEventListener("click", () => {
+        if (!sendBtn.disabled) {
+          this.sendMessage();
+        }
+      });
+
+      // New conversation
+      newConvBtn?.addEventListener("click", () => {
+        this.startNewConversation();
+      });
+
+      // Delete conversation
+      deleteConvBtn?.addEventListener("click", () => {
+        if (this.currentConversationId) {
+          this.deleteConversation(this.currentConversationId);
+        }
+      });
+
+      // Conversation selector
+      conversationSelector?.addEventListener("change", (e) => {
+        const target = e.target as HTMLSelectElement;
+        if (target.value) {
+          this.loadConversation(target.value);
+        } else {
+          this.startNewConversation();
+        }
+      });
+
+      // Load conversations on init
+      this.loadConversations();
+    }
+
+    private adjustTextareaHeight(textarea: HTMLTextAreaElement) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+    }
+
+    private async sendMessage() {
+      const input = document.getElementById("ai-chat-input") as HTMLTextAreaElement;
+      const sendBtn = document.getElementById("ai-chat-send") as HTMLButtonElement;
+      const message = input.value.trim();
+
+      if (!message || this.isProcessing) return;
+
+      // Clear input
+      input.value = "";
+      this.adjustTextareaHeight(input);
+      sendBtn.disabled = true;
+      this.isProcessing = true;
+
+      // Add user message to UI
+      this.addMessage("user", message);
+
+      // Show typing indicator
+      this.showTypingIndicator();
+
+      try {
+        // Get project ID from component data attribute
+        const chatContainer = document.getElementById("ai-chat-agent");
+        const projectId = chatContainer?.dataset.projectId;
+
+        // Send to API
+        const response = await fetch("/api/agent/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            message,
+            conversationId: this.currentConversationId || undefined,
+            context: projectId ? { projectId: parseInt(projectId) } : undefined,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to send message");
+        }
+
+        // Hide typing indicator
+        this.hideTypingIndicator();
+
+        // Add assistant response
+        this.addMessage("assistant", data.response, data.metadata);
+
+        // Update conversation ID if new
+        if (data.conversationId && !this.currentConversationId) {
+          this.currentConversationId = data.conversationId;
+          await this.loadConversations();
+          this.updateConversationSelector();
+        }
+
+        // Update token count
+        if (data.metadata?.tokensUsed) {
+          this.updateTokenCount(data.metadata.tokensUsed);
+        }
+      } catch (error: any) {
+        console.error("❌ [AI-CHAT] Error:", error);
+        this.hideTypingIndicator();
+        this.addMessage(
+          "assistant",
+          `Sorry, I encountered an error: ${error.message}. Please try again.`,
+          { error: true }
+        );
+      } finally {
+        this.isProcessing = false;
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    private addMessage(role: "user" | "assistant", content: string, metadata?: any) {
+      const messagesContainer = document.getElementById("ai-chat-messages");
+      if (!messagesContainer) return;
+
+      // Hide welcome message
+      const welcomeMsg = document.getElementById("welcome-message");
+      if (welcomeMsg) {
+        welcomeMsg.style.display = "none";
+      }
+
+      const message: Message = {
+        role,
+        content,
+        timestamp: new Date().toISOString(),
+        metadata,
+      };
+
+      this.messages.push(message);
+
+      const messageDiv = document.createElement("div");
+      messageDiv.className = `message-${role}`;
+
+      const bubble = document.createElement("div");
+      bubble.className = "message-bubble";
+
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "message-content";
+      contentDiv.textContent = content;
+
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "message-meta";
+      metaDiv.textContent = new Date(message.timestamp).toLocaleTimeString();
+
+      bubble.appendChild(contentDiv);
+      bubble.appendChild(metaDiv);
+      messageDiv.appendChild(bubble);
+      messagesContainer.appendChild(messageDiv);
+
+      // Scroll to bottom
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    private showTypingIndicator() {
+      const messagesContainer = document.getElementById("ai-chat-messages");
+      if (!messagesContainer) return;
+
+      const indicator = document.createElement("div");
+      indicator.id = "typing-indicator";
+      indicator.className = "message-assistant";
+
+      const bubble = document.createElement("div");
+      bubble.className = "message-bubble";
+
+      const typingDiv = document.createElement("div");
+      typingDiv.className = "typing-indicator";
+      typingDiv.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      `;
+
+      bubble.appendChild(typingDiv);
+      indicator.appendChild(bubble);
+      messagesContainer.appendChild(indicator);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    private hideTypingIndicator() {
+      const indicator = document.getElementById("typing-indicator");
+      if (indicator) {
+        indicator.remove();
+      }
+    }
+
+    private async loadConversations() {
+      try {
+        const response = await fetch("/api/agent/conversations", {
+          credentials: "include",
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          this.conversations = data.conversations || [];
+          this.updateConversationSelector();
+        }
+      } catch (error) {
+        console.error("❌ [AI-CHAT] Error loading conversations:", error);
+      }
+    }
+
+    private updateConversationSelector() {
+      const selector = document.getElementById("conversation-selector") as HTMLSelectElement;
+      if (!selector) return;
+
+      // Keep "New Conversation" option
+      selector.innerHTML = '<option value="">New Conversation</option>';
+
+      // Add conversations
+      this.conversations.forEach((conv) => {
+        const option = document.createElement("option");
+        option.value = conv.id;
+        option.textContent = conv.title || `Conversation ${new Date(conv.updatedAt).toLocaleDateString()}`;
+        if (conv.id === this.currentConversationId) {
+          option.selected = true;
+        }
+        selector.appendChild(option);
+      });
+    }
+
+    private async loadConversation(conversationId: string) {
+      try {
+        const response = await fetch(`/api/agent/conversations?id=${conversationId}`, {
+          credentials: "include",
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.conversation) {
+          this.currentConversationId = conversationId;
+          this.messages = (data.conversation.messages || []).map((msg: any) => ({
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.createdAt,
+            metadata: msg.metadata,
+          }));
+
+          this.renderMessages();
+        }
+      } catch (error) {
+        console.error("❌ [AI-CHAT] Error loading conversation:", error);
+      }
+    }
+
+    private renderMessages() {
+      const messagesContainer = document.getElementById("ai-chat-messages");
+      if (!messagesContainer) return;
+
+      // Clear container
+      messagesContainer.innerHTML = "";
+
+      // Hide welcome message
+      const welcomeMsg = document.getElementById("welcome-message");
+      if (welcomeMsg) {
+        welcomeMsg.style.display = "none";
+      }
+
+      // Render all messages
+      this.messages.forEach((msg) => {
+        this.addMessage(msg.role, msg.content, msg.metadata);
+      });
+    }
+
+    private startNewConversation() {
+      this.currentConversationId = null;
+      this.messages = [];
+
+      const messagesContainer = document.getElementById("ai-chat-messages");
+      if (messagesContainer) {
+        messagesContainer.innerHTML = "";
+        const welcomeMsg = document.getElementById("welcome-message");
+        if (welcomeMsg) {
+          welcomeMsg.style.display = "block";
+        }
+      }
+
+      const selector = document.getElementById("conversation-selector") as HTMLSelectElement;
+      if (selector) {
+        selector.value = "";
+      }
+    }
+
+    private async deleteConversation(conversationId: string) {
+      if (!confirm("Are you sure you want to delete this conversation?")) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/agent/conversations?id=${conversationId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // If deleted conversation was current, start new
+          if (conversationId === this.currentConversationId) {
+            this.startNewConversation();
+          }
+
+          // Reload conversations
+          await this.loadConversations();
+        }
+      } catch (error) {
+        console.error("❌ [AI-CHAT] Error deleting conversation:", error);
+        alert("Failed to delete conversation");
+      }
+    }
+
+    private updateTokenCount(tokens: number) {
+      const tokenCount = document.getElementById("token-count");
+      if (tokenCount) {
+        tokenCount.textContent = `${tokens.toLocaleString()} tokens`;
+        tokenCount.classList.remove("hidden");
+      }
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    new AIChatAgent();
+  });
+</script>
+
