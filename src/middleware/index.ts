@@ -30,7 +30,19 @@ const protectedAPIRoutes = [
 ];
 const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify"];
 
-export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirect }, next) => {
+export const onRequest = defineMiddleware(async ({ locals, url, cookies, redirect, request }, next) => {
+  // Force HTTPS redirect in production (Railway handles SSL termination)
+  if (import.meta.env.PROD || process.env.NODE_ENV === "production") {
+    const protocol = request.headers.get("x-forwarded-proto") || url.protocol;
+    const host = url.host;
+    
+    // If request is HTTP, redirect to HTTPS (Railway provides SSL)
+    if (protocol === "http:" || (!protocol && !url.href.startsWith("https://"))) {
+      const httpsUrl = `https://${host}${url.pathname}${url.search}`;
+      return redirect(httpsUrl, 301); // Permanent redirect
+    }
+  }
+
   // Skip middleware if Supabase is not configured
   if (!supabase) {
     return next();
