@@ -75,9 +75,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Initialize AI agent
-    const apiKey =
-      import.meta.env.ANTHROPIC_API_KEY ||
-      (typeof process !== "undefined" ? process.env.ANTHROPIC_API_KEY : undefined);
+    const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "AI API key not configured" }), {
