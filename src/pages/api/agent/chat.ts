@@ -197,6 +197,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Railway exposes env vars via process.env at runtime
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
+    // Debug logging (always log in production to help diagnose Railway issues)
+    console.log("[---AGENT-CHAT] Environment check:", {
+      hasApiKey: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      apiKeyPrefix: apiKey ? apiKey.substring(0, 8) + "..." : "none",
+      allAnthropicKeys: Object.keys(process.env).filter(k => k.includes('ANTHROPIC')),
+      nodeEnv: process.env.NODE_ENV,
+    });
+
     if (!apiKey) {
       console.error("❌ [AGENT-CHAT] AI API key not configured");
       console.error("❌ [AGENT-CHAT] Checking environment variables...");
@@ -204,16 +213,35 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("❌ [AGENT-CHAT] import.meta.env.ANTHROPIC_API_KEY:", import.meta.env.ANTHROPIC_API_KEY ? "***exists***" : "undefined");
       console.error("❌ [AGENT-CHAT] Available env vars with 'ANTHROPIC':", Object.keys(process.env).filter(k => k.includes('ANTHROPIC')));
       console.error("❌ [AGENT-CHAT] Available env vars with 'API':", Object.keys(process.env).filter(k => k.includes('API')).slice(0, 10));
+      console.error("❌ [AGENT-CHAT] Total env vars:", Object.keys(process.env).length);
       
       return new Response(JSON.stringify({ 
         error: "AI API key not configured",
-        hint: "Please ensure ANTHROPIC_API_KEY is set in Railway environment variables"
+        hint: "Please ensure ANTHROPIC_API_KEY is set in Railway environment variables",
+        debug: {
+          checkedProcessEnv: true,
+          checkedImportMetaEnv: true,
+          anthropicKeysFound: Object.keys(process.env).filter(k => k.includes('ANTHROPIC')),
+        }
       }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
+    // Validate API key format (should start with sk-ant-)
+    if (!apiKey.startsWith('sk-ant-')) {
+      console.error("❌ [AGENT-CHAT] Invalid API key format (should start with 'sk-ant-')");
+      return new Response(JSON.stringify({ 
+        error: "Invalid API key format",
+        hint: "ANTHROPIC_API_KEY should start with 'sk-ant-'"
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("[---AGENT-CHAT] API key found, initializing agent...");
     const agent = new UnifiedFireProtectionAgent(apiKey);
 
     console.log(`🤖 [AGENT-CHAT] Processing message from user ${currentUser.id}`);
