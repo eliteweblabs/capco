@@ -70,8 +70,8 @@ export class UnifiedFireProtectionAgent {
   async processQuery(request: AgentRequest): Promise<AgentResponse> {
     const { message, context } = request;
     
-    // Build comprehensive system prompt with all agent capabilities
-    const systemPrompt = this.buildSystemPrompt(context);
+    // Build comprehensive system prompt with all agent capabilities and knowledge base
+    const systemPrompt = await this.buildSystemPrompt(context);
     
     // Build conversation messages
     const messages = this.buildMessages(message, context);
@@ -145,9 +145,43 @@ export class UnifiedFireProtectionAgent {
   }
 
   /**
+   * Load knowledge base entries for agent context
+   */
+  private async loadKnowledgeBase(category?: string): Promise<Array<{ title: string; content: string; category?: string }>> {
+    if (!supabaseAdmin) return [];
+
+    try {
+      const { data: entries } = await supabaseAdmin
+        .from("ai_agent_knowledge")
+        .select("title, content, category")
+        .eq("isActive", true)
+        .order("priority", { ascending: false })
+        .order("createdAt", { ascending: false })
+        .limit(20);
+
+      return entries || [];
+    } catch (error) {
+      console.error("❌ [UNIFIED-AGENT] Error loading knowledge base:", error);
+      return [];
+    }
+  }
+
+  /**
    * Build comprehensive system prompt that defines the agent's capabilities
    */
-  private buildSystemPrompt(context?: any): string {
+  private async buildSystemPrompt(context?: any): Promise<string> {
+    // Load knowledge base entries
+    const knowledgeEntries = await this.loadKnowledgeBase();
+    
+    // Format knowledge base for system prompt
+    let knowledgeSection = "";
+    if (knowledgeEntries.length > 0) {
+      knowledgeSection = "\n\n## Knowledge Base\n";
+      knowledgeEntries.forEach((entry, index) => {
+        knowledgeSection += `\n### ${entry.title}${entry.category ? ` (${entry.category})` : ""}\n${entry.content}\n`;
+      });
+    }
+
     return `You are an expert AI assistant specialized in fire protection engineering and project management. You help users with:
 
 ## Core Capabilities
