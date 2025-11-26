@@ -380,13 +380,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   } catch (error: any) {
     console.error("❌ [AGENT-CHAT] Error:", error);
+    console.error("❌ [AGENT-CHAT] Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      cause: error.cause,
+    });
+    
+    // Provide more helpful error messages
+    let errorMessage = "Failed to process message";
+    if (error.message?.includes("API key")) {
+      errorMessage = "API key error: " + error.message;
+    } else if (error.message?.includes("rate limit") || error.status === 429) {
+      errorMessage = "Rate limit exceeded. Please try again in a moment.";
+    } else if (error.status === 401 || error.message?.includes("401")) {
+      errorMessage = "Authentication failed. Please check API key configuration.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     return new Response(
       JSON.stringify({
-        error: "Failed to process message",
+        error: errorMessage,
         message: error.message,
+        type: error.name || "UnknownError",
       }),
       {
-        status: 500,
+        status: error.status || 500,
         headers: { "Content-Type": "application/json" },
       }
     );

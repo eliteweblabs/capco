@@ -90,9 +90,26 @@ export class UnifiedFireProtectionAgent {
           generatedAt: new Date().toISOString(),
         },
       };
-    } catch (error) {
-      console.error('❌ [UNIFIED-AGENT] Error:', error);
-      throw new Error('Failed to process query');
+    } catch (error: any) {
+      console.error('❌ [UNIFIED-AGENT] Error calling Anthropic API:', error);
+      console.error('❌ [UNIFIED-AGENT] Error details:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        type: error.type,
+        cause: error.cause,
+      });
+      
+      // Re-throw with more context
+      if (error.status === 401) {
+        throw new Error('Invalid API key. Please check ANTHROPIC_API_KEY configuration.');
+      } else if (error.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      } else if (error.message) {
+        throw new Error(`Anthropic API error: ${error.message}`);
+      } else {
+        throw new Error('Failed to process query. Please check API configuration.');
+      }
     }
   }
 
