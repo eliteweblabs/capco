@@ -60,12 +60,27 @@ export class UnifiedFireProtectionAgent {
     // Build conversation messages
     const messages = this.buildMessages(message, context);
     
+    // Log API call details (without exposing sensitive data)
+    console.log('[---UNIFIED-AGENT] Making Anthropic API call:', {
+      model: this.model,
+      messageCount: messages.length,
+      systemPromptLength: systemPrompt.length,
+      hasApiKey: !!this.client, // Client exists if API key was provided
+    });
+    
     try {
       const response = await this.client.messages.create({
         model: this.model,
         max_tokens: 4096,
         system: systemPrompt,
         messages: messages,
+      });
+      
+      console.log('[---UNIFIED-AGENT] API call successful:', {
+        hasResponse: !!response,
+        hasUsage: !!response.usage,
+        inputTokens: response.usage?.input_tokens,
+        outputTokens: response.usage?.output_tokens,
       });
 
       const content = this.extractContent(response);
