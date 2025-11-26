@@ -210,21 +210,50 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log(`🤖 [AGENT-CHAT] Processing message from user ${currentUser.id}`);
 
     // Get or create conversation
-    const finalConversationId = await getOrCreateConversation(
-      currentUser.id,
-      conversationId,
-      context?.projectId
-    );
-
-    if (!finalConversationId) {
-      return new Response(JSON.stringify({ error: "Failed to create conversation" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+    let finalConversationId: string | null = null;
+    try {
+      finalConversationId = await getOrCreateConversation(
+        currentUser.id,
+        conversationId,
+        context?.projectId
+      );
+    } catch (dbError: any) {
+      console.error("❌ [AGENT-CHAT] Database error creating conversation:", dbError);
+      // If tables don't exist, continue without conversation history
+      if (dbError?.code === "42P01" || dbError?.message?.includes("does not exist")) {
+        console.warn("⚠️ [AGENT-CHAT] Conversation tables not found - run database migration");
+        // Continue without conversation history - agent will still work
+        finalConversationId = null;
+      } else {
+        return new Response(
+          JSON.stringify({
+            error: "Database error",
+            message: "Failed to create conversation. Please check database setup.",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
-    // Load conversation history
-    const conversationHistory = await loadConversationHistory(finalConversationId);
+    // If conversation creation failed and we don't have a conversationId, create a temporary one
+    if (!finalConversationId && !conversationId) {
+      finalConversationId = `temp_${Date.now()}_${currentUser.id.substring(0, 8)}`;
+    }
+
+    // Load conversation history (only if we have a real conversation ID)
+    let conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
+    if (finalConversationId && !finalConversationId.startsWith("temp_")) {
+      try {
+        conversationHistory = await loadConversationHistory(finalConversationId);
+      } catch (dbError: any) {
+        console.error("❌ [AGENT-CHAT] Error loading conversation history:", dbError);
+        // Continue without history if tables don't exist
+        conversationHistory = [];
+      }
+    }
 
     // Build agent context
     const agentContext = {
@@ -233,12 +262,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       ...context,
     };
 
-    // Save user message
-    await saveConversationMessage(finalConversationId, "user", message);
-
-    // Update conversation title if this is the first message
-    if (conversationHistory.length === 0) {
-      await updateConversationTitle(finalConversationId, message);
+    // Save user message (only if we have a real conversation ID)
+    if (finalConversationId && !finalConversationId.startsWith("temp_")) {
+      try {
+        await saveConversationMessage(finalConversationId, "user", message);
+        // Update conversation title if this is the first message
+        if (conversationHistory.length === 0) {
+          await updateConversationTitle(finalConversationId, message);
+        }
+      } catch (dbError: any) {
+        console.error("❌ [AGENT-CHAT] Error saving message:", dbError);
+        // Continue even if save fails
+      }
     }
 
     // Process the query
@@ -247,35 +282,49 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       context: agentContext,
     });
 
-    // Save assistant response
-    const { data: savedMessage } = await supabaseAdmin
-      .from("ai_agent_messages")
-      .insert({
-        conversationId: finalConversationId,
-        role: "assistant",
-        content: response.content,
-        metadata: {
-          actions: response.actions,
-          model: response.metadata.model,
-          tokensUsed: response.metadata.tokensUsed,
-        },
-      })
-      .select("id")
-      .single();
+    // Save assistant response (only if we have a real conversation ID)
+    let savedMessageId: string | null = null;
+    if (finalConversationId && !finalConversationId.startsWith("temp_")) {
+      try {
+        const { data: savedMessage } = await supabaseAdmin
+          .from("ai_agent_messages")
+          .insert({
+            conversationId: finalConversationId,
+            role: "assistant",
+            content: response.content,
+            metadata: {
+              actions: response.actions,
+              model: response.metadata.model,
+              tokensUsed: response.metadata.tokensUsed,
+            },
+          })
+          .select("id")
+          .single();
+        savedMessageId = savedMessage?.id || null;
+      } catch (dbError: any) {
+        console.error("❌ [AGENT-CHAT] Error saving assistant message:", dbError);
+        // Continue even if save fails
+      }
+    }
 
-    // Track usage - use actual token counts from Claude API response
-    const inputTokens = response.metadata.inputTokens || 0;
-    const outputTokens = response.metadata.outputTokens || 0;
-    
-    await trackUsage(
-      currentUser.id,
-      finalConversationId,
-      savedMessage?.id || null,
-      response.metadata.model,
-      inputTokens,
-      outputTokens,
-      "chat"
-    );
+    // Track usage (only if tables exist)
+    try {
+      const inputTokens = response.metadata.inputTokens || 0;
+      const outputTokens = response.metadata.outputTokens || 0;
+      
+      await trackUsage(
+        currentUser.id,
+        finalConversationId && !finalConversationId.startsWith("temp_") ? finalConversationId : null,
+        savedMessageId,
+        response.metadata.model,
+        inputTokens,
+        outputTokens,
+        "chat"
+      );
+    } catch (dbError: any) {
+      console.error("❌ [AGENT-CHAT] Error tracking usage:", dbError);
+      // Continue even if tracking fails
+    }
 
     console.log(`✅ [AGENT-CHAT] Response generated (${response.metadata.tokensUsed} tokens)`);
 
