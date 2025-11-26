@@ -4,16 +4,16 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 /**
  * Download Google avatar and save to Supabase Storage
  * This prevents rate limiting from Google's CDN
+ * 
+ * Can be called directly (saveAvatarDirect) or via HTTP POST
  */
-export const POST: APIRoute = async ({ request }) => {
+export async function saveAvatarDirect(
+  userId: string,
+  avatarUrl: string
+): Promise<{ success: boolean; avatarUrl?: string; error?: string }> {
   try {
-    const { userId, avatarUrl } = await request.json();
-
     if (!userId || !avatarUrl) {
-      return new Response(JSON.stringify({ error: "User ID and avatar URL are required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return { success: false, error: "User ID and avatar URL are required" };
     }
 
     console.log("📸 [SAVE-AVATAR] Processing avatar for user:", userId);
@@ -21,17 +21,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Skip if not a Google avatar URL (to avoid unnecessary downloads)
     if (!avatarUrl.includes("googleusercontent.com")) {
       console.log("📸 [SAVE-AVATAR] Not a Google avatar, skipping download");
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "Not a Google avatar, no download needed",
-          avatarUrl: avatarUrl,
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return { success: true, avatarUrl: avatarUrl };
     }
 
     // Download the avatar from Google
@@ -40,16 +30,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!avatarResponse.ok) {
       console.error("📸 [SAVE-AVATAR] Failed to download avatar:", avatarResponse.status);
-      return new Response(
-        JSON.stringify({
-          error: "Failed to download avatar from Google",
-          status: avatarResponse.status,
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return {
+        success: false,
+        error: `Failed to download avatar from Google: ${avatarResponse.status}`,
+      };
     }
 
     const avatarBlob = await avatarResponse.blob();
@@ -76,16 +60,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (uploadError) {
       console.error("📸 [SAVE-AVATAR] Upload error:", uploadError);
-      return new Response(
-        JSON.stringify({
-          error: "Failed to upload avatar to storage",
-          details: uploadError.message,
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return {
+        success: false,
+        error: `Failed to upload avatar to storage: ${uploadError.message}`,
+      };
     }
 
     // Get public URL for the avatar

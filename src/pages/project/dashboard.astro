@@ -38,31 +38,17 @@ import "../../lib/refresh-manager.ts";
 // Initialize data arrays
 let projects: any[] = [];
 
-// Fetch projects using the API endpoint that includes discussion counts
+// Fetch projects directly from Supabase to avoid SSL issues with self-fetching
 if (currentUser?.id) {
   try {
-    const baseUrl = Astro.url.origin;
-    let apiUrl = `${baseUrl}/api/projects/get`;
-    // Add assignedToId parameter for Staff role
+    const { supabaseAdmin } = await import("../../lib/supabase-admin");
+    const { getProjectsByAuthor, fetchProjects } = await import("../../lib/api/_projects");
+    
     if (currentRole === "Client") {
-      apiUrl += `?authorId=${currentUser.id}`;
-    }
-
-    const response = await fetch(apiUrl, {
-      headers: {
-        Cookie: Astro.request.headers.get("Cookie") || "",
-      },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      projects = data.projects || [];
+      projects = await getProjectsByAuthor(supabaseAdmin, currentUser.id);
     } else {
-      console.error(
-        "🏗️ [PROJECT/DASHBOARD] Error fetching projects:",
-        response.status,
-        response.statusText
-      );
+      // Admin/Staff can see all projects
+      projects = await fetchProjects(supabaseAdmin);
     }
   } catch (error) {
     console.error("🏗️ [PROJECT/DASHBOARD] Error fetching projects:", error);

@@ -121,26 +121,14 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
     if (googleAvatarUrl && data.user?.id) {
       console.log("[---AUTH-CALLBACK] Google avatar detected, saving to storage");
       try {
-        const baseUrl = url.origin;
-        const saveAvatarResponse = await fetch(`${baseUrl}/api/auth/save-avatar`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: data.user.id,
-            avatarUrl: googleAvatarUrl,
-          }),
-        });
-
-        if (saveAvatarResponse.ok) {
-          const result = await saveAvatarResponse.json();
+        // Call save-avatar function directly instead of HTTP request to avoid SSL issues
+        const { saveAvatarDirect } = await import("./save-avatar");
+        const result = await saveAvatarDirect(data.user.id, googleAvatarUrl);
+        
+        if (result.success) {
           console.log("[---AUTH-CALLBACK] Avatar saved successfully:", result.avatarUrl);
         } else {
-          const errorText = await saveAvatarResponse.text();
-          console.error(
-            "[---AUTH-CALLBACK] Failed to save avatar:",
-            saveAvatarResponse.status,
-            errorText
-          );
+          console.error("[---AUTH-CALLBACK] Failed to save avatar:", result.error);
         }
       } catch (avatarError) {
         // Don't fail the login if avatar saving fails
