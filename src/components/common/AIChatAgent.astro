@@ -343,7 +343,10 @@ const { currentUser, projectId } = Astro.props;
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "Failed to send message");
+          // Provide more detailed error message
+          const errorMsg = data.error || data.message || "Failed to send message";
+          const errorDetails = data.debug ? ` (Debug: ${JSON.stringify(data.debug)})` : "";
+          throw new Error(`${errorMsg}${errorDetails}`);
         }
 
         // Hide typing indicator
@@ -365,10 +368,26 @@ const { currentUser, projectId } = Astro.props;
         }
       } catch (error: any) {
         console.error("❌ [AI-CHAT] Error:", error);
+        console.error("❌ [AI-CHAT] Error details:", {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+        });
         this.hideTypingIndicator();
+        
+        // Show more helpful error message
+        let errorMessage = `Sorry, I encountered an error: ${error.message}`;
+        if (error.message?.includes("API key")) {
+          errorMessage = "Configuration error: API key issue. Please contact support.";
+        } else if (error.message?.includes("rate limit")) {
+          errorMessage = "Rate limit exceeded. Please try again in a moment.";
+        } else if (error.message?.includes("Failed to process message")) {
+          errorMessage = "Unable to process your message. Please check Railway logs for details.";
+        }
+        
         this.addMessage(
           "assistant",
-          `Sorry, I encountered an error: ${error.message}. Please try again.`,
+          errorMessage,
           { error: true }
         );
       } finally {
