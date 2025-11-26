@@ -24,6 +24,8 @@ CREATE INDEX IF NOT EXISTS idx_ai_knowledge_active ON ai_agent_knowledge("isActi
 CREATE INDEX IF NOT EXISTS idx_ai_knowledge_priority ON ai_agent_knowledge(priority DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_knowledge_tags ON ai_agent_knowledge USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_ai_knowledge_created ON ai_agent_knowledge("createdAt" DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_knowledge_project ON ai_agent_knowledge("projectId");
+CREATE INDEX IF NOT EXISTS idx_ai_project_memory_project ON ai_agent_project_memory("projectId");
 
 -- Function to update updatedAt timestamp
 CREATE OR REPLACE FUNCTION update_ai_knowledge_updated_at()
@@ -34,10 +36,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger to auto-update updatedAt
+-- Trigger to auto-update updatedAt for knowledge
 DROP TRIGGER IF EXISTS update_ai_knowledge_updated_at_trigger ON ai_agent_knowledge;
 CREATE TRIGGER update_ai_knowledge_updated_at_trigger
   BEFORE UPDATE ON ai_agent_knowledge
+  FOR EACH ROW
+  EXECUTE FUNCTION update_ai_knowledge_updated_at();
+
+-- Trigger to auto-update updatedAt for project memory
+DROP TRIGGER IF EXISTS update_ai_project_memory_updated_at_trigger ON ai_agent_project_memory;
+CREATE TRIGGER update_ai_project_memory_updated_at_trigger
+  BEFORE UPDATE ON ai_agent_project_memory
   FOR EACH ROW
   EXECUTE FUNCTION update_ai_knowledge_updated_at();
 
@@ -84,6 +93,60 @@ CREATE POLICY "Users can delete own knowledge"
   FOR DELETE
   TO authenticated
   USING (auth.uid() = "authorId");
+
+-- RLS for project memory
+ALTER TABLE ai_agent_project_memory ENABLE ROW LEVEL SECURITY;
+
+-- Admins can manage all project memory
+CREATE POLICY "Admins can manage all project memory"
+  ON ai_agent_project_memory
+  FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'Admin'
+    )
+  );
+
+-- Users can view project memory for projects they have access to
+CREATE POLICY "Users can view project memory"
+  ON ai_agent_project_memory
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = ai_agent_project_memory."projectId"
+      AND (
+        projects."authorId" = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM profiles
+          WHERE id = auth.uid() AND role = 'Admin'
+        )
+      )
+    )
+  );
+
+-- Users can create/update project memory for their projects
+CREATE POLICY "Users can manage own project memory"
+  ON ai_agent_project_memory
+  FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = ai_agent_project_memory."projectId"
+      AND projects."authorId" = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = ai_agent_project_memory."projectId"
+      AND projects."authorId" = auth.uid()
+    )
+  );
 
 -- Sample knowledge entries
 INSERT INTO ai_agent_knowledge (title, content, category, tags, priority, "authorId")
