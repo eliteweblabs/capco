@@ -163,10 +163,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   } catch (error: any) {
     console.error("❌ [AGENT-KNOWLEDGE] Error:", error);
+    console.error("❌ [AGENT-KNOWLEDGE] Error details:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
     return new Response(
       JSON.stringify({
         error: "Failed to create knowledge entry",
         message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
       }),
       {
         status: 500,
