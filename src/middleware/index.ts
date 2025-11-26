@@ -7,7 +7,12 @@ import { setupConsoleInterceptor } from "../lib/console-interceptor";
 import { supabase } from "../lib/supabase";
 
 // Setup console interceptor for server-side (disables console.log in production)
-setupConsoleInterceptor();
+try {
+  setupConsoleInterceptor();
+} catch (error) {
+  // Don't let console interceptor break the entire site
+  console.error("[---MIDDLEWARE] Error setting up console interceptor:", error);
+}
 
 const protectedRoutes = ["/dashboard(|/)", "/project/**"];
 const devBypassRoutes = ["/analytics", "/dashboard"];

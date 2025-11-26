@@ -11,6 +11,7 @@ echo "PORT: $PORT"
 echo "EMAIL_LOGO_LIGHT: $EMAIL_LOGO_LIGHT"
 echo "COMPANY_LOGO_LIGHT: $COMPANY_LOGO_LIGHT"
 echo "GLOBAL_COLOR_PRIMARY: $GLOBAL_COLOR_PRIMARY"
+echo "ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:+***configured***}"
 
 # Start Astro server with Node adapter
 echo "Starting Astro server with Node adapter..."
