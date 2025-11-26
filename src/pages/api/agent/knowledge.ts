@@ -55,11 +55,11 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
     const isAdmin = profile?.role === "Admin";
 
-    // Build query
+    // Build query - include user's own entries even if inactive, and all active entries
     let query = supabaseAdmin
       .from("ai_agent_knowledge")
       .select("*")
-      .eq("isActive", true)
+      .or(`isActive.eq.true,authorId.eq.${currentUser.id}`)
       .order("priority", { ascending: false })
       .order("createdAt", { ascending: false })
       .limit(limit);
