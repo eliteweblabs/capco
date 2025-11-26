@@ -3,19 +3,33 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Knowledge base entries table
+-- Knowledge base entries table (similar to Claude.ai project memory)
 CREATE TABLE IF NOT EXISTS ai_agent_knowledge (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title TEXT NOT NULL,
   content TEXT NOT NULL,
-  category TEXT, -- e.g., "company_policy", "nfpa_standards", "procedures", "facts"
+  category TEXT, -- e.g., "company_policy", "nfpa_standards", "procedures", "facts", "purpose_context", "current_state"
   tags TEXT[], -- Array of tags for easier searching
   priority INTEGER DEFAULT 0, -- Higher priority entries shown first
   "isActive" BOOLEAN DEFAULT true,
   "authorId" UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  "projectId" INTEGER REFERENCES projects(id) ON DELETE CASCADE, -- Optional: project-specific knowledge
   "createdAt" TIMESTAMPTZ DEFAULT NOW(),
   "updatedAt" TIMESTAMPTZ DEFAULT NOW(),
   metadata JSONB DEFAULT '{}'::jsonb -- Additional metadata
+);
+
+-- Project-specific memory (like Claude.ai's project memory)
+-- Stores "Purpose & context" and "Current state" for each project
+CREATE TABLE IF NOT EXISTS ai_agent_project_memory (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  "projectId" INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  "purposeContext" TEXT, -- "Purpose & context" section (like Claude.ai)
+  "currentState" TEXT, -- "Current state" section (like Claude.ai)
+  "authorId" UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  "createdAt" TIMESTAMPTZ DEFAULT NOW(),
+  "updatedAt" TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE("projectId") -- One memory per project
 );
 
 -- Indexes for performance
