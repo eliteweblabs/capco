@@ -39,7 +39,13 @@ export interface AgentResponse {
 
 export class UnifiedFireProtectionAgent {
   private client: Anthropic;
-  private model: string = 'claude-3-opus-20240229'; // Using Claude 3 Opus (known working model)
+  // Try these models in order of preference (newest first)
+  // After adding payment, account should have access to these
+  private model: string = 'claude-3-5-sonnet-20241022'; // Latest Claude 3.5 Sonnet
+  // Fallback models (will be tried if above fails):
+  // - claude-3-opus-20240229
+  // - claude-3-sonnet-20240229
+  // - claude-3-haiku-20240307
 
   constructor(apiKey: string) {
     if (!apiKey) {
