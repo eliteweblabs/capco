@@ -80,37 +80,41 @@ export async function saveAvatarDirect(
 
     if (updateError) {
       console.error("📸 [SAVE-AVATAR] Profile update error:", updateError);
-      return new Response(
-        JSON.stringify({
-          error: "Failed to update profile with new avatar URL",
-          details: updateError.message,
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return {
+        success: false,
+        error: `Failed to update profile with new avatar URL: ${updateError.message}`,
+      };
     }
 
     console.log("✅ [SAVE-AVATAR] Avatar saved successfully for user:", userId);
 
+    return { success: true, avatarUrl: newAvatarUrl };
+  } catch (error: any) {
+    console.error("❌ [SAVE-AVATAR] Error:", error);
+    return {
+      success: false,
+      error: `Failed to save avatar: ${error.message}`,
+    };
+  }
+}
+
+/**
+ * HTTP POST endpoint wrapper for saveAvatarDirect
+ */
+export const POST: APIRoute = async ({ request }) => {
+  try {
+    const { userId, avatarUrl } = await request.json();
+    const result = await saveAvatarDirect(userId, avatarUrl);
+    
+    return new Response(JSON.stringify(result), {
+      status: result.success ? 200 : 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error: any) {
     return new Response(
       JSON.stringify({
-        success: true,
-        avatarUrl: newAvatarUrl,
-        message: "Avatar downloaded and saved successfully",
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  } catch (error) {
-    console.error("❌ [SAVE-AVATAR] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        success: false,
+        error: error.message,
       }),
       {
         status: 500,
