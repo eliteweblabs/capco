@@ -32,6 +32,18 @@ CREATE TABLE IF NOT EXISTS ai_agent_project_memory (
   UNIQUE("projectId") -- One memory per project
 );
 
+-- Add projectId column to ai_agent_knowledge if it doesn't exist (for existing tables)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'ai_agent_knowledge' AND column_name = 'projectId'
+  ) THEN
+    ALTER TABLE ai_agent_knowledge 
+    ADD COLUMN "projectId" INTEGER REFERENCES projects(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_ai_knowledge_category ON ai_agent_knowledge(category);
 CREATE INDEX IF NOT EXISTS idx_ai_knowledge_active ON ai_agent_knowledge("isActive");
