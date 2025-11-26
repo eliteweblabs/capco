@@ -145,7 +145,7 @@ const { currentUser, projectId } = Astro.props;
       <div class="flex-1">
         <!-- Image previews container -->
         <div id="image-previews" class="mb-2 flex flex-wrap gap-2"></div>
-        
+
         <!-- Input wrapper with drag-drop support -->
         <div
           id="input-wrapper"
@@ -157,7 +157,7 @@ const { currentUser, projectId } = Astro.props;
             placeholder="Ask me anything about fire protection... (or drag images here)"
             class="w-full resize-none rounded-lg border-0 bg-transparent px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-white dark:placeholder-gray-500"
             style="max-height: 120px;"></textarea>
-          
+
           <!-- Drag overlay -->
           <div
             id="drag-overlay"
@@ -183,7 +183,7 @@ const { currentUser, projectId } = Astro.props;
             </div>
           </div>
         </div>
-        
+
         <div
           class="mt-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400"
         >
@@ -388,12 +388,7 @@ const { currentUser, projectId } = Astro.props;
         const rect = wrapper.getBoundingClientRect();
         const x = e.clientX;
         const y = e.clientY;
-        if (
-          x < rect.left ||
-          x > rect.right ||
-          y < rect.top ||
-          y > rect.bottom
-        ) {
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
           overlay?.classList.add("hidden");
           overlay?.classList.remove("flex");
           wrapper?.classList.remove("border-primary-500");
@@ -417,7 +412,7 @@ const { currentUser, projectId } = Astro.props;
           .filter((item) => item.type.startsWith("image/"))
           .map((item) => item.getAsFile())
           .filter((file): file is File => file !== null);
-        
+
         if (imageFiles.length > 0) {
           this.handleImageFiles(imageFiles);
         }
@@ -426,7 +421,7 @@ const { currentUser, projectId } = Astro.props;
 
     private handleImageFiles(files: File[]) {
       const imageFiles = files.filter((file) => file.type.startsWith("image/"));
-      
+
       if (imageFiles.length === 0) {
         console.warn("⚠️ [AI-CHAT] No image files found");
         return;
@@ -443,7 +438,7 @@ const { currentUser, projectId } = Astro.props;
         reader.onload = (e) => {
           const preview = e.target?.result as string;
           const id = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          
+
           this.imageAttachments.push({
             file,
             preview,
@@ -492,9 +487,7 @@ const { currentUser, projectId } = Astro.props;
     }
 
     private removeImage(imageId: string) {
-      this.imageAttachments = this.imageAttachments.filter(
-        (img) => img.id !== imageId
-      );
+      this.imageAttachments = this.imageAttachments.filter((img) => img.id !== imageId);
       this.renderImagePreviews();
       this.updateSendButtonState();
     }
@@ -522,8 +515,8 @@ const { currentUser, projectId } = Astro.props;
           formData.append("file", attachment.file);
           formData.append("folder", "ai-chat");
 
-          // Upload to your media API (adjust endpoint as needed)
-          const uploadResponse = await fetch("/api/media/upload", {
+          // Upload to AI chat image upload endpoint
+          const uploadResponse = await fetch("/api/agent/upload-image", {
             method: "POST",
             credentials: "include",
             body: formData,
@@ -868,7 +861,7 @@ const { currentUser, projectId } = Astro.props;
   // Initialize when DOM is ready
   document.addEventListener("DOMContentLoaded", () => {
     const chatAgent = new AIChatAgent();
-    
+
     // Expose to window for image removal button onclick
     (window as any).aiChatAgent = chatAgent;
   });
