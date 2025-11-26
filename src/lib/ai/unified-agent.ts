@@ -147,11 +147,11 @@ export class UnifiedFireProtectionAgent {
   /**
    * Load knowledge base entries for agent context
    */
-  private async loadKnowledgeBase(category?: string): Promise<Array<{ title: string; content: string; category?: string }>> {
+  private async loadKnowledgeBase(category?: string, projectId?: number): Promise<Array<{ title: string; content: string; category?: string }>> {
     if (!supabaseAdmin) return [];
 
     try {
-      const { data: entries } = await supabaseAdmin
+      let query = supabaseAdmin
         .from("ai_agent_knowledge")
         .select("title, content, category")
         .eq("isActive", true)
@@ -159,6 +159,18 @@ export class UnifiedFireProtectionAgent {
         .order("createdAt", { ascending: false })
         .limit(20);
 
+      // Filter by project if specified, or get global knowledge
+      if (projectId) {
+        query = query.or(`projectId.is.null,projectId.eq.${projectId}`);
+      } else {
+        query = query.is("projectId", null); // Only global knowledge
+      }
+
+      if (category) {
+        query = query.eq("category", category);
+      }
+
+      const { data: entries } = await query;
       return entries || [];
     } catch (error) {
       console.error("❌ [UNIFIED-AGENT] Error loading knowledge base:", error);
@@ -167,17 +179,54 @@ export class UnifiedFireProtectionAgent {
   }
 
   /**
+   * Load project-specific memory (like Claude.ai's project memory)
+   */
+  private async loadProjectMemory(projectId: number): Promise<{ purposeContext?: string; currentState?: string } | null> {
+    if (!supabaseAdmin || !projectId) return null;
+
+    try {
+      const { data: memory } = await supabaseAdmin
+        .from("ai_agent_project_memory")
+        .select("purposeContext, currentState")
+        .eq("projectId", projectId)
+        .single();
+
+      return memory || null;
+    } catch (error) {
+      console.error("❌ [UNIFIED-AGENT] Error loading project memory:", error);
+      return null;
+    }
+  }
+
+  /**
    * Build comprehensive system prompt that defines the agent's capabilities
    */
   private async buildSystemPrompt(context?: any): Promise<string> {
-    // Load knowledge base entries
-    const knowledgeEntries = await this.loadKnowledgeBase();
+    // Load project-specific memory (like Claude.ai's project memory)
+    const projectMemory = context?.projectId 
+      ? await this.loadProjectMemory(context.projectId)
+      : null;
+
+    // Load knowledge base entries (global + project-specific)
+    const knowledgeEntries = await this.loadKnowledgeBase(undefined, context?.projectId);
+    
+    // Format project memory (like Claude.ai)
+    let projectMemorySection = "";
+    if (projectMemory) {
+      projectMemorySection = "\n\n## Project Memory\n";
+      if (projectMemory.purposeContext) {
+        projectMemorySection += `\n### Purpose & Context\n${projectMemory.purposeContext}\n`;
+      }
+      if (projectMemory.currentState) {
+        projectMemorySection += `\n### Current State\n${projectMemory.currentState}\n`;
+      }
+    }
     
     // Format knowledge base for system prompt
     let knowledgeSection = "";
     if (knowledgeEntries.length > 0) {
       knowledgeSection = "\n\n## Knowledge Base\n";
-      knowledgeEntries.forEach((entry, index) => {
+      knowledgeEntries.forEach((entry) => {
         knowledgeSection += `\n### ${entry.title}${entry.category ? ` (${entry.category})` : ""}\n${entry.content}\n`;
       });
     }
@@ -229,7 +278,7 @@ You have access to:
 - Document templates (can generate various document types)
 - Historical data (can reference past projects or documents)
 
-${context?.projectId ? `\n## Current Context\n- Working with Project ID: ${context.projectId}\n` : ''}
+${projectMemorySection}${knowledgeSection}${context?.projectId ? `\n## Current Context\n- Working with Project ID: ${context.projectId}\n` : ''}
 ${context?.userId ? `- User ID: ${context.userId}\n` : ''}
 
 Remember: Be helpful, accurate, and professional. If you need more information to complete a task, ask for it.`;
