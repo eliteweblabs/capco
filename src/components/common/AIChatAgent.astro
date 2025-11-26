@@ -143,16 +143,51 @@ const { currentUser, projectId } = Astro.props;
   <div class="border-t border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
     <div class="flex items-end space-x-2">
       <div class="flex-1">
-        <textarea
-          id="ai-chat-input"
-          rows="1"
-          placeholder="Ask me anything about fire protection..."
-          class="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
-          style="max-height: 120px;"></textarea>
+        <!-- Image previews container -->
+        <div id="image-previews" class="mb-2 flex flex-wrap gap-2"></div>
+        
+        <!-- Input wrapper with drag-drop support -->
+        <div
+          id="input-wrapper"
+          class="relative rounded-lg border-2 border-dashed border-gray-300 bg-white transition-colors dark:border-gray-600 dark:bg-gray-800"
+        >
+          <textarea
+            id="ai-chat-input"
+            rows="1"
+            placeholder="Ask me anything about fire protection... (or drag images here)"
+            class="w-full resize-none rounded-lg border-0 bg-transparent px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-white dark:placeholder-gray-500"
+            style="max-height: 120px;"></textarea>
+          
+          <!-- Drag overlay -->
+          <div
+            id="drag-overlay"
+            class="absolute inset-0 hidden items-center justify-center rounded-lg bg-primary-50/80 dark:bg-primary-900/30"
+          >
+            <div class="text-center">
+              <svg
+                class="mx-auto h-12 w-12 text-primary-600 dark:text-primary-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                ></path>
+              </svg>
+              <p class="mt-2 text-sm font-medium text-primary-600 dark:text-primary-400">
+                Drop images here
+              </p>
+            </div>
+          </div>
+        </div>
+        
         <div
           class="mt-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400"
         >
-          <span>Press Enter to send, Shift+Enter for new line</span>
+          <span>Press Enter to send, Shift+Enter for new line • Drag images to attach</span>
           <span id="token-count" class="hidden">0 tokens</span>
         </div>
       </div>
@@ -245,11 +280,18 @@ const { currentUser, projectId } = Astro.props;
     metadata?: any;
   }
 
+  interface ImageAttachment {
+    file: File;
+    preview: string;
+    id: string;
+  }
+
   class AIChatAgent {
     private currentConversationId: string | null = null;
     private messages: Message[] = [];
     private conversations: Array<{ id: string; title: string; updatedAt: string }> = [];
     private isProcessing = false;
+    private imageAttachments: ImageAttachment[] = [];
 
     constructor() {
       this.initialize();
@@ -263,11 +305,16 @@ const { currentUser, projectId } = Astro.props;
       const conversationSelector = document.getElementById(
         "conversation-selector"
       ) as HTMLSelectElement;
+      const inputWrapper = document.getElementById("input-wrapper");
+      const dragOverlay = document.getElementById("drag-overlay");
+
+      // Drag and drop handlers
+      this.setupDragAndDrop(inputWrapper, dragOverlay, input);
 
       // Auto-resize textarea
       input?.addEventListener("input", () => {
         this.adjustTextareaHeight(input);
-        sendBtn.disabled = !input.value.trim() || this.isProcessing;
+        this.updateSendButtonState();
       });
 
       // Send on Enter (Shift+Enter for new line)
@@ -313,26 +360,220 @@ const { currentUser, projectId } = Astro.props;
       this.loadConversations();
     }
 
+    private setupDragAndDrop(
+      wrapper: HTMLElement | null,
+      overlay: HTMLElement | null,
+      input: HTMLTextAreaElement
+    ) {
+      if (!wrapper || !overlay) return;
+
+      // Prevent default drag behaviors on the wrapper
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        wrapper.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      });
+
+      // Show overlay on drag enter
+      wrapper.addEventListener("dragenter", () => {
+        overlay?.classList.remove("hidden");
+        overlay?.classList.add("flex");
+        wrapper?.classList.add("border-primary-500");
+      });
+
+      // Hide overlay on drag leave
+      wrapper.addEventListener("dragleave", (e) => {
+        // Only hide if we're leaving the wrapper (not entering a child)
+        const rect = wrapper.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (
+          x < rect.left ||
+          x > rect.right ||
+          y < rect.top ||
+          y > rect.bottom
+        ) {
+          overlay?.classList.add("hidden");
+          overlay?.classList.remove("flex");
+          wrapper?.classList.remove("border-primary-500");
+        }
+      });
+
+      // Handle drop
+      wrapper.addEventListener("drop", (e) => {
+        overlay?.classList.add("hidden");
+        overlay?.classList.remove("flex");
+        wrapper?.classList.remove("border-primary-500");
+
+        const files = Array.from(e.dataTransfer?.files || []);
+        this.handleImageFiles(files);
+      });
+
+      // Also handle paste
+      input.addEventListener("paste", (e) => {
+        const items = Array.from(e.clipboardData?.items || []);
+        const imageFiles = items
+          .filter((item) => item.type.startsWith("image/"))
+          .map((item) => item.getAsFile())
+          .filter((file): file is File => file !== null);
+        
+        if (imageFiles.length > 0) {
+          this.handleImageFiles(imageFiles);
+        }
+      });
+    }
+
+    private handleImageFiles(files: File[]) {
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+      
+      if (imageFiles.length === 0) {
+        console.warn("⚠️ [AI-CHAT] No image files found");
+        return;
+      }
+
+      imageFiles.forEach((file) => {
+        // Check file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`Image "${file.name}" is too large. Maximum size is 10MB.`);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const preview = e.target?.result as string;
+          const id = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          this.imageAttachments.push({
+            file,
+            preview,
+            id,
+          });
+
+          this.renderImagePreviews();
+          this.updateSendButtonState();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    private renderImagePreviews() {
+      const container = document.getElementById("image-previews");
+      if (!container) return;
+
+      if (this.imageAttachments.length === 0) {
+        container.innerHTML = "";
+        return;
+      }
+
+      container.innerHTML = this.imageAttachments
+        .map(
+          (attachment) => `
+        <div class="group relative inline-block">
+          <img
+            src="${attachment.preview}"
+            alt="Preview"
+            class="h-20 w-20 rounded-lg object-cover border-2 border-gray-300 dark:border-gray-600"
+          />
+          <button
+            type="button"
+            class="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
+            data-image-id="${attachment.id}"
+            onclick="window.aiChatAgent?.removeImage('${attachment.id}')"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      `
+        )
+        .join("");
+    }
+
+    private removeImage(imageId: string) {
+      this.imageAttachments = this.imageAttachments.filter(
+        (img) => img.id !== imageId
+      );
+      this.renderImagePreviews();
+      this.updateSendButtonState();
+    }
+
+    private updateSendButtonState() {
+      const input = document.getElementById("ai-chat-input") as HTMLTextAreaElement;
+      const sendBtn = document.getElementById("ai-chat-send") as HTMLButtonElement;
+      const hasText = input?.value.trim().length > 0;
+      const hasImages = this.imageAttachments.length > 0;
+      sendBtn.disabled = (!hasText && !hasImages) || this.isProcessing;
+    }
+
     private adjustTextareaHeight(textarea: HTMLTextAreaElement) {
       textarea.style.height = "auto";
       textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+    }
+
+    private async uploadImages(attachments: ImageAttachment[]): Promise<string[]> {
+      const uploadedUrls: string[] = [];
+
+      for (const attachment of attachments) {
+        try {
+          // Create FormData for file upload
+          const formData = new FormData();
+          formData.append("file", attachment.file);
+          formData.append("folder", "ai-chat");
+
+          // Upload to your media API (adjust endpoint as needed)
+          const uploadResponse = await fetch("/api/media/upload", {
+            method: "POST",
+            credentials: "include",
+            body: formData,
+          });
+
+          if (uploadResponse.ok) {
+            const result = await uploadResponse.json();
+            if (result.url || result.publicUrl) {
+              uploadedUrls.push(result.url || result.publicUrl);
+            }
+          } else {
+            console.error("❌ [AI-CHAT] Failed to upload image:", attachment.file.name);
+            // Fallback: use data URL (less ideal but works)
+            uploadedUrls.push(attachment.preview);
+          }
+        } catch (error) {
+          console.error("❌ [AI-CHAT] Error uploading image:", error);
+          // Fallback: use data URL
+          uploadedUrls.push(attachment.preview);
+        }
+      }
+
+      return uploadedUrls;
     }
 
     private async sendMessage() {
       const input = document.getElementById("ai-chat-input") as HTMLTextAreaElement;
       const sendBtn = document.getElementById("ai-chat-send") as HTMLButtonElement;
       const message = input.value.trim();
+      const hasImages = this.imageAttachments.length > 0;
 
-      if (!message || this.isProcessing) return;
+      if ((!message && !hasImages) || this.isProcessing) return;
 
-      // Clear input
+      // Store attachments before clearing
+      const attachments = [...this.imageAttachments];
+
+      // Clear input and attachments
       input.value = "";
+      this.imageAttachments = [];
+      this.renderImagePreviews();
       this.adjustTextareaHeight(input);
       sendBtn.disabled = true;
       this.isProcessing = true;
 
-      // Add user message to UI
-      this.addMessage("user", message);
+      // Add user message to UI (with image indicators)
+      let displayMessage = message;
+      if (attachments.length > 0) {
+        displayMessage += `\n[${attachments.length} image${attachments.length > 1 ? "s" : ""} attached]`;
+      }
+      this.addMessage("user", displayMessage);
 
       // Show typing indicator
       this.showTypingIndicator();
@@ -342,15 +583,22 @@ const { currentUser, projectId } = Astro.props;
         const chatContainer = document.getElementById("ai-chat-agent");
         const projectId = chatContainer?.dataset.projectId;
 
+        // Upload images if any
+        let imageUrls: string[] = [];
+        if (attachments.length > 0) {
+          imageUrls = await this.uploadImages(attachments);
+        }
+
         // Send to API
         const response = await fetch("/api/agent/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            message,
+            message: message || (imageUrls.length > 0 ? "Please analyze these images" : ""),
             conversationId: this.currentConversationId || undefined,
             context: projectId ? { projectId: parseInt(projectId) } : undefined,
+            images: imageUrls.length > 0 ? imageUrls : undefined,
           }),
         });
 
