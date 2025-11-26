@@ -45,7 +45,22 @@ export class UnifiedFireProtectionAgent {
     if (!apiKey) {
       throw new Error('Anthropic API key is required');
     }
-    this.client = new Anthropic({ apiKey });
+    
+    // Validate API key format
+    if (!apiKey.startsWith('sk-ant-')) {
+      console.warn('[---UNIFIED-AGENT] API key format warning - should start with sk-ant-');
+    }
+    
+    // Initialize Anthropic client
+    this.client = new Anthropic({ 
+      apiKey,
+    });
+    
+    console.log('[---UNIFIED-AGENT] Anthropic client initialized:', {
+      keyPrefix: apiKey.substring(0, 12) + '...',
+      keyLength: apiKey.length,
+      keyFormat: apiKey.startsWith('sk-ant-') ? 'valid' : 'unexpected',
+    });
   }
 
   /**
