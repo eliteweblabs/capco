@@ -17,7 +17,7 @@ import App from "../../components/common/App.astro";
 
       <h2>📊 Database Schema</h2>
 
-      <h3>1. <code>ai_agent_knowledge</code> Table</h3>
+      <h3>1. ai_agent_knowledge Table</h3>
       
       <p>Stores general knowledge entries that can be used across all conversations or for specific projects.</p>
 
@@ -40,18 +40,18 @@ import App from "../../components/common/App.astro";
       <h4>Usage:</h4>
       <ul>
         <li><strong>Global knowledge</strong>: <code>projectId = NULL</code> - Available to all conversations</li>
-        <li><strong>Project-specific</strong>: <code>projectId = &lt;project_id&gt;</code> - Only available when that project is in context</li>
+        <li><strong>Project-specific</strong>: <code>projectId = [project_id]</code> - Only available when that project is in context</li>
       </ul>
 
-      <h3>2. <code>ai_agent_project_memory</code> Table</h3>
+      <h3>2. ai_agent_project_memory Table</h3>
       
-      <p>Stores Claude.ai-style project memory with "Purpose & Context" and "Current State" sections.</p>
+      <p>Stores Claude.ai-style project memory with "Purpose &amp; Context" and "Current State" sections.</p>
 
       <h4>Columns:</h4>
       <ul>
         <li><code>id</code> (UUID) - Primary key</li>
         <li><code>projectId</code> (INTEGER) - Project ID (unique, one memory per project)</li>
-        <li><code>purposeContext</code> (TEXT) - "Purpose & Context" section</li>
+        <li><code>purposeContext</code> (TEXT) - "Purpose &amp; Context" section</li>
         <li><code>currentState</code> (TEXT) - "Current State" section</li>
         <li><code>authorId</code> (UUID) - User who created/updated the memory</li>
         <li><code>createdAt</code> (TIMESTAMPTZ) - Creation timestamp</li>
@@ -95,22 +95,22 @@ import App from "../../components/common/App.astro";
       <h2>📝 Memory Format in System Prompt</h2>
 
       <h3>Project Memory Section:</h3>
-      <pre><code>## Project Memory
+      <pre><code set:html={`## Project Memory
 
 ### Purpose & Context
 {projectMemory.purposeContext}
 
 ### Current State
-{projectMemory.currentState}</code></pre>
+{projectMemory.currentState}`}></code></pre>
 
       <h3>Knowledge Base Section:</h3>
-      <pre><code>## Knowledge Base
+      <pre><code set:html>## Knowledge Base
 
-### {entry.title} ({entry.category})
-{entry.content}
+### {'{'}{'entry.title'}{'}'} ({'{'}{'entry.category'}{'}'})
+{'{'}{'entry.content'}{'}'}
 
-### {entry.title} ({entry.category})
-{entry.content}
+### {'{'}{'entry.title'}{'}'} ({'{'}{'entry.category'}{'}'})
+{'{'}{'entry.content'}{'}'}
 ...</code></pre>
 
       <h2>🔧 Managing Memory</h2>
@@ -119,13 +119,13 @@ import App from "../../components/common/App.astro";
 
       <h4>Via API:</h4>
       <pre><code>POST /api/agent/knowledge
-{
+{'{'}
   "title": "Company Policy",
   "content": "We always prioritize safety...",
   "category": "company_policy",
   "tags": ["policy", "safety"],
   "priority": 10
-}</code></pre>
+{'}'}</code></pre>
 
       <h4>Via SQL:</h4>
       <pre><code>INSERT INTO ai_agent_knowledge (title, content, category, priority, "isActive")
@@ -152,11 +152,11 @@ VALUES (
 
       <h4>Via API:</h4>
       <pre><code>POST /api/agent/project-memory
-{
+{'{'}
   "projectId": 123,
   "purposeContext": "This project is for...",
   "currentState": "Currently working on..."
-}</code></pre>
+{'}'}</code></pre>
 
       <h4>Via SQL:</h4>
       <pre><code>INSERT INTO ai_agent_project_memory ("projectId", "purposeContext", "currentState")
