@@ -16,10 +16,12 @@ import { supabaseAdmin } from '../supabase-admin';
 
 export interface AgentRequest {
   message: string;
+  images?: string[]; // Array of image URLs
   context?: {
     projectId?: number;
     userId?: string;
     conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    images?: string[];
     [key: string]: any;
   };
 }
@@ -68,13 +70,13 @@ export class UnifiedFireProtectionAgent {
    * Main agent method - handles any query and routes to appropriate capabilities
    */
   async processQuery(request: AgentRequest): Promise<AgentResponse> {
-    const { message, context } = request;
+    const { message, context, images } = request;
     
     // Build comprehensive system prompt with all agent capabilities and knowledge base
     const systemPrompt = await this.buildSystemPrompt(context);
     
-    // Build conversation messages
-    const messages = this.buildMessages(message, context);
+    // Build conversation messages (including images)
+    const messages = this.buildMessages(message, context, images);
     
     // Log API call details (without exposing sensitive data)
     console.log('[---UNIFIED-AGENT] Making Anthropic API call:', {
@@ -82,6 +84,8 @@ export class UnifiedFireProtectionAgent {
       messageCount: messages.length,
       systemPromptLength: systemPrompt.length,
       hasApiKey: !!this.client, // Client exists if API key was provided
+      hasImages: images && images.length > 0,
+      imageCount: images?.length || 0,
     });
     
     try {
@@ -255,7 +259,12 @@ export class UnifiedFireProtectionAgent {
 - Generate reports on project status, timelines, or performance
 - Provide insights from project data
 
-### 5. General Assistance
+### 5. Image Analysis
+- Analyze images of fire protection systems, plans, or documents
+- Extract information from photos, diagrams, or technical drawings
+- Review uploaded documents or images for compliance or technical details
+
+### 6. General Assistance
 - Answer questions about fire protection systems
 - Explain technical concepts
 - Provide guidance on best practices
@@ -289,9 +298,16 @@ Remember: Be helpful, accurate, and professional. If you need more information t
    */
   private buildMessages(
     currentMessage: string,
-    context?: any
-  ): Array<{ role: 'user' | 'assistant'; content: string }> {
-    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    context?: any,
+    imageUrls?: string[]
+  ): Array<{ 
+    role: 'user' | 'assistant'; 
+    content: string | Array<string | { type: 'image'; source: { type: 'url'; url: string } }> 
+  }> {
+    const messages: Array<{ 
+      role: 'user' | 'assistant'; 
+      content: string | Array<string | { type: 'image'; source: { type: 'url'; url: string } }> 
+    }> = [];
 
     // Add conversation history if provided
     if (context?.conversationHistory) {
@@ -305,9 +321,36 @@ Remember: Be helpful, accurate, and professional. If you need more information t
       enrichedMessage += `\n\n[Context: Working with project ${context.projectId}]`;
     }
 
+    // Build content array - include text and images if present
+    const contentBlocks: Array<string | { type: 'image'; source: { type: 'url'; url: string } }> = [];
+    
+    // Add text message if present
+    if (enrichedMessage.trim()) {
+      contentBlocks.push(enrichedMessage);
+    }
+    
+    // Add images if present
+    if (imageUrls && imageUrls.length > 0) {
+      console.log('[---UNIFIED-AGENT] Adding images to message:', {
+        imageCount: imageUrls.length,
+        imageUrls: imageUrls.map(url => url.substring(0, 50) + '...'), // Log partial URLs
+      });
+      imageUrls.forEach(url => {
+        contentBlocks.push({
+          type: 'image',
+          source: {
+            type: 'url',
+            url: url,
+          },
+        });
+      });
+    }
+
     messages.push({
       role: 'user',
-      content: enrichedMessage,
+      content: contentBlocks.length === 1 && typeof contentBlocks[0] === 'string' 
+        ? contentBlocks[0] 
+        : contentBlocks,
     });
 
     return messages;
