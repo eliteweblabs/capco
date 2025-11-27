@@ -152,32 +152,51 @@ export class UnifiedFireProtectionAgent {
    * Load knowledge base entries for agent context
    */
   private async loadKnowledgeBase(category?: string, projectId?: number): Promise<Array<{ title: string; content: string; category?: string }>> {
-    if (!supabaseAdmin) return [];
+    if (!supabaseAdmin) {
+      console.warn("⚠️ [UNIFIED-AGENT] Supabase admin client not available for knowledge base");
+      return [];
+    }
 
     try {
       let query = supabaseAdmin
         .from("ai_agent_knowledge")
         .select("title, content, category")
-        .eq("isActive", true)
-        .order("priority", { ascending: false })
-        .order("createdAt", { ascending: false })
-        .limit(20);
+        .eq("isActive", true);
 
       // Filter by project if specified, or get global knowledge
       if (projectId) {
+        // Get both global knowledge (projectId is null) and project-specific knowledge
         query = query.or(`projectId.is.null,projectId.eq.${projectId}`);
       } else {
-        query = query.is("projectId", null); // Only global knowledge
+        // Only get global knowledge (no project-specific)
+        query = query.is("projectId", null);
       }
 
       if (category) {
         query = query.eq("category", category);
       }
 
-      const { data: entries } = await query;
+      // Order by priority (descending) then by createdAt (descending)
+      query = query.order("priority", { ascending: false })
+                   .order("createdAt", { ascending: false })
+                   .limit(50); // Increased limit to get more knowledge
+
+      const { data: entries, error } = await query;
+      
+      if (error) {
+        console.error("❌ [UNIFIED-AGENT] Error loading knowledge base:", error);
+        return [];
+      }
+
+      console.log(`✅ [UNIFIED-AGENT] Loaded ${entries?.length || 0} knowledge entries`, {
+        category,
+        projectId,
+        entryCount: entries?.length || 0,
+      });
+
       return entries || [];
     } catch (error) {
-      console.error("❌ [UNIFIED-AGENT] Error loading knowledge base:", error);
+      console.error("❌ [UNIFIED-AGENT] Exception loading knowledge base:", error);
       return [];
     }
   }
@@ -186,18 +205,42 @@ export class UnifiedFireProtectionAgent {
    * Load project-specific memory (like Claude.ai's project memory)
    */
   private async loadProjectMemory(projectId: number): Promise<{ purposeContext?: string; currentState?: string } | null> {
-    if (!supabaseAdmin || !projectId) return null;
+    if (!supabaseAdmin) {
+      console.warn("⚠️ [UNIFIED-AGENT] Supabase admin client not available for project memory");
+      return null;
+    }
+
+    if (!projectId) {
+      return null;
+    }
 
     try {
-      const { data: memory } = await supabaseAdmin
+      const { data: memory, error } = await supabaseAdmin
         .from("ai_agent_project_memory")
         .select("purposeContext, currentState")
         .eq("projectId", projectId)
         .single();
 
+      if (error) {
+        // If no rows found, that's okay - project might not have memory yet
+        if (error.code === 'PGRST116') {
+          console.log(`ℹ️ [UNIFIED-AGENT] No project memory found for project ${projectId}`);
+          return null;
+        }
+        console.error("❌ [UNIFIED-AGENT] Error loading project memory:", error);
+        return null;
+      }
+
+      if (memory) {
+        console.log(`✅ [UNIFIED-AGENT] Loaded project memory for project ${projectId}`, {
+          hasPurposeContext: !!memory.purposeContext,
+          hasCurrentState: !!memory.currentState,
+        });
+      }
+
       return memory || null;
     } catch (error) {
-      console.error("❌ [UNIFIED-AGENT] Error loading project memory:", error);
+      console.error("❌ [UNIFIED-AGENT] Exception loading project memory:", error);
       return null;
     }
   }
@@ -206,6 +249,12 @@ export class UnifiedFireProtectionAgent {
    * Build comprehensive system prompt that defines the agent's capabilities
    */
   private async buildSystemPrompt(context?: any): Promise<string> {
+    console.log(`🔍 [UNIFIED-AGENT] Building system prompt`, {
+      hasContext: !!context,
+      projectId: context?.projectId,
+      userId: context?.userId,
+    });
+
     // Load project-specific memory (like Claude.ai's project memory)
     const projectMemory = context?.projectId 
       ? await this.loadProjectMemory(context.projectId)
@@ -224,6 +273,9 @@ export class UnifiedFireProtectionAgent {
       if (projectMemory.currentState) {
         projectMemorySection += `\n### Current State\n${projectMemory.currentState}\n`;
       }
+      console.log(`📝 [UNIFIED-AGENT] Added project memory to system prompt`);
+    } else {
+      console.log(`ℹ️ [UNIFIED-AGENT] No project memory to add`);
     }
     
     // Format knowledge base for system prompt
@@ -233,6 +285,9 @@ export class UnifiedFireProtectionAgent {
       knowledgeEntries.forEach((entry) => {
         knowledgeSection += `\n### ${entry.title}${entry.category ? ` (${entry.category})` : ""}\n${entry.content}\n`;
       });
+      console.log(`📚 [UNIFIED-AGENT] Added ${knowledgeEntries.length} knowledge entries to system prompt`);
+    } else {
+      console.warn(`⚠️ [UNIFIED-AGENT] No knowledge entries found! Check database and RLS policies.`);
     }
 
     return `You are an expert AI assistant specialized in fire protection engineering and project management. You help users with:
