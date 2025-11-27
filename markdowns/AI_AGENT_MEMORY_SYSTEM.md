@@ -5,9 +5,11 @@ This document explains how the AI agent's memory/knowledge system works and how 
 ## 📊 Database Schema
 
 ### 1. `ai_agent_knowledge` Table
+
 Stores general knowledge entries that can be used across all conversations or for specific projects.
 
 **Columns:**
+
 - `id` (UUID) - Primary key
 - `title` (TEXT) - Entry title
 - `content` (TEXT) - Entry content/knowledge
@@ -22,13 +24,16 @@ Stores general knowledge entries that can be used across all conversations or fo
 - `metadata` (JSONB) - Additional metadata
 
 **Usage:**
+
 - **Global knowledge**: `projectId = NULL` - Available to all conversations
 - **Project-specific**: `projectId = <project_id>` - Only available when that project is in context
 
 ### 2. `ai_agent_project_memory` Table
+
 Stores Claude.ai-style project memory with "Purpose & Context" and "Current State" sections.
 
 **Columns:**
+
 - `id` (UUID) - Primary key
 - `projectId` (INTEGER) - Project ID (unique, one memory per project)
 - `purposeContext` (TEXT) - "Purpose & Context" section
@@ -38,12 +43,14 @@ Stores Claude.ai-style project memory with "Purpose & Context" and "Current Stat
 - `updatedAt` (TIMESTAMPTZ) - Last update timestamp
 
 **Usage:**
+
 - One memory entry per project
 - Automatically loaded when `projectId` is in the conversation context
 
 ## 🔄 How Memory is Loaded
 
 ### Flow:
+
 1. **User sends message** → `/api/agent/chat`
 2. **API extracts context** → Includes `projectId` if available
 3. **Agent processes query** → Calls `buildSystemPrompt(context)`
@@ -54,6 +61,7 @@ Stores Claude.ai-style project memory with "Purpose & Context" and "Current Stat
 5. **System prompt sent to Claude** → Includes all memory/knowledge
 
 ### Code Location:
+
 - **Loading**: `src/lib/ai/unified-agent.ts`
   - `loadKnowledgeBase()` - Lines 154-183
   - `loadProjectMemory()` - Lines 188-203
@@ -62,6 +70,7 @@ Stores Claude.ai-style project memory with "Purpose & Context" and "Current Stat
 ## 📝 Memory Format in System Prompt
 
 ### Project Memory Section:
+
 ```
 ## Project Memory
 
@@ -73,6 +82,7 @@ Stores Claude.ai-style project memory with "Purpose & Context" and "Current Stat
 ```
 
 ### Knowledge Base Section:
+
 ```
 ## Knowledge Base
 
@@ -89,6 +99,7 @@ Stores Claude.ai-style project memory with "Purpose & Context" and "Current Stat
 ### Adding General Knowledge
 
 **Via API:**
+
 ```javascript
 POST /api/agent/knowledge
 {
@@ -101,6 +112,7 @@ POST /api/agent/knowledge
 ```
 
 **Via SQL:**
+
 ```sql
 INSERT INTO ai_agent_knowledge (title, content, category, priority, "isActive")
 VALUES (
@@ -115,6 +127,7 @@ VALUES (
 ### Adding Project-Specific Knowledge
 
 **Via API:**
+
 ```javascript
 POST /api/agent/knowledge
 {
@@ -128,6 +141,7 @@ POST /api/agent/knowledge
 ### Managing Project Memory
 
 **Via API:**
+
 ```javascript
 POST /api/agent/project-memory
 {
@@ -138,6 +152,7 @@ POST /api/agent/project-memory
 ```
 
 **Via SQL:**
+
 ```sql
 INSERT INTO ai_agent_project_memory ("projectId", "purposeContext", "currentState")
 VALUES (
@@ -153,62 +168,75 @@ ON CONFLICT ("projectId") DO UPDATE SET
 ## 🔍 Debugging Memory Loading
 
 ### Check Logs
+
 The agent logs memory loading:
+
 - `✅ [UNIFIED-AGENT] Loaded X knowledge entries`
 - `✅ [UNIFIED-AGENT] Loaded project memory for project X`
 - `⚠️ [UNIFIED-AGENT] No knowledge entries found!`
 
 ### Verify Database
+
 ```sql
 -- Check knowledge entries
-SELECT id, title, category, "isActive", "projectId" 
-FROM ai_agent_knowledge 
+SELECT id, title, category, "isActive", "projectId"
+FROM ai_agent_knowledge
 ORDER BY priority DESC, "createdAt" DESC;
 
 -- Check project memory
-SELECT "projectId", "purposeContext", "currentState" 
+SELECT "projectId", "purposeContext", "currentState"
 FROM ai_agent_project_memory;
 ```
 
 ### Test API Endpoints
+
 - `GET /api/agent/knowledge` - List knowledge entries
 - `GET /api/agent/project-memory?projectId=123` - Get project memory
 
 ## ⚠️ Common Issues
 
 ### 1. No Knowledge Loading
+
 **Symptoms:** Agent doesn't use knowledge entries
 **Causes:**
+
 - RLS policies blocking access
 - `isActive = false`
 - No entries in database
 - `projectId` filter too restrictive
 
 **Solution:**
+
 - Check RLS policies allow authenticated users to SELECT
 - Verify entries have `isActive = true`
 - Check logs for errors
 
 ### 2. Project Memory Not Loading
+
 **Symptoms:** Project memory not appearing in responses
 **Causes:**
+
 - No memory entry for project
 - `projectId` not passed in context
 - RLS policies blocking access
 
 **Solution:**
+
 - Verify memory exists: `SELECT * FROM ai_agent_project_memory WHERE "projectId" = X`
 - Check context includes `projectId`
 - Verify RLS policies allow access
 
 ### 3. Too Much/Little Knowledge
+
 **Symptoms:** System prompt too long or missing entries
 **Causes:**
+
 - Limit too low (currently 50 entries)
 - Priority ordering not working
 - Category filter too restrictive
 
 **Solution:**
+
 - Adjust limit in `loadKnowledgeBase()` (currently 50)
 - Check priority values are set correctly
 - Remove category filter if needed
@@ -217,7 +245,7 @@ FROM ai_agent_project_memory;
 
 - **Database Schema**: `sql-queriers/create-ai-agent-knowledge-base.sql`
 - **Agent Code**: `src/lib/ai/unified-agent.ts`
-- **API Endpoints**: 
+- **API Endpoints**:
   - `src/pages/api/agent/knowledge.ts`
   - `src/pages/api/agent/project-memory.ts`
 - **Documentation**: `markdowns/AI_AGENT_KNOWLEDGE_MANAGEMENT.md`
@@ -230,4 +258,3 @@ FROM ai_agent_project_memory;
 4. **Project-Specific**: Use `projectId` for knowledge that only applies to specific projects
 5. **Regular Updates**: Keep project memory current with latest state
 6. **Test Loading**: Check logs to verify memory is loading correctly
-
