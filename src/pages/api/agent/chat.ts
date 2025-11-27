@@ -15,6 +15,7 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 interface ChatRequest {
   message: string;
   conversationId?: string; // Optional: for maintaining conversation context
+  images?: string[]; // Array of image URLs
   context?: {
     projectId?: number;
     [key: string]: any;
@@ -181,11 +182,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body: ChatRequest = await request.json();
-    const { message, conversationId, context } = body;
+    const { message, conversationId, context, images } = body;
 
-    if (!message?.trim()) {
+    // Require either message text or images
+    if (!message?.trim() && (!images || images.length === 0)) {
       return new Response(
-        JSON.stringify({ error: "Message is required" }),
+        JSON.stringify({ error: "Message or images are required" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -292,12 +294,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Build agent context
-    const agentContext = {
-      userId: currentUser.id,
-      conversationHistory,
-      ...context,
-    };
+      // Build agent context (include images)
+      const agentContext = {
+        userId: currentUser.id,
+        conversationHistory,
+        images: images || [],
+        ...context,
+      };
 
     // Save user message (only if we have a real conversation ID)
     if (finalConversationId && !finalConversationId.startsWith("temp_")) {
@@ -313,9 +316,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Process the query
+    // Process the query (include images)
     const response = await agent.processQuery({
-      message,
+      message: message || (images && images.length > 0 ? "Please analyze these images" : ""),
+      images: images || [],
       context: agentContext,
     });
 
