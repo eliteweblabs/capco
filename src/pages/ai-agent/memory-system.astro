@@ -1,0 +1,318 @@
+---
+// AI Agent Memory System Documentation Page
+// Public page (no auth required) but blocked from search engines
+
+import App from "../../components/common/App.astro";
+---
+
+<App 
+  title="AI Agent Memory System Documentation" 
+  currentUser={undefined}
+>
+  <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <h1>🧠 AI Agent Memory System</h1>
+      
+      <p>This document explains how the AI agent's memory/knowledge system works and how to manage it.</p>
+
+      <h2>📊 Database Schema</h2>
+
+      <h3>1. <code>ai_agent_knowledge</code> Table</h3>
+      
+      <p>Stores general knowledge entries that can be used across all conversations or for specific projects.</p>
+
+      <h4>Columns:</h4>
+      <ul>
+        <li><code>id</code> (UUID) - Primary key</li>
+        <li><code>title</code> (TEXT) - Entry title</li>
+        <li><code>content</code> (TEXT) - Entry content/knowledge</li>
+        <li><code>category</code> (TEXT) - Optional category (e.g., "company_policy", "nfpa_standards", "procedures")</li>
+        <li><code>tags</code> (TEXT[]) - Array of tags for searching</li>
+        <li><code>priority</code> (INTEGER) - Higher priority entries shown first (default: 0)</li>
+        <li><code>isActive</code> (BOOLEAN) - Whether entry is active (default: true)</li>
+        <li><code>authorId</code> (UUID) - User who created the entry</li>
+        <li><code>projectId</code> (INTEGER) - Optional: project-specific knowledge (NULL = global)</li>
+        <li><code>createdAt</code> (TIMESTAMPTZ) - Creation timestamp</li>
+        <li><code>updatedAt</code> (TIMESTAMPTZ) - Last update timestamp</li>
+        <li><code>metadata</code> (JSONB) - Additional metadata</li>
+      </ul>
+
+      <h4>Usage:</h4>
+      <ul>
+        <li><strong>Global knowledge</strong>: <code>projectId = NULL</code> - Available to all conversations</li>
+        <li><strong>Project-specific</strong>: <code>projectId = &lt;project_id&gt;</code> - Only available when that project is in context</li>
+      </ul>
+
+      <h3>2. <code>ai_agent_project_memory</code> Table</h3>
+      
+      <p>Stores Claude.ai-style project memory with "Purpose & Context" and "Current State" sections.</p>
+
+      <h4>Columns:</h4>
+      <ul>
+        <li><code>id</code> (UUID) - Primary key</li>
+        <li><code>projectId</code> (INTEGER) - Project ID (unique, one memory per project)</li>
+        <li><code>purposeContext</code> (TEXT) - "Purpose & Context" section</li>
+        <li><code>currentState</code> (TEXT) - "Current State" section</li>
+        <li><code>authorId</code> (UUID) - User who created/updated the memory</li>
+        <li><code>createdAt</code> (TIMESTAMPTZ) - Creation timestamp</li>
+        <li><code>updatedAt</code> (TIMESTAMPTZ) - Last update timestamp</li>
+      </ul>
+
+      <h4>Usage:</h4>
+      <ul>
+        <li>One memory entry per project</li>
+        <li>Automatically loaded when <code>projectId</code> is in the conversation context</li>
+      </ul>
+
+      <h2>🔄 How Memory is Loaded</h2>
+
+      <h3>Flow:</h3>
+      <ol>
+        <li><strong>User sends message</strong> → <code>/api/agent/chat</code></li>
+        <li><strong>API extracts context</strong> → Includes <code>projectId</code> if available</li>
+        <li><strong>Agent processes query</strong> → Calls <code>buildSystemPrompt(context)</code></li>
+        <li><strong>System prompt builder</strong>:
+          <ul>
+            <li>Loads project memory (if <code>projectId</code> exists)</li>
+            <li>Loads knowledge base (global + project-specific if <code>projectId</code> exists)</li>
+            <li>Formats into system prompt sections</li>
+          </ul>
+        </li>
+        <li><strong>System prompt sent to Claude</strong> → Includes all memory/knowledge</li>
+      </ol>
+
+      <h3>Code Location:</h3>
+      <ul>
+        <li><strong>Loading</strong>: <code>src/lib/ai/unified-agent.ts</code>
+          <ul>
+            <li><code>loadKnowledgeBase()</code> - Lines 154-183</li>
+            <li><code>loadProjectMemory()</code> - Lines 188-203</li>
+            <li><code>buildSystemPrompt()</code> - Lines 208-294</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h2>📝 Memory Format in System Prompt</h2>
+
+      <h3>Project Memory Section:</h3>
+      <pre><code>## Project Memory
+
+### Purpose & Context
+{projectMemory.purposeContext}
+
+### Current State
+{projectMemory.currentState}</code></pre>
+
+      <h3>Knowledge Base Section:</h3>
+      <pre><code>## Knowledge Base
+
+### {entry.title} ({entry.category})
+{entry.content}
+
+### {entry.title} ({entry.category})
+{entry.content}
+...</code></pre>
+
+      <h2>🔧 Managing Memory</h2>
+
+      <h3>Adding General Knowledge</h3>
+
+      <h4>Via API:</h4>
+      <pre><code>POST /api/agent/knowledge
+{
+  "title": "Company Policy",
+  "content": "We always prioritize safety...",
+  "category": "company_policy",
+  "tags": ["policy", "safety"],
+  "priority": 10
+}</code></pre>
+
+      <h4>Via SQL:</h4>
+      <pre><code>INSERT INTO ai_agent_knowledge (title, content, category, priority, "isActive")
+VALUES (
+  'Company Policy',
+  'We always prioritize safety...',
+  'company_policy',
+  10,
+  true
+);</code></pre>
+
+      <h3>Adding Project-Specific Knowledge</h3>
+
+      <h4>Via API:</h4>
+      <pre><code>POST /api/agent/knowledge
+{
+  "title": "Project Specific Info",
+  "content": "This project requires...",
+  "projectId": 123,
+  "category": "project_info"
+}</code></pre>
+
+      <h3>Managing Project Memory</h3>
+
+      <h4>Via API:</h4>
+      <pre><code>POST /api/agent/project-memory
+{
+  "projectId": 123,
+  "purposeContext": "This project is for...",
+  "currentState": "Currently working on..."
+}</code></pre>
+
+      <h4>Via SQL:</h4>
+      <pre><code>INSERT INTO ai_agent_project_memory ("projectId", "purposeContext", "currentState")
+VALUES (
+  123,
+  'This project is for...',
+  'Currently working on...'
+)
+ON CONFLICT ("projectId") DO UPDATE SET
+  "purposeContext" = EXCLUDED."purposeContext",
+  "currentState" = EXCLUDED."currentState";</code></pre>
+
+      <h2>🔍 Debugging Memory Loading</h2>
+
+      <h3>Check Logs</h3>
+      <p>The agent logs memory loading:</p>
+      <ul>
+        <li><code>✅ [UNIFIED-AGENT] Loaded X knowledge entries</code></li>
+        <li><code>✅ [UNIFIED-AGENT] Loaded project memory for project X</code></li>
+        <li><code>⚠️ [UNIFIED-AGENT] No knowledge entries found!</code></li>
+      </ul>
+
+      <h3>Verify Database</h3>
+      <pre><code>-- Check knowledge entries
+SELECT id, title, category, "isActive", "projectId"
+FROM ai_agent_knowledge
+ORDER BY priority DESC, "createdAt" DESC;
+
+-- Check project memory
+SELECT "projectId", "purposeContext", "currentState"
+FROM ai_agent_project_memory;</code></pre>
+
+      <h3>Test API Endpoints</h3>
+      <ul>
+        <li><code>GET /api/agent/knowledge</code> - List knowledge entries</li>
+        <li><code>GET /api/agent/project-memory?projectId=123</code> - Get project memory</li>
+        <li><code>GET /api/agent/debug-memory?projectId=123</code> - Debug memory loading</li>
+      </ul>
+
+      <h2>⚠️ Common Issues</h2>
+
+      <h3>1. No Knowledge Loading</h3>
+      <p><strong>Symptoms:</strong> Agent doesn't use knowledge entries</p>
+      <p><strong>Causes:</strong></p>
+      <ul>
+        <li>RLS policies blocking access</li>
+        <li><code>isActive = false</code></li>
+        <li>No entries in database</li>
+        <li><code>projectId</code> filter too restrictive</li>
+      </ul>
+      <p><strong>Solution:</strong></p>
+      <ul>
+        <li>Check RLS policies allow authenticated users to SELECT</li>
+        <li>Verify entries have <code>isActive = true</code></li>
+        <li>Check logs for errors</li>
+      </ul>
+
+      <h3>2. Project Memory Not Loading</h3>
+      <p><strong>Symptoms:</strong> Project memory not appearing in responses</p>
+      <p><strong>Causes:</strong></p>
+      <ul>
+        <li>No memory entry for project</li>
+        <li><code>projectId</code> not passed in context</li>
+        <li>RLS policies blocking access</li>
+      </ul>
+      <p><strong>Solution:</strong></p>
+      <ul>
+        <li>Verify memory exists: <code>SELECT * FROM ai_agent_project_memory WHERE "projectId" = X</code></li>
+        <li>Check context includes <code>projectId</code></li>
+        <li>Verify RLS policies allow access</li>
+      </ul>
+
+      <h3>3. Too Much/Little Knowledge</h3>
+      <p><strong>Symptoms:</strong> System prompt too long or missing entries</p>
+      <p><strong>Causes:</strong></p>
+      <ul>
+        <li>Limit too low (currently 50 entries)</li>
+        <li>Priority ordering not working</li>
+        <li>Category filter too restrictive</li>
+      </ul>
+      <p><strong>Solution:</strong></p>
+      <ul>
+        <li>Adjust limit in <code>loadKnowledgeBase()</code> (currently 50)</li>
+        <li>Check priority values are set correctly</li>
+        <li>Remove category filter if needed</li>
+      </ul>
+
+      <h2>📚 Related Files</h2>
+      <ul>
+        <li><strong>Database Schema</strong>: <code>sql-queriers/create-ai-agent-knowledge-base.sql</code></li>
+        <li><strong>Agent Code</strong>: <code>src/lib/ai/unified-agent.ts</code></li>
+        <li><strong>API Endpoints</strong>:
+          <ul>
+            <li><code>src/pages/api/agent/knowledge.ts</code></li>
+            <li><code>src/pages/api/agent/project-memory.ts</code></li>
+          </ul>
+        </li>
+        <li><strong>Documentation</strong>: <code>markdowns/AI_AGENT_KNOWLEDGE_MANAGEMENT.md</code></li>
+      </ul>
+
+      <h2>🎯 Best Practices</h2>
+      <ol>
+        <li><strong>Use Categories</strong>: Organize knowledge with categories for easier management</li>
+        <li><strong>Set Priorities</strong>: Higher priority entries appear first</li>
+        <li><strong>Keep Active</strong>: Set <code>isActive = false</code> to temporarily disable entries</li>
+        <li><strong>Project-Specific</strong>: Use <code>projectId</code> for knowledge that only applies to specific projects</li>
+        <li><strong>Regular Updates</strong>: Keep project memory current with latest state</li>
+        <li><strong>Test Loading</strong>: Check logs to verify memory is loading correctly</li>
+      </ol>
+    </div>
+  </div>
+</App>
+
+<script is:inline define:vars={{}}>
+  // Block search bots from indexing this page
+  (function() {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, nofollow, noarchive, nosnippet';
+    if (document.head) {
+      document.head.appendChild(meta);
+    } else {
+      document.addEventListener('DOMContentLoaded', function() {
+        document.head.appendChild(meta);
+      });
+    }
+  })();
+</script>
+
+<style>
+  .prose {
+    color: rgb(55 65 81);
+  }
+  .dark .prose {
+    color: rgb(209 213 219);
+  }
+  .prose code {
+    background-color: rgb(243 244 246);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+  }
+  .dark .prose code {
+    background-color: rgb(31 41 55);
+  }
+  .prose pre {
+    background-color: rgb(243 244 246);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+  }
+  .dark .prose pre {
+    background-color: rgb(31 41 55);
+  }
+  .prose pre code {
+    background-color: transparent;
+    padding: 0;
+  }
+</style>
