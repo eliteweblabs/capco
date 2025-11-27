@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Knowledge API Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        button {
+            padding: 10px 20px;
+            background: #0f0;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover { background: #0a0; }
+        #output {
+            background: #000;
+            padding: 15px;
+            border: 1px solid #0f0;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .info { color: #ff0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Knowledge API Test</h1>
+    <p>Make sure you're logged into capcofire.com in this browser!</p>
+    
+    <button onclick="testAPI()">Test Knowledge API</button>
+    <button onclick="addJayKnowledge()">Add Jay's Knowledge</button>
+    
+    <div id="output"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            output.innerHTML += `<div class="${className}">${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function testAPI() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            
+            log('🚀 Starting test...', 'info');
+            
+            const baseUrl = window.location.origin;
+            log(`📍 Base URL: ${baseUrl}`, 'info');
+            
+            const testEntry = {
+                title: "Test Entry " + Date.now(),
+                content: "This is a test knowledge entry",
+                category: "test",
+                tags: ["test"],
+                priority: 1
+            };
+            
+            log(`📤 Sending: ${JSON.stringify(testEntry)}`, 'info');
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/agent/knowledge`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(testEntry),
+                });
+                
+                log(`📥 Response status: ${response.status} ${response.statusText}`, 'info');
+                
+                const text = await response.text();
+                log(`📥 Response text: ${text}`, 'info');
+                
+                const data = JSON.parse(text);
+                
+                if (response.ok && data.success) {
+                    log(`✅ SUCCESS! Entry created with ID: ${data.entry?.id}`, 'success');
+                    log(`📋 Full entry: ${JSON.stringify(data.entry, null, 2)}`, 'success');
+                } else {
+                    log(`❌ FAILED!`, 'error');
+                    log(`Error: ${data.error || 'Unknown'}`, 'error');
+                    log(`Message: ${data.message || 'None'}`, 'error');
+                    log(`Code: ${data.code || 'None'}`, 'error');
+                    log(`Details: ${data.details || 'None'}`, 'error');
+                    log(`Hint: ${data.hint || 'None'}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ EXCEPTION: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        }
+
+        async function addJayKnowledge() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            
+            log('🚀 Adding Jay\'s knowledge entries...', 'info');
+            
+            const baseUrl = window.location.origin;
+            const entries = [
+                {
+                    title: "Jay's Purpose & Context",
+                    content: `Jay is a licensed fire protection engineer at CAP Design Group, specializing in fire sprinkler design and fire alarm design with a focus on Massachusetts projects. His work involves reviewing and stamping fire protection plans for approval, conducting technical analyses for code compliance challenges, and preparing comprehensive project submissions. Jay operates as a top-tier third-party consultant, working with projects that require expertise in NFPA codes (particularly 13, 14, 25, 72, 101, and 1), Massachusetts Building Code (780 CMR), and International Building/Residential Codes as applied in Massachusetts.
+
+His primary objectives center on delivering accurate technical documentation while streamlining repetitive processes that currently consume significant time. Success is measured by regulatory approval, code compliance, and operational efficiency. Jay works with local authorities having jurisdiction (AHJs), building and fire departments, and design teams, requiring documentation suitable for formal regulatory presentation.`,
+                    category: "purpose_context",
+                    tags: ["jay", "cap-design-group", "massachusetts", "fire-protection-engineer"],
+                    priority: 10
+                },
+                {
+                    title: "Jay's Current State",
+                    content: `Jay has successfully automated his narrative documentation process, moving from 30-45 minutes of manual work per project to under 5 minutes through a Google Forms → Google Sheets → Google Docs workflow. The system handles 12 key project fields and generates both Google Docs and PDFs with proper formatting preservation. He's actively using this automation for project submissions at CAP Design Group.
+
+Recent work includes complex feasibility analyses for facilities like the 47 Kemble Street transfer station in Roxbury, involving detailed hydraulic calculations, code compliance analysis, and cost comparisons for fire protection system upgrades. Jay is currently navigating projects that require balancing standard NFPA 13 requirements against manufacturer-specific listings to optimize system performance within available water supply constraints.`,
+                    category: "current_state",
+                    tags: ["jay", "automation", "workflow", "current-projects"],
+                    priority: 10
+                },
+                {
+                    title: "Jay's Key Learnings & Principles",
+                    content: `Jay has established that practical enforcement by local AHJs often takes precedence over strict code compliance, requiring solutions that are both technically sound and politically feasible. He's learned that fire-rated separation solutions (like 2-hour walls) can be more cost-effective than full property reclassification, with savings ranging from $15,000-90,000+ per project.
+
+In system design, Jay recognizes that standard NFPA 13 criteria often provide more practical solutions than manufacturer-specific listings, particularly when water supply constraints are a factor. He's discovered that K25.2 ESFR sprinklers can effectively protect Class I-IV commodities at 20-foot storage heights up to 45-foot ceilings, requiring only 15 psi minimum pressure versus much higher manufacturer-specified requirements.
+
+For automation projects, Jay has proven that preserving document formatting (including background images and professional appearance) is critical for client acceptance, and that manual trigger systems often provide better reliability than automatic triggers for document generation workflows.`,
+                    category: "learnings",
+                    tags: ["jay", "principles", "ahj", "nfpa13", "esfr", "automation"],
+                    priority: 9
+                },
+                {
+                    title: "Jay's Approach & Patterns",
+                    content: `Jay's technical analysis follows a structured approach: comprehensive code review, multiple design option evaluation, detailed cost-benefit analysis, and risk assessment with safety margins. He consistently provides deliverables in multiple formats - detailed technical reports, executive summaries for decision-makers, and exportable documents (Excel, CSV, PDF) for team collaboration and regulatory submission.
+
+His problem-solving methodology emphasizes practical solutions that exceed minimum code requirements while remaining cost-effective. Jay typically recommends safety margins (like 25 psi versus 5 psi hydraulic margins) and prefers proven standard approaches over cutting-edge alternatives when reliability is paramount.
+
+For client communication, Jay structures presentations with strategic talking points for regulatory meetings, emphasizing how proposed solutions exceed code minimums and represent standard construction practices.`,
+                    category: "approach",
+                    tags: ["jay", "methodology", "problem-solving", "client-communication"],
+                    priority: 8
+                },
+                {
+                    title: "Jay's Tools & Resources",
+                    content: `Jay's primary technical resources include NFPA 13 (2019 version), Massachusetts Building Code (780 CMR), and related fire protection standards. His automation infrastructure relies on Google Workspace (Forms, Sheets, Docs, Drive) with custom Apps Script integration for document generation.
+
+For project management, Jay uses Google Drive folder structures with specific document IDs for templates and output locations. His workflow includes hydraulic calculation software for system design and various document formats (PDF, Excel, CSV) for different stakeholder needs. Jay maintains template documents with precise placeholder patterns and has established reliable column mapping systems for data integration between platforms.`,
+                    category: "tools",
+                    tags: ["jay", "tools", "google-workspace", "nfpa13", "780-cmr"],
+                    priority: 7
+                }
+            ];
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const entry of entries) {
+                try {
+                    log(`\n📌 Adding: ${entry.title}`, 'info');
+                    
+                    const response = await fetch(`${baseUrl}/api/agent/knowledge`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(entry),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        log(`✅ Success! ID: ${data.entry?.id}`, 'success');
+                        successCount++;
+                    } else {
+                        log(`❌ Failed: ${data.error || data.message}`, 'error');
+                        log(`Code: ${data.code || 'None'}`, 'error');
+                        log(`Details: ${data.details || 'None'}`, 'error');
+                        failCount++;
+                    }
+                } catch (error) {
+                    log(`❌ Exception: ${error.message}`, 'error');
+                    failCount++;
+                }
+            }
+
+            log(`\n📊 Summary: ${successCount} succeeded, ${failCount} failed`, successCount > 0 ? 'success' : 'error');
+        }
+    </script>
+</body>
+</html>
+
