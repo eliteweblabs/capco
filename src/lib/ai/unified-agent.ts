@@ -322,15 +322,25 @@ Remember: Be helpful, accurate, and professional. If you need more information t
     }
 
     // Build content array - include text and images if present
-    const contentBlocks: Array<string | { type: 'image'; source: { type: 'url'; url: string } }> = [];
+    // When images are present, ALL content blocks must be objects (not strings)
+    const hasImages = imageUrls && imageUrls.length > 0;
+    const contentBlocks: Array<string | { type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }> = [];
     
     // Add text message if present
     if (enrichedMessage.trim()) {
-      contentBlocks.push(enrichedMessage);
+      // If we have images, text must be an object. Otherwise, string is fine.
+      if (hasImages) {
+        contentBlocks.push({
+          type: 'text',
+          text: enrichedMessage,
+        });
+      } else {
+        contentBlocks.push(enrichedMessage);
+      }
     }
     
     // Add images if present
-    if (imageUrls && imageUrls.length > 0) {
+    if (hasImages) {
       console.log('[---UNIFIED-AGENT] Adding images to message:', {
         imageCount: imageUrls.length,
         imageUrls: imageUrls.map(url => url.substring(0, 50) + '...'), // Log partial URLs
@@ -346,11 +356,15 @@ Remember: Be helpful, accurate, and professional. If you need more information t
       });
     }
 
+    // Anthropic API: content must be an array
+    // If no text and no images, provide a default message
+    if (contentBlocks.length === 0) {
+      contentBlocks.push(hasImages ? { type: 'text', text: 'Please analyze these images' } : 'Please analyze these images');
+    }
+
     messages.push({
       role: 'user',
-      content: contentBlocks.length === 1 && typeof contentBlocks[0] === 'string' 
-        ? contentBlocks[0] 
-        : contentBlocks,
+      content: contentBlocks,
     });
 
     return messages;
