@@ -62,9 +62,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log(`📸 [AI-IMAGE-UPLOAD] Uploading image: ${file.name} to ${filePath}`);
 
-    // Upload to Supabase Storage (using project-media bucket)
+    // Upload to Supabase Storage (using dedicated ai-chat-images bucket)
+    // This bucket should be configured as public in Supabase dashboard
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from("project-media")
+      .from("ai-chat-images")
       .upload(filePath, file, {
         contentType: file.type,
         upsert: false, // Don't overwrite
@@ -72,6 +73,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (uploadError) {
       console.error("❌ [AI-IMAGE-UPLOAD] Upload error:", uploadError);
+      
+      // If bucket doesn't exist, provide helpful error message
+      if (uploadError.message?.includes("Bucket not found") || uploadError.statusCode === 404) {
+        return new Response(
+          JSON.stringify({
+            error: "Storage bucket not configured",
+            details: "The 'ai-chat-images' bucket does not exist. Please create it in Supabase Storage and set it to public.",
+            hint: "Go to Supabase Dashboard > Storage > Create Bucket > Name: 'ai-chat-images' > Public: Yes",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      
       return new Response(
         JSON.stringify({
           error: "Failed to upload image",
@@ -86,7 +103,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get public URL
     const { data: urlData } = supabaseAdmin.storage
-      .from("project-media")
+      .from("ai-chat-images")
       .getPublicUrl(filePath);
 
     console.log(`✅ [AI-IMAGE-UPLOAD] Image uploaded successfully: ${urlData.publicUrl}`);
