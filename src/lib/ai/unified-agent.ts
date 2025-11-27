@@ -396,7 +396,6 @@ Remember: Be helpful, accurate, and professional. If you need more information t
 
     // Build content array - include text and images if present
     // When images are present, ALL content blocks must be objects (not strings)
-    const hasImages = imageUrls && imageUrls.length > 0;
     const contentBlocks: Array<string | { type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }> = [];
     
     // Add text message if present
