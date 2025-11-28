@@ -21,6 +21,7 @@ interface KnowledgeEntry {
   tags?: string[];
   priority?: number;
   isActive?: boolean;
+  projectId?: number;
   metadata?: Record<string, any>;
 }
 
@@ -120,7 +121,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body: KnowledgeEntry = await request.json();
-    const { title, content, category, tags, priority, metadata } = body;
+    const { title, content, category, tags, priority, metadata, projectId } = body;
 
     if (!title || !content) {
       return new Response(
@@ -142,6 +143,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         priority: priority || 0,
         isActive: true,
         authorId: currentUser.id,
+        projectId: projectId || null,
         metadata: metadata || {},
       })
       .select()
