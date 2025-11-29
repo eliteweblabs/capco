@@ -58,15 +58,18 @@ const { currentUser } = await checkAuth(Astro.cookies);
       <!-- Wake Word Input -->
       <div class="mb-6">
         <label for="wake-word" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Wake Word (optional)
+          Wake Word
         </label>
         <input
           type="text"
           id="wake-word"
-          value="hey assistant"
+          value="Bee"
           class="w-full px-4 py-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          placeholder="hey assistant"
+          placeholder="Bee"
         />
+        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          Special commands: "Bee stop" (stop talking), "Bee remember this" (save conversation)
+        </p>
       </div>
 
       <!-- Conversation Display -->
@@ -117,8 +120,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">How to Use</h2>
       <ol class="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
         <li>Click the microphone button to start listening</li>
-        <li>Say your wake word (e.g., "hey assistant") followed by your question</li>
+        <li>Say "Bee" followed by your question (e.g., "Bee what is fire protection?")</li>
         <li>The assistant will process your request using AI and respond</li>
+        <li>Special commands:
+          <ul class="list-disc list-inside ml-4 mt-1">
+            <li><strong>"Bee stop"</strong> - Stop the assistant from talking</li>
+            <li><strong>"Bee remember this"</strong> - Save the current conversation to memory</li>
+          </ul>
+        </li>
         <li>Click the microphone again to stop listening</li>
       </ol>
       <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
@@ -148,7 +157,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
   let isListening = false;
   let conversationHistory = [];
   let isAwake = false;
-  let wakeWord = "hey assistant";
+  let wakeWord = "Bee";
+  let currentSpeechUtterance = null;
 
   // Check for browser support
   const SpeechRecognition =
@@ -239,8 +249,51 @@ const { currentUser } = await checkAuth(Astro.cookies);
         // Process command if there's content (or if skipping wake word)
         if (skipWakeWord ? transcript.length > 0 : command.length > 0) {
           const commandToProcess = skipWakeWord ? transcript : command;
+          const commandLower = commandToProcess.toLowerCase().trim();
           
           addMessage("user", transcript);
+          
+          // Check for special keyword commands
+          if (commandLower.includes("stop") || commandLower === "stop") {
+            // Stop talking command
+            stopSpeaking();
+            addMessage("assistant", "Stopped speaking.");
+            updateStatus("Ready - Say wake word", "bg-gray-400");
+            if (!skipWakeWord) {
+              setTimeout(() => {
+                isAwake = false;
+              }, 2000);
+            }
+            return;
+          }
+          
+          if (commandLower.includes("remember this") || commandLower.includes("remember that")) {
+            // Save conversation to learning table
+            updateStatus("Saving conversation...", "bg-purple-400");
+            try {
+              const saved = await saveConversation();
+              if (saved) {
+                addMessage("assistant", "I've saved this conversation to my memory.");
+                updateStatus("Conversation saved!", "bg-green-400");
+              } else {
+                addMessage("assistant", "I couldn't save the conversation. Please check the console for errors.");
+                updateStatus("Save failed", "bg-red-400");
+              }
+            } catch (error) {
+              console.error("Error saving conversation:", error);
+              addMessage("assistant", "I encountered an error saving the conversation.");
+              updateStatus("Error saving", "bg-red-400");
+            }
+            
+            if (!skipWakeWord) {
+              setTimeout(() => {
+                isAwake = false;
+              }, 2000);
+            }
+            return;
+          }
+          
+          // Regular command processing
           updateStatus("Processing...", "bg-yellow-400");
 
           try {
@@ -356,11 +409,76 @@ const { currentUser } = await checkAuth(Astro.cookies);
   // Speak text
   function speak(text) {
     if ("speechSynthesis" in window) {
+      // Stop any current speech
+      stopSpeaking();
+      
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
+      currentSpeechUtterance = utterance;
       window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  // Stop speaking
+  function stopSpeaking() {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      currentSpeechUtterance = null;
+    }
+  }
+
+  // Save conversation to learning table
+  async function saveConversation() {
+    if (conversationHistory.length === 0) {
+      console.log("No conversation to save");
+      return false;
+    }
+
+    // Get the last exchange (user question + assistant response)
+    const lastExchange = conversationHistory.slice(-2);
+    if (lastExchange.length < 2) {
+      console.log("Not enough conversation to save");
+      return false;
+    }
+
+    const userMessage = lastExchange.find(m => m.role === "user")?.content || "";
+    const assistantMessage = lastExchange.find(m => m.role === "assistant")?.content || "";
+
+    if (!userMessage || !assistantMessage) {
+      console.log("Missing user or assistant message");
+      return false;
+    }
+
+    // Create a knowledge entry from the conversation
+    const title = userMessage.substring(0, 100) + (userMessage.length > 100 ? "..." : "");
+    const content = `User asked: "${userMessage}"\n\nAssistant responded: "${assistantMessage}"`;
+
+    try {
+      const response = await fetch("/api/voice-assistant/remember", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          category: "conversation_memory",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Conversation saved:", data);
+      return true;
+    } catch (error) {
+      console.error("Error saving conversation:", error);
+      return false;
     }
   }
 

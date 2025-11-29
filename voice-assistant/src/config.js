@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../.env') });
 
 export const config = {
-  wakeWord: process.env.WAKE_WORD || 'hey assistant',
+  wakeWord: process.env.WAKE_WORD || 'Bee',
   wakeWordSensitivity: parseFloat(process.env.WAKE_WORD_SENSITIVITY) || 0.5,
   language: process.env.LANGUAGE || 'en-US',
   modelPath: process.env.MODEL_PATH || join(__dirname, '../models/vosk-model-small-en-us-0.15'),
