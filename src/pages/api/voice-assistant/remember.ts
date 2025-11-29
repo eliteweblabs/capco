@@ -8,7 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { title, content, category = "conversation_memory" } = await request.json();
+    const { title, content, category = "conversation_memory", tags = [], priority = 0 } = await request.json();
 
     if (!title || !content) {
       return new Response(
@@ -46,8 +46,9 @@ export const POST: APIRoute = async ({ request }) => {
         title: title.substring(0, 255), // Ensure title fits
         content: content,
         category: category,
+        tags: Array.isArray(tags) ? tags : [], // Store tags as array
         isActive: true,
-        priority: 0,
+        priority: parseInt(priority, 10) || 0, // Use provided priority or default to 0
         projectId: null, // Global knowledge
       })
       .select()
