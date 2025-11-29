@@ -82,6 +82,85 @@ const { currentUser } = await checkAuth(Astro.cookies);
         </div>
       </div>
 
+      <!-- Tags Editor (shown when ready to save) -->
+      <div id="tags-editor" class="mb-6 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tags (for saving conversation)
+            </label>
+            <div id="tags-container" class="flex flex-wrap gap-2 mb-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg min-h-[3rem]">
+              <!-- Tags will be dynamically added here -->
+            </div>
+            <div class="flex gap-2">
+              <input
+                type="text"
+                id="tag-input"
+                placeholder="Add a tag..."
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+              />
+              <button
+                id="add-tag-btn"
+                class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md text-sm font-medium transition-colors"
+              >
+                Add Tag
+              </button>
+            </div>
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Tags help organize and search saved conversations. Click × to remove a tag.
+            </p>
+          </div>
+          <div>
+            <label for="priority-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Priority
+            </label>
+            <select
+              id="priority-select"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+            >
+              <option value="0">Normal (0)</option>
+              <option value="1">Low (1)</option>
+              <option value="5">Medium (5)</option>
+              <option value="10">High (10)</option>
+              <option value="20">Critical (20)</option>
+            </select>
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Higher priority entries appear first in search results.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="mb-6">
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Quick Actions (fallback if voice fails):
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <button
+            id="btn-stop"
+            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            title="Stop speaking (Bee stop)"
+          >
+            🛑 Stop Speaking
+          </button>
+          <button
+            id="btn-remember"
+            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+            title="Save conversation (Bee remember this)"
+          >
+            💾 Remember This
+          </button>
+          <button
+            id="btn-help"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            title="Show help"
+          >
+            ❓ Help
+          </button>
+        </div>
+      </div>
+
       <!-- Settings -->
       <div class="flex items-center justify-between text-sm mb-4">
         <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
@@ -100,6 +179,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
             class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
           />
           Skip wake word (process all speech)
+        </label>
+        <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+          <input
+            type="checkbox"
+            id="use-cloud-transcription"
+            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          Use cloud transcription (better accuracy)
         </label>
         <button
           id="clear-conversation"
@@ -132,6 +219,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
       </ol>
       <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
         <strong>Note:</strong> This uses your browser's built-in speech recognition. Works best in Chrome, Edge, or Safari.
+        <br />
+        <strong>Tip:</strong> Enable "Use cloud transcription" for better accuracy (requires API key configuration).
       </p>
     </div>
   </div>
@@ -149,7 +238,19 @@ const { currentUser } = await checkAuth(Astro.cookies);
   const wakeWordInput = document.getElementById("wake-word");
   const enableSpeechCheckbox = document.getElementById("enable-speech");
   const skipWakeWordCheckbox = document.getElementById("skip-wake-word");
+  const useCloudTranscriptionCheckbox = document.getElementById("use-cloud-transcription");
   const clearButton = document.getElementById("clear-conversation");
+  const btnStop = document.getElementById("btn-stop");
+  const btnRemember = document.getElementById("btn-remember");
+  const btnHelp = document.getElementById("btn-help");
+  const tagsEditor = document.getElementById("tags-editor");
+  const tagsContainer = document.getElementById("tags-container");
+  const tagInput = document.getElementById("tag-input");
+  const addTagBtn = document.getElementById("add-tag-btn");
+  const prioritySelect = document.getElementById("priority-select");
+  
+  let currentTags = []; // Store tags for current conversation
+  let currentPriority = 0; // Store priority for current conversation
   const debugInfo = document.getElementById("debug-info");
   const debugText = document.getElementById("debug-text");
 
@@ -159,6 +260,9 @@ const { currentUser } = await checkAuth(Astro.cookies);
   let isAwake = false;
   let wakeWord = "Bee";
   let currentSpeechUtterance = null;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let audioStream = null;
 
   // Check for browser support
   const SpeechRecognition =
@@ -171,8 +275,20 @@ const { currentUser } = await checkAuth(Astro.cookies);
   } else {
     recognition = new SpeechRecognition();
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true; // Enable interim results for better accuracy
     recognition.lang = "en-US";
+    recognition.maxAlternatives = 3; // Get multiple transcription alternatives
+    
+    // Add grammar hints for better recognition (if supported)
+    try {
+      const grammar = `#JSGF V1.0; grammar wakeword; public <wakeword> = Bee | bee | B | b;`;
+      const speechRecognitionList = new (window.SpeechGrammarList || window.webkitSpeechGrammarList)();
+      speechRecognitionList.addFromString(grammar, 1);
+      recognition.grammars = speechRecognitionList;
+    } catch (e) {
+      // Grammar not supported, continue without it
+      console.log("Speech grammar not supported");
+    }
 
     recognition.onstart = () => {
       isListening = true;
@@ -207,12 +323,46 @@ const { currentUser } = await checkAuth(Astro.cookies);
     };
 
     recognition.onresult = async (event) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0].transcript)
-        .join(" ")
-        .trim();
-
+      // If using cloud transcription, skip Web Speech API results
+      if (useCloudTranscriptionCheckbox?.checked) {
+        return; // Cloud transcription handles this separately
+      }
+      
+      // Get the most confident transcript
+      let transcript = "";
+      let confidence = 0;
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          // Use the most confident alternative
+          const alternatives = Array.from(result);
+          const bestAlternative = alternatives.reduce((best, current) => {
+            return (current.confidence || 0) > (best.confidence || 0) ? current : best;
+          });
+          
+          if (bestAlternative.confidence > confidence) {
+            transcript = bestAlternative.transcript;
+            confidence = bestAlternative.confidence;
+          }
+        } else {
+          // For interim results, just use the first alternative
+          transcript += result[0].transcript;
+        }
+      }
+      
+      transcript = transcript.trim();
       if (!transcript) return;
+      
+      // Post-process transcript to fix common errors
+      transcript = correctCommonErrors(transcript);
+      
+      // Process the transcript
+      await processTranscript(transcript);
+    };
+    
+    // Process transcript (used by both Web Speech API and cloud transcription)
+    async function processTranscript(transcript) {
 
       const skipWakeWord = skipWakeWordCheckbox.checked;
       const currentWakeWord = wakeWordInput.value.toLowerCase().trim();
@@ -251,7 +401,15 @@ const { currentUser } = await checkAuth(Astro.cookies);
           const commandToProcess = skipWakeWord ? transcript : command;
           const commandLower = commandToProcess.toLowerCase().trim();
           
-          addMessage("user", transcript);
+          // Extract and show tags for user message
+          const userTags = await extractTags(transcript);
+          // Add extracted tags to current tags
+          userTags.forEach(tag => addTag(tag));
+          // Show tags editor
+          if (tagsEditor && userTags.length > 0) {
+            tagsEditor.classList.remove("hidden");
+          }
+          addMessage("user", transcript, userTags);
           
           // Check for special keyword commands
           if (commandLower.includes("stop") || commandLower === "stop") {
@@ -335,7 +493,15 @@ const { currentUser } = await checkAuth(Astro.cookies);
         } else if (hasWakeWord && command.length === 0 && !skipWakeWord) {
           // Wake word detected but no command yet
           isAwake = true;
-          addMessage("user", transcript);
+          // Extract tags even for just wake word
+          const userTags = await extractTags(transcript);
+          // Add extracted tags to current tags
+          userTags.forEach(tag => addTag(tag));
+          // Show tags editor
+          if (tagsEditor && userTags.length > 0) {
+            tagsEditor.classList.remove("hidden");
+          }
+          addMessage("user", transcript, userTags);
           updateStatus("Awake - Listening for command...", "bg-green-400");
           // Keep listening - don't return
         }
@@ -375,9 +541,64 @@ const { currentUser } = await checkAuth(Astro.cookies);
     return data.response || "I'm not sure how to respond to that.";
   }
 
+  // Add tag to current tags and update UI
+  function addTag(tag) {
+    const normalizedTag = tag.toLowerCase().trim();
+    if (normalizedTag && !currentTags.includes(normalizedTag)) {
+      currentTags.push(normalizedTag);
+      updateTagsDisplay();
+    }
+  }
+
+  // Remove tag from current tags
+  function removeTag(tag) {
+    currentTags = currentTags.filter(t => t !== tag);
+    updateTagsDisplay();
+  }
+
+  // Update tags display in editor
+  function updateTagsDisplay() {
+    tagsContainer.innerHTML = "";
+    
+    if (currentTags.length === 0) {
+      const emptyMsg = document.createElement("div");
+      emptyMsg.className = "text-sm text-gray-400 italic";
+      emptyMsg.textContent = "No tags yet. Add tags above or they'll be auto-extracted.";
+      tagsContainer.appendChild(emptyMsg);
+      return;
+    }
+
+    currentTags.forEach(tag => {
+      const tagDiv = document.createElement("div");
+      tagDiv.className = "inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-sm";
+      
+      const tagSpan = document.createElement("span");
+      tagSpan.textContent = `#${tag}`;
+      
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "ml-1 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100 font-bold";
+      removeBtn.textContent = "×";
+      removeBtn.title = "Remove tag";
+      removeBtn.onclick = () => removeTag(tag);
+      
+      tagDiv.appendChild(tagSpan);
+      tagDiv.appendChild(removeBtn);
+      tagsContainer.appendChild(tagDiv);
+    });
+  }
+
   // Add message to conversation
-  function addMessage(role, text) {
+  function addMessage(role, text, tags = []) {
     conversationHistory.push({ role, content: text });
+
+    // Add tags to current tags if provided
+    if (tags && tags.length > 0) {
+      tags.forEach(tag => addTag(tag));
+      // Show tags editor if tags are present
+      if (tagsEditor) {
+        tagsEditor.classList.remove("hidden");
+      }
+    }
 
     // Clear placeholder
     if (conversation.querySelector(".text-gray-500")) {
@@ -385,19 +606,52 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
 
     const messageDiv = document.createElement("div");
-    messageDiv.className = `flex ${role === "user" ? "justify-end" : "justify-start"}`;
+    messageDiv.className = `flex ${role === "user" ? "justify-end" : "justify-start"} mb-2`;
 
     const bubble = document.createElement("div");
     bubble.className = `max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
       role === "user"
         ? "bg-primary-600 text-white"
+        : role === "system"
+        ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border border-yellow-300 dark:border-yellow-700"
         : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
     }`;
 
     bubble.textContent = text;
+    
+    // Add tags display if present (read-only in conversation)
+    if (tags && tags.length > 0) {
+      const tagsDiv = document.createElement("div");
+      tagsDiv.className = "mt-2 flex flex-wrap gap-1";
+      tags.forEach(tag => {
+        const tagSpan = document.createElement("span");
+        tagSpan.className = "text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded";
+        tagSpan.textContent = `#${tag}`;
+        tagsDiv.appendChild(tagSpan);
+      });
+      bubble.appendChild(tagsDiv);
+    }
+    
     messageDiv.appendChild(bubble);
     conversation.appendChild(messageDiv);
     conversation.scrollTop = conversation.scrollHeight;
+  }
+  
+  // Extract and display tags for user messages
+  async function processMessageWithTags(role, text) {
+    if (role === "user") {
+      // Extract tags from user message
+      const tags = await extractTags(text);
+      if (tags.length > 0) {
+        addMessage(role, text, tags);
+        // Show tags in debug
+        debugText.textContent += ` | Tags: ${tags.join(", ")}`;
+      } else {
+        addMessage(role, text);
+      }
+    } else {
+      addMessage(role, text);
+    }
   }
 
   // Update status
@@ -429,6 +683,30 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
   }
 
+  // Extract tags from text using AI
+  async function extractTags(text) {
+    try {
+      const response = await fetch("/api/voice-assistant/extract-tags", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        console.error("Tag extraction failed");
+        return [];
+      }
+
+      const data = await response.json();
+      return data.tags || [];
+    } catch (error) {
+      console.error("Error extracting tags:", error);
+      return [];
+    }
+  }
+
   // Save conversation to learning table
   async function saveConversation() {
     if (conversationHistory.length === 0) {
@@ -455,6 +733,24 @@ const { currentUser } = await checkAuth(Astro.cookies);
     const title = userMessage.substring(0, 100) + (userMessage.length > 100 ? "..." : "");
     const content = `User asked: "${userMessage}"\n\nAssistant responded: "${assistantMessage}"`;
 
+    // Use current tags (from manual entry + auto-extraction), or extract if none
+    let tagsToSave = [...currentTags];
+    
+    if (tagsToSave.length === 0) {
+      // Auto-extract tags if none manually added
+      const combinedText = `${userMessage} ${assistantMessage}`;
+      const extractedTags = await extractTags(combinedText);
+      tagsToSave = extractedTags;
+      // Add extracted tags to current tags for display
+      extractedTags.forEach(tag => addTag(tag));
+    }
+    
+    // Get priority from dropdown
+    const priority = parseInt(prioritySelect?.value || "0", 10);
+    currentPriority = priority;
+    
+    console.log("Saving with tags:", tagsToSave, "and priority:", priority);
+
     try {
       const response = await fetch("/api/voice-assistant/remember", {
         method: "POST",
@@ -465,6 +761,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
           title,
           content,
           category: "conversation_memory",
+          tags: tagsToSave, // Use current tags (manual + auto-extracted)
+          priority: priority, // Include priority
         }),
       });
 
@@ -474,7 +772,27 @@ const { currentUser } = await checkAuth(Astro.cookies);
       }
 
       const data = await response.json();
-      console.log("Conversation saved:", data);
+      console.log("Conversation saved with tags and priority:", data);
+      
+      // Show confirmation with tags and priority
+      const priorityLabels = { 0: "Normal", 1: "Low", 5: "Medium", 10: "High", 20: "Critical" };
+      const priorityLabel = priorityLabels[priority] || `Priority ${priority}`;
+      
+      if (tagsToSave.length > 0) {
+        const tagsDisplay = tagsToSave.map(tag => `#${tag}`).join(" ");
+        addMessage("system", `Conversation saved with tags: ${tagsDisplay} (Priority: ${priorityLabel})`);
+      } else {
+        addMessage("system", `Conversation saved (Priority: ${priorityLabel})`);
+      }
+      
+      // Clear tags and reset priority after saving
+      currentTags = [];
+      currentPriority = 0;
+      updateTagsDisplay();
+      if (prioritySelect) {
+        prioritySelect.value = "0";
+      }
+      
       return true;
     } catch (error) {
       console.error("Error saving conversation:", error);
@@ -482,28 +800,289 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
   }
 
+  // Start audio recording for cloud transcription
+  async function startAudioRecording() {
+    try {
+      audioStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000
+        } 
+      });
+      
+      mediaRecorder = new MediaRecorder(audioStream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      audioChunks = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+      
+      // Handle when recording stops (for cloud transcription)
+      mediaRecorder.onstop = async () => {
+        if (audioChunks.length > 0) {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          audioChunks = [];
+          
+          // Stop all tracks
+          if (audioStream) {
+            audioStream.getTracks().forEach(track => track.stop());
+            audioStream = null;
+          }
+          
+          // Transcribe with cloud API
+          updateStatus("Transcribing...", "bg-purple-400");
+          const cloudTranscript = await transcribeWithCloud(audioBlob);
+          
+          if (cloudTranscript && cloudTranscript.length > 0) {
+            const correctedTranscript = correctCommonErrors(cloudTranscript);
+            await processTranscript(correctedTranscript);
+          }
+          
+          // Restart recording for next command if still listening
+          if (isListening && useCloudTranscriptionCheckbox?.checked) {
+            await startAudioRecording();
+          }
+        }
+      };
+      
+      mediaRecorder.start(100); // Collect data every 100ms
+    } catch (error) {
+      console.error("Error starting audio recording:", error);
+    }
+  }
+
+  // Stop audio recording (triggers onstop handler)
+  function stopAudioRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+  }
+
+  // Transcribe using cloud API
+  async function transcribeWithCloud(audioBlob) {
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      const response = await fetch('/api/voice-assistant/transcribe', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error('Cloud transcription failed');
+      }
+      
+      const data = await response.json();
+      return data.transcript || '';
+    } catch (error) {
+      console.error('Cloud transcription error:', error);
+      return null;
+    }
+  }
+
   // Toggle listening
-  micButton.addEventListener("click", () => {
+  micButton.addEventListener("click", async () => {
     if (!recognition) return;
 
     if (isListening) {
       recognition.stop();
       isAwake = false;
+      
+      // Stop audio recording if using cloud transcription
+      if (useCloudTranscriptionCheckbox?.checked && mediaRecorder) {
+        stopAudioRecording();
+      }
     } else {
+      // Start audio recording if cloud transcription is enabled
+      if (useCloudTranscriptionCheckbox?.checked) {
+        await startAudioRecording();
+      }
+      
       recognition.start();
     }
   });
+  
+  // Handle manual stop for cloud transcription (when user pauses)
+  let silenceTimer = null;
+  function resetSilenceTimer() {
+    if (silenceTimer) clearTimeout(silenceTimer);
+    
+    if (useCloudTranscriptionCheckbox?.checked && mediaRecorder && mediaRecorder.state === 'recording') {
+      // Stop recording after 2 seconds of silence (user finished speaking)
+      silenceTimer = setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          stopAudioRecording();
+        }
+      }, 2000);
+    }
+  }
+  
+  // Reset silence timer on any speech activity
+  if (recognition) {
+    const originalOnResult = recognition.onresult;
+    recognition.onresult = (event) => {
+      resetSilenceTimer();
+      if (originalOnResult) originalOnResult.call(recognition, event);
+    };
+  }
+
+  // Post-process transcript to fix common errors
+  function correctCommonErrors(text) {
+    let corrected = text;
+    
+    // Common transcription errors and corrections
+    const corrections = {
+      // Wake word variations
+      "be": "Bee",
+      "b": "Bee",
+      "bee": "Bee",
+      
+      // Common word errors
+      "what's": "what is",
+      "whats": "what is",
+      "that's": "that is",
+      "thats": "that is",
+      "it's": "it is",
+      "its": "it is",
+      "you're": "you are",
+      "youre": "you are",
+      "I'm": "I am",
+      "im": "I am",
+      
+      // Technical terms that are often misheard
+      "nfpa": "NFPA",
+      "n f p a": "NFPA",
+      "n f p": "NFPA",
+      "fire protection": "fire protection",
+      "fire alarm": "fire alarm",
+      "fire sprinkler": "fire sprinkler",
+      
+      // Number corrections
+      "one": "1",
+      "two": "2",
+      "three": "3",
+      "four": "4",
+      "five": "5",
+      
+      // Common phrase corrections
+      "remember this": "remember this",
+      "remember that": "remember this",
+      "stop talking": "stop",
+      "stop speaking": "stop",
+    };
+    
+    // Apply corrections (case-insensitive)
+    Object.keys(corrections).forEach((error) => {
+      const regex = new RegExp(`\\b${error}\\b`, "gi");
+      corrected = corrected.replace(regex, corrections[error]);
+    });
+    
+    // Fix double spaces
+    corrected = corrected.replace(/\s+/g, " ");
+    
+    return corrected.trim();
+  }
 
   // Update wake word
   wakeWordInput.addEventListener("change", (e) => {
     wakeWord = e.target.value.toLowerCase().trim();
   });
 
+  // Stop button handler
+  btnStop.addEventListener("click", () => {
+    stopSpeaking();
+    addMessage("assistant", "Stopped speaking.");
+    updateStatus("Ready - Say wake word", "bg-gray-400");
+    isAwake = false;
+  });
+
+  // Remember button handler
+  btnRemember.addEventListener("click", async () => {
+    updateStatus("Saving conversation...", "bg-purple-400");
+    try {
+      const saved = await saveConversation();
+      if (saved) {
+        addMessage("assistant", "I've saved this conversation to my memory.");
+        updateStatus("Conversation saved!", "bg-green-400");
+      } else {
+        addMessage("assistant", "I couldn't save the conversation. Please check the console for errors.");
+        updateStatus("Save failed", "bg-red-400");
+      }
+    } catch (error) {
+      console.error("Error saving conversation:", error);
+      addMessage("assistant", "I encountered an error saving the conversation.");
+      updateStatus("Error saving", "bg-red-400");
+    }
+  });
+
+  // Help button handler
+  btnHelp.addEventListener("click", () => {
+    const helpText = `Here's what I can do:
+
+🎤 Voice Commands:
+• "Bee [your question]" - Ask me anything
+• "Bee stop" - Stop me from talking
+• "Bee remember this" - Save our conversation
+
+💡 Tips:
+• Speak clearly for best results
+• Enable cloud transcription for better accuracy
+• Use the buttons below if voice recognition fails
+
+🔧 Available Actions:
+• Stop Speaking - Interrupts my speech
+• Remember This - Saves conversation to memory
+• Help - Shows this message`;
+
+    addMessage("assistant", helpText);
+    if (enableSpeechCheckbox.checked) {
+      speak("Here's what I can do. Use Bee followed by your question, or say Bee stop to stop me from talking, or Bee remember this to save our conversation.");
+    }
+  });
+
+  // Add tag button handler
+  addTagBtn.addEventListener("click", () => {
+    const tagValue = tagInput.value.trim();
+    if (tagValue) {
+      addTag(tagValue);
+      tagInput.value = "";
+      // Show tags editor if hidden
+      if (tagsEditor) {
+        tagsEditor.classList.remove("hidden");
+      }
+    }
+  });
+
+  // Add tag on Enter key
+  tagInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addTagBtn.click();
+    }
+  });
+
   // Clear conversation
   clearButton.addEventListener("click", () => {
     conversationHistory = [];
+    currentTags = [];
+    currentPriority = 0;
     conversation.innerHTML =
       '<div class="text-sm text-gray-500 dark:text-gray-400 text-center">Your conversation will appear here...</div>';
+    updateTagsDisplay();
+    if (prioritySelect) {
+      prioritySelect.value = "0";
+    }
+    if (tagsEditor) {
+      tagsEditor.classList.add("hidden");
+    }
     isAwake = false;
   });
 </script>
