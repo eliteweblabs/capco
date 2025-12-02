@@ -213,7 +213,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
           <ul class="list-disc list-inside ml-4 mt-1">
             <li><strong>"Bee stop"</strong> - Stop the assistant from talking</li>
             <li><strong>"Bee remember this"</strong> - Save the current conversation to memory</li>
-            <li><strong>"Bee new job"</strong> or <strong>"Bee new project"</strong> - Create a new project (I'll ask you for all the details sequentially)</li>
+            <li><strong>"Bee new job"</strong> or <strong>"Bee new project"</strong> - Create a new project (I'll ask you for all the details sequentially)
+              <ul class="list-disc list-inside ml-4 mt-1">
+                <li>For Admin/Staff: First asks if you want to use an existing client or create a new one</li>
+                <li>For Clients: Starts directly with project details</li>
+              </ul>
+            </li>
           </ul>
         </li>
         <li>Click the microphone again to stop listening</li>
@@ -425,7 +430,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
             stopSpeaking();
             addMessage("assistant", "Stopped speaking.");
             updateStatus("Ready - Say wake word", "bg-gray-400");
-            if (!skipWakeWord) {
+            if (!skipWakeWordCheckbox.checked) {
               setTimeout(() => {
                 isAwake = false;
               }, 2000);
@@ -451,7 +456,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
               updateStatus("Error saving", "bg-red-400");
             }
             
-            if (!skipWakeWord) {
+            if (!skipWakeWordCheckbox.checked) {
               setTimeout(() => {
                 isAwake = false;
               }, 2000);
@@ -476,30 +481,34 @@ const { currentUser } = await checkAuth(Astro.cookies);
               return;
             }
             
-            // Check if user is Admin/Staff - they need to use web interface for client selection
+            // Start project creation flow
             if (!isClient) {
-              const response = "I can help you create projects, but as an Admin or Staff member, you'll need to use the web interface to select or create a client. Would you like me to open the project creation page?";
+              // Admin/Staff: Ask about client first
+              projectCreationState = {
+                step: "clientType",
+                data: {}
+              };
+              isAwaitingProjectField = true;
+              const response = "I'll help you create a new project. First, do you want to use an existing client or create a new client? Say 'existing' or 'new'.";
               addMessage("assistant", response);
               if (enableSpeechCheckbox.checked) {
                 speak(response);
               }
-              // Optionally redirect to dashboard
-              // window.location.href = "/dashboard";
-              return;
+              updateStatus("Creating project - Client selection", "bg-blue-400");
+            } else {
+              // Client: Start directly with address
+              projectCreationState = {
+                step: "address",
+                data: {}
+              };
+              isAwaitingProjectField = true;
+              const response = "I'll help you create a new project. Let's start with the project address. What's the address for this project?";
+              addMessage("assistant", response);
+              if (enableSpeechCheckbox.checked) {
+                speak(response);
+              }
+              updateStatus("Creating project - Address", "bg-blue-400");
             }
-            
-            // Start project creation flow for Clients
-            projectCreationState = {
-              step: "address",
-              data: {}
-            };
-            isAwaitingProjectField = true;
-            const response = "I'll help you create a new project. Let's start with the project address. What's the address for this project?";
-            addMessage("assistant", response);
-            if (enableSpeechCheckbox.checked) {
-              speak(response);
-            }
-            updateStatus("Creating project - Address", "bg-blue-400");
             return;
           }
           
@@ -525,7 +534,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
             }
 
             // Return to wake word listening after a delay (unless skip mode)
-            if (!skipWakeWord) {
+            if (!skipWakeWordCheckbox.checked) {
               setTimeout(() => {
                 isAwake = false;
               }, 2000);
@@ -538,7 +547,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
             if (enableSpeechCheckbox.checked) {
               speak(errorMsg);
             }
-            if (!skipWakeWord) {
+            if (!skipWakeWordCheckbox.checked) {
               isAwake = false;
             }
           }
@@ -590,6 +599,112 @@ const { currentUser } = await checkAuth(Astro.cookies);
     
     // Process current step and move to next
     switch (step) {
+      case "clientType":
+        const clientTypeLower = input.toLowerCase().trim();
+        if (clientTypeLower.includes("existing") || clientTypeLower.includes("current") || clientTypeLower.includes("old")) {
+          projectCreationState.clientType = "existing";
+          nextStep = "searchClient";
+          response = "Got it. Let's find an existing client. What's the client's name, company name, or email? I'll search for them.";
+        } else if (clientTypeLower.includes("new") || clientTypeLower.includes("create")) {
+          projectCreationState.clientType = "new";
+          nextStep = "firstName";
+          response = "Great! Let's create a new client. What's the client's first name?";
+        } else {
+          // Didn't understand, ask again
+          response = "I didn't understand. Do you want to use an existing client or create a new client? Say 'existing' or 'new'.";
+          addMessage("assistant", response);
+          if (enableSpeechCheckbox.checked) {
+            speak(response);
+          }
+          return;
+        }
+        break;
+        
+      case "searchClient":
+        // Search for clients
+        const searchResults = await searchClients(input.trim());
+        if (searchResults.length === 0) {
+          response = `I couldn't find any clients matching "${input}". Would you like to search again with different terms, or create a new client instead? Say 'search again', 'new client', or 'cancel'.`;
+          nextStep = "searchClient"; // Stay on search step
+        } else if (searchResults.length === 1) {
+          // Single match - use it
+          data.authorId = searchResults[0].id;
+          data.clientName = searchResults[0].companyName || `${searchResults[0].firstName} ${searchResults[0].lastName}`;
+          nextStep = "address";
+          response = `Found client: ${data.clientName}. Now let's get the project details. What's the address for this project?`;
+        } else {
+          // Multiple matches - list them and ask to select
+          projectCreationState.searchResults = searchResults;
+          nextStep = "selectClient";
+          const clientList = searchResults.slice(0, 5).map((c, i) => 
+            `${i + 1}. ${c.companyName || `${c.firstName} ${c.lastName}`} (${c.email})`
+          ).join(". ");
+          response = `I found ${searchResults.length} clients. Here are the first few: ${clientList}. Which one do you want? Say the number (1-${Math.min(5, searchResults.length)}) or the company name.`;
+        }
+        break;
+        
+      case "selectClient":
+        // User selecting from search results
+        const selection = input.toLowerCase().trim();
+        const numMatch = selection.match(/\d+/);
+        let selectedClient = null;
+        
+        if (numMatch) {
+          const index = parseInt(numMatch[0]) - 1;
+          if (index >= 0 && index < projectCreationState.searchResults.length) {
+            selectedClient = projectCreationState.searchResults[index];
+          }
+        } else {
+          // Try to match by name
+          selectedClient = projectCreationState.searchResults.find(c => 
+            c.companyName?.toLowerCase().includes(selection) ||
+            `${c.firstName} ${c.lastName}`.toLowerCase().includes(selection) ||
+            c.email?.toLowerCase().includes(selection)
+          );
+        }
+        
+        if (selectedClient) {
+          data.authorId = selectedClient.id;
+          data.clientName = selectedClient.companyName || `${selectedClient.firstName} ${selectedClient.lastName}`;
+          nextStep = "address";
+          response = `Selected client: ${data.clientName}. Now let's get the project details. What's the address for this project?`;
+        } else {
+          response = `I couldn't match that selection. Please say the number (1-${Math.min(5, projectCreationState.searchResults.length)}) or the company name from the list.`;
+          nextStep = "selectClient"; // Stay on selection step
+        }
+        break;
+        
+      case "firstName":
+        data.firstName = input.trim();
+        nextStep = "lastName";
+        response = `First name: ${data.firstName}. What's the last name?`;
+        break;
+        
+      case "lastName":
+        data.lastName = input.trim();
+        nextStep = "email";
+        response = `Last name: ${data.lastName}. What's the email address?`;
+        break;
+        
+      case "email":
+        const emailMatch = input.match(/[\w\.-]+@[\w\.-]+\.\w+/);
+        if (emailMatch) {
+          data.email = emailMatch[0];
+        } else {
+          data.email = input.trim();
+        }
+        nextStep = "companyName";
+        response = `Email: ${data.email}. What's the company name? (Say "skip" if not applicable)`;
+        break;
+        
+      case "companyName":
+        if (!input.toLowerCase().includes("skip")) {
+          data.companyName = input.trim();
+        }
+        nextStep = "address";
+        response = `Client information collected. Now let's get the project details. What's the address for this project?`;
+        break;
+        
       case "address":
         data.address = input.trim();
         data.title = input.trim(); // Use address as title default
@@ -801,6 +916,29 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
   }
   
+  // Search for clients by name, company, or email
+  async function searchClients(query) {
+    try {
+      const response = await fetch(`/api/users/get?role=Client&search=${encodeURIComponent(query)}&limit=10`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        console.error("Error searching clients:", response.statusText);
+        return [];
+      }
+      
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error("Error searching clients:", error);
+      return [];
+    }
+  }
+
   // Create project from collected voice data
   async function createProjectFromVoice(projectData) {
     updateStatus("Creating project...", "bg-purple-400");
@@ -1405,6 +1543,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
 • "Bee stop" - Stop me from talking
 • "Bee remember this" - Save our conversation
 • "Bee new job" or "Bee new project" - Create a new project (I'll ask you for all the details)
+  - For Admin/Staff: I'll first ask if you want to use an existing client or create a new one
+  - For Clients: I'll start directly with project details
 
 💡 Tips:
 • Speak clearly for best results
