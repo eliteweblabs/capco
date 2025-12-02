@@ -239,86 +239,76 @@ async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<stri
   const os = await import("os");
 
   let tempPdfPath: string | null = null;
+  let tempImageFiles: string[] = [];
 
   try {
     console.log("🔍 [PDF-OCR] Converting PDF pages to images for OCR...");
 
-    // Write buffer to temporary file (pdf-poppler requires a file path, not a buffer)
-    const tempDir = os.tmpdir();
-    const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
-    tempPdfPath = path.join(tempDir, `pdf_ocr_${Date.now()}_${safeFileName}`);
+    // Try pdf-poppler first (if available and poppler binaries are installed)
+    try {
+      const tempDir = os.tmpdir();
+      const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+      tempPdfPath = path.join(tempDir, `pdf_ocr_${Date.now()}_${safeFileName}`);
 
-    await fs.writeFile(tempPdfPath, buffer);
-    console.log(`📁 [PDF-OCR] Wrote PDF to temporary file: ${tempPdfPath}`);
+      await fs.writeFile(tempPdfPath, buffer);
+      console.log(`📁 [PDF-OCR] Wrote PDF to temporary file: ${tempPdfPath}`);
 
-    // Import pdf-poppler to convert PDF pages to images
-    const pdfPoppler = (await import("pdf-poppler")) as any;
+      // Import pdf-poppler to convert PDF pages to images
+      const pdfPoppler = (await import("pdf-poppler")) as any;
 
-    // Convert PDF to images
-    const options = {
-      format: "png",
-      out_dir: tempDir,
-      out_prefix: `pdf_page_${Date.now()}`,
-      page: null, // Convert all pages
-    };
+      // Convert PDF to images
+      const options = {
+        format: "png",
+        out_dir: tempDir,
+        out_prefix: `pdf_page_${Date.now()}`,
+        page: null, // Convert all pages
+      };
 
-    const images = await pdfPoppler.convert(tempPdfPath, options);
-    console.log(`🔍 [PDF-OCR] Converted PDF to ${images.length} image(s)`);
+      console.log(`🔍 [PDF-OCR] Attempting to convert PDF using pdf-poppler...`);
+      const images = await pdfPoppler.convert(tempPdfPath, options);
+      console.log(`🔍 [PDF-OCR] Converted PDF to ${images.length} image(s)`);
 
-    if (!images || images.length === 0) {
-      throw new Error("Failed to convert PDF pages to images");
-    }
-
-    // Import Tesseract for OCR
-    const Tesseract = await import("tesseract.js");
-    let allText = "";
-
-    // Run OCR on each page
-    for (let i = 0; i < images.length; i++) {
-      console.log(`🔍 [PDF-OCR] Running OCR on page ${i + 1}/${images.length}...`);
-
-      try {
-        const {
-          data: { text },
-        } = await Tesseract.recognize(images[i], "eng", {
-          logger: (m) => {
-            if (m.status === "recognizing text") {
-              const progress = Math.round(m.progress * 100);
-              if (progress % 25 === 0) {
-                console.log(`🔍 [PDF-OCR-Page-${i + 1}] Progress: ${progress}%`);
-              }
-            }
-          },
-        });
-
-        if (text && text.trim().length > 0) {
-          allText += `\n--- Page ${i + 1} ---\n${text.trim()}\n`;
-          console.log(`✅ [PDF-OCR] Page ${i + 1} completed. Text length: ${text.trim().length}`);
-        } else {
-          console.warn(`⚠️ [PDF-OCR] Page ${i + 1} returned no text`);
-        }
-      } catch (pageError: any) {
-        console.error(`❌ [PDF-OCR] Error processing page ${i + 1}:`, pageError);
-        // Continue with other pages even if one fails
-        allText += `\n--- Page ${i + 1} ---\n[OCR Error: ${pageError.message}]\n`;
+      if (images && images.length > 0) {
+        tempImageFiles = Array.isArray(images) ? images : [images];
+        return await runOCROnImageFiles(tempImageFiles, fileName);
       }
+    } catch (popplerError: any) {
+      console.warn("⚠️ [PDF-OCR] pdf-poppler failed:", popplerError.message);
+      // Clean up temp PDF file if it exists
+      if (tempPdfPath) {
+        await fs.unlink(tempPdfPath).catch(() => {});
+        tempPdfPath = null;
+      }
+      // Continue to fallback method
     }
 
-    const extractedText = allText.trim();
+    // Fallback: Try to extract text directly first (in case it's not actually scanned)
+    try {
+      console.log("🔍 [PDF-OCR] Attempting direct text extraction as fallback...");
+      const pdfParseModule = await import("pdf-parse");
+      const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+      const pdfData = await pdfParse(buffer);
 
-    if (extractedText.length < 10) {
-      console.warn("⚠️ [PDF-OCR] Very little text extracted from PDF");
-      return `PDF file "${fileName}" processed with OCR. Very little text was found. The document may be unclear, contain mostly images, or have poor scan quality.`;
+      if (pdfData.text && pdfData.text.trim().length > 50) {
+        console.log("✅ [PDF-OCR] Found extractable text in PDF, using direct extraction");
+        return pdfData.text;
+      }
+    } catch (parseError: any) {
+      console.warn("⚠️ [PDF-OCR] Direct text extraction failed:", parseError.message);
     }
 
-    console.log(`✅ [PDF-OCR] OCR completed. Total text length: ${extractedText.length}`);
-    return extractedText;
+    // If we get here, OCR is needed but pdf-poppler isn't available
+    throw new Error(
+      "PDF appears to be scanned/image-based. pdf-poppler library requires system-level poppler binaries (poppler-utils) to be installed. " +
+        "On Railway, you may need to add poppler-utils to your buildpack or use a different OCR service. " +
+        "Alternatively, please describe the document content manually."
+    );
   } catch (error: any) {
     console.error("❌ [PDF-OCR] Error:", error);
 
     // Provide helpful error messages
     if (error.message?.includes("pdf-poppler") || error.message?.includes("poppler")) {
-      return `PDF file "${fileName}" uploaded. OCR processing requires pdf-poppler library. The PDF appears to be scanned or image-based. Please ensure pdf-poppler is installed or describe the document content.`;
+      return `PDF file "${fileName}" uploaded. OCR processing requires pdf-poppler library with system poppler binaries installed. The PDF appears to be scanned or image-based. Please ensure poppler-utils is installed on your server or describe the document content.`;
     }
 
     if (error.message?.includes("Tesseract")) {
@@ -327,19 +317,80 @@ async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<stri
 
     return `PDF file "${fileName}" uploaded. Unable to extract text via OCR: ${error.message || "Unknown error"}. The PDF may be scanned or image-based. Please describe the document content.`;
   } finally {
-    // Clean up temporary PDF file
+    // Clean up temporary files
     if (tempPdfPath) {
       try {
         await fs.unlink(tempPdfPath);
-        console.log(`🧹 [PDF-OCR] Cleaned up temporary file: ${tempPdfPath}`);
+        console.log(`🧹 [PDF-OCR] Cleaned up temporary PDF file: ${tempPdfPath}`);
       } catch (cleanupError) {
         console.warn(
-          `⚠️ [PDF-OCR] Failed to clean up temporary file: ${tempPdfPath}`,
+          `⚠️ [PDF-OCR] Failed to clean up temporary PDF file: ${tempPdfPath}`,
           cleanupError
         );
       }
     }
+
+    // Clean up temporary image files
+    for (const imageFile of tempImageFiles) {
+      try {
+        await fs.unlink(imageFile).catch(() => {});
+      } catch (cleanupError) {
+        // Ignore cleanup errors for image files
+      }
+    }
   }
+}
+
+/**
+ * Helper function to run OCR on image file paths
+ */
+async function runOCROnImageFiles(imageFiles: string[], fileName: string): Promise<string> {
+  const fs = await import("fs/promises");
+  const Tesseract = await import("tesseract.js");
+  let allText = "";
+
+  for (let i = 0; i < imageFiles.length; i++) {
+    console.log(`🔍 [PDF-OCR] Running OCR on page ${i + 1}/${imageFiles.length}...`);
+
+    try {
+      // Read image file
+      const imageBuffer = await fs.readFile(imageFiles[i]);
+
+      const {
+        data: { text },
+      } = await Tesseract.recognize(imageBuffer, "eng", {
+        logger: (m) => {
+          if (m.status === "recognizing text") {
+            const progress = Math.round(m.progress * 100);
+            if (progress % 25 === 0) {
+              console.log(`🔍 [PDF-OCR-Page-${i + 1}] Progress: ${progress}%`);
+            }
+          }
+        },
+      });
+
+      if (text && text.trim().length > 0) {
+        allText += `\n--- Page ${i + 1} ---\n${text.trim()}\n`;
+        console.log(`✅ [PDF-OCR] Page ${i + 1} completed. Text length: ${text.trim().length}`);
+      } else {
+        console.warn(`⚠️ [PDF-OCR] Page ${i + 1} returned no text`);
+      }
+    } catch (pageError: any) {
+      console.error(`❌ [PDF-OCR] Error processing page ${i + 1}:`, pageError);
+      // Continue with other pages even if one fails
+      allText += `\n--- Page ${i + 1} ---\n[OCR Error: ${pageError.message}]\n`;
+    }
+  }
+
+  const extractedText = allText.trim();
+
+  if (extractedText.length < 10) {
+    console.warn("⚠️ [PDF-OCR] Very little text extracted from PDF");
+    return `PDF file "${fileName}" processed with OCR. Very little text was found. The document may be unclear, contain mostly images, or have poor scan quality.`;
+  }
+
+  console.log(`✅ [PDF-OCR] OCR completed. Total text length: ${extractedText.length}`);
+  return extractedText;
 }
 
 /**

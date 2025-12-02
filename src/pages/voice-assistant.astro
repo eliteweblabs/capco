@@ -2053,6 +2053,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
     fileStatus.textContent = "Processing file...";
     fileStatus.className = "mt-2 text-sm text-blue-600 dark:text-blue-400";
     
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+    
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -2061,8 +2065,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
         method: "POST",
         credentials: "include",
         body: formData,
+        signal: controller.signal,
       });
       
+      clearTimeout(timeoutId);
       const result = await response.json();
       
       if (!response.ok) {
@@ -2104,8 +2110,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
         throw new Error("No content extracted from file");
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error("[VOICE-ASSISTANT] Error processing file:", error);
-      const errorMessage = error && error.message ? error.message : "Unknown error";
+      let errorMessage = "Unknown error";
+      if (error.name === "AbortError") {
+        errorMessage = "Request timed out. The file may be too large or complex. Try a smaller file or simpler format.";
+      } else if (error && error.message) {
+        errorMessage = error.message;
+      }
       fileStatus.textContent = `Error: ${errorMessage}`;
       fileStatus.className = "mt-2 text-sm text-red-600 dark:text-red-400";
       addMessage("system", `❌ Failed to process file: ${errorMessage}`, []);
