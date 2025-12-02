@@ -195,6 +195,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
           />
           Use cloud transcription (better accuracy)
         </label>
+        <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+          <input
+            type="checkbox"
+            id="enable-tags"
+            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          Enable tag extraction (may affect agent)
+        </label>
         <button
           id="clear-conversation"
           class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
@@ -255,6 +263,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
   const enableSpeechCheckbox = document.getElementById("enable-speech");
   const skipWakeWordCheckbox = document.getElementById("skip-wake-word");
   const useCloudTranscriptionCheckbox = document.getElementById("use-cloud-transcription");
+  const enableTagsCheckbox = document.getElementById("enable-tags");
   const clearButton = document.getElementById("clear-conversation");
   const btnStop = document.getElementById("btn-stop");
   const btnRemember = document.getElementById("btn-remember");
@@ -404,7 +413,22 @@ const { currentUser } = await checkAuth(Astro.cookies);
     userRole: currentUserRole,
     isClient,
     userAgent: navigator.userAgent,
+    tagsEnabled: enableTagsCheckbox?.checked || false,
   });
+  
+  // Log when tag toggle changes
+  if (enableTagsCheckbox) {
+    enableTagsCheckbox.addEventListener("change", (e) => {
+      const enabled = e.target.checked;
+      VoiceAssistantLogger.info("system", "Tag extraction toggled", { enabled });
+      // Hide tags editor if disabled
+      if (!enabled && tagsEditor) {
+        tagsEditor.classList.add("hidden");
+        currentTags = [];
+        updateTagsDisplay();
+      }
+    });
+  }
 
   let recognition = null;
   let isListening = false;
@@ -570,13 +594,19 @@ const { currentUser } = await checkAuth(Astro.cookies);
             isAwake,
           });
           
-          // Extract and show tags for user message
-          const userTags = await extractTags(transcript);
-          // Add extracted tags to current tags
-          userTags.forEach(tag => addTag(tag));
-          // Show tags editor
-          if (tagsEditor && userTags.length > 0) {
-            tagsEditor.classList.remove("hidden");
+          // Extract and show tags for user message (only if enabled)
+          let userTags = [];
+          if (enableTagsCheckbox?.checked) {
+            VoiceAssistantLogger.debug("tags", "Extracting tags from transcript");
+            userTags = await extractTags(transcript);
+            // Add extracted tags to current tags
+            userTags.forEach(tag => addTag(tag));
+            // Show tags editor
+            if (tagsEditor && userTags.length > 0) {
+              tagsEditor.classList.remove("hidden");
+            }
+          } else {
+            VoiceAssistantLogger.debug("tags", "Tag extraction disabled, skipping");
           }
           addMessage("user", transcript, userTags);
           
@@ -734,13 +764,17 @@ const { currentUser } = await checkAuth(Astro.cookies);
         } else if (hasWakeWord && command.length === 0 && !skipWakeWord) {
           // Wake word detected but no command yet
           isAwake = true;
-          // Extract tags even for just wake word
-          const userTags = await extractTags(transcript);
-          // Add extracted tags to current tags
-          userTags.forEach(tag => addTag(tag));
-          // Show tags editor
-          if (tagsEditor && userTags.length > 0) {
-            tagsEditor.classList.remove("hidden");
+          // Extract tags even for just wake word (only if enabled)
+          let userTags = [];
+          if (enableTagsCheckbox?.checked) {
+            VoiceAssistantLogger.debug("tags", "Extracting tags from wake word");
+            userTags = await extractTags(transcript);
+            // Add extracted tags to current tags
+            userTags.forEach(tag => addTag(tag));
+            // Show tags editor
+            if (tagsEditor && userTags.length > 0) {
+              tagsEditor.classList.remove("hidden");
+            }
           }
           addMessage("user", transcript, userTags);
           updateStatus("Awake - Listening for command...", "bg-green-400");
@@ -1586,11 +1620,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
     const title = userMessage.substring(0, 100) + (userMessage.length > 100 ? "..." : "");
     const content = `User asked: "${userMessage}"\n\nAssistant responded: "${assistantMessage}"`;
 
-    // Use current tags (from manual entry + auto-extraction), or extract if none
+    // Use current tags (from manual entry + auto-extraction), or extract if none (only if enabled)
     let tagsToSave = [...currentTags];
     
-    if (tagsToSave.length === 0) {
-      // Auto-extract tags if none manually added
+    if (tagsToSave.length === 0 && enableTagsCheckbox?.checked) {
+      // Auto-extract tags if none manually added and tags are enabled
       const combinedText = `${userMessage} ${assistantMessage}`;
       const extractedTags = await extractTags(combinedText);
       tagsToSave = extractedTags;
