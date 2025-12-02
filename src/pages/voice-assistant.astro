@@ -285,6 +285,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
   let projectCreationState = null; // null | { step: string, data: object }
   let isAwaitingProjectField = false;
   
+  // Debouncing and duplicate prevention
+  let lastProcessedTranscript = "";
+  let lastProcessedTime = 0;
+  let processingCooldown = 2000; // 2 seconds cooldown between processing
+  let isProcessingTranscript = false;
+  
   // Logging system
   const VoiceAssistantLogger = {
     logs: [],
@@ -508,13 +514,21 @@ const { currentUser } = await checkAuth(Astro.cookies);
         return; // Cloud transcription handles this separately
       }
       
-      // Get the most confident transcript
+      // Prevent duplicate processing
+      if (isProcessingTranscript) {
+        VoiceAssistantLogger.debug("voice", "Skipping duplicate transcript processing");
+        return;
+      }
+      
+      // Get the most confident transcript from FINAL results only
       let transcript = "";
       let confidence = 0;
+      let hasFinalResult = false;
       
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
+          hasFinalResult = true;
           // Use the most confident alternative
           const alternatives = Array.from(result);
           const bestAlternative = alternatives.reduce((best, current) => {
@@ -525,26 +539,55 @@ const { currentUser } = await checkAuth(Astro.cookies);
             transcript = bestAlternative.transcript;
             confidence = bestAlternative.confidence;
           }
-        } else {
-          // For interim results, just use the first alternative
-          transcript += result[0].transcript;
         }
+        // Skip interim results - we only want final transcripts
+      }
+      
+      // Only process if we have a final result
+      if (!hasFinalResult) {
+        VoiceAssistantLogger.debug("voice", "Skipping interim transcript", { 
+          hasFinalResult: false 
+        });
+        return;
       }
       
       transcript = transcript.trim();
       if (!transcript) return;
       
+      // Check for duplicate transcript (same as last processed)
+      const now = Date.now();
+      if (transcript.toLowerCase() === lastProcessedTranscript.toLowerCase() && 
+          (now - lastProcessedTime) < processingCooldown) {
+        VoiceAssistantLogger.debug("voice", "Skipping duplicate transcript", {
+          transcript,
+          timeSinceLastProcess: now - lastProcessedTime,
+        });
+        return;
+      }
+      
       // Post-process transcript to fix common errors
       transcript = correctCommonErrors(transcript);
       
-      VoiceAssistantLogger.info("voice", "Transcript received", { 
-        original: transcript,
+      // Update last processed
+      lastProcessedTranscript = transcript.toLowerCase();
+      lastProcessedTime = now;
+      isProcessingTranscript = true;
+      
+      VoiceAssistantLogger.info("voice", "Transcript received (final)", { 
+        transcript,
         confidence,
         isFinal: true 
       });
       
       // Process the transcript
-      await processTranscript(transcript);
+      try {
+        await processTranscript(transcript);
+      } finally {
+        // Reset processing flag after a short delay to allow for natural speech pauses
+        setTimeout(() => {
+          isProcessingTranscript = false;
+        }, 1500);
+      }
     };
     
     // Process transcript (used by both Web Speech API and cloud transcription)
@@ -657,10 +700,26 @@ const { currentUser } = await checkAuth(Astro.cookies);
           
           // Handle project field collection if we're in project creation mode (check this first)
           if (isAwaitingProjectField && projectCreationState) {
+            // Check if this is a duplicate of the last processed input
+            const normalizedInput = commandToProcess.toLowerCase().trim();
+            if (normalizedInput === lastProcessedTranscript && 
+                (Date.now() - lastProcessedTime) < processingCooldown) {
+              VoiceAssistantLogger.debug("project", "Skipping duplicate project field input", {
+                input: commandToProcess,
+                step: projectCreationState.step,
+              });
+              return;
+            }
+            
             VoiceAssistantLogger.debug("project", "Handling project field input", { 
               step: projectCreationState.step,
               input: commandToProcess 
             });
+            
+            // Update last processed before handling
+            lastProcessedTranscript = normalizedInput;
+            lastProcessedTime = Date.now();
+            
             await handleProjectFieldInput(commandToProcess);
             return;
           }
@@ -680,6 +739,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
             VoiceAssistantLogger.info("project", "Starting project creation", { isClient, userRole: currentUserRole });
             
             // Start project creation flow
+            // Reset processing state to allow new inputs
+            lastProcessedTranscript = "";
+            lastProcessedTime = 0;
+            
             if (!isClient) {
               // Admin/Staff: Ask about client first
               projectCreationState = {
@@ -689,10 +752,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
               isAwaitingProjectField = true;
               const response = "I'll help you create a new project. First, do you want to use an existing client or create a new client? Say 'existing' or 'new'.";
               addMessage("assistant", response);
-              if (enableSpeechCheckbox.checked) {
-                speak(response);
-              }
               updateStatus("Creating project - Client selection", "bg-blue-400");
+              
+              // Wait before speaking to prevent immediate re-processing
+              if (enableSpeechCheckbox.checked) {
+                setTimeout(() => {
+                  speak(response);
+                }, 800);
+              }
             } else {
               // Client: Start directly with address
               projectCreationState = {
@@ -702,10 +769,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
               isAwaitingProjectField = true;
               const response = "I'll help you create a new project. Let's start with the project address. What's the address for this project?";
               addMessage("assistant", response);
-              if (enableSpeechCheckbox.checked) {
-                speak(response);
-              }
               updateStatus("Creating project - Address", "bg-blue-400");
+              
+              // Wait before speaking to prevent immediate re-processing
+              if (enableSpeechCheckbox.checked) {
+                setTimeout(() => {
+                  speak(response);
+                }, 800);
+              }
             }
             return;
           }
@@ -1126,13 +1197,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
         return;
     }
     
-    // Add assistant response
+        // Add assistant response
     addMessage("assistant", response);
-    if (enableSpeechCheckbox.checked) {
-      speak(response);
-    }
     
-        // Update state
+    // Update state BEFORE speaking to prevent race conditions
     if (nextStep === "complete") {
       VoiceAssistantLogger.info("project", "All project fields collected, creating project", { 
         dataKeys: Object.keys(data),
@@ -1140,6 +1208,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
         hasAuthorId: !!data.authorId,
       });
       projectCreationState.step = "complete";
+      updateStatus("Creating project...", "bg-purple-400");
       // Create the project
       await createProjectFromVoice(data);
     } else {
@@ -1150,6 +1219,19 @@ const { currentUser } = await checkAuth(Astro.cookies);
       });
       projectCreationState.step = nextStep;
       updateStatus(`Creating project - ${nextStep}`, "bg-blue-400");
+      
+      // Add a cooldown period after asking a question to prevent immediate re-processing
+      // Reset the last processed transcript so the next response will be accepted
+      lastProcessedTranscript = "";
+      lastProcessedTime = 0;
+      
+      // Speak response after a brief delay to ensure state is updated
+      if (enableSpeechCheckbox.checked) {
+        // Wait a moment before speaking to allow user to finish
+        setTimeout(() => {
+          speak(response);
+        }, 500);
+      }
     }
   }
   
@@ -1754,6 +1836,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
   // Transcribe using cloud API
   async function transcribeWithCloud(audioBlob) {
+    VoiceAssistantLogger.info("transcription", "Starting cloud transcription", {
+      audioSize: audioBlob.size,
+      audioType: audioBlob.type,
+    });
+    
     try {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
@@ -1763,15 +1850,52 @@ const { currentUser } = await checkAuth(Astro.cookies);
         body: formData
       });
       
+      VoiceAssistantLogger.debug("transcription", "Transcription API response", {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+      });
+      
       if (!response.ok) {
-        throw new Error('Cloud transcription failed');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        VoiceAssistantLogger.error("transcription", "Cloud transcription API failed", {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+        });
+        
+        // Provide helpful error message based on status
+        if (response.status === 500) {
+          throw new Error('Transcription service not configured. Please configure DEEPGRAM_API_KEY or GOOGLE_CLOUD_SPEECH_API_KEY, or disable cloud transcription.');
+        } else if (response.status === 400) {
+          throw new Error('Invalid audio format. Please try again.');
+        } else {
+          throw new Error(`Transcription failed: ${errorData.error || response.statusText}`);
+        }
       }
       
       const data = await response.json();
-      return data.transcript || '';
+      const transcript = data.transcript || '';
+      
+      VoiceAssistantLogger.info("transcription", "Cloud transcription successful", {
+        transcriptLength: transcript.length,
+        provider: data.provider || 'unknown',
+        transcriptPreview: transcript.substring(0, 50) + (transcript.length > 50 ? '...' : ''),
+      });
+      
+      return transcript;
     } catch (error) {
+      VoiceAssistantLogger.error("transcription", "Cloud transcription error", {
+        error: error.message,
+        stack: error.stack,
+        audioSize: audioBlob.size,
+      });
       console.error('Cloud transcription error:', error);
-      return null;
+      
+      // Show user-friendly error message
+      addMessage("system", `⚠️ Cloud transcription failed: ${error.message}. Falling back to browser speech recognition.`, []);
+      
+      return null; // Return null to trigger fallback
     }
   }
 
