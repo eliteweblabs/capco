@@ -68,7 +68,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           placeholder="Bee"
         />
         <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          Special commands: "Bee stop" (stop talking), "Bee remember this" (save conversation)
+          Special commands: "Bee stop" (stop talking), "Bee remember this" (save conversation), "Bee new job" (create project)
         </p>
       </div>
 
@@ -213,6 +213,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           <ul class="list-disc list-inside ml-4 mt-1">
             <li><strong>"Bee stop"</strong> - Stop the assistant from talking</li>
             <li><strong>"Bee remember this"</strong> - Save the current conversation to memory</li>
+            <li><strong>"Bee new job"</strong> or <strong>"Bee new project"</strong> - Create a new project (I'll ask you for all the details sequentially)</li>
           </ul>
         </li>
         <li>Click the microphone again to stop listening</li>
@@ -226,9 +227,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
   </div>
 </App>
 
-<script>
+<script define:vars={{ currentUserRole: currentUser?.profile?.role || "Client" }}>
   // Voice Assistant Web Interface
   // Uses Web Speech API for speech recognition
+
+  // Get current user info from server
+  const isClient = currentUserRole.toLowerCase() === "client";
 
   const micButton = document.getElementById("mic-button");
   const micIcon = document.getElementById("mic-icon");
@@ -253,6 +257,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
   let currentPriority = 0; // Store priority for current conversation
   const debugInfo = document.getElementById("debug-info");
   const debugText = document.getElementById("debug-text");
+  
+  // Project creation state
+  let projectCreationState = null; // null | { step: string, data: object }
+  let isAwaitingProjectField = false;
 
   let recognition = null;
   let isListening = false;
@@ -451,6 +459,50 @@ const { currentUser } = await checkAuth(Astro.cookies);
             return;
           }
           
+          // Handle project field collection if we're in project creation mode (check this first)
+          if (isAwaitingProjectField && projectCreationState) {
+            await handleProjectFieldInput(commandToProcess);
+            return;
+          }
+          
+          // Check for "Bee new job" or "Bee new project" command
+          if (commandLower.includes("new job") || commandLower.includes("new project")) {
+            if (isAwaitingProjectField) {
+              const response = "I'm already helping you create a project. Please answer my current question, or say 'cancel' to start over.";
+              addMessage("assistant", response);
+              if (enableSpeechCheckbox.checked) {
+                speak(response);
+              }
+              return;
+            }
+            
+            // Check if user is Admin/Staff - they need to use web interface for client selection
+            if (!isClient) {
+              const response = "I can help you create projects, but as an Admin or Staff member, you'll need to use the web interface to select or create a client. Would you like me to open the project creation page?";
+              addMessage("assistant", response);
+              if (enableSpeechCheckbox.checked) {
+                speak(response);
+              }
+              // Optionally redirect to dashboard
+              // window.location.href = "/dashboard";
+              return;
+            }
+            
+            // Start project creation flow for Clients
+            projectCreationState = {
+              step: "address",
+              data: {}
+            };
+            isAwaitingProjectField = true;
+            const response = "I'll help you create a new project. Let's start with the project address. What's the address for this project?";
+            addMessage("assistant", response);
+            if (enableSpeechCheckbox.checked) {
+              speak(response);
+            }
+            updateStatus("Creating project - Address", "bg-blue-400");
+            return;
+          }
+          
           // Regular command processing
           updateStatus("Processing...", "bg-yellow-400");
 
@@ -507,6 +559,327 @@ const { currentUser } = await checkAuth(Astro.cookies);
         }
       }
     };
+  }
+
+  // Handle project field input sequentially
+  async function handleProjectFieldInput(input) {
+    if (!projectCreationState) return;
+    
+    // Check for cancellation
+    const inputLower = input.toLowerCase().trim();
+    if (inputLower === "cancel" || inputLower === "stop" || inputLower.includes("cancel") || inputLower.includes("never mind")) {
+      projectCreationState = null;
+      isAwaitingProjectField = false;
+      const cancelMsg = "Project creation cancelled. You can start again anytime by saying 'Bee new job'.";
+      addMessage("assistant", cancelMsg);
+      if (enableSpeechCheckbox.checked) {
+        speak(cancelMsg);
+      }
+      updateStatus("Ready - Say wake word", "bg-gray-400");
+      if (!skipWakeWordCheckbox.checked) {
+        setTimeout(() => {
+          isAwake = false;
+        }, 2000);
+      }
+      return;
+    }
+    
+    const { step, data } = projectCreationState;
+    let nextStep = null;
+    let response = "";
+    
+    // Process current step and move to next
+    switch (step) {
+      case "address":
+        data.address = input.trim();
+        data.title = input.trim(); // Use address as title default
+        nextStep = "title";
+        response = `Got it. The address is ${data.address}. Would you like to provide a different title, or should I use the address as the title?`;
+        break;
+        
+      case "title":
+        if (input.toLowerCase().includes("use address") || input.toLowerCase().includes("same") || input.toLowerCase().includes("keep")) {
+          // Keep address as title
+        } else {
+          data.title = input.trim();
+        }
+        nextStep = "architect";
+        response = `Title set. Who is the architect for this project? (Say "skip" if not applicable)`;
+        break;
+        
+      case "architect":
+        if (!input.toLowerCase().includes("skip")) {
+          data.architect = input.trim();
+        }
+        nextStep = "sqFt";
+        response = `Architect noted. What's the square footage of the project? (Say "skip" if not applicable)`;
+        break;
+        
+      case "sqFt":
+        if (!input.toLowerCase().includes("skip")) {
+          const sqFtMatch = input.match(/\d+/);
+          if (sqFtMatch) {
+            data.sqFt = sqFtMatch[0];
+          }
+        }
+        nextStep = "units";
+        response = `Square footage recorded. How many units does this project have? (Say "skip" if not applicable)`;
+        break;
+        
+      case "units":
+        if (!input.toLowerCase().includes("skip")) {
+          const unitsMatch = input.match(/\d+/);
+          if (unitsMatch) {
+            data.units = unitsMatch[0];
+          }
+        }
+        nextStep = "newConstruction";
+        response = `Units recorded. Is this new construction? (Say "yes" or "no")`;
+        break;
+        
+      case "newConstruction":
+        data.newConstruction = input.toLowerCase().includes("yes") || input.toLowerCase().includes("y");
+        nextStep = "building";
+        response = `New construction: ${data.newConstruction ? "Yes" : "No"}. What type of building is this? You can choose from: Residential, Mixed use, Mercantile, Commercial, Storage, Warehouse, or Institutional. (You can select multiple, say "skip" if not applicable)`;
+        break;
+        
+      case "building":
+        if (!input.toLowerCase().includes("skip")) {
+          const buildingTypes = ["Residential", "Mixed use", "Mercantile", "Commercial", "Storage", "Warehouse", "Institutional"];
+          const selected = buildingTypes.filter(type => 
+            input.toLowerCase().includes(type.toLowerCase())
+          );
+          if (selected.length > 0) {
+            data.building = selected;
+          }
+        }
+        nextStep = "project";
+        response = `Building type recorded. What type of project is this? You can choose from: Sprinkler, Alarm, Mechanical, Electrical, Plumbing, Civil engineering, or Other. (You can select multiple, say "skip" if not applicable)`;
+        break;
+        
+      case "project":
+        if (!input.toLowerCase().includes("skip")) {
+          const projectTypes = ["Sprinkler", "Alarm", "Mechanical", "Electrical", "Plumbing", "Civil engineering", "Other"];
+          const selected = projectTypes.filter(type => 
+            input.toLowerCase().includes(type.toLowerCase())
+          );
+          if (selected.length > 0) {
+            data.project = selected;
+          }
+        }
+        nextStep = "tier";
+        response = `Project type recorded. What tier is this? You can choose: Tier I, Tier II, or Tier III. (Say "skip" if not applicable)`;
+        break;
+        
+      case "tier":
+        if (!input.toLowerCase().includes("skip")) {
+          if (input.toLowerCase().includes("tier i") || input.toLowerCase().includes("tier 1")) {
+            data.tier = ["Tier I"];
+          } else if (input.toLowerCase().includes("tier ii") || input.toLowerCase().includes("tier 2")) {
+            data.tier = ["Tier II"];
+          } else if (input.toLowerCase().includes("tier iii") || input.toLowerCase().includes("tier 3")) {
+            data.tier = ["Tier III"];
+          }
+        }
+        nextStep = "service";
+        response = `Tier recorded. What's the supply or service type? Options are: Pump & Tank 300, Pump & Tank 600, 2' Copper, 4' Ductile, 6' Ductile, or Unknown. (Say "skip" if not applicable)`;
+        break;
+        
+      case "service":
+        if (!input.toLowerCase().includes("skip")) {
+          const serviceTypes = ["Pump & Tank 300", "Pump & Tank 600", "Pump & Tank", "2' Copper", "4' Ductile", "6' Ductile", "Unknown"];
+          const selected = serviceTypes.find(type => 
+            input.toLowerCase().includes(type.toLowerCase().replace("'", ""))
+          );
+          if (selected) {
+            data.service = selected === "Pump & Tank" ? "Pump & Tank 300" : selected;
+          }
+        }
+        nextStep = "nfpaVersion";
+        response = `Service type recorded. What NFPA version applies? Options are: 13, 13R, or 13D. (Say "skip" if not applicable)`;
+        break;
+        
+      case "nfpaVersion":
+        if (!input.toLowerCase().includes("skip")) {
+          if (input.toLowerCase().includes("13r")) {
+            data.nfpaVersion = "13R";
+          } else if (input.toLowerCase().includes("13d")) {
+            data.nfpaVersion = "13D";
+          } else if (input.match(/\b13\b/)) {
+            data.nfpaVersion = "13";
+          }
+        }
+        nextStep = "requestedDocs";
+        response = `NFPA version recorded. What reports are required? Options include: Narrative, Sprinkler, Alarm, Hydraulic Calculations, Fire Hydrant Flow Test, NFPA 241, IEBC, or IBC. (You can select multiple, say "skip" if not applicable)`;
+        break;
+        
+      case "requestedDocs":
+        if (!input.toLowerCase().includes("skip")) {
+          const docTypes = ["Narrative", "Sprinkler", "Alarm", "Hydraulic Calculations", "Fire Hydrant Flow Test", "NFPA 241", "IEBC", "IBC"];
+          const selected = docTypes.filter(type => 
+            input.toLowerCase().includes(type.toLowerCase())
+          );
+          if (selected.length > 0) {
+            data.requestedDocs = selected;
+          } else {
+            // Default to common ones
+            data.requestedDocs = ["Narrative", "Sprinkler", "Hydraulic Calculations", "Fire Hydrant Flow Test"];
+          }
+        } else {
+          // Default to common ones
+          data.requestedDocs = ["Narrative", "Sprinkler", "Hydraulic Calculations", "Fire Hydrant Flow Test"];
+        }
+        nextStep = "description";
+        response = `Reports required recorded. Would you like to add a description for this project? (Say "skip" if not needed)`;
+        break;
+        
+      case "description":
+        if (!input.toLowerCase().includes("skip")) {
+          data.description = input.trim();
+        }
+        nextStep = "siteAccess";
+        response = `Description added. What's the site access information? (Say "skip" if not applicable)`;
+        break;
+        
+      case "siteAccess":
+        if (!input.toLowerCase().includes("skip")) {
+          data.siteAccess = input.trim();
+        }
+        nextStep = "commencementOfConstruction";
+        response = `Site access recorded. What's the estimated commencement of construction? (Say "skip" if not applicable)`;
+        break;
+        
+      case "commencementOfConstruction":
+        if (!input.toLowerCase().includes("skip")) {
+          data.commencementOfConstruction = input.trim();
+        }
+        nextStep = "buildingHeight";
+        response = `Commencement date recorded. What's the building height? (Say "skip" if not applicable)`;
+        break;
+        
+      case "buildingHeight":
+        if (!input.toLowerCase().includes("skip")) {
+          const heightMatch = input.match(/\d+/);
+          if (heightMatch) {
+            data.buildingHeight = heightMatch[0];
+          }
+        }
+        nextStep = "floorsBelowGrade";
+        response = `Building height recorded. How many floors below grade? (Say "skip" if not applicable)`;
+        break;
+        
+      case "floorsBelowGrade":
+        if (!input.toLowerCase().includes("skip")) {
+          const floorsMatch = input.match(/\d+/);
+          if (floorsMatch) {
+            data.floorsBelowGrade = floorsMatch[0];
+          }
+        }
+        nextStep = "complete";
+        response = `All information collected. Creating your project now...`;
+        break;
+        
+      case "complete":
+        // Shouldn't reach here, but handle it
+        return;
+    }
+    
+    // Add assistant response
+    addMessage("assistant", response);
+    if (enableSpeechCheckbox.checked) {
+      speak(response);
+    }
+    
+    // Update state
+    if (nextStep === "complete") {
+      projectCreationState.step = "complete";
+      // Create the project
+      await createProjectFromVoice(data);
+    } else {
+      projectCreationState.step = nextStep;
+      updateStatus(`Creating project - ${nextStep}`, "bg-blue-400");
+    }
+  }
+  
+  // Create project from collected voice data
+  async function createProjectFromVoice(projectData) {
+    updateStatus("Creating project...", "bg-purple-400");
+    
+    try {
+      // Ensure arrays are arrays
+      if (projectData.building && !Array.isArray(projectData.building)) {
+        projectData.building = [projectData.building];
+      }
+      if (projectData.project && !Array.isArray(projectData.project)) {
+        projectData.project = [projectData.project];
+      }
+      if (projectData.tier && !Array.isArray(projectData.tier)) {
+        projectData.tier = [projectData.tier];
+      }
+      if (projectData.requestedDocs && !Array.isArray(projectData.requestedDocs)) {
+        projectData.requestedDocs = [projectData.requestedDocs];
+      }
+      
+      // Convert numeric strings to numbers
+      if (projectData.sqFt) projectData.sqFt = parseInt(projectData.sqFt);
+      if (projectData.units) projectData.units = parseInt(projectData.units);
+      if (projectData.buildingHeight) projectData.buildingHeight = parseInt(projectData.buildingHeight);
+      if (projectData.floorsBelowGrade) projectData.floorsBelowGrade = parseInt(projectData.floorsBelowGrade);
+      
+      const response = await fetch("/api/projects/upsert", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(projectData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to create project: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        const successMsg = `Great! I've successfully created your project "${result.project.title || result.project.address}". The project ID is ${result.project.id}.`;
+        addMessage("assistant", successMsg);
+        if (enableSpeechCheckbox.checked) {
+          speak(successMsg);
+        }
+        updateStatus("Project created!", "bg-green-400");
+        
+        // Reset project creation state
+        projectCreationState = null;
+        isAwaitingProjectField = false;
+        
+        if (!skipWakeWordCheckbox.checked) {
+          setTimeout(() => {
+            isAwake = false;
+          }, 3000);
+        }
+      } else {
+        throw new Error(result.error || "Failed to create project");
+      }
+    } catch (error) {
+      console.error("Error creating project:", error);
+      const errorMsg = `Sorry, I encountered an error creating the project: ${error.message || "Please try again."}`;
+      addMessage("assistant", errorMsg);
+      updateStatus("Error creating project", "bg-red-400");
+      if (enableSpeechCheckbox.checked) {
+        speak(errorMsg);
+      }
+      
+      // Reset project creation state on error
+      projectCreationState = null;
+      isAwaitingProjectField = false;
+      
+      if (!skipWakeWordCheckbox.checked) {
+        setTimeout(() => {
+          isAwake = false;
+        }, 3000);
+      }
+    }
   }
 
   // Process command via API
@@ -1031,6 +1404,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 • "Bee [your question]" - Ask me anything
 • "Bee stop" - Stop me from talking
 • "Bee remember this" - Save our conversation
+• "Bee new job" or "Bee new project" - Create a new project (I'll ask you for all the details)
 
 💡 Tips:
 • Speak clearly for best results
@@ -1044,7 +1418,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
     addMessage("assistant", helpText);
     if (enableSpeechCheckbox.checked) {
-      speak("Here's what I can do. Use Bee followed by your question, or say Bee stop to stop me from talking, or Bee remember this to save our conversation.");
+      speak("Here's what I can do. Use Bee followed by your question, or say Bee stop to stop me from talking, or Bee remember this to save our conversation, or Bee new job to create a new project.");
     }
   });
 
@@ -1074,6 +1448,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
     conversationHistory = [];
     currentTags = [];
     currentPriority = 0;
+    projectCreationState = null;
+    isAwaitingProjectField = false;
     conversation.innerHTML =
       '<div class="text-sm text-gray-500 dark:text-gray-400 text-center">Your conversation will appear here...</div>';
     updateTagsDisplay();
@@ -1084,6 +1460,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       tagsEditor.classList.add("hidden");
     }
     isAwake = false;
+    updateStatus("Ready - Click microphone to start", "bg-gray-400");
   });
 </script>
 
