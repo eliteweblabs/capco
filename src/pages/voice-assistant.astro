@@ -131,6 +131,40 @@ const { currentUser } = await checkAuth(Astro.cookies);
         </div>
       </div>
 
+      <!-- File Upload Section -->
+      <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Upload Documents or Images</h3>
+        <div class="flex items-center gap-4 flex-wrap">
+          <label
+            for="file-input"
+            class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <svg class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            <span class="text-sm text-gray-700 dark:text-gray-300">Choose File</span>
+          </label>
+          <input
+            type="file"
+            id="file-input"
+            accept=".pdf,.png,.jpg,.jpeg,.gif,.webp"
+            class="hidden"
+          />
+          <span id="file-name" class="text-sm text-gray-500 dark:text-gray-400 flex-1 min-w-[150px]">
+            No file selected
+          </span>
+          <button
+            id="upload-btn"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            disabled
+          >
+            Process File
+          </button>
+        </div>
+        <div id="file-preview" class="mt-4 hidden"></div>
+        <div id="file-status" class="mt-2 text-sm"></div>
+      </div>
+
       <!-- Quick Action Buttons -->
       <div class="mb-6">
         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -265,6 +299,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
   const skipWakeWordCheckbox = document.getElementById("skip-wake-word");
   const useCloudTranscriptionCheckbox = document.getElementById("use-cloud-transcription");
   const enableTagsCheckbox = document.getElementById("enable-tags");
+  const fileInput = document.getElementById("file-input");
+  const fileNameDisplay = document.getElementById("file-name");
+  const uploadBtn = document.getElementById("upload-btn");
+  const filePreview = document.getElementById("file-preview");
+  const fileStatus = document.getElementById("file-status");
+  
+  let selectedFile = null;
   const clearButton = document.getElementById("clear-conversation");
   const btnStop = document.getElementById("btn-stop");
   const btnRemember = document.getElementById("btn-remember");
@@ -2213,12 +2254,128 @@ const { currentUser } = await checkAuth(Astro.cookies);
   });
 
   // Clear conversation
+  // File upload handlers
+  if (fileInput && uploadBtn && fileNameDisplay) {
+    fileInput.addEventListener("change", (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        selectedFile = file;
+        fileNameDisplay.textContent = file.name;
+        uploadBtn.disabled = false;
+        
+        // Show preview for images
+        if (file.type.startsWith("image/") && filePreview) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            filePreview.innerHTML = `
+              <img src="${e.target?.result}" alt="Preview" class="max-w-full max-h-48 rounded-lg border border-gray-300 dark:border-gray-600">
+            `;
+            filePreview.classList.remove("hidden");
+          };
+          reader.readAsDataURL(file);
+        } else if (filePreview) {
+          filePreview.classList.add("hidden");
+        }
+        
+        if (fileStatus) {
+          fileStatus.textContent = "";
+          fileStatus.className = "mt-2 text-sm";
+        }
+      }
+    });
+
+    uploadBtn.addEventListener("click", async () => {
+      if (!selectedFile) return;
+      await processFile(selectedFile);
+    });
+  }
+
+  // Process uploaded file
+  async function processFile(file: File) {
+    if (!file || !uploadBtn || !fileStatus) return;
+    
+    uploadBtn.disabled = true;
+    fileStatus.textContent = "Processing file...";
+    fileStatus.className = "mt-2 text-sm text-blue-600 dark:text-blue-400";
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const response = await fetch("/api/voice-assistant/process-file", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to process file");
+      }
+      
+      // Display extracted content
+      if (result.data?.content) {
+        fileStatus.textContent = "File processed successfully!";
+        fileStatus.className = "mt-2 text-sm text-green-600 dark:text-green-400";
+        
+        // Add extracted content to conversation
+        addMessage("system", `📄 File "${file.name}" processed successfully. Extracted content:`, []);
+        
+        // Show extracted text (strip HTML for display)
+        const textContent = result.data.content.replace(/<[^>]*>/g, "").substring(0, 500);
+        addMessage("assistant", textContent + (result.data.content.length > 500 ? "..." : ""), []);
+        
+        // Show detected fields if any
+        if (result.data.fields && result.data.fields.length > 0) {
+          const fieldsText = result.data.fields
+            .map((f: any) => `• ${f.name}: ${f.value}`)
+            .join("\n");
+          addMessage("assistant", `\nDetected fields:\n${fieldsText}`, []);
+          VoiceAssistantLogger.info("file", "Fields extracted from file", { 
+            fileName: file.name, 
+            fieldCount: result.data.fields.length,
+            fields: result.data.fields 
+          });
+        }
+        
+        VoiceAssistantLogger.info("file", "File processed successfully", { 
+          fileName: file.name, 
+          fileType: file.type,
+          contentLength: result.data.content.length,
+          fieldCount: result.data.fields?.length || 0
+        });
+      } else {
+        throw new Error("No content extracted from file");
+      }
+    } catch (error: any) {
+      console.error("[VOICE-ASSISTANT] Error processing file:", error);
+      fileStatus.textContent = `Error: ${error.message}`;
+      fileStatus.className = "mt-2 text-sm text-red-600 dark:text-red-400";
+      addMessage("system", `❌ Failed to process file: ${error.message}`, []);
+      VoiceAssistantLogger.error("file", "File processing failed", { 
+        fileName: file.name, 
+        error: error.message 
+      });
+    } finally {
+      if (uploadBtn) uploadBtn.disabled = false;
+    }
+  }
+
   clearButton.addEventListener("click", () => {
     conversationHistory = [];
     currentTags = [];
     currentPriority = 0;
     projectCreationState = null;
     isAwaitingProjectField = false;
+    selectedFile = null;
+    if (fileInput) fileInput.value = "";
+    if (fileNameDisplay) fileNameDisplay.textContent = "No file selected";
+    if (filePreview) filePreview.classList.add("hidden");
+    if (fileStatus) {
+      fileStatus.textContent = "";
+      fileStatus.className = "mt-2 text-sm";
+    }
     conversation.innerHTML =
       '<div class="text-sm text-gray-500 dark:text-gray-400 text-center">Your conversation will appear here...</div>';
     updateTagsDisplay();
