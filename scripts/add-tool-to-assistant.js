@@ -14,9 +14,39 @@ if (!toolId) {
 
 async function addToolToAssistant() {
   try {
-    console.log("🔧 Adding tool to assistant...");
+    console.log("🔧 Fetching current assistant configuration...");
 
-    const response = await fetch(`https://api.vapi.ai/assistant/${ASSISTANT_ID}`, {
+    // First, get the current assistant configuration
+    const getResponse = await fetch(`https://api.vapi.ai/assistant/${ASSISTANT_ID}`, {
+      headers: {
+        Authorization: `Bearer ${VAPI_API_KEY}`,
+      },
+    });
+
+    if (!getResponse.ok) {
+      const error = await getResponse.text();
+      throw new Error(`Failed to fetch assistant: ${getResponse.status} ${error}`);
+    }
+
+    const currentAssistant = await getResponse.json();
+    console.log("✅ Current assistant configuration loaded");
+
+    // Get existing toolIds or initialize empty array
+    const existingToolIds = currentAssistant.model?.toolIds || [];
+
+    // Check if tool already exists
+    if (existingToolIds.includes(toolId)) {
+      console.log(`⚠️  Tool ${toolId} is already in the assistant's tool list`);
+      console.log("📋 Current tools:", existingToolIds);
+      return;
+    }
+
+    // Add the new tool ID to the existing list
+    const updatedToolIds = [...existingToolIds, toolId];
+    console.log("📋 Adding tool to list. Updated tools:", updatedToolIds);
+
+    // Update ONLY the toolIds, preserving all other configuration
+    const updateResponse = await fetch(`https://api.vapi.ai/assistant/${ASSISTANT_ID}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${VAPI_API_KEY}`,
@@ -24,30 +54,22 @@ async function addToolToAssistant() {
       },
       body: JSON.stringify({
         model: {
-          provider: "openai",
-          model: "gpt-4o",
-          temperature: 0.7,
-          maxTokens: 1000,
-          toolIds: [toolId],
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a helpful assistant for CAPCO Fire Protection Systems. When the call starts, immediately call getStaffSchedule() to get account information, then read the result to the user.",
-            },
-          ],
+          ...currentAssistant.model, // Preserve existing model config
+          toolIds: updatedToolIds, // Only update toolIds
         },
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to update assistant: ${response.status} ${error}`);
+    if (!updateResponse.ok) {
+      const error = await updateResponse.text();
+      throw new Error(`Failed to update assistant: ${updateResponse.status} ${error}`);
     }
 
-    const assistant = await response.json();
+    const updatedAssistant = await updateResponse.json();
     console.log("✅ Assistant updated successfully!");
     console.log("📋 Tool added to assistant:", ASSISTANT_ID);
+    console.log("📋 Total tools now:", updatedAssistant.model?.toolIds?.length || 0);
+    console.log("📋 Tool IDs:", updatedAssistant.model?.toolIds || []);
   } catch (error) {
     console.error("❌ Error:", error);
     throw error;
