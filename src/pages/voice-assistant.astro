@@ -158,6 +158,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
           >
             ❓ Help
           </button>
+          <button
+            id="btn-export-logs"
+            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            title="Export logs"
+          >
+            📋 Export Logs (<span id="log-count">0</span>)
+          </button>
         </div>
       </div>
 
@@ -257,6 +264,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
   const tagInput = document.getElementById("tag-input");
   const addTagBtn = document.getElementById("add-tag-btn");
   const prioritySelect = document.getElementById("priority-select");
+  const btnExportLogs = document.getElementById("btn-export-logs");
+  const logCountSpan = document.getElementById("log-count");
   
   let currentTags = []; // Store tags for current conversation
   let currentPriority = 0; // Store priority for current conversation
@@ -266,6 +275,136 @@ const { currentUser } = await checkAuth(Astro.cookies);
   // Project creation state
   let projectCreationState = null; // null | { step: string, data: object }
   let isAwaitingProjectField = false;
+  
+  // Logging system
+  const VoiceAssistantLogger = {
+    logs: [],
+    maxLogs: 10000, // Maximum logs to keep in memory
+    
+    init() {
+      // Load logs from localStorage on init
+      try {
+        const savedLogs = localStorage.getItem("voiceAssistantLogs");
+        if (savedLogs) {
+          this.logs = JSON.parse(savedLogs);
+          this.updateLogCount();
+        }
+      } catch (error) {
+        console.error("🎤 [LOGGER] Error loading logs from localStorage:", error);
+      }
+    },
+    
+    log(level, category, message, data = null) {
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        level, // 'info', 'warn', 'error', 'debug'
+        category, // 'command', 'project', 'voice', 'api', 'state', etc.
+        message,
+        data: data ? JSON.parse(JSON.stringify(data)) : null, // Deep clone to avoid reference issues
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+      };
+      
+      this.logs.push(logEntry);
+      
+      // Keep only the most recent logs
+      if (this.logs.length > this.maxLogs) {
+        this.logs = this.logs.slice(-this.maxLogs);
+      }
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem("voiceAssistantLogs", JSON.stringify(this.logs));
+      } catch (error) {
+        console.error("🎤 [LOGGER] Error saving logs to localStorage:", error);
+        // If localStorage is full, remove oldest logs
+        if (error.name === "QuotaExceededError") {
+          this.logs = this.logs.slice(-Math.floor(this.maxLogs / 2));
+          try {
+            localStorage.setItem("voiceAssistantLogs", JSON.stringify(this.logs));
+          } catch (e) {
+            console.error("🎤 [LOGGER] Failed to save logs after cleanup:", e);
+          }
+        }
+      }
+      
+      this.updateLogCount();
+      
+      // Also log to console with prefix
+      const consoleMethod = level === "error" ? console.error : level === "warn" ? console.warn : console.log;
+      consoleMethod(`🎤 [${category.toUpperCase()}] ${message}`, data || "");
+    },
+    
+    info(category, message, data) {
+      this.log("info", category, message, data);
+    },
+    
+    warn(category, message, data) {
+      this.log("warn", category, message, data);
+    },
+    
+    error(category, message, data) {
+      this.log("error", category, message, data);
+    },
+    
+    debug(category, message, data) {
+      this.log("debug", category, message, data);
+    },
+    
+    updateLogCount() {
+      if (logCountSpan) {
+        logCountSpan.textContent = this.logs.length;
+      }
+    },
+    
+    exportLogs() {
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        totalLogs: this.logs.length,
+        logs: this.logs,
+        summary: {
+          byLevel: {},
+          byCategory: {},
+          errors: this.logs.filter(l => l.level === "error").length,
+          warnings: this.logs.filter(l => l.level === "warn").length,
+        },
+      };
+      
+      // Calculate summaries
+      this.logs.forEach(log => {
+        exportData.summary.byLevel[log.level] = (exportData.summary.byLevel[log.level] || 0) + 1;
+        exportData.summary.byCategory[log.category] = (exportData.summary.byCategory[log.category] || 0) + 1;
+      });
+      
+      // Create downloadable file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `voice-assistant-logs-${new Date().toISOString().replace(/:/g, "-").split(".")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      this.info("export", "Logs exported", { totalLogs: this.logs.length });
+    },
+    
+    clearLogs() {
+      this.logs = [];
+      localStorage.removeItem("voiceAssistantLogs");
+      this.updateLogCount();
+      this.info("export", "Logs cleared");
+    },
+  };
+  
+  // Initialize logger
+  VoiceAssistantLogger.init();
+  VoiceAssistantLogger.info("system", "Voice Assistant initialized", {
+    userRole: currentUserRole,
+    isClient,
+    userAgent: navigator.userAgent,
+  });
 
   let recognition = null;
   let isListening = false;
@@ -307,12 +446,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
       isListening = true;
       updateStatus("Listening...", "bg-blue-400");
       micButton.classList.add("ring-4", "ring-blue-300");
+      VoiceAssistantLogger.info("voice", "Speech recognition started");
     };
 
     recognition.onend = () => {
       isListening = false;
       updateStatus("Ready - Click microphone to start", "bg-gray-400");
       micButton.classList.remove("ring-4", "ring-blue-300");
+      VoiceAssistantLogger.debug("voice", "Speech recognition ended", { isAwake });
       
       // Auto-restart if it stopped unexpectedly (browser sometimes stops recognition)
       // Only restart if we were actively listening
@@ -321,8 +462,9 @@ const { currentUser } = await checkAuth(Astro.cookies);
           if (!isListening) {
             try {
               recognition.start();
+              VoiceAssistantLogger.debug("voice", "Speech recognition auto-restarted");
             } catch (e) {
-              console.log("Recognition already starting");
+              VoiceAssistantLogger.warn("voice", "Recognition already starting", { error: e.message });
             }
           }
         }, 100);
@@ -331,6 +473,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
     recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
+      VoiceAssistantLogger.error("voice", "Speech recognition error", { error: event.error, event });
       updateStatus(`Error: ${event.error}`, "bg-red-400");
       isListening = false;
     };
@@ -369,6 +512,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
       
       // Post-process transcript to fix common errors
       transcript = correctCommonErrors(transcript);
+      
+      VoiceAssistantLogger.info("voice", "Transcript received", { 
+        original: transcript,
+        confidence,
+        isFinal: true 
+      });
       
       // Process the transcript
       await processTranscript(transcript);
@@ -414,6 +563,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
           const commandToProcess = skipWakeWord ? transcript : command;
           const commandLower = commandToProcess.toLowerCase().trim();
           
+          VoiceAssistantLogger.info("command", "Processing command", {
+            command: commandToProcess,
+            hasWakeWord,
+            skipWakeWord,
+            isAwake,
+          });
+          
           // Extract and show tags for user message
           const userTags = await extractTags(transcript);
           // Add extracted tags to current tags
@@ -426,6 +582,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           
           // Check for special keyword commands
           if (commandLower.includes("stop") || commandLower === "stop") {
+            VoiceAssistantLogger.info("command", "Stop command detected");
             // Stop talking command
             stopSpeaking();
             addMessage("assistant", "Stopped speaking.");
@@ -440,17 +597,21 @@ const { currentUser } = await checkAuth(Astro.cookies);
           
           if (commandLower.includes("remember this") || commandLower.includes("remember that")) {
             // Save conversation to learning table
+            VoiceAssistantLogger.info("command", "Remember command detected");
             updateStatus("Saving conversation...", "bg-purple-400");
             try {
               const saved = await saveConversation();
               if (saved) {
+                VoiceAssistantLogger.info("command", "Conversation saved successfully");
                 addMessage("assistant", "I've saved this conversation to my memory.");
                 updateStatus("Conversation saved!", "bg-green-400");
               } else {
+                VoiceAssistantLogger.warn("command", "Failed to save conversation");
                 addMessage("assistant", "I couldn't save the conversation. Please check the console for errors.");
                 updateStatus("Save failed", "bg-red-400");
               }
             } catch (error) {
+              VoiceAssistantLogger.error("command", "Error saving conversation", { error: error.message, stack: error.stack });
               console.error("Error saving conversation:", error);
               addMessage("assistant", "I encountered an error saving the conversation.");
               updateStatus("Error saving", "bg-red-400");
@@ -466,6 +627,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
           
           // Handle project field collection if we're in project creation mode (check this first)
           if (isAwaitingProjectField && projectCreationState) {
+            VoiceAssistantLogger.debug("project", "Handling project field input", { 
+              step: projectCreationState.step,
+              input: commandToProcess 
+            });
             await handleProjectFieldInput(commandToProcess);
             return;
           }
@@ -473,6 +638,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           // Check for "Bee new job" or "Bee new project" command
           if (commandLower.includes("new job") || commandLower.includes("new project")) {
             if (isAwaitingProjectField) {
+              VoiceAssistantLogger.warn("project", "Project creation already in progress");
               const response = "I'm already helping you create a project. Please answer my current question, or say 'cancel' to start over.";
               addMessage("assistant", response);
               if (enableSpeechCheckbox.checked) {
@@ -480,6 +646,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
               }
               return;
             }
+            
+            VoiceAssistantLogger.info("project", "Starting project creation", { isClient, userRole: currentUserRole });
             
             // Start project creation flow
             if (!isClient) {
@@ -516,15 +684,22 @@ const { currentUser } = await checkAuth(Astro.cookies);
           updateStatus("Processing...", "bg-yellow-400");
 
           try {
+            VoiceAssistantLogger.info("api", "Processing command via API", { command: commandToProcess });
             console.log("Processing command:", commandToProcess);
             const response = await processCommand(commandToProcess);
             console.log("Received response:", response);
+            
+            VoiceAssistantLogger.info("api", "Received API response", { 
+              responseLength: response?.length,
+              hasResponse: !!response 
+            });
             
             if (response) {
               addMessage("assistant", response);
 
               // Speak response if enabled
               if (enableSpeechCheckbox.checked) {
+                VoiceAssistantLogger.debug("voice", "Speaking response", { responseLength: response.length });
                 speak(response);
               }
 
@@ -540,6 +715,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
               }, 2000);
             }
           } catch (error) {
+            VoiceAssistantLogger.error("api", "Error processing command", { 
+              error: error.message, 
+              stack: error.stack,
+              command: commandToProcess 
+            });
             console.error("Error processing command:", error);
             const errorMsg = `Sorry, I encountered an error: ${error.message || "Please try again."}`;
             addMessage("assistant", errorMsg);
@@ -572,11 +752,21 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
   // Handle project field input sequentially
   async function handleProjectFieldInput(input) {
-    if (!projectCreationState) return;
+    if (!projectCreationState) {
+      VoiceAssistantLogger.warn("project", "handleProjectFieldInput called but no projectCreationState");
+      return;
+    }
+    
+    VoiceAssistantLogger.info("project", "Processing project field input", {
+      step: projectCreationState.step,
+      input,
+      dataKeys: Object.keys(projectCreationState.data || {}),
+    });
     
     // Check for cancellation
     const inputLower = input.toLowerCase().trim();
     if (inputLower === "cancel" || inputLower === "stop" || inputLower.includes("cancel") || inputLower.includes("never mind")) {
+      VoiceAssistantLogger.info("project", "Project creation cancelled by user");
       projectCreationState = null;
       isAwaitingProjectField = false;
       const cancelMsg = "Project creation cancelled. You can start again anytime by saying 'Bee new job'.";
@@ -604,13 +794,16 @@ const { currentUser } = await checkAuth(Astro.cookies);
         if (clientTypeLower.includes("existing") || clientTypeLower.includes("current") || clientTypeLower.includes("old")) {
           projectCreationState.clientType = "existing";
           nextStep = "searchClient";
+          VoiceAssistantLogger.info("project", "Client type selected: existing");
           response = "Got it. Let's find an existing client. What's the client's name, company name, or email? I'll search for them.";
         } else if (clientTypeLower.includes("new") || clientTypeLower.includes("create")) {
           projectCreationState.clientType = "new";
           nextStep = "firstName";
+          VoiceAssistantLogger.info("project", "Client type selected: new");
           response = "Great! Let's create a new client. What's the client's first name?";
         } else {
           // Didn't understand, ask again
+          VoiceAssistantLogger.warn("project", "Unclear client type response", { input });
           response = "I didn't understand. Do you want to use an existing client or create a new client? Say 'existing' or 'new'.";
           addMessage("assistant", response);
           if (enableSpeechCheckbox.checked) {
@@ -905,12 +1098,22 @@ const { currentUser } = await checkAuth(Astro.cookies);
       speak(response);
     }
     
-    // Update state
+        // Update state
     if (nextStep === "complete") {
+      VoiceAssistantLogger.info("project", "All project fields collected, creating project", { 
+        dataKeys: Object.keys(data),
+        hasAddress: !!data.address,
+        hasAuthorId: !!data.authorId,
+      });
       projectCreationState.step = "complete";
       // Create the project
       await createProjectFromVoice(data);
     } else {
+      VoiceAssistantLogger.debug("project", "Moving to next step", { 
+        from: step, 
+        to: nextStep,
+        dataKeys: Object.keys(data),
+      });
       projectCreationState.step = nextStep;
       updateStatus(`Creating project - ${nextStep}`, "bg-blue-400");
     }
@@ -918,6 +1121,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
   
   // Search for clients by name, company, or email
   async function searchClients(query) {
+    VoiceAssistantLogger.info("project", "Searching for clients", { query });
     try {
       const response = await fetch(`/api/users/get?role=Client&search=${encodeURIComponent(query)}&limit=10`, {
         method: "GET",
@@ -927,13 +1131,27 @@ const { currentUser } = await checkAuth(Astro.cookies);
       });
       
       if (!response.ok) {
+        VoiceAssistantLogger.error("project", "Client search failed", { 
+          status: response.status, 
+          statusText: response.statusText 
+        });
         console.error("Error searching clients:", response.statusText);
         return [];
       }
       
       const data = await response.json();
-      return data.data || [];
+      const results = data.data || [];
+      VoiceAssistantLogger.info("project", "Client search completed", { 
+        query, 
+        resultCount: results.length 
+      });
+      return results;
     } catch (error) {
+      VoiceAssistantLogger.error("project", "Error searching clients", { 
+        error: error.message, 
+        stack: error.stack,
+        query 
+      });
       console.error("Error searching clients:", error);
       return [];
     }
@@ -941,6 +1159,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
   // Create project from collected voice data
   async function createProjectFromVoice(projectData) {
+    VoiceAssistantLogger.info("project", "Creating project from voice data", { 
+      projectDataKeys: Object.keys(projectData),
+      hasAuthorId: !!projectData.authorId,
+      hasAddress: !!projectData.address,
+    });
     updateStatus("Creating project...", "bg-purple-400");
     
     try {
@@ -964,6 +1187,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
       if (projectData.buildingHeight) projectData.buildingHeight = parseInt(projectData.buildingHeight);
       if (projectData.floorsBelowGrade) projectData.floorsBelowGrade = parseInt(projectData.floorsBelowGrade);
       
+      VoiceAssistantLogger.info("api", "Calling projects/upsert API", { 
+        method: "POST",
+        dataKeys: Object.keys(projectData),
+      });
+      
       const response = await fetch("/api/projects/upsert", {
         method: "POST",
         headers: {
@@ -972,14 +1200,29 @@ const { currentUser } = await checkAuth(Astro.cookies);
         body: JSON.stringify(projectData),
       });
       
+      VoiceAssistantLogger.info("api", "Received projects/upsert response", { 
+        status: response.status,
+        ok: response.ok,
+      });
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        VoiceAssistantLogger.error("api", "Project creation API error", { 
+          status: response.status,
+          errorData,
+        });
         throw new Error(errorData.error || `Failed to create project: ${response.statusText}`);
       }
       
       const result = await response.json();
       
       if (result.success) {
+        VoiceAssistantLogger.info("project", "Project created successfully", { 
+          projectId: result.project?.id,
+          title: result.project?.title,
+          address: result.project?.address,
+        });
+        
         const successMsg = `Great! I've successfully created your project "${result.project.title || result.project.address}". The project ID is ${result.project.id}.`;
         addMessage("assistant", successMsg);
         if (enableSpeechCheckbox.checked) {
@@ -997,9 +1240,18 @@ const { currentUser } = await checkAuth(Astro.cookies);
           }, 3000);
         }
       } else {
+        VoiceAssistantLogger.error("project", "Project creation failed", { 
+          error: result.error,
+          result,
+        });
         throw new Error(result.error || "Failed to create project");
       }
     } catch (error) {
+      VoiceAssistantLogger.error("project", "Error creating project", { 
+        error: error.message,
+        stack: error.stack,
+        projectData: projectData,
+      });
       console.error("Error creating project:", error);
       const errorMsg = `Sorry, I encountered an error creating the project: ${error.message || "Please try again."}`;
       addMessage("assistant", errorMsg);
@@ -1215,6 +1467,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
   // Speak text
   function speak(text) {
     if ("speechSynthesis" in window) {
+      VoiceAssistantLogger.debug("voice", "Speaking text", { 
+        textLength: text.length,
+        textPreview: text.substring(0, 50) + (text.length > 50 ? "..." : ""),
+      });
+      
       // Stop any current speech
       stopSpeaking();
       
@@ -1233,10 +1490,28 @@ const { currentUser } = await checkAuth(Astro.cookies);
       const preferredVoice = getPreferredVoice();
       if (preferredVoice) {
         utterance.voice = preferredVoice;
+        VoiceAssistantLogger.debug("voice", "Using voice", { voiceName: preferredVoice.name });
       }
+      
+      utterance.onstart = () => {
+        VoiceAssistantLogger.debug("voice", "Speech started");
+      };
+      
+      utterance.onend = () => {
+        VoiceAssistantLogger.debug("voice", "Speech ended");
+      };
+      
+      utterance.onerror = (event) => {
+        VoiceAssistantLogger.error("voice", "Speech synthesis error", { 
+          error: event.error,
+          type: event.type,
+        });
+      };
       
       currentSpeechUtterance = utterance;
       window.speechSynthesis.speak(utterance);
+    } else {
+      VoiceAssistantLogger.warn("voice", "Speech synthesis not available");
     }
   }
   
@@ -1601,8 +1876,15 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
   });
 
+  // Export logs button handler
+  btnExportLogs.addEventListener("click", () => {
+    VoiceAssistantLogger.info("export", "Exporting logs");
+    VoiceAssistantLogger.exportLogs();
+  });
+
   // Help button handler
   btnHelp.addEventListener("click", () => {
+    VoiceAssistantLogger.info("command", "Help button clicked");
     const helpText = `Here's what I can do:
 
 🎤 Voice Commands:
