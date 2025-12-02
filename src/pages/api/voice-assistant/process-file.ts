@@ -234,8 +234,22 @@ async function processPDFFile(file: File): Promise<string> {
  * Converts PDF pages to images and runs OCR on each page
  */
 async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<string> {
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const os = await import("os");
+
+  let tempPdfPath: string | null = null;
+
   try {
     console.log("🔍 [PDF-OCR] Converting PDF pages to images for OCR...");
+
+    // Write buffer to temporary file (pdf-poppler requires a file path, not a buffer)
+    const tempDir = os.tmpdir();
+    const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+    tempPdfPath = path.join(tempDir, `pdf_ocr_${Date.now()}_${safeFileName}`);
+
+    await fs.writeFile(tempPdfPath, buffer);
+    console.log(`📁 [PDF-OCR] Wrote PDF to temporary file: ${tempPdfPath}`);
 
     // Import pdf-poppler to convert PDF pages to images
     const pdfPoppler = (await import("pdf-poppler")) as any;
@@ -243,12 +257,12 @@ async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<stri
     // Convert PDF to images
     const options = {
       format: "png",
-      out_dir: "/tmp",
-      out_prefix: "pdf_page",
+      out_dir: tempDir,
+      out_prefix: `pdf_page_${Date.now()}`,
       page: null, // Convert all pages
     };
 
-    const images = await pdfPoppler.convert(buffer, options);
+    const images = await pdfPoppler.convert(tempPdfPath, options);
     console.log(`🔍 [PDF-OCR] Converted PDF to ${images.length} image(s)`);
 
     if (!images || images.length === 0) {
@@ -312,6 +326,19 @@ async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<stri
     }
 
     return `PDF file "${fileName}" uploaded. Unable to extract text via OCR: ${error.message || "Unknown error"}. The PDF may be scanned or image-based. Please describe the document content.`;
+  } finally {
+    // Clean up temporary PDF file
+    if (tempPdfPath) {
+      try {
+        await fs.unlink(tempPdfPath);
+        console.log(`🧹 [PDF-OCR] Cleaned up temporary file: ${tempPdfPath}`);
+      } catch (cleanupError) {
+        console.warn(
+          `⚠️ [PDF-OCR] Failed to clean up temporary file: ${tempPdfPath}`,
+          cleanupError
+        );
+      }
+    }
   }
 }
 
