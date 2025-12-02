@@ -1,9 +1,9 @@
 /**
  * Voice Assistant File Processing API
- * 
+ *
  * Processes PDFs and images uploaded from the voice assistant
  * Extracts text content and optionally saves to knowledge base
- * 
+ *
  * POST /api/voice-assistant/process-file
  */
 
@@ -13,6 +13,10 @@ import { supabase } from "../../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
+    if (!supabase) {
+      return createErrorResponse("Database connection not available", 500);
+    }
+
     // Check authentication
     const {
       data: { user },
@@ -50,7 +54,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       "image/gif",
       "image/webp",
     ];
-    
+
     if (!allowedTypes.includes(fileType)) {
       return createErrorResponse(
         "Unsupported file type. Please upload PDF or image files (PNG, JPG, GIF, WEBP).",
@@ -78,7 +82,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // Optionally save to knowledge base
       let knowledgeEntryId = null;
-      if (saveToKnowledge && extractedContent) {
+      if (saveToKnowledge && extractedContent && supabase) {
         try {
           const { data: knowledgeData, error: knowledgeError } = await supabase
             .from("ai_agent_knowledge")
@@ -99,7 +103,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             console.log("✅ [VOICE-ASSISTANT-FILE] Saved to knowledge base:", knowledgeEntryId);
           }
         } catch (knowledgeErr) {
-          console.error("⚠️ [VOICE-ASSISTANT-FILE] Failed to save to knowledge base:", knowledgeErr);
+          console.error(
+            "⚠️ [VOICE-ASSISTANT-FILE] Failed to save to knowledge base:",
+            knowledgeErr
+          );
           // Don't fail the whole request if knowledge save fails
         }
       }
@@ -131,20 +138,21 @@ async function processImageWithOCR(file: File): Promise<string> {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
+
     // Try to use Tesseract.js if available
     try {
       const Tesseract = await import("tesseract.js");
-      
+
       console.log("🔍 [OCR] Starting OCR recognition...");
-      
+
       const {
-        data: { text, words, lines },
+        data: { text },
       } = await Tesseract.recognize(buffer, "eng", {
         logger: (m) => {
           if (m.status === "recognizing text") {
             const progress = Math.round(m.progress * 100);
-            if (progress % 25 === 0) { // Log every 25% to reduce noise
+            if (progress % 25 === 0) {
+              // Log every 25% to reduce noise
               console.log(`🔍 [OCR] Progress: ${progress}%`);
             }
           }
@@ -153,12 +161,14 @@ async function processImageWithOCR(file: File): Promise<string> {
 
       const extractedText = text?.trim() || "";
       console.log("🔍 [VOICE-ASSISTANT-FILE] OCR completed. Text length:", extractedText.length);
-      
+
       if (extractedText.length < 10) {
-        console.warn("⚠️ [OCR] Very little text extracted, image may be unclear or contain no text");
+        console.warn(
+          "⚠️ [OCR] Very little text extracted, image may be unclear or contain no text"
+        );
         return `Image file "${file.name}" processed. Very little text was found. The image may be unclear or contain no readable text.`;
       }
-      
+
       return extractedText;
     } catch (tesseractError: any) {
       console.error("⚠️ [VOICE-ASSISTANT-FILE] Tesseract error:", tesseractError);
@@ -187,7 +197,12 @@ async function processPDFFile(file: File): Promise<string> {
     // First, try to extract text directly from PDF
     try {
       const pdfParseModule = await import("pdf-parse");
-      const pdfParse = pdfParseModule.default || pdfParseModule;
+      // Handle both default and named exports - pdf-parse exports as default function
+      const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+
+      if (typeof pdfParse !== "function") {
+        throw new Error("pdf-parse is not a function");
+      }
 
       const pdfData = await pdfParse(buffer);
       const extractedText = pdfData.text.trim();
@@ -197,7 +212,9 @@ async function processPDFFile(file: File): Promise<string> {
         return extractedText;
       } else {
         // PDF appears to be scanned/image-based, try OCR
-        console.log("📄 [VOICE-ASSISTANT-FILE] Minimal text extracted, attempting OCR on PDF pages...");
+        console.log(
+          "📄 [VOICE-ASSISTANT-FILE] Minimal text extracted, attempting OCR on PDF pages..."
+        );
         return await processPDFWithOCR(buffer, file.name);
       }
     } catch (pdfParseError: any) {
@@ -220,17 +237,17 @@ async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<stri
     // Try to use pdf2pic or similar to convert PDF pages to images, then OCR
     // For now, we'll use a simpler approach with pdf-parse + Tesseract if needed
     console.log("🔍 [PDF-OCR] Attempting OCR on PDF...");
-    
+
     // Note: Full PDF OCR requires converting PDF pages to images first
     // This is a simplified version - in production you might want to use pdf2pic or pdf-poppler
     const Tesseract = await import("tesseract.js");
-    
+
     // For now, return a message indicating OCR is needed
     // In a full implementation, you would:
     // 1. Convert PDF pages to images (using pdf-poppler or similar)
     // 2. Run OCR on each page
     // 3. Combine results
-    
+
     return `PDF file "${fileName}" uploaded. The document appears to be scanned or image-based. Text extraction found minimal content. Please describe the document content or ensure the PDF contains selectable text.`;
   } catch (error: any) {
     console.error("❌ [PDF-OCR] Error:", error);
@@ -247,17 +264,17 @@ function extractFieldsFromText(text: string): any[] {
   const normalizedText = text.toLowerCase();
 
   // ===== CLIENT INFORMATION =====
-  
+
   // Email pattern (multiple matches)
   const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
   const emails = text.match(emailRegex);
   if (emails) {
     emails.forEach((email, index) => {
-      fields.push({ 
-        name: index === 0 ? "Email" : `Email ${index + 1}`, 
-        type: "email", 
+      fields.push({
+        name: index === 0 ? "Email" : `Email ${index + 1}`,
+        type: "email",
         value: email,
-        confidence: "high"
+        confidence: "high",
       });
     });
   }
@@ -269,33 +286,33 @@ function extractFieldsFromText(text: string): any[] {
     /phone[:\s]+([0-9\-\(\)\s]+)/gi, // "Phone: ..."
     /tel[:\s]+([0-9\-\(\)\s]+)/gi, // "Tel: ..."
   ];
-  
+
   const foundPhones = new Set<string>();
-  phonePatterns.forEach(pattern => {
+  phonePatterns.forEach((pattern) => {
     const matches = text.match(pattern);
     if (matches) {
-      matches.forEach(phone => {
-        const cleaned = phone.replace(/[^\d]/g, '');
+      matches.forEach((phone) => {
+        const cleaned = phone.replace(/[^\d]/g, "");
         if (cleaned.length >= 10) {
           foundPhones.add(phone.trim());
         }
       });
     }
   });
-  
+
   if (foundPhones.size > 0) {
     Array.from(foundPhones).forEach((phone, index) => {
-      fields.push({ 
-        name: index === 0 ? "Phone" : `Phone ${index + 1}`, 
-        type: "phone", 
+      fields.push({
+        name: index === 0 ? "Phone" : `Phone ${index + 1}`,
+        type: "phone",
         value: phone,
-        confidence: "high"
+        confidence: "high",
       });
     });
   }
 
   // ===== PROJECT ADDRESS =====
-  
+
   // Enhanced address patterns
   const addressPatterns = [
     // Standard street address
@@ -307,78 +324,80 @@ function extractFieldsFromText(text: string): any[] {
     // Site address
     /site\s+address[:\s]+([A-Za-z0-9\s,]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5})/gi,
   ];
-  
+
   const foundAddresses = new Set<string>();
-  addressPatterns.forEach(pattern => {
+  addressPatterns.forEach((pattern) => {
     const matches = text.match(pattern);
     if (matches) {
-      matches.forEach(addr => {
-        const cleaned = addr.replace(/^(address|project\s+location|site\s+address)[:\s]+/i, '').trim();
+      matches.forEach((addr) => {
+        const cleaned = addr
+          .replace(/^(address|project\s+location|site\s+address)[:\s]+/i, "")
+          .trim();
         if (cleaned.length > 10) {
           foundAddresses.add(cleaned);
         }
       });
     }
   });
-  
+
   if (foundAddresses.size > 0) {
     Array.from(foundAddresses).forEach((addr, index) => {
-      fields.push({ 
-        name: index === 0 ? "Project Address" : `Address ${index + 1}`, 
-        type: "address", 
+      fields.push({
+        name: index === 0 ? "Project Address" : `Address ${index + 1}`,
+        type: "address",
         value: addr,
-        confidence: "high"
+        confidence: "high",
       });
     });
   }
 
   // ===== DATES =====
-  
+
   const datePatterns = [
     /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g, // MM/DD/YYYY
     /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}\b/gi, // Month DD, YYYY
     /\b\d{4}[-\.]\d{1,2}[-\.]\d{1,2}\b/g, // YYYY-MM-DD
   ];
-  
+
   const foundDates = new Set<string>();
-  datePatterns.forEach(pattern => {
+  datePatterns.forEach((pattern) => {
     const matches = text.match(pattern);
     if (matches) {
-      matches.forEach(date => foundDates.add(date.trim()));
+      matches.forEach((date) => foundDates.add(date.trim()));
     }
   });
-  
+
   if (foundDates.size > 0) {
     Array.from(foundDates).forEach((date, index) => {
-      fields.push({ 
-        name: index === 0 ? "Date" : `Date ${index + 1}`, 
-        type: "date", 
+      fields.push({
+        name: index === 0 ? "Date" : `Date ${index + 1}`,
+        type: "date",
         value: date,
-        confidence: "medium"
+        confidence: "medium",
       });
     });
   }
 
   // ===== SQUARE FOOTAGE =====
-  
+
   const sqftPatterns = [
     /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|square\s+feet|sf)/gi,
     /square\s+footage[:\s]+(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/gi,
     /sqft[:\s]+(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/gi,
     /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*sf\b/gi,
   ];
-  
-  sqftPatterns.forEach(pattern => {
+
+  sqftPatterns.forEach((pattern) => {
     const match = text.match(pattern);
     if (match) {
       const sqftMatch = match[0].match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/);
       if (sqftMatch) {
-        fields.push({ 
-          name: "Square Footage", 
-          type: "number", 
-          value: sqftMatch[1].replace(/,/g, ''),
+        fields.push({
+          name: "Square Footage",
+          type: "number",
+          value: sqftMatch[1].replace(/,/g, ""),
           unit: "sq ft",
-          confidence: "high"
+          confidence: "high",
         });
         return; // Only add once
       }
@@ -386,96 +405,126 @@ function extractFieldsFromText(text: string): any[] {
   });
 
   // ===== BUILDING TYPES =====
-  
+
   const buildingTypes = [
-    "residential", "commercial", "warehouse", "storage", "mercantile",
-    "institutional", "mixed use", "industrial", "office", "retail",
-    "restaurant", "hotel", "apartment", "condominium", "single family",
-    "multi-family", "school", "hospital", "church", "theater"
+    "residential",
+    "commercial",
+    "warehouse",
+    "storage",
+    "mercantile",
+    "institutional",
+    "mixed use",
+    "industrial",
+    "office",
+    "retail",
+    "restaurant",
+    "hotel",
+    "apartment",
+    "condominium",
+    "single family",
+    "multi-family",
+    "school",
+    "hospital",
+    "church",
+    "theater",
   ];
-  
+
   const foundBuildingTypes: string[] = [];
-  buildingTypes.forEach(type => {
-    const regex = new RegExp(`\\b${type}\\b`, 'gi');
+  buildingTypes.forEach((type) => {
+    const regex = new RegExp(`\\b${type}\\b`, "gi");
     if (regex.test(text)) {
       foundBuildingTypes.push(type.charAt(0).toUpperCase() + type.slice(1));
     }
   });
-  
+
   if (foundBuildingTypes.length > 0) {
-    fields.push({ 
-      name: "Building Type", 
-      type: "multi-select", 
+    fields.push({
+      name: "Building Type",
+      type: "multi-select",
       value: foundBuildingTypes,
-      confidence: "medium"
+      confidence: "medium",
     });
   }
 
   // ===== PROJECT TYPES (FIRE PROTECTION SYSTEMS) =====
-  
+
   const projectTypes = [
-    "sprinkler", "fire alarm", "fire detection", "fire suppression",
-    "mechanical", "electrical", "plumbing", "civil engineering",
-    "emergency lighting", "exit signage", "standpipe", "fire pump",
-    "pre-action", "deluge", "wet pipe", "dry pipe", "foam", "clean agent"
+    "sprinkler",
+    "fire alarm",
+    "fire detection",
+    "fire suppression",
+    "mechanical",
+    "electrical",
+    "plumbing",
+    "civil engineering",
+    "emergency lighting",
+    "exit signage",
+    "standpipe",
+    "fire pump",
+    "pre-action",
+    "deluge",
+    "wet pipe",
+    "dry pipe",
+    "foam",
+    "clean agent",
   ];
-  
+
   const foundProjectTypes: string[] = [];
-  projectTypes.forEach(type => {
-    const regex = new RegExp(`\\b${type}\\b`, 'gi');
+  projectTypes.forEach((type) => {
+    const regex = new RegExp(`\\b${type}\\b`, "gi");
     if (regex.test(text)) {
       foundProjectTypes.push(type.charAt(0).toUpperCase() + type.slice(1));
     }
   });
-  
+
   if (foundProjectTypes.length > 0) {
-    fields.push({ 
-      name: "Project Type", 
-      type: "multi-select", 
+    fields.push({
+      name: "Project Type",
+      type: "multi-select",
       value: foundProjectTypes,
-      confidence: "medium"
+      confidence: "medium",
     });
   }
 
   // ===== CONSTRUCTION TYPE =====
-  
+
   if (/\bnew\s+construction\b/gi.test(text)) {
-    fields.push({ 
-      name: "New Construction", 
-      type: "boolean", 
+    fields.push({
+      name: "New Construction",
+      type: "boolean",
       value: true,
-      confidence: "high"
+      confidence: "high",
     });
   }
-  
+
   if (/\b(?:existing|renovation|remodel|retrofit)\b/gi.test(text)) {
-    fields.push({ 
-      name: "New Construction", 
-      type: "boolean", 
+    fields.push({
+      name: "New Construction",
+      type: "boolean",
       value: false,
-      confidence: "medium"
+      confidence: "medium",
     });
   }
 
   // ===== CLIENT/COMPANY NAME =====
-  
+
   const companyPatterns = [
     /company[:\s]+([A-Z][A-Za-z0-9\s&.,-]+)/g,
     /client[:\s]+([A-Z][A-Za-z0-9\s&.,-]+)/g,
     /customer[:\s]+([A-Z][A-Za-z0-9\s&.,-]+)/g,
     /(?:attn|attention|attn:)\s+([A-Z][A-Za-z\s]+)/g,
   ];
-  
-  companyPatterns.forEach(pattern => {
+
+  companyPatterns.forEach((pattern) => {
     const match = text.match(pattern);
     if (match && match[1]) {
       const company = match[1].trim();
       if (company.length > 2 && company.length < 100) {
-        fields.push({ 
-          name: "Company Name", 
-          type: "text", 
+        fields.push({
+          name: "Company Name",
+          type: "text",
           value: company,
-          confidence: "medium"
+          confidence: "medium",
         });
         return; // Only add first match
       }
@@ -483,57 +532,57 @@ function extractFieldsFromText(text: string): any[] {
   });
 
   // ===== NFPA CODES/STANDARDS =====
-  
+
   const nfpaPattern = /\bNFPA\s+(\d{2,3}[A-Z]?)\b/gi;
   const nfpaMatches = text.match(nfpaPattern);
   if (nfpaMatches) {
-    const nfpaCodes = [...new Set(nfpaMatches.map(m => m.replace(/\bNFPA\s+/i, '')))];
-    fields.push({ 
-      name: "NFPA Standards", 
-      type: "array", 
+    const nfpaCodes = [...new Set(nfpaMatches.map((m) => m.replace(/\bNFPA\s+/i, "")))];
+    fields.push({
+      name: "NFPA Standards",
+      type: "array",
       value: nfpaCodes,
-      confidence: "high"
+      confidence: "high",
     });
   }
 
   // ===== PERMIT NUMBERS =====
-  
+
   const permitPatterns = [
     /permit\s+(?:number|#|no\.?)[:\s]+([A-Z0-9\-]+)/gi,
     /permit[:\s]+([A-Z0-9\-]+)/gi,
     /permit\s+#\s*([A-Z0-9\-]+)/gi,
   ];
-  
-  permitPatterns.forEach(pattern => {
+
+  permitPatterns.forEach((pattern) => {
     const match = text.match(pattern);
     if (match && match[1]) {
-      fields.push({ 
-        name: "Permit Number", 
-        type: "text", 
+      fields.push({
+        name: "Permit Number",
+        type: "text",
         value: match[1].trim(),
-        confidence: "medium"
+        confidence: "medium",
       });
       return;
     }
   });
 
   // ===== PROJECT TITLE/NAME =====
-  
+
   const titlePatterns = [
     /project\s+(?:title|name)[:\s]+([A-Z][A-Za-z0-9\s\-.,]+)/g,
     /job\s+(?:title|name)[:\s]+([A-Z][A-Za-z0-9\s\-.,]+)/g,
   ];
-  
-  titlePatterns.forEach(pattern => {
+
+  titlePatterns.forEach((pattern) => {
     const match = text.match(pattern);
     if (match && match[1]) {
       const title = match[1].trim();
       if (title.length > 3 && title.length < 200) {
-        fields.push({ 
-          name: "Project Title", 
-          type: "text", 
+        fields.push({
+          name: "Project Title",
+          type: "text",
           value: title,
-          confidence: "medium"
+          confidence: "medium",
         });
         return;
       }
@@ -541,21 +590,21 @@ function extractFieldsFromText(text: string): any[] {
   });
 
   // ===== ZIP CODE =====
-  
+
   const zipPattern = /\b\d{5}(?:-\d{4})?\b/g;
   const zipMatches = text.match(zipPattern);
   if (zipMatches) {
     // Filter out dates and phone numbers (they can look like zip codes)
-    const validZips = zipMatches.filter(zip => {
-      const num = parseInt(zip.replace('-', ''));
+    const validZips = zipMatches.filter((zip) => {
+      const num = parseInt(zip.replace("-", ""));
       return num >= 10000 && num <= 99999;
     });
     if (validZips.length > 0) {
-      fields.push({ 
-        name: "Zip Code", 
-        type: "text", 
+      fields.push({
+        name: "Zip Code",
+        type: "text",
         value: validZips[0],
-        confidence: "medium"
+        confidence: "medium",
       });
     }
   }
@@ -563,4 +612,3 @@ function extractFieldsFromText(text: string): any[] {
   console.log(`📋 [FIELD-EXTRACTION] Found ${fields.length} fields from text`);
   return fields;
 }
-
