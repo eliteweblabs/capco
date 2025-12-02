@@ -1171,6 +1171,47 @@ const { currentUser } = await checkAuth(Astro.cookies);
     statusIndicator.className = `w-3 h-3 rounded-full ${indicatorColor}`;
   }
 
+  // Get preferred voice (prefer female voices, fallback to any available)
+  function getPreferredVoice() {
+    if (!("speechSynthesis" in window)) return null;
+    
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) return null;
+    
+    // Preferred voices (female, natural-sounding)
+    const preferredVoiceNames = [
+      "Samantha", // macOS female voice
+      "Victoria", // macOS female voice
+      "Karen", // macOS female voice
+      "Google UK English Female",
+      "Microsoft Zira - English (United States)",
+      "Microsoft Hazel - English (Great Britain)",
+    ];
+    
+    // Try to find a preferred voice
+    for (const preferredName of preferredVoiceNames) {
+      const voice = voices.find(v => 
+        v.name.includes(preferredName) || 
+        v.name.toLowerCase().includes(preferredName.toLowerCase())
+      );
+      if (voice) return voice;
+    }
+    
+    // Fallback: find any female voice
+    const femaleVoice = voices.find(v => 
+      v.name.toLowerCase().includes("female") ||
+      v.name.includes("Samantha") ||
+      v.name.includes("Victoria") ||
+      v.name.includes("Karen") ||
+      v.name.includes("Zira") ||
+      v.name.includes("Hazel")
+    );
+    if (femaleVoice) return femaleVoice;
+    
+    // Last resort: use default voice
+    return voices[0];
+  }
+
   // Speak text
   function speak(text) {
     if ("speechSynthesis" in window) {
@@ -1178,11 +1219,37 @@ const { currentUser } = await checkAuth(Astro.cookies);
       stopSpeaking();
       
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      
+      // Set slower rate (0.7 = 70% speed, slower than normal)
+      utterance.rate = 0.75;
+      
+      // Slightly lower pitch for a warmer tone
+      utterance.pitch = 0.9;
+      
+      // Normal volume
       utterance.volume = 1.0;
+      
+      // Set preferred voice
+      const preferredVoice = getPreferredVoice();
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+      
       currentSpeechUtterance = utterance;
       window.speechSynthesis.speak(utterance);
+    }
+  }
+  
+  // Load voices when they become available (some browsers need this)
+  if ("speechSynthesis" in window) {
+    // Load voices immediately if available
+    if (window.speechSynthesis.getVoices().length > 0) {
+      // Voices already loaded
+    } else {
+      // Wait for voices to load
+      window.speechSynthesis.onvoiceschanged = () => {
+        console.log("Voices loaded:", window.speechSynthesis.getVoices().length);
+      };
     }
   }
 
