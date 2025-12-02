@@ -231,27 +231,87 @@ async function processPDFFile(file: File): Promise<string> {
 
 /**
  * Process PDF with OCR (for scanned/image-based PDFs)
+ * Converts PDF pages to images and runs OCR on each page
  */
 async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<string> {
   try {
-    // Try to use pdf2pic or similar to convert PDF pages to images, then OCR
-    // For now, we'll use a simpler approach with pdf-parse + Tesseract if needed
-    console.log("🔍 [PDF-OCR] Attempting OCR on PDF...");
+    console.log("🔍 [PDF-OCR] Converting PDF pages to images for OCR...");
 
-    // Note: Full PDF OCR requires converting PDF pages to images first
-    // This is a simplified version - in production you might want to use pdf2pic or pdf-poppler
+    // Import pdf-poppler to convert PDF pages to images
+    const pdfPoppler = (await import("pdf-poppler")) as any;
+
+    // Convert PDF to images
+    const options = {
+      format: "png",
+      out_dir: "/tmp",
+      out_prefix: "pdf_page",
+      page: null, // Convert all pages
+    };
+
+    const images = await pdfPoppler.convert(buffer, options);
+    console.log(`🔍 [PDF-OCR] Converted PDF to ${images.length} image(s)`);
+
+    if (!images || images.length === 0) {
+      throw new Error("Failed to convert PDF pages to images");
+    }
+
+    // Import Tesseract for OCR
     const Tesseract = await import("tesseract.js");
+    let allText = "";
 
-    // For now, return a message indicating OCR is needed
-    // In a full implementation, you would:
-    // 1. Convert PDF pages to images (using pdf-poppler or similar)
-    // 2. Run OCR on each page
-    // 3. Combine results
+    // Run OCR on each page
+    for (let i = 0; i < images.length; i++) {
+      console.log(`🔍 [PDF-OCR] Running OCR on page ${i + 1}/${images.length}...`);
 
-    return `PDF file "${fileName}" uploaded. The document appears to be scanned or image-based. Text extraction found minimal content. Please describe the document content or ensure the PDF contains selectable text.`;
+      try {
+        const {
+          data: { text },
+        } = await Tesseract.recognize(images[i], "eng", {
+          logger: (m) => {
+            if (m.status === "recognizing text") {
+              const progress = Math.round(m.progress * 100);
+              if (progress % 25 === 0) {
+                console.log(`🔍 [PDF-OCR-Page-${i + 1}] Progress: ${progress}%`);
+              }
+            }
+          },
+        });
+
+        if (text && text.trim().length > 0) {
+          allText += `\n--- Page ${i + 1} ---\n${text.trim()}\n`;
+          console.log(`✅ [PDF-OCR] Page ${i + 1} completed. Text length: ${text.trim().length}`);
+        } else {
+          console.warn(`⚠️ [PDF-OCR] Page ${i + 1} returned no text`);
+        }
+      } catch (pageError: any) {
+        console.error(`❌ [PDF-OCR] Error processing page ${i + 1}:`, pageError);
+        // Continue with other pages even if one fails
+        allText += `\n--- Page ${i + 1} ---\n[OCR Error: ${pageError.message}]\n`;
+      }
+    }
+
+    const extractedText = allText.trim();
+
+    if (extractedText.length < 10) {
+      console.warn("⚠️ [PDF-OCR] Very little text extracted from PDF");
+      return `PDF file "${fileName}" processed with OCR. Very little text was found. The document may be unclear, contain mostly images, or have poor scan quality.`;
+    }
+
+    console.log(`✅ [PDF-OCR] OCR completed. Total text length: ${extractedText.length}`);
+    return extractedText;
   } catch (error: any) {
     console.error("❌ [PDF-OCR] Error:", error);
-    return `PDF file "${fileName}" uploaded. Unable to extract text. The PDF may be scanned or image-based. Please describe the document content.`;
+
+    // Provide helpful error messages
+    if (error.message?.includes("pdf-poppler") || error.message?.includes("poppler")) {
+      return `PDF file "${fileName}" uploaded. OCR processing requires pdf-poppler library. The PDF appears to be scanned or image-based. Please ensure pdf-poppler is installed or describe the document content.`;
+    }
+
+    if (error.message?.includes("Tesseract")) {
+      return `PDF file "${fileName}" uploaded. OCR processing requires Tesseract.js. The PDF appears to be scanned. Please ensure Tesseract.js is available or describe the document content.`;
+    }
+
+    return `PDF file "${fileName}" uploaded. Unable to extract text via OCR: ${error.message || "Unknown error"}. The PDF may be scanned or image-based. Please describe the document content.`;
   }
 }
 
