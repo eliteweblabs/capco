@@ -53,6 +53,40 @@ const publicKey = import.meta.env.PUBLIC_VAPI_PUBLIC_KEY || "";
         </div>
       </div>
 
+      <!-- File Upload Section -->
+      <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Upload Documents or Images</h3>
+        <div class="flex items-center gap-4">
+          <label
+            for="vapi-file-input"
+            class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <svg class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            <span class="text-sm text-gray-700 dark:text-gray-300">Choose File</span>
+          </label>
+          <input
+            type="file"
+            id="vapi-file-input"
+            accept=".pdf,.png,.jpg,.jpeg,.gif,.webp"
+            class="hidden"
+          />
+          <span id="vapi-file-name" class="text-sm text-gray-500 dark:text-gray-400 flex-1">
+            No file selected
+          </span>
+          <button
+            id="vapi-upload-btn"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            disabled
+          >
+            Process File
+          </button>
+        </div>
+        <div id="vapi-file-preview" class="mt-4 hidden"></div>
+        <div id="vapi-file-status" class="mt-2 text-sm"></div>
+      </div>
+
       <!-- Controls -->
       <div class="flex items-center justify-center gap-4">
         <button
@@ -89,6 +123,7 @@ const publicKey = import.meta.env.PUBLIC_VAPI_PUBLIC_KEY || "";
           <li>Click "Start Voice Assistant" to begin</li>
           <li>Say "Bee new project" to create a new project</li>
           <li>The assistant will guide you through all the details</li>
+          <li>Upload PDFs or images to extract text content (OCR for images, text extraction for PDFs)</li>
           <li>Only YOUR voice will trigger the assistant (voice authentication enabled)</li>
           <li>Click "Stop" when you're done</li>
         </ul>
@@ -136,6 +171,13 @@ const publicKey = import.meta.env.PUBLIC_VAPI_PUBLIC_KEY || "";
   const statusText = document.getElementById("vapi-status-text");
   const conversation = document.getElementById("vapi-conversation");
   const micIcon = document.getElementById("vapi-mic-icon");
+  const fileInput = document.getElementById("vapi-file-input");
+  const fileNameDisplay = document.getElementById("vapi-file-name");
+  const uploadBtn = document.getElementById("vapi-upload-btn");
+  const filePreview = document.getElementById("vapi-file-preview");
+  const fileStatus = document.getElementById("vapi-file-status");
+  
+  let selectedFile = null;
 
   // Initialize VAPI
   document.addEventListener("DOMContentLoaded", async () => {
@@ -231,6 +273,104 @@ const publicKey = import.meta.env.PUBLIC_VAPI_PUBLIC_KEY || "";
         vapi.stop();
       }
     });
+
+    // File upload handlers
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        selectedFile = file;
+        fileNameDisplay.textContent = file.name;
+        uploadBtn.disabled = false;
+        
+        // Show preview for images
+        if (file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            filePreview.innerHTML = `
+              <img src="${e.target.result}" alt="Preview" class="max-w-full max-h-48 rounded-lg border border-gray-300 dark:border-gray-600">
+            `;
+            filePreview.classList.remove("hidden");
+          };
+          reader.readAsDataURL(file);
+        } else {
+          filePreview.classList.add("hidden");
+        }
+        
+        fileStatus.textContent = "";
+        fileStatus.className = "mt-2 text-sm";
+      }
+    });
+
+    uploadBtn.addEventListener("click", async () => {
+      if (!selectedFile) return;
+      
+      await processFile(selectedFile);
+    });
+  }
+
+  // Process uploaded file
+  async function processFile(file) {
+    if (!file) return;
+    
+    uploadBtn.disabled = true;
+    fileStatus.textContent = "Processing file...";
+    fileStatus.className = "mt-2 text-sm text-blue-600 dark:text-blue-400";
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const response = await fetch("/api/voice-assistant/process-file", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to process file");
+      }
+      
+      // Display extracted content
+      if (result.data?.content) {
+        fileStatus.textContent = "File processed successfully!";
+        fileStatus.className = "mt-2 text-sm text-green-600 dark:text-green-400";
+        
+        // Add extracted content to conversation
+        addMessage("system", `📄 File "${file.name}" processed successfully. Extracted content:`, []);
+        
+        // Show extracted text (strip HTML for display)
+        const textContent = result.data.content.replace(/<[^>]*>/g, "").substring(0, 500);
+        addMessage("assistant", textContent + (result.data.content.length > 500 ? "..." : ""), []);
+        
+        // If VAPI is active, send the extracted content to the assistant
+        if (vapi && isCallActive) {
+          const summary = `I just uploaded a file "${file.name}". Here's what it contains: ${textContent.substring(0, 200)}...`;
+          await vapi.send({
+            type: "add-message",
+            message: {
+              role: "user",
+              content: summary,
+            },
+          });
+        }
+        
+        // Optionally save to knowledge base
+        if (result.data.fields && result.data.fields.length > 0) {
+          console.log("[VAPI-FILE] Detected fields:", result.data.fields);
+        }
+      } else {
+        throw new Error("No content extracted from file");
+      }
+    } catch (error) {
+      console.error("[VAPI-FILE] Error processing file:", error);
+      fileStatus.textContent = `Error: ${error.message}`;
+      fileStatus.className = "mt-2 text-sm text-red-600 dark:text-red-400";
+      addMessage("system", `❌ Failed to process file: ${error.message}`, []);
+    } finally {
+      uploadBtn.disabled = false;
+    }
   }
 
   // Update status
