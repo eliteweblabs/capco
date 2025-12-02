@@ -224,15 +224,6 @@ const { currentUser } = await checkAuth(Astro.cookies);
         <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
           <input
             type="checkbox"
-            id="use-cloud-transcription"
-            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-          />
-          Use cloud transcription (better accuracy)
-          <span id="cloud-transcription-status" class="text-xs text-gray-500 dark:text-gray-400 ml-1"></span>
-        </label>
-        <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-          <input
-            type="checkbox"
             id="enable-tags"
             class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
           />
@@ -276,7 +267,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
         <strong>Note:</strong> This uses your browser's built-in speech recognition. Works best in Chrome, Edge, or Safari.
         <br />
-        <strong>Tip:</strong> Enable "Use cloud transcription" for better accuracy (requires API key configuration).
+        <strong>Note:</strong> For better accuracy and voice authentication, use the VAPI-based voice assistant at <code>/voice-assistant-vapi</code>.
       </p>
     </div>
   </div>
@@ -297,7 +288,6 @@ const { currentUser } = await checkAuth(Astro.cookies);
   const wakeWordInput = document.getElementById("wake-word");
   const enableSpeechCheckbox = document.getElementById("enable-speech");
   const skipWakeWordCheckbox = document.getElementById("skip-wake-word");
-  const useCloudTranscriptionCheckbox = document.getElementById("use-cloud-transcription");
   const enableTagsCheckbox = document.getElementById("enable-tags");
   const fileInput = document.getElementById("file-input");
   const fileNameDisplay = document.getElementById("file-name");
@@ -464,47 +454,6 @@ const { currentUser } = await checkAuth(Astro.cookies);
     tagsEnabled: enableTagsCheckbox?.checked || false,
   });
   
-  // Check cloud transcription availability on load
-  async function checkCloudTranscriptionAvailability() {
-    const statusElement = document.getElementById("cloud-transcription-status");
-    if (!statusElement) return;
-    
-    try {
-      // Try a test request to see if transcription is configured
-      const testResponse = await fetch("/api/voice-assistant/transcribe", {
-        method: "POST",
-        body: new FormData(), // Empty form data to test
-      });
-      
-      if (testResponse.status === 400) {
-        // 400 means endpoint exists but needs audio - this is good
-        statusElement.textContent = "(configured)";
-        statusElement.className = "text-xs text-green-600 dark:text-green-400 ml-1";
-        VoiceAssistantLogger.info("system", "Cloud transcription is configured");
-      } else if (testResponse.status === 500) {
-        const errorData = await testResponse.json().catch(() => ({}));
-        if (errorData.error?.includes("not configured")) {
-          statusElement.textContent = "(not configured)";
-          statusElement.className = "text-xs text-yellow-600 dark:text-yellow-400 ml-1";
-          VoiceAssistantLogger.warn("system", "Cloud transcription not configured");
-          
-          // If cloud transcription is checked, uncheck it and show warning
-          if (useCloudTranscriptionCheckbox?.checked) {
-            useCloudTranscriptionCheckbox.checked = false;
-            addMessage("system", "⚠️ Cloud transcription is not configured. Please set DEEPGRAM_API_KEY or GOOGLE_CLOUD_SPEECH_API_KEY in your environment, or use browser speech recognition (currently enabled).", []);
-          }
-        }
-      }
-    } catch (error) {
-      // Network error or endpoint doesn't exist
-      statusElement.textContent = "(checking...)";
-      statusElement.className = "text-xs text-gray-500 dark:text-gray-400 ml-1";
-      VoiceAssistantLogger.debug("system", "Could not check cloud transcription availability", { error: error.message });
-    }
-  }
-  
-  // Check cloud transcription on page load
-  checkCloudTranscriptionAvailability();
   
   // Log when tag toggle changes
   if (enableTagsCheckbox) {
@@ -520,20 +469,6 @@ const { currentUser } = await checkAuth(Astro.cookies);
     });
   }
   
-  // Warn when cloud transcription is enabled but fails
-  if (useCloudTranscriptionCheckbox) {
-    useCloudTranscriptionCheckbox.addEventListener("change", (e) => {
-      const enabled = e.target.checked;
-      VoiceAssistantLogger.info("system", "Cloud transcription toggled", { enabled });
-      
-      if (enabled) {
-        // Re-check availability when enabled
-        setTimeout(() => {
-          checkCloudTranscriptionAvailability();
-        }, 500);
-      }
-    });
-  }
 
   let recognition = null;
   let isListening = false;
@@ -541,9 +476,6 @@ const { currentUser } = await checkAuth(Astro.cookies);
   let isAwake = false;
   let wakeWord = "Bee";
   let currentSpeechUtterance = null;
-  let mediaRecorder = null;
-  let audioChunks = [];
-  let audioStream = null;
 
   // Check for browser support
   const SpeechRecognition =
@@ -608,10 +540,6 @@ const { currentUser } = await checkAuth(Astro.cookies);
     };
 
     recognition.onresult = async (event) => {
-      // If using cloud transcription, skip Web Speech API results
-      if (useCloudTranscriptionCheckbox?.checked) {
-        return; // Cloud transcription handles this separately
-      }
       
       // Prevent duplicate processing
       if (isProcessingTranscript) {
@@ -1917,150 +1845,6 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
   }
 
-  // Start audio recording for cloud transcription
-  async function startAudioRecording() {
-    try {
-      audioStream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 16000
-        } 
-      });
-      
-      mediaRecorder = new MediaRecorder(audioStream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-      
-      audioChunks = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
-      };
-      
-      // Handle when recording stops (for cloud transcription)
-      mediaRecorder.onstop = async () => {
-        if (audioChunks.length > 0) {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          audioChunks = [];
-          
-          // Stop all tracks
-          if (audioStream) {
-            audioStream.getTracks().forEach(track => track.stop());
-            audioStream = null;
-          }
-          
-          // Transcribe with cloud API
-          updateStatus("Transcribing...", "bg-purple-400");
-          const cloudTranscript = await transcribeWithCloud(audioBlob);
-          
-          if (cloudTranscript && cloudTranscript.length > 0) {
-            const correctedTranscript = correctCommonErrors(cloudTranscript);
-            VoiceAssistantLogger.info("transcription", "Processing cloud transcript", {
-              originalLength: cloudTranscript.length,
-              correctedLength: correctedTranscript.length,
-            });
-            await processTranscript(correctedTranscript);
-          } else {
-            // Cloud transcription failed - show warning and auto-disable
-            VoiceAssistantLogger.warn("transcription", "Cloud transcription returned empty or failed");
-            addMessage("system", "⚠️ Cloud transcription unavailable. Auto-disabling cloud transcription. Browser speech recognition is now active.", []);
-            updateStatus("Transcription failed - Using browser recognition", "bg-yellow-400");
-            
-            // Auto-disable cloud transcription if it fails
-            if (useCloudTranscriptionCheckbox) {
-              useCloudTranscriptionCheckbox.checked = false;
-              VoiceAssistantLogger.info("system", "Auto-disabled cloud transcription due to failure");
-            }
-          }
-          
-          // Restart recording for next command if still listening
-          if (isListening && useCloudTranscriptionCheckbox?.checked) {
-            await startAudioRecording();
-          }
-        }
-      };
-      
-      mediaRecorder.start(100); // Collect data every 100ms
-    } catch (error) {
-      console.error("Error starting audio recording:", error);
-    }
-  }
-
-  // Stop audio recording (triggers onstop handler)
-  function stopAudioRecording() {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-    }
-  }
-
-  // Transcribe using cloud API
-  async function transcribeWithCloud(audioBlob) {
-    VoiceAssistantLogger.info("transcription", "Starting cloud transcription", {
-      audioSize: audioBlob.size,
-      audioType: audioBlob.type,
-    });
-    
-    try {
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
-      
-      const response = await fetch('/api/voice-assistant/transcribe', {
-        method: 'POST',
-        body: formData
-      });
-      
-      VoiceAssistantLogger.debug("transcription", "Transcription API response", {
-        status: response.status,
-        ok: response.ok,
-        statusText: response.statusText,
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        VoiceAssistantLogger.error("transcription", "Cloud transcription API failed", {
-          status: response.status,
-          statusText: response.statusText,
-          errorData,
-        });
-        
-        // Provide helpful error message based on status
-        if (response.status === 500) {
-          throw new Error('Transcription service not configured. Please configure DEEPGRAM_API_KEY or GOOGLE_CLOUD_SPEECH_API_KEY, or disable cloud transcription.');
-        } else if (response.status === 400) {
-          throw new Error('Invalid audio format. Please try again.');
-        } else {
-          throw new Error(`Transcription failed: ${errorData.error || response.statusText}`);
-        }
-      }
-      
-      const data = await response.json();
-      const transcript = data.transcript || '';
-      
-      VoiceAssistantLogger.info("transcription", "Cloud transcription successful", {
-        transcriptLength: transcript.length,
-        provider: data.provider || 'unknown',
-        transcriptPreview: transcript.substring(0, 50) + (transcript.length > 50 ? '...' : ''),
-      });
-      
-      return transcript;
-    } catch (error) {
-      VoiceAssistantLogger.error("transcription", "Cloud transcription error", {
-        error: error.message,
-        stack: error.stack,
-        audioSize: audioBlob.size,
-      });
-      console.error('Cloud transcription error:', error);
-      
-      // Show user-friendly error message
-      addMessage("system", `⚠️ Cloud transcription failed: ${error.message}. Falling back to browser speech recognition.`, []);
-      
-      return null; // Return null to trigger fallback
-    }
-  }
 
   // Toggle listening
   micButton.addEventListener("click", async () => {
@@ -2069,44 +1853,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
     if (isListening) {
       recognition.stop();
       isAwake = false;
-      
-      // Stop audio recording if using cloud transcription
-      if (useCloudTranscriptionCheckbox?.checked && mediaRecorder) {
-        stopAudioRecording();
-      }
     } else {
-      // Start audio recording if cloud transcription is enabled
-      if (useCloudTranscriptionCheckbox?.checked) {
-        await startAudioRecording();
-      }
-      
       recognition.start();
     }
   });
   
-  // Handle manual stop for cloud transcription (when user pauses)
-  let silenceTimer = null;
-  function resetSilenceTimer() {
-    if (silenceTimer) clearTimeout(silenceTimer);
-    
-    if (useCloudTranscriptionCheckbox?.checked && mediaRecorder && mediaRecorder.state === 'recording') {
-      // Stop recording after 2 seconds of silence (user finished speaking)
-      silenceTimer = setTimeout(() => {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-          stopAudioRecording();
-        }
-      }, 2000);
-    }
-  }
-  
-  // Reset silence timer on any speech activity
-  if (recognition) {
-    const originalOnResult = recognition.onresult;
-    recognition.onresult = (event) => {
-      resetSilenceTimer();
-      if (originalOnResult) originalOnResult.call(recognition, event);
-    };
-  }
 
   // Post-process transcript to fix common errors
   function correctCommonErrors(text) {
@@ -2257,7 +2008,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
   // File upload handlers
   if (fileInput && uploadBtn && fileNameDisplay) {
     fileInput.addEventListener("change", (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
+      const target = e.target;
+      const file = target && target.files && target.files[0];
       if (file) {
         selectedFile = file;
         fileNameDisplay.textContent = file.name;
@@ -2266,11 +2018,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
         // Show preview for images
         if (file.type.startsWith("image/") && filePreview) {
           const reader = new FileReader();
-          reader.onload = (e) => {
-            filePreview.innerHTML = `
-              <img src="${e.target?.result}" alt="Preview" class="max-w-full max-h-48 rounded-lg border border-gray-300 dark:border-gray-600">
-            `;
-            filePreview.classList.remove("hidden");
+          reader.onload = (event) => {
+            const result = event.target && event.target.result;
+            if (result) {
+              filePreview.innerHTML = `
+                <img src="${result}" alt="Preview" class="max-w-full max-h-48 rounded-lg border border-gray-300 dark:border-gray-600">
+              `;
+              filePreview.classList.remove("hidden");
+            }
           };
           reader.readAsDataURL(file);
         } else if (filePreview) {
@@ -2291,7 +2046,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
   }
 
   // Process uploaded file
-  async function processFile(file: File) {
+  async function processFile(file) {
     if (!file || !uploadBtn || !fileStatus) return;
     
     uploadBtn.disabled = true;
@@ -2315,7 +2070,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       }
       
       // Display extracted content
-      if (result.data?.content) {
+      if (result.data && result.data.content) {
         fileStatus.textContent = "File processed successfully!";
         fileStatus.className = "mt-2 text-sm text-green-600 dark:text-green-400";
         
@@ -2329,7 +2084,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
         // Show detected fields if any
         if (result.data.fields && result.data.fields.length > 0) {
           const fieldsText = result.data.fields
-            .map((f: any) => `• ${f.name}: ${f.value}`)
+            .map(function(f) { return `• ${f.name}: ${f.value}`; })
             .join("\n");
           addMessage("assistant", `\nDetected fields:\n${fieldsText}`, []);
           VoiceAssistantLogger.info("file", "Fields extracted from file", { 
@@ -2343,19 +2098,20 @@ const { currentUser } = await checkAuth(Astro.cookies);
           fileName: file.name, 
           fileType: file.type,
           contentLength: result.data.content.length,
-          fieldCount: result.data.fields?.length || 0
+          fieldCount: (result.data.fields && result.data.fields.length) || 0
         });
       } else {
         throw new Error("No content extracted from file");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("[VOICE-ASSISTANT] Error processing file:", error);
-      fileStatus.textContent = `Error: ${error.message}`;
+      const errorMessage = error && error.message ? error.message : "Unknown error";
+      fileStatus.textContent = `Error: ${errorMessage}`;
       fileStatus.className = "mt-2 text-sm text-red-600 dark:text-red-400";
-      addMessage("system", `❌ Failed to process file: ${error.message}`, []);
+      addMessage("system", `❌ Failed to process file: ${errorMessage}`, []);
       VoiceAssistantLogger.error("file", "File processing failed", { 
         fileName: file.name, 
-        error: error.message 
+        error: errorMessage 
       });
     } finally {
       if (uploadBtn) uploadBtn.disabled = false;

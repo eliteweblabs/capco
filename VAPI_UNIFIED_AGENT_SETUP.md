@@ -88,13 +88,29 @@ Your VAPI assistant needs a system prompt that:
 - Already has appointment booking logic
 - **NEEDS**: Add instructions for project creation, knowledge loading, and remembering
 
-### 4. Configure Voice Authentication
+### 4. Prevent Accidental Triggers
 
-In VAPI Dashboard:
-1. Go to your assistant → Security
-2. Enable "Voice Authentication"
-3. Train your voice (record a few phrases)
-4. Set sensitivity level
+**Important:** VAPI doesn't have built-in voice authentication, but you can prevent accidental triggers in other ways:
+
+**Option 1: Explicit Start (Recommended)**
+- The VAPI SDK only activates when you explicitly call `vapi.start()`
+- This means the assistant won't respond unless you click the "Start" button
+- **This is already implemented** in `voice-assistant-vapi.astro`
+
+**Option 2: Check Tabs in VAPI Dashboard**
+- Look under the **"Advanced"** tab for any authentication/security settings
+- Look under the **"Compliance"** tab for access controls
+- Some features might be under **"Voice"** tab → Voice settings
+
+**Option 3: Custom Authentication (If Needed)**
+- You can add authentication checks in your webhook (`/api/vapi/webhook.ts`)
+- Verify user identity before processing requests
+- Use Supabase auth to ensure only authenticated users can trigger the assistant
+
+**Current Implementation:**
+- The VAPI assistant page (`/voice-assistant-vapi`) requires explicit button click to start
+- This prevents accidental triggers better than browser-based continuous listening
+- The assistant only responds when actively started, not continuously listening
 
 ### 5. Update Web Interface
 

@@ -35,25 +35,24 @@ node scripts/add-tool-to-assistant.js <TOOL_ID>
 3. Go to "Tools" section
 4. Add the tool ID
 
-### 3. Configure Voice Authentication (CRITICAL)
+### 3. Prevent Accidental Triggers
 
-In your VAPI assistant settings:
+**Note:** VAPI doesn't have built-in voice authentication, but accidental triggers are prevented by:
 
-1. **Enable Voice Authentication**:
-   - Go to Assistant Settings → Security
-   - Enable "Voice Authentication" or "Speaker Recognition"
-   - This will require you to train the system with your voice
+1. **Explicit Start Required:**
+   - The assistant only activates when you click "Start Voice Assistant"
+   - It doesn't continuously listen like browser-based solutions
+   - This prevents accidental triggers automatically
 
-2. **Train Your Voice**:
-   - VAPI will prompt you to record a few phrases
-   - Speak clearly and naturally
-   - The system will learn your voice characteristics
-   - Only YOUR voice will trigger the assistant
+2. **Check VAPI Dashboard Tabs:**
+   - **"Advanced"** tab - May have security/authentication settings
+   - **"Compliance"** tab - May have access controls
+   - **"Voice"** tab - Voice configuration settings
 
-3. **Set Sensitivity**:
-   - Adjust sensitivity to balance security vs convenience
-   - Higher = more strict (only your exact voice)
-   - Lower = more lenient (similar voices might work)
+3. **Custom Authentication (Optional):**
+   - Add user authentication checks in your webhook
+   - Verify user identity before processing requests
+   - Use Supabase auth to ensure only authorized users can use the assistant
 
 ### 4. Update Assistant System Prompt
 
