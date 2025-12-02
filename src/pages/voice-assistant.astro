@@ -194,6 +194,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
             class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
           />
           Use cloud transcription (better accuracy)
+          <span id="cloud-transcription-status" class="text-xs text-gray-500 dark:text-gray-400 ml-1"></span>
         </label>
         <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
           <input
@@ -422,6 +423,48 @@ const { currentUser } = await checkAuth(Astro.cookies);
     tagsEnabled: enableTagsCheckbox?.checked || false,
   });
   
+  // Check cloud transcription availability on load
+  async function checkCloudTranscriptionAvailability() {
+    const statusElement = document.getElementById("cloud-transcription-status");
+    if (!statusElement) return;
+    
+    try {
+      // Try a test request to see if transcription is configured
+      const testResponse = await fetch("/api/voice-assistant/transcribe", {
+        method: "POST",
+        body: new FormData(), // Empty form data to test
+      });
+      
+      if (testResponse.status === 400) {
+        // 400 means endpoint exists but needs audio - this is good
+        statusElement.textContent = "(configured)";
+        statusElement.className = "text-xs text-green-600 dark:text-green-400 ml-1";
+        VoiceAssistantLogger.info("system", "Cloud transcription is configured");
+      } else if (testResponse.status === 500) {
+        const errorData = await testResponse.json().catch(() => ({}));
+        if (errorData.error?.includes("not configured")) {
+          statusElement.textContent = "(not configured)";
+          statusElement.className = "text-xs text-yellow-600 dark:text-yellow-400 ml-1";
+          VoiceAssistantLogger.warn("system", "Cloud transcription not configured");
+          
+          // If cloud transcription is checked, uncheck it and show warning
+          if (useCloudTranscriptionCheckbox?.checked) {
+            useCloudTranscriptionCheckbox.checked = false;
+            addMessage("system", "⚠️ Cloud transcription is not configured. Please set DEEPGRAM_API_KEY or GOOGLE_CLOUD_SPEECH_API_KEY in your environment, or use browser speech recognition (currently enabled).", []);
+          }
+        }
+      }
+    } catch (error) {
+      // Network error or endpoint doesn't exist
+      statusElement.textContent = "(checking...)";
+      statusElement.className = "text-xs text-gray-500 dark:text-gray-400 ml-1";
+      VoiceAssistantLogger.debug("system", "Could not check cloud transcription availability", { error: error.message });
+    }
+  }
+  
+  // Check cloud transcription on page load
+  checkCloudTranscriptionAvailability();
+  
   // Log when tag toggle changes
   if (enableTagsCheckbox) {
     enableTagsCheckbox.addEventListener("change", (e) => {
@@ -432,6 +475,21 @@ const { currentUser } = await checkAuth(Astro.cookies);
         tagsEditor.classList.add("hidden");
         currentTags = [];
         updateTagsDisplay();
+      }
+    });
+  }
+  
+  // Warn when cloud transcription is enabled but fails
+  if (useCloudTranscriptionCheckbox) {
+    useCloudTranscriptionCheckbox.addEventListener("change", (e) => {
+      const enabled = e.target.checked;
+      VoiceAssistantLogger.info("system", "Cloud transcription toggled", { enabled });
+      
+      if (enabled) {
+        // Re-check availability when enabled
+        setTimeout(() => {
+          checkCloudTranscriptionAvailability();
+        }, 500);
       }
     });
   }
@@ -896,25 +954,29 @@ const { currentUser } = await checkAuth(Astro.cookies);
     switch (step) {
       case "clientType":
         const clientTypeLower = input.toLowerCase().trim();
+        VoiceAssistantLogger.debug("project", "Processing clientType input", { input, clientTypeLower });
+        
         if (clientTypeLower.includes("existing") || clientTypeLower.includes("current") || clientTypeLower.includes("old")) {
           projectCreationState.clientType = "existing";
           nextStep = "searchClient";
-          VoiceAssistantLogger.info("project", "Client type selected: existing");
+          VoiceAssistantLogger.info("project", "Client type selected: existing", { nextStep });
           response = "Got it. Let's find an existing client. What's the client's name, company name, or email? I'll search for them.";
         } else if (clientTypeLower.includes("new") || clientTypeLower.includes("create")) {
           projectCreationState.clientType = "new";
           nextStep = "firstName";
-          VoiceAssistantLogger.info("project", "Client type selected: new");
+          VoiceAssistantLogger.info("project", "Client type selected: new", { nextStep });
           response = "Great! Let's create a new client. What's the client's first name?";
         } else {
           // Didn't understand, ask again
-          VoiceAssistantLogger.warn("project", "Unclear client type response", { input });
+          VoiceAssistantLogger.warn("project", "Unclear client type response", { input, clientTypeLower });
           response = "I didn't understand. Do you want to use an existing client or create a new client? Say 'existing' or 'new'.";
           addMessage("assistant", response);
           if (enableSpeechCheckbox.checked) {
-            speak(response);
+            setTimeout(() => {
+              speak(response);
+            }, 500);
           }
-          return;
+          return; // Return early to prevent state update
         }
         break;
         
@@ -1198,6 +1260,17 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
     
         // Add assistant response
+    if (!response) {
+      VoiceAssistantLogger.error("project", "No response generated for step", { step, input });
+      return;
+    }
+    
+    VoiceAssistantLogger.info("project", "Adding assistant response", { 
+      step, 
+      nextStep, 
+      responsePreview: response.substring(0, 50) + "...",
+    });
+    
     addMessage("assistant", response);
     
     // Update state BEFORE speaking to prevent race conditions
@@ -1211,14 +1284,46 @@ const { currentUser } = await checkAuth(Astro.cookies);
       updateStatus("Creating project...", "bg-purple-400");
       // Create the project
       await createProjectFromVoice(data);
-    } else {
-      VoiceAssistantLogger.debug("project", "Moving to next step", { 
+    } else if (nextStep) {
+      VoiceAssistantLogger.info("project", "Moving to next step", { 
         from: step, 
         to: nextStep,
         dataKeys: Object.keys(data),
+        currentState: projectCreationState,
       });
+      
+      // Update the step in projectCreationState
       projectCreationState.step = nextStep;
-      updateStatus(`Creating project - ${nextStep}`, "bg-blue-400");
+      
+      // Update status with readable step name
+      const stepNames = {
+        searchClient: "Searching for client",
+        selectClient: "Selecting client",
+        firstName: "Client first name",
+        lastName: "Client last name",
+        email: "Client email",
+        companyName: "Client company",
+        address: "Project address",
+        title: "Project title",
+        architect: "Architect",
+        sqFt: "Square footage",
+        units: "Units",
+        newConstruction: "New construction",
+        building: "Building type",
+        project: "Project type",
+        tier: "Tier",
+        service: "Service type",
+        nfpaVersion: "NFPA version",
+        requestedDocs: "Reports required",
+        description: "Description",
+        siteAccess: "Site access",
+        commencementOfConstruction: "Commencement date",
+        buildingHeight: "Building height",
+        floorsBelowGrade: "Floors below grade",
+      };
+      
+      const statusText = stepNames[nextStep] || nextStep;
+      updateStatus(`Creating project - ${statusText}`, "bg-blue-400");
       
       // Add a cooldown period after asking a question to prevent immediate re-processing
       // Reset the last processed transcript so the next response will be accepted
@@ -1230,8 +1335,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
         // Wait a moment before speaking to allow user to finish
         setTimeout(() => {
           speak(response);
-        }, 500);
+        }, 800);
       }
+    } else {
+      VoiceAssistantLogger.error("project", "No nextStep defined", { step, input, response });
     }
   }
   
@@ -1811,7 +1918,22 @@ const { currentUser } = await checkAuth(Astro.cookies);
           
           if (cloudTranscript && cloudTranscript.length > 0) {
             const correctedTranscript = correctCommonErrors(cloudTranscript);
+            VoiceAssistantLogger.info("transcription", "Processing cloud transcript", {
+              originalLength: cloudTranscript.length,
+              correctedLength: correctedTranscript.length,
+            });
             await processTranscript(correctedTranscript);
+          } else {
+            // Cloud transcription failed - show warning and auto-disable
+            VoiceAssistantLogger.warn("transcription", "Cloud transcription returned empty or failed");
+            addMessage("system", "⚠️ Cloud transcription unavailable. Auto-disabling cloud transcription. Browser speech recognition is now active.", []);
+            updateStatus("Transcription failed - Using browser recognition", "bg-yellow-400");
+            
+            // Auto-disable cloud transcription if it fails
+            if (useCloudTranscriptionCheckbox) {
+              useCloudTranscriptionCheckbox.checked = false;
+              VoiceAssistantLogger.info("system", "Auto-disabled cloud transcription due to failure");
+            }
           }
           
           // Restart recording for next command if still listening

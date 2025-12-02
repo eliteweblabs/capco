@@ -177,6 +177,49 @@ async function handleToolCalls(
           nameOrPhone: args.nameOrPhone || args.name || args.phone,
         };
         console.log(`[---VAPI-WEBHOOK] Lookup client params:`, params);
+      } else if (functionName === "createProject") {
+        // Handle project creation - route directly to projects API
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+        
+        console.log(`[---VAPI-WEBHOOK] Creating project with params:`, args);
+        
+        const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
+        const projectResponse = await fetch(`${baseUrl}/api/projects/upsert`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Note: VAPI calls don't have user session, so we'll need to handle auth differently
+            // For now, we'll create projects without authorId (system-created)
+            // You may want to pass user info via VAPI assistant variables
+          },
+          body: JSON.stringify({
+            ...args,
+            // If authorId is provided, use it; otherwise create as system project
+          }),
+        });
+
+        const projectData = await projectResponse.json();
+        
+        if (!projectResponse.ok || !projectData.success) {
+          const errorMsg = projectData.error || "Failed to create project";
+          console.error(`❌ [VAPI-WEBHOOK] Project creation failed:`, errorMsg);
+          results.push({
+            toolCallId: toolCall.id,
+            result: `I'm sorry, I couldn't create that project. ${errorMsg}`,
+          });
+        } else {
+          console.log(`✅ [VAPI-WEBHOOK] Project created successfully:`, projectData.project?.id);
+          results.push({
+            toolCallId: toolCall.id,
+            result: `Great! I've created the project "${projectData.project?.title || args.title || args.address}" with ID ${projectData.project?.id}. The project is now in the system and ready for review.`,
+          });
+        }
+        
+        // Skip the cal-integration fetch for createProject
+        continue;
       }
 
       const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
