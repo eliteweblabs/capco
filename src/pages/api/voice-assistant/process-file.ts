@@ -12,7 +12,10 @@ import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-op
 import { supabase } from "../../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  const startTime = Date.now();
   try {
+    console.log("📄 [VOICE-ASSISTANT-FILE] Request received");
+
     if (!supabase) {
       return createErrorResponse("Database connection not available", 500);
     }
@@ -23,8 +26,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.log("📄 [VOICE-ASSISTANT-FILE] Auth error:", authError?.message);
       return createErrorResponse("Authentication required", 401);
     }
+
+    console.log("📄 [VOICE-ASSISTANT-FILE] User authenticated:", user.id);
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
@@ -34,7 +40,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return createErrorResponse("No file provided", 400);
     }
 
-    console.log("📄 [VOICE-ASSISTANT-FILE] Processing file:", file.name, "Type:", file.type);
+    console.log(
+      "📄 [VOICE-ASSISTANT-FILE] Processing file:",
+      file.name,
+      "Type:",
+      file.type,
+      "Size:",
+      file.size
+    );
 
     const fileType = file.type;
     const fileName = file.name;
@@ -66,19 +79,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let detectedFields: any[] = [];
 
     try {
+      console.log("📄 [VOICE-ASSISTANT-FILE] Starting file processing...");
+
       if (fileType.startsWith("image/")) {
         // Process image with OCR
+        console.log("📄 [VOICE-ASSISTANT-FILE] Processing as image");
         extractedContent = await processImageWithOCR(file);
         detectedFields = extractFieldsFromText(extractedContent);
       } else if (fileType === "application/pdf") {
         // Process PDF
+        console.log("📄 [VOICE-ASSISTANT-FILE] Processing as PDF");
         extractedContent = await processPDFFile(file);
         detectedFields = extractFieldsFromText(extractedContent);
+      } else {
+        return createErrorResponse(`Unsupported file type: ${fileType}`, 400);
       }
 
       console.log("✅ [VOICE-ASSISTANT-FILE] File processed successfully");
       console.log("📄 [VOICE-ASSISTANT-FILE] Extracted content length:", extractedContent.length);
       console.log("📄 [VOICE-ASSISTANT-FILE] Detected fields:", detectedFields.length);
+      console.log("📄 [VOICE-ASSISTANT-FILE] Processing took:", Date.now() - startTime, "ms");
 
       // Optionally save to knowledge base
       let knowledgeEntryId = null;
@@ -121,11 +141,29 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     } catch (processingError: any) {
       console.error("❌ [VOICE-ASSISTANT-FILE] Error processing file:", processingError);
-      return createErrorResponse("Failed to process file: " + processingError.message, 500);
+      console.error("❌ [VOICE-ASSISTANT-FILE] Error stack:", processingError.stack);
+      console.error(
+        "❌ [VOICE-ASSISTANT-FILE] Processing took:",
+        Date.now() - startTime,
+        "ms before error"
+      );
+
+      // Return a helpful error message
+      const errorMessage = processingError.message || "Unknown error";
+      return createErrorResponse(
+        `Failed to process file: ${errorMessage}. The file may be too large or in an unsupported format.`,
+        500
+      );
     }
   } catch (error: any) {
     console.error("❌ [VOICE-ASSISTANT-FILE] Unexpected error:", error);
-    return createErrorResponse("Internal server error: " + error.message, 500);
+    console.error("❌ [VOICE-ASSISTANT-FILE] Error stack:", error.stack);
+    console.error(
+      "❌ [VOICE-ASSISTANT-FILE] Request took:",
+      Date.now() - startTime,
+      "ms before unexpected error"
+    );
+    return createErrorResponse("Internal server error: " + (error.message || "Unknown error"), 500);
   }
 };
 
@@ -194,17 +232,53 @@ async function processPDFFile(file: File): Promise<string> {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    // Add timeout wrapper for pdf-parse (60 seconds)
+    const parseWithTimeout = async (buffer: Buffer, timeoutMs: number = 60000): Promise<any> => {
+      return Promise.race([
+        (async () => {
+          try {
+            // pdf-parse is a CommonJS module, handle dynamic import correctly
+            const pdfParseModule = await import("pdf-parse");
+
+            // pdf-parse exports the function as default - use type assertion
+            const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+
+            if (typeof pdfParse !== "function") {
+              console.error(
+                "📄 [VOICE-ASSISTANT-FILE] pdf-parse module keys:",
+                Object.keys(pdfParseModule)
+              );
+              console.error(
+                "📄 [VOICE-ASSISTANT-FILE] pdf-parse.default type:",
+                typeof (pdfParseModule as any).default
+              );
+              console.error(
+                "📄 [VOICE-ASSISTANT-FILE] pdf-parse module type:",
+                typeof pdfParseModule
+              );
+              throw new Error(
+                `pdf-parse is not a function. Module keys: ${Object.keys(pdfParseModule || {}).join(", ")}`
+              );
+            }
+
+            console.log("📄 [VOICE-ASSISTANT-FILE] pdf-parse loaded successfully, parsing PDF...");
+            return await pdfParse(buffer);
+          } catch (importError: any) {
+            console.error("📄 [VOICE-ASSISTANT-FILE] Error importing pdf-parse:", importError);
+            console.error("📄 [VOICE-ASSISTANT-FILE] Error stack:", importError.stack);
+            throw importError;
+          }
+        })(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("PDF parsing timed out after 60 seconds")), timeoutMs)
+        ),
+      ]);
+    };
+
     // First, try to extract text directly from PDF
     try {
-      const pdfParseModule = await import("pdf-parse");
-      // Handle both default and named exports - pdf-parse exports as default function
-      const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-
-      if (typeof pdfParse !== "function") {
-        throw new Error("pdf-parse is not a function");
-      }
-
-      const pdfData = await pdfParse(buffer);
+      console.log("📄 [VOICE-ASSISTANT-FILE] Attempting text extraction with pdf-parse...");
+      const pdfData = await parseWithTimeout(buffer);
       const extractedText = pdfData.text.trim();
 
       if (extractedText.length > 50) {
@@ -219,9 +293,27 @@ async function processPDFFile(file: File): Promise<string> {
       }
     } catch (pdfParseError: any) {
       console.warn("⚠️ [VOICE-ASSISTANT-FILE] pdf-parse error:", pdfParseError.message);
-      // Try OCR as fallback
+
+      // If timeout, return helpful message instead of trying OCR (which will also timeout)
+      if (pdfParseError.message?.includes("timed out")) {
+        return `PDF file "${file.name}" uploaded. The PDF is taking too long to process. It may be very large or complex. Please try a smaller file or describe the content manually.`;
+      }
+
+      // Try OCR as fallback (but with timeout)
       console.log("📄 [VOICE-ASSISTANT-FILE] Attempting OCR fallback...");
-      return await processPDFWithOCR(buffer, file.name);
+      try {
+        return await Promise.race([
+          processPDFWithOCR(buffer, file.name),
+          new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error("OCR processing timed out after 60 seconds")), 60000)
+          ),
+        ]);
+      } catch (ocrError: any) {
+        if (ocrError.message?.includes("timed out")) {
+          return `PDF file "${file.name}" uploaded. OCR processing timed out. The PDF may be too large or complex. Please try a smaller file or describe the content manually.`;
+        }
+        throw ocrError;
+      }
     }
   } catch (error) {
     console.error("❌ [VOICE-ASSISTANT-FILE] Error parsing PDF:", error);
