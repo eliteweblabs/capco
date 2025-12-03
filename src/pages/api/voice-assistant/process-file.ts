@@ -96,12 +96,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Process image with OCR
           console.log("📄 [VOICE-ASSISTANT-FILE] Processing as image");
           extractedContent = await processImageWithOCR(file);
-          detectedFields = extractFieldsFromText(extractedContent);
+          // Use LLM extraction for better field detection
+          detectedFields = await extractFieldsWithLLM(extractedContent);
+          // Also run regex-based extraction as fallback
+          const regexFields = extractFieldsFromText(extractedContent);
+          // Merge fields, preferring LLM results
+          detectedFields = mergeFields(detectedFields, regexFields);
         } else if (fileType === "application/pdf") {
-          // Process PDF
+          // Process PDF using pdf-parse v2 API (like pdf-system)
           console.log("📄 [VOICE-ASSISTANT-FILE] Processing as PDF");
           extractedContent = await processPDFFile(file);
-          detectedFields = extractFieldsFromText(extractedContent);
+          // Use LLM extraction for better field detection
+          detectedFields = await extractFieldsWithLLM(extractedContent);
+          // Also run regex-based extraction as fallback
+          const regexFields = extractFieldsFromText(extractedContent);
+          // Merge fields, preferring LLM results
+          detectedFields = mergeFields(detectedFields, regexFields);
         } else {
           return createErrorResponse(`Unsupported file type: ${fileType}`, 400);
         }
@@ -207,14 +217,20 @@ async function processImageWithOCR(file: File): Promise<string> {
 
     // Try to use Tesseract.js if available
     try {
-      const Tesseract = await import("tesseract.js");
+      const TesseractModule = await import("tesseract.js");
+      // ESM import: recognize is under default export
+      const Tesseract = (TesseractModule as any).default || TesseractModule;
+
+      if (!Tesseract || typeof Tesseract.recognize !== "function") {
+        throw new Error("Tesseract.recognize is not available");
+      }
 
       console.log("🔍 [OCR] Starting OCR recognition...");
 
       const {
         data: { text },
       } = await Tesseract.recognize(buffer, "eng", {
-        logger: (m) => {
+        logger: (m: any) => {
           if (m.status === "recognizing text") {
             const progress = Math.round(m.progress * 100);
             if (progress % 25 === 0) {
@@ -265,32 +281,49 @@ async function processPDFFile(file: File): Promise<string> {
       return Promise.race([
         (async () => {
           try {
-            // pdf-parse is a CommonJS module, handle dynamic import correctly
+            // pdf-parse v2 uses PDFParse class
             const pdfParseModule = await import("pdf-parse");
+            const PDFParse = (pdfParseModule as any).PDFParse;
 
-            // pdf-parse exports the function as default - use type assertion
-            const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-
-            if (typeof pdfParse !== "function") {
-              console.error(
-                "📄 [VOICE-ASSISTANT-FILE] pdf-parse module keys:",
-                Object.keys(pdfParseModule)
-              );
-              console.error(
-                "📄 [VOICE-ASSISTANT-FILE] pdf-parse.default type:",
-                typeof (pdfParseModule as any).default
-              );
-              console.error(
-                "📄 [VOICE-ASSISTANT-FILE] pdf-parse module type:",
-                typeof pdfParseModule
-              );
+            if (!PDFParse || typeof PDFParse !== "function") {
               throw new Error(
-                `pdf-parse is not a function. Module keys: ${Object.keys(pdfParseModule || {}).join(", ")}`
+                `PDFParse class not found. Module keys: ${Object.keys(pdfParseModule || {}).join(", ")}`
               );
             }
 
             console.log("📄 [VOICE-ASSISTANT-FILE] pdf-parse loaded successfully, parsing PDF...");
-            return await pdfParse(buffer);
+
+            // v2 API: Create instance with { data: buffer }, call getText(), then destroy()
+            const parser = new PDFParse({ data: buffer });
+            try {
+              // First get page info to verify total pages
+              const info = await parser.getInfo();
+              const totalPages = info?.total || 0;
+              console.log(`📄 [VOICE-ASSISTANT-FILE] PDF has ${totalPages} page(s)`);
+
+              // getText() with no options parses all pages by default
+              // But let's explicitly ensure all pages are parsed
+              const result = await parser.getText({
+                // Don't specify partial/first/last to parse all pages
+                pageJoiner: "\n\n--- Page {page_number} of {total_number} ---\n\n",
+              });
+
+              console.log("📄 [VOICE-ASSISTANT-FILE] PDF parsed successfully");
+              console.log("📄 [VOICE-ASSISTANT-FILE] Result keys:", Object.keys(result || {}));
+              console.log("📄 [VOICE-ASSISTANT-FILE] Text length:", result?.text?.length || 0);
+
+              // Count page separators to verify all pages were parsed
+              if (result?.text) {
+                const pageMarkers = (result.text.match(/--- Page \d+ of \d+ ---/g) || []).length;
+                console.log(
+                  `📄 [VOICE-ASSISTANT-FILE] Found ${pageMarkers} page marker(s) in extracted text`
+                );
+              }
+
+              return result;
+            } finally {
+              await parser.destroy();
+            }
           } catch (importError: any) {
             console.error("📄 [VOICE-ASSISTANT-FILE] Error importing pdf-parse:", importError);
             console.error("📄 [VOICE-ASSISTANT-FILE] Error stack:", importError.stack);
@@ -307,7 +340,8 @@ async function processPDFFile(file: File): Promise<string> {
     try {
       console.log("📄 [VOICE-ASSISTANT-FILE] Attempting text extraction with pdf-parse...");
       const pdfData = await parseWithTimeout(buffer);
-      const extractedText = pdfData.text.trim();
+      // v2 API: result.text is a string, not an object with .text property
+      const extractedText = (typeof pdfData === "string" ? pdfData : pdfData.text || "").trim();
 
       if (extractedText.length > 50) {
         console.log("📄 [VOICE-ASSISTANT-FILE] Extracted text length:", extractedText.length);
@@ -412,21 +446,32 @@ async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<stri
     try {
       console.log("🔍 [PDF-OCR] Attempting direct text extraction as fallback...");
       const pdfParseModule = await import("pdf-parse");
-      const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-      // Add timeout for fallback extraction (30 seconds)
-      const pdfData = (await Promise.race([
-        pdfParse(buffer),
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error("Fallback PDF extraction timed out after 30 seconds")),
-            30000
-          )
-        ),
-      ])) as any;
+      const PDFParse = (pdfParseModule as any).PDFParse;
 
-      if (pdfData.text && pdfData.text.trim().length > 50) {
-        console.log("✅ [PDF-OCR] Found extractable text in PDF, using direct extraction");
-        return pdfData.text;
+      if (!PDFParse) {
+        throw new Error("PDFParse class not available");
+      }
+
+      // Add timeout for fallback extraction (30 seconds)
+      const parser = new PDFParse({ data: buffer });
+      try {
+        const pdfData = (await Promise.race([
+          parser.getText(),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Fallback PDF extraction timed out after 30 seconds")),
+              30000
+            )
+          ),
+        ])) as any;
+
+        const extractedText = (typeof pdfData === "string" ? pdfData : pdfData.text || "").trim();
+        if (extractedText.length > 50) {
+          console.log("✅ [PDF-OCR] Found extractable text in PDF, using direct extraction");
+          return extractedText;
+        }
+      } finally {
+        await parser.destroy();
       }
     } catch (parseError: any) {
       console.warn("⚠️ [PDF-OCR] Direct text extraction failed:", parseError.message);
@@ -481,8 +526,14 @@ async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<stri
  */
 async function runOCROnImageFiles(imageFiles: string[], fileName: string): Promise<string> {
   const fs = await import("fs/promises");
-  const Tesseract = await import("tesseract.js");
+  const TesseractModule = await import("tesseract.js");
+  // ESM import: recognize is under default export
+  const Tesseract = (TesseractModule as any).default || TesseractModule;
   let allText = "";
+
+  if (!Tesseract || typeof Tesseract.recognize !== "function") {
+    throw new Error("Tesseract.recognize is not available");
+  }
 
   for (let i = 0; i < imageFiles.length; i++) {
     console.log(`🔍 [PDF-OCR] Running OCR on page ${i + 1}/${imageFiles.length}...`);
@@ -494,7 +545,7 @@ async function runOCROnImageFiles(imageFiles: string[], fileName: string): Promi
       const {
         data: { text },
       } = await Tesseract.recognize(imageBuffer, "eng", {
-        logger: (m) => {
+        logger: (m: any) => {
           if (m.status === "recognizing text") {
             const progress = Math.round(m.progress * 100);
             if (progress % 25 === 0) {
@@ -884,4 +935,132 @@ function extractFieldsFromText(text: string): any[] {
 
   console.log(`📋 [FIELD-EXTRACTION] Found ${fields.length} fields from text`);
   return fields;
+}
+
+/**
+ * Extract project-specific fields using LLM (Anthropic Claude)
+ * More accurate than regex patterns for complex documents
+ */
+async function extractFieldsWithLLM(text: string): Promise<any[]> {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      console.warn(
+        "⚠️ [VOICE-ASSISTANT-FILE] ANTHROPIC_API_KEY not configured, skipping LLM extraction"
+      );
+      return [];
+    }
+
+    // Limit text length to avoid token limits (keep first 8000 chars)
+    const textToAnalyze = text.substring(0, 8000);
+
+    const Anthropic = await import("@anthropic-ai/sdk");
+    const client = new Anthropic.default({ apiKey });
+    const model = "claude-3-haiku-20240307"; // Fast and cost-effective
+
+    const systemPrompt = `You are an expert at extracting structured data from fire protection project documents. 
+Extract key project information and return it as a JSON array of field objects.
+
+Each field object should have:
+- name: Field name (e.g., "Address", "Square Footage", "Architect")
+- type: Field type (e.g., "address", "number", "text", "email", "phone", "date", "boolean")
+- value: Extracted value (string, number, or boolean)
+- confidence: "high", "medium", or "low"
+
+Focus on extracting these project fields:
+- Project Address (full address with street, city, state, zip)
+- Project Title/Name
+- Square Footage (sqFt)
+- Architect/Engineer name
+- New Construction (true/false)
+- Building Type
+- Project Type (sprinkler, fire alarm, standpipe, etc.)
+- Client/Company Name
+- Client Email
+- Client Phone
+- Project Date/Submission Date
+- Units (if mentioned)
+- NFPA Version/Code references
+
+Return ONLY valid JSON array, no markdown, no explanation.`;
+
+    const userPrompt = `Extract project fields from this document text:
+
+${textToAnalyze}
+
+Return a JSON array of field objects. Only include fields you're confident about.`;
+
+    const response = await client.messages.create({
+      model,
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content: userPrompt,
+        },
+      ],
+    });
+
+    // Extract JSON from response
+    let responseText = "";
+    if (response.content && response.content.length > 0) {
+      const firstBlock = response.content[0];
+      if (firstBlock.type === "text") {
+        responseText = firstBlock.text;
+      }
+    }
+
+    // Try to parse JSON (might be wrapped in markdown code blocks)
+    let jsonText = responseText.trim();
+    const jsonMatch = jsonText.match(/```(?:json)?\s*(\[[\s\S]*\])\s*```/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[1];
+    } else if (jsonText.startsWith("[")) {
+      // Already JSON array
+    } else {
+      // Try to find JSON array in the text
+      const arrayMatch = jsonText.match(/(\[[\s\S]*\])/);
+      if (arrayMatch) {
+        jsonText = arrayMatch[1];
+      }
+    }
+
+    const fields = JSON.parse(jsonText);
+    console.log(`✅ [VOICE-ASSISTANT-FILE] LLM extracted ${fields.length} fields`);
+    return Array.isArray(fields) ? fields : [];
+  } catch (error: any) {
+    console.error("⚠️ [VOICE-ASSISTANT-FILE] LLM extraction error:", error.message);
+    // Return empty array on error, fallback to regex extraction
+    return [];
+  }
+}
+
+/**
+ * Merge LLM-extracted fields with regex-extracted fields
+ * Prefers LLM results, adds regex results that don't conflict
+ */
+function mergeFields(llmFields: any[], regexFields: any[]): any[] {
+  const merged: any[] = [];
+  const seen = new Set<string>();
+
+  // Add LLM fields first (higher priority)
+  for (const field of llmFields) {
+    const key = `${field.name}:${field.type}`.toLowerCase();
+    if (!seen.has(key)) {
+      merged.push(field);
+      seen.add(key);
+    }
+  }
+
+  // Add regex fields that don't conflict
+  for (const field of regexFields) {
+    const key = `${field.name}:${field.type}`.toLowerCase();
+    if (!seen.has(key)) {
+      merged.push(field);
+      seen.add(key);
+    }
+  }
+
+  return merged;
 }
