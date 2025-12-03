@@ -13,157 +13,185 @@ import { supabase } from "../../../lib/supabase";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const startTime = Date.now();
-  try {
-    console.log("📄 [VOICE-ASSISTANT-FILE] Request received");
 
-    if (!supabase) {
-      return createErrorResponse("Database connection not available", 500);
-    }
+  // Global timeout wrapper - prevent 502 errors by ensuring response within 2 minutes
+  const timeoutMs = 120000; // 2 minutes
+  const timeoutPromise = new Promise<Response>((_, reject) =>
+    setTimeout(() => {
+      console.error(`⏱️ [VOICE-ASSISTANT-FILE] Request timeout after ${timeoutMs}ms`);
+      reject(new Error(`Request timeout after ${timeoutMs}ms`));
+    }, timeoutMs)
+  );
 
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.log("📄 [VOICE-ASSISTANT-FILE] Auth error:", authError?.message);
-      return createErrorResponse("Authentication required", 401);
-    }
-
-    console.log("📄 [VOICE-ASSISTANT-FILE] User authenticated:", user.id);
-
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
-    const saveToKnowledge = formData.get("saveToKnowledge") === "true";
-
-    if (!file) {
-      return createErrorResponse("No file provided", 400);
-    }
-
-    console.log(
-      "📄 [VOICE-ASSISTANT-FILE] Processing file:",
-      file.name,
-      "Type:",
-      file.type,
-      "Size:",
-      file.size
-    );
-
-    const fileType = file.type;
-    const fileName = file.name;
-    const fileSize = file.size;
-
-    // Check file size (max 10MB)
-    if (fileSize > 10 * 1024 * 1024) {
-      return createErrorResponse("File size too large. Maximum 10MB allowed.", 400);
-    }
-
-    // Validate file type
-    const allowedTypes = [
-      "application/pdf",
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-      "image/gif",
-      "image/webp",
-    ];
-
-    if (!allowedTypes.includes(fileType)) {
-      return createErrorResponse(
-        "Unsupported file type. Please upload PDF or image files (PNG, JPG, GIF, WEBP).",
-        400
-      );
-    }
-
-    let extractedContent = "";
-    let detectedFields: any[] = [];
-
+  const handlerPromise = (async (): Promise<Response> => {
     try {
-      console.log("📄 [VOICE-ASSISTANT-FILE] Starting file processing...");
+      console.log("📄 [VOICE-ASSISTANT-FILE] Request received");
 
-      if (fileType.startsWith("image/")) {
-        // Process image with OCR
-        console.log("📄 [VOICE-ASSISTANT-FILE] Processing as image");
-        extractedContent = await processImageWithOCR(file);
-        detectedFields = extractFieldsFromText(extractedContent);
-      } else if (fileType === "application/pdf") {
-        // Process PDF
-        console.log("📄 [VOICE-ASSISTANT-FILE] Processing as PDF");
-        extractedContent = await processPDFFile(file);
-        detectedFields = extractFieldsFromText(extractedContent);
-      } else {
-        return createErrorResponse(`Unsupported file type: ${fileType}`, 400);
+      if (!supabase) {
+        return createErrorResponse("Database connection not available", 500);
       }
 
-      console.log("✅ [VOICE-ASSISTANT-FILE] File processed successfully");
-      console.log("📄 [VOICE-ASSISTANT-FILE] Extracted content length:", extractedContent.length);
-      console.log("📄 [VOICE-ASSISTANT-FILE] Detected fields:", detectedFields.length);
-      console.log("📄 [VOICE-ASSISTANT-FILE] Processing took:", Date.now() - startTime, "ms");
-
-      // Optionally save to knowledge base
-      let knowledgeEntryId = null;
-      if (saveToKnowledge && extractedContent && supabase) {
-        try {
-          const { data: knowledgeData, error: knowledgeError } = await supabase
-            .from("ai_agent_knowledge")
-            .insert({
-              title: `Document: ${fileName}`,
-              content: extractedContent.substring(0, 50000), // Limit to 50k chars
-              category: "document_upload",
-              tags: [fileType.split("/")[1], "voice-assistant"],
-              priority: 5,
-              authorId: user.id,
-              isActive: true,
-            })
-            .select("id")
-            .single();
-
-          if (!knowledgeError && knowledgeData) {
-            knowledgeEntryId = knowledgeData.id;
-            console.log("✅ [VOICE-ASSISTANT-FILE] Saved to knowledge base:", knowledgeEntryId);
-          }
-        } catch (knowledgeErr) {
-          console.error(
-            "⚠️ [VOICE-ASSISTANT-FILE] Failed to save to knowledge base:",
-            knowledgeErr
-          );
-          // Don't fail the whole request if knowledge save fails
-        }
+      // Check authentication
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.log("📄 [VOICE-ASSISTANT-FILE] Auth error:", authError?.message);
+        return createErrorResponse("Authentication required", 401);
       }
 
-      return createSuccessResponse({
-        content: extractedContent,
-        fields: detectedFields,
-        fileName,
-        fileType,
-        fileSize,
-        knowledgeEntryId,
-      });
-    } catch (processingError: any) {
-      console.error("❌ [VOICE-ASSISTANT-FILE] Error processing file:", processingError);
-      console.error("❌ [VOICE-ASSISTANT-FILE] Error stack:", processingError.stack);
-      console.error(
-        "❌ [VOICE-ASSISTANT-FILE] Processing took:",
-        Date.now() - startTime,
-        "ms before error"
+      console.log("📄 [VOICE-ASSISTANT-FILE] User authenticated:", user.id);
+
+      const formData = await request.formData();
+      const file = formData.get("file") as File;
+      const saveToKnowledge = formData.get("saveToKnowledge") === "true";
+
+      if (!file) {
+        return createErrorResponse("No file provided", 400);
+      }
+
+      console.log(
+        "📄 [VOICE-ASSISTANT-FILE] Processing file:",
+        file.name,
+        "Type:",
+        file.type,
+        "Size:",
+        file.size
       );
 
-      // Return a helpful error message
-      const errorMessage = processingError.message || "Unknown error";
+      const fileType = file.type;
+      const fileName = file.name;
+      const fileSize = file.size;
+
+      // Check file size (max 10MB)
+      if (fileSize > 10 * 1024 * 1024) {
+        return createErrorResponse("File size too large. Maximum 10MB allowed.", 400);
+      }
+
+      // Validate file type
+      const allowedTypes = [
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "image/gif",
+        "image/webp",
+      ];
+
+      if (!allowedTypes.includes(fileType)) {
+        return createErrorResponse(
+          "Unsupported file type. Please upload PDF or image files (PNG, JPG, GIF, WEBP).",
+          400
+        );
+      }
+
+      let extractedContent = "";
+      let detectedFields: any[] = [];
+
+      try {
+        console.log("📄 [VOICE-ASSISTANT-FILE] Starting file processing...");
+
+        if (fileType.startsWith("image/")) {
+          // Process image with OCR
+          console.log("📄 [VOICE-ASSISTANT-FILE] Processing as image");
+          extractedContent = await processImageWithOCR(file);
+          detectedFields = extractFieldsFromText(extractedContent);
+        } else if (fileType === "application/pdf") {
+          // Process PDF
+          console.log("📄 [VOICE-ASSISTANT-FILE] Processing as PDF");
+          extractedContent = await processPDFFile(file);
+          detectedFields = extractFieldsFromText(extractedContent);
+        } else {
+          return createErrorResponse(`Unsupported file type: ${fileType}`, 400);
+        }
+
+        console.log("✅ [VOICE-ASSISTANT-FILE] File processed successfully");
+        console.log("📄 [VOICE-ASSISTANT-FILE] Extracted content length:", extractedContent.length);
+        console.log("📄 [VOICE-ASSISTANT-FILE] Detected fields:", detectedFields.length);
+        console.log("📄 [VOICE-ASSISTANT-FILE] Processing took:", Date.now() - startTime, "ms");
+
+        // Optionally save to knowledge base
+        let knowledgeEntryId = null;
+        if (saveToKnowledge && extractedContent && supabase) {
+          try {
+            const { data: knowledgeData, error: knowledgeError } = await supabase
+              .from("ai_agent_knowledge")
+              .insert({
+                title: `Document: ${fileName}`,
+                content: extractedContent.substring(0, 50000), // Limit to 50k chars
+                category: "document_upload",
+                tags: [fileType.split("/")[1], "voice-assistant"],
+                priority: 5,
+                authorId: user.id,
+                isActive: true,
+              })
+              .select("id")
+              .single();
+
+            if (!knowledgeError && knowledgeData) {
+              knowledgeEntryId = knowledgeData.id;
+              console.log("✅ [VOICE-ASSISTANT-FILE] Saved to knowledge base:", knowledgeEntryId);
+            }
+          } catch (knowledgeErr) {
+            console.error(
+              "⚠️ [VOICE-ASSISTANT-FILE] Failed to save to knowledge base:",
+              knowledgeErr
+            );
+            // Don't fail the whole request if knowledge save fails
+          }
+        }
+
+        return createSuccessResponse({
+          content: extractedContent,
+          fields: detectedFields,
+          fileName,
+          fileType,
+          fileSize,
+          knowledgeEntryId,
+        });
+      } catch (processingError: any) {
+        console.error("❌ [VOICE-ASSISTANT-FILE] Error processing file:", processingError);
+        console.error("❌ [VOICE-ASSISTANT-FILE] Error stack:", processingError.stack);
+        console.error(
+          "❌ [VOICE-ASSISTANT-FILE] Processing took:",
+          Date.now() - startTime,
+          "ms before error"
+        );
+
+        // Return a helpful error message
+        const errorMessage = processingError.message || "Unknown error";
+        return createErrorResponse(
+          `Failed to process file: ${errorMessage}. The file may be too large or in an unsupported format.`,
+          500
+        );
+      }
+    } catch (error: any) {
+      console.error("❌ [VOICE-ASSISTANT-FILE] Unexpected error:", error);
+      console.error("❌ [VOICE-ASSISTANT-FILE] Error stack:", error.stack);
+      console.error(
+        "❌ [VOICE-ASSISTANT-FILE] Request took:",
+        Date.now() - startTime,
+        "ms before unexpected error"
+      );
       return createErrorResponse(
-        `Failed to process file: ${errorMessage}. The file may be too large or in an unsupported format.`,
+        "Internal server error: " + (error.message || "Unknown error"),
         500
       );
     }
-  } catch (error: any) {
-    console.error("❌ [VOICE-ASSISTANT-FILE] Unexpected error:", error);
-    console.error("❌ [VOICE-ASSISTANT-FILE] Error stack:", error.stack);
-    console.error(
-      "❌ [VOICE-ASSISTANT-FILE] Request took:",
-      Date.now() - startTime,
-      "ms before unexpected error"
+  })();
+
+  // Race between handler and timeout
+  try {
+    return await Promise.race([handlerPromise, timeoutPromise]);
+  } catch (timeoutError: any) {
+    console.error("⏱️ [VOICE-ASSISTANT-FILE] Request timed out or failed:", timeoutError);
+    return createErrorResponse(
+      timeoutError.message?.includes("timeout")
+        ? "File processing timed out. The file may be too large or complex. Please try a smaller file or describe the content manually."
+        : `Request failed: ${timeoutError.message || "Unknown error"}`,
+      504
     );
-    return createErrorResponse("Internal server error: " + (error.message || "Unknown error"), 500);
   }
 };
 
@@ -357,7 +385,13 @@ async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<stri
       };
 
       console.log(`🔍 [PDF-OCR] Attempting to convert PDF using pdf-poppler...`);
-      const images = await pdfPoppler.convert(tempPdfPath, options);
+      // Add timeout for PDF conversion (45 seconds)
+      const images = (await Promise.race([
+        pdfPoppler.convert(tempPdfPath, options),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("PDF conversion timed out after 45 seconds")), 45000)
+        ),
+      ])) as any;
       console.log(`🔍 [PDF-OCR] Converted PDF to ${images.length} image(s)`);
 
       if (images && images.length > 0) {
@@ -379,7 +413,16 @@ async function processPDFWithOCR(buffer: Buffer, fileName: string): Promise<stri
       console.log("🔍 [PDF-OCR] Attempting direct text extraction as fallback...");
       const pdfParseModule = await import("pdf-parse");
       const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-      const pdfData = await pdfParse(buffer);
+      // Add timeout for fallback extraction (30 seconds)
+      const pdfData = (await Promise.race([
+        pdfParse(buffer),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("Fallback PDF extraction timed out after 30 seconds")),
+            30000
+          )
+        ),
+      ])) as any;
 
       if (pdfData.text && pdfData.text.trim().length > 50) {
         console.log("✅ [PDF-OCR] Found extractable text in PDF, using direct extraction");
