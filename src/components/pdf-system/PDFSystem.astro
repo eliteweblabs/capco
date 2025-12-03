@@ -90,6 +90,14 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           <SimpleIcon name="user" class="w-4 h-4 inline mr-2" />
           Google Contacts
         </button>
+        <button
+          id="scanner-tab"
+          class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+          data-tab="scanner"
+        >
+          <SimpleIcon name="file-search" class="w-4 h-4 inline mr-2" />
+          Scanner
+        </button>
       </nav>
     </div>
   </div>
@@ -207,6 +215,62 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       <!-- Template List -->
       <div id="templates-list" class="space-y-4">
         <!-- Templates will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scanner Tab Content -->
+  <div id="scanner-content" class="pdf-tab-content hidden">
+    <div class="mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Document Scanner</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Upload and view documents with OCR text extraction. No template generation - just scan and view.
+          </p>
+        </div>
+      </div>
+
+      <div class="w-full mb-6">
+        <Dropzone
+          id="scanner-dropzone"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+          maxSize={50}
+          label="Drop a document here or click to browse"
+          description="Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF"
+          required={false}
+        />
+      </div>
+
+      <!-- PDF Viewer / Document Display -->
+      <div id="scanner-viewer-section" class="hidden mb-6">
+        <div class="grid grid-cols-12 gap-4">
+          <!-- PDF Viewer / Image Display -->
+          <div class="col-span-8">
+            <div class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-4 min-h-[600px]">
+              <div id="scanner-pdf-viewer" class="w-full">
+                <!-- PDF.js viewer or image will be rendered here -->
+                <div class="text-center text-gray-500 dark:text-gray-400 py-20">
+                  <p>Document preview will appear here</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detected Fields Panel -->
+          <div class="col-span-4">
+            <div id="scanner-extracted-fields" class="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 p-4 max-h-[600px] overflow-y-auto">
+              <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
+                Detected Fields
+              </h4>
+              <div id="scanner-fields-list" class="space-y-2">
+                <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                  Upload a document to detect fields...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -528,6 +592,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         });
 
         dropzone.addEventListener("dropzone-error", (e) => {
+          const { error } = e.detail;
+          this.showNotification(error || "Error uploading file", "error");
+        });
+      }
+
+      // Dropzone for scanner tab
+      const scannerDropzone = document.getElementById("scanner-dropzone");
+      if (scannerDropzone) {
+        scannerDropzone.addEventListener("dropzone-files-selected", (e) => {
+          const { files } = e.detail;
+          if (files && files.length > 0) {
+            this.handleScannerFileUpload(files[0]);
+          }
+        });
+
+        scannerDropzone.addEventListener("dropzone-error", (e) => {
           const { error } = e.detail;
           this.showNotification(error || "Error uploading file", "error");
         });
@@ -1503,6 +1583,459 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       }
     }
 
+    async handleScannerFileUpload(file) {
+      if (!file) return;
+
+      console.log("📄 [SCANNER] Processing file:", file.name);
+
+      const viewerSection = document.getElementById("scanner-viewer-section");
+      const pdfViewer = document.getElementById("scanner-pdf-viewer");
+      const fieldsList = document.getElementById("scanner-fields-list");
+
+      // Show viewer section
+      viewerSection?.classList.remove("hidden");
+
+      // Show loading state
+      if (pdfViewer) {
+        pdfViewer.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-20"><p>Loading document...</p></div>';
+      }
+      if (fieldsList) {
+        fieldsList.innerHTML = '<div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8"><p>Detecting fields...</p></div>';
+      }
+
+      try {
+        if (file.type === "application/pdf") {
+          // Display PDF immediately, then extract and highlight fields
+          await this.displayPDFWithHighlights(file, pdfViewer);
+        } else if (file.type.startsWith("image/")) {
+          // Display image and highlight fields
+          await this.displayImageWithHighlights(file, pdfViewer);
+        } else {
+          throw new Error("Unsupported file type. Please upload PDF or image files.");
+        }
+
+        this.showNotification("Document loaded successfully!", "success");
+      } catch (error) {
+        console.error("❌ [SCANNER] Error processing file:", error);
+        if (pdfViewer) {
+          pdfViewer.innerHTML = `<div class="text-center text-red-500 py-20"><p>Error: ${error.message}</p></div>`;
+        }
+        this.showNotification("Error processing file: " + error.message, "error");
+      }
+    }
+
+    async processPDFForScanner(file) {
+      return new Promise((resolve, reject) => {
+        const fileReader = new FileReader();
+        const self = this;
+        fileReader.onload = async function (e) {
+          try {
+            const typedarray = new Uint8Array(e.target.result);
+            const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+
+            let fullText = "";
+            const numPages = pdf.numPages;
+
+            for (let i = 1; i <= numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              const structuredText = self.extractStructuredText(textContent.items);
+              fullText += structuredText + "\n";
+            }
+
+            // Check if we got meaningful text
+            const meaningfulText = fullText.trim().length > 50;
+
+            if (!meaningfulText) {
+              // Try OCR
+              console.log("📄 [SCANNER] Minimal text, trying OCR...");
+              const ocrResult = await self.processPDFWithOCRForScanner(file);
+              fullText = ocrResult.text;
+            }
+
+            // Extract fields
+            const fields = self.extractFieldsFromText(fullText);
+
+            resolve({ text: fullText, fields });
+          } catch (error) {
+            reject(error);
+          }
+        };
+        fileReader.readAsArrayBuffer(file);
+      });
+    }
+
+    async processImageForScanner(file) {
+      return new Promise((resolve, reject) => {
+        const self = this;
+        self.processImageWithCanvas(file)
+          .then((result) => {
+            const text = result.text || "";
+            const fields = self.extractFieldsFromText(text);
+            resolve({ text, fields });
+          })
+          .catch(reject);
+      });
+    }
+
+    async displayPDFWithHighlights(file, container) {
+      const self = this;
+      return new Promise((resolve, reject) => {
+        const fileReader = new FileReader();
+        fileReader.onload = async function (e) {
+          try {
+            const typedarray = new Uint8Array(e.target.result);
+            const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+            const numPages = pdf.numPages;
+
+            // Extract text and fields in background
+            let allText = "";
+            let allTextItems = []; // Store text items with coordinates
+            
+            for (let i = 1; i <= numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              
+              // Store text items with page number
+              textContent.items.forEach(item => {
+                allTextItems.push({ ...item, pageNum: i });
+                if (item.str) {
+                  allText += item.str + " ";
+                }
+              });
+            }
+
+            // Extract fields from text
+            const fields = self.extractFieldsFromText(allText.trim());
+            
+            // Display fields in sidebar
+            self.displayScannerFields(fields);
+
+            // Display PDF pages with highlights
+            const viewerHTML = document.createElement("div");
+            viewerHTML.className = "space-y-4";
+            
+            for (let i = 1; i <= numPages; i++) {
+              const page = await pdf.getPage(i);
+              const viewport = page.getViewport({ scale: 1.5 });
+              
+              // Create container for page
+              const pageContainer = document.createElement("div");
+              pageContainer.className = "mb-4 border border-gray-300 dark:border-gray-600 rounded p-2 bg-white relative";
+              
+              const pageLabel = document.createElement("div");
+              pageLabel.className = "text-xs text-gray-500 dark:text-gray-400 mb-2";
+              pageLabel.textContent = `Page ${i} of ${numPages}`;
+              pageContainer.appendChild(pageLabel);
+              
+              // Create canvas for PDF rendering
+              const canvas = document.createElement("canvas");
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+              const context = canvas.getContext("2d");
+              
+              // Render PDF page
+              await page.render({
+                canvasContext: context,
+                viewport: viewport,
+              }).promise;
+              
+              // Create overlay canvas for highlights
+              const overlayCanvas = document.createElement("canvas");
+              overlayCanvas.height = viewport.height;
+              overlayCanvas.width = viewport.width;
+              overlayCanvas.className = "absolute top-0 left-0 pointer-events-none";
+              overlayCanvas.style.position = "absolute";
+              overlayCanvas.style.top = "0";
+              overlayCanvas.style.left = "0";
+              
+              const overlayContext = overlayCanvas.getContext("2d");
+              
+              // Create wrapper div for positioning
+              const canvasWrapper = document.createElement("div");
+              canvasWrapper.className = "relative";
+              canvasWrapper.style.position = "relative";
+              canvasWrapper.appendChild(canvas);
+              canvasWrapper.appendChild(overlayCanvas);
+              
+              pageContainer.appendChild(canvasWrapper);
+              viewerHTML.appendChild(pageContainer);
+              
+              // Highlight fields on this page
+              const pageTextItems = allTextItems.filter(item => item.pageNum === i);
+              self.highlightFieldsOnPDFPage(fields, pageTextItems, viewport, overlayContext);
+            }
+            
+            container.innerHTML = "";
+            container.appendChild(viewerHTML);
+            
+            resolve();
+          } catch (error) {
+            console.error("Error displaying PDF:", error);
+            container.innerHTML = `<div class="text-center text-red-500 py-20"><p>Error displaying PDF: ${error.message}</p></div>`;
+            reject(error);
+          }
+        };
+        fileReader.readAsArrayBuffer(file);
+      });
+    }
+
+    highlightFieldsOnPDFPage(fields, textItems, viewport, overlayContext) {
+      if (!fields || fields.length === 0 || !textItems || textItems.length === 0) return;
+
+      const self = this; // Capture context for nested functions
+
+      // Colors for different field types
+      const fieldColors = {
+        email: "rgba(255, 235, 59, 0.4)", // Yellow
+        phone: "rgba(144, 202, 249, 0.4)", // Blue
+        address: "rgba(129, 199, 132, 0.4)", // Green
+        date: "rgba(255, 183, 77, 0.4)", // Orange
+        default: "rgba(255, 152, 0, 0.4)", // Orange
+      };
+
+      // Build full text string from items for better matching
+      const fullText = textItems.map(item => item.str || "").join(" ").toLowerCase();
+
+      fields.forEach(field => {
+        const fieldValue = field.value?.toString().trim();
+        if (!fieldValue) return;
+
+        const fieldValueLower = fieldValue.toLowerCase();
+        const fieldType = field.type?.toLowerCase() || "default";
+        const color = fieldColors[fieldType] || fieldColors.default;
+
+        // Try to find the field value in the text
+        const searchValue = fieldValueLower.replace(/[^\w\s@.-]/g, ""); // Clean for matching
+        const searchIndex = fullText.indexOf(searchValue);
+        
+        if (searchIndex === -1) {
+          // Try partial matching - find individual words
+          const words = searchValue.split(/\s+/).filter(w => w.length > 2);
+          words.forEach(word => {
+            const wordIndex = fullText.indexOf(word);
+            if (wordIndex !== -1) {
+              // Find text items that contain this word
+              let charCount = 0;
+              for (let i = 0; i < textItems.length; i++) {
+                const item = textItems[i];
+                const itemText = item.str || "";
+                const itemStart = charCount;
+                const itemEnd = charCount + itemText.length;
+                
+                if (wordIndex >= itemStart && wordIndex < itemEnd) {
+                  self.highlightTextItem(item, viewport, overlayContext, color);
+                  break;
+                }
+                
+                charCount = itemEnd + 1; // +1 for space
+              }
+            }
+          });
+        } else {
+          // Found exact match - highlight all items that are part of this match
+          let charCount = 0;
+          const matchEnd = searchIndex + searchValue.length;
+          const itemsToHighlight = [];
+          
+          for (let i = 0; i < textItems.length; i++) {
+            const item = textItems[i];
+            const itemText = item.str || "";
+            const itemStart = charCount;
+            const itemEnd = charCount + itemText.length;
+            
+            // Check if this item overlaps with the match
+            if (itemEnd > searchIndex && itemStart < matchEnd) {
+              itemsToHighlight.push(item);
+            }
+            
+            charCount = itemEnd + 1; // +1 for space
+            
+            if (itemStart > matchEnd) break; // Past the match
+          }
+          
+          // Highlight all items in the match
+          itemsToHighlight.forEach(item => {
+            self.highlightTextItem(item, viewport, overlayContext, color);
+          });
+        }
+      });
+    }
+
+    highlightTextItem(item, viewport, overlayContext, color) {
+      if (!item.transform || item.transform.length < 6) return;
+      
+      const x = item.transform[4];
+      const y = item.transform[5];
+      const width = item.width || (item.str ? item.str.length * 6 : 50);
+      const height = item.height || (item.transform[0] ? Math.abs(item.transform[0]) : 20);
+      
+      // Convert PDF coordinates to canvas coordinates
+      // PDF coordinates: bottom-left origin, Y increases upward
+      // Canvas coordinates: top-left origin, Y increases downward
+      const canvasX = x;
+      const canvasY = viewport.height - y - height;
+      
+      // Draw highlight rectangle
+      overlayContext.fillStyle = color;
+      overlayContext.fillRect(canvasX - 1, canvasY - 1, width + 2, height + 2);
+      
+      // Draw border
+      overlayContext.strokeStyle = color.replace("0.4", "0.7");
+      overlayContext.lineWidth = 1.5;
+      overlayContext.strokeRect(canvasX - 1, canvasY - 1, width + 2, height + 2);
+    }
+
+    displayScannerFields(fields) {
+      const fieldsList = document.getElementById("scanner-fields-list");
+      if (!fieldsList) return;
+
+      if (!fields || fields.length === 0) {
+        fieldsList.innerHTML = '<div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No fields detected</div>';
+        return;
+      }
+
+      fieldsList.innerHTML = fields.map(field => {
+        const fieldType = field.type?.toLowerCase() || "default";
+        const typeColors = {
+          email: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
+          phone: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
+          address: "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200",
+          date: "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200",
+          default: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200",
+        };
+        const colorClass = typeColors[fieldType] || typeColors.default;
+        
+        return `
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-600 ${colorClass}">
+            <div class="text-xs font-medium uppercase mb-1 opacity-75">${this.escapeHtml(field.name)}</div>
+            <div class="text-sm font-semibold">${this.escapeHtml(field.value)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async displayImageWithHighlights(file, container) {
+      const self = this;
+      
+      // Display image first
+      const reader = new FileReader();
+      reader.onload = async function (e) {
+        try {
+          // Create image element
+          const img = document.createElement("img");
+          img.src = e.target.result;
+          img.className = "max-w-full h-auto rounded border border-gray-300 dark:border-gray-600";
+          img.style.maxHeight = "600px";
+          
+          // Create wrapper with relative positioning for overlay
+          const wrapper = document.createElement("div");
+          wrapper.className = "relative inline-block";
+          wrapper.style.position = "relative";
+          
+          // Create overlay canvas for highlights
+          const overlayCanvas = document.createElement("canvas");
+          overlayCanvas.className = "absolute top-0 left-0 pointer-events-none";
+          overlayCanvas.style.position = "absolute";
+          overlayCanvas.style.top = "0";
+          overlayCanvas.style.left = "0";
+          
+          img.onload = async function() {
+            // Set canvas size to match image
+            overlayCanvas.width = img.width;
+            overlayCanvas.height = img.height;
+            
+            wrapper.appendChild(img);
+            wrapper.appendChild(overlayCanvas);
+            container.innerHTML = "";
+            container.appendChild(wrapper);
+            
+            // Process image with OCR to extract fields
+            try {
+              const result = await self.processImageWithCanvas(file);
+              const fields = self.extractFieldsFromText(result.text || "");
+              
+              // Display fields
+              self.displayScannerFields(fields);
+              
+              // Note: For images, we'd need OCR with word positions to highlight accurately
+              // This is a simplified version - full implementation would require OCR.space API
+              // with WordsOverlay data to get exact coordinates
+              
+            } catch (ocrError) {
+              console.error("OCR error:", ocrError);
+              self.displayScannerFields([]);
+            }
+          };
+        } catch (error) {
+          console.error("Error displaying image:", error);
+          container.innerHTML = `<div class="text-center text-red-500 py-20"><p>Error: ${error.message}</p></div>`;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    displayImageInViewer(file, container) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        container.innerHTML = `
+          <div class="flex justify-center">
+            <img src="${e.target.result}" alt="${file.name}" class="max-w-full h-auto rounded border border-gray-300 dark:border-gray-600" />
+          </div>
+        `;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async processPDFWithOCRForScanner(file) {
+      // Similar to processPDFWithOCR but returns text only
+      return new Promise((resolve, reject) => {
+        const fileReader = new FileReader();
+        const self = this;
+        fileReader.onload = async function (e) {
+          try {
+            const typedarray = new Uint8Array(e.target.result);
+            const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+            const numPages = pdf.numPages;
+            let allExtractedText = "";
+
+            for (let i = 1; i <= numPages; i++) {
+              const page = await pdf.getPage(i);
+              const viewport = page.getViewport({ scale: 2.0 });
+              const canvas = document.createElement("canvas");
+              const context = canvas.getContext("2d");
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+
+              await page.render({
+                canvasContext: context,
+                viewport: viewport,
+              }).promise;
+
+              const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+              const imageFile = new File([blob], `page-${i}.png`, { type: "image/png" });
+              const ocrResult = await self.runOCROnImage(imageFile, i);
+              
+              if (ocrResult && ocrResult.text) {
+                allExtractedText += `\n--- Page ${i} ---\n${ocrResult.text}\n`;
+              }
+            }
+
+            resolve({ text: allExtractedText });
+          } catch (error) {
+            reject(error);
+          }
+        };
+        fileReader.readAsArrayBuffer(file);
+      });
+    }
+
+    escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
     async processUploadedFile(file) {
       const formData = new FormData();
       formData.append("file", file);
@@ -1829,24 +2362,34 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     }
 
     extractStructuredTextFromString(text) {
-      // Split text into lines and process each line
-      const lines = text.split("\n");
+      // Improved OCR text processing - groups single-word lines into sentences/paragraphs
+      const lines = text.split("\n").map(l => l.trim()).filter(l => l);
+      
+      if (lines.length === 0) return "";
+      
       let result = "";
+      let currentParagraph = [];
       let currentList = [];
       let inList = false;
       let listType = null;
+      let inParagraph = false;
 
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        const nextLine = lines[i + 1]?.trim();
-
-        // Skip empty lines
-        if (!line) continue;
+        const line = lines[i];
+        const nextLine = lines[i + 1];
+        const prevLine = lines[i - 1];
 
         // Detect list items (bullet points, numbers, dashes)
         const isListItem = this.detectListItemFromString(line);
 
         if (isListItem) {
+          // End current paragraph if we were in one
+          if (inParagraph && currentParagraph.length > 0) {
+            result += `<p>${currentParagraph.join(" ")}</p>\n`;
+            currentParagraph = [];
+            inParagraph = false;
+          }
+
           if (!inList) {
             // Start new list
             inList = true;
@@ -1865,12 +2408,65 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
           // Detect headers (all caps, short lines, or specific patterns)
           if (this.detectHeaderFromString(line)) {
+            // End current paragraph before header
+            if (inParagraph && currentParagraph.length > 0) {
+              result += `<p>${currentParagraph.join(" ")}</p>\n`;
+              currentParagraph = [];
+              inParagraph = false;
+            }
             result += `<h3>${line}</h3>\n`;
           } else {
-            // Regular paragraph
-            result += `<p>${line}</p>\n`;
+            // Smart paragraph grouping for OCR text
+            // If line is very short (likely single word), add to current paragraph
+            const isShortLine = line.split(/\s+/).length <= 3 && line.length < 50;
+            const endsWithPunctuation = /[.!?;:]$/.test(line);
+            const nextIsShort = nextLine && nextLine.split(/\s+/).length <= 3 && nextLine.length < 50;
+            const nextIsListItem = nextLine && this.detectListItemFromString(nextLine);
+            const nextIsHeader = nextLine && this.detectHeaderFromString(nextLine);
+            
+            // Start new paragraph if:
+            // - Previous line ended with punctuation AND current line starts with capital
+            // - Current line is long (likely a full sentence)
+            // - Next line is a list item or header
+            const shouldStartNewParagraph = 
+              (inParagraph && currentParagraph.length > 0 && 
+               (endsWithPunctuation && /^[A-Z]/.test(line)) ||
+               (!isShortLine && currentParagraph.length > 5) ||
+               nextIsListItem || nextIsHeader);
+
+            if (shouldStartNewParagraph && currentParagraph.length > 0) {
+              result += `<p>${currentParagraph.join(" ")}</p>\n`;
+              currentParagraph = [line];
+              inParagraph = true;
+            } else if (isShortLine && !endsWithPunctuation && nextLine && !nextIsListItem && !nextIsHeader) {
+              // Short line that's likely part of a sentence - add to current paragraph
+              currentParagraph.push(line);
+              inParagraph = true;
+            } else {
+              // Regular line - start new paragraph or add to current
+              if (!inParagraph) {
+                currentParagraph = [line];
+                inParagraph = true;
+              } else {
+                // Check if we should continue or start new paragraph
+                if (endsWithPunctuation && nextLine && /^[A-Z]/.test(nextLine) && !nextIsListItem && !nextIsHeader) {
+                  // End of sentence, next starts with capital - likely new paragraph
+                  currentParagraph.push(line);
+                  result += `<p>${currentParagraph.join(" ")}</p>\n`;
+                  currentParagraph = [];
+                  inParagraph = false;
+                } else {
+                  currentParagraph.push(line);
+                }
+              }
+            }
           }
         }
+      }
+
+      // Close any remaining paragraph
+      if (inParagraph && currentParagraph.length > 0) {
+        result += `<p>${currentParagraph.join(" ")}</p>\n`;
       }
 
       // Close any remaining list
