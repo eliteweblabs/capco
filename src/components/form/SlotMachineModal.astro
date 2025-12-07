@@ -120,6 +120,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   value={selectedValue}
   data-refresh={name}
   data-project-id={projectId}
+  data-scrap={id === "address" ? "true" : undefined}
 />
 
 <script
@@ -1508,6 +1509,122 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     }
     window.slotMachineOptions[componentId] = newOptions;
   };
+
+  // Observe changes to the hidden input and update button text
+  // Use a function that works both on DOMContentLoaded and immediately
+  function setupInputObserver() {
+    const hiddenInput = document.getElementById(`${id}-value`) as HTMLInputElement;
+    const triggerButton = document.getElementById(id) as HTMLElement;
+    
+    if (!hiddenInput || !triggerButton) {
+      // If elements don't exist yet, try again after a short delay
+      setTimeout(setupInputObserver, 100);
+      return;
+    }
+    
+    // Function to update button text from hidden input value
+    const updateButtonText = () => {
+      const value = hiddenInput.value;
+      if (value && triggerButton) {
+        // Try to find the button text element (most common case)
+        const buttonTextSpan = triggerButton.querySelector(".button-text") as HTMLElement;
+        if (buttonTextSpan) {
+          buttonTextSpan.textContent = value;
+          console.log(`🔄 [SLOT-MACHINE-${id}] Button text updated via .button-text span: ${value}`);
+          return;
+        }
+        
+        // Fallback: find any text span that's not an icon and doesn't contain SVG
+        const textSpans = Array.from(triggerButton.querySelectorAll("span")).filter(
+          span => {
+            const hasIcon = span.classList.contains("icon") || span.className.includes("icon");
+            const hasSVG = span.querySelector("svg") !== null;
+            return !hasIcon && !hasSVG;
+          }
+        );
+        if (textSpans.length > 0) {
+          textSpans[0].textContent = value;
+          console.log(`🔄 [SLOT-MACHINE-${id}] Button text updated via text span: ${value}`);
+          return;
+        }
+        
+        // Last resort: preserve icon and update text
+        const icon = triggerButton.querySelector("svg");
+        if (icon) {
+          const iconHTML = icon.outerHTML;
+          // Find existing button-text or create new one
+          let textElement = triggerButton.querySelector(".button-text");
+          if (!textElement) {
+            textElement = document.createElement("span");
+            textElement.className = "button-text";
+            triggerButton.insertBefore(textElement, icon.nextSibling);
+          }
+          textElement.textContent = value;
+          console.log(`🔄 [SLOT-MACHINE-${id}] Button text updated (created/updated text element): ${value}`);
+        } else {
+          // No icon found, just update text
+          triggerButton.textContent = value;
+          console.log(`🔄 [SLOT-MACHINE-${id}] Button text updated (direct): ${value}`);
+        }
+      }
+    };
+    
+    // Listen for input/change events
+    hiddenInput.addEventListener("input", updateButtonText);
+    hiddenInput.addEventListener("change", updateButtonText);
+    
+    // Use MutationObserver to watch for value attribute changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === "attributes" && mutation.attributeName === "value") {
+          updateButtonText();
+        }
+        // Also watch for value property changes
+        if (mutation.type === "characterData" || mutation.type === "childList") {
+          updateButtonText();
+        }
+      });
+    });
+    
+    observer.observe(hiddenInput, {
+      attributes: true,
+      attributeFilter: ["value"],
+      childList: false,
+      subtree: false
+    });
+    
+    // Also watch for property changes using a different approach
+    // This is important because setting .value programmatically doesn't always trigger events
+    let lastValue = hiddenInput.value;
+    const checkValue = () => {
+      if (hiddenInput && hiddenInput.value !== lastValue) {
+        lastValue = hiddenInput.value;
+        if (lastValue) {
+          updateButtonText();
+        }
+      }
+    };
+    
+    // Check more frequently for programmatic changes (every 50ms)
+    const valueCheckInterval = setInterval(checkValue, 50);
+    
+    // Clean up interval when component is removed (if needed)
+    // Store interval ID for potential cleanup
+    (hiddenInput as any).__valueCheckInterval = valueCheckInterval;
+    
+    // Initial update in case value is already set
+    if (hiddenInput.value) {
+      updateButtonText();
+    }
+  }
+  
+  // Try to set up immediately, and also on DOMContentLoaded
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupInputObserver);
+  } else {
+    // DOM already loaded, set up immediately
+    setupInputObserver();
+  }
 </script>
 
 <style>

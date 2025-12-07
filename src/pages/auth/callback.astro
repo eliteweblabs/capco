@@ -91,12 +91,13 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
           // Get the code from URL parameters (check both query params and hash)
           const urlParams = new URLSearchParams(window.location.search);
           const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove # from hash
-          
+
           // Check query params first, then hash
           let code = urlParams.get("code") || hashParams.get("code");
           let error = urlParams.get("error") || hashParams.get("error");
-          let errorDescription = urlParams.get("error_description") || hashParams.get("error_description");
-          
+          let errorDescription =
+            urlParams.get("error_description") || hashParams.get("error_description");
+
           // Also check for Supabase-specific error formats
           if (!error) {
             const errorParam = urlParams.get("error") || hashParams.get("error");
@@ -129,7 +130,9 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               allSearchParams: Object.fromEntries(urlParams.entries()),
               allHashParams: Object.fromEntries(hashParams.entries()),
             });
-            showError("No authorization code received. Please check the browser console for details.");
+            showError(
+              "No authorization code received. Please check the browser console for details."
+            );
             setTimeout(() => {
               window.location.href = "/auth/login?error=no_code";
             }, 5000);
@@ -185,14 +188,14 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
             console.warn(
               "[AUTH-CALLBACK] Code verifier still missing, checking alternative storage keys..."
             );
-            
+
             // Try alternative key formats
             const alternativeKeys = [
               codeVerifierKey,
               `sb-${supabaseProjectRef}-auth-code-verifier`,
               `sb-${supabaseProjectRef}-code-verifier`,
             ];
-            
+
             for (const altKey of alternativeKeys) {
               codeVerifier = localStorage.getItem(altKey);
               if (codeVerifier) {
@@ -200,7 +203,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
                 break;
               }
             }
-            
+
             // Also check sessionStorage as fallback
             if (!codeVerifier) {
               for (const altKey of alternativeKeys) {
@@ -213,7 +216,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
                 }
               }
             }
-            
+
             // Final wait if still not found
             if (!codeVerifier) {
               console.warn(
@@ -259,7 +262,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               console.warn("[AUTH-CALLBACK] 1. OAuth was initiated server-side");
               console.warn("[AUTH-CALLBACK] 2. localStorage was cleared");
               console.warn("[AUTH-CALLBACK] 3. Different browser/tab was used");
-              
+
               // Try exchange anyway - Supabase might have the verifier internally
               // The exchangeCodeForSession method should handle this automatically
             }
@@ -281,14 +284,17 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
                   console.error("[AUTH-CALLBACK] Code verifier length:", codeVerifier.length);
                 } else {
                   console.error("[AUTH-CALLBACK] Exchange failed - code verifier was missing");
-                  console.error("[AUTH-CALLBACK] This usually means OAuth was initiated server-side");
+                  console.error(
+                    "[AUTH-CALLBACK] This usually means OAuth was initiated server-side"
+                  );
                   console.error("[AUTH-CALLBACK] Solution: Always initiate OAuth client-side");
                 }
                 console.error("[AUTH-CALLBACK] Error:", exchangeError);
-                
+
                 // If it's a code verifier error, provide specific guidance
                 if (exchangeError.message?.toLowerCase().includes("verifier")) {
-                  exchangeError.message = "Code verifier not found. Please try signing in again from the login page.";
+                  exchangeError.message =
+                    "Code verifier not found. Please try signing in again from the login page.";
                 }
               }
             }

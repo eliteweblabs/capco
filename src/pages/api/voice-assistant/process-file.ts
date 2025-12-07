@@ -96,21 +96,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Process image with OCR
           console.log("📄 [VOICE-ASSISTANT-FILE] Processing as image");
           extractedContent = await processImageWithOCR(file);
-          // Use LLM extraction for better field detection
-          detectedFields = await extractFieldsWithLLM(extractedContent);
-          // Also run regex-based extraction as fallback
+          // Fix word breaks caused by OCR line splits
+          extractedContent = fixWordBreaks(extractedContent);
+          // Extract fields: regex first (address priority), then LLM, then merge
           const regexFields = extractFieldsFromText(extractedContent);
-          // Merge fields, preferring LLM results
+          detectedFields = await extractFieldsWithLLM(extractedContent);
+          // Merge fields: regex address takes priority, LLM for other fields
           detectedFields = mergeFields(detectedFields, regexFields);
         } else if (fileType === "application/pdf") {
           // Process PDF using pdf-parse v2 API (like pdf-system)
           console.log("📄 [VOICE-ASSISTANT-FILE] Processing as PDF");
           extractedContent = await processPDFFile(file);
-          // Use LLM extraction for better field detection
-          detectedFields = await extractFieldsWithLLM(extractedContent);
-          // Also run regex-based extraction as fallback
+          // Fix word breaks caused by PDF line splits
+          extractedContent = fixWordBreaks(extractedContent);
+          // Extract fields: regex first (address priority), then LLM, then merge
           const regexFields = extractFieldsFromText(extractedContent);
-          // Merge fields, preferring LLM results
+          detectedFields = await extractFieldsWithLLM(extractedContent);
+          // Merge fields: regex address takes priority, LLM for other fields
           detectedFields = mergeFields(detectedFields, regexFields);
         } else {
           return createErrorResponse(`Unsupported file type: ${fileType}`, 400);
@@ -580,18 +582,252 @@ async function runOCROnImageFiles(imageFiles: string[], fileName: string): Promi
 }
 
 /**
+ * Fix word breaks caused by line splits in PDF/OCR text extraction
+ * Handles cases like "istroy" -> "history", "heet" -> "sheet", etc.
+ */
+function fixWordBreaks(text: string): string {
+  // Common word patterns that get broken
+  const wordFixes: Record<string, string> = {
+    // Common broken words
+    istroy: "history",
+    heet: "sheet",
+    ame: "name",
+    nformation: "information",
+    rawing: "drawing",
+    orth: "north",
+    outh: "south",
+    ast: "east",
+    est: "west",
+    uilding: "building",
+    onstruction: "construction",
+    lassification: "classification",
+    istrict: "district",
+    ubdistrict: "subdistrict",
+    roposed: "proposed",
+    xisting: "existing",
+    ermeable: "permeable",
+    arking: "parking",
+    verage: "coverage",
+    eight: "height",
+    epth: "depth",
+    idth: "width",
+    late: "plate",
+    rea: "area",
+    ard: "yard",
+    escription: "description",
+  };
+
+  // Fix broken words at word boundaries
+  let fixedText = text;
+
+  // First, try to fix common broken word patterns
+  Object.entries(wordFixes).forEach(([broken, correct]) => {
+    // Look for broken word at start of word or after space
+    const regex = new RegExp(`(^|\\s|\\b)${broken}\\b`, "gi");
+    fixedText = fixedText.replace(regex, (match, prefix) => {
+      return prefix + correct;
+    });
+  });
+
+  // Also fix common patterns where letters are split
+  // Pattern: single letter followed by lowercase word (likely a break)
+  // e.g., "h istory" -> "history", "s heet" -> "sheet"
+  fixedText = fixedText.replace(/\b([a-z])\s+([a-z]{2,})\b/gi, (match, letter, rest) => {
+    // Check if letter + rest forms a common word
+    const combined = letter + rest;
+    const commonWords = [
+      "history",
+      "sheet",
+      "name",
+      "information",
+      "drawing",
+      "north",
+      "south",
+      "east",
+      "west",
+      "building",
+      "construction",
+      "classification",
+      "district",
+      "subdistrict",
+      "proposed",
+      "existing",
+      "permeable",
+      "parking",
+      "coverage",
+      "height",
+      "depth",
+      "width",
+      "plate",
+      "area",
+      "yard",
+      "description",
+      "story",
+      "stories",
+      "type",
+      "group",
+      "use",
+      "lot",
+      "parcel",
+      "front",
+      "side",
+      "rear",
+      "minimum",
+      "maximum",
+      "gross",
+      "floor",
+      "total",
+    ];
+
+    if (commonWords.includes(combined.toLowerCase())) {
+      return combined;
+    }
+    return match; // Keep original if not a known word
+  });
+
+  // Fix double spaces
+  fixedText = fixedText.replace(/\s+/g, " ");
+
+  return fixedText;
+}
+
+/**
+ * Extract the best address from text using top-down priority
+ * Returns the first complete address found, removes it from text
+ * Complete addresses (with zip) trump incomplete ones
+ */
+function extractBestAddress(text: string): { address: string | null; remainingText: string } {
+  // Address patterns ordered by priority (most specific first)
+  const addressPatterns = [
+    // Labeled addresses (highest priority) - complete with zip
+    {
+      pattern:
+        /(?:address|project\s+location|site\s+address|location)[:\s]+(\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy|Highway|Hwy)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?)/gi,
+      isComplete: true,
+      priority: 1,
+    },
+    // Standard complete address (street + city + state + zip)
+    {
+      pattern:
+        /\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy|Highway|Hwy)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi,
+      isComplete: true,
+      priority: 2,
+    },
+    // Address with PO Box
+    {
+      pattern:
+        /(?:P\.?O\.?\s*Box|PO\s*Box|Post\s*Office\s*Box)\s+\d+[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi,
+      isComplete: true,
+      priority: 3,
+    },
+    // Incomplete addresses (no zip) - lower priority
+    {
+      pattern:
+        /(?:address|project\s+location|site\s+address)[:\s]+(\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy)[\s,]+[A-Za-z\s]+)/gi,
+      isComplete: false,
+      priority: 4,
+    },
+    {
+      pattern:
+        /\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy)[\s,]+[A-Za-z\s]+/gi,
+      isComplete: false,
+      priority: 5,
+    },
+  ];
+
+  // Find all addresses with their positions and completeness
+  const addressMatches: Array<{
+    match: string;
+    cleaned: string;
+    position: number;
+    isComplete: boolean;
+    priority: number;
+  }> = [];
+
+  addressPatterns.forEach(({ pattern, isComplete, priority }) => {
+    const regex = new RegExp(pattern.source, pattern.flags);
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const fullMatch = match[0];
+      const cleaned = fullMatch
+        .replace(/^(address|project\s+location|site\s+address|location)[:\s]+/i, "")
+        .trim();
+
+      // Validate: must have street number and street name
+      if (cleaned.length > 10 && /\d+/.test(cleaned) && /[A-Za-z]/.test(cleaned)) {
+        addressMatches.push({
+          match: fullMatch,
+          cleaned,
+          position: match.index,
+          isComplete,
+          priority,
+        });
+      }
+    }
+  });
+
+  if (addressMatches.length === 0) {
+    return { address: null, remainingText: text };
+  }
+
+  // Sort by: 1) completeness (complete first), 2) position (earlier first), 3) priority (lower number = higher priority)
+  addressMatches.sort((a, b) => {
+    // Complete addresses always win
+    if (a.isComplete !== b.isComplete) {
+      return a.isComplete ? -1 : 1;
+    }
+    // Among same completeness, earlier position wins
+    if (a.position !== b.position) {
+      return a.position - b.position;
+    }
+    // Among same position, lower priority number wins
+    return a.priority - b.priority;
+  });
+
+  const bestAddress = addressMatches[0];
+
+  // Remove the found address from text (use original match to preserve exact formatting)
+  const remainingText = text.replace(bestAddress.match, " ").replace(/\s+/g, " ").trim();
+
+  console.log(
+    `📍 [ADDRESS-EXTRACTION] Found address at position ${bestAddress.position}, complete: ${bestAddress.isComplete}, removed from text`
+  );
+
+  return {
+    address: bestAddress.cleaned,
+    remainingText,
+  };
+}
+
+/**
  * Extract fields from extracted text using comprehensive patterns
  * Specifically designed for fire protection project documents
+ * Address is extracted first and removed from text to prevent duplicates
  */
 function extractFieldsFromText(text: string): any[] {
   const fields: any[] = [];
   const normalizedText = text.toLowerCase();
 
+  // ===== PROJECT ADDRESS (FIRST PRIORITY) =====
+  // Extract address first, then remove it from text for other field extraction
+  const { address, remainingText } = extractBestAddress(text);
+  let textForOtherFields = remainingText; // Use text without address for other extractions
+
+  if (address) {
+    fields.push({
+      name: "Project Address",
+      type: "address",
+      value: address,
+      confidence: "high",
+    });
+    console.log(`📍 [FIELD-EXTRACTION] Extracted address: ${address.substring(0, 50)}...`);
+  }
+
   // ===== CLIENT INFORMATION =====
 
   // Email pattern (multiple matches)
   const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-  const emails = text.match(emailRegex);
+  const emails = textForOtherFields.match(emailRegex);
   if (emails) {
     emails.forEach((email, index) => {
       fields.push({
@@ -613,7 +849,7 @@ function extractFieldsFromText(text: string): any[] {
 
   const foundPhones = new Set<string>();
   phonePatterns.forEach((pattern) => {
-    const matches = text.match(pattern);
+    const matches = textForOtherFields.match(pattern);
     if (matches) {
       matches.forEach((phone) => {
         const cleaned = phone.replace(/[^\d]/g, "");
@@ -630,46 +866,6 @@ function extractFieldsFromText(text: string): any[] {
         name: index === 0 ? "Phone" : `Phone ${index + 1}`,
         type: "phone",
         value: phone,
-        confidence: "high",
-      });
-    });
-  }
-
-  // ===== PROJECT ADDRESS =====
-
-  // Enhanced address patterns
-  const addressPatterns = [
-    // Standard street address
-    /\d+\s+[A-Za-z0-9\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi,
-    // Address with "Address:" label
-    /address[:\s]+([A-Za-z0-9\s,]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5})/gi,
-    // Project location
-    /project\s+location[:\s]+([A-Za-z0-9\s,]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5})/gi,
-    // Site address
-    /site\s+address[:\s]+([A-Za-z0-9\s,]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5})/gi,
-  ];
-
-  const foundAddresses = new Set<string>();
-  addressPatterns.forEach((pattern) => {
-    const matches = text.match(pattern);
-    if (matches) {
-      matches.forEach((addr) => {
-        const cleaned = addr
-          .replace(/^(address|project\s+location|site\s+address)[:\s]+/i, "")
-          .trim();
-        if (cleaned.length > 10) {
-          foundAddresses.add(cleaned);
-        }
-      });
-    }
-  });
-
-  if (foundAddresses.size > 0) {
-    Array.from(foundAddresses).forEach((addr, index) => {
-      fields.push({
-        name: index === 0 ? "Project Address" : `Address ${index + 1}`,
-        type: "address",
-        value: addr,
         confidence: "high",
       });
     });
@@ -728,6 +924,179 @@ function extractFieldsFromText(text: string): any[] {
     }
   });
 
+  // ===== BUILDING USE GROUP =====
+  // Reusable function for extracting fields with specific allowed values
+  const extractFieldWithValues = (
+    fieldName: string,
+    fieldType: string,
+    allowedValues: string[],
+    text: string,
+    confidence: "high" | "medium" | "low" = "medium"
+  ) => {
+    const foundValues: string[] = [];
+
+    allowedValues.forEach((value) => {
+      // Look for exact matches (case-insensitive) with word boundaries
+      // Handle multi-word values by allowing flexible whitespace
+      // Handle hyphens by using word boundaries that work with hyphens
+      const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // Escape special regex chars
+      // Replace hyphens with a pattern that allows word boundaries on either side
+      const patternValue = escapedValue.replace(/\s+/g, "\\s+").replace(/-/g, "-?");
+      // Use word boundaries, but allow hyphens to be part of the word
+      const regex = new RegExp(`(?:^|\\s|[^\\w-])${patternValue}(?:$|\\s|[^\\w-])`, "gi");
+      if (regex.test(text)) {
+        foundValues.push(value);
+      }
+    });
+
+    if (foundValues.length > 0) {
+      // If multiple found, return array; otherwise single value
+      const value = foundValues.length === 1 ? foundValues[0] : foundValues;
+      fields.push({
+        name: fieldName,
+        type: fieldType,
+        value: value,
+        confidence: confidence,
+      });
+    }
+  };
+
+  // Extract Building use group
+  extractFieldWithValues(
+    "Building use group",
+    "building_use_group",
+    ["Residential", "Lodging House", "Commercial", "Warehouse"],
+    textForOtherFields,
+    "high"
+  );
+
+  // Extract Construction Type
+  extractFieldWithValues(
+    "Construction Type",
+    "construction_type",
+    ["Type V-A", "Type IV-B", "Type V-B", "Type IV-A"],
+    textForOtherFields,
+    "high"
+  );
+
+  // ===== KEY-VALUE PAIR EXTRACTION =====
+  // Extract all labeled fields (Key: Value pattern)
+  // This catches fields like "Construction Use Group: R-2", "Stories: 3", "ADDRESS: 5 Swift Terrace", etc.
+
+  // Common field names to look for (case-insensitive)
+  const commonFieldNames = [
+    "Construction Use Group",
+    "Construction Classification",
+    "Stories",
+    "Zoning District",
+    "Zoning Subdistrict",
+    "Existing Use",
+    "Proposed Use",
+    "Lot Area",
+    "Parcel Number",
+    "Building Height",
+    "Building Width",
+    "Building Depth",
+    "Floor Plate",
+    "Gross Floor Area",
+    "Permeable Area",
+    "Front Yard",
+    "Side Yard",
+    "Rear Yard",
+    "Parking Spaces",
+    "Off-Street Parking",
+    "Project Description",
+    "Address",
+    "ADDRESS",
+    "Maximum Building Height",
+    "Maximum Building Lot Coverage",
+    "Max Building Width",
+    "Max Building Depth",
+    "Maximum Building Floor Plate",
+    "Maximum Total Gross Floor Area",
+    "Minimum Permeable Area",
+    "Min Side Yard",
+    "Min Rear Yard",
+    "Off-Street Parking Space",
+  ];
+
+  // Extract key-value pairs using colon-separated pattern
+  const extractedKeyValues = new Map<string, string>();
+
+  // Pattern: "KEY: value" (most common format in documents)
+  const colonPattern =
+    /([A-Z][A-Za-z\s&\/\-]+?)[:\s]+([^\n\r]{1,200}?)(?=\n|$|(?=[A-Z][A-Za-z\s&]+?:))/g;
+  let match;
+  while ((match = colonPattern.exec(textForOtherFields)) !== null) {
+    const key = match[1]?.trim();
+    let value = match[2]?.trim();
+
+    // Clean up value (remove trailing punctuation that might be part of next field)
+    value = value.replace(/[,\s]+$/, "").trim();
+
+    if (key && value && key.length >= 2 && value.length > 0 && value.length < 200) {
+      // Normalize key
+      const normalizedKey = key.replace(/\s+/g, " ").trim();
+
+      // Check if this is a relevant field
+      const isRelevantField = commonFieldNames.some((fieldName) => {
+        const keyLower = normalizedKey.toLowerCase();
+        const fieldLower = fieldName.toLowerCase();
+        return (
+          keyLower === fieldLower ||
+          keyLower.includes(fieldLower) ||
+          fieldLower.includes(keyLower) ||
+          keyLower.replace(/\s+/g, "") === fieldLower.replace(/\s+/g, "")
+        );
+      });
+
+      // Also extract if key is all caps (like "ADDRESS", "ZONING DISTRICT")
+      const isAllCapsField =
+        normalizedKey === normalizedKey.toUpperCase() &&
+        normalizedKey.length >= 3 &&
+        normalizedKey.length <= 50;
+
+      // Extract if it looks like a field (starts with common prefixes)
+      const looksLikeField =
+        /^(Construction|Zoning|Building|Lot|Parcel|Use|Area|Yard|Parking|Stories|Address|Maximum|Max|Minimum|Min|Existing|Proposed|Project|Off-Street)/i.test(
+          normalizedKey
+        );
+
+      if (isRelevantField || isAllCapsField || looksLikeField) {
+        // Don't overwrite if we already have a better (longer) match
+        const existingValue = extractedKeyValues.get(normalizedKey);
+        if (!existingValue || existingValue.length < value.length) {
+          extractedKeyValues.set(normalizedKey, value);
+        }
+      }
+    }
+  }
+
+  // Add extracted key-value pairs as fields
+  extractedKeyValues.forEach((value, key) => {
+    // Skip if we already have this as a specific field type
+    const existingField = fields.find((f) => {
+      const fName = f.name?.toLowerCase() || "";
+      const keyLower = key.toLowerCase();
+      return (
+        fName === keyLower ||
+        (f.type === "address" && keyLower.includes("address")) ||
+        (f.type === "building_use_group" &&
+          (keyLower.includes("use group") || keyLower.includes("construction use"))) ||
+        (f.type === "construction_type" && keyLower.includes("construction classification"))
+      );
+    });
+
+    if (!existingField) {
+      fields.push({
+        name: key,
+        type: "key_value",
+        value: value,
+        confidence: "medium",
+      });
+    }
+  });
+
   // ===== BUILDING TYPES =====
 
   const buildingTypes = [
@@ -756,7 +1125,7 @@ function extractFieldsFromText(text: string): any[] {
   const foundBuildingTypes: string[] = [];
   buildingTypes.forEach((type) => {
     const regex = new RegExp(`\\b${type}\\b`, "gi");
-    if (regex.test(text)) {
+    if (regex.test(textForOtherFields)) {
       foundBuildingTypes.push(type.charAt(0).toUpperCase() + type.slice(1));
     }
   });
@@ -967,8 +1336,14 @@ Each field object should have:
 - value: Extracted value (string, number, or boolean)
 - confidence: "high", "medium", or "low"
 
-Focus on extracting these project fields:
-- Project Address (full address with street, city, state, zip)
+IMPORTANT EXTRACTION PRIORITY (top-down hierarchy):
+1. Project Address - MUST be extracted FIRST. Use the FIRST complete address found (with street, city, state, zip code). 
+   Complete addresses (with zip) always trump incomplete ones. Addresses on the first page/earlier in document have priority.
+   Only return ONE address - the best/most complete one found earliest in the document.
+2. All other fields follow after address extraction.
+
+Focus on extracting these project fields in this order:
+- Project Address (full address with street, city, state, zip) - PRIORITY #1, only one address
 - Project Title/Name
 - Square Footage (sqFt)
 - Architect/Engineer name
@@ -1038,25 +1413,51 @@ Return a JSON array of field objects. Only include fields you're confident about
 
 /**
  * Merge LLM-extracted fields with regex-extracted fields
- * Prefers LLM results, adds regex results that don't conflict
+ * Special handling for address: regex address (extracted first) takes priority
+ * For other fields: LLM results preferred, regex fills gaps
  */
 function mergeFields(llmFields: any[], regexFields: any[]): any[] {
   const merged: any[] = [];
   const seen = new Set<string>();
 
-  // Add LLM fields first (higher priority)
+  // Find address fields from both sources
+  const regexAddress = regexFields.find(
+    (f) => f.name?.toLowerCase().includes("address") && f.type === "address"
+  );
+  const llmAddress = llmFields.find(
+    (f) => f.name?.toLowerCase().includes("address") && f.type === "address"
+  );
+
+  // Address priority: regex-extracted address (processed first with top-down logic) takes precedence
+  if (regexAddress) {
+    merged.push(regexAddress);
+    seen.add("address:address");
+    console.log(`📍 [FIELD-MERGE] Using regex-extracted address (priority)`);
+  } else if (llmAddress) {
+    merged.push(llmAddress);
+    seen.add("address:address");
+    console.log(`📍 [FIELD-MERGE] Using LLM-extracted address (fallback)`);
+  }
+
+  // Add LLM fields (except address, already handled)
   for (const field of llmFields) {
     const key = `${field.name}:${field.type}`.toLowerCase();
-    if (!seen.has(key)) {
+    if (
+      !seen.has(key) &&
+      !(field.name?.toLowerCase().includes("address") && field.type === "address")
+    ) {
       merged.push(field);
       seen.add(key);
     }
   }
 
-  // Add regex fields that don't conflict
+  // Add regex fields that don't conflict (except address, already handled)
   for (const field of regexFields) {
     const key = `${field.name}:${field.type}`.toLowerCase();
-    if (!seen.has(key)) {
+    if (
+      !seen.has(key) &&
+      !(field.name?.toLowerCase().includes("address") && field.type === "address")
+    ) {
       merged.push(field);
       seen.add(key);
     }

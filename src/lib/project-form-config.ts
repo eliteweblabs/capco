@@ -67,6 +67,7 @@ export interface FormElementConfig {
   hideAtStatus?: number[]; // Control visibility based on project status
   readOnlyAtStatus?: number[]; // Control read-only state based on project status
   columns?: 1 | 2 | 3 | 4 | 6 | 12; // Control grid column span (1=full width, 2=half, 3=third, etc.)
+  dataScrap?: boolean; // Mark field for OCR/scraping in PDF extractor (default: false)
 }
 
 export interface FormActionConfig {
@@ -163,6 +164,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     },
     required: true,
     dataField: "address",
+    dataScrap: true, // Include in OCR scraping
     allow: ["Admin", "Staff", "Client"],
     hideAtStatus: [
       10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
@@ -180,6 +182,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Title",
     placeholder: "Title",
     dataField: "title",
+    dataScrap: true, // Include in OCR scraping
     allow: ["Admin", "Staff", "Client"],
     hideAtStatus: [],
     readOnlyAtStatus: standardReadOnlyStatus,
@@ -195,6 +198,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Architect",
     placeholder: "Architect",
     dataField: "architect",
+    dataScrap: true, // Include in OCR scraping
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
     readOnlyAtStatus: standardReadOnlyStatus,
@@ -268,6 +272,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Description",
     placeholder: "Project description...",
     dataField: "description",
+    dataScrap: true, // Include in OCR scraping
     allow: ["Admin", "Staff"],
     // hideAtStatus: [50, 60, 70, 80, 90],
     readOnlyAtStatus: standardReadOnlyStatus,
@@ -377,7 +382,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     name: "commencementOfConstruction",
     type: "field",
     elementType: "text",
-    label: "Commencement of Construction",
+    label: "Commencement",
     placeholder: "Estimated Commencement of Construction",
     dataField: "commencementOfConstruction",
     allow: ["Admin", "Staff"], // Only admin and staff can see architect

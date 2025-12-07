@@ -146,7 +146,17 @@ const browseBtnId = `${id}-browse-btn`;
     input.addEventListener("change", (e) => {
       const target = e.target;
       const files = target.files;
-      handleFiles(files);
+      if (files && files.length > 0) {
+        // Use setTimeout to ensure Chrome processes the change event correctly
+        setTimeout(() => {
+          handleFiles(files);
+        }, 0);
+      }
+      // Reset input to allow selecting the same file again
+      // Use a longer timeout to ensure Chrome processes the change event first
+      setTimeout(() => {
+        input.value = "";
+      }, 100);
     });
 
     // Drag and drop handlers
@@ -244,10 +254,15 @@ const browseBtnId = `${id}-browse-btn`;
         onFileSelect(files);
       } else {
         // Fallback: dispatch custom event
-        const event = new CustomEvent("dropzone-files-selected", {
-          detail: { files, dropzoneId: id },
-        });
-        dropzone.dispatchEvent(event);
+        // Use setTimeout to ensure Chrome processes the event correctly
+        setTimeout(() => {
+          const event = new CustomEvent("dropzone-files-selected", {
+            detail: { files, dropzoneId: id },
+            bubbles: true,
+            composed: true,
+          });
+          dropzone.dispatchEvent(event);
+        }, 0);
       }
     }
 
@@ -268,25 +283,33 @@ const browseBtnId = `${id}-browse-btn`;
         maxSize: maxFileSize,
         onFileSelect: (files) => {
           // Dispatch custom event for file selection
-          const dropzone = document.getElementById(dropzoneId);
-          if (dropzone) {
-            const event = new CustomEvent("dropzone-files-selected", {
-              detail: { files, dropzoneId },
-              bubbles: true,
-            });
-            dropzone.dispatchEvent(event);
-          }
+          // Use setTimeout to ensure Chrome processes the event correctly
+          setTimeout(() => {
+            const dropzone = document.getElementById(dropzoneId);
+            if (dropzone) {
+              const event = new CustomEvent("dropzone-files-selected", {
+                detail: { files, dropzoneId },
+                bubbles: true,
+                composed: true,
+              });
+              dropzone.dispatchEvent(event);
+            }
+          }, 0);
         },
         onError: (error) => {
           // Dispatch custom event for errors
-          const dropzone = document.getElementById(dropzoneId);
-          if (dropzone) {
-            const event = new CustomEvent("dropzone-error", {
-              detail: { error, dropzoneId },
-              bubbles: true,
-            });
-            dropzone.dispatchEvent(event);
-          }
+          // Use setTimeout to ensure Chrome processes the event correctly
+          setTimeout(() => {
+            const dropzone = document.getElementById(dropzoneId);
+            if (dropzone) {
+              const event = new CustomEvent("dropzone-error", {
+                detail: { error, dropzoneId },
+                bubbles: true,
+                composed: true,
+              });
+              dropzone.dispatchEvent(event);
+            }
+          }, 0);
         },
       });
     };
