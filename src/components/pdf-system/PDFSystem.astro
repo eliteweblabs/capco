@@ -247,7 +247,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         <div class="grid grid-cols-12 gap-4">
           <!-- PDF Viewer / Image Display -->
           <div class="col-span-8">
-            <div class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-4 min-h-[600px]">
+            <div class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-4 min-h-[600px] max-h-[800px] overflow-y-auto">
               <div id="scanner-pdf-viewer" class="w-full">
                 <!-- PDF.js viewer or image will be rendered here -->
                 <div class="text-center text-gray-500 dark:text-gray-400 py-20">
@@ -556,6 +556,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       this.placeholderElements = []; // Store DOM elements for placeholders in template preview
       this.placeholdersList = []; // Store list of placeholders to map
       this.tooltipListenersSetup = false; // Track if tooltip listeners are set up
+      this.scannerFields = []; // Store fields with location data for scanner tab
+      this.scannerPageScales = {}; // Store scale used for each page
 
       this.init();
     }
@@ -1690,38 +1692,80 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
             // Extract text and fields in background
             let allText = "";
-            let allTextItems = []; // Store text items with coordinates
+            let allTextItems = []; // Store text items with coordinates and font info
             
             for (let i = 1; i <= numPages; i++) {
               const page = await pdf.getPage(i);
               const textContent = await page.getTextContent();
               
-              // Store text items with page number
+              // Store text items with page number and font size info
               textContent.items.forEach(item => {
-                allTextItems.push({ ...item, pageNum: i });
+                // Extract font size from PDF.js text item
+                // PDF.js items have: height, transform[0] (horizontal scale), transform[3] (vertical scale)
+                let fontSize = 12; // default
+                if (item.height) {
+                  fontSize = item.height;
+                } else if (item.transform && Array.isArray(item.transform) && item.transform.length >= 4) {
+                  // Use vertical scale from transform matrix (transform[3] or 'd' value)
+                  fontSize = Math.abs(item.transform[3]) || Math.abs(item.transform[0]) || 12;
+                }
+                
+                allTextItems.push({ 
+                  ...item, 
+                  pageNum: i,
+                  fontSize: fontSize
+                });
                 if (item.str) {
                   allText += item.str + " ";
                 }
               });
             }
 
-            // Extract fields from text
-            const fields = self.extractFieldsFromText(allText.trim());
+            // Normalize text to fix word breaks (e.g., "istroy" -> "history")
+            allText = self.fixWordBreaks(allText);
+
+            // Extract fields from text with font size information
+            const fields = self.extractFieldsFromTextWithFontInfo(allText.trim(), allTextItems);
+            
+            // Enrich fields with location data (page number and coordinates)
+            const fieldsWithLocations = self.enrichFieldsWithLocations(fields, allTextItems);
+            
+            // Store fields with locations for click handlers
+            self.scannerFields = fieldsWithLocations;
             
             // Display fields in sidebar
-            self.displayScannerFields(fields);
+            self.displayScannerFields(fieldsWithLocations);
 
             // Display PDF pages with highlights
             const viewerHTML = document.createElement("div");
             viewerHTML.className = "space-y-4";
+            viewerHTML.id = "scanner-pdf-viewer-container";
+            
+            // Get container width to calculate scale
+            const container = document.getElementById("scanner-pdf-viewer");
+            const containerWidth = container ? container.clientWidth - 32 : 800; // Subtract padding
+            
+            // Store scale for each page for field highlighting
+            self.scannerPageScales = {};
             
             for (let i = 1; i <= numPages; i++) {
               const page = await pdf.getPage(i);
-              const viewport = page.getViewport({ scale: 1.5 });
+              
+              // Calculate scale to fit 100% width
+              const defaultViewport = page.getViewport({ scale: 1.0 });
+              const scale = containerWidth / defaultViewport.width;
+              const viewport = page.getViewport({ scale: scale });
+              
+              // Store scale for this page
+              self.scannerPageScales[i] = scale;
               
               // Create container for page
               const pageContainer = document.createElement("div");
               pageContainer.className = "mb-4 border border-gray-300 dark:border-gray-600 rounded p-2 bg-white relative";
+              pageContainer.id = `scanner-page-${i}`;
+              pageContainer.dataset.pageNum = i.toString();
+              pageContainer.style.width = "100%";
+              pageContainer.style.overflowX = "hidden";
               
               const pageLabel = document.createElement("div");
               pageLabel.className = "text-xs text-gray-500 dark:text-gray-400 mb-2";
@@ -1732,6 +1776,9 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               const canvas = document.createElement("canvas");
               canvas.height = viewport.height;
               canvas.width = viewport.width;
+              canvas.style.width = "100%";
+              canvas.style.height = "auto";
+              canvas.style.display = "block";
               const context = canvas.getContext("2d");
               
               // Render PDF page
@@ -1748,6 +1795,9 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               overlayCanvas.style.position = "absolute";
               overlayCanvas.style.top = "0";
               overlayCanvas.style.left = "0";
+              overlayCanvas.style.width = "100%";
+              overlayCanvas.style.height = "auto";
+              overlayCanvas.id = `scanner-overlay-${i}`;
               
               const overlayContext = overlayCanvas.getContext("2d");
               
@@ -1755,15 +1805,17 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               const canvasWrapper = document.createElement("div");
               canvasWrapper.className = "relative";
               canvasWrapper.style.position = "relative";
+              canvasWrapper.style.width = "100%";
+              canvasWrapper.style.overflowX = "hidden";
               canvasWrapper.appendChild(canvas);
               canvasWrapper.appendChild(overlayCanvas);
               
               pageContainer.appendChild(canvasWrapper);
               viewerHTML.appendChild(pageContainer);
               
-              // Highlight fields on this page
+              // Store viewport scale for field highlighting calculations
               const pageTextItems = allTextItems.filter(item => item.pageNum === i);
-              self.highlightFieldsOnPDFPage(fields, pageTextItems, viewport, overlayContext);
+              self.highlightFieldsOnPDFPage(fieldsWithLocations, pageTextItems, viewport, overlayContext, i, scale);
             }
             
             container.innerHTML = "";
@@ -1780,7 +1832,81 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       });
     }
 
-    highlightFieldsOnPDFPage(fields, textItems, viewport, overlayContext) {
+    enrichFieldsWithLocations(fields, allTextItems) {
+      // Add location data (page number, coordinates) to each field
+      const fieldsWithLocations = fields.map((field, fieldIndex) => {
+        const fieldValue = field.value?.toString().trim();
+        if (!fieldValue) return { ...field, pageNum: null, coordinates: null };
+
+        const fieldValueLower = fieldValue.toLowerCase();
+        const fullText = allTextItems.map(item => item.str || "").join(" ").toLowerCase();
+        const searchValue = fieldValueLower.replace(/[^\w\s@.-]/g, "");
+        const searchIndex = fullText.indexOf(searchValue);
+
+        if (searchIndex === -1) {
+          // Try to find first word
+          const words = searchValue.split(/\s+/).filter(w => w.length > 2);
+          if (words.length > 0) {
+            const wordIndex = fullText.indexOf(words[0]);
+            if (wordIndex !== -1) {
+              // Find which page and item contains this word
+              let charCount = 0;
+              for (let i = 0; i < allTextItems.length; i++) {
+                const item = allTextItems[i];
+                const itemText = item.str || "";
+                const itemStart = charCount;
+                const itemEnd = charCount + itemText.length;
+                
+                if (wordIndex >= itemStart && wordIndex < itemEnd) {
+                  return {
+                    ...field,
+                    pageNum: item.pageNum,
+                    coordinates: item.transform ? {
+                      x: item.transform[4],
+                      y: item.transform[5],
+                      width: item.width || 50,
+                      height: item.height || 20,
+                    } : null,
+                  };
+                }
+                
+                charCount = itemEnd + 1;
+              }
+            }
+          }
+          return { ...field, pageNum: null, coordinates: null };
+        } else {
+          // Find first item in the match
+          let charCount = 0;
+          for (let i = 0; i < allTextItems.length; i++) {
+            const item = allTextItems[i];
+            const itemText = item.str || "";
+            const itemStart = charCount;
+            const itemEnd = charCount + itemText.length;
+            
+            if (itemEnd > searchIndex && itemStart < searchIndex + searchValue.length) {
+              return {
+                ...field,
+                pageNum: item.pageNum,
+                coordinates: item.transform ? {
+                  x: item.transform[4],
+                  y: item.transform[5],
+                  width: item.width || 50,
+                  height: item.height || 20,
+                } : null,
+              };
+            }
+            
+            charCount = itemEnd + 1;
+          }
+          return { ...field, pageNum: null, coordinates: null };
+        }
+      });
+
+      return fieldsWithLocations;
+    }
+
+    highlightFieldsOnPDFPage(fields, textItems, viewport, overlayContext, pageNum, scale = 1.5) {
       if (!fields || fields.length === 0 || !textItems || textItems.length === 0) return;
 
       const self = this; // Capture context for nested functions
@@ -1794,14 +1920,17 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         default: "rgba(255, 152, 0, 0.4)", // Orange
       };
 
+      // Only highlight fields that are on this page
+      const pageFields = fields.filter(f => f.pageNum === pageNum);
+
       // Build full text string from items for better matching
       const fullText = textItems.map(item => item.str || "").join(" ").toLowerCase();
 
-      fields.forEach(field => {
+      pageFields.forEach((field, fieldIndex) => {
         const fieldValue = field.value?.toString().trim();
         if (!fieldValue) return;
 
-        const fieldValueLower = fieldValue.toLowerCase();
+        const fieldValueLower = field.value?.toString().toLowerCase().trim();
         const fieldType = field.type?.toLowerCase() || "default";
         const color = fieldColors[fieldType] || fieldColors.default;
 
@@ -1824,7 +1953,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 const itemEnd = charCount + itemText.length;
                 
                 if (wordIndex >= itemStart && wordIndex < itemEnd) {
-                  self.highlightTextItem(item, viewport, overlayContext, color);
+                  self.highlightTextItem(item, viewport, overlayContext, color, fieldIndex);
                   break;
                 }
                 
@@ -1856,13 +1985,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           
           // Highlight all items in the match
           itemsToHighlight.forEach(item => {
-            self.highlightTextItem(item, viewport, overlayContext, color);
+            self.highlightTextItem(item, viewport, overlayContext, color, fieldIndex);
           });
         }
       });
     }
 
-    highlightTextItem(item, viewport, overlayContext, color) {
+    highlightTextItem(item, viewport, overlayContext, color, fieldIndex) {
       if (!item.transform || item.transform.length < 6) return;
       
       const x = item.transform[4];
@@ -1895,7 +2024,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         return;
       }
 
-      fieldsList.innerHTML = fields.map(field => {
+      const self = this;
+      fieldsList.innerHTML = fields.map((field, index) => {
         const fieldType = field.type?.toLowerCase() || "default";
         const typeColors = {
           email: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
@@ -1905,14 +2035,236 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           default: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200",
         };
         const colorClass = typeColors[fieldType] || typeColors.default;
+        const hasLocation = field.pageNum && field.coordinates;
+        const clickableClass = hasLocation ? "cursor-pointer hover:shadow-md transition-shadow" : "";
         
         return `
-          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-600 ${colorClass}">
-            <div class="text-xs font-medium uppercase mb-1 opacity-75">${this.escapeHtml(field.name)}</div>
-            <div class="text-sm font-semibold">${this.escapeHtml(field.value)}</div>
+          <div 
+            class="p-3 rounded-lg border border-gray-200 dark:border-gray-600 ${colorClass} ${clickableClass}"
+            data-field-index="${index}"
+            ${hasLocation ? `onclick="window.pdfSystem.scrollToScannerField(${index})"` : ''}
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="text-xs font-medium uppercase mb-1 opacity-75">${this.escapeHtml(field.name)}</div>
+                <div class="text-sm font-semibold">${this.escapeHtml(field.value)}</div>
+              </div>
+              ${hasLocation ? `
+                <div class="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                </div>
+              ` : ''}
+            </div>
           </div>
         `;
       }).join('');
+    }
+
+    scrollToScannerField(fieldIndex) {
+      try {
+        console.log(`📍 [SCANNER] Scrolling to field index: ${fieldIndex}`);
+        
+        // Ensure scannerFields is initialized
+        if (!this.scannerFields || !Array.isArray(this.scannerFields)) {
+          console.warn("⚠️ [SCANNER] Scanner fields not available");
+          return;
+        }
+
+        const field = this.scannerFields[fieldIndex];
+        if (!field) {
+          console.warn(`⚠️ [SCANNER] Field at index ${fieldIndex} not found`);
+          return;
+        }
+
+        if (!field.pageNum || !field.coordinates) {
+          console.warn(`⚠️ [SCANNER] Field location not available for field:`, field);
+          return;
+        }
+
+        console.log(`📍 [SCANNER] Field: ${field.name}, Page: ${field.pageNum}, Coordinates:`, field.coordinates);
+
+        const pageContainer = document.getElementById(`scanner-page-${field.pageNum}`);
+        if (!pageContainer) {
+          console.warn(`⚠️ [SCANNER] Page container ${field.pageNum} not found. Available page containers:`, 
+            Array.from(document.querySelectorAll('[id^="scanner-page-"]')).map(el => el.id));
+          return;
+        }
+
+        // Find the scrollable container - check multiple possible locations
+        const viewerSection = document.getElementById("scanner-viewer-section");
+        if (!viewerSection) {
+          console.warn("⚠️ [SCANNER] Viewer section not found");
+          return;
+        }
+
+        // Try to find scrollable container - check the PDF viewer container first
+        const pdfViewer = document.getElementById("scanner-pdf-viewer");
+        let scrollableElement = null;
+
+        // First, try to find a scrollable parent of the PDF viewer
+        if (pdfViewer) {
+          let element = pdfViewer;
+          while (element && element !== document.body) {
+            const style = window.getComputedStyle(element);
+            const hasScroll = style.overflowY === 'auto' || style.overflowY === 'scroll' || 
+                            style.overflow === 'auto' || style.overflow === 'scroll' ||
+                            (element.scrollHeight > element.clientHeight && element.clientHeight > 0);
+            
+            if (hasScroll) {
+              scrollableElement = element;
+              break;
+            }
+            element = element.parentElement;
+          }
+        }
+
+        // Fallback: look for overflow-y-auto class
+        if (!scrollableElement) {
+          scrollableElement = viewerSection.querySelector(".overflow-y-auto");
+        }
+
+        // Last resort: use window scrolling
+        if (!scrollableElement) {
+          console.log("📍 [SCANNER] No scrollable container found, using window scroll");
+          const pageRect = pageContainer.getBoundingClientRect();
+          const fieldY = this.calculateFieldYPosition(field, pageContainer);
+          
+          window.scrollTo({
+            top: window.scrollY + pageRect.top + fieldY - (window.innerHeight / 2),
+            behavior: "smooth",
+          });
+
+          setTimeout(() => {
+            this.pulseFieldHighlight(field.pageNum, field.coordinates);
+          }, 300);
+          return;
+        }
+
+        console.log("📍 [SCANNER] Using scrollable element:", scrollableElement.id || scrollableElement.className);
+
+        // Get page position relative to scrollable container
+        const pageRect = pageContainer.getBoundingClientRect();
+        const containerRect = scrollableElement.getBoundingClientRect();
+        
+        // Calculate field Y position on the page
+        const fieldY = this.calculateFieldYPosition(field, pageContainer);
+        
+        // Calculate target scroll position to center the field
+        const currentScroll = scrollableElement.scrollTop;
+        const pageTopRelative = pageRect.top - containerRect.top + currentScroll;
+        const targetScroll = pageTopRelative + fieldY - (containerRect.height / 2);
+        
+        console.log("📍 [SCANNER] Scroll calculation:", {
+          currentScroll,
+          pageTopRelative,
+          fieldY,
+          targetScroll,
+          containerHeight: containerRect.height
+        });
+        
+        // Smooth scroll
+        scrollableElement.scrollTo({
+          top: Math.max(0, targetScroll),
+          behavior: "smooth",
+        });
+
+        // Add visual indicator (pulse animation) after scroll starts
+        setTimeout(() => {
+          this.pulseFieldHighlight(field.pageNum, field.coordinates);
+        }, 300);
+      } catch (error) {
+        console.error("❌ [SCANNER] Error scrolling to scanner field:", error);
+      }
+    }
+
+    calculateFieldYPosition(field, pageContainer) {
+      // Get the actual scale used for rendering this page
+      const actualScale = this.scannerPageScales?.[field.pageNum] || 1.0;
+      const pageRect = pageContainer.getBoundingClientRect();
+      
+      // PDF coordinates use bottom-left origin, but canvas uses top-left
+      // Transform[5] is the Y coordinate in PDF space (from bottom)
+      // We need to convert to canvas space (from top)
+      const pdfY = field.coordinates.y; // Y coordinate from bottom in PDF points
+      const pdfHeight = field.coordinates.height || 20; // Height in PDF points
+      
+      // Get the canvas element to determine the actual rendered height
+      const canvas = pageContainer.querySelector('canvas');
+      if (!canvas) {
+        // Fallback calculation
+        return (pageRect.height - pdfY * actualScale - pdfHeight * actualScale);
+      }
+      
+      const canvasHeight = canvas.height;
+      const viewportHeight = canvasHeight / actualScale; // Original PDF viewport height in points
+      
+      // Convert PDF Y (from bottom) to canvas Y (from top)
+      const canvasY = viewportHeight - pdfY - pdfHeight;
+      const scaledY = canvasY * actualScale;
+      
+      return scaledY;
+    }
+
+    updateScannerField(fieldIndex, newValue) {
+      if (!this.scannerFields || !Array.isArray(this.scannerFields)) {
+        console.warn("⚠️ [SCANNER] Scanner fields not available");
+        return;
+      }
+
+      const field = this.scannerFields[fieldIndex];
+      if (!field) {
+        console.warn(`⚠️ [SCANNER] Field at index ${fieldIndex} not found`);
+        return;
+      }
+
+      // Update the field value
+      field.value = newValue;
+      field.editable = false; // Mark as no longer editable (has value now)
+
+      console.log(`✅ [SCANNER] Updated field ${field.name} to: ${newValue}`);
+
+      // Re-render the fields list to update the display
+      this.displayScannerFields(this.scannerFields);
+    }
+
+    pulseFieldHighlight(pageNum, coordinates) {
+      const overlayCanvas = document.getElementById(`scanner-overlay-${pageNum}`);
+      if (!overlayCanvas) return;
+
+      const overlayContext = overlayCanvas.getContext("2d");
+      const viewport = { height: overlayCanvas.height };
+      
+      const canvasX = coordinates.x;
+      const canvasY = viewport.height - coordinates.y - coordinates.height;
+      
+      // Draw pulsing highlight
+      let pulseCount = 0;
+      const pulseInterval = setInterval(() => {
+        // Clear and redraw
+        overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        
+        // Redraw all highlights first (we'd need to store them, but for now just pulse)
+        pulseCount++;
+        
+        if (pulseCount > 6) {
+          clearInterval(pulseInterval);
+          // Redraw all highlights
+          // For now, we'll just leave it - in production you'd redraw all highlights
+          return;
+        }
+        
+        // Draw pulsing highlight
+        const opacity = 0.4 + (Math.sin(pulseCount * Math.PI / 2) * 0.3);
+        overlayContext.fillStyle = `rgba(255, 0, 0, ${opacity})`;
+        overlayContext.fillRect(canvasX - 3, canvasY - 3, coordinates.width + 6, coordinates.height + 6);
+        
+        overlayContext.strokeStyle = `rgba(255, 0, 0, ${opacity + 0.3})`;
+        overlayContext.lineWidth = 3;
+        overlayContext.strokeRect(canvasX - 3, canvasY - 3, coordinates.width + 6, coordinates.height + 6);
+      }, 200);
     }
 
     async displayImageWithHighlights(file, container) {
@@ -2255,11 +2607,32 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const text = item.str || "";
+        let text = item.str || "";
         const nextItem = items[i + 1];
 
         // Skip empty items
         if (!text || !text.trim()) continue;
+
+        // Fix word breaks: if text is a single letter followed by space, check if next item completes the word
+        // This handles cases where "h" + "istory" should be "history"
+        if (text.length === 1 && /^[a-z]$/i.test(text) && nextItem?.str) {
+          const nextText = nextItem.str.trim();
+          // Check if combining makes a common word
+          const combined = text + nextText;
+          const commonWords = [
+            "history", "sheet", "name", "information", "drawing", "north", "south", "east", "west",
+            "building", "construction", "classification", "district", "subdistrict", "proposed",
+            "existing", "permeable", "parking", "coverage", "height", "depth", "width", "plate",
+            "area", "yard", "description", "story", "stories", "type", "group", "use", "lot",
+            "parcel", "front", "side", "rear", "minimum", "maximum", "gross", "floor", "total"
+          ];
+          
+          if (commonWords.includes(combined.toLowerCase())) {
+            // Combine them and skip the next item
+            text = combined;
+            i++; // Skip next item since we've combined it
+          }
+        }
 
         // Detect list items (bullet points, numbers, dashes)
         const isListItem = this.detectListItem(text, item, nextItem);
@@ -2967,8 +3340,244 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       });
     }
 
-    extractFieldsFromText(text) {
+    /**
+     * Extract the best address from text using top-down priority
+     * Now prioritizes by font size (larger fonts = higher priority)
+     * Returns the first complete address found, removes it from text
+     * Priority: 1) Font size (larger first), 2) Completeness (complete first), 3) Position (earlier first)
+     */
+    extractBestAddress(text, textItems = null) {
+      // Address patterns ordered by priority (most specific first)
+      const addressPatterns = [
+        // Labeled addresses (highest priority) - complete with zip
+        {
+          pattern: /(?:address|project\s+location|site\s+address|location)[:\s]+(\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy|Highway|Hwy)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?)/gi,
+          isComplete: true,
+          priority: 1,
+        },
+        // Standard complete address (street + city + state + zip)
+        {
+          pattern: /\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy|Highway|Hwy)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi,
+          isComplete: true,
+          priority: 2,
+        },
+        // Address with PO Box
+        {
+          pattern: /(?:P\.?O\.?\s*Box|PO\s*Box|Post\s*Office\s*Box)\s+\d+[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi,
+          isComplete: true,
+          priority: 3,
+        },
+        // Incomplete addresses (no zip) - lower priority
+        {
+          pattern: /(?:address|project\s+location|site\s+address)[:\s]+(\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy)[\s,]+[A-Za-z\s]+)/gi,
+          isComplete: false,
+          priority: 4,
+        },
+        {
+          pattern: /\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy)[\s,]+[A-Za-z\s]+/gi,
+          isComplete: false,
+          priority: 5,
+        },
+      ];
+
+      // Find all addresses with their positions, completeness, and font sizes
+      const addressMatches = [];
+
+      addressPatterns.forEach(({ pattern, isComplete, priority }) => {
+        const regex = new RegExp(pattern.source, pattern.flags);
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          const fullMatch = match[0];
+          const cleaned = fullMatch
+            .replace(/^(address|project\s+location|site\s+address|location)[:\s]+/i, "")
+            .trim();
+
+          // Validate: must have street number and street name
+          if (cleaned.length > 10 && /\d+/.test(cleaned) && /[A-Za-z]/.test(cleaned)) {
+            // Calculate average font size for this address match
+            let avgFontSize = 12; // Default font size
+            let maxFontSize = 12;
+            
+            if (textItems && textItems.length > 0) {
+              // Find text items that overlap with this address match
+              let charCount = 0;
+              const matchStart = match.index;
+              const matchEnd = match.index + fullMatch.length;
+              const fontSizes = [];
+              
+              for (let i = 0; i < textItems.length; i++) {
+                const item = textItems[i];
+                const itemText = item.str || "";
+                const itemStart = charCount;
+                const itemEnd = charCount + itemText.length;
+                
+                // Check if this text item overlaps with the address match
+                if (itemEnd > matchStart && itemStart < matchEnd) {
+                  const fontSize = item.fontSize || item.height || item.transform?.[0] || 12;
+                  fontSizes.push(fontSize);
+                }
+                
+                charCount = itemEnd + 1; // +1 for space
+              }
+              
+              if (fontSizes.length > 0) {
+                // Use average font size, but weight towards max (larger text is more important)
+                avgFontSize = fontSizes.reduce((a, b) => a + b, 0) / fontSizes.length;
+                maxFontSize = Math.max(...fontSizes);
+                // Use max font size as primary metric (largest text wins)
+                avgFontSize = maxFontSize;
+              }
+            }
+            
+            addressMatches.push({
+              match: fullMatch,
+              cleaned,
+              position: match.index,
+              isComplete,
+              priority,
+              fontSize: avgFontSize,
+              maxFontSize: maxFontSize,
+            });
+          }
+        }
+      });
+
+      if (addressMatches.length === 0) {
+        return { address: null, remainingText: text };
+      }
+
+      // Sort by: 1) Font size (larger first), 2) completeness (complete first), 3) position (earlier first), 4) priority
+      addressMatches.sort((a, b) => {
+        // Font size is primary - larger fonts win (project address is typically larger)
+        if (Math.abs(a.fontSize - b.fontSize) > 0.5) { // Only compare if significantly different (>0.5pt)
+          return b.fontSize - a.fontSize; // Larger font size first
+        }
+        // If font sizes are similar, complete addresses win
+        if (a.isComplete !== b.isComplete) {
+          return a.isComplete ? -1 : 1;
+        }
+        // Among same completeness, earlier position wins
+        if (a.position !== b.position) {
+          return a.position - b.position;
+        }
+        // Among same position, lower priority number wins
+        return a.priority - b.priority;
+      });
+
+      const bestAddress = addressMatches[0];
+
+      // Remove the found address from text (use original match to preserve exact formatting)
+      const remainingText = text.replace(bestAddress.match, " ").replace(/\s+/g, " ").trim();
+
+      console.log(
+        `📍 [SCANNER-ADDRESS] Found address at position ${bestAddress.position}, font size: ${bestAddress.fontSize.toFixed(1)}pt, complete: ${bestAddress.isComplete}, removed from text`
+      );
+
+      return {
+        address: bestAddress.cleaned,
+        remainingText,
+      };
+    }
+
+    /**
+     * Extract fields from text with font size information (for scanner tab)
+     * Uses font size to prioritize addresses
+     */
+    extractFieldsFromTextWithFontInfo(text, textItems = null) {
       const fields = [];
+
+      // ===== PROJECT ADDRESS (FIRST PRIORITY) =====
+      // Extract address first with font size info, then remove it from text for other field extraction
+      const { address, remainingText } = this.extractBestAddress(text, textItems);
+      const textForOtherFields = remainingText; // Use text without address for other extractions
+
+      if (address) {
+        fields.push({ name: "Address", type: "address", value: address });
+        console.log(`📍 [SCANNER] Extracted address: ${address.substring(0, 50)}...`);
+      }
+
+      // Continue with other field extraction...
+      return this.extractOtherFields(textForOtherFields, fields);
+    }
+
+    /**
+     * Fix word breaks caused by line splits in PDF text extraction
+     * Handles cases like "istroy" -> "history", "heet" -> "sheet", etc.
+     */
+    fixWordBreaks(text) {
+      // Common word patterns that get broken
+      const wordFixes = {
+        // Common broken words
+        "istroy": "history",
+        "heet": "sheet",
+        "ame": "name",
+        "nformation": "information",
+        "rawing": "drawing",
+        "orth": "north",
+        "outh": "south",
+        "ast": "east",
+        "est": "west",
+        "uilding": "building",
+        "onstruction": "construction",
+        "lassification": "classification",
+        "istrict": "district",
+        "ubdistrict": "subdistrict",
+        "roposed": "proposed",
+        "xisting": "existing",
+        "ermeable": "permeable",
+        "arking": "parking",
+        "verage": "coverage",
+        "eight": "height",
+        "epth": "depth",
+        "idth": "width",
+        "late": "plate",
+        "rea": "area",
+        "ard": "yard",
+        "escription": "description",
+      };
+
+      // Fix broken words at word boundaries
+      let fixedText = text;
+      
+      // First, try to fix common broken word patterns
+      Object.keys(wordFixes).forEach((broken, correct) => {
+        // Look for broken word at start of word or after space
+        const regex = new RegExp(`(^|\\s|\\b)${broken}\\b`, "gi");
+        fixedText = fixedText.replace(regex, (match, prefix) => {
+          return prefix + correct;
+        });
+      });
+
+      // Also fix common patterns where letters are split
+      // Pattern: single letter followed by lowercase word (likely a break)
+      // e.g., "h istory" -> "history", "s heet" -> "sheet"
+      fixedText = fixedText.replace(/\b([a-z])\s+([a-z]{2,})\b/gi, (match, letter, rest) => {
+        // Check if letter + rest forms a common word
+        const combined = letter + rest;
+        const commonWords = [
+          "history", "sheet", "name", "information", "drawing", "north", "south", "east", "west",
+          "building", "construction", "classification", "district", "subdistrict", "proposed",
+          "existing", "permeable", "parking", "coverage", "height", "depth", "width", "plate",
+          "area", "yard", "description", "story", "stories", "type", "group", "use", "lot",
+          "parcel", "front", "side", "rear", "minimum", "maximum", "gross", "floor", "total"
+        ];
+        
+        if (commonWords.includes(combined.toLowerCase())) {
+          return combined;
+        }
+        return match; // Keep original if not a known word
+      });
+
+      // Fix double spaces
+      fixedText = fixedText.replace(/\s+/g, " ");
+
+      return fixedText;
+    }
+
+    /**
+     * Extract other fields (non-address) from text
+     */
+    extractOtherFields(text, fields = []) {
 
       // Email pattern
       const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
@@ -3018,24 +3627,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         }
       });
 
-      // Address patterns
-      const addressPatterns = [
-        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)\b/gi,
-        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)[\s,]*[A-Za-z\s]*,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/gi, // With city, state, zip
-        /\b[A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/g, // City, State ZIP
-      ];
-
-      addressPatterns.forEach((pattern) => {
-        const addresses = text.match(pattern);
-        if (addresses) {
-          addresses.forEach((address) => {
-            if (!fields.some((f) => f.type === "address" && f.value === address)) {
-              fields.push({ name: "Address", type: "address", value: address.trim() });
-            }
-          });
-        }
-      });
-
       // ZIP/Postal codes
       const zipRegex = /\b\d{5}(?:-\d{4})?\b/g;
       const zips = text.match(zipRegex);
@@ -3046,6 +3637,175 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           }
         });
       }
+
+      // ===== BUILDING USE GROUP =====
+      // Reusable function for extracting fields with specific allowed values
+      // Always adds the field, even if no value found (makes it editable)
+      const extractFieldWithValues = (fieldName, fieldType, allowedValues, text, alwaysShow = true) => {
+        const foundValues = [];
+        
+        allowedValues.forEach((value) => {
+          // Look for exact matches (case-insensitive) with word boundaries
+          // Handle multi-word values by allowing flexible whitespace
+          // Handle hyphens by using word boundaries that work with hyphens
+          const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // Escape special regex chars
+          // Replace hyphens with a pattern that allows word boundaries on either side
+          const patternValue = escapedValue.replace(/\s+/g, "\\s+").replace(/-/g, "-?");
+          // Use word boundaries, but allow hyphens to be part of the word
+          const regex = new RegExp(`(?:^|\\s|[^\\w-])${patternValue}(?:$|\\s|[^\\w-])`, "gi");
+          if (regex.test(text)) {
+            foundValues.push(value);
+          }
+        });
+
+        if (foundValues.length > 0) {
+          // If multiple found, return array; otherwise single value
+          const value = foundValues.length === 1 ? foundValues[0] : foundValues;
+          fields.push({ 
+            name: fieldName, 
+            type: fieldType, 
+            value: value,
+            editable: false // Has a value, not editable
+          });
+        } else if (alwaysShow) {
+          // No value found, but always show this field type (makes it editable)
+          fields.push({ 
+            name: fieldName, 
+            type: fieldType, 
+            value: "", // Empty value
+            editable: true, // No value found, make it editable
+            allowedValues: allowedValues // Store allowed values for dropdown/validation
+          });
+        }
+      };
+
+      // Extract Building use group (always show, editable if not found)
+      extractFieldWithValues(
+        "Building use group",
+        "building_use_group",
+        ["Residential", "Lodging House", "Commercial", "Warehouse"],
+        text,
+        true // alwaysShow = true
+      );
+
+      // Extract Construction Type (always show, editable if not found)
+      extractFieldWithValues(
+        "Construction Type",
+        "construction_type",
+        ["Type V-A", "Type IV-B", "Type V-B", "Type IV-A"],
+        text,
+        true // alwaysShow = true
+      );
+
+      // ===== KEY-VALUE PAIR EXTRACTION =====
+      // Extract all labeled fields (Key: Value pattern)
+      // This catches fields like "Construction Use Group: R-2", "Stories: 3", "ADDRESS: 5 Swift Terrace", etc.
+      
+      // Common field names to look for (case-insensitive)
+      const commonFieldNames = [
+        "Construction Use Group",
+        "Construction Classification",
+        "Stories",
+        "Zoning District",
+        "Zoning Subdistrict",
+        "Existing Use",
+        "Proposed Use",
+        "Lot Area",
+        "Parcel Number",
+        "Building Height",
+        "Building Width",
+        "Building Depth",
+        "Floor Plate",
+        "Gross Floor Area",
+        "Permeable Area",
+        "Front Yard",
+        "Side Yard",
+        "Rear Yard",
+        "Parking Spaces",
+        "Off-Street Parking",
+        "Project Description",
+        "Address",
+        "ADDRESS",
+        "Maximum Building Height",
+        "Maximum Building Lot Coverage",
+        "Max Building Width",
+        "Max Building Depth",
+        "Maximum Building Floor Plate",
+        "Maximum Total Gross Floor Area",
+        "Minimum Permeable Area",
+        "Min Side Yard",
+        "Min Rear Yard",
+        "Off-Street Parking Space",
+      ];
+
+      // Extract key-value pairs using multiple patterns
+      const extractedKeyValues = new Map();
+      
+      // Pattern 1: "KEY: value" (most common format)
+      const colonPattern = /([A-Z][A-Za-z\s&\/\-]+?)[:\s]+([^\n\r]{1,200}?)(?=\n|$|(?=[A-Z][A-Za-z\s&]+?:))/g;
+      let match;
+      while ((match = colonPattern.exec(text)) !== null) {
+        const key = match[1]?.trim();
+        let value = match[2]?.trim();
+        
+        // Clean up value (remove trailing punctuation that might be part of next field)
+        value = value.replace(/[,\s]+$/, "").trim();
+        
+        if (key && value && key.length >= 2 && value.length > 0 && value.length < 200) {
+          // Normalize key
+          const normalizedKey = key
+            .replace(/\s+/g, " ")
+            .trim();
+          
+          // Check if this is a relevant field
+          const isRelevantField = commonFieldNames.some(fieldName => {
+            const keyLower = normalizedKey.toLowerCase();
+            const fieldLower = fieldName.toLowerCase();
+            return keyLower === fieldLower || 
+                   keyLower.includes(fieldLower) || 
+                   fieldLower.includes(keyLower) ||
+                   keyLower.replace(/\s+/g, "") === fieldLower.replace(/\s+/g, "");
+          });
+          
+          // Also extract if key is all caps (like "ADDRESS", "ZONING DISTRICT")
+          const isAllCapsField = normalizedKey === normalizedKey.toUpperCase() && 
+                                 normalizedKey.length >= 3 && 
+                                 normalizedKey.length <= 50;
+          
+          // Extract if it looks like a field (starts with common prefixes)
+          const looksLikeField = /^(Construction|Zoning|Building|Lot|Parcel|Use|Area|Yard|Parking|Stories|Address|Maximum|Max|Minimum|Min|Existing|Proposed|Project|Off-Street)/i.test(normalizedKey);
+          
+          if (isRelevantField || isAllCapsField || looksLikeField) {
+            // Don't overwrite if we already have a better (longer) match
+            const existingValue = extractedKeyValues.get(normalizedKey);
+            if (!existingValue || existingValue.length < value.length) {
+              extractedKeyValues.set(normalizedKey, value);
+            }
+          }
+        }
+      }
+
+      // Add extracted key-value pairs as fields
+      extractedKeyValues.forEach((value, key) => {
+        // Skip if we already have this as a specific field type
+        const existingField = fields.find(f => {
+          const fName = f.name?.toLowerCase() || "";
+          const keyLower = key.toLowerCase();
+          return fName === keyLower ||
+                 (f.type === "address" && keyLower.includes("address")) ||
+                 (f.type === "building_use_group" && (keyLower.includes("use group") || keyLower.includes("construction use"))) ||
+                 (f.type === "construction_type" && keyLower.includes("construction classification"));
+        });
+        
+        if (!existingField) {
+          fields.push({
+            name: key,
+            type: "key_value",
+            value: value,
+            editable: false
+          });
+        }
+      });
 
       // Names (simple pattern - capitalized words that might be names)
       // const nameRegex = /\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g;
@@ -3102,16 +3862,27 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         });
       }
 
-      // License plates
-      const licenseRegex = /\b[A-Z]{1,3}\s?\d{1,4}[A-Z]?\b/g;
-      const licenses = text.match(licenseRegex);
-      if (licenses) {
-        licenses.forEach((license) => {
-          fields.push({ name: "License Plate", type: "license", value: license });
-        });
+      return fields;
+    }
+
+    /**
+     * Extract fields from text (fallback for when font info not available)
+     */
+    extractFieldsFromText(text) {
+      const fields = [];
+
+      // ===== PROJECT ADDRESS (FIRST PRIORITY) =====
+      // Extract address first, then remove it from text for other field extraction
+      const { address, remainingText } = this.extractBestAddress(text);
+      const textForOtherFields = remainingText; // Use text without address for other extractions
+
+      if (address) {
+        fields.push({ name: "Address", type: "address", value: address });
+        console.log(`📍 [SCANNER] Extracted address: ${address.substring(0, 50)}...`);
       }
 
-      return fields;
+      // Continue with other field extraction...
+      return this.extractOtherFields(textForOtherFields, fields);
     }
 
     replaceFieldsWithPlaceholders(text) {
@@ -3195,9 +3966,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       });
 
       // Replace addresses with {{ADDRESS_1}}, {{ADDRESS_2}}, etc.
+      // Use best address extraction to get the primary address first
+      const { address: bestAddress } = this.extractBestAddress(result);
+      
+      // Address patterns (for template generation, we may want multiple addresses)
       const addressPatterns = [
-        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)\b/gi,
-        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)[\s,]*[A-Za-z\s]*,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/gi, // With city, state, zip
+        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)[\s,]*[A-Za-z\s]*,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/gi, // With city, state, zip (complete addresses first)
+        /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)\b/gi, // Incomplete addresses
         /\b[A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/g, // City, State ZIP
       ];
 
@@ -3215,7 +3990,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           detectedFields.push({
             name: `ADDRESS_${counters.address}`,
             type: "address",
-            value: match,
+            value: match.trim(),
             placeholder: placeholder,
           });
           return placeholder;
