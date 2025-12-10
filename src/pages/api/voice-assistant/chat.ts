@@ -104,7 +104,12 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
 4. Use send_email tool with the collected information
 5. Confirm: "I've sent the email to [recipient]."
 
-**When user says "check emails" or "read emails":**
+**When user says "check Gmail" or "check my email" or "any new emails":**
+- Use check_gmail tool to check Gmail inbox
+- If new emails found: "You have [X] new emails. [List senders and subjects]"
+- If no new emails: "No new emails in your inbox."
+
+**When user says "check emails" or "read emails" (generic):**
 - Use check_emails tool
 - Summarize the results: "You have [X] new emails. [Brief summary]"
 
@@ -298,6 +303,19 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
           required: ["emailId"],
         },
       },
+      {
+        name: "check_gmail",
+        description: "Check Gmail inbox for new emails. Returns only new emails that haven't been reported yet. Requires Google OAuth authentication with Gmail scope. Use this when user asks to check their Gmail or monitor for new emails.",
+        input_schema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "Optional Gmail search query (default: 'is:unread')",
+            },
+          },
+        },
+      },
     ];
 
     // Call Anthropic API with tools
@@ -366,6 +384,19 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
                 }
               );
               toolResult = await emailResponse.json();
+            } else if (toolName === "check_gmail") {
+              const gmailResponse = await fetch(
+                new URL("/api/voice-assistant/gmail-monitor", request.url).toString(),
+                {
+                  method: "POST",
+                  headers: { 
+                    "Content-Type": "application/json",
+                    Cookie: request.headers.get("Cookie") || "",
+                  },
+                  body: JSON.stringify(toolInput),
+                }
+              );
+              toolResult = await gmailResponse.json();
             }
 
             toolResults.push({
