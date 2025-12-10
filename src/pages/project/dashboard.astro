@@ -43,8 +43,10 @@ if (currentUser?.id) {
   try {
     const { supabaseAdmin } = await import("../../lib/supabase-admin");
     const { getProjectsByAuthor, fetchProjects } = await import("../../lib/api/_projects");
-    
-    if (currentRole === "Client") {
+
+    if (!supabaseAdmin) {
+      console.error("🏗️ [PROJECT/DASHBOARD] Supabase admin client not available");
+    } else if (currentRole === "Client") {
       projects = await getProjectsByAuthor(supabaseAdmin, currentUser.id);
     } else {
       // Admin/Staff can see all projects
@@ -295,7 +297,7 @@ const statusData = statusResponseData.statuses || [];
         </div>
       </div>
     </div>
-    <div class="overflow-x-scroll overflow-y-visible relative pt-8">
+    <div class="overflow-x-scroll overflow-y-visible relative pt-8 no-scrollbar">
       {
         projects && projects.length > 0 ? (
           <ProjectList

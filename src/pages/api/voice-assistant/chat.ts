@@ -85,12 +85,18 @@ Capabilities:
 - Help with tasks
 - Remember context from the conversation
 - Learn from interactions
+- Send emails (use send_email tool when user wants to send an email)
+- Check emails (use check_emails tool when user wants to check their inbox - note: requires additional setup)
+- Read emails (use read_email tool when user wants to read a specific email - note: requires additional setup)
 
 Guidelines:
 - Keep responses short and natural for voice (1-2 sentences when possible)
 - Be conversational, not robotic
 - If you don't know something, say so honestly
 - Use the knowledge base below to inform your responses
+- When user asks to send an email, use the send_email tool with to, subject, and body parameters
+- When user asks to check emails, use the check_emails tool
+- When user asks to read a specific email, use the read_email tool with the email ID
 `;
 
     // Add knowledge base if available
@@ -123,29 +129,180 @@ Guidelines:
       content: message,
     });
 
-    // Call Anthropic API
-    const response = await client.messages.create({
+    // Define email tools
+    const tools = [
+      {
+        name: "send_email",
+        description: "Send an email to a recipient. Use this when the user wants to send an email.",
+        input_schema: {
+          type: "object",
+          properties: {
+            to: {
+              type: "string",
+              description: "The recipient's email address",
+            },
+            subject: {
+              type: "string",
+              description: "The email subject line",
+            },
+            body: {
+              type: "string",
+              description: "The email body/content (plain text)",
+            },
+            html: {
+              type: "string",
+              description: "Optional HTML version of the email body",
+            },
+          },
+          required: ["to", "subject", "body"],
+        },
+      },
+      {
+        name: "check_emails",
+        description: "Check the inbox for new emails. Returns a list of recent emails. Note: This requires email reading to be configured (Gmail API, Outlook API, or IMAP).",
+        input_schema: {
+          type: "object",
+          properties: {
+            limit: {
+              type: "number",
+              description: "Maximum number of emails to return (default: 10)",
+            },
+          },
+        },
+      },
+      {
+        name: "read_email",
+        description: "Read a specific email by its ID. Note: This requires email reading to be configured (Gmail API, Outlook API, or IMAP).",
+        input_schema: {
+          type: "object",
+          properties: {
+            emailId: {
+              type: "string",
+              description: "The ID of the email to read",
+            },
+          },
+          required: ["emailId"],
+        },
+      },
+    ];
+
+    // Call Anthropic API with tools
+    let response = await client.messages.create({
       model,
       max_tokens: 1024, // Shorter responses for voice
       system: systemPrompt,
       messages,
+      tools,
     });
 
-    // Extract response content
-    let responseText = "I'm not sure how to respond to that.";
+    // Handle tool calls
+    let finalResponseText = "I'm not sure how to respond to that.";
+    let toolResults: any[] = [];
+
+    // Process tool calls if any
+    if (response.content && response.content.length > 0) {
+      for (const block of response.content) {
+        if (block.type === "tool_use") {
+          const toolName = block.name;
+          const toolInput = block.input;
+
+          console.log(`🔧 [VOICE-ASSISTANT-API] Tool call: ${toolName}`, toolInput);
+
+          let toolResult: any = {};
+
+          try {
+            if (toolName === "send_email") {
+              const emailResponse = await fetch(
+                new URL("/api/voice-assistant/email-send", request.url).toString(),
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(toolInput),
+                }
+              );
+              toolResult = await emailResponse.json();
+            } else if (toolName === "check_emails") {
+              const emailResponse = await fetch(
+                new URL("/api/voice-assistant/email-check", request.url).toString(),
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(toolInput),
+                }
+              );
+              toolResult = await emailResponse.json();
+            } else if (toolName === "read_email") {
+              const emailResponse = await fetch(
+                new URL("/api/voice-assistant/email-read", request.url).toString(),
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(toolInput),
+                }
+              );
+              toolResult = await emailResponse.json();
+            }
+
+            toolResults.push({
+              tool_use_id: block.id,
+              type: "tool_result",
+              content: typeof toolResult === "string" ? toolResult : JSON.stringify(toolResult),
+            });
+          } catch (error: any) {
+            console.error(`❌ [VOICE-ASSISTANT-API] Error executing tool ${toolName}:`, error);
+            toolResults.push({
+              tool_use_id: block.id,
+              type: "tool_result",
+              content: JSON.stringify({
+                success: false,
+                error: error.message || "Tool execution failed",
+              }),
+              is_error: true,
+            });
+          }
+        } else if (block.type === "text") {
+          finalResponseText = block.text;
+        }
+      }
+    }
+
+    // If there are tool results, make another API call with the results
+    if (toolResults.length > 0) {
+      // Add tool results to messages
+      messages.push({
+        role: "assistant",
+        content: response.content,
+      });
+      messages.push({
+        role: "user",
+        content: toolResults,
+      });
+
+      // Get final response with tool results
+      response = await client.messages.create({
+        model,
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages,
+        tools,
+      });
+
+      // Extract final response text
     if (response.content && response.content.length > 0) {
       const firstBlock = response.content[0];
       if (firstBlock.type === "text") {
-        responseText = firstBlock.text;
+          finalResponseText = firstBlock.text;
+        }
       }
     }
 
     return new Response(
       JSON.stringify({
-        response: responseText,
+        response: finalResponseText,
         metadata: {
           tokensUsed: response.usage?.input_tokens + response.usage?.output_tokens || 0,
           model,
+          toolCalls: toolResults.length,
         },
       }),
       {
