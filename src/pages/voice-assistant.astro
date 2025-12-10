@@ -379,6 +379,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
               </ul>
             </li>
             <li><strong>"Bee send email"</strong> or <strong>"Bee email [client name]"</strong> - Send an email. You can mention a client name like "email John Smith" or "email ABC Company" and I'll look them up automatically</li>
+            <li><strong>"Bee check Gmail"</strong> - Check your Gmail inbox for new emails (requires Google OAuth with Gmail scope)</li>
             <li><strong>"Bee check emails"</strong> - Check your inbox (requires email reading setup)</li>
             <li><strong>"Bee read email"</strong> - Read a specific email (requires email reading setup)</li>
           </ul>
@@ -390,7 +391,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
         <br />
         <strong>Note:</strong> For better accuracy and voice authentication, use the VAPI-based voice assistant at <code>/voice-assistant-vapi</code>.
         <br />
-        <strong>Email Features:</strong> The assistant can send emails. Email reading/checking requires additional setup (Gmail API, Outlook API, or IMAP configuration).
+        <strong>Email Features:</strong> The assistant can send emails and monitor your Gmail inbox. Gmail monitoring automatically checks for new emails every 10 seconds and will notify you when new emails arrive. Requires Google OAuth authentication with Gmail scope. Email reading/checking for other providers requires additional setup (Outlook API or IMAP configuration).
       </p>
     </div>
   </div>
@@ -608,6 +609,97 @@ const { currentUser } = await checkAuth(Astro.cookies);
     tagsEnabled: enableTagsCheckbox?.checked || false,
   });
   
+  // Gmail Monitoring - Check for new emails every 10 seconds
+  let gmailMonitoringInterval = null;
+  let lastGmailCheck = null;
+  let isGmailMonitoringEnabled = false;
+  
+  async function checkGmailForNewEmails() {
+    try {
+      const response = await fetch("/api/voice-assistant/gmail-monitor", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Not authenticated with Google - stop monitoring
+          if (gmailMonitoringInterval) {
+            clearInterval(gmailMonitoringInterval);
+            gmailMonitoringInterval = null;
+            isGmailMonitoringEnabled = false;
+          }
+          VoiceAssistantLogger.warn("gmail", "Gmail monitoring stopped - not authenticated with Google");
+          return;
+        }
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.newEmails && data.newEmails.length > 0) {
+        // New emails found!
+        const emailCount = data.newEmails.length;
+        const emailList = data.newEmails
+          .slice(0, 3) // Only announce first 3
+          .map((email: any) => `${email.from.split("<")[0].trim() || email.from}: ${email.subject}`)
+          .join(". ");
+        
+        const announcement = emailCount === 1 
+          ? `You have 1 new email. ${emailList}`
+          : `You have ${emailCount} new emails. ${emailList}${emailCount > 3 ? ` and ${emailCount - 3} more` : ""}`;
+        
+        // Add to conversation
+        addMessage("assistant", announcement);
+        
+        // Speak the announcement if speech is enabled
+        if (enableSpeechCheckbox?.checked && !isListening) {
+          speak(announcement);
+        }
+        
+        VoiceAssistantLogger.info("gmail", `New emails detected: ${emailCount}`, {
+          emails: data.newEmails.map((e: any) => ({ from: e.from, subject: e.subject })),
+        });
+      }
+      
+      lastGmailCheck = new Date();
+    } catch (error: any) {
+      VoiceAssistantLogger.error("gmail", "Error checking Gmail", { error: error.message });
+    }
+  }
+  
+  function startGmailMonitoring() {
+    if (gmailMonitoringInterval) {
+      return; // Already monitoring
+    }
+    
+    VoiceAssistantLogger.info("gmail", "Starting Gmail monitoring (every 10 seconds)");
+    isGmailMonitoringEnabled = true;
+    
+    // Check immediately
+    checkGmailForNewEmails();
+    
+    // Then check every 10 seconds
+    gmailMonitoringInterval = setInterval(checkGmailForNewEmails, 10000);
+  }
+  
+  function stopGmailMonitoring() {
+    if (gmailMonitoringInterval) {
+      clearInterval(gmailMonitoringInterval);
+      gmailMonitoringInterval = null;
+      isGmailMonitoringEnabled = false;
+      VoiceAssistantLogger.info("gmail", "Gmail monitoring stopped");
+    }
+  }
+  
+  // Start Gmail monitoring when page loads (if user is authenticated)
+  // Check after a short delay to ensure cookies are available
+  setTimeout(() => {
+    startGmailMonitoring();
+  }, 2000);
   
   // Log when tag toggle changes
   if (enableTagsCheckbox) {
