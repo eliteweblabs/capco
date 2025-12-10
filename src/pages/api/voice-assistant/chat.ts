@@ -85,7 +85,8 @@ Capabilities:
 - Help with tasks
 - Remember context from the conversation
 - Learn from interactions
-- Send emails (use send_email tool when user wants to send an email)
+- Search for clients in the database (use search_client tool when user mentions a client name)
+- Send emails (use send_email tool when user wants to send an email. If user mentions a client name like "email John Smith" or "email ABC Company", first use search_client to find the client, then use send_email with their email address)
 - Check emails (use check_emails tool when user wants to check their inbox - note: requires additional setup)
 - Read emails (use read_email tool when user wants to read a specific email - note: requires additional setup)
 
@@ -94,6 +95,7 @@ Guidelines:
 - Be conversational, not robotic
 - If you don't know something, say so honestly
 - Use the knowledge base below to inform your responses
+- When user mentions a client name (e.g., "email John Smith" or "send email to ABC Company"), first use search_client to find the client and get their email address, then use send_email with that email
 - When user asks to send an email, use the send_email tool with to, subject, and body parameters
 - When user asks to check emails, use the check_emails tool
 - When user asks to read a specific email, use the read_email tool with the email ID
@@ -132,8 +134,26 @@ Guidelines:
     // Define email tools
     const tools = [
       {
+        name: "search_client",
+        description: "Search for a client in the database by name, company name, or email. Use this when the user mentions a client name or wants to find a client before sending an email. Returns client information including email address.",
+        input_schema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "The search query - can be client name, company name, or email address",
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of results to return (default: 10)",
+            },
+          },
+          required: ["query"],
+        },
+      },
+      {
         name: "send_email",
-        description: "Send an email to a recipient. Use this when the user wants to send an email.",
+        description: "Send an email to a recipient. Use this when the user wants to send an email. If the user mentions a client name, first use search_client to find the client's email address.",
         input_schema: {
           type: "object",
           properties: {
@@ -211,7 +231,17 @@ Guidelines:
           let toolResult: any = {};
 
           try {
-            if (toolName === "send_email") {
+            if (toolName === "search_client") {
+              const clientResponse = await fetch(
+                new URL("/api/voice-assistant/client-search", request.url).toString(),
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(toolInput),
+                }
+              );
+              toolResult = await clientResponse.json();
+            } else if (toolName === "send_email") {
               const emailResponse = await fetch(
                 new URL("/api/voice-assistant/email-send", request.url).toString(),
                 {
