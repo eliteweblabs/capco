@@ -316,6 +316,31 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
           },
         },
       },
+      {
+        name: "call_client",
+        description: "Make a phone call to a client using VAPI. Use this when the user wants to call a client. If a client name is mentioned, first use search_client to find the client and get their phone number, then use call_client with the client's phone number or clientId. You can also provide a custom message for the call.",
+        input_schema: {
+          type: "object",
+          properties: {
+            clientName: {
+              type: "string",
+              description: "The name of the client to call (optional if clientId or phoneNumber is provided)",
+            },
+            clientId: {
+              type: "string",
+              description: "The ID of the client to call (optional if clientName or phoneNumber is provided)",
+            },
+            phoneNumber: {
+              type: "string",
+              description: "The phone number to call in E.164 format (e.g., +1234567890). Optional if clientName or clientId is provided - will be looked up from database.",
+            },
+            message: {
+              type: "string",
+              description: "Optional custom message or context for the call",
+            },
+          },
+        },
+      },
     ];
 
     // Call Anthropic API with tools
@@ -397,6 +422,16 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
                 }
               );
               toolResult = await gmailResponse.json();
+            } else if (toolName === "call_client") {
+              const callResponse = await fetch(
+                new URL("/api/voice-assistant/call-client", request.url).toString(),
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(toolInput),
+                }
+              );
+              toolResult = await callResponse.json();
             }
 
             toolResults.push({

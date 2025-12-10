@@ -1877,57 +1877,111 @@ const { currentUser } = await checkAuth(Astro.cookies);
     if (voices.length === 0) return null;
     
     // Prioritize neural/premium voices (most natural-sounding)
+    // These are the most human-like voices available
     const neuralVoices = [
-      "Microsoft Aria", // Neural voice - very natural
-      "Microsoft Jenny", // Neural voice - very natural
-      "Microsoft Aria Neural", // Neural voice
-      "Microsoft Jenny Neural", // Neural voice
-      "Google en-US-Neural2", // Google Neural
-      "Google en-US-Neural2-C", // Google Neural
-      "Google en-US-Neural2-D", // Google Neural
-      "Google en-US-Neural2-E", // Google Neural
-      "Google en-US-Neural2-F", // Google Neural
-      "Google en-US-Neural2-G", // Google Neural
-      "Google en-US-Neural2-H", // Google Neural
-      "Google en-US-Neural2-I", // Google Neural
-      "Google en-US-Neural2-J", // Google Neural
+      // Microsoft Neural voices (most natural)
+      "Microsoft Aria", 
+      "Microsoft Jenny", 
+      "Microsoft Aria Neural", 
+      "Microsoft Jenny Neural",
+      "Microsoft Zira",
+      "Microsoft Hazel",
+      // Google Neural voices (very natural)
+      "Google en-US-Neural2",
+      "Google en-US-Neural2-C",
+      "Google en-US-Neural2-D",
+      "Google en-US-Neural2-E",
+      "Google en-US-Neural2-F",
+      "Google en-US-Neural2-G",
+      "Google en-US-Neural2-H",
+      "Google en-US-Neural2-I",
+      "Google en-US-Neural2-J",
+      // Amazon Polly voices (if available)
+      "Joanna",
+      "Salli",
+      "Kimberly",
+      // Apple Premium voices (macOS)
+      "Samantha Premium",
+      "Victoria Premium",
     ];
     
     // High-quality natural voices (second priority)
+    // These are still very natural but not neural
     const naturalVoices = [
-      "Samantha", // macOS - very natural
-      "Victoria", // macOS - very natural
-      "Karen", // macOS - natural
-      "Alex", // macOS - natural
-      "Microsoft Zira", // Windows - natural
-      "Microsoft Hazel", // Windows - natural
-      "Microsoft Aria", // Windows - natural
-      "Microsoft Jenny", // Windows - natural
+      // macOS voices (very natural)
+      "Samantha", 
+      "Victoria", 
+      "Karen", 
+      "Alex",
+      "Fiona",
+      "Moira",
+      "Tessa",
+      // Windows voices
+      "Microsoft Zira", 
+      "Microsoft Hazel", 
+      "Microsoft Aria", 
+      "Microsoft Jenny",
+      "Microsoft Susan",
+      // Google voices
       "Google UK English Female",
       "Google US English Female",
       "Google Australian English Female",
+      "Google en-US",
+      // Other premium voices
+      "Salli",
+      "Joanna",
+      "Kimberly",
     ];
     
     // Try neural voices first (most natural)
+    // Be VERY aggressive in finding neural voices - try partial matches
     for (const voiceName of neuralVoices) {
-      const voice = voices.find(v => 
-        v.name.includes(voiceName) || 
-        v.name.toLowerCase().includes(voiceName.toLowerCase())
-      );
+      const searchName = voiceName.toLowerCase();
+      const voice = voices.find(v => {
+        const vName = v.name.toLowerCase();
+        // Try multiple matching strategies
+        return vName.includes(searchName) || 
+               searchName.includes(vName) ||
+               vName === searchName ||
+               vName.startsWith(searchName) ||
+               searchName.startsWith(vName) ||
+               vName.split(' ').some(word => searchName.includes(word)) ||
+               searchName.split(' ').some(word => vName.includes(word));
+      });
       if (voice) {
-        console.log("🎤 Using neural voice:", voice.name);
+        console.log("🎤 [VOICE] ✅ Selected neural voice:", voice.name, "| Lang:", voice.lang, "| Local:", voice.localService);
         return voice;
       }
     }
     
+    // Also try to find any voice with "neural", "premium", or "enhanced" in name
+    const neuralMatch = voices.find(v => {
+      const name = v.name.toLowerCase();
+      return name.includes("neural") || 
+             name.includes("premium") || 
+             name.includes("enhanced") ||
+             name.includes("aria") ||
+             name.includes("jenny") ||
+             name.includes("samantha") ||
+             name.includes("victoria");
+    });
+    if (neuralMatch) {
+      console.log("🎤 [VOICE] ✅ Selected neural/premium voice (auto-detected):", neuralMatch.name);
+      return neuralMatch;
+    }
+    
     // Try natural voices (second choice)
+    // Be more flexible in matching
     for (const voiceName of naturalVoices) {
-      const voice = voices.find(v => 
-        v.name.includes(voiceName) || 
-        v.name.toLowerCase().includes(voiceName.toLowerCase())
-      );
+      const voice = voices.find(v => {
+        const vName = v.name.toLowerCase();
+        const searchName = voiceName.toLowerCase();
+        return vName.includes(searchName) || 
+               vName === searchName ||
+               vName.startsWith(searchName);
+      });
       if (voice) {
-        console.log("🎤 Using natural voice:", voice.name);
+        console.log("🎤 Using natural voice:", voice.name, "| Lang:", voice.lang);
         return voice;
       }
     }
@@ -1973,21 +2027,27 @@ const { currentUser } = await checkAuth(Astro.cookies);
       // Stop any current speech
       stopSpeaking();
       
-      // Process text for more natural speech (add slight pauses after punctuation)
-      const processedText = text
-        .replace(/\. /g, '. ') // Keep periods with space
-        .replace(/, /g, ', ') // Keep commas with space
-        .replace(/\? /g, '? ') // Keep question marks with space
-        .replace(/! /g, '! '); // Keep exclamation marks with space
+      // Process text for more natural speech
+      // Keep text as-is - don't over-process it
+      // The voice engine handles punctuation naturally
+      let processedText = text.trim();
+      
+      // Only normalize excessive whitespace
+      processedText = processedText.replace(/\s+/g, ' ');
       
       const utterance = new SpeechSynthesisUtterance(processedText);
       
-      // Set natural speaking rate (0.95 = slightly slower than normal for clarity, but not robotic)
-      // Normal rate is 1.0, so 0.95 is just slightly slower for better comprehension
-      utterance.rate = 0.95;
+      // Set natural speaking rate - 1.0 is normal human speed
+      // For more natural sound, use normal or slightly slower rate (0.9-1.0)
+      // Too fast sounds rushed, too slow sounds robotic
+      utterance.rate = 1.0;
       
       // Normal pitch for natural sound (1.0 = normal human pitch)
+      // Avoid extreme pitches - they sound unnatural
       utterance.pitch = 1.0;
+      
+      // Add slight variation to make it less monotone
+      // Use volume variation hints in text processing
       
       // Normal volume
       utterance.volume = 1.0;
@@ -1996,7 +2056,30 @@ const { currentUser } = await checkAuth(Astro.cookies);
       const preferredVoice = getPreferredVoice();
       if (preferredVoice) {
         utterance.voice = preferredVoice;
-        VoiceAssistantLogger.debug("voice", "Using voice", { voiceName: preferredVoice.name });
+        console.log("🎤 [VOICE] Selected voice:", preferredVoice.name);
+        console.log("🎤 [VOICE] Voice details:", {
+          name: preferredVoice.name,
+          lang: preferredVoice.lang,
+          localService: preferredVoice.localService,
+          default: preferredVoice.default,
+          rate: utterance.rate,
+          pitch: utterance.pitch,
+        });
+        VoiceAssistantLogger.debug("voice", "Using voice", { 
+          voiceName: preferredVoice.name,
+          lang: preferredVoice.lang,
+          rate: utterance.rate,
+          pitch: utterance.pitch,
+        });
+      } else {
+        console.warn("🎤 [VOICE] No preferred voice found, using default");
+        // Log all available voices for debugging
+        const allVoices = window.speechSynthesis.getVoices();
+        console.log("🎤 [VOICE] Available voices:", allVoices.map(v => ({
+          name: v.name,
+          lang: v.lang,
+          localService: v.localService,
+        })));
       }
       
       utterance.onstart = () => {
@@ -2024,12 +2107,32 @@ const { currentUser } = await checkAuth(Astro.cookies);
   // Load voices when they become available (some browsers need this)
   if ("speechSynthesis" in window) {
     // Load voices immediately if available
-    if (window.speechSynthesis.getVoices().length > 0) {
-      // Voices already loaded
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      console.log("🎤 [VOICE] Voices loaded immediately:", voices.length);
+      // Log available neural/premium voices
+      const neuralVoices = voices.filter(v => 
+        v.name.toLowerCase().includes("neural") || 
+        v.name.toLowerCase().includes("premium") ||
+        v.name.toLowerCase().includes("enhanced")
+      );
+      if (neuralVoices.length > 0) {
+        console.log("🎤 [VOICE] Neural/Premium voices found:", neuralVoices.map(v => v.name));
+      }
     } else {
       // Wait for voices to load
       window.speechSynthesis.onvoiceschanged = () => {
-        console.log("Voices loaded:", window.speechSynthesis.getVoices().length);
+        const loadedVoices = window.speechSynthesis.getVoices();
+        console.log("🎤 [VOICE] Voices loaded:", loadedVoices.length);
+        // Log available neural/premium voices
+        const neuralVoices = loadedVoices.filter(v => 
+          v.name.toLowerCase().includes("neural") || 
+          v.name.toLowerCase().includes("premium") ||
+          v.name.toLowerCase().includes("enhanced")
+        );
+        if (neuralVoices.length > 0) {
+          console.log("🎤 [VOICE] Neural/Premium voices found:", neuralVoices.map(v => v.name));
+        }
       };
     }
   }
