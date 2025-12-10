@@ -376,7 +376,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
                 <li>For Clients: Starts directly with project details</li>
               </ul>
             </li>
-            <li><strong>"Bee send email"</strong> - Send an email (I'll ask for recipient, subject, and message)</li>
+            <li><strong>"Bee send email"</strong> or <strong>"Bee email [client name]"</strong> - Send an email. You can mention a client name like "email John Smith" or "email ABC Company" and I'll look them up automatically</li>
             <li><strong>"Bee check emails"</strong> - Check your inbox (requires email reading setup)</li>
             <li><strong>"Bee read email"</strong> - Read a specific email (requires email reading setup)</li>
           </ul>
@@ -1736,30 +1736,76 @@ const { currentUser } = await checkAuth(Astro.cookies);
     statusIndicator.className = `w-3 h-3 rounded-full ${indicatorColor}`;
   }
 
-  // Get preferred voice (prefer female voices, fallback to any available)
+  // Get preferred voice (prioritize natural, neural, and premium voices)
   function getPreferredVoice() {
     if (!("speechSynthesis" in window)) return null;
     
     const voices = window.speechSynthesis.getVoices();
     if (voices.length === 0) return null;
     
-    // Preferred voices (female, natural-sounding)
-    const preferredVoiceNames = [
-      "Samantha", // macOS female voice
-      "Victoria", // macOS female voice
-      "Karen", // macOS female voice
-      "Google UK English Female",
-      "Microsoft Zira - English (United States)",
-      "Microsoft Hazel - English (Great Britain)",
+    // Prioritize neural/premium voices (most natural-sounding)
+    const neuralVoices = [
+      "Microsoft Aria", // Neural voice - very natural
+      "Microsoft Jenny", // Neural voice - very natural
+      "Microsoft Aria Neural", // Neural voice
+      "Microsoft Jenny Neural", // Neural voice
+      "Google en-US-Neural2", // Google Neural
+      "Google en-US-Neural2-C", // Google Neural
+      "Google en-US-Neural2-D", // Google Neural
+      "Google en-US-Neural2-E", // Google Neural
+      "Google en-US-Neural2-F", // Google Neural
+      "Google en-US-Neural2-G", // Google Neural
+      "Google en-US-Neural2-H", // Google Neural
+      "Google en-US-Neural2-I", // Google Neural
+      "Google en-US-Neural2-J", // Google Neural
     ];
     
-    // Try to find a preferred voice
-    for (const preferredName of preferredVoiceNames) {
+    // High-quality natural voices (second priority)
+    const naturalVoices = [
+      "Samantha", // macOS - very natural
+      "Victoria", // macOS - very natural
+      "Karen", // macOS - natural
+      "Alex", // macOS - natural
+      "Microsoft Zira", // Windows - natural
+      "Microsoft Hazel", // Windows - natural
+      "Microsoft Aria", // Windows - natural
+      "Microsoft Jenny", // Windows - natural
+      "Google UK English Female",
+      "Google US English Female",
+      "Google Australian English Female",
+    ];
+    
+    // Try neural voices first (most natural)
+    for (const voiceName of neuralVoices) {
       const voice = voices.find(v => 
-        v.name.includes(preferredName) || 
-        v.name.toLowerCase().includes(preferredName.toLowerCase())
+        v.name.includes(voiceName) || 
+        v.name.toLowerCase().includes(voiceName.toLowerCase())
       );
-      if (voice) return voice;
+      if (voice) {
+        console.log("🎤 Using neural voice:", voice.name);
+        return voice;
+      }
+    }
+    
+    // Try natural voices (second choice)
+    for (const voiceName of naturalVoices) {
+      const voice = voices.find(v => 
+        v.name.includes(voiceName) || 
+        v.name.toLowerCase().includes(voiceName.toLowerCase())
+      );
+      if (voice) {
+        console.log("🎤 Using natural voice:", voice.name);
+        return voice;
+      }
+    }
+    
+    // Fallback: find any voice with "neural" in the name
+    const anyNeural = voices.find(v => 
+      v.name.toLowerCase().includes("neural")
+    );
+    if (anyNeural) {
+      console.log("🎤 Using neural voice (fallback):", anyNeural.name);
+      return anyNeural;
     }
     
     // Fallback: find any female voice
@@ -1769,11 +1815,17 @@ const { currentUser } = await checkAuth(Astro.cookies);
       v.name.includes("Victoria") ||
       v.name.includes("Karen") ||
       v.name.includes("Zira") ||
-      v.name.includes("Hazel")
+      v.name.includes("Hazel") ||
+      v.name.includes("Aria") ||
+      v.name.includes("Jenny")
     );
-    if (femaleVoice) return femaleVoice;
+    if (femaleVoice) {
+      console.log("🎤 Using female voice (fallback):", femaleVoice.name);
+      return femaleVoice;
+    }
     
     // Last resort: use default voice
+    console.log("🎤 Using default voice:", voices[0]?.name);
     return voices[0];
   }
 
@@ -1788,13 +1840,21 @@ const { currentUser } = await checkAuth(Astro.cookies);
       // Stop any current speech
       stopSpeaking();
       
-      const utterance = new SpeechSynthesisUtterance(text);
+      // Process text for more natural speech (add slight pauses after punctuation)
+      const processedText = text
+        .replace(/\. /g, '. ') // Keep periods with space
+        .replace(/, /g, ', ') // Keep commas with space
+        .replace(/\? /g, '? ') // Keep question marks with space
+        .replace(/! /g, '! '); // Keep exclamation marks with space
       
-      // Set slower rate (0.7 = 70% speed, slower than normal)
-      utterance.rate = 0.75;
+      const utterance = new SpeechSynthesisUtterance(processedText);
       
-      // Slightly lower pitch for a warmer tone
-      utterance.pitch = 0.9;
+      // Set natural speaking rate (0.95 = slightly slower than normal for clarity, but not robotic)
+      // Normal rate is 1.0, so 0.95 is just slightly slower for better comprehension
+      utterance.rate = 0.95;
+      
+      // Normal pitch for natural sound (1.0 = normal human pitch)
+      utterance.pitch = 1.0;
       
       // Normal volume
       utterance.volume = 1.0;
