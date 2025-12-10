@@ -10,7 +10,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
 ---
 
 <App title="Voice Assistant" currentUser={currentUser}>
-  <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+  <!-- Mobile-optimized container with full-screen support -->
+  <div id="voice-assistant-container" class="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-8 lg:px-8 min-h-screen sm:min-h-0">
     <div class="mb-8 text-center">
       <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
         🎤 Voice Assistant
@@ -31,12 +32,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
         </div>
       </div>
 
-      <!-- Microphone Button -->
+      <!-- Microphone Button with enhanced mobile support -->
       <div class="flex justify-center mb-8">
         <button
           id="mic-button"
-          class="w-24 h-24 rounded-full bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:focus:ring-primary-800 transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl"
+          class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-primary-600 hover:bg-primary-700 active:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:focus:ring-primary-800 transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl active:scale-95 touch-manipulation"
           aria-label="Start/Stop listening"
+          style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
         >
           <svg
             id="mic-icon"
@@ -397,6 +399,37 @@ const { currentUser } = await checkAuth(Astro.cookies);
 <script define:vars={{ currentUserRole: currentUser?.profile?.role || "Client" }}>
   // Voice Assistant Web Interface
   // Uses Web Speech API for speech recognition
+  // Enhanced for mobile/PWA Siri-like experience
+
+  // Detect if running as PWA (installed on home screen)
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                (window.navigator as any).standalone === true ||
+                document.referrer.includes('android-app://');
+  
+  // Detect mobile device
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+  // Apply mobile optimizations
+  if (isPWA || isMobile) {
+    document.documentElement.classList.add('pwa-mode');
+    // Prevent zoom on double tap
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (event) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+    
+    // Add viewport meta tag if missing
+    if (!document.querySelector('meta[name="viewport"]')) {
+      const viewport = document.createElement('meta');
+      viewport.name = 'viewport';
+      viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+      document.head.appendChild(viewport);
+    }
+  }
 
   // Get current user info from server
   const isClient = currentUserRole.toLowerCase() === "client";
@@ -627,14 +660,22 @@ const { currentUser } = await checkAuth(Astro.cookies);
     recognition.onstart = () => {
       isListening = true;
       updateStatus("Listening...", "bg-blue-400");
-      micButton.classList.add("ring-4", "ring-blue-300");
+      micButton.classList.add("ring-4", "ring-blue-300", "animate-pulse");
+      // Add visual feedback for mobile
+      if (isMobile || isPWA) {
+        micButton.style.transform = "scale(1.1)";
+      }
       VoiceAssistantLogger.info("voice", "Speech recognition started");
     };
 
     recognition.onend = () => {
       isListening = false;
       updateStatus("Ready - Click microphone to start", "bg-gray-400");
-      micButton.classList.remove("ring-4", "ring-blue-300");
+      micButton.classList.remove("ring-4", "ring-blue-300", "animate-pulse");
+      // Reset visual feedback
+      if (isMobile || isPWA) {
+        micButton.style.transform = "scale(1)";
+      }
       VoiceAssistantLogger.debug("voice", "Speech recognition ended", { isAwake });
       
       // Auto-restart if it stopped unexpectedly (browser sometimes stops recognition)
@@ -2562,9 +2603,28 @@ const { currentUser } = await checkAuth(Astro.cookies);
 </script>
 
 <style>
+  /* Mobile/PWA optimizations */
+  .pwa-mode {
+    /* Full-screen PWA support */
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Prevent text selection on mobile for better UX */
+  @media (max-width: 640px) {
+    #mic-button {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+  }
+
+  /* Enhanced conversation area for mobile */
   #conversation {
     scrollbar-width: thin;
     scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    /* Better mobile scrolling */
+    -webkit-overflow-scrolling: touch;
   }
 
   #conversation::-webkit-scrollbar {
@@ -2578,6 +2638,53 @@ const { currentUser } = await checkAuth(Astro.cookies);
   #conversation::-webkit-scrollbar-thumb {
     background-color: rgba(156, 163, 175, 0.5);
     border-radius: 3px;
+  }
+
+  /* Mobile-specific styles */
+  @media (max-width: 640px) {
+    #voice-assistant-container {
+      padding: 1rem;
+    }
+    
+    /* Larger tap targets on mobile */
+    button, input, select {
+      min-height: 44px; /* iOS recommended tap target size */
+    }
+    
+    /* Better spacing on mobile */
+    .mb-8 {
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  /* PWA full-screen mode */
+  @media (display-mode: standalone) {
+    #voice-assistant-container {
+      padding-top: max(1rem, env(safe-area-inset-top));
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+  }
+
+  /* Smooth animations for voice feedback */
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.2);
+      opacity: 0;
+    }
+  }
+
+  #mic-button.animate-pulse::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid rgba(59, 130, 246, 0.5);
+    animation: pulse-ring 1.5s ease-out infinite;
   }
 </style>
 
