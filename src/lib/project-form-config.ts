@@ -164,7 +164,6 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     },
     required: true,
     dataField: "address",
-    dataScrap: true, // Include in OCR scraping
     allow: ["Admin", "Staff", "Client"],
     hideAtStatus: [
       10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
@@ -182,7 +181,6 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Title",
     placeholder: "Title",
     dataField: "title",
-    dataScrap: true, // Include in OCR scraping
     allow: ["Admin", "Staff", "Client"],
     hideAtStatus: [],
     readOnlyAtStatus: standardReadOnlyStatus,
@@ -198,7 +196,6 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Architect",
     placeholder: "Architect",
     dataField: "architect",
-    dataScrap: true, // Include in OCR scraping
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
     readOnlyAtStatus: standardReadOnlyStatus,
@@ -272,7 +269,6 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label: "Description",
     placeholder: "Project description...",
     dataField: "description",
-    dataScrap: true, // Include in OCR scraping
     allow: ["Admin", "Staff"],
     // hideAtStatus: [50, 60, 70, 80, 90],
     readOnlyAtStatus: standardReadOnlyStatus,

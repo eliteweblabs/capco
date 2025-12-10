@@ -2,6 +2,7 @@
 import Alert from "../partials/Alert.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Dropzone from "../common/Dropzone.astro";
+import App from "../common/App.astro";
 
 export interface Props {
   currentUser?: any;
@@ -55,61 +56,188 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     background: rgba(255, 255, 255, 0.5);
   }
 </style>
-
-<div class="pdf-system-container p-6 color-background rounded-lg shadow-lg">
-  <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">PDF System</h2>
-    <p class="text-gray-600 dark:text-gray-400">Create templates and generate professional PDFs</p>
-  </div>
-
-  <!-- Tab Navigation -->
-  <div class="mb-6">
-    <div class="border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex space-x-8">
-        <button
-          id="templates-tab"
-          class="pdf-tab py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600 dark:text-blue-400"
-          data-tab="templates"
-        >
-          <SimpleIcon name="file-text" class="w-4 h-4 inline mr-2" />
-          Templates
-        </button>
-        <button
-          id="generate-tab"
-          class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-          data-tab="generate"
-        >
-          <SimpleIcon name="file-plus" class="w-4 h-4 inline mr-2" />
-          Generate PDF
-        </button>
-        <button
-          id="contacts-tab"
-          class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-          data-tab="contacts"
-        >
-          <SimpleIcon name="user" class="w-4 h-4 inline mr-2" />
-          Google Contacts
-        </button>
-        <button
-          id="scanner-tab"
-          class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-          data-tab="scanner"
-        >
-          <SimpleIcon name="file-search" class="w-4 h-4 inline mr-2" />
-          Scanner
-        </button>
-      </nav>
-    </div>
-  </div>
-
-  <!-- Templates Tab Content -->
-  <div id="templates-content" class="pdf-tab-content">
+<App title="PDF System">
+  <div class="pdf-system-container p-6 color-background rounded-lg shadow-lg">
     <div class="mb-6">
-      <div class="flex justify-between items-center mb-4">
-        <!-- <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Template Management</h3> -->
-        <div class="w-full">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">PDF System</h2>
+      <p class="text-gray-600 dark:text-gray-400">
+        Create templates and generate professional PDFs
+      </p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="mb-6">
+      <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="-mb-px flex space-x-8">
+          <button
+            id="templates-tab"
+            class="pdf-tab py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600 dark:text-blue-400"
+            data-tab="templates"
+          >
+            <SimpleIcon name="file-text" class="w-4 h-4 inline mr-2" />
+            Templates
+          </button>
+          <button
+            id="generate-tab"
+            class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+            data-tab="generate"
+          >
+            <SimpleIcon name="file-plus" class="w-4 h-4 inline mr-2" />
+            Generate PDF
+          </button>
+          <button
+            id="contacts-tab"
+            class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+            data-tab="contacts"
+          >
+            <SimpleIcon name="user" class="w-4 h-4 inline mr-2" />
+            Google Contacts
+          </button>
+          <button
+            id="scanner-tab"
+            class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+            data-tab="scanner"
+          >
+            <SimpleIcon name="file-search" class="w-4 h-4 inline mr-2" />
+            Scanner
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Templates Tab Content -->
+    <div id="templates-content" class="pdf-tab-content">
+      <div class="mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <!-- <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Template Management</h3> -->
+          <div class="w-full">
+            <Dropzone
+              id="new-template-dropzone"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+              maxSize={50}
+              label="Drop a document here or click to browse"
+              description="Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF"
+              required={false}
+            />
+          </div>
+        </div>
+
+        <!-- Template Editor Accordion (hidden by default) -->
+        <div
+          id="template-editor-accordion"
+          class="hidden mb-6 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+        >
+          <div class="color-background p-6">
+            <!-- Template Form -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Template Name
+                </label>
+                <input
+                  type="text"
+                  id="template-name"
+                  placeholder="Enter template name..."
+                  class={globalInputClasses}
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Template Type
+                </label>
+                <select id="template-type" class={globalInputClasses}>
+                  <option value="body">Body Template</option>
+                  <option value="header">Header Template</option>
+                  <option value="footer">Footer Template</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Template Content Editor -->
+            <div class="grid grid-cols-12 gap-4">
+              <div class="mb-6 col-span-8">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Template Content
+                </label>
+                <div
+                  id="template-editor"
+                  class="border border-gray-300 dark:border-gray-600 rounded-md min-h-[400px]"
+                >
+                  <!-- Quill Editor will be loaded here -->
+                </div>
+              </div>
+              <!-- Extracted Fields -->
+              <div id="extracted-fields" class="mb-6 hidden col-span-4 flex flex-col max-h-[600px]">
+                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3 flex-shrink-0">
+                  Detected Fields
+                </h4>
+                <div id="fields-list" class="space-y-2 overflow-y-auto flex-1 pr-2">
+                  <!-- Extracted fields will be displayed here -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Save Options -->
+            <div class="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md hidden">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked="checked"
+                  id="save-html-template-checkbox"
+                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Save HTML version to templates directory
+                </span>
+              </label>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
+                Saves the OCR'd/extracted content as an HTML file in the templates folder for
+                preview purposes
+              </p>
+            </div>
+
+            <!-- Save Template -->
+            <div class="flex justify-end space-x-4 mt-6">
+              <button
+                id="cancel-template-btn"
+                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                id="save-template-btn"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                <SimpleIcon name="save" class="w-4 h-4 inline mr-2" />
+                Save Template
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template List -->
+        <div id="templates-list" class="space-y-4">
+          <!-- Templates will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Scanner Tab Content -->
+    <div id="scanner-content" class="pdf-tab-content hidden">
+      <div class="mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Document Scanner</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Upload and view documents with OCR text extraction. No template generation - just scan
+              and view.
+            </p>
+          </div>
+        </div>
+
+        <div class="w-full mb-6">
           <Dropzone
-            id="new-template-dropzone"
+            id="scanner-dropzone"
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
             maxSize={50}
             label="Drop a document here or click to browse"
@@ -117,155 +245,37 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             required={false}
           />
         </div>
-      </div>
 
-      <!-- Template Editor Accordion (hidden by default) -->
-      <div
-        id="template-editor-accordion"
-        class="hidden mb-6 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-      >
-        <div class="color-background p-6">
-          <!-- Template Form -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Template Name
-              </label>
-              <input
-                type="text"
-                id="template-name"
-                placeholder="Enter template name..."
-                class={globalInputClasses}
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Template Type
-              </label>
-              <select id="template-type" class={globalInputClasses}>
-                <option value="body">Body Template</option>
-                <option value="header">Header Template</option>
-                <option value="footer">Footer Template</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Template Content Editor -->
+        <!-- PDF Viewer / Document Display -->
+        <div id="scanner-viewer-section" class="hidden mb-6">
           <div class="grid grid-cols-12 gap-4">
-            <div class="mb-6 col-span-8">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Template Content
-              </label>
+            <!-- PDF Viewer / Image Display -->
+            <div class="col-span-8">
               <div
-                id="template-editor"
-                class="border border-gray-300 dark:border-gray-600 rounded-md min-h-[400px]"
+                class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-4 min-h-[600px] max-h-[800px] overflow-y-auto"
               >
-                <!-- Quill Editor will be loaded here -->
-              </div>
-            </div>
-            <!-- Extracted Fields -->
-            <div id="extracted-fields" class="mb-6 hidden col-span-4 flex flex-col max-h-[600px]">
-              <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3 flex-shrink-0">
-                Detected Fields
-              </h4>
-              <div id="fields-list" class="space-y-2 overflow-y-auto flex-1 pr-2">
-                <!-- Extracted fields will be displayed here -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Save Options -->
-          <div class="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md hidden">
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked="checked"
-                id="save-html-template-checkbox"
-                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Save HTML version to templates directory
-              </span>
-            </label>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
-              Saves the OCR'd/extracted content as an HTML file in the templates folder for preview
-              purposes
-            </p>
-          </div>
-
-          <!-- Save Template -->
-          <div class="flex justify-end space-x-4 mt-6">
-            <button
-              id="cancel-template-btn"
-              class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              id="save-template-btn"
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              <SimpleIcon name="save" class="w-4 h-4 inline mr-2" />
-              Save Template
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Template List -->
-      <div id="templates-list" class="space-y-4">
-        <!-- Templates will be loaded here -->
-      </div>
-    </div>
-  </div>
-
-  <!-- Scanner Tab Content -->
-  <div id="scanner-content" class="pdf-tab-content hidden">
-    <div class="mb-6">
-      <div class="flex justify-between items-center mb-4">
-        <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Document Scanner</h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Upload and view documents with OCR text extraction. No template generation - just scan and view.
-          </p>
-        </div>
-      </div>
-
-      <div class="w-full mb-6">
-        <Dropzone
-          id="scanner-dropzone"
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
-          maxSize={50}
-          label="Drop a document here or click to browse"
-          description="Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF"
-          required={false}
-        />
-      </div>
-
-      <!-- PDF Viewer / Document Display -->
-      <div id="scanner-viewer-section" class="hidden mb-6">
-        <div class="grid grid-cols-12 gap-4">
-          <!-- PDF Viewer / Image Display -->
-          <div class="col-span-8">
-            <div class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-4 min-h-[600px] max-h-[800px] overflow-y-auto">
-              <div id="scanner-pdf-viewer" class="w-full">
-                <!-- PDF.js viewer or image will be rendered here -->
-                <div class="text-center text-gray-500 dark:text-gray-400 py-20">
-                  <p>Document preview will appear here</p>
+                <div id="scanner-pdf-viewer" class="w-full">
+                  <!-- PDF.js viewer or image will be rendered here -->
+                  <div class="text-center text-gray-500 dark:text-gray-400 py-20">
+                    <p>Document preview will appear here</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Detected Fields Panel -->
-          <div class="col-span-4">
-            <div id="scanner-extracted-fields" class="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 p-4 max-h-[600px] overflow-y-auto">
-              <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
-                Detected Fields
-              </h4>
-              <div id="scanner-fields-list" class="space-y-2">
-                <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
-                  Upload a document to detect fields...
+            <!-- Detected Fields Panel -->
+            <div class="col-span-4">
+              <div
+                id="scanner-extracted-fields"
+                class="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 p-4 max-h-[600px] overflow-y-auto"
+              >
+                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
+                  Detected Fields
+                </h4>
+                <div id="scanner-fields-list" class="space-y-2">
+                  <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                    Upload a document to detect fields...
+                  </div>
                 </div>
               </div>
             </div>
@@ -273,20 +283,19 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Generate PDF Tab Content -->
-  <div id="generate-content" class="pdf-tab-content hidden">
-    <div class="mb-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generate PDF</h3>
-
-      <!-- User Search -->
+    <!-- Generate PDF Tab Content -->
+    <div id="generate-content" class="pdf-tab-content hidden">
       <div class="mb-6">
-        <label class="hidden block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Search User
-        </label>
-        <div class="flex space-x-2">
-          <!-- <input
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generate PDF</h3>
+
+        <!-- User Search -->
+        <div class="mb-6">
+          <label class="hidden block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Search User
+          </label>
+          <div class="flex space-x-2">
+            <!-- <input
             type="text"
             id="user-search"
             placeholder="Search by user name, address, or client..."
@@ -299,8 +308,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             <SimpleIcon name="search" class="w-4 h-4 inline mr-2" />
             Search
           </button> -->
-          <!-- replace the above with slot machine for google contacts endpoint -->
-          <!-- <button
+            <!-- replace the above with slot machine for google contacts endpoint -->
+            <!-- <button
             id="search-user-btn"
             class="hidden px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             onclick="window.pdfSystem.checkGoogleAuthAndSearch()"
@@ -309,229 +318,236 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             Search for a user...
           </button> -->
 
-          <!-- Hidden SlotMachineModal for when auth is ready -->
-          <SlotMachineModalFunction
-            id="user-search"
-            icon="user"
-            title="Search User"
-            options={[]}
-            placeholder="Search for a user..."
-            showCloseButton={true}
-            showCancelButton={true}
-            fetchApiEndpoint="/api/google/contacts"
-            searchText="Search for a user..."
-            searchPlaceholder="Search for a user..."
-            valueField="id"
-            labelField="name"
-            {currentUser}
-            {globalInputClasses}
-          />
-        </div>
-        <div class="flex space-x-2">
-          <!-- Selected user preview (rendered by SlotMachineModalFunction) -->
-          <div id="user-search-preview" class="mt-4 rounded-md border p-4 text-sm color-background">
+            <!-- Hidden SlotMachineModal for when auth is ready -->
+            <SlotMachineModalFunction
+              id="user-search"
+              icon="user"
+              title="Search User"
+              options={[]}
+              placeholder="Search for a user..."
+              showCloseButton={true}
+              showCancelButton={true}
+              fetchApiEndpoint="/api/google/contacts"
+              searchText="Search for a user..."
+              searchPlaceholder="Search for a user..."
+              valueField="id"
+              labelField="name"
+              {currentUser}
+              {globalInputClasses}
+            />
+          </div>
+          <div class="flex space-x-2">
+            <!-- Selected user preview (rendered by SlotMachineModalFunction) -->
+            <div
+              id="user-search-preview"
+              class="mt-4 rounded-md border p-4 text-sm color-background"
+            >
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Template Selection -->
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Select Template
-        </label>
-        <select id="template-select" class={globalInputClasses}>
-          <option value="">Choose a template...</option>
-        </select>
-      </div>
+        <!-- Template Selection -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Select Template
+          </label>
+          <select id="template-select" class={globalInputClasses}>
+            <option value="">Choose a template...</option>
+          </select>
+        </div>
 
-      <!-- Template Preview Section (for interactive placeholder mapping) -->
-      <div id="template-preview-section" class="mb-6 hidden">
-        <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-1">
-                Map Placeholders
-              </h4>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                <span id="placeholder-progress">0 of 0</span> placeholders mapped
-              </p>
+        <!-- Template Preview Section (for interactive placeholder mapping) -->
+        <div id="template-preview-section" class="mb-6 hidden">
+          <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-1">
+                  Map Placeholders
+                </h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  <span id="placeholder-progress">0 of 0</span> placeholders mapped
+                </p>
+              </div>
+              <button
+                id="skip-mapping-btn"
+                class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              >
+                Skip for now
+              </button>
             </div>
-            <button
-              id="skip-mapping-btn"
-              class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            <div
+              id="template-preview-container"
+              class="border border-gray-300 dark:border-gray-600 rounded-md p-6 bg-white dark:bg-gray-800"
             >
-              Skip for now
+              <!-- Template content with highlighted placeholders will be rendered here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Placeholder Mapping Tooltip (positioned absolutely) -->
+        <div
+          id="placeholder-tooltip"
+          class="hidden fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-4 max-w-md"
+          style="display: none;"
+        >
+          <div
+            id="tooltip-drag-handle"
+            class="flex items-center justify-between mb-3 cursor-move select-none"
+          >
+            <h5 class="text-sm font-semibold text-gray-900 dark:text-white">
+              Select value for <span
+                id="tooltip-placeholder-name"
+                class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"></span>
+            </h5>
+            <button
+              id="close-tooltip-btn"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
+            >
+              ×
             </button>
           </div>
-          <div
-            id="template-preview-container"
-            class="border border-gray-300 dark:border-gray-600 rounded-md p-6 bg-white dark:bg-gray-800"
-          >
-            <!-- Template content with highlighted placeholders will be rendered here -->
+          <div id="tooltip-contact-fields" class="space-y-2 max-h-64 overflow-y-auto mb-3">
+            <!-- Contact field options will be rendered here -->
           </div>
-        </div>
-      </div>
-
-      <!-- Placeholder Mapping Tooltip (positioned absolutely) -->
-      <div
-        id="placeholder-tooltip"
-        class="hidden fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-4 max-w-md"
-        style="display: none;"
-      >
-        <div id="tooltip-drag-handle" class="flex items-center justify-between mb-3 cursor-move select-none">
-          <h5 class="text-sm font-semibold text-gray-900 dark:text-white">
-            Select value for <span
-              id="tooltip-placeholder-name"
-              class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"></span>
-          </h5>
-          <button
-            id="close-tooltip-btn"
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
-          >
-            ×
-          </button>
-        </div>
-        <div id="tooltip-contact-fields" class="space-y-2 max-h-64 overflow-y-auto mb-3">
-          <!-- Contact field options will be rendered here -->
-        </div>
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
-          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Or enter manually:
-          </label>
-          <input
-            type="text"
-            id="tooltip-manual-input"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-            placeholder="Enter value..."
-          />
-          <button
-            id="tooltip-apply-btn"
-            class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-          >
-            Apply
-          </button>
-        </div>
-      </div>
-
-      <!-- Placeholder Mapping Section -->
-      <div id="placeholder-mapping-section" class="mb-6 hidden">
-        <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
-          <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
-            Map Template Placeholders to Contact Data
-          </h4>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Map each placeholder to a Google contact field or enter a value manually.
-          </p>
-          <div id="placeholder-mappings-list" class="space-y-3">
-            <!-- Placeholder mappings will be rendered here -->
-          </div>
-        </div>
-      </div>
-
-      <!-- User Results -->
-      <div id="user-results" class="mb-6">
-        <!-- User search results will be displayed here -->
-      </div>
-
-      <!-- PDF Generation Options -->
-      <div class="mb-6 p-4 color-background rounded-lg">
-        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">PDF Options</h4>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Page Size
+          <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Or enter manually:
             </label>
-            <select id="page-size" class={globalInputClasses}>
-              <option value="8.5x11">8.5" x 11" (Letter)</option>
-              <option value="A4">A4</option>
-              <option value="A3">A3</option>
-              <option value="11x17">11" x 17" (Tabloid)</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Orientation
-            </label>
-            <select id="orientation" class={globalInputClasses}>
-              <option value="portrait">Portrait</option>
-              <option value="landscape">Landscape</option>
-            </select>
+            <input
+              type="text"
+              id="tooltip-manual-input"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+              placeholder="Enter value..."
+            />
+            <button
+              id="tooltip-apply-btn"
+              class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Apply
+            </button>
           </div>
         </div>
-      </div>
 
-      <!-- Generate Button -->
-      <div class="flex space-x-4">
-        <button
-          id="preview-pdf-btn"
-          class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
-        >
-          <SimpleIcon name="eye" class="w-4 h-4 inline mr-2" />
-          Preview
-        </button>
-        <button
-          id="generate-pdf-btn"
-          class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
-        >
-          <SimpleIcon name="download" class="w-4 h-4 inline mr-2" />
-          Generate PDF
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Google Contacts Tab Content -->
-  <div id="contacts-content" class="pdf-tab-content hidden">
-    <div class="mb-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Google Contacts</h3>
-
-      <!-- Information Card -->
-      <div
-        class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
-      >
-        <div class="flex items-start">
-          <div
-            class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 mt-0.5 flex-shrink-0 text-lg font-bold"
-          >
-            i
-          </div>
-          <div class="flex-1">
-            <p class="text-sm text-blue-800 dark:text-blue-300">
-              <strong>Note:</strong> Google Contacts cannot be embedded in iframes due to security restrictions.
-              Click the button below to open Google Contacts in a new tab where you can manage your contacts.
+        <!-- Placeholder Mapping Section -->
+        <div id="placeholder-mapping-section" class="mb-6 hidden">
+          <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
+            <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
+              Map Template Placeholders to Contact Data
+            </h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Map each placeholder to a Google contact field or enter a value manually.
             </p>
+            <div id="placeholder-mappings-list" class="space-y-3">
+              <!-- Placeholder mappings will be rendered here -->
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Open Google Contacts Button -->
-      <div
-        class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50"
-      >
-        <SimpleIcon name="user" class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
-        <h4 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          Manage Google Contacts
-        </h4>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">
-          Add, edit, or search your Google Contacts in a new tab
-        </p>
-        <a
-          href="https://contacts.google.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-lg hover:shadow-xl"
+        <!-- User Results -->
+        <div id="user-results" class="mb-6">
+          <!-- User search results will be displayed here -->
+        </div>
+
+        <!-- PDF Generation Options -->
+        <div class="mb-6 p-4 color-background rounded-lg">
+          <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">PDF Options</h4>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Page Size
+              </label>
+              <select id="page-size" class={globalInputClasses}>
+                <option value="8.5x11">8.5" x 11" (Letter)</option>
+                <option value="A4">A4</option>
+                <option value="A3">A3</option>
+                <option value="11x17">11" x 17" (Tabloid)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Orientation
+              </label>
+              <select id="orientation" class={globalInputClasses}>
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="flex space-x-4">
+          <button
+            id="preview-pdf-btn"
+            class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            <SimpleIcon name="eye" class="w-4 h-4 inline mr-2" />
+            Preview
+          </button>
+          <button
+            id="generate-pdf-btn"
+            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            <SimpleIcon name="download" class="w-4 h-4 inline mr-2" />
+            Generate PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Contacts Tab Content -->
+    <div id="contacts-content" class="pdf-tab-content hidden">
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Google Contacts</h3>
+
+        <!-- Information Card -->
+        <div
+          class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
         >
-          Open Google Contacts
-          <span class="ml-2 text-sm">↗</span>
-        </a>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">Opens in a new tab</p>
+          <div class="flex items-start">
+            <div
+              class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 mt-0.5 flex-shrink-0 text-lg font-bold"
+            >
+              i
+            </div>
+            <div class="flex-1">
+              <p class="text-sm text-blue-800 dark:text-blue-300">
+                <strong>Note:</strong> Google Contacts cannot be embedded in iframes due to security
+                restrictions. Click the button below to open Google Contacts in a new tab where you can
+                manage your contacts.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Open Google Contacts Button -->
+        <div
+          class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+        >
+          <SimpleIcon name="user" class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
+          <h4 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Manage Google Contacts
+          </h4>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">
+            Add, edit, or search your Google Contacts in a new tab
+          </p>
+          <a
+            href="https://contacts.google.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-lg hover:shadow-xl"
+          >
+            Open Google Contacts
+            <span class="ml-2 text-sm">↗</span>
+          </a>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">Opens in a new tab</p>
+        </div>
       </div>
     </div>
   </div>
-</div>
-
+</App>
 <script
   is:inline
   define:vars={{ currentUser, globalInputClasses, primaryTextClasses, secondaryTextClasses }}
@@ -1599,10 +1615,12 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       // Show loading state
       if (pdfViewer) {
-        pdfViewer.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-20"><p>Loading document...</p></div>';
+        pdfViewer.innerHTML =
+          '<div class="text-center text-gray-500 dark:text-gray-400 py-20"><p>Loading document...</p></div>';
       }
       if (fieldsList) {
-        fieldsList.innerHTML = '<div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8"><p>Detecting fields...</p></div>';
+        fieldsList.innerHTML =
+          '<div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8"><p>Detecting fields...</p></div>';
       }
 
       try {
@@ -1670,7 +1688,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     async processImageForScanner(file) {
       return new Promise((resolve, reject) => {
         const self = this;
-        self.processImageWithCanvas(file)
+        self
+          .processImageWithCanvas(file)
           .then((result) => {
             const text = result.text || "";
             const fields = self.extractFieldsFromText(text);
@@ -1693,27 +1712,31 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             // Extract text and fields in background
             let allText = "";
             let allTextItems = []; // Store text items with coordinates and font info
-            
+
             for (let i = 1; i <= numPages; i++) {
               const page = await pdf.getPage(i);
               const textContent = await page.getTextContent();
-              
+
               // Store text items with page number and font size info
-              textContent.items.forEach(item => {
+              textContent.items.forEach((item) => {
                 // Extract font size from PDF.js text item
                 // PDF.js items have: height, transform[0] (horizontal scale), transform[3] (vertical scale)
                 let fontSize = 12; // default
                 if (item.height) {
                   fontSize = item.height;
-                } else if (item.transform && Array.isArray(item.transform) && item.transform.length >= 4) {
+                } else if (
+                  item.transform &&
+                  Array.isArray(item.transform) &&
+                  item.transform.length >= 4
+                ) {
                   // Use vertical scale from transform matrix (transform[3] or 'd' value)
                   fontSize = Math.abs(item.transform[3]) || Math.abs(item.transform[0]) || 12;
                 }
-                
-                allTextItems.push({ 
-                  ...item, 
+
+                allTextItems.push({
+                  ...item,
                   pageNum: i,
-                  fontSize: fontSize
+                  fontSize: fontSize,
                 });
                 if (item.str) {
                   allText += item.str + " ";
@@ -1726,13 +1749,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
             // Extract fields from text with font size information
             const fields = self.extractFieldsFromTextWithFontInfo(allText.trim(), allTextItems);
-            
+
             // Enrich fields with location data (page number and coordinates)
             const fieldsWithLocations = self.enrichFieldsWithLocations(fields, allTextItems);
-            
+
             // Store fields with locations for click handlers
             self.scannerFields = fieldsWithLocations;
-            
+
             // Display fields in sidebar
             self.displayScannerFields(fieldsWithLocations);
 
@@ -1740,38 +1763,39 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             const viewerHTML = document.createElement("div");
             viewerHTML.className = "space-y-4";
             viewerHTML.id = "scanner-pdf-viewer-container";
-            
+
             // Get container width to calculate scale
             const container = document.getElementById("scanner-pdf-viewer");
             const containerWidth = container ? container.clientWidth - 32 : 800; // Subtract padding
-            
+
             // Store scale for each page for field highlighting
             self.scannerPageScales = {};
-            
+
             for (let i = 1; i <= numPages; i++) {
               const page = await pdf.getPage(i);
-              
+
               // Calculate scale to fit 100% width
               const defaultViewport = page.getViewport({ scale: 1.0 });
               const scale = containerWidth / defaultViewport.width;
               const viewport = page.getViewport({ scale: scale });
-              
+
               // Store scale for this page
               self.scannerPageScales[i] = scale;
-              
+
               // Create container for page
               const pageContainer = document.createElement("div");
-              pageContainer.className = "mb-4 border border-gray-300 dark:border-gray-600 rounded p-2 bg-white relative";
+              pageContainer.className =
+                "mb-4 border border-gray-300 dark:border-gray-600 rounded p-2 bg-white relative";
               pageContainer.id = `scanner-page-${i}`;
               pageContainer.dataset.pageNum = i.toString();
               pageContainer.style.width = "100%";
               pageContainer.style.overflowX = "hidden";
-              
+
               const pageLabel = document.createElement("div");
               pageLabel.className = "text-xs text-gray-500 dark:text-gray-400 mb-2";
               pageLabel.textContent = `Page ${i} of ${numPages}`;
               pageContainer.appendChild(pageLabel);
-              
+
               // Create canvas for PDF rendering
               const canvas = document.createElement("canvas");
               canvas.height = viewport.height;
@@ -1780,13 +1804,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               canvas.style.height = "auto";
               canvas.style.display = "block";
               const context = canvas.getContext("2d");
-              
+
               // Render PDF page
               await page.render({
                 canvasContext: context,
                 viewport: viewport,
               }).promise;
-              
+
               // Create overlay canvas for highlights
               const overlayCanvas = document.createElement("canvas");
               overlayCanvas.height = viewport.height;
@@ -1798,9 +1822,9 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               overlayCanvas.style.width = "100%";
               overlayCanvas.style.height = "auto";
               overlayCanvas.id = `scanner-overlay-${i}`;
-              
+
               const overlayContext = overlayCanvas.getContext("2d");
-              
+
               // Create wrapper div for positioning
               const canvasWrapper = document.createElement("div");
               canvasWrapper.className = "relative";
@@ -1809,18 +1833,25 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               canvasWrapper.style.overflowX = "hidden";
               canvasWrapper.appendChild(canvas);
               canvasWrapper.appendChild(overlayCanvas);
-              
+
               pageContainer.appendChild(canvasWrapper);
               viewerHTML.appendChild(pageContainer);
-              
+
               // Store viewport scale for field highlighting calculations
-              const pageTextItems = allTextItems.filter(item => item.pageNum === i);
-              self.highlightFieldsOnPDFPage(fieldsWithLocations, pageTextItems, viewport, overlayContext, i, scale);
+              const pageTextItems = allTextItems.filter((item) => item.pageNum === i);
+              self.highlightFieldsOnPDFPage(
+                fieldsWithLocations,
+                pageTextItems,
+                viewport,
+                overlayContext,
+                i,
+                scale
+              );
             }
-            
+
             container.innerHTML = "";
             container.appendChild(viewerHTML);
-            
+
             resolve();
           } catch (error) {
             console.error("Error displaying PDF:", error);
@@ -1839,13 +1870,16 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         if (!fieldValue) return { ...field, pageNum: null, coordinates: null };
 
         const fieldValueLower = fieldValue.toLowerCase();
-        const fullText = allTextItems.map(item => item.str || "").join(" ").toLowerCase();
+        const fullText = allTextItems
+          .map((item) => item.str || "")
+          .join(" ")
+          .toLowerCase();
         const searchValue = fieldValueLower.replace(/[^\w\s@.-]/g, "");
         const searchIndex = fullText.indexOf(searchValue);
 
         if (searchIndex === -1) {
           // Try to find first word
-          const words = searchValue.split(/\s+/).filter(w => w.length > 2);
+          const words = searchValue.split(/\s+/).filter((w) => w.length > 2);
           if (words.length > 0) {
             const wordIndex = fullText.indexOf(words[0]);
             if (wordIndex !== -1) {
@@ -1856,20 +1890,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 const itemText = item.str || "";
                 const itemStart = charCount;
                 const itemEnd = charCount + itemText.length;
-                
+
                 if (wordIndex >= itemStart && wordIndex < itemEnd) {
                   return {
                     ...field,
                     pageNum: item.pageNum,
-                    coordinates: item.transform ? {
-                      x: item.transform[4],
-                      y: item.transform[5],
-                      width: item.width || 50,
-                      height: item.height || 20,
-                    } : null,
+                    coordinates: item.transform
+                      ? {
+                          x: item.transform[4],
+                          y: item.transform[5],
+                          width: item.width || 50,
+                          height: item.height || 20,
+                        }
+                      : null,
                   };
                 }
-                
+
                 charCount = itemEnd + 1;
               }
             }
@@ -1883,20 +1919,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             const itemText = item.str || "";
             const itemStart = charCount;
             const itemEnd = charCount + itemText.length;
-            
+
             if (itemEnd > searchIndex && itemStart < searchIndex + searchValue.length) {
               return {
                 ...field,
                 pageNum: item.pageNum,
-                coordinates: item.transform ? {
-                  x: item.transform[4],
-                  y: item.transform[5],
-                  width: item.width || 50,
-                  height: item.height || 20,
-                } : null,
+                coordinates: item.transform
+                  ? {
+                      x: item.transform[4],
+                      y: item.transform[5],
+                      width: item.width || 50,
+                      height: item.height || 20,
+                    }
+                  : null,
               };
             }
-            
+
             charCount = itemEnd + 1;
           }
           return { ...field, pageNum: null, coordinates: null };
@@ -1921,10 +1959,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       };
 
       // Only highlight fields that are on this page
-      const pageFields = fields.filter(f => f.pageNum === pageNum);
+      const pageFields = fields.filter((f) => f.pageNum === pageNum);
 
       // Build full text string from items for better matching
-      const fullText = textItems.map(item => item.str || "").join(" ").toLowerCase();
+      const fullText = textItems
+        .map((item) => item.str || "")
+        .join(" ")
+        .toLowerCase();
 
       pageFields.forEach((field, fieldIndex) => {
         const fieldValue = field.value?.toString().trim();
@@ -1937,11 +1978,11 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         // Try to find the field value in the text
         const searchValue = fieldValueLower.replace(/[^\w\s@.-]/g, ""); // Clean for matching
         const searchIndex = fullText.indexOf(searchValue);
-        
+
         if (searchIndex === -1) {
           // Try partial matching - find individual words
-          const words = searchValue.split(/\s+/).filter(w => w.length > 2);
-          words.forEach(word => {
+          const words = searchValue.split(/\s+/).filter((w) => w.length > 2);
+          words.forEach((word) => {
             const wordIndex = fullText.indexOf(word);
             if (wordIndex !== -1) {
               // Find text items that contain this word
@@ -1951,12 +1992,12 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 const itemText = item.str || "";
                 const itemStart = charCount;
                 const itemEnd = charCount + itemText.length;
-                
+
                 if (wordIndex >= itemStart && wordIndex < itemEnd) {
                   self.highlightTextItem(item, viewport, overlayContext, color, fieldIndex);
                   break;
                 }
-                
+
                 charCount = itemEnd + 1; // +1 for space
               }
             }
@@ -1966,25 +2007,25 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           let charCount = 0;
           const matchEnd = searchIndex + searchValue.length;
           const itemsToHighlight = [];
-          
+
           for (let i = 0; i < textItems.length; i++) {
             const item = textItems[i];
             const itemText = item.str || "";
             const itemStart = charCount;
             const itemEnd = charCount + itemText.length;
-            
+
             // Check if this item overlaps with the match
             if (itemEnd > searchIndex && itemStart < matchEnd) {
               itemsToHighlight.push(item);
             }
-            
+
             charCount = itemEnd + 1; // +1 for space
-            
+
             if (itemStart > matchEnd) break; // Past the match
           }
-          
+
           // Highlight all items in the match
-          itemsToHighlight.forEach(item => {
+          itemsToHighlight.forEach((item) => {
             self.highlightTextItem(item, viewport, overlayContext, color, fieldIndex);
           });
         }
@@ -1993,22 +2034,22 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
     highlightTextItem(item, viewport, overlayContext, color, fieldIndex) {
       if (!item.transform || item.transform.length < 6) return;
-      
+
       const x = item.transform[4];
       const y = item.transform[5];
       const width = item.width || (item.str ? item.str.length * 6 : 50);
       const height = item.height || (item.transform[0] ? Math.abs(item.transform[0]) : 20);
-      
+
       // Convert PDF coordinates to canvas coordinates
       // PDF coordinates: bottom-left origin, Y increases upward
       // Canvas coordinates: top-left origin, Y increases downward
       const canvasX = x;
       const canvasY = viewport.height - y - height;
-      
+
       // Draw highlight rectangle
       overlayContext.fillStyle = color;
       overlayContext.fillRect(canvasX - 1, canvasY - 1, width + 2, height + 2);
-      
+
       // Draw border
       overlayContext.strokeStyle = color.replace("0.4", "0.7");
       overlayContext.lineWidth = 1.5;
@@ -2020,53 +2061,62 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       if (!fieldsList) return;
 
       if (!fields || fields.length === 0) {
-        fieldsList.innerHTML = '<div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No fields detected</div>';
+        fieldsList.innerHTML =
+          '<div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No fields detected</div>';
         return;
       }
 
       const self = this;
-      fieldsList.innerHTML = fields.map((field, index) => {
-        const fieldType = field.type?.toLowerCase() || "default";
-        const typeColors = {
-          email: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
-          phone: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
-          address: "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200",
-          date: "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200",
-          default: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200",
-        };
-        const colorClass = typeColors[fieldType] || typeColors.default;
-        const hasLocation = field.pageNum && field.coordinates;
-        const clickableClass = hasLocation ? "cursor-pointer hover:shadow-md transition-shadow" : "";
-        
-        return `
+      fieldsList.innerHTML = fields
+        .map((field, index) => {
+          const fieldType = field.type?.toLowerCase() || "default";
+          const typeColors = {
+            email: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
+            phone: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
+            address: "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200",
+            date: "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200",
+            default: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200",
+          };
+          const colorClass = typeColors[fieldType] || typeColors.default;
+          const hasLocation = field.pageNum && field.coordinates;
+          const clickableClass = hasLocation
+            ? "cursor-pointer hover:shadow-md transition-shadow"
+            : "";
+
+          return `
           <div 
             class="p-3 rounded-lg border border-gray-200 dark:border-gray-600 ${colorClass} ${clickableClass}"
             data-field-index="${index}"
-            ${hasLocation ? `onclick="window.pdfSystem.scrollToScannerField(${index})"` : ''}
+            ${hasLocation ? `onclick="window.pdfSystem.scrollToScannerField(${index})"` : ""}
           >
             <div class="flex items-start justify-between">
               <div class="flex-1">
                 <div class="text-xs font-medium uppercase mb-1 opacity-75">${this.escapeHtml(field.name)}</div>
                 <div class="text-sm font-semibold">${this.escapeHtml(field.value)}</div>
               </div>
-              ${hasLocation ? `
+              ${
+                hasLocation
+                  ? `
                 <div class="ml-2 text-xs text-gray-500 dark:text-gray-400">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                   </svg>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
           </div>
         `;
-      }).join('');
+        })
+        .join("");
     }
 
     scrollToScannerField(fieldIndex) {
       try {
         console.log(`📍 [SCANNER] Scrolling to field index: ${fieldIndex}`);
-        
+
         // Ensure scannerFields is initialized
         if (!this.scannerFields || !Array.isArray(this.scannerFields)) {
           console.warn("⚠️ [SCANNER] Scanner fields not available");
@@ -2084,12 +2134,17 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           return;
         }
 
-        console.log(`📍 [SCANNER] Field: ${field.name}, Page: ${field.pageNum}, Coordinates:`, field.coordinates);
+        console.log(
+          `📍 [SCANNER] Field: ${field.name}, Page: ${field.pageNum}, Coordinates:`,
+          field.coordinates
+        );
 
         const pageContainer = document.getElementById(`scanner-page-${field.pageNum}`);
         if (!pageContainer) {
-          console.warn(`⚠️ [SCANNER] Page container ${field.pageNum} not found. Available page containers:`, 
-            Array.from(document.querySelectorAll('[id^="scanner-page-"]')).map(el => el.id));
+          console.warn(
+            `⚠️ [SCANNER] Page container ${field.pageNum} not found. Available page containers:`,
+            Array.from(document.querySelectorAll('[id^="scanner-page-"]')).map((el) => el.id)
+          );
           return;
         }
 
@@ -2109,10 +2164,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           let element = pdfViewer;
           while (element && element !== document.body) {
             const style = window.getComputedStyle(element);
-            const hasScroll = style.overflowY === 'auto' || style.overflowY === 'scroll' || 
-                            style.overflow === 'auto' || style.overflow === 'scroll' ||
-                            (element.scrollHeight > element.clientHeight && element.clientHeight > 0);
-            
+            const hasScroll =
+              style.overflowY === "auto" ||
+              style.overflowY === "scroll" ||
+              style.overflow === "auto" ||
+              style.overflow === "scroll" ||
+              (element.scrollHeight > element.clientHeight && element.clientHeight > 0);
+
             if (hasScroll) {
               scrollableElement = element;
               break;
@@ -2131,9 +2189,9 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           console.log("📍 [SCANNER] No scrollable container found, using window scroll");
           const pageRect = pageContainer.getBoundingClientRect();
           const fieldY = this.calculateFieldYPosition(field, pageContainer);
-          
+
           window.scrollTo({
-            top: window.scrollY + pageRect.top + fieldY - (window.innerHeight / 2),
+            top: window.scrollY + pageRect.top + fieldY - window.innerHeight / 2,
             behavior: "smooth",
           });
 
@@ -2143,28 +2201,31 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           return;
         }
 
-        console.log("📍 [SCANNER] Using scrollable element:", scrollableElement.id || scrollableElement.className);
+        console.log(
+          "📍 [SCANNER] Using scrollable element:",
+          scrollableElement.id || scrollableElement.className
+        );
 
         // Get page position relative to scrollable container
         const pageRect = pageContainer.getBoundingClientRect();
         const containerRect = scrollableElement.getBoundingClientRect();
-        
+
         // Calculate field Y position on the page
         const fieldY = this.calculateFieldYPosition(field, pageContainer);
-        
+
         // Calculate target scroll position to center the field
         const currentScroll = scrollableElement.scrollTop;
         const pageTopRelative = pageRect.top - containerRect.top + currentScroll;
-        const targetScroll = pageTopRelative + fieldY - (containerRect.height / 2);
-        
+        const targetScroll = pageTopRelative + fieldY - containerRect.height / 2;
+
         console.log("📍 [SCANNER] Scroll calculation:", {
           currentScroll,
           pageTopRelative,
           fieldY,
           targetScroll,
-          containerHeight: containerRect.height
+          containerHeight: containerRect.height,
         });
-        
+
         // Smooth scroll
         scrollableElement.scrollTo({
           top: Math.max(0, targetScroll),
@@ -2184,27 +2245,27 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Get the actual scale used for rendering this page
       const actualScale = this.scannerPageScales?.[field.pageNum] || 1.0;
       const pageRect = pageContainer.getBoundingClientRect();
-      
+
       // PDF coordinates use bottom-left origin, but canvas uses top-left
       // Transform[5] is the Y coordinate in PDF space (from bottom)
       // We need to convert to canvas space (from top)
       const pdfY = field.coordinates.y; // Y coordinate from bottom in PDF points
       const pdfHeight = field.coordinates.height || 20; // Height in PDF points
-      
+
       // Get the canvas element to determine the actual rendered height
-      const canvas = pageContainer.querySelector('canvas');
+      const canvas = pageContainer.querySelector("canvas");
       if (!canvas) {
         // Fallback calculation
-        return (pageRect.height - pdfY * actualScale - pdfHeight * actualScale);
+        return pageRect.height - pdfY * actualScale - pdfHeight * actualScale;
       }
-      
+
       const canvasHeight = canvas.height;
       const viewportHeight = canvasHeight / actualScale; // Original PDF viewport height in points
-      
+
       // Convert PDF Y (from bottom) to canvas Y (from top)
       const canvasY = viewportHeight - pdfY - pdfHeight;
       const scaledY = canvasY * actualScale;
-      
+
       return scaledY;
     }
 
@@ -2236,40 +2297,50 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       const overlayContext = overlayCanvas.getContext("2d");
       const viewport = { height: overlayCanvas.height };
-      
+
       const canvasX = coordinates.x;
       const canvasY = viewport.height - coordinates.y - coordinates.height;
-      
+
       // Draw pulsing highlight
       let pulseCount = 0;
       const pulseInterval = setInterval(() => {
         // Clear and redraw
         overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-        
+
         // Redraw all highlights first (we'd need to store them, but for now just pulse)
         pulseCount++;
-        
+
         if (pulseCount > 6) {
           clearInterval(pulseInterval);
           // Redraw all highlights
           // For now, we'll just leave it - in production you'd redraw all highlights
           return;
         }
-        
+
         // Draw pulsing highlight
-        const opacity = 0.4 + (Math.sin(pulseCount * Math.PI / 2) * 0.3);
+        const opacity = 0.4 + Math.sin((pulseCount * Math.PI) / 2) * 0.3;
         overlayContext.fillStyle = `rgba(255, 0, 0, ${opacity})`;
-        overlayContext.fillRect(canvasX - 3, canvasY - 3, coordinates.width + 6, coordinates.height + 6);
-        
+        overlayContext.fillRect(
+          canvasX - 3,
+          canvasY - 3,
+          coordinates.width + 6,
+          coordinates.height + 6
+        );
+
         overlayContext.strokeStyle = `rgba(255, 0, 0, ${opacity + 0.3})`;
         overlayContext.lineWidth = 3;
-        overlayContext.strokeRect(canvasX - 3, canvasY - 3, coordinates.width + 6, coordinates.height + 6);
+        overlayContext.strokeRect(
+          canvasX - 3,
+          canvasY - 3,
+          coordinates.width + 6,
+          coordinates.height + 6
+        );
       }, 200);
     }
 
     async displayImageWithHighlights(file, container) {
       const self = this;
-      
+
       // Display image first
       const reader = new FileReader();
       reader.onload = async function (e) {
@@ -2279,41 +2350,40 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           img.src = e.target.result;
           img.className = "max-w-full h-auto rounded border border-gray-300 dark:border-gray-600";
           img.style.maxHeight = "600px";
-          
+
           // Create wrapper with relative positioning for overlay
           const wrapper = document.createElement("div");
           wrapper.className = "relative inline-block";
           wrapper.style.position = "relative";
-          
+
           // Create overlay canvas for highlights
           const overlayCanvas = document.createElement("canvas");
           overlayCanvas.className = "absolute top-0 left-0 pointer-events-none";
           overlayCanvas.style.position = "absolute";
           overlayCanvas.style.top = "0";
           overlayCanvas.style.left = "0";
-          
-          img.onload = async function() {
+
+          img.onload = async function () {
             // Set canvas size to match image
             overlayCanvas.width = img.width;
             overlayCanvas.height = img.height;
-            
+
             wrapper.appendChild(img);
             wrapper.appendChild(overlayCanvas);
             container.innerHTML = "";
             container.appendChild(wrapper);
-            
+
             // Process image with OCR to extract fields
             try {
               const result = await self.processImageWithCanvas(file);
               const fields = self.extractFieldsFromText(result.text || "");
-              
+
               // Display fields
               self.displayScannerFields(fields);
-              
+
               // Note: For images, we'd need OCR with word positions to highlight accurately
               // This is a simplified version - full implementation would require OCR.space API
               // with WordsOverlay data to get exact coordinates
-              
             } catch (ocrError) {
               console.error("OCR error:", ocrError);
               self.displayScannerFields([]);
@@ -2367,7 +2437,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
               const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
               const imageFile = new File([blob], `page-${i}.png`, { type: "image/png" });
               const ocrResult = await self.runOCROnImage(imageFile, i);
-              
+
               if (ocrResult && ocrResult.text) {
                 allExtractedText += `\n--- Page ${i} ---\n${ocrResult.text}\n`;
               }
@@ -2383,7 +2453,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     }
 
     escapeHtml(text) {
-      const div = document.createElement('div');
+      const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
     }
@@ -2620,13 +2690,49 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
           // Check if combining makes a common word
           const combined = text + nextText;
           const commonWords = [
-            "history", "sheet", "name", "information", "drawing", "north", "south", "east", "west",
-            "building", "construction", "classification", "district", "subdistrict", "proposed",
-            "existing", "permeable", "parking", "coverage", "height", "depth", "width", "plate",
-            "area", "yard", "description", "story", "stories", "type", "group", "use", "lot",
-            "parcel", "front", "side", "rear", "minimum", "maximum", "gross", "floor", "total"
+            "history",
+            "sheet",
+            "name",
+            "information",
+            "drawing",
+            "north",
+            "south",
+            "east",
+            "west",
+            "building",
+            "construction",
+            "classification",
+            "district",
+            "subdistrict",
+            "proposed",
+            "existing",
+            "permeable",
+            "parking",
+            "coverage",
+            "height",
+            "depth",
+            "width",
+            "plate",
+            "area",
+            "yard",
+            "description",
+            "story",
+            "stories",
+            "type",
+            "group",
+            "use",
+            "lot",
+            "parcel",
+            "front",
+            "side",
+            "rear",
+            "minimum",
+            "maximum",
+            "gross",
+            "floor",
+            "total",
           ];
-          
+
           if (commonWords.includes(combined.toLowerCase())) {
             // Combine them and skip the next item
             text = combined;
@@ -2736,10 +2842,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
     extractStructuredTextFromString(text) {
       // Improved OCR text processing - groups single-word lines into sentences/paragraphs
-      const lines = text.split("\n").map(l => l.trim()).filter(l => l);
-      
+      const lines = text
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l);
+
       if (lines.length === 0) return "";
-      
+
       let result = "";
       let currentParagraph = [];
       let currentList = [];
@@ -2793,25 +2902,35 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             // If line is very short (likely single word), add to current paragraph
             const isShortLine = line.split(/\s+/).length <= 3 && line.length < 50;
             const endsWithPunctuation = /[.!?;:]$/.test(line);
-            const nextIsShort = nextLine && nextLine.split(/\s+/).length <= 3 && nextLine.length < 50;
+            const nextIsShort =
+              nextLine && nextLine.split(/\s+/).length <= 3 && nextLine.length < 50;
             const nextIsListItem = nextLine && this.detectListItemFromString(nextLine);
             const nextIsHeader = nextLine && this.detectHeaderFromString(nextLine);
-            
+
             // Start new paragraph if:
             // - Previous line ended with punctuation AND current line starts with capital
             // - Current line is long (likely a full sentence)
             // - Next line is a list item or header
-            const shouldStartNewParagraph = 
-              (inParagraph && currentParagraph.length > 0 && 
-               (endsWithPunctuation && /^[A-Z]/.test(line)) ||
-               (!isShortLine && currentParagraph.length > 5) ||
-               nextIsListItem || nextIsHeader);
+            const shouldStartNewParagraph =
+              (inParagraph &&
+                currentParagraph.length > 0 &&
+                endsWithPunctuation &&
+                /^[A-Z]/.test(line)) ||
+              (!isShortLine && currentParagraph.length > 5) ||
+              nextIsListItem ||
+              nextIsHeader;
 
             if (shouldStartNewParagraph && currentParagraph.length > 0) {
               result += `<p>${currentParagraph.join(" ")}</p>\n`;
               currentParagraph = [line];
               inParagraph = true;
-            } else if (isShortLine && !endsWithPunctuation && nextLine && !nextIsListItem && !nextIsHeader) {
+            } else if (
+              isShortLine &&
+              !endsWithPunctuation &&
+              nextLine &&
+              !nextIsListItem &&
+              !nextIsHeader
+            ) {
               // Short line that's likely part of a sentence - add to current paragraph
               currentParagraph.push(line);
               inParagraph = true;
@@ -2822,7 +2941,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 inParagraph = true;
               } else {
                 // Check if we should continue or start new paragraph
-                if (endsWithPunctuation && nextLine && /^[A-Z]/.test(nextLine) && !nextIsListItem && !nextIsHeader) {
+                if (
+                  endsWithPunctuation &&
+                  nextLine &&
+                  /^[A-Z]/.test(nextLine) &&
+                  !nextIsListItem &&
+                  !nextIsHeader
+                ) {
                   // End of sentence, next starts with capital - likely new paragraph
                   currentParagraph.push(line);
                   result += `<p>${currentParagraph.join(" ")}</p>\n`;
@@ -3351,30 +3476,35 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       const addressPatterns = [
         // Labeled addresses (highest priority) - complete with zip
         {
-          pattern: /(?:address|project\s+location|site\s+address|location)[:\s]+(\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy|Highway|Hwy)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?)/gi,
+          pattern:
+            /(?:address|project\s+location|site\s+address|location)[:\s]+(\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy|Highway|Hwy)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?)/gi,
           isComplete: true,
           priority: 1,
         },
         // Standard complete address (street + city + state + zip)
         {
-          pattern: /\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy|Highway|Hwy)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi,
+          pattern:
+            /\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy|Highway|Hwy)[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi,
           isComplete: true,
           priority: 2,
         },
         // Address with PO Box
         {
-          pattern: /(?:P\.?O\.?\s*Box|PO\s*Box|Post\s*Office\s*Box)\s+\d+[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi,
+          pattern:
+            /(?:P\.?O\.?\s*Box|PO\s*Box|Post\s*Office\s*Box)\s+\d+[\s,]+[A-Za-z\s]+(?:,\s*)?[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi,
           isComplete: true,
           priority: 3,
         },
         // Incomplete addresses (no zip) - lower priority
         {
-          pattern: /(?:address|project\s+location|site\s+address)[:\s]+(\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy)[\s,]+[A-Za-z\s]+)/gi,
+          pattern:
+            /(?:address|project\s+location|site\s+address)[:\s]+(\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy)[\s,]+[A-Za-z\s]+)/gi,
           isComplete: false,
           priority: 4,
         },
         {
-          pattern: /\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy)[\s,]+[A-Za-z\s]+/gi,
+          pattern:
+            /\d+\s+[A-Za-z0-9\s,.#-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|Place|Pl|Parkway|Pkwy)[\s,]+[A-Za-z\s]+/gi,
           isComplete: false,
           priority: 5,
         },
@@ -3397,29 +3527,29 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             // Calculate average font size for this address match
             let avgFontSize = 12; // Default font size
             let maxFontSize = 12;
-            
+
             if (textItems && textItems.length > 0) {
               // Find text items that overlap with this address match
               let charCount = 0;
               const matchStart = match.index;
               const matchEnd = match.index + fullMatch.length;
               const fontSizes = [];
-              
+
               for (let i = 0; i < textItems.length; i++) {
                 const item = textItems[i];
                 const itemText = item.str || "";
                 const itemStart = charCount;
                 const itemEnd = charCount + itemText.length;
-                
+
                 // Check if this text item overlaps with the address match
                 if (itemEnd > matchStart && itemStart < matchEnd) {
                   const fontSize = item.fontSize || item.height || item.transform?.[0] || 12;
                   fontSizes.push(fontSize);
                 }
-                
+
                 charCount = itemEnd + 1; // +1 for space
               }
-              
+
               if (fontSizes.length > 0) {
                 // Use average font size, but weight towards max (larger text is more important)
                 avgFontSize = fontSizes.reduce((a, b) => a + b, 0) / fontSizes.length;
@@ -3428,7 +3558,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
                 avgFontSize = maxFontSize;
               }
             }
-            
+
             addressMatches.push({
               match: fullMatch,
               cleaned,
@@ -3449,7 +3579,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Sort by: 1) Font size (larger first), 2) completeness (complete first), 3) position (earlier first), 4) priority
       addressMatches.sort((a, b) => {
         // Font size is primary - larger fonts win (project address is typically larger)
-        if (Math.abs(a.fontSize - b.fontSize) > 0.5) { // Only compare if significantly different (>0.5pt)
+        if (Math.abs(a.fontSize - b.fontSize) > 0.5) {
+          // Only compare if significantly different (>0.5pt)
           return b.fontSize - a.fontSize; // Larger font size first
         }
         // If font sizes are similar, complete addresses win
@@ -3508,37 +3639,37 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Common word patterns that get broken
       const wordFixes = {
         // Common broken words
-        "istroy": "history",
-        "heet": "sheet",
-        "ame": "name",
-        "nformation": "information",
-        "rawing": "drawing",
-        "orth": "north",
-        "outh": "south",
-        "ast": "east",
-        "est": "west",
-        "uilding": "building",
-        "onstruction": "construction",
-        "lassification": "classification",
-        "istrict": "district",
-        "ubdistrict": "subdistrict",
-        "roposed": "proposed",
-        "xisting": "existing",
-        "ermeable": "permeable",
-        "arking": "parking",
-        "verage": "coverage",
-        "eight": "height",
-        "epth": "depth",
-        "idth": "width",
-        "late": "plate",
-        "rea": "area",
-        "ard": "yard",
-        "escription": "description",
+        istroy: "history",
+        heet: "sheet",
+        ame: "name",
+        nformation: "information",
+        rawing: "drawing",
+        orth: "north",
+        outh: "south",
+        ast: "east",
+        est: "west",
+        uilding: "building",
+        onstruction: "construction",
+        lassification: "classification",
+        istrict: "district",
+        ubdistrict: "subdistrict",
+        roposed: "proposed",
+        xisting: "existing",
+        ermeable: "permeable",
+        arking: "parking",
+        verage: "coverage",
+        eight: "height",
+        epth: "depth",
+        idth: "width",
+        late: "plate",
+        rea: "area",
+        ard: "yard",
+        escription: "description",
       };
 
       // Fix broken words at word boundaries
       let fixedText = text;
-      
+
       // First, try to fix common broken word patterns
       Object.keys(wordFixes).forEach((broken, correct) => {
         // Look for broken word at start of word or after space
@@ -3555,13 +3686,49 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         // Check if letter + rest forms a common word
         const combined = letter + rest;
         const commonWords = [
-          "history", "sheet", "name", "information", "drawing", "north", "south", "east", "west",
-          "building", "construction", "classification", "district", "subdistrict", "proposed",
-          "existing", "permeable", "parking", "coverage", "height", "depth", "width", "plate",
-          "area", "yard", "description", "story", "stories", "type", "group", "use", "lot",
-          "parcel", "front", "side", "rear", "minimum", "maximum", "gross", "floor", "total"
+          "history",
+          "sheet",
+          "name",
+          "information",
+          "drawing",
+          "north",
+          "south",
+          "east",
+          "west",
+          "building",
+          "construction",
+          "classification",
+          "district",
+          "subdistrict",
+          "proposed",
+          "existing",
+          "permeable",
+          "parking",
+          "coverage",
+          "height",
+          "depth",
+          "width",
+          "plate",
+          "area",
+          "yard",
+          "description",
+          "story",
+          "stories",
+          "type",
+          "group",
+          "use",
+          "lot",
+          "parcel",
+          "front",
+          "side",
+          "rear",
+          "minimum",
+          "maximum",
+          "gross",
+          "floor",
+          "total",
         ];
-        
+
         if (commonWords.includes(combined.toLowerCase())) {
           return combined;
         }
@@ -3578,7 +3745,6 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
      * Extract other fields (non-address) from text
      */
     extractOtherFields(text, fields = []) {
-
       // Email pattern
       const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
       const emails = text.match(emailRegex);
@@ -3641,9 +3807,15 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // ===== BUILDING USE GROUP =====
       // Reusable function for extracting fields with specific allowed values
       // Always adds the field, even if no value found (makes it editable)
-      const extractFieldWithValues = (fieldName, fieldType, allowedValues, text, alwaysShow = true) => {
+      const extractFieldWithValues = (
+        fieldName,
+        fieldType,
+        allowedValues,
+        text,
+        alwaysShow = true
+      ) => {
         const foundValues = [];
-        
+
         allowedValues.forEach((value) => {
           // Look for exact matches (case-insensitive) with word boundaries
           // Handle multi-word values by allowing flexible whitespace
@@ -3661,20 +3833,20 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         if (foundValues.length > 0) {
           // If multiple found, return array; otherwise single value
           const value = foundValues.length === 1 ? foundValues[0] : foundValues;
-          fields.push({ 
-            name: fieldName, 
-            type: fieldType, 
+          fields.push({
+            name: fieldName,
+            type: fieldType,
             value: value,
-            editable: false // Has a value, not editable
+            editable: false, // Has a value, not editable
           });
         } else if (alwaysShow) {
           // No value found, but always show this field type (makes it editable)
-          fields.push({ 
-            name: fieldName, 
-            type: fieldType, 
+          fields.push({
+            name: fieldName,
+            type: fieldType,
             value: "", // Empty value
             editable: true, // No value found, make it editable
-            allowedValues: allowedValues // Store allowed values for dropdown/validation
+            allowedValues: allowedValues, // Store allowed values for dropdown/validation
           });
         }
       };
@@ -3700,7 +3872,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // ===== KEY-VALUE PAIR EXTRACTION =====
       // Extract all labeled fields (Key: Value pattern)
       // This catches fields like "Construction Use Group: R-2", "Stories: 3", "ADDRESS: 5 Swift Terrace", etc.
-      
+
       // Common field names to look for (case-insensitive)
       const commonFieldNames = [
         "Construction Use Group",
@@ -3740,41 +3912,46 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       // Extract key-value pairs using multiple patterns
       const extractedKeyValues = new Map();
-      
+
       // Pattern 1: "KEY: value" (most common format)
-      const colonPattern = /([A-Z][A-Za-z\s&\/\-]+?)[:\s]+([^\n\r]{1,200}?)(?=\n|$|(?=[A-Z][A-Za-z\s&]+?:))/g;
+      const colonPattern =
+        /([A-Z][A-Za-z\s&\/\-]+?)[:\s]+([^\n\r]{1,200}?)(?=\n|$|(?=[A-Z][A-Za-z\s&]+?:))/g;
       let match;
       while ((match = colonPattern.exec(text)) !== null) {
         const key = match[1]?.trim();
         let value = match[2]?.trim();
-        
+
         // Clean up value (remove trailing punctuation that might be part of next field)
         value = value.replace(/[,\s]+$/, "").trim();
-        
+
         if (key && value && key.length >= 2 && value.length > 0 && value.length < 200) {
           // Normalize key
-          const normalizedKey = key
-            .replace(/\s+/g, " ")
-            .trim();
-          
+          const normalizedKey = key.replace(/\s+/g, " ").trim();
+
           // Check if this is a relevant field
-          const isRelevantField = commonFieldNames.some(fieldName => {
+          const isRelevantField = commonFieldNames.some((fieldName) => {
             const keyLower = normalizedKey.toLowerCase();
             const fieldLower = fieldName.toLowerCase();
-            return keyLower === fieldLower || 
-                   keyLower.includes(fieldLower) || 
-                   fieldLower.includes(keyLower) ||
-                   keyLower.replace(/\s+/g, "") === fieldLower.replace(/\s+/g, "");
+            return (
+              keyLower === fieldLower ||
+              keyLower.includes(fieldLower) ||
+              fieldLower.includes(keyLower) ||
+              keyLower.replace(/\s+/g, "") === fieldLower.replace(/\s+/g, "")
+            );
           });
-          
+
           // Also extract if key is all caps (like "ADDRESS", "ZONING DISTRICT")
-          const isAllCapsField = normalizedKey === normalizedKey.toUpperCase() && 
-                                 normalizedKey.length >= 3 && 
-                                 normalizedKey.length <= 50;
-          
+          const isAllCapsField =
+            normalizedKey === normalizedKey.toUpperCase() &&
+            normalizedKey.length >= 3 &&
+            normalizedKey.length <= 50;
+
           // Extract if it looks like a field (starts with common prefixes)
-          const looksLikeField = /^(Construction|Zoning|Building|Lot|Parcel|Use|Area|Yard|Parking|Stories|Address|Maximum|Max|Minimum|Min|Existing|Proposed|Project|Off-Street)/i.test(normalizedKey);
-          
+          const looksLikeField =
+            /^(Construction|Zoning|Building|Lot|Parcel|Use|Area|Yard|Parking|Stories|Address|Maximum|Max|Minimum|Min|Existing|Proposed|Project|Off-Street)/i.test(
+              normalizedKey
+            );
+
           if (isRelevantField || isAllCapsField || looksLikeField) {
             // Don't overwrite if we already have a better (longer) match
             const existingValue = extractedKeyValues.get(normalizedKey);
@@ -3788,21 +3965,24 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Add extracted key-value pairs as fields
       extractedKeyValues.forEach((value, key) => {
         // Skip if we already have this as a specific field type
-        const existingField = fields.find(f => {
+        const existingField = fields.find((f) => {
           const fName = f.name?.toLowerCase() || "";
           const keyLower = key.toLowerCase();
-          return fName === keyLower ||
-                 (f.type === "address" && keyLower.includes("address")) ||
-                 (f.type === "building_use_group" && (keyLower.includes("use group") || keyLower.includes("construction use"))) ||
-                 (f.type === "construction_type" && keyLower.includes("construction classification"));
+          return (
+            fName === keyLower ||
+            (f.type === "address" && keyLower.includes("address")) ||
+            (f.type === "building_use_group" &&
+              (keyLower.includes("use group") || keyLower.includes("construction use"))) ||
+            (f.type === "construction_type" && keyLower.includes("construction classification"))
+          );
         });
-        
+
         if (!existingField) {
           fields.push({
             name: key,
             type: "key_value",
             value: value,
-            editable: false
+            editable: false,
           });
         }
       });
@@ -3968,7 +4148,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Replace addresses with {{ADDRESS_1}}, {{ADDRESS_2}}, etc.
       // Use best address extraction to get the primary address first
       const { address: bestAddress } = this.extractBestAddress(result);
-      
+
       // Address patterns (for template generation, we may want multiple addresses)
       const addressPatterns = [
         /\b\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Place|Pl|Court|Ct|Circle|Cir)[\s,]*[A-Za-z\s]*,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/gi, // With city, state, zip (complete addresses first)
@@ -5211,7 +5391,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     setupTooltipDrag() {
       const tooltip = document.getElementById("placeholder-tooltip");
       const dragHandle = document.getElementById("tooltip-drag-handle");
-      
+
       if (!tooltip || !dragHandle) return;
 
       let isDragging = false;
@@ -5223,11 +5403,13 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Prevent dragging when clicking on buttons or inputs
       const preventDrag = (e) => {
         // Don't drag if clicking on close button or any button/input
-        if (e.target.closest("#close-tooltip-btn") || 
-            e.target.closest("button") || 
-            e.target.closest("input") ||
-            e.target.tagName === "BUTTON" ||
-            e.target.tagName === "INPUT") {
+        if (
+          e.target.closest("#close-tooltip-btn") ||
+          e.target.closest("button") ||
+          e.target.closest("input") ||
+          e.target.tagName === "BUTTON" ||
+          e.target.tagName === "INPUT"
+        ) {
           return true;
         }
         return false;
@@ -5235,12 +5417,12 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
 
       dragHandle.addEventListener("mousedown", (e) => {
         if (preventDrag(e)) return;
-        
+
         // Get current tooltip position
         const rect = tooltip.getBoundingClientRect();
         initialX = rect.left;
         initialY = rect.top;
-        
+
         // Get mouse position relative to viewport
         startX = e.clientX;
         startY = e.clientY;
@@ -5288,14 +5470,14 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
       // Touch support for mobile
       dragHandle.addEventListener("touchstart", (e) => {
         if (preventDrag(e)) return;
-        
+
         const touch = e.touches[0];
-        
+
         // Get current tooltip position
         const rect = tooltip.getBoundingClientRect();
         initialX = rect.left;
         initialY = rect.top;
-        
+
         // Get touch position relative to viewport
         startX = touch.clientX;
         startY = touch.clientY;
@@ -5310,7 +5492,7 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         e.preventDefault();
 
         const touch = e.touches[0];
-        
+
         // Calculate new position
         const deltaX = touch.clientX - startX;
         const deltaY = touch.clientY - startY;
