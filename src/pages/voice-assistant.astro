@@ -645,7 +645,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
         const emailCount = data.newEmails.length;
         const emailList = data.newEmails
           .slice(0, 3) // Only announce first 3
-          .map((email: any) => `${email.from.split("<")[0].trim() || email.from}: ${email.subject}`)
+          .map((email) => `${email.from.split("<")[0].trim() || email.from}: ${email.subject}`)
           .join(". ");
         
         const announcement = emailCount === 1 
@@ -661,12 +661,12 @@ const { currentUser } = await checkAuth(Astro.cookies);
         }
         
         VoiceAssistantLogger.info("gmail", `New emails detected: ${emailCount}`, {
-          emails: data.newEmails.map((e: any) => ({ from: e.from, subject: e.subject })),
+          emails: data.newEmails.map((e) => ({ from: e.from, subject: e.subject })),
         });
       }
       
       lastGmailCheck = new Date();
-    } catch (error: any) {
+    } catch (error) {
       VoiceAssistantLogger.error("gmail", "Error checking Gmail", { error: error.message });
     }
   }
