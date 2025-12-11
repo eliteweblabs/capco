@@ -13,20 +13,20 @@ export const POST: APIRoute = async ({ request }) => {
     const { message, conversationHistory = [] } = await request.json();
 
     if (!message || typeof message !== "string") {
-      return new Response(
-        JSON.stringify({ error: "Message is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Message is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get API key
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       console.error("❌ [VOICE-ASSISTANT-API] ANTHROPIC_API_KEY not configured");
-      return new Response(
-        JSON.stringify({ error: "AI service not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "AI service not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Initialize Anthropic client
@@ -244,13 +244,15 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
     const tools = [
       {
         name: "search_client",
-        description: "Search for a client in the database by name, company name, or email. ALWAYS use this FIRST when the user mentions a client name (e.g., 'email John Smith', 'send email to ABC Company'). Returns client information including email address which you can then use for send_email.",
+        description:
+          "Search for a client in the database by name, company name, or email. ALWAYS use this FIRST when the user mentions a client name (e.g., 'email John Smith', 'send email to ABC Company'). Returns client information including email address which you can then use for send_email.",
         input_schema: {
           type: "object",
           properties: {
             query: {
               type: "string",
-              description: "The search query - can be client name, company name, or email address. Extract this from the user's message (e.g., if user says 'email John Smith', use 'John Smith' as the query)",
+              description:
+                "The search query - can be client name, company name, or email address. Extract this from the user's message (e.g., if user says 'email John Smith', use 'John Smith' as the query)",
             },
             limit: {
               type: "number",
@@ -262,7 +264,8 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
       },
       {
         name: "send_email",
-        description: "Send an email to a recipient. Use this AFTER you have: 1) Found the recipient's email (via search_client if client name was mentioned, or directly from user), 2) Asked for and received the subject line, 3) Asked for and received the email body/message. Do NOT call this until you have all three: to, subject, and body.",
+        description:
+          "Send an email to a recipient. Use this AFTER you have: 1) Found the recipient's email (via search_client if client name was mentioned, or directly from user), 2) Asked for and received the subject line, 3) Asked for and received the email body/message. Do NOT call this until you have all three: to, subject, and body.",
         input_schema: {
           type: "object",
           properties: {
@@ -288,7 +291,8 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
       },
       {
         name: "check_emails",
-        description: "Check the inbox for new emails. Returns a list of recent emails. Note: This requires email reading to be configured (Gmail API, Outlook API, or IMAP).",
+        description:
+          "Check the inbox for new emails. Returns a list of recent emails. Note: This requires email reading to be configured (Gmail API, Outlook API, or IMAP).",
         input_schema: {
           type: "object",
           properties: {
@@ -301,7 +305,8 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
       },
       {
         name: "read_email",
-        description: "Read a specific email by its ID. Note: This requires email reading to be configured (Gmail API, Outlook API, or IMAP).",
+        description:
+          "Read a specific email by its ID. Note: This requires email reading to be configured (Gmail API, Outlook API, or IMAP).",
         input_schema: {
           type: "object",
           properties: {
@@ -315,7 +320,8 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
       },
       {
         name: "check_gmail",
-        description: "Check Gmail inbox for new emails. Returns only new emails that haven't been reported yet. Requires Google OAuth authentication with Gmail scope. Use this when user asks to check their Gmail or monitor for new emails.",
+        description:
+          "Check Gmail inbox for new emails. Returns only new emails that haven't been reported yet. Requires Google OAuth authentication with Gmail scope. Use this when user asks to check their Gmail or monitor for new emails.",
         input_schema: {
           type: "object",
           properties: {
@@ -328,21 +334,25 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
       },
       {
         name: "call_client",
-        description: "Make a phone call to a client using VAPI. Use this when the user wants to call a client. If a client name is mentioned, first use search_client to find the client and get their phone number, then use call_client with the client's phone number or clientId. You can also provide a custom message for the call.",
+        description:
+          "Make a phone call to a client using VAPI. Use this when the user wants to call a client. If a client name is mentioned, first use search_client to find the client and get their phone number, then use call_client with the client's phone number or clientId. You can also provide a custom message for the call.",
         input_schema: {
           type: "object",
           properties: {
             clientName: {
               type: "string",
-              description: "The name of the client to call (optional if clientId or phoneNumber is provided)",
+              description:
+                "The name of the client to call (optional if clientId or phoneNumber is provided)",
             },
             clientId: {
               type: "string",
-              description: "The ID of the client to call (optional if clientName or phoneNumber is provided)",
+              description:
+                "The ID of the client to call (optional if clientName or phoneNumber is provided)",
             },
             phoneNumber: {
               type: "string",
-              description: "The phone number to call in E.164 format (e.g., +1234567890). Optional if clientName or clientId is provided - will be looked up from database.",
+              description:
+                "The phone number to call in E.164 format (e.g., +1234567890). Optional if clientName or clientId is provided - will be looked up from database.",
             },
             message: {
               type: "string",
@@ -424,7 +434,7 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
                 new URL("/api/voice-assistant/gmail-monitor", request.url).toString(),
                 {
                   method: "POST",
-                  headers: { 
+                  headers: {
                     "Content-Type": "application/json",
                     Cookie: request.headers.get("Cookie") || "",
                   },
@@ -489,9 +499,9 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
       });
 
       // Extract final response text
-    if (response.content && response.content.length > 0) {
-      const firstBlock = response.content[0];
-      if (firstBlock.type === "text") {
+      if (response.content && response.content.length > 0) {
+        const firstBlock = response.content[0];
+        if (firstBlock.type === "text") {
           finalResponseText = firstBlock.text;
         }
       }
@@ -524,13 +534,9 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
       errorMessage = `Error: ${error.message}`;
     }
 
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: error.status || 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: error.status || 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
-
