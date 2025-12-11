@@ -1,9 +1,7 @@
 ---
 const { currentUser } = Astro.props;
-if (!currentUser) {
-  return null;
-}
 // Mapbox Widget Component with Scroll Effects
+// Note: Widget will still render even without currentUser - adjust if needed
 ---
 
 <div id="mapbox-widget" class="mapbox-container">
@@ -574,7 +572,7 @@ if (!currentUser) {
   }
 </style>
 
-<script>
+<script is:inline>
   // Mapbox configuration
   const MAPBOX_ACCESS_TOKEN =
     "REDACTED_MAPBOX_TOKEN"; // Replace with your token
@@ -583,15 +581,28 @@ if (!currentUser) {
   const MIN_ZOOM = 4;
   const MAX_ZOOM = 13;
 
-  let map: any = null;
+  let map = null;
 
   // Initialize map when component loads
-  document.addEventListener("DOMContentLoaded", () => {
-    console.log("🗺️ [MAPBOX] Initializing Mapbox widget...");
+  // Wait for both DOM and Mapbox GL JS to be ready
+  function initWhenReady() {
+    console.log("🗺️ [MAPBOX] Checking Mapbox widget initialization...");
 
-    // Check if Mapbox GL is loaded
-    if (typeof (window as any).mapboxgl === "undefined") {
-      console.error("❌ [MAPBOX] Mapbox GL JS not loaded!");
+    // Check if Mapbox GL is loaded (try both window.mapboxgl and global mapboxgl)
+    const mapboxgl = window.mapboxgl || (typeof mapboxgl !== "undefined" ? mapboxgl : null);
+
+    if (!mapboxgl) {
+      console.log("⏳ [MAPBOX] Mapbox GL JS not loaded yet, waiting...");
+      setTimeout(initWhenReady, 100);
+      return;
+    }
+
+    console.log("✅ [MAPBOX] Mapbox GL JS loaded, initializing...");
+
+    // Check if map container exists
+    const mapContainer = document.getElementById("map");
+    if (!mapContainer) {
+      console.error("❌ [MAPBOX] Map container not found!");
       return;
     }
 
@@ -601,13 +612,31 @@ if (!currentUser) {
     setupCounterAnimations();
 
     console.log("✅ [MAPBOX] Widget initialized successfully");
-  });
+  }
+
+  // Start initialization when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      // Wait a bit for Mapbox script to load
+      setTimeout(initWhenReady, 200);
+    });
+  } else {
+    // DOM already loaded, but wait a bit for Mapbox script
+    setTimeout(initWhenReady, 200);
+  }
 
   function initializeMap() {
     // Initialize Mapbox GL JS
-    (window as any).mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+    const mapboxgl = window.mapboxgl || (typeof mapboxgl !== "undefined" ? mapboxgl : null);
 
-    map = new (window as any).mapboxgl.Map({
+    if (!mapboxgl) {
+      console.error("❌ [MAPBOX] Mapbox GL JS still not available!");
+      return;
+    }
+
+    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+
+    map = new mapboxgl.Map({
       container: "map",
       style: "mapbox://styles/mapbox/streets-v11",
       center: [-71.0589, 42.3601], // Boston, MA
@@ -714,7 +743,7 @@ if (!currentUser) {
       });
 
       // Add coverage markers
-      addCoverageMarkers(map as any);
+      addCoverageMarkers(map);
     });
   }
 
@@ -943,10 +972,10 @@ if (!currentUser) {
     },
   ];
 
-  let markerObjects: any[] = [];
+  let markerObjects = [];
   let currentFilter = "all";
 
-  function addCoverageMarkers(map: any) {
+  function addCoverageMarkers(map) {
     buildingMarkers.forEach((building) => {
       // Create 3D-style marker element
       const el = document.createElement("div");
@@ -962,9 +991,12 @@ if (!currentUser) {
         <div class="marker-label">${building.name}</div>
       `;
 
-      const marker = new (window as any).mapboxgl.Marker(el)
-        .setLngLat([building.lng, building.lat])
-        .addTo(map);
+      const mapboxgl = window.mapboxgl || (typeof mapboxgl !== "undefined" ? mapboxgl : null);
+      if (!mapboxgl) {
+        console.error("❌ [MAPBOX] Mapbox GL JS not available for markers!");
+        return;
+      }
+      const marker = new mapboxgl.Marker(el).setLngLat([building.lng, building.lat]).addTo(map);
 
       markerObjects.push({ marker, building });
     });
@@ -976,7 +1008,7 @@ if (!currentUser) {
     );
   }
 
-  function updateMarkerVisibility(progress: number) {
+  function updateMarkerVisibility(progress) {
     // Reveal markers based on eased progress matching their priority
     markerObjects.forEach(({ marker, building }) => {
       const el = marker.getElement();
@@ -996,7 +1028,7 @@ if (!currentUser) {
     });
   }
 
-  function filterMarkers(type: string) {
+  function filterMarkers(type) {
     currentFilter = type;
 
     // Get current scroll progress to respect priority timing
@@ -1018,12 +1050,12 @@ if (!currentUser) {
   }
 
   let lastScrollY = 0;
-  let lastScrollDirection: "down" | "up" | null = null;
+  let lastScrollDirection = null;
   let animationProgress = 0; // 0-100, tracks animation state
-  let rafId: number | null = null;
+  let rafId = null;
 
   // Calculate how much of the map is visible in the viewport (0-100%)
-  function getMapVisibility(mapContainer: HTMLElement): number {
+  function getMapVisibility(mapContainer) {
     const rect = mapContainer.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
     const elementHeight = rect.height;
@@ -1039,7 +1071,7 @@ if (!currentUser) {
   }
 
   // Apply cubic ease-in for smooth acceleration
-  function applyEasing(linearValue: number): number {
+  function applyEasing(linearValue) {
     const t = linearValue / 100; // Normalize to 0-1
     return t * t * t * 100; // Cubic ease-in, back to 0-100
   }
@@ -1068,7 +1100,7 @@ if (!currentUser) {
     });
   }
 
-  function updateMapAnimation(mapContainer: HTMLElement) {
+  function updateMapAnimation(mapContainer) {
     // 1. Get current visibility percentage
     const visibility = getMapVisibility(mapContainer);
 
@@ -1119,7 +1151,9 @@ if (!currentUser) {
         bearing: bearing,
         center: [-71.0589, 42.3601],
         duration: 0,
-        easing: (t: number) => t,
+        easing: function (t) {
+          return t;
+        },
       });
 
       console.log(
@@ -1142,7 +1176,7 @@ if (!currentUser) {
         tab.classList.add("active");
 
         // Get filter type
-        const filter = (tab as any).dataset.filter;
+        const filter = tab.getAttribute("data-filter") || tab.dataset?.filter;
 
         // Filter markers by building type
         filterMarkers(filter);
@@ -1153,8 +1187,10 @@ if (!currentUser) {
   function setupCounterAnimations() {
     const counters = document.querySelectorAll(".stat-number");
 
-    const animateCounter = (counter: HTMLElement) => {
-      const target = parseInt(counter.dataset.target as string);
+    const animateCounter = (counter) => {
+      const target = parseInt(
+        counter.getAttribute("data-target") || counter.dataset?.target || "0"
+      );
       const duration = 2000;
       const increment = target / (duration / 16);
       let current = 0;
@@ -1170,17 +1206,17 @@ if (!currentUser) {
     };
 
     // Intersection Observer for counter animation
-    const observer = new IntersectionObserver((entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry: IntersectionObserverEntry) => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          animateCounter(entry.target as HTMLElement);
-          observer.unobserve(entry.target as HTMLElement);
+          animateCounter(entry.target);
+          observer.unobserve(entry.target);
         }
       });
     });
 
     counters.forEach((counter) => {
-      observer.observe(counter as HTMLElement);
+      observer.observe(counter);
     });
   }
 </script>
