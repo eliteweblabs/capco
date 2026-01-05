@@ -329,7 +329,9 @@ async function main() {
       console.log("🤖 [VAPI-CONFIG] Creating new assistant");
       const assistant = await createAssistant();
       console.log("📝 [VAPI-CONFIG] Save this assistant ID:", assistant.id);
-      console.log("📝 [VAPI-CONFIG] Add to your .env file: VAPI_ASSISTANT_ID=" + assistant.id);
+      console.log(
+        "📝 [VAPI-CONFIG] Add to your .env file: PUBLIC_VAPI_ASSISTANT_ID=" + assistant.id
+      );
     }
 
     console.log("✅ [VAPI-CONFIG] Configuration complete!");

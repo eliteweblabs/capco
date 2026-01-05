@@ -1,0 +1,45 @@
+---
+/**
+ * Layout: Full Width
+ * Full-width page for landing pages, marketing pages, etc.
+ */
+interface Props {
+  children: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  title: string;
+  description: string;
+  lastUpdated?: string;
+  currentUser?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  session?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  supabase?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
+const { children, title, description, lastUpdated, currentUser, session, supabase } = Astro.props;
+
+import App from "../common/App.astro";
+import { getSiteConfig } from "../../lib/content";
+
+const siteConfig = getSiteConfig();
+---
+
+<App
+  title={`${title} - ${siteConfig.site.name}`}
+  description={description}
+  {currentUser}
+  {session}
+  {supabase}
+>
+  <div class="w-full">
+    {
+      lastUpdated === "auto" && (
+        <div class="container mx-auto mb-8 rounded-lg border border-primary-200 bg-primary-50 p-6 dark:border-primary-800 dark:bg-primary-900/20">
+          <p class="my-0 text-primary-800 dark:text-primary-200">
+            <strong>Last Updated:</strong> {new Date().toLocaleDateString()}
+          </p>
+        </div>
+      )
+    }
+
+    <slot />
+  </div>
+</App>
+

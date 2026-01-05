@@ -35,7 +35,7 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
   googleAuthUrl.searchParams.set("response_type", "code");
   googleAuthUrl.searchParams.set(
     "scope",
-    "openid email profile https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/gmail.readonly"
+    "openid email profile"
   );
   googleAuthUrl.searchParams.set("access_type", "offline");
   googleAuthUrl.searchParams.set("prompt", "consent");

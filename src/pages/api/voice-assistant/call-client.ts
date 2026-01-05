@@ -12,7 +12,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Get VAPI API key and assistant ID
     const vapiApiKey = process.env.VAPI_API_KEY;
-    const assistantId = process.env.VAPI_ASSISTANT_ID || import.meta.env.PUBLIC_VAPI_ASSISTANT_ID || "3ae002d5-fe9c-4870-8034-4c66a9b43b51";
+    const assistantId =
+      process.env.PUBLIC_VAPI_ASSISTANT_ID ||
+      import.meta.env.PUBLIC_PUBLIC_VAPI_ASSISTANT_ID ||
+      "3ae002d5-fe9c-4870-8034-4c66a9b43b51";
 
     if (!vapiApiKey) {
       return new Response(
@@ -218,4 +221,3 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
-

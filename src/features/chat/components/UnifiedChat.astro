@@ -1,0 +1,714 @@
+---
+// Unified Chat Component - Group Chat + Direct Messaging
+// Single widget with tabs for both group and direct messaging
+
+import SimpleIcon from "../../../components/common/SimpleIcon.astro";
+
+interface Props {
+  currentUser?: any;
+}
+
+const { currentUser } = Astro.props;
+const currentRole = currentUser?.profile?.role;
+
+// Debug logging
+console.log("🔧 [UNIFIED-CHAT] Current user object:", currentUser);
+console.log("🔧 [UNIFIED-CHAT] Current role:", currentRole);
+console.log("🔧 [UNIFIED-CHAT] User ID:", currentUser?.id);
+console.log("🔧 [UNIFIED-CHAT] Company name:", currentUser?.profile?.companyName);
+
+if (currentRole !== "Admin" && currentRole !== "Staff") {
+  return null;
+}
+---
+
+<!-- Unified Chat Widget -->
+<div
+  id="unified-chat-widget"
+  class="z-50 h-[300px] flex-col"
+  data-user-role={currentRole || "Client"}
+  data-user-id={currentUser?.id || "unknown"}
+  data-user-name={currentUser?.profile?.companyName || "Unknown User"}
+>
+  <!-- Chat Toggle Button -->
+  <div class="relative hidden">
+    <SimpleIcon
+      name="message-circle"
+      variant="primary"
+      size="lg"
+      id="unified-chat-toggle"
+      dataAttributes={{ "data-count": "0" }}
+      backgroundColor="primary"
+      shape="circle"
+    />
+    <!-- Debug indicator -->
+    <div
+      class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-green-500"
+    >
+      <span class="text-xs font-bold text-white">CHAT</span>
+    </div>
+  </div>
+
+  <!-- Chat Panel -->
+  <div id="unified-chat-panel" class="flex-col bg-gray-100 dark:border-gray-700 color-background">
+    <!-- Header with Tabs -->
+    <div class="flex items-center justify-between bg-gray-50 p-4 dark:bg-gray-700">
+      <div class="flex items-center space-x-2">
+        <div
+          class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30"
+        >
+          <SimpleIcon name="message-circle" class="text-primary-600 dark:text-primary-400" />
+        </div>
+        <div>
+          <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+            Team Chat <SimpleIcon
+              name="message-circle"
+              variant="primary"
+              size="lg"
+              id="unified-chat-toggle"
+              dataAttributes={{ "data-count": "0" }}
+              backgroundColor="primary"
+              shape="circle"
+            />
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400" id="unified-online-count">0 online</p>
+        </div>
+      </div>
+      <button
+        id="unified-chat-close"
+        class="rounded-lg p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-600 dark:hover:text-gray-300"
+        title="Close chat"
+      >
+        <SimpleIcon name="x" class="text-lg" />
+      </button>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex border-b border-gray-200 dark:border-gray-700">
+      <button
+        id="group-chat-tab"
+        class="flex-1 border-b-2 border-transparent px-4 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+      >
+        <SimpleIcon name="users" class="mr-2" />
+        Group Chat
+      </button>
+      <button
+        id="direct-messages-tab"
+        class="flex-1 border-b-2 border-transparent px-4 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+      >
+        <SimpleIcon name="message-square" class="mr-2" />
+        Direct Messages
+      </button>
+    </div>
+
+    <!-- Group Chat Content -->
+    <div id="group-chat-content" class="flex-1 flex-col">
+      <!-- Group Chat Messages -->
+      <div class="flex-1 space-y-3 overflow-y-auto p-3" id="group-chat-messages">
+        <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          <SimpleIcon name="message-circle" class="mx-auto mb-2 text-2xl" />
+          <p>Connecting to group chat...</p>
+        </div>
+      </div>
+
+      <!-- Group Chat Input -->
+      <div class="border-t border-gray-200 p-3 dark:border-gray-700">
+        <div class="flex space-x-2">
+          <input
+            type="text"
+            id="group-chat-input"
+            placeholder="Type a message..."
+            class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            maxlength="500"
+          />
+          <button
+            id="group-chat-send"
+            class="rounded-full bg-primary-600 px-4 py-2 text-sm text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled
+          >
+            <SimpleIcon name="send" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Direct Messages Content -->
+    <div id="direct-messages-content" class="flex-1 flex-col">
+      <!-- User List -->
+      <div id="dm-user-list" class="flex-1 space-y-1 overflow-y-auto p-2">
+        <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          <SimpleIcon name="message-square" class="mx-auto mb-2 text-2xl" />
+          <p>Loading users...</p>
+        </div>
+      </div>
+
+      <!-- Conversation View (hidden initially) -->
+      <div id="dm-conversation" class="hidden flex-1 flex-col">
+        <!-- Conversation Header -->
+        <div
+          class="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-700"
+        >
+          <div class="flex items-center space-x-2">
+            <button
+              id="dm-back-to-users"
+              class="rounded-lg p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-600 dark:hover:text-gray-300"
+            >
+              <SimpleIcon name="arrow-left" class="text-lg" />
+            </button>
+            <div>
+              <h4
+                class="text-sm font-medium text-gray-900 dark:text-white"
+                id="dm-conversation-user"
+              >
+                User Name
+              </h4>
+              <p class="text-xs text-gray-500 dark:text-gray-400" id="dm-conversation-status">
+                Online
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="dm-messages" class="flex-1 space-y-2 overflow-y-auto p-3">
+          <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+            <SimpleIcon name="message-square" class="mx-auto mb-2 text-2xl" />
+            <p>Start a conversation...</p>
+          </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="border-t border-gray-200 p-3 dark:border-gray-700">
+          <div class="flex space-x-2">
+            <input
+              type="text"
+              id="dm-message-input"
+              placeholder="Type a message..."
+              class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              maxlength="500"
+            />
+            <button
+              id="dm-send-button"
+              class="rounded-full bg-primary-600 px-4 py-2 text-sm text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled
+            >
+              <SimpleIcon name="send" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Socket.io Client Library -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+  // Unified Chat JavaScript
+  let socket: any = null;
+  let currentUser: any = null;
+  let onlineUsers: any[] = [];
+  let currentConversation: any = null;
+  let conversations: any = {};
+  let isInitialized = false;
+  let unreadCount = 0;
+  let isChatOpen = false;
+  let currentTab = "group"; // "group" or "direct"
+
+  // Initialize unified chat
+  function initializeUnifiedChat() {
+    if (isInitialized) {
+      console.log("💬 [UNIFIED-CHAT] Already initialized");
+      return;
+    }
+
+    console.log("💬 [UNIFIED-CHAT] Initializing unified chat");
+
+    const widget = document.getElementById("unified-chat-widget");
+    if (!widget) {
+      console.log("💬 [UNIFIED-CHAT] Widget not found");
+      return;
+    }
+
+    const userRole = widget.dataset.userRole || "Client";
+    const userId = widget.dataset.userId || "unknown";
+    const userName = widget.dataset.userName || "Unknown User";
+
+    console.log("🔧 [UNIFIED-CHAT] Widget data attributes:", {
+      userRole: widget.dataset.userRole,
+      userId: widget.dataset.userId,
+      userName: widget.dataset.userName,
+    });
+
+    if (userRole !== "Admin" && userRole !== "Staff") {
+      console.log("💬 [UNIFIED-CHAT] User not Admin/Staff, hiding widget");
+      widget.classList.add("hidden");
+      return;
+    }
+
+    currentUser = {
+      id: userId,
+      name: userName,
+      role: userRole,
+    };
+
+    console.log("💬 [UNIFIED-CHAT] Current user:", currentUser);
+
+    // Initialize Socket.io connection
+    initializeSocket();
+
+    // Setup event listeners
+    setupUnifiedChatEvents();
+
+    // Load users for direct messaging
+    loadUsers();
+
+    isInitialized = true;
+    console.log("💬 [UNIFIED-CHAT] Initialization complete");
+  }
+
+  // Initialize Socket.io connection
+  function initializeSocket() {
+    try {
+      if (typeof (window as any).io === "undefined") {
+        console.error("❌ [UNIFIED-CHAT] Socket.io library not loaded");
+        return;
+      }
+
+      // Use environment-based URL or fallback to localhost
+      console.log("🔧 [UNIFIED-CHAT] Current hostname:", window.location.hostname);
+      console.log("🔧 [UNIFIED-CHAT] Is localhost?", window.location.hostname === "localhost");
+
+      // Use the main server URL for Socket.io (integrated approach)
+      const socketUrl =
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+          ? "http://localhost:3001" // Local development still uses separate server
+          : window.location.origin; // Production uses integrated server
+
+      console.log("🔧 [UNIFIED-CHAT] Connecting to socket server:", socketUrl);
+
+      socket = (window as any).io(socketUrl, {
+        transports: ["websocket", "polling"],
+        timeout: 20000,
+        forceNew: true,
+        autoConnect: true,
+      });
+
+      // Connection events
+      socket.on("connect", () => {
+        console.log("✅ [UNIFIED-CHAT] Connected to server");
+        console.log("🔧 [UNIFIED-CHAT] Socket ID:", socket.id);
+        console.log("🔧 [UNIFIED-CHAT] Current user:", currentUser);
+
+        // Join both group chat and direct messaging
+        socket.emit("join", {
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser.role,
+        });
+
+        socket.emit("join_dm", {
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser.role,
+        });
+      });
+
+      socket.on("connect_error", (error: any) => {
+        console.error("❌ [UNIFIED-CHAT] Connection error:", error);
+        console.error("🔧 [UNIFIED-CHAT] Error details:", {
+          message: error.message,
+          description: error.description,
+          context: error.context,
+          type: error.type,
+        });
+      });
+
+      socket.on("disconnect", (reason: any) => {
+        console.log("❌ [UNIFIED-CHAT] Disconnected from server:", reason);
+      });
+
+      // Group chat events
+      socket.on("chat_history", (messages: any) => {
+        console.log("💬 [UNIFIED-CHAT] Group chat history:", messages.length);
+        loadGroupChatHistory(messages);
+      });
+
+      socket.on("new_message", (message: any) => {
+        console.log("💬 [UNIFIED-CHAT] New group message:", message);
+        addGroupMessage(message);
+      });
+
+      socket.on("user_list", (users: any) => {
+        console.log("💬 [UNIFIED-CHAT] Online users:", users.length);
+        console.log("🔧 [UNIFIED-CHAT] Users data:", users);
+        onlineUsers = users;
+        updateOnlineCount();
+      });
+
+      // Direct messaging events
+      socket.on("dm_user_list", (users: any) => {
+        console.log("💬 [UNIFIED-CHAT] DM users:", users.length);
+        console.log("🔧 [UNIFIED-CHAT] DM users data:", users);
+        onlineUsers = users;
+        updateUserList();
+        updateOnlineCount();
+      });
+
+      socket.on("dm_message", (message: any) => {
+        console.log("💬 [UNIFIED-CHAT] New direct message:", message);
+        handleDirectMessage(message);
+      });
+
+      socket.on("dm_conversation_history", (data: any) => {
+        console.log("💬 [UNIFIED-CHAT] DM conversation history:", data.messages.length);
+        loadConversationHistory(data.messages);
+      });
+    } catch (error) {
+      console.error("❌ [UNIFIED-CHAT] Error initializing socket:", error);
+    }
+  }
+
+  // Setup event listeners
+  function setupUnifiedChatEvents() {
+    const toggle = document.getElementById("unified-chat-toggle");
+    const close = document.getElementById("unified-chat-close");
+    const groupTab = document.getElementById("group-chat-tab");
+    const directTab = document.getElementById("direct-messages-tab");
+    const groupInput = document.getElementById("group-chat-input");
+    const groupSend = document.getElementById("group-chat-send");
+    const dmInput = document.getElementById("dm-message-input");
+    const dmSend = document.getElementById("dm-send-button");
+    const backToUsers = document.getElementById("dm-back-to-users");
+
+    // Toggle panel
+    toggle?.addEventListener("click", () => {
+      const panel = document.getElementById("unified-chat-panel");
+      const isHidden = panel?.classList.contains("hidden");
+
+      if (isHidden) {
+        panel?.classList.remove("hidden");
+        isChatOpen = true;
+        groupInput?.focus();
+      } else {
+        panel?.classList.add("hidden");
+        isChatOpen = false;
+      }
+    });
+
+    // Close panel
+    close?.addEventListener("click", () => {
+      document.getElementById("unified-chat-panel")?.classList.add("hidden");
+      isChatOpen = false;
+    });
+
+    // Tab switching
+    groupTab?.addEventListener("click", () => {
+      switchTab("group");
+    });
+
+    directTab?.addEventListener("click", () => {
+      switchTab("direct");
+    });
+
+    // Group chat input
+    groupInput?.addEventListener("input", (e) => {
+      const target = e.target as HTMLInputElement;
+      const sendBtn = document.getElementById("group-chat-send") as HTMLButtonElement;
+      sendBtn.disabled = !target.value.trim();
+    });
+
+    groupSend?.addEventListener("click", sendGroupMessage);
+
+    groupInput?.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendGroupMessage();
+      }
+    });
+
+    // Direct message input
+    dmInput?.addEventListener("input", (e) => {
+      const target = e.target as HTMLInputElement;
+      const sendBtn = document.getElementById("dm-send-button") as HTMLButtonElement;
+      sendBtn.disabled = !target.value.trim();
+    });
+
+    dmSend?.addEventListener("click", sendDirectMessage);
+
+    dmInput?.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendDirectMessage();
+      }
+    });
+
+    // Back to user list
+    backToUsers?.addEventListener("click", () => {
+      showUserList();
+    });
+  }
+
+  // Switch between tabs
+  function switchTab(tab: string) {
+    currentTab = tab;
+
+    const groupContent = document.getElementById("group-chat-content");
+    const directContent = document.getElementById("direct-messages-content");
+    const groupTab = document.getElementById("group-chat-tab");
+    const directTab = document.getElementById("direct-messages-tab");
+
+    if (tab === "group") {
+      groupContent?.classList.remove("hidden");
+      directContent?.classList.add("hidden");
+      groupTab?.classList.add("border-primary-500", "text-primary-600");
+      groupTab?.classList.remove("border-transparent", "text-gray-500");
+      directTab?.classList.remove("border-primary-500", "text-primary-600");
+      directTab?.classList.add("border-transparent", "text-gray-500");
+    } else {
+      groupContent?.classList.add("hidden");
+      directContent?.classList.remove("hidden");
+      directTab?.classList.add("border-primary-500", "text-primary-600");
+      directTab?.classList.remove("border-transparent", "text-gray-500");
+      groupTab?.classList.remove("border-primary-500", "text-primary-600");
+      groupTab?.classList.add("border-transparent", "text-gray-500");
+    }
+  }
+
+  // Group chat functions
+  function sendGroupMessage() {
+    const input = document.getElementById("group-chat-input") as HTMLInputElement;
+    const message = input.value.trim();
+
+    if (!message || !socket) return;
+
+    socket.emit("message", { message });
+    input.value = "";
+    document.getElementById("group-chat-send")?.setAttribute("disabled", "true");
+  }
+
+  function addGroupMessage(message: any) {
+    const messagesContainer = document.getElementById("group-chat-messages");
+    if (!messagesContainer) return;
+
+    const isOwnMessage = message.userId === currentUser.id;
+    const messageElement = document.createElement("div");
+    messageElement.className = `flex ${isOwnMessage ? "justify-end" : "justify-start"}`;
+
+    messageElement.innerHTML = `
+      <div class="max-w-xs ${isOwnMessage ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white"} rounded-lg px-3 py-2">
+        <div class="flex items-center space-x-2 mb-1">
+          <span class="text-xs font-medium">${message.companyName || "Unknown"}</span>
+          <span class="text-xs opacity-75">${new Date(message.timestamp).toLocaleTimeString()}</span>
+        </div>
+        <p class="text-sm">${message.message}</p>
+      </div>
+    `;
+
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  function loadGroupChatHistory(messages: any[]) {
+    const messagesContainer = document.getElementById("group-chat-messages");
+    if (!messagesContainer) return;
+
+    messagesContainer.innerHTML = "";
+    messages.forEach((message) => addGroupMessage(message));
+  }
+
+  // Direct messaging functions
+  async function loadUsers() {
+    try {
+      const response = await fetch("/api/users?role=Admin&role=Staff", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json();
+
+      if (data.data) {
+        const users = data.data || [];
+        const otherUsers = users.filter((user: any) => user.id !== currentUser.id);
+        updateUserList(otherUsers);
+      }
+    } catch (error) {
+      console.error("Error loading users:", error);
+    }
+  }
+
+  function updateUserList(users = onlineUsers) {
+    const userList = document.getElementById("dm-user-list");
+    if (!userList) return;
+
+    console.log("🔧 [UNIFIED-CHAT] Updating user list with:", users.length, "users");
+    console.log("🔧 [UNIFIED-CHAT] Online users:", onlineUsers.length);
+
+    if (users.length === 0) {
+      userList.innerHTML = `
+        <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          <SimpleIcon name="user-x" class="mx-auto mb-2 text-2xl" />
+          <p>No other users online</p>
+        </div>
+      `;
+      return;
+    }
+
+    userList.innerHTML = users
+      .map((user: any) => {
+        const isOnline = onlineUsers.some((u) => u.userId === user.id || u.id === user.id);
+        const unreadCount = conversations[user.id]?.unreadCount || 0;
+
+        console.log(`🔧 [UNIFIED-CHAT] User ${user.companyName || user.email}: online=${isOnline}`);
+
+        return `
+        <div class="flex items-center space-x-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" 
+             onclick="startConversation('${user.id}', '${user.companyName || user.email}')">
+          <div class="relative">
+            <div class="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+              <SimpleIcon name="user" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <div class="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white dark:border-gray-800 ${isOnline ? "bg-green-400" : "bg-gray-400"}"></div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+              ${user.companyName || user.email}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              ${user.role} • ${isOnline ? "Online" : "Offline"}
+            </p>
+          </div>
+          ${
+            unreadCount > 0
+              ? `
+            <div class="flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-xs text-white">
+              ${unreadCount > 99 ? "99+" : unreadCount}
+            </div>
+          `
+              : ""
+          }
+        </div>
+      `;
+      })
+      .join("");
+  }
+
+  function startConversation(userId: string, userName: string) {
+    currentConversation = { id: userId, name: userName };
+
+    document.getElementById("dm-user-list")?.classList.add("hidden");
+    document.getElementById("dm-conversation")?.classList.remove("hidden");
+
+    const conversationUser = document.getElementById("dm-conversation-user");
+    if (conversationUser) {
+      conversationUser.textContent = userName;
+    }
+
+    socket?.emit("get_dm_history", { userId });
+
+    if (conversations[userId]) {
+      conversations[userId].unreadCount = 0;
+    }
+  }
+
+  function showUserList() {
+    document.getElementById("dm-user-list")?.classList.remove("hidden");
+    document.getElementById("dm-conversation")?.classList.add("hidden");
+    currentConversation = null;
+  }
+
+  function sendDirectMessage() {
+    const input = document.getElementById("dm-message-input") as HTMLInputElement;
+    const message = input.value.trim();
+
+    if (!message || !socket || !currentConversation) return;
+
+    socket.emit("dm_message", {
+      to: currentConversation.id,
+      message: message,
+    });
+
+    input.value = "";
+    document.getElementById("dm-send-button")?.setAttribute("disabled", "true");
+  }
+
+  function handleDirectMessage(message: any) {
+    const fromUserId = message.from || message.userId;
+    const isFromCurrentConversation = currentConversation?.id === fromUserId;
+
+    if (!conversations[fromUserId]) {
+      conversations[fromUserId] = { messages: [], unreadCount: 0 };
+    }
+
+    conversations[fromUserId].messages.push(message);
+
+    if (isFromCurrentConversation) {
+      addMessageToConversation(message);
+    } else {
+      conversations[fromUserId].unreadCount++;
+      updateUserList();
+    }
+  }
+
+  function addMessageToConversation(message: any) {
+    const messagesContainer = document.getElementById("dm-messages");
+    if (!messagesContainer) return;
+
+    const isOwnMessage = message.from === currentUser.id;
+    const messageElement = document.createElement("div");
+    messageElement.className = `flex ${isOwnMessage ? "justify-end" : "justify-start"}`;
+
+    messageElement.innerHTML = `
+      <div class="max-w-xs ${isOwnMessage ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white"} rounded-lg px-3 py-2">
+        <p class="text-sm">${message.message}</p>
+        <p class="text-xs opacity-75 mt-1">${new Date(message.timestamp || Date.now()).toLocaleTimeString()}</p>
+      </div>
+    `;
+
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  function loadConversationHistory(messages: any[]) {
+    const messagesContainer = document.getElementById("dm-messages");
+    if (!messagesContainer) return;
+
+    messagesContainer.innerHTML = "";
+    messages.forEach((message) => addMessageToConversation(message));
+  }
+
+  function updateOnlineCount() {
+    const countElement = document.getElementById("unified-online-count");
+    if (countElement) {
+      countElement.textContent = `${onlineUsers.length} online`;
+    }
+  }
+
+  // Make functions globally available
+  (window as any).startConversation = startConversation;
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("💬 [UNIFIED-CHAT] DOM Content Loaded");
+    setTimeout(initializeUnifiedChat, 1000);
+
+    // Periodic refresh of user list every 2 minutes (reduced from 30 seconds)
+    setInterval(() => {
+      if (socket && socket.connected) {
+        console.log("🔄 [UNIFIED-CHAT] Refreshing user list");
+        socket.emit("join_dm", {
+          userId: currentUser?.id,
+          userName: currentUser?.name,
+          userRole: currentUser?.profile.role,
+        });
+      }
+    }, 120000);
+  });
+
+  // Cleanup on page unload
+  window.addEventListener("beforeunload", () => {
+    if (socket) {
+      socket.disconnect();
+    }
+  });
+</script>

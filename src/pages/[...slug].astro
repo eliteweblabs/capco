@@ -1,0 +1,28 @@
+---
+/**
+ * Dynamic Markdown Page Router
+ * Catches all routes and renders from markdown files
+ * Template selection handled by MarkdownPage component
+ */
+
+import { checkAuth } from "../lib/auth";
+import { getPageContent } from "../lib/content";
+import MarkdownPage from "../components/common/MarkdownPage.astro";
+
+// Get auth state
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+
+// Get slug from URL (e.g., /terms -> "terms", /about/team -> "about/team")
+const { slug } = Astro.params;
+const pageSlug = slug || "home";
+
+// Try to load content from markdown
+const pageContent = await getPageContent(pageSlug);
+
+// If no markdown file exists, return 404
+if (!pageContent) {
+  return Astro.redirect("/404");
+}
+---
+
+<MarkdownPage slug={pageSlug} {currentUser} {session} {supabase} />

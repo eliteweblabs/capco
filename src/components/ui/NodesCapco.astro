@@ -1,0 +1,1466 @@
+---
+// NodeEditor.astro - A complete node-based editor with demo page
+import { checkAuth } from "@/lib/auth";
+const { currentUser } = await checkAuth(Astro.cookies);
+---
+
+<style>
+  /* Demo page styles */
+
+  .node-editor-canvas {
+    cursor: grab;
+
+    overflow: hidden;
+    touch-action: none; /* Disable browser touch handling for better control */
+  }
+
+  .node-editor-canvas:active {
+    cursor: grabbing;
+  }
+
+  /* Pause button for debugging */
+  .pause-button {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9;
+    padding: 12px 20px;
+    background: rgba(59, 130, 246, 0.95);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s;
+  }
+
+  .pause-button:hover {
+    background: rgba(37, 99, 235, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .pause-button.paused {
+    background: rgba(239, 68, 68, 0.95);
+  }
+
+  .pause-button.paused:hover {
+    background: rgba(220, 38, 38, 1);
+  }
+
+  :global(.node-card) {
+    position: absolute;
+    min-width: 200px;
+    max-width: 300px;
+    padding: 16px;
+    cursor: move;
+    z-index: 5;
+    user-select: none;
+    transition: all 0.2s;
+    box-sizing: border-box;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  :global(.node-card:hover) {
+  }
+
+  :global(.node-card.selected) {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  :global(.node-card.dragging) {
+    z-index: 10;
+    transform: rotate(2deg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  :global(.node-header) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  :global(.node-icon) {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  :global(.node-title) {
+    font-weight: 600;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+  }
+
+  :global(.node-subtitle) {
+    font-size: 12px;
+    margin-top: 2px;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+  }
+
+  :global(.node-status) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    margin-top: 8px;
+    margin: 0;
+    padding: 0;
+  }
+
+  :global(.status-indicator) {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+  }
+
+  :global(.connection-point) {
+    /* position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #3b82f6;
+    border: 2px solid #1a1a1a;
+    border-radius: 50%; */
+    /* cursor: pointer;
+    z-index: 6;
+    box-sizing: border-box; */
+  }
+
+  :global(.connection-point:hover) {
+    background: #60a5fa;
+    transform: scale(1.2);
+  }
+
+  :global(.connection-point.input.top) {
+    left: 50%;
+    top: -6px;
+    transform: translateX(-50%);
+  }
+
+  :global(.connection-point.input.right) {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  :global(.connection-point.input.bottom) {
+    left: 50%;
+    bottom: -6px;
+    transform: translateX(-50%);
+  }
+
+  :global(.connection-point.input.left) {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  :global(.connection-point.output.top) {
+    left: 50%;
+    top: -6px;
+    transform: translateX(-50%);
+  }
+
+  :global(.connection-point.output.right) {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  :global(.connection-point.output.bottom) {
+    left: 50%;
+    bottom: -6px;
+    transform: translateX(-50%);
+  }
+
+  :global(.connection-point.output.left) {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  :global(.connection-line) {
+    stroke: #3b82f6;
+    stroke-width: 3;
+    fill: none;
+    stroke-dasharray: 8, 4;
+    animation:
+      dash 2s linear infinite,
+      drawLine 1.5s ease-in-out forwards;
+    pointer-events: none;
+  }
+
+  @keyframes dash {
+    to {
+      stroke-dashoffset: -12;
+    }
+  }
+
+  @keyframes drawLine {
+    from {
+      stroke-dasharray: 0, 1000;
+    }
+    to {
+      stroke-dasharray: 8, 4;
+    }
+  }
+
+  :global(.connection-arrow) {
+    fill: #3b82f6;
+    pointer-events: none;
+    animation:
+      arrowPulse 1.5s ease-in-out infinite,
+      drawArrow 1.5s ease-in-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes arrowPulse {
+    0%,
+    100% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+
+  @keyframes drawArrow {
+    0% {
+      opacity: 0;
+      transform: scale(0);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(0.5);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  :global(.node-card[data-type="database"] .node-icon) {
+    background: #3b82f6;
+    color: white;
+  }
+
+  :global(.node-card[data-type="analytics"] .node-icon) {
+    background: #8b5cf6;
+    color: white;
+  }
+
+  :global(.node-card[data-type="storage"] .node-icon) {
+    background: #f59e0b;
+    color: white;
+  }
+
+  :global(.node-card[data-type="default"] .node-icon) {
+    background: #6b7280;
+    color: white;
+  }
+</style>
+
+<div class="fixed inset-0 node-editor-canvas overflow-hidden bg-radial-gradient" id="node-canvas">
+  <!-- Connection overlay for drawing arrows -->
+  <svg class="absolute inset-0 w-full h-full" id="connections-svg"> </svg>
+</div>
+
+<!-- Pause button for debugging -->
+{
+  currentUser?.profile?.role === "Admin" && (
+    <button id="pause-scroll-btn" class="pause-button">
+      ⏸ Pause Scroll
+    </button>
+  )
+}
+<script>
+  // Type declaration for window.SimpleIcons
+  declare global {
+    interface Window {
+      SimpleIcons?: {
+        getIcon: (name: string, config?: any) => string;
+        SIMPLE_ICONS: Record<string, string>;
+      };
+    }
+  }
+  interface NodeOptions {
+    id?: string;
+    type?: string;
+    title?: string;
+    subtitle?: string;
+    icon?: string;
+    status?: string;
+    x?: number;
+    y?: number;
+  }
+
+  class NodeEditor {
+    canvas;
+    svg;
+    nodes;
+    connections: {
+      from: string;
+      to: string;
+      fromSide?: string;
+      toSide?: string;
+      createdAt: number;
+      animated: boolean;
+    }[];
+    draggedNode: NodeOptions | null;
+    dragOffset: { x: number; y: number };
+    connecting: boolean;
+    connectionStart: { node: NodeOptions; isOutput: boolean; side: string } | null;
+    nodeCounter: number;
+    centerX: number;
+    centerY;
+    isScrolling: boolean;
+    scrollSpeed: number;
+    scrollInterval: number | null;
+
+    constructor() {
+      this.canvas = document.getElementById("node-canvas");
+      this.svg = document.getElementById("connections-svg");
+      this.nodes = new Map();
+      this.connections = [];
+      this.draggedNode = null;
+      this.dragOffset = { x: 0, y: 0 };
+      this.connecting = false;
+      this.connectionStart = null;
+      this.nodeCounter = 0;
+      // Center maintenance properties
+      this.centerX = 0;
+      this.centerY = 0;
+      // Continuous scroll properties
+      this.isScrolling = false;
+      this.scrollSpeed = 2;
+      this.scrollInterval = null;
+
+      this.init();
+      this.setupPauseButton();
+    }
+
+    init() {
+      this.setupEventListeners();
+      // Wait for custom icon system to load before adding nodes
+      this.waitForIconSystem().then(() => {
+        this.addCustomNodes(1500);
+      });
+    }
+
+    async waitForIconSystem() {
+      // Try to load the custom icon system if not already available
+      if (!window.SimpleIcons) {
+        try {
+          console.log("🔧 [ICON] Loading custom icon system synchronously...");
+          await import("../../lib/simple-icons.ts");
+          console.log("🔧 [ICON] Custom icon system loaded successfully");
+        } catch (error) {
+          console.warn("Failed to load custom icon system:", error);
+        }
+      }
+
+      // Wait a bit more to ensure it's fully available
+      return new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    setupPauseButton() {
+      const pauseBtn = document.getElementById("pause-scroll-btn");
+      if (pauseBtn) {
+        // Update button state based on current scroll state
+        const updateButtonState = () => {
+          pauseBtn.textContent = this.isScrolling ? "⏸ Pause Scroll" : "▶ Resume Scroll";
+          pauseBtn.classList.toggle("paused", !this.isScrolling);
+        };
+
+        pauseBtn.addEventListener("click", () => {
+          if (this.isScrolling) {
+            // Pause scrolling
+            this.stopContinuousScroll();
+          } else {
+            // Resume scrolling
+            this.startContinuousScroll();
+          }
+          updateButtonState();
+        });
+
+        // Set initial state after a brief delay to ensure scrolling has started
+        setTimeout(updateButtonState, 100);
+      }
+    }
+
+    setupEventListeners() {
+      // Add node button
+
+      // Canvas events - Mouse
+      this.canvas?.addEventListener("mousedown", this.handleCanvasMouseDown.bind(this));
+      this.canvas?.addEventListener("mousemove", this.handleCanvasMouseMove.bind(this));
+      this.canvas?.addEventListener("mouseup", this.handleCanvasMouseUp.bind(this));
+
+      // Canvas events - Touch
+      this.canvas?.addEventListener("touchstart", this.handleCanvasTouchStart.bind(this), {
+        passive: false,
+      });
+      this.canvas?.addEventListener("touchmove", this.handleCanvasTouchMove.bind(this), {
+        passive: false,
+      });
+      this.canvas?.addEventListener("touchend", this.handleCanvasTouchEnd.bind(this));
+    }
+
+    addCustomNodes(delay = 1500) {
+      // Start continuous scrolling immediately
+      this.startContinuousScroll();
+
+      const screenWidth = window.innerWidth || 0;
+      const screenHeight = window.innerHeight || 0;
+      const CONNECTION_DELAY = 100; // Constant delay after node creation before adding connection
+
+      // Unified array containing both nodes and connections
+      const workflowData: Array<
+        | {
+            type: "node";
+            id: string;
+            icon: string;
+            title: string;
+            subtitle?: string;
+            status: string;
+            x: number;
+            y: number;
+            delayMultiplier: number;
+          }
+        | {
+            type: "connection";
+            from: string;
+            to: string;
+            fromSide?: string;
+            toSide?: string;
+          }
+      > = [
+        // Nodes
+        {
+          type: "node",
+          id: "create-account",
+          icon: "user",
+          title: "Create Account",
+          subtitle: "<a href='/auth/login?register=true'>Register</a>",
+          status: "2 Minutes",
+          x: screenWidth,
+          y: screenHeight * 0.25,
+          delayMultiplier: 1,
+        },
+        {
+          type: "node",
+          id: "login",
+          icon: "log-in",
+          title: "Login",
+          subtitle: "<a href='/auth/login'>Login</a>",
+          status: "2 Seconds",
+          x: screenWidth,
+          y: screenHeight * 0.5,
+          delayMultiplier: 2,
+        },
+        {
+          type: "connection",
+          from: "create-account",
+          to: "login",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
+          id: "upload-files",
+          icon: "upload",
+          title: "Upload Files",
+          status: "PDF, jpeg, png, autocad, revit, dwg",
+          x: screenWidth,
+          y: screenHeight * 0.15,
+          delayMultiplier: 3,
+        },
+        {
+          type: "connection",
+          from: "login",
+          to: "upload-files",
+          fromSide: "right",
+          toSide: "left",
+        },
+
+        {
+          type: "node",
+          id: "submit-files",
+          icon: "file-text",
+          title: "Submit Files",
+          status: "",
+          x: screenWidth,
+          y: screenHeight * 0.65,
+          delayMultiplier: 4,
+        },
+        {
+          type: "connection",
+          from: "upload-files",
+          to: "submit-files",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
+          id: "request-review",
+          icon: "file-text",
+          title: "Request Review",
+          status: "2-4 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.5,
+          delayMultiplier: 5,
+        },
+        {
+          type: "connection",
+          from: "submit-files",
+          to: "request-review",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
+          id: "generating-proposal",
+          icon: "file-text",
+          title: "Generating Proposal",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.5,
+          delayMultiplier: 6,
+        },
+        {
+          type: "connection",
+          from: "request-review",
+          to: "generating-proposal",
+          fromSide: "right",
+          toSide: "left",
+        },
+
+        {
+          type: "node",
+          id: "proposal-ready-for-review",
+          icon: "file-text",
+          title: "Proposal Ready for Review",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.5,
+          delayMultiplier: 7,
+        },
+        {
+          type: "connection",
+          from: "request-review",
+          to: "proposal-ready-for-review",
+          fromSide: "right",
+          toSide: "left",
+        },
+
+        {
+          type: "node",
+          id: "request-revision",
+          icon: "edit-3",
+          title: "Request Revision",
+          status: "2-4 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.25,
+          delayMultiplier: 8,
+        },
+        {
+          type: "connection",
+          from: "proposal-request-revision",
+          to: "approve-revisions",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
+          id: "approve-revisions",
+          icon: "file-text",
+          title: "Approve Revisions",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.25,
+          delayMultiplier: 9,
+        },
+
+        {
+          type: "connection",
+          from: "approve-revisions",
+          to: "sign-off-proposal",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
+          id: "approve-proposal",
+          icon: "check-circle",
+          title: "Approve Proposal",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.5,
+          delayMultiplier: 10,
+        },
+        {
+          type: "connection",
+          from: "approve-proposal",
+          to: "sign-off-proposal",
+          fromSide: "right",
+          toSide: "left",
+        },
+
+        {
+          type: "node",
+          id: "sign-off-proposal",
+          icon: "file-text",
+          title: "Sign Off Proposal",
+          status: "2-4 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.75,
+          delayMultiplier: 11,
+        },
+
+        {
+          type: "node",
+          id: "generating-final-documents",
+          icon: "file-text",
+          title: "Generating Final Documents",
+          status: "24 hours to complete",
+          x: screenWidth,
+          y: screenHeight * 0.25,
+          delayMultiplier: 12,
+        },
+        {
+          type: "connection",
+          from: "sign-off-proposal",
+          to: "generating-final-documents",
+          fromSide: "right",
+          toSide: "left",
+        },
+
+        {
+          type: "node",
+          id: "delivering-final-documents",
+          icon: "file-text",
+          title: "Delivering Final Documents",
+          status: "2 minutes to complete",
+          x: screenWidth,
+          y: screenHeight * 0.65,
+          delayMultiplier: 13,
+        },
+        {
+          type: "connection",
+          from: "generating-final-documents",
+          to: "delivering-final-documents",
+          fromSide: "right",
+          toSide: "left",
+        },
+      ];
+
+      // Build a map of node delay multipliers for connection scheduling
+      const nodeDelayMap = new Map<string, number>();
+      workflowData.forEach((item) => {
+        if (item.type === "node") {
+          nodeDelayMap.set(item.id, item.delayMultiplier);
+        }
+      });
+
+      // Process all items in the unified array
+      workflowData.forEach((item) => {
+        if (item.type === "node") {
+          const nodeDelay = delay * item.delayMultiplier;
+          setTimeout(() => {
+            this.addNodeWithCenterMaintenance({
+              id: item.id,
+              icon: item.icon,
+              title: item.title,
+              subtitle: item.subtitle,
+              status: item.status,
+              x: item.x,
+              y: item.y,
+            });
+          }, nodeDelay);
+        } else {
+          // Connection - add it after the "to" node is created + constant delay
+          const toNodeMultiplier = nodeDelayMap.get(item.to);
+          if (toNodeMultiplier !== undefined) {
+            const toNodeDelay = delay * toNodeMultiplier;
+            const connectionDelay = toNodeDelay + CONNECTION_DELAY;
+
+            setTimeout(() => {
+              this.addConnection(
+                item.from,
+                item.to,
+                item.fromSide || "right",
+                item.toSide || "left"
+              );
+            }, connectionDelay);
+          }
+        }
+      });
+    }
+
+    addNode(options: NodeOptions = {}) {
+      const nodeId = options.id || `node-${++this.nodeCounter}`;
+
+      // Calculate position using center maintenance
+      const node = {
+        id: nodeId,
+        type: options.type || "default",
+        title: options.title || `Node ${this.nodeCounter}`,
+        subtitle: options.subtitle || "",
+        icon: options.icon || "circle",
+        status: options.status || "Active",
+        x: options.x,
+        y: options.y,
+      };
+
+      this.nodes.set(nodeId, node);
+      this.renderNode(node);
+
+      // Update center and shift existing nodes
+      // this.updateCenterAndShiftNodes();
+
+      return node;
+    }
+
+    // calculateNodePosition(options = {}) {
+    //   // If specific coordinates are provided, use them
+    //   if (options.x !== undefined && options.y !== undefined) {
+    //     return { x: options.x, y: options.y };
+    //   }
+
+    //   // Calculate canvas dimensions
+    //   const canvasWidth = this.canvas.offsetWidth;
+    //   const canvasHeight = this.canvas.offsetHeight;
+    //   this.centerX = canvasWidth / 2;
+    //   this.centerY = canvasHeight / 2;
+
+    //   // Always place new nodes on the right side of the screen
+    //   const x = canvasWidth - 200; // Right side of screen
+    //   const y = this.centerY + (Math.random() - 0.5) * 300; // Add vertical variation
+
+    //   return { x, y };
+    // }
+
+    // Method to preserve individual node positioning while shifting
+    preserveNodePositions() {
+      // Store current positions of all nodes
+      const nodePositions = new Map();
+      this.nodes.forEach((node, nodeId) => {
+        nodePositions.set(nodeId, { x: node.x, y: node.y });
+      });
+      return nodePositions;
+    }
+
+    // Method to restore individual node positions
+    restoreNodePositions(nodePositions: Map<string, { x: number; y: number }>) {
+      nodePositions.forEach((position, nodeId) => {
+        const node = this.nodes.get(nodeId);
+        if (node) {
+          node.x = position.x;
+          node.y = position.y;
+
+          const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
+          if (nodeElement) {
+            (nodeElement as HTMLElement).style.left = `${node.x}px`;
+            (nodeElement as HTMLElement).style.top = `${node.y}px`;
+          }
+        }
+      });
+    }
+
+    // Method to remove nodes that have scrolled off the left side
+    removeOffscreenNodes() {
+      const nodesToRemove: string[] = [];
+
+      this.nodes.forEach((node, nodeId) => {
+        // Remove nodes that are well off the left side of the screen
+        if (node.x < -1000) {
+          // Much larger buffer to keep nodes and arrows visible longer
+          nodesToRemove.push(nodeId);
+        }
+      });
+
+      // Remove nodes and their DOM elements
+      nodesToRemove.forEach((nodeId) => {
+        const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
+        if (nodeElement) {
+          nodeElement.remove();
+        }
+        this.nodes.delete(nodeId);
+      });
+
+      // Don't remove connections - keep arrows visible even if nodes are off-screen
+      // This ensures arrows stay visible during the timeline
+      // this.connections = this.connections.filter((connection) => {
+      //   return this.nodes.has(connection.from) && this.nodes.has(connection.to);
+      // });
+    }
+
+    // Method to add a node with center maintenance and smooth animation
+    addNodeWithCenterMaintenance(options = {}) {
+      const node = this.addNode(options);
+
+      // Add entrance animation
+      const nodeElement: HTMLElement | null = document.querySelector(`[data-node-id="${node.id}"]`);
+      if (nodeElement) {
+        nodeElement.style.opacity = "0";
+        nodeElement.style.transform = "scale(0.01)";
+
+        setTimeout(() => {
+          nodeElement.style.transition = "opacity 0.3s ease-out, transform 0.85s ease-out";
+          nodeElement.style.opacity = "1";
+          nodeElement.style.transform = "scale(1)";
+        }, 50);
+      }
+
+      return node;
+    }
+
+    renderNode(node: NodeOptions) {
+      const nodeElement = document.createElement("div");
+      nodeElement.classList.add(
+        "node-card",
+        "backdrop-blur-sm",
+        "rounded-lg",
+        "bg-black/10",
+        "border",
+        "border-white/10",
+        "dark:bg-white/10",
+        "dark:border-black/10"
+      );
+      nodeElement.dataset.nodeId = node.id || "";
+      nodeElement.dataset.type = node.type || "";
+      nodeElement.style.left = `${node.x}px`;
+      nodeElement.style.top = `${node.y}px`;
+
+      // Custom icon system - Direct SVG HTML mapping
+      const getIconHTML = (iconName: string | undefined): string => {
+        // Handle undefined or null icon names
+
+        // Use the custom icon system if available, otherwise fallback to simple SVG
+        if (window.SimpleIcons && window.SimpleIcons.getIcon) {
+          const iconHTML: string = window.SimpleIcons.getIcon(iconName || "", {
+            size: 16,
+            className: "text-primary-500 dark:text-primary-400",
+          });
+          return iconHTML;
+        } else {
+          return "";
+        }
+      };
+
+      nodeElement.innerHTML = `
+        <div class="node-header">
+          <div class="node-icon">${getIconHTML(node.icon)}</div>
+          <div>
+            <div class="node-title">${node.title}</div>
+            ${node.subtitle ? `<div class="node-subtitle">${node.subtitle}</div>` : ""}
+          </div>
+        </div>
+        <div class="node-status pulse">
+          <div class="status-indicator pulse"></div>
+          <span>${node.status}</span>
+        </div>
+        <div class="connection-point input top"></div>
+        <div class="connection-point input right"></div>
+        <div class="connection-point input bottom"></div>
+        <div class="connection-point input left"></div>
+        <div class="connection-point output top"></div>
+        <div class="connection-point output right"></div>
+        <div class="connection-point output bottom"></div>
+        <div class="connection-point output left"></div>
+      `;
+
+      // Add drag functionality - Mouse
+      nodeElement.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        this.startDrag(node, e);
+      });
+
+      // Add drag functionality - Touch
+      nodeElement.addEventListener(
+        "touchstart",
+        (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          this.startDrag(node, e);
+        },
+        { passive: false }
+      );
+
+      // Add connection point functionality
+      nodeElement.querySelectorAll(".connection-point").forEach((point) => {
+        // Mouse events
+        point.addEventListener("mousedown", (e) => {
+          e.stopPropagation();
+          const isOutput = point.classList.contains("output");
+          const side = point.classList.contains("top")
+            ? "top"
+            : point.classList.contains("right")
+              ? "right"
+              : point.classList.contains("bottom")
+                ? "bottom"
+                : "left";
+          this.startConnection(node, isOutput, side, e as MouseEvent);
+        });
+
+        // Touch events
+        point.addEventListener(
+          "touchstart",
+          (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            const isOutput = point.classList.contains("output");
+            const side = point.classList.contains("top")
+              ? "top"
+              : point.classList.contains("right")
+                ? "right"
+                : point.classList.contains("bottom")
+                  ? "bottom"
+                  : "left";
+            this.startConnection(node, isOutput, side, e as TouchEvent);
+          },
+          { passive: false }
+        );
+      });
+
+      (this.canvas as HTMLElement).appendChild(nodeElement);
+    }
+
+    startDrag(node: NodeOptions, e: MouseEvent | TouchEvent) {
+      this.draggedNode = node;
+      const rect = (e.target as HTMLElement).closest(".node-card")?.getBoundingClientRect() || {
+        left: 0,
+        top: 0,
+      };
+      const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
+
+      // Handle both MouseEvent and TouchEvent
+      // Check for TouchEvent safely (not available in SSR)
+      const isTouchEvent = typeof TouchEvent !== "undefined" && e instanceof TouchEvent;
+      const clientX =
+        isTouchEvent && "touches" in e ? (e.touches[0]?.clientX ?? 0) : (e as MouseEvent).clientX;
+      const clientY =
+        isTouchEvent && "touches" in e ? (e.touches[0]?.clientY ?? 0) : (e as MouseEvent).clientY;
+
+      this.dragOffset = {
+        x: clientX - rect.left,
+        y: clientY - rect.top,
+      };
+
+      (e.target as HTMLElement).closest(".node-card")?.classList.add("dragging");
+    }
+
+    startConnection(
+      node: NodeOptions,
+      isOutput: boolean,
+      side: string,
+      e: MouseEvent | TouchEvent
+    ) {
+      this.connecting = true;
+      this.connectionStart = { node, isOutput, side };
+      (e.target as HTMLElement).style.background = "#60a5fa";
+    }
+
+    findNearestAnchor(node: NodeOptions, mouseX: number, mouseY: number) {
+      const anchors = [
+        { side: "top", pos: this.getConnectionPoint(node, "top") },
+        { side: "right", pos: this.getConnectionPoint(node, "right") },
+        { side: "bottom", pos: this.getConnectionPoint(node, "bottom") },
+        { side: "left", pos: this.getConnectionPoint(node, "left") },
+      ];
+
+      let nearest = anchors[0];
+      let minDistance = this.getDistance(mouseX, mouseY, anchors[0].pos.x, anchors[0].pos.y);
+
+      for (let i = 1; i < anchors.length; i++) {
+        const distance = this.getDistance(mouseX, mouseY, anchors[i].pos.x, anchors[i].pos.y);
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearest = anchors[i];
+        }
+      }
+
+      return nearest.side;
+    }
+
+    getDistance(x1: number, y1: number, x2: number, y2: number) {
+      return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    }
+
+    handleCanvasMouseMove(e: MouseEvent | TouchEvent) {
+      // Helper to get coordinates from either MouseEvent or TouchEvent
+      // Check for TouchEvent safely (not available in SSR)
+      const getClientX = (evt: MouseEvent | TouchEvent): number => {
+        const isTouch = typeof TouchEvent !== "undefined" && evt instanceof TouchEvent;
+        return isTouch && "touches" in evt
+          ? (evt.touches[0]?.clientX ?? 0)
+          : (evt as MouseEvent).clientX;
+      };
+      const getClientY = (evt: MouseEvent | TouchEvent): number => {
+        const isTouch = typeof TouchEvent !== "undefined" && evt instanceof TouchEvent;
+        return isTouch && "touches" in evt
+          ? (evt.touches[0]?.clientY ?? 0)
+          : (evt as MouseEvent).clientY;
+      };
+
+      if (this.draggedNode) {
+        const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
+        const clientX = getClientX(e);
+        const clientY = getClientY(e);
+        const x = clientX - canvasRect.left - this.dragOffset.x;
+        const y = clientY - canvasRect.top - this.dragOffset.y;
+
+        this.draggedNode.x = Math.max(0, Math.min(x, this.canvas?.offsetWidth || 0 - 200));
+        this.draggedNode.y = Math.max(0, Math.min(y, this.canvas?.offsetHeight || 0 - 100));
+
+        const nodeElement: HTMLElement | null = document.querySelector(
+          `[data-node-id="${this.draggedNode.id}"]`
+        );
+        if (nodeElement) {
+          nodeElement.style.left = `${this.draggedNode.x ?? 0}px`;
+          nodeElement.style.top = `${this.draggedNode.y ?? 0}px`;
+        }
+
+        this.updateConnections();
+      }
+
+      // Handle connection preview when connecting
+      if (this.connecting && this.connectionStart) {
+        const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
+        const clientX = getClientX(e);
+        const clientY = getClientY(e);
+        const mouseX = clientX - canvasRect.left;
+        const mouseY = clientY - canvasRect.top;
+
+        // Find the node under the mouse
+        const elementUnderMouse: HTMLElement | null = document.elementFromPoint(
+          clientX,
+          clientY
+        ) as HTMLElement | null;
+        const nodeElement = elementUnderMouse?.closest(".node-card") as HTMLElement | null;
+
+        if (
+          nodeElement &&
+          nodeElement !== document.querySelector(`[data-node-id="${this.connectionStart.node.id}"]`)
+        ) {
+          const nodeId = (nodeElement.dataset.nodeId as string) || "";
+          const targetNode = this.nodes.get(nodeId);
+
+          if (targetNode) {
+            // Find nearest anchor on target node
+            const nearestSide = this.findNearestAnchor(targetNode, mouseX, mouseY);
+
+            // Update connection preview
+            this.updateConnectionPreview(
+              this.connectionStart.node,
+              this.connectionStart.side,
+              targetNode,
+              nearestSide
+            );
+          }
+        }
+      }
+    }
+
+    handleCanvasMouseUp(e: MouseEvent | TouchEvent) {
+      // Helper to get coordinates from either MouseEvent or TouchEvent
+      const getClientX = (evt: MouseEvent | TouchEvent): number => {
+        const isTouch = typeof TouchEvent !== "undefined" && evt instanceof TouchEvent;
+        if (isTouch && "touches" in evt) {
+          return evt.changedTouches.length > 0
+            ? (evt.changedTouches[0]?.clientX ?? 0)
+            : (evt.touches[0]?.clientX ?? 0);
+        }
+        return (evt as MouseEvent).clientX;
+      };
+      const getClientY = (evt: MouseEvent | TouchEvent): number => {
+        const isTouch = typeof TouchEvent !== "undefined" && evt instanceof TouchEvent;
+        if (isTouch && "touches" in evt) {
+          return evt.changedTouches.length > 0
+            ? (evt.changedTouches[0]?.clientY ?? 0)
+            : (evt.touches[0]?.clientY ?? 0);
+        }
+        return (evt as MouseEvent).clientY;
+      };
+
+      if (this.draggedNode) {
+        this.draggedNode = null;
+        document.querySelectorAll(".node-card").forEach((card) => {
+          card.classList.remove("dragging");
+        });
+      }
+
+      if (this.connecting && this.connectionStart) {
+        const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
+        const clientX = getClientX(e);
+        const clientY = getClientY(e);
+        const mouseX = clientX - canvasRect.left;
+        const mouseY = clientY - canvasRect.top;
+
+        // Find the node under the mouse
+        const elementUnderMouse: HTMLElement | null = document.elementFromPoint(
+          clientX,
+          clientY
+        ) as HTMLElement | null;
+        const nodeElement: HTMLElement | null = elementUnderMouse?.closest(
+          ".node-card"
+        ) as HTMLElement | null;
+
+        if (
+          nodeElement &&
+          nodeElement !== document.querySelector(`[data-node-id="${this.connectionStart.node.id}"]`)
+        ) {
+          const nodeId = (nodeElement.dataset.nodeId as string) || "";
+          const targetNode = this.nodes.get(nodeId);
+
+          if (targetNode) {
+            // Find nearest anchor on target node
+            const nearestSide = this.findNearestAnchor(targetNode, mouseX, mouseY);
+
+            // Create the connection
+            this.addConnection(
+              this.connectionStart.node.id as string,
+              targetNode.id,
+              this.connectionStart.side,
+              nearestSide
+            );
+          }
+        }
+
+        this.connecting = false;
+        this.connectionStart = null;
+        document.querySelectorAll(".connection-point").forEach((point) => {
+          (point as HTMLElement).style.background = "#3b82f6";
+        });
+
+        // Clear preview
+        this.clearConnectionPreview();
+      }
+    }
+
+    // Touch event handlers
+    handleCanvasTouchStart(e: TouchEvent) {
+      // Prevent default to avoid scrolling
+      e.preventDefault();
+      // Pass TouchEvent directly to handlers that can handle it
+      if (e.touches.length === 1) {
+        this.handleCanvasMouseDown(e);
+      }
+    }
+
+    handleCanvasTouchMove(e: TouchEvent) {
+      // Prevent default to avoid scrolling
+      e.preventDefault();
+      // Pass TouchEvent directly to handlers that can handle it
+      if (e.touches.length === 1) {
+        this.handleCanvasMouseMove(e);
+      }
+    }
+
+    handleCanvasTouchEnd(e: TouchEvent) {
+      // Pass TouchEvent directly to handlers that can handle it
+      // Use changedTouches since touches will be empty on touchend
+      if (e.changedTouches.length === 1) {
+        this.handleCanvasMouseUp(e);
+      }
+    }
+
+    updateConnectionPreview(
+      fromNode: NodeOptions,
+      fromSide: string,
+      toNode: NodeOptions,
+      toSide: string
+    ) {
+      // Clear existing preview
+      this.clearConnectionPreview();
+
+      // Create preview connection
+      const fromPos = this.getConnectionPoint(fromNode, fromSide);
+      const toPos = this.getConnectionPoint(toNode, toSide);
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const midX = (fromPos.x + toPos.x) / 2; // True middle point between anchors
+      const pathData = `M ${fromPos.x} ${fromPos.y} L ${midX} ${fromPos.y} L ${midX} ${toPos.y} L ${toPos.x} ${toPos.y}`;
+
+      path.setAttribute("d", pathData);
+      path.setAttribute("class", "connection-line");
+      path.setAttribute("style", "stroke: #60a5fa; stroke-dasharray: 3,3; opacity: 0.7;");
+
+      this.svg?.appendChild(path);
+    }
+
+    clearConnectionPreview() {
+      // Remove preview connections (those with dashed style)
+      const previewLines = this.svg?.querySelectorAll('path[style*="stroke-dasharray"]') || [];
+      previewLines.forEach((line) => line.remove());
+    }
+
+    handleCanvasMouseDown(e: MouseEvent | TouchEvent) {
+      // Deselect all nodes
+      document.querySelectorAll(".node-card").forEach((card) => {
+        card.classList.remove("selected");
+      });
+    }
+
+    addConnection(fromNodeId: string, toNodeId: string, fromSide = "right", toSide = "left") {
+      const connection = {
+        from: fromNodeId,
+        to: toNodeId,
+        fromSide,
+        toSide,
+        createdAt: Date.now(), // Track when connection was created
+        animated: true, // Track if animation has been applied
+      };
+      this.connections.push(connection as any);
+      this.renderConnection(connection as any);
+    }
+
+    renderConnection(connection: {
+      from: string;
+      to: string;
+      fromSide?: string;
+      toSide?: string;
+      createdAt: number;
+      animated: boolean;
+    }) {
+      const fromNode = this.nodes.get(connection.from);
+      const toNode = this.nodes.get(connection.to);
+
+      if (!fromNode || !toNode) return;
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const arrow = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+
+      // Calculate connection points based on sides
+      const fromPos = this.getConnectionPoint(fromNode, connection.fromSide || "right");
+      const toPos = this.getConnectionPoint(toNode, connection.toSide || "left");
+
+      // Create 90-degree bent path with bend at the middle of the anchors
+      const midX = (fromPos.x + toPos.x) / 2; // True middle point between anchors
+      const pathData = `M ${fromPos.x} ${fromPos.y} L ${midX} ${fromPos.y} L ${midX} ${toPos.y} L ${toPos.x} ${toPos.y}`;
+
+      path.setAttribute("d", pathData);
+      path.setAttribute("class", "connection-line");
+
+      // Check if connection should be animated (hasn't been rendered yet, or is still in animation period)
+      const age = Date.now() - (connection.createdAt || 0);
+      const animationDuration = 500; // Total animation time (1500ms draw + connectDelay00ms for arrow)
+      const shouldAnimate = !connection.animated && age < animationDuration;
+
+      if (shouldAnimate) {
+        // Add drawing animation delay based on connection order
+        const delay = this.connections.indexOf(connection) * 200; // 200ms delay between each connection
+        path.style.animationDelay = `${delay}ms`;
+      } else {
+        // Animation complete or already rendered - just show the line
+        path.style.animation = "none";
+        path.style.strokeDasharray = "8, 4";
+        connection.animated = true; // Mark as fully animated
+      }
+
+      // Add arrowhead at the end
+      const arrowSize = 8;
+      const arrowX = toPos.x - arrowSize;
+      const arrowY = toPos.y;
+
+      arrow.setAttribute(
+        "points",
+        `${toPos.x},${toPos.y} ${arrowX},${arrowY - arrowSize / 2} ${arrowX},${arrowY + arrowSize / 2}`
+      );
+      arrow.setAttribute("class", "connection-arrow");
+
+      if (shouldAnimate) {
+        const delay = this.connections.indexOf(connection as any) * 200;
+        arrow.style.animationDelay = `${delay + 1000}ms`; // Arrow appears after line is drawn
+      } else {
+        // Animation complete - just show the arrow
+        arrow.style.animation = "none";
+        arrow.style.opacity = "1";
+      }
+
+      (this.svg as HTMLElement).appendChild(path);
+      (this.svg as HTMLElement).appendChild(arrow);
+    }
+
+    getConnectionPoint(node: NodeOptions, side: string) {
+      // Get actual node dimensions from the DOM element
+      const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
+      let nodeWidth = 200;
+      let nodeHeight = 100;
+
+      if (nodeElement) {
+        const rect = nodeElement.getBoundingClientRect();
+        const canvasRect = (this.canvas as HTMLElement).getBoundingClientRect();
+        nodeWidth = rect.width;
+        nodeHeight = rect.height;
+      }
+
+      switch (side) {
+        case "top":
+          return { x: (node.x ?? 0) + nodeWidth / 2, y: node.y ?? 0 };
+        case "right":
+          return { x: (node.x ?? 0) + nodeWidth, y: (node.y ?? 0) + nodeHeight / 2 };
+        case "bottom":
+          return { x: (node.x ?? 0) + nodeWidth / 2, y: (node.y ?? 0) + nodeHeight };
+        case "left":
+          return { x: node.x ?? 0, y: (node.y ?? 0) + nodeHeight / 2 };
+        default:
+          return { x: (node.x ?? 0) + nodeWidth, y: (node.y ?? 0) + nodeHeight / 2 };
+      }
+    }
+
+    updateConnections() {
+      // Clear existing connections
+      (this.svg as HTMLElement).innerHTML = "";
+
+      // Re-render all connections with updated positions
+      this.connections.forEach((connection) => {
+        const fromNode = this.nodes.get(connection.from);
+        const toNode = this.nodes.get(connection.to);
+
+        // Only render if both nodes exist
+        if (fromNode && toNode) {
+          this.renderConnection(connection as any);
+        }
+      });
+    }
+
+    clearAll() {
+      this.nodes.clear();
+      this.connections = [];
+      (this.canvas as HTMLElement).innerHTML = "";
+      (this.svg as HTMLElement).innerHTML = "";
+    }
+
+    // Method to continuously add nodes to demonstrate center maintenance
+    startContinuousNodeAddition(interval = 2000) {
+      const nodeTypes = ["analytics", "database", "storage", "default"];
+      const titles = [
+        "Login",
+        "Register",
+        "Upload Files",
+        "Generate Proposal",
+        "Approve Proposal",
+        "Request Revision",
+        "Final Review",
+        "Final Documents Ready",
+      ];
+
+      const addNextNode = () => {
+        const randomType = nodeTypes[Math.floor(Math.random() * nodeTypes.length)];
+        const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+
+        this.addNodeWithCenterMaintenance({
+          type: randomType,
+          title: randomTitle,
+          status: `${Math.floor(Math.random() * 60)} minutes`,
+        });
+
+        // Schedule next node
+        setTimeout(addNextNode, interval);
+      };
+
+      // Start the process
+      setTimeout(addNextNode, interval);
+    }
+
+    // Method to stop continuous addition (if needed)
+    stopContinuousAddition() {
+      // This would require storing the timeout IDs, but for simplicity
+      // we'll just clear all nodes
+      this.clearAll();
+    }
+
+    // Start continuous smooth scrolling
+    startContinuousScroll() {
+      this.isScrolling = true;
+      this.scrollSpeed = 3; // pixels per frame - adjust this value to change speed
+      this.scrollInterval = null;
+
+      const scroll = () => {
+        if (this.isScrolling) {
+          // Move all nodes left smoothly
+          this.nodes.forEach((node, nodeId) => {
+            node.x -= this.scrollSpeed;
+
+            const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
+            if (nodeElement) {
+              (nodeElement as HTMLElement).style.left = `${node.x ?? 0}px`;
+            }
+          });
+
+          // Update connections every frame to maintain arrows
+          this.updateConnections();
+
+          // Remove offscreen nodes
+          this.removeOffscreenNodes();
+
+          // Continue scrolling
+          this.scrollInterval = requestAnimationFrame(scroll);
+        }
+      };
+
+      // Start the scroll loop
+      this.scrollInterval = requestAnimationFrame(scroll);
+    }
+
+    // Stop continuous scrolling
+    stopContinuousScroll() {
+      this.isScrolling = false;
+      if (this.scrollInterval) {
+        cancelAnimationFrame(this.scrollInterval);
+        this.scrollInterval = null;
+      }
+    }
+  }
+
+  // TypeScript declaration for SimpleIcons
+  declare global {
+    interface Window {
+      SimpleIcons?: {
+        getIcon: (name: string, config?: any) => string;
+        SIMPLE_ICONS: Record<string, string>;
+      };
+    }
+  }
+
+  // Initialize when DOM is loaded
+  document.addEventListener("DOMContentLoaded", async () => {
+    // Dynamically import the custom icon system
+    try {
+      console.log("🔧 [ICON] Loading custom icon system...");
+      await import("../../lib/simple-icons.ts");
+      console.log("🔧 [ICON] Custom icon system loaded successfully");
+      console.log("🔧 [ICON] SimpleIcons available:", !!window.SimpleIcons);
+      if (window.SimpleIcons) {
+        console.log(
+          "🔧 [ICON] Available icons:",
+          Object.keys(window.SimpleIcons.SIMPLE_ICONS || {})
+        );
+      }
+    } catch (error) {
+      console.warn("Failed to load custom icon system:", error);
+    }
+
+    const nodeEditor = new NodeEditor();
+
+    // Optional: Start continuous node addition to demonstrate center maintenance
+    // Uncomment the line below to see the center maintenance in action
+    // nodeEditor.startContinuousNodeAddition(3000);
+  });
+</script>

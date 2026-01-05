@@ -75,6 +75,12 @@ export default {
         // #### Body Copy
         body: "14px",
       },
+      zIndex: {
+        '-1': '-1',
+      },
+      animation: {
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
       colors: {
         // Text Colors
         black: "#171717", // Default text (black)
@@ -209,6 +215,7 @@ export default {
   plugins: [
     require("tailwindcss-animate"),
     require("@tailwindcss/forms"),
+    require("@tailwindcss/typography"),
     require("flowbite/plugin"),
     // Add scrollbar-hide utility
     function ({ addUtilities }) {

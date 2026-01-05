@@ -1,0 +1,39 @@
+---
+/**
+ * Layout: Default
+ * Standard content page with container, prose styling, and full app chrome
+ */
+interface Props {
+  title: string;
+  description: string;
+  lastUpdated?: string;
+  currentUser?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  session?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  supabase?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
+const { title, description, lastUpdated, currentUser, session, supabase } = Astro.props;
+
+import App from "../common/App.astro";
+import { getSiteConfig } from "../../lib/content";
+
+const siteConfig = getSiteConfig();
+---
+
+<App title={`${title} - ${siteConfig.site.name}`} {description} {currentUser} {session} {supabase}>
+  <div class="container mx-auto max-w-4xl px-4 py-8">
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      {
+        lastUpdated === "auto" && (
+          <div class="mb-8 rounded-lg border border-primary-200 bg-primary-50 p-6 dark:border-primary-800 dark:bg-primary-900/20">
+            <p class="my-0 text-primary-800 dark:text-primary-200">
+              <strong>Last Updated:</strong> {new Date().toLocaleDateString()}
+            </p>
+          </div>
+        )
+      }
+
+      <slot />
+    </div>
+  </div>
+</App>
