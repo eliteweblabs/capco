@@ -57,19 +57,23 @@ const {
   globalCompanyLogo,
   globalCompanyLogoDark,
   globalCompanyLogoLight,
-  globalCompanyLogoURL,
+  // globalCompanyLogoURL, // Unused
   primaryColor,
   globalCompanyIcon,
-  globalCompanyIconDark,
-  globalCompanyIconLight,
+  // globalCompanyIconDark, // Unused
+  // globalCompanyIconLight, // Unused
 } = globalCompanyData();
 
 import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
+// Get theme from cookie (set by client-side script)
+const themeCookie = Astro.cookies.get("theme");
+const serverTheme = themeCookie?.value || "light"; // Default to light
+
 // Derived properties (8 props → 13 total)
 const isAuth = currentUser ? true : false;
-const currentUserId = currentUser?.id || undefined;
+// const currentUserId = currentUser?.id || undefined; // Unused
 const currentRole = currentUser?.profile.role || undefined;
 const projectId = project?.id || undefined;
 const currentUrl = Astro.url.pathname;
@@ -83,7 +87,7 @@ if (
   const encoded = Buffer.from(globalCompanyIcon).toString("base64");
   iconSrc = `data:image/svg+xml;base64,${encoded}`;
 } else {
-  iconSrc = globalCompanyIcon;
+  iconSrc = globalCompanyIcon || "";
 }
 
 // Logo URL for OG images
@@ -158,6 +162,49 @@ const debugData = {
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Theme detection - MUST be first to be available for all components -->
+    <script is:inline>
+      // Initialize dark mode FIRST to prevent flash
+      const hasExplicitPreference = localStorage.getItem("color-theme") !== null;
+
+      if (hasExplicitPreference) {
+        // User has explicitly set a preference, apply it
+        const theme = localStorage.getItem("color-theme");
+        if (theme === "dark") {
+          document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
+          document.cookie = "theme=dark; path=/; max-age=31536000"; // 1 year
+        } else {
+          document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
+          document.cookie = "theme=light; path=/; max-age=31536000"; // 1 year
+        }
+      } else {
+        // No explicit preference, check system preference
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
+          localStorage.setItem("color-theme", "dark");
+          document.cookie = "theme=dark; path=/; max-age=31536000";
+        } else {
+          document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
+          localStorage.setItem("color-theme", "light");
+          document.cookie = "theme=light; path=/; max-age=31536000";
+        }
+      }
+
+      // Global theme detection utility
+      window.isDarkMode = () => {
+        if (document.documentElement.classList.contains("dark")) {
+          return true;
+        }
+        if (localStorage.getItem("color-theme") === "dark") {
+          return true;
+        }
+        return window.matchMedia("(prefers-color-scheme: dark)").matches;
+      };
+
+      // Set current theme immediately (available ASAP for all components)
+      window.currentTheme = window.isDarkMode() ? "dark" : "light";
+      console.log("[THEME] window.currentTheme set to:", window.currentTheme);
+    </script>
     <meta charset="utf-8" />
     <meta
       name="viewport"
@@ -303,18 +350,11 @@ const debugData = {
     />
 
     <div class="flex safari-18-fix">
-      <Aside
-        {currentUser}
-        {project}
-        {globalInputClasses}
-        {primaryTextClasses}
-        {secondaryTextClasses}
-        {projects}
-      />
+      <Aside {currentUser} {globalInputClasses} {primaryTextClasses} {projects} />
 
       <div id="main-content" class=`w-full pt-16 overflow-x-hidden ${mainClasses}`>
         <main
-          class={`min-h-[calc(100dvh-8rem)] flex-1 mx-2 sm:mx-4 relative ${centerContent ? "flex items-center justify-center" : ""}`}
+          class={`min-h-[calc(100dvh-12rem)] m-min-h-[calc(100dvh-10rem)] flex-1 mx-2 sm:mx-4 relative ${centerContent ? "flex items-center justify-center" : ""}`}
         >
           <slot />
         </main>
@@ -376,6 +416,9 @@ const debugData = {
           hideOnFormFocus?: (elementSelector: string, mobileOnly?: boolean) => void;
           hideNotification?: any;
           // UX Utility Functions
+          isDarkMode?: () => boolean;
+          currentTheme?: "light" | "dark";
+          updateThemeSync?: () => "light" | "dark";
           scrollToTopOnMobile?: () => void;
           scrollToTop?: (behavior?: ScrollBehavior) => void;
           isMobile?: () => boolean;
@@ -1440,26 +1483,38 @@ const debugData = {
         // Initialize autofill navigation - COMMENTED OUT
         // (window as any).setupAutofillNavigation();
 
-        // Initialize dark mode first to prevent preloader flash
-        const hasExplicitPreference = localStorage.getItem("color-theme") !== null;
+        // Global theme sync utility - updates theme attribute on elements with data-theme-sync
+        (window as any).updateThemeSync = () => {
+          const isDark = (window as any).isDarkMode();
+          const themeValue = isDark ? "dark" : "light";
+          (window as any).currentTheme = themeValue; // Keep currentTheme in sync
 
-        if (hasExplicitPreference) {
-          // User has explicitly set a preference, apply it
-          if (localStorage.getItem("color-theme") === "dark") {
-            document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
-          } else {
-            document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
-          }
-        } else {
-          // No explicit preference, check system preference
-          if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-            document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
-            localStorage.setItem("color-theme", "dark");
-          } else {
-            document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
-            localStorage.setItem("color-theme", "light");
-          }
-        }
+          // Find all elements with data-theme-sync attribute
+          const elements = document.querySelectorAll("[data-theme-sync]");
+          elements.forEach((el) => {
+            el.setAttribute("theme", themeValue);
+          });
+
+          console.log(`[THEME-SYNC] Updated ${elements.length} element(s) to theme: ${themeValue}`);
+          return themeValue;
+        };
+
+        // Update theme-synced elements initially
+        (window as any).updateThemeSync();
+
+        // Watch for theme changes and auto-sync
+        const themeObserver = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.attributeName === "class") {
+              (window as any).updateThemeSync();
+            }
+          });
+        });
+
+        themeObserver.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["class"],
+        });
 
         // Call immediately
         const isSafariBeta = (window as any).isSafariBeta();
@@ -1702,7 +1757,7 @@ const debugData = {
 
         // Override console.log to suppress network errors
         console.log = function (...args) {
-          const message = String(args[0] || "");
+          // const message = String(args[0] || ""); // Unused
           const fullMessage = args.join(" ");
 
           if (
@@ -1957,6 +2012,26 @@ const debugData = {
         if (event.message && event.message.includes("ERR_CONNECTION_CLOSED")) {
           console.warn("⚠️ [NETWORK-ERROR] Connection closed error suppressed:", event.message);
           event.preventDefault(); // Prevent the error from showing in console
+        }
+      });
+    </script>
+
+    <!-- AOS (Animate On Scroll) - Global initialization -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
+    <script is:inline>
+      // Wait for AOS library to load before initializing
+      window.addEventListener("DOMContentLoaded", function () {
+        // @ts-ignore - AOS loaded from CDN
+        if (typeof AOS !== "undefined") {
+          // @ts-ignore
+          AOS.init({
+            duration: 800,
+            easing: "ease-in-out",
+            once: true,
+            offset: 120,
+            delay: 50,
+          });
         }
       });
     </script>

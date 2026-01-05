@@ -43,7 +43,7 @@ const { globalInputClasses } = Astro.props;
 </div>
 <!-- </div> -->
 
-<div data-aos="fade-up" data-aos-delay="150">
+<div data-aos="fade-in" data-aos-delay="150">
   <hr class="mt-14 h-0 border-t border-zinc-300 dark:border-zinc-600" />
   <p class="-mt-2.5 text-center text-xs">
     <span class="px-4 color-background">Or</span>
@@ -84,8 +84,20 @@ const { globalInputClasses } = Astro.props;
   </div>
 
   <div class="flex justify-between gap-3 aos-init" data-aos="fade-up" data-aos-delay="600">
-    <Button href="/auth/register" variant="link" size="lg" class="px-0">
-      <span>no account?</span>
+    <Button href="/auth/register" variant="secondary" size="lg" class="px-0" icon="user-plus">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><path
+          d="M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path><path d="M20 8v6"></path><path
+          d="M23 11h-6"></path></svg
+      >create account
     </Button>
     <Button
       type="button"
@@ -129,7 +141,7 @@ const { globalInputClasses } = Astro.props;
     const urlParams = new URLSearchParams(window.location.search);
     const provider = urlParams.get("provider");
     const oauth = urlParams.get("oauth");
-    
+
     // Auto-trigger OAuth if provider and oauth params are present
     if (provider === "google" && oauth === "true") {
       console.log("[GOOGLE-SIGNIN] Auto-triggering OAuth from URL params...");
@@ -183,7 +195,7 @@ const { globalInputClasses } = Astro.props;
           queryParams: {
             access_type: "offline",
             prompt: "consent",
-            scope: "openid email profile https://www.googleapis.com/auth/gmail.readonly",
+            scope: "openid email profile",
           },
         },
       });
@@ -216,9 +228,7 @@ const { globalInputClasses } = Astro.props;
           }
 
           if (codeVerifier) {
-            console.log(
-              "[GOOGLE-SIGNIN] Code verifier confirmed in localStorage, redirecting..."
-            );
+            console.log("[GOOGLE-SIGNIN] Code verifier confirmed in localStorage, redirecting...");
           } else {
             console.warn(
               "[GOOGLE-SIGNIN] Code verifier not found after waiting, but proceeding with redirect..."

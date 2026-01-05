@@ -8,7 +8,8 @@ import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async () => {
   try {
-    const assistantId = process.env.VAPI_ASSISTANT_ID || "3ae002d5-fe9c-4870-8034-4c66a9b43b51";
+    const assistantId =
+      process.env.PUBLIC_VAPI_ASSISTANT_ID || "3ae002d5-fe9c-4870-8034-4c66a9b43b51";
 
     if (!assistantId) {
       return new Response(

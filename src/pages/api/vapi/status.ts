@@ -10,7 +10,7 @@ import { ensureProtocol } from "../../../lib/url-utils";
 export const GET: APIRoute = async () => {
   try {
     const vapiApiKey = process.env.VAPI_API_KEY;
-    const assistantId = process.env.VAPI_ASSISTANT_ID;
+    const assistantId = process.env.PUBLIC_VAPI_ASSISTANT_ID;
     const webhookSecret = process.env.VAPI_WEBHOOK_SECRET;
 
     console.log("🔍 [VAPI-STATUS] Environment variables:", {

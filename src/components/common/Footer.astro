@@ -1,24 +1,19 @@
 ---
-const {
-  globalInputClasses,
-  secondaryTextClasses,
-  primaryTextClasses,
-  year,
-  globalCompanyName,
-  isBackend,
-  primaryColor,
-} = Astro.props;
+const { globalCompanyName, isBackend } = Astro.props;
 
 import { checkAuth } from "@/lib/auth";
 const { currentUser } = await checkAuth(Astro.cookies);
 
+// Get theme from cookie for server-side rendering
+const themeCookie = Astro.cookies.get("theme");
+const theme = (themeCookie?.value as "light" | "dark") || "light";
+
 import Tooltip from "@/components/common/Tooltip.astro";
-import VapiChatWidget from "@/components/vapi/VapiChatWidget.astro";
-import CampfireChatWidget from "@/components/common/CampfireChatWidget.astro";
+import VapiChatWidget from "@/features/vapi-chat-widget/VapiChatWidget.astro";
 ---
 
 <footer
-  class="flex max-w-screen-xl mx-auto w-full gap-2 mt-4 p-4 items-center justify-between pt-0"
+  class="flex max-w-screen-xl mx-auto w-full gap-2 mt-4 p-4 items-center justify-between relative pt-0 z-10"
 >
   <div class="align-center flex justify-center space-x-3">
     <Tooltip
@@ -89,45 +84,10 @@ import CampfireChatWidget from "@/components/common/CampfireChatWidget.astro";
   </div>
   <div class="align-center flex justify-center space-x-3 w-8">
     <!-- VAPI Voice Chat Widget (Fixed Bottom Right) -->
-    <!-- <VapiChatWidget
-  assistantId="3ae002d5-fe9c-4870-8034-4c66a9b43b51"
-  publicKey="77cb0a47-2427-44ac-996d-e6ed2ca03bbf"
-/> -->
+    <!-- Debug: Show VAPI widget status -->
+    <!-- currentUser: {currentUser ? "LOGGED IN" : "NOT LOGGED IN"} -->
+    <!-- isBackend: {isBackend ? "TRUE" : "FALSE"} -->
 
-    {
-      !currentUser && !isBackend ? (
-        <>
-          <vapi-widget
-            public-key="77cb0a47-2427-44ac-996d-e6ed2ca03bbf"
-            assistant-id="3ae002d5-fe9c-4870-8034-4c66a9b43b51"
-            mode="chat"
-            theme="dark"
-            base-bg-color="#000000"
-            accent-color={primaryColor}
-            cta-button-color="#000000"
-            cta-button-text-color="#ffffff"
-            border-radius="large"
-            size="compact"
-            position="bottom-right"
-            title="Live"
-            start-button-text="Start"
-            end-button-text="End Call"
-            chat-first-message={`Thank you for your interest in ${globalCompanyName}. How can I help you today?`}
-            chat-placeholder="Type your message..."
-            voice-show-transcript="true"
-            consent-required="true"
-            consent-title="Terms and conditions"
-            consent-content="By clicking Agree, and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as otherwise described in our Terms of Service."
-            consent-storage-key="vapi_widget_consent"
-          />
-
-          <script
-            src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js"
-            async
-            type="text/javascript"
-          />
-        </>
-      ) : null
-    }
+    {!currentUser && !isBackend && <VapiChatWidget basic={true} theme={theme} />}
   </div>
 </footer>

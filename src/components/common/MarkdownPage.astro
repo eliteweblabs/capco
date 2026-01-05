@@ -1,0 +1,136 @@
+---
+/**
+ * MarkdownPage Component
+ * Convention-based component loading: <ComponentName /> → tries to load from common locations
+ * No registry needed - if file exists, load it; if not, skip it
+ */
+
+import { getPageContent } from "../../lib/content";
+import { marked } from "marked";
+import { parseComponentShortcodes, type ComponentShortcode } from "../../lib/markdown-components";
+
+// Layout imports (these are always needed)
+import LayoutDefault from "../layouts/LayoutDefault.astro";
+import LayoutFullWidth from "../layouts/LayoutFullWidth.astro";
+import LayoutMinimal from "../layouts/LayoutMinimal.astro";
+
+interface Props {
+  slug: string;
+  currentUser?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  session?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  supabase?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
+const { slug, currentUser, session, supabase } = Astro.props;
+
+const pageContent = await getPageContent(slug);
+
+if (!pageContent) {
+  return Astro.redirect("/404");
+}
+
+const template = pageContent.template || "default";
+
+const layouts = {
+  default: LayoutDefault,
+  fullwidth: LayoutFullWidth,
+  minimal: LayoutMinimal,
+};
+
+const Layout = layouts[template as keyof typeof layouts] || LayoutDefault;
+
+// Parse component shortcodes from markdown
+const components = parseComponentShortcodes(pageContent.content);
+
+console.log(
+  "[MarkdownPage] Found components:",
+  components.map((c) => c.name)
+);
+
+// Replace components with placeholders
+let markdownContent = pageContent.content;
+for (const component of components) {
+  markdownContent = markdownContent.replace(
+    component.fullMatch,
+    `\n\n<div id="${component.id}" data-component-placeholder="${component.name}"></div>\n\n`
+  );
+}
+
+const htmlContent = marked.parse(markdownContent);
+
+// Use import.meta.glob to pre-load all possible components (so Vite processes styles)
+const allComponents = import.meta.glob([
+  "../layouts/*.astro",
+  "../ui/*.astro",
+  "../common/*.astro",
+  "../../features/*/*.astro",
+  "../../features/*/components/*.astro",
+]);
+
+console.log("[MarkdownPage] Available component paths:", Object.keys(allComponents));
+
+// Load only the components used in this page's markdown
+const componentModules = await Promise.all(
+  components.map(async (component) => {
+    const name = component.name;
+
+    // Find matching component in the glob
+    const matchingPath = Object.keys(allComponents).find((path) => {
+      const fileName = path.split("/").pop()?.replace(".astro", "");
+      return fileName === name;
+    });
+
+    if (!matchingPath) {
+      console.warn(`[MarkdownPage] ❌ Component not found: ${name}`);
+      return null;
+    }
+
+    try {
+      console.log(`[MarkdownPage] ✅ Loading ${name} from ${matchingPath}`);
+      const module = (await allComponents[matchingPath]()) as { default: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
+      return { component, Component: module.default };
+    } catch (error) {
+      console.error(`[MarkdownPage] Failed to load ${name}:`, error);
+      return null;
+    }
+  })
+);
+
+const validComponentModules = componentModules.filter(
+  (m): m is { component: ComponentShortcode; Component: any } => m !== null
+); // eslint-disable-line @typescript-eslint/no-explicit-any
+---
+
+<Layout
+  title={pageContent.title}
+  description={pageContent.description || ""}
+  lastUpdated={pageContent.lastUpdated}
+  {currentUser}
+  {session}
+  {supabase}
+>
+  <div set:html={htmlContent} />
+
+  {
+    validComponentModules.map(({ component, Component }) => (
+      <div id={`component-${component.id}`} data-component-name={component.name}>
+        <Component {...component.props} />
+      </div>
+    ))
+  }
+</Layout>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const placeholders = document.querySelectorAll("[data-component-placeholder]");
+
+    placeholders.forEach((placeholder) => {
+      const componentId = placeholder.id;
+      const renderedComponent = document.querySelector(`[id="component-${componentId}"]`);
+
+      if (renderedComponent && placeholder.parentNode) {
+        placeholder.parentNode.replaceChild(renderedComponent, placeholder);
+      }
+    });
+  });
+</script>

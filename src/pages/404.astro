@@ -1,21 +1,33 @@
 ---
 import App from "../components/common/App.astro";
 import SimpleIcon from "../components/common/SimpleIcon.astro";
-//Para cambiar idioma de textos
-// const { currentLocale } = Astro;
-// const i18n = getI18N({ currentLocale });
+import { getPageContent } from "../lib/content";
+
+const pageContent = await getPageContent("404");
+
+// Fallback if no 404.md exists
+const fallbackContent = {
+  title: "404 - Page Not Found",
+  description: "The page you're looking for doesn't exist",
+  code: "404",
+  buttonHref: "/",
+  buttonText: "Go Home",
+};
+
+const content = pageContent || fallbackContent;
 ---
 
-<App title="404" description="404" centerContent={true}>
+<App title={content.title} description={content.description} centerContent={true}>
   <div class="mb-12 flex content-center items-center justify-center">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">404</h1>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{content.code}</h1>
   </div>
   <div class="flex content-center items-center justify-center">
     <a
-      href="/"
+      href={content.buttonHref}
       class="inline-flex items-center rounded-full bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
     >
       <SimpleIcon name="arrow-left" />
+      {content.buttonText}
     </a>
   </div>
 </App>

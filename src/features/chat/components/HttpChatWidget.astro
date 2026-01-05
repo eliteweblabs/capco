@@ -1,0 +1,589 @@
+---
+// HTTP-based Chat Widget Component - Fixed bottom-right floating chat
+// Only visible to Admin/Staff users
+
+interface Props {
+  currentUser?: {
+    id: string;
+    email: string;
+    profile: {
+      role: string;
+      companyName: string;
+    };
+  };
+  currentRole?: string;
+  globalInputClasses?: string;
+}
+import SimpleIcon from "../../../components/common/SimpleIcon.astro";
+const { currentUser, globalInputClasses, currentRole } = Astro.props;
+if (!currentUser || (currentRole !== "Admin" && currentRole !== "Staff")) {
+  return null;
+}
+
+// // Debug logging
+// console.log("🔧 [HTTP-CHAT-WIDGET] Current user object:", currentUser);
+// console.log("🔧 [HTTP-CHAT-WIDGET] Current role:", currentRole);
+// console.log("🔧 [HTTP-CHAT-WIDGET] User ID:", currentUser?.id);
+// console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.companyName);
+---
+
+<div
+  id="chat-widget"
+  data-user-role={currentRole || "Client"}
+  data-user-id={currentUser?.id || "unknown"}
+  data-user-name={currentUser?.profile?.companyName || "Unknown User"}
+>
+  <!-- Chat Widget (Hidden by Default) -->
+  <div id="chat-panel">
+    <!-- Chat Header -->
+
+    <!-- Chat Messages -->
+    <div class="flex-1 flex-grow space-y-3 overflow-y-scroll py-4" id="chat-messages">
+      <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <SimpleIcon name="message-circle" class="mx-auto mb-2 text-2xl" />
+        <p>Start chatting with your team!</p>
+      </div>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="border-t border-gray-200 pt-4 dark:border-gray-700">
+      <div class="flex space-x-2">
+        <div>
+          <input
+            type="text"
+            id="chat-input"
+            placeholder="Type your message..."
+            class=`w-[11rem] ${globalInputClasses}`
+            maxlength="500"
+          />
+        </div>
+        <div>
+          <button id="chat-send" class="disabled:cursor-not-allowed disabled:opacity-50" disabled>
+            <SimpleIcon
+              name="send"
+              variant="secondary"
+              size="xl"
+              shape="rounded"
+              backgroundColor="primary"
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // HTTP-based Chat Widget Functionality
+  let currentUser: any = null;
+  let onlineUsers: any[] = [];
+  let isInitialized = false;
+  let heartbeatInterval: any = null;
+  let unreadCount = 0;
+  let lastMessageTimestamp: string | null = null;
+  let isChatOpen = false;
+
+  // Initialize chat widget
+  function initializeChat() {
+    if (isInitialized) {
+      // console.log("🔔 [HTTP-CHAT] Chat widget already initialized, skipping");
+      return;
+    }
+
+    console.log("🔔 [HTTP-CHAT] Initializing HTTP chat widget");
+
+    // Check if user is Admin/Staff
+    const chatWidget = document.getElementById("chat-widget");
+    if (!chatWidget) {
+      console.log("🔔 [HTTP-CHAT] Chat widget element not found!");
+      return;
+    }
+
+    const userRole = chatWidget.dataset.userRole || "Client";
+    const userId = chatWidget.dataset.userId || "unknown";
+    const userName = chatWidget.dataset.userName || "Unknown User";
+
+    console.log("🔔 [HTTP-CHAT] User role:", userRole);
+    console.log("🔔 [HTTP-CHAT] User ID:", userId);
+    console.log("🔔 [HTTP-CHAT] User name:", userName);
+
+    if (userRole !== "Admin" && userRole !== "Staff") {
+      console.log("🔔 [HTTP-CHAT] User not Admin/Staff, hiding chat widget");
+      chatWidget.classList.add("hidden");
+      return;
+    }
+
+    console.log("🔔 [HTTP-CHAT] User is Admin/Staff, showing chat widget");
+
+    // Get current user info
+    currentUser = {
+      id: userId,
+      name: userName,
+      role: userRole,
+    };
+
+    console.log("🔔 [HTTP-CHAT] Current user:", currentUser);
+
+    // Setup event listeners
+    setupChatEvents();
+
+    // Check if chat should be open from cookie
+    checkChatStateFromCookie();
+
+    // Join chat (disabled - API not working)
+    joinChat();
+
+    // Start heartbeat (disabled - API not working)
+    startHeartbeat();
+
+    isInitialized = true;
+    console.log("🔔 [HTTP-CHAT] HTTP chat widget initialization complete");
+  }
+
+  // Setup chat event listeners
+  function setupChatEvents() {
+    const chatToggle = document.getElementById("chat-toggle");
+    const chatClose = document.getElementById("chat-close");
+    const chatInput = document.getElementById("chat-input");
+    const chatSend = document.getElementById("chat-send");
+
+    // Toggle chat panel
+    chatToggle?.addEventListener("click", () => {
+      const chatPanel = document.getElementById("chat-panel");
+      const isHidden = chatPanel?.classList.contains("hidden");
+
+      if (isHidden) {
+        // Opening chat
+        chatPanel?.classList.remove("hidden");
+        isChatOpen = true;
+        chatInput?.focus();
+        // Reset unread count when opening
+        resetUnreadCount();
+        // Save chat state to cookie
+        saveChatStateToCookie(true);
+      } else {
+        // Closing chat
+        chatPanel?.classList.add("hidden");
+        isChatOpen = false;
+        // Save chat state to cookie
+        saveChatStateToCookie(false);
+      }
+    });
+
+    // Close chat panel
+    chatClose?.addEventListener("click", () => {
+      document.getElementById("chat-panel")?.classList.add("hidden");
+      isChatOpen = false;
+      // Save chat state to cookie
+      saveChatStateToCookie(false);
+    });
+
+    // Handle input changes
+    chatInput?.addEventListener("input", (e) => {
+      const target = e.target as HTMLInputElement;
+      const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
+      sendBtn.disabled = !target.value.trim();
+    });
+
+    // Handle send button
+    chatSend?.addEventListener("click", sendMessage);
+
+    // Handle Enter key
+    chatInput?.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
+
+  // Join chat
+  async function joinChat() {
+    try {
+      // console.log("🔔 [HTTP-CHAT] Joining chat...");
+
+      const response = await fetch("/api/utils/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
+        body: JSON.stringify({
+          action: "join",
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser.role,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      // console.log("🔔 [HTTP-CHAT] Join response:", data);
+
+      if (data.success) {
+        // Load chat history
+        if (data.chatHistory && data.chatHistory.length > 0) {
+          // console.log("🔔 [HTTP-CHAT] Loading chat history:", data.chatHistory.length, "messages");
+          loadChatHistory(data.chatHistory);
+        }
+
+        // Update online users
+        if (data.onlineUsers) {
+          onlineUsers = data.onlineUsers;
+          updateOnlineCount();
+        }
+
+        console.log("🔔 [HTTP-CHAT] Successfully joined chat");
+      }
+    } catch (error) {
+      console.error("🔔 [HTTP-CHAT] Error joining chat:", error);
+    }
+  }
+
+  // Send message
+  async function sendMessage() {
+    const input = document.getElementById("chat-input") as HTMLInputElement;
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    // Disable input while sending
+    input.disabled = true;
+    const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
+    if (sendBtn) {
+      sendBtn.disabled = true;
+    }
+
+    try {
+      console.log("🔔 [HTTP-CHAT] Sending message:", message);
+
+      const response = await fetch("/api/utils/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "message",
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser.role,
+          message: message,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("🔔 [HTTP-CHAT] Send response:", data);
+
+      if (data.success) {
+        // Clear input
+        input.value = "";
+        console.log("✅ [HTTP-CHAT] Message sent successfully");
+
+        // Immediately display the sent message
+        const messageData = {
+          id: data.messageId || Date.now(), // Use server-provided ID or fallback to timestamp
+          userId: currentUser.id,
+          userName: currentUser.name,
+          message: message,
+          timestamp: new Date().toISOString(),
+        };
+        addMessage(messageData);
+      } else {
+        console.error("❌ [HTTP-CHAT] Failed to send message:", data.error);
+        // Show error to user
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "Error",
+            "Failed to send message: " + (data.error || "Unknown error"),
+            "error"
+          );
+        }
+      }
+    } catch (error) {
+      console.error("🔔 [HTTP-CHAT] Error sending message:", error);
+      // Show error to user
+      if ((window as any).showModal) {
+        (window as any).showModal("Error", "Failed to send message. Please try again.", "error");
+      }
+    } finally {
+      // Re-enable input
+      input.disabled = false;
+      if (sendBtn) {
+        sendBtn.disabled = false;
+      }
+    }
+  }
+
+  // Load chat history
+  function loadChatHistory(messages: any[]) {
+    const messagesContainer = document.getElementById("chat-messages");
+    if (!messagesContainer) return;
+
+    // Clear existing messages
+    messagesContainer.innerHTML = "";
+
+    // Add each message
+    messages.forEach((msg) => {
+      addMessage(msg);
+    });
+
+    // console.log("🔔 [HTTP-CHAT] Chat history loaded:", messages.length, "messages");
+  }
+
+  // Add message to chat
+  function addMessage(data: any) {
+    const messagesContainer = document.getElementById("chat-messages");
+    if (!messagesContainer) return;
+
+    messagesContainer.style.maxHeight =
+      document.documentElement.clientHeight -
+      (document.getElementById("sidebar-menu")?.offsetHeight || 0) -
+      230 +
+      "px";
+    const userName = data.companyName || data.userName || "Unknown User";
+    const userId = data.userId || data.userId || "unknown";
+    const message = data.message || "";
+    const timestamp = data.timestamp || data.createdAt || new Date().toISOString();
+
+    const isOwnMessage = userId === currentUser.id;
+    const messageElement = document.createElement("div");
+    messageElement.className = `flex ${isOwnMessage ? "justify-end" : "justify-start"}`;
+    messageElement.setAttribute("data-message-id", data.id || "unknown");
+
+    messageElement.innerHTML = `
+      <div class="max-w-xs ${isOwnMessage ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white"} rounded-lg px-3 py-2">
+        <div class="flex items-center space-x-2 mb-1">
+          <span class="text-xs font-medium">${userName}</span>
+          <span class="text-xs opacity-75">${new Date(timestamp).toLocaleTimeString()}</span>
+        </div>
+        <p class="text-sm">${message}</p>
+      </div>
+    `;
+
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Update notification count if message is not from current user and chat is closed
+    if (!isOwnMessage && !isChatOpen) {
+      incrementUnreadCount();
+    }
+
+    // Update last message timestamp
+    lastMessageTimestamp = timestamp;
+  }
+
+  // Start heartbeat to maintain connection
+  function startHeartbeat() {
+    heartbeatInterval = setInterval(async () => {
+      try {
+        const response = await fetch("/api/utils/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "heartbeat",
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userRole: currentUser.role,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.onlineUsers) {
+            onlineUsers = data.onlineUsers;
+            updateOnlineCount();
+          }
+        }
+      } catch (error) {
+        console.error("🔔 [HTTP-CHAT] Heartbeat error:", error);
+      }
+    }, 30000); // Every 30 seconds
+
+    // Also poll for new messages every 5 seconds
+    setInterval(async () => {
+      try {
+        const response = await fetch("/api/utils/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "get_messages",
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userRole: currentUser.role,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.messages && data.messages.length > 0) {
+            // Check if we have new messages
+            const messagesContainer = document.getElementById("chat-messages");
+            if (messagesContainer) {
+              const existingMessageIds = new Set(
+                Array.from(messagesContainer.children).map((el) =>
+                  el.getAttribute("data-message-id")
+                )
+              );
+
+              // Add only new messages
+              data.messages.forEach((msg: any) => {
+                if (!existingMessageIds.has(msg.id.toString())) {
+                  addMessage(msg);
+                }
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("🔔 [HTTP-CHAT] Message polling error:", error);
+      }
+    }, 30000); // Every 30 seconds (reduced from 5 seconds)
+  }
+
+  // Update online count and show usernames
+  function updateOnlineCount() {
+    const countElement = document.getElementById("online-count");
+    const usersListElement = document.getElementById("online-users-list");
+
+    if (countElement) {
+      if (onlineUsers.length === 0) {
+        countElement.textContent = "0 online";
+      } else if (onlineUsers.length === 1) {
+        const user = onlineUsers[0];
+        countElement.innerHTML = `<span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-blue-900 dark:text-blue-300">${user.userName || user.companyName}</span>`;
+      } else if (onlineUsers.length === 2) {
+        const users = onlineUsers;
+        countElement.innerHTML = `<span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-blue-900 dark:text-blue-300">${users[0].userName || users[0].companyName}</span> and <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-blue-900 dark:text-blue-300">${users[1].userName || users[1].companyName}</span>`;
+      } else {
+        const users = onlineUsers;
+        const firstTwo = users
+          .slice(0, 2)
+          .map((u) => u.userName || u.companyName)
+          .join(", ");
+        countElement.innerHTML = `<span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-blue-900 dark:text-blue-300">${firstTwo}</span> and <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-blue-900 dark:text-blue-300">${onlineUsers.length - 2} more</span> online`;
+      }
+    }
+
+    // Update the online users list in the tooltip
+    if (usersListElement) {
+      if (onlineUsers.length === 0) {
+        usersListElement.innerHTML = '<div class="text-gray-300">No users online</div>';
+      } else {
+        const users = onlineUsers;
+        usersListElement.innerHTML = users
+          .map(
+            (user) =>
+              `<div class="flex items-center space-x-2">
+            <div class="w-2 h-2 bg-green-400 rounded-lg"></div>
+            <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-blue-900 dark:text-blue-300">${user.userName || user.companyName}</span>
+            <span class="text-gray-400 text-xs">(${user.userRole || user.role})</span>
+          </div>`
+          )
+          .join("");
+      }
+    }
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    // console.log("🔔 [HTTP-CHAT] DOM Content Loaded");
+    setTimeout(initializeChat, 1000);
+  });
+
+  // Also initialize when window loads (fallback)
+  window.addEventListener("load", () => {
+    // console.log("🔔 [HTTP-CHAT] Window Loaded");
+    if (!isInitialized) {
+      setTimeout(initializeChat, 500);
+    }
+  });
+
+  // Notification count management
+  function incrementUnreadCount() {
+    unreadCount++;
+    updateNotificationCount();
+  }
+
+  function resetUnreadCount() {
+    unreadCount = 0;
+    updateNotificationCount();
+  }
+
+  function updateNotificationCount() {
+    const chatToggle = document.getElementById("chat-toggle");
+    if (chatToggle) {
+      // Remove existing count bubble if it exists
+      const existingBubble = chatToggle.querySelector(".count-bubble");
+      if (existingBubble) {
+        existingBubble.remove();
+      }
+
+      if (unreadCount > 0) {
+        // Create count bubble manually since Button component only creates it when count > 0
+        const countBubble = document.createElement("span");
+        countBubble.className =
+          "count-bubble absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-gray-100 text-xs font-medium text-primary-500 dark:border-primary-400 dark:bg-background-dark dark:text-primary-400 animate-pulse";
+        countBubble.textContent = unreadCount > 99 ? "99+" : unreadCount.toString();
+        chatToggle.appendChild(countBubble);
+      }
+    }
+  }
+
+  // Cookie management for chat state
+  function saveChatStateToCookie(isOpen: boolean) {
+    try {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000); // 24 hours
+      document.cookie = `chatOpen=${isOpen}; expires=${expires.toUTCString()}; path=/`;
+      // console.log("🔔 [HTTP-CHAT] Chat state saved to cookie:", isOpen);
+    } catch (error) {
+      console.error("🔔 [HTTP-CHAT] Error saving chat state to cookie:", error);
+    }
+  }
+
+  function checkChatStateFromCookie() {
+    try {
+      const cookies = document.cookie.split(";");
+      const chatOpenCookie = cookies.find((cookie) => cookie.trim().startsWith("chatOpen="));
+
+      if (chatOpenCookie) {
+        const isOpen = chatOpenCookie.split("=")[1] === "true";
+        // console.log("🔔 [HTTP-CHAT] Chat state from cookie:", isOpen);
+
+        if (isOpen) {
+          const chatPanel = document.getElementById("chat-panel");
+          chatPanel?.classList.remove("hidden");
+          isChatOpen = true;
+        }
+      }
+    } catch (error) {
+      console.error("🔔 [HTTP-CHAT] Error reading chat state from cookie:", error);
+    }
+  }
+
+  // Cleanup on page unload
+  window.addEventListener("beforeunload", () => {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+    }
+    // Save current chat state
+    saveChatStateToCookie(isChatOpen);
+  });
+</script>
+
+<style>
+  .hF9NObSI2kQdwL54aiHc #chat-panel {
+    display: none !important;
+  }
+</style>

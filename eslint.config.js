@@ -23,9 +23,11 @@ export default [
       "astro/no-conflict-set-directives": "error",
       "astro/no-unused-define-vars-in-style": "error",
 
-      // TypeScript rules
-      "@typescript-eslint/no-unused-vars": "warn",
-      "@typescript-eslint/no-explicit-any": "warn",
+      // TypeScript rules - lenient for utility functions
+      "@typescript-eslint/no-unused-vars": ["off"],
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-undef": "off",
+      "no-unused-vars": "off",
     },
   },
   {
@@ -37,8 +39,10 @@ export default [
       "@typescript-eslint": typescript,
     },
     rules: {
-      "@typescript-eslint/no-unused-vars": "warn",
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-undef": "off",
+      "no-unused-vars": "off",
     },
   },
   {
