@@ -68,6 +68,7 @@ import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
 // Get theme from cookie (set by client-side script)
+// Note: Cookie is set client-side, so on first load it may not exist yet
 const themeCookie = Astro.cookies.get("theme");
 const serverTheme = themeCookie?.value || "light"; // Default to light
 
@@ -167,26 +168,31 @@ const debugData = {
       // Initialize dark mode FIRST to prevent flash
       const hasExplicitPreference = localStorage.getItem("color-theme") !== null;
 
+      function setThemeCookie(theme) {
+        document.cookie = `theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
+        console.log("[THEME] Cookie set to:", theme);
+      }
+
       if (hasExplicitPreference) {
         // User has explicitly set a preference, apply it
         const theme = localStorage.getItem("color-theme");
         if (theme === "dark") {
           document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
-          document.cookie = "theme=dark; path=/; max-age=31536000"; // 1 year
+          setThemeCookie("dark");
         } else {
           document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
-          document.cookie = "theme=light; path=/; max-age=31536000"; // 1 year
+          setThemeCookie("light");
         }
       } else {
         // No explicit preference, check system preference
         if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
           document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
           localStorage.setItem("color-theme", "dark");
-          document.cookie = "theme=dark; path=/; max-age=31536000";
+          setThemeCookie("dark");
         } else {
           document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
           localStorage.setItem("color-theme", "light");
-          document.cookie = "theme=light; path=/; max-age=31536000";
+          setThemeCookie("light");
         }
       }
 
@@ -333,7 +339,7 @@ const debugData = {
     <!-- Set global user data for client-side components -->
   </head>
 
-  <body class="antialiased">
+  <body class="antialiased mask-center">
     <!-- Preloader -->
     <Preloader />
     <ScrollProgressIndicator />
@@ -354,7 +360,7 @@ const debugData = {
 
       <div id="main-content" class=`w-full pt-16 overflow-x-hidden ${mainClasses}`>
         <main
-          class={` flex-1 mx-2 sm:mx-4 relative ${centerContent ? "flex items-center justify-center" : ""}`}
+          class={` flex-1 mx-2 sm:mx-4 relative min-h-[calc(100dvh-8rem)] m-min-h-[calc(100dvh-8rem)] ${centerContent ? "flex items-center justify-center" : ""}`}
         >
           <slot />
         </main>
