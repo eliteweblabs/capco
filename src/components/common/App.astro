@@ -72,6 +72,12 @@ const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalC
 const themeCookie = Astro.cookies.get("theme");
 const serverTheme = themeCookie?.value || "light"; // Default to light
 
+// Debug logging
+console.log("[THEME-SERVER] Cookie exists:", themeCookie !== undefined);
+console.log("[THEME-SERVER] Cookie value:", themeCookie?.value);
+console.log("[THEME-SERVER] Server theme:", serverTheme);
+console.log("[THEME-SERVER] Has theme cookie:", Astro.cookies.has("theme"));
+
 // Derived properties (8 props → 13 total)
 const isAuth = currentUser ? true : false;
 // const currentUserId = currentUser?.id || undefined; // Unused
@@ -170,7 +176,17 @@ const debugData = {
 
       function setThemeCookie(theme) {
         document.cookie = `theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
-        console.log("[THEME] Cookie set to:", theme);
+        console.log("[THEME-CLIENT] Cookie set to:", theme);
+        console.log("[THEME-CLIENT] All cookies:", document.cookie);
+
+        // Verify cookie was set
+        const cookies = document.cookie.split(";").reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split("=");
+          acc[key] = value;
+          return acc;
+        }, {});
+        console.log("[THEME-CLIENT] Parsed cookies:", cookies);
+        console.log("[THEME-CLIENT] Theme cookie value:", cookies.theme);
       }
 
       if (hasExplicitPreference) {
@@ -198,13 +214,25 @@ const debugData = {
 
       // Global theme detection utility
       window.isDarkMode = () => {
-        if (document.documentElement.classList.contains("dark")) {
+        const hasDarkClass = document.documentElement.classList.contains("dark");
+        const localStorageTheme = localStorage.getItem("color-theme");
+        const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+        console.log("[THEME-DEBUG] hasDarkClass:", hasDarkClass);
+        console.log("[THEME-DEBUG] localStorageTheme:", localStorageTheme);
+        console.log("[THEME-DEBUG] systemPrefersDark:", systemPrefersDark);
+
+        if (hasDarkClass) {
+          console.log("[THEME-DEBUG] Returning true (dark class found)");
           return true;
         }
-        if (localStorage.getItem("color-theme") === "dark") {
+        if (localStorageTheme === "dark") {
+          console.log("[THEME-DEBUG] Returning true (localStorage is dark)");
           return true;
         }
-        return window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const result = systemPrefersDark;
+        console.log("[THEME-DEBUG] Returning system preference:", result);
+        return result;
       };
 
       // Set current theme immediately (available ASAP for all components)
