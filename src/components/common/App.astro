@@ -222,14 +222,20 @@ const debugData = {
         console.log("[THEME-DEBUG] localStorageTheme:", localStorageTheme);
         console.log("[THEME-DEBUG] systemPrefersDark:", systemPrefersDark);
 
+        // Priority 1: Check DOM class (most reliable)
         if (hasDarkClass) {
           console.log("[THEME-DEBUG] Returning true (dark class found)");
           return true;
         }
-        if (localStorageTheme === "dark") {
-          console.log("[THEME-DEBUG] Returning true (localStorage is dark)");
-          return true;
+
+        // Priority 2: Check localStorage (user's explicit preference)
+        if (localStorageTheme !== null) {
+          const isDark = localStorageTheme === "dark";
+          console.log("[THEME-DEBUG] Returning localStorage preference:", isDark);
+          return isDark;
         }
+
+        // Priority 3: Fall back to system preference (only if no explicit preference)
         const result = systemPrefersDark;
         console.log("[THEME-DEBUG] Returning system preference:", result);
         return result;
