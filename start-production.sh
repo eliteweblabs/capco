@@ -2,6 +2,12 @@
 
 echo "Starting Astro application..."
 
+# Initialize persistent content storage (preserves custom content across deployments)
+if [ -f "./scripts/init-persistent-content.sh" ]; then
+  echo "Initializing persistent content..."
+  ./scripts/init-persistent-content.sh || echo "⚠️ Content init script failed, continuing..."
+fi
+
 # Debug: Print runtime environment variables
 echo "🔍 RUNTIME ENV CHECK:"
 echo "RAILWAY_PUBLIC_DOMAIN: $RAILWAY_PUBLIC_DOMAIN"

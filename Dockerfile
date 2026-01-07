@@ -20,6 +20,16 @@ COPY . .
 # Ensure the production startup script has execute permissions and verify it exists
 RUN ls -la start-production.sh && chmod +x start-production.sh && ls -la start-production.sh
 
+# Make content init script executable
+RUN chmod +x scripts/init-persistent-content.sh 2>/dev/null || true
+
+# Initialize persistent content volume (runs at build time, but volume persists at runtime)
+# Note: Volume must be mounted at /data/content in Railway
+RUN mkdir -p /data/content/pages && \
+    if [ -f "scripts/init-persistent-content.sh" ]; then \
+      ./scripts/init-persistent-content.sh || true; \
+    fi
+
 # Change ownership of all files to non-root user
 RUN chown -R astro:nodejs /app
 
