@@ -150,19 +150,118 @@ export function getSiteConfig(): SiteConfig {
 }
 
 /**
- * Get page content from markdown file
+ * Get default page content (fallback when markdown file doesn't exist)
+ */
+function getDefaultPageContent(slug: string): PageContent | null {
+  const defaults: Record<string, PageContent> = {
+    home: {
+      title: process.env.RAILWAY_PROJECT_NAME || "Fire Protection Services",
+      description:
+        process.env.GLOBAL_COMPANY_SLOGAN ||
+        "Professional fire protection plan review and approval",
+      template: "fullwidth",
+      content: "",
+    },
+    contact: {
+      title: "Contact Us",
+      description: "Get in touch with our fire protection experts",
+      content: "# Contact Us\n\nGet in touch with our team.",
+    },
+    privacy: {
+      title: "Privacy Policy",
+      description: "Our privacy policy and data protection practices",
+      content: "# Privacy Policy\n\nPrivacy policy content...",
+    },
+    terms: {
+      title: "Terms of Service",
+      description: "Terms and conditions for using our services",
+      content: "# Terms of Service\n\nTerms and conditions...",
+    },
+    "404": {
+      title: "Page Not Found",
+      description: "The page you're looking for doesn't exist",
+      content: "# 404 - Page Not Found\n\nThe page you're looking for doesn't exist.",
+    },
+  };
+
+  return defaults[slug] || null;
+}
+
+/**
+ * Get page content from environment variables, files, or defaults (in that order)
+ * Priority: Env Vars > Files > Defaults
+ *
+ * Environment variable format:
+ * - PAGE_{SLUG}_CONTENT - Markdown content
+ * - PAGE_{SLUG}_TITLE - Page title
+ * - PAGE_{SLUG}_DESCRIPTION - Page description
+ * - PAGE_{SLUG}_JSON - Full JSON object (overrides individual vars)
  */
 export async function getPageContent(slug: string): Promise<PageContent | null> {
   const cacheKey = `page-${slug}`;
+  const slugUpper = slug.toUpperCase().replace(/-/g, "_");
 
   // Skip cache in development for live updates
   if (process.env.NODE_ENV !== "development" && cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
 
-  const contentPath = join(process.cwd(), "content", "pages", `${slug}.md`);
+  // 1. Try environment variable override first (allows per-deployment customization)
+  const envJson = process.env[`PAGE_${slugUpper}_JSON`];
+  if (envJson) {
+    try {
+      const parsed = JSON.parse(envJson);
+      const pageContent: PageContent = {
+        title: parsed.title || slug,
+        description: parsed.description || "",
+        template: parsed.template || "default",
+        content: parsed.content || "",
+        ...parsed,
+      };
+      cache.set(cacheKey, pageContent);
+      console.log(`✅ [CONTENT] Loaded ${slug} from environment variable (JSON)`);
+      return pageContent;
+    } catch (error) {
+      console.warn(`⚠️ [CONTENT] Error parsing PAGE_${slugUpper}_JSON:`, error);
+    }
+  }
 
-  // Try to read markdown file
+  // 2. Try individual environment variables
+  const envContent = process.env[`PAGE_${slugUpper}_CONTENT`];
+  if (envContent) {
+    const pageContent: PageContent = {
+      title: process.env[`PAGE_${slugUpper}_TITLE`] || slug,
+      description: process.env[`PAGE_${slugUpper}_DESCRIPTION`] || "",
+      template: (process.env[`PAGE_${slugUpper}_TEMPLATE`] as any) || "default",
+      content: envContent,
+    };
+    cache.set(cacheKey, pageContent);
+    console.log(`✅ [CONTENT] Loaded ${slug} from environment variables`);
+    return pageContent;
+  }
+
+  // 2. Try persistent volume (survives deployments) - Check this BEFORE git files
+  const volumePath = "/data/content/pages";
+  const volumeContentPath = join(volumePath, `${slug}.md`);
+  if (existsSync(volumePath) && existsSync(volumeContentPath)) {
+    try {
+      const fileContent = readFileSync(volumeContentPath, "utf-8");
+      const { data, content } = matter(fileContent);
+      const pageContent: PageContent = {
+        ...data,
+        content,
+        title: data.title || "Untitled Page",
+      };
+      cache.set(cacheKey, pageContent);
+      console.log(`✅ [CONTENT] Loaded ${slug} from persistent volume`);
+      return pageContent;
+    } catch (error) {
+      console.warn(`⚠️ [CONTENT] Error reading from volume:`, error);
+    }
+  }
+
+  // 3. Try markdown file (from git - defaults)
+  const contentPath = join(process.cwd(), "content", "pages", `${slug}.md`);
   if (existsSync(contentPath)) {
     try {
       const fileContent = readFileSync(contentPath, "utf-8");
@@ -175,13 +274,22 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
       };
 
       cache.set(cacheKey, pageContent);
+      console.log(`✅ [CONTENT] Loaded ${slug} from file`);
       return pageContent;
     } catch (error) {
       console.warn(`⚠️ [CONTENT] Error reading ${slug}.md:`, error);
     }
   }
 
-  // Return null if page doesn't exist (will trigger 404)
+  // 3. Fallback to default content
+  const defaultContent = getDefaultPageContent(slug);
+  if (defaultContent) {
+    console.log(`ℹ️ [CONTENT] Using default content for: ${slug}`);
+    cache.set(cacheKey, defaultContent);
+    return defaultContent;
+  }
+
+  // Return null if no content found (will trigger 404)
   console.warn(`⚠️ [CONTENT] No content found for page: ${slug}`);
   return null;
 }
