@@ -1,15 +1,8 @@
 export const globalCompanyData = () => {
-  // Get logo from environment variable, fallback to simple text logo
-  const logoFromEnv = process.env.GLOBAL_COMPANY_LOGO_SVG;
-  const companyName = process.env.RAILWAY_PROJECT_NAME || "Company";
-
-  // Default logo: Simple text-based SVG that uses company name
-  const defaultLogo = `<svg xmlns="http://www.w3.org/2000/svg" height="36" viewBox="0 0 200 36">
-    <text x="0" y="24" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="currentColor">${companyName}</text>
-  </svg>`;
-
-  const logo = logoFromEnv || defaultLogo;
-  const icon = process.env.GLOBAL_COMPANY_ICON_SVG;
+  // Get logo from environment variable
+  // If not set, return empty string (no logo will be shown)
+  const logo = process.env.GLOBAL_COMPANY_LOGO_SVG || "";
+  const icon = process.env.GLOBAL_COMPANY_ICON_SVG || "";
 
   // Website URL - ensure it has protocol
   const websiteRaw = process.env.RAILWAY_PUBLIC_DOMAIN;

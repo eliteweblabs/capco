@@ -8,6 +8,13 @@ const logoSvgIcon = replacePlaceholders("{{COMPANY_ICON}}", null);
 const logoSvgIconLight = replacePlaceholders("{{COMPANY_ICON_LIGHT}}", null);
 const logoSvgIconDark = replacePlaceholders("{{COMPANY_ICON_DARK}}", null);
 
+// Check if logo is actually set (not empty and not just placeholder text)
+const hasLogo = logoSvg && 
+  logoSvg.trim() && 
+  logoSvg !== "{{COMPANY_LOGO_LIGHT}}" &&
+  !logoSvg.includes("<text") && // Don't show text-based fallback logos
+  logoSvg.includes("<svg"); // Must be valid SVG
+
 export interface Props {
   file?: "svg" | "string" | "data-url" | "base64";
   size?: "sm" | "md" | "lg" | "xl";
@@ -32,7 +39,10 @@ if (typeof link === "string" && link && !link.startsWith("/") && !link.startsWit
   link = "/";
 }
 
-// Get the logo SVG content with the current size
+// If no logo is set, return null (don't render anything)
+if (!hasLogo) {
+  return null;
+}
 
 // Return different types based on the file prop
 if (file === "string") {
@@ -48,8 +58,8 @@ if (file === "string") {
 }
 ---
 
-{
-  file === "svg" && link && isBackend ? (
+{hasLogo && file === "svg" && link && isBackend && (
+  <>
     <a
       class="flex sm:hidden w-10"
       href={link}
@@ -57,11 +67,9 @@ if (file === "string") {
       set:html={logoSvgIconLight}
     />
     <a class="hidden sm:flex" href={link} title="Go to home page" set:html={logoSvg} />
-
-  ) : (
-    file === "svg" && link && !isBackend && (
-      <a href={link} title="Go to home page" set:html={logoSvg} />
-    )
-  )
-}
-{file === "svg" && !link && <div set:html={logoSvg} />}
+  </>
+)}
+{hasLogo && file === "svg" && link && !isBackend && (
+  <a href={link} title="Go to home page" set:html={logoSvg} />
+)}
+{hasLogo && file === "svg" && !link && <div set:html={logoSvg} />}
