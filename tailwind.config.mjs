@@ -10,17 +10,24 @@ import { generateColorPalette } from "./color-generator.js";
 // Get primary color from environment variable or use default
 const primaryColor = process.env.GLOBAL_COLOR_PRIMARY || "#825BDD";
 
+// Get secondary color from environment variable or use default
+const secondaryColor = process.env.GLOBAL_COLOR_SECONDARY || "#0ea5e9";
+
 // Get font family from environment variable or use default
 const fontFamily = process.env.FONT_FAMILY || "Outfit Variable";
 const fontFamilyFallback = process.env.FONT_FAMILY_FALLBACK || "sans-serif";
 
-// Generate complete color palette automatically from the hex color
+// Generate complete color palettes automatically from the hex colors
 const primaryColorPalette = generateColorPalette(primaryColor);
+const secondaryColorPalette = generateColorPalette(secondaryColor);
 
 // Debug: Log what color and font are being used
 console.log("🎨 [TAILWIND] GLOBAL_COLOR_PRIMARY from env:", process.env.GLOBAL_COLOR_PRIMARY);
 console.log("🎨 [TAILWIND] Using primary color:", primaryColor);
-console.log("🎨 [TAILWIND] Generated palette:", primaryColorPalette);
+console.log("🎨 [TAILWIND] GLOBAL_COLOR_SECONDARY from env:", process.env.GLOBAL_COLOR_SECONDARY);
+console.log("🎨 [TAILWIND] Using secondary color:", secondaryColor);
+console.log("🎨 [TAILWIND] Generated primary palette:", primaryColorPalette);
+console.log("🎨 [TAILWIND] Generated secondary palette:", secondaryColorPalette);
 console.log("🎨 [TAILWIND] FONT_FAMILY from env:", process.env.FONT_FAMILY);
 console.log("🎨 [TAILWIND] Using font family:", fontFamily);
 
@@ -90,21 +97,9 @@ export default {
           600: "#525252", // Secondary text (gray)
           400: "#a3a3a3", // Secondary text (dark mode)
         },
-        // Brand Colors - Automatically generated from GLOBAL_COLOR_PRIMARY environment variable
+        // Brand Colors - Automatically generated from GLOBAL_COLOR_PRIMARY and GLOBAL_COLOR_SECONDARY environment variables
         primary: primaryColorPalette,
-        secondary: {
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
-          950: "#082f49",
-        },
+        secondary: secondaryColorPalette,
 
         // Semantic Colors
         success: {
@@ -209,7 +204,7 @@ export default {
         },
       },
       backgroundImage: {
-        "btn-gradient": "linear-gradient(to right, #825BDD, #5327BA)", // Gradiente para botones
+        "btn-gradient": `linear-gradient(to right, ${primaryColorPalette[500]}, ${primaryColorPalette[700]})`, // Gradient for buttons - uses primary color palette
       },
     },
   },
