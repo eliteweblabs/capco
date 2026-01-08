@@ -155,7 +155,7 @@ export function replacePlaceholders(
       "🚨 [PLACEHOLDER-UTILS] This will cause malformed URLs. Check your environment variables."
     );
     // Fallback to prevent malformed URLs
-    baseUrl = "https://capcofire.com";
+    baseUrl = "failure.com";
   }
 
   // Ensure baseUrl has proper protocol
@@ -206,7 +206,7 @@ export function replacePlaceholders(
   // undone
   const registrationExpirationDate = "06/30/2026";
   const registrationNumber = "48388";
-  const professionalName = "Jason Kahan";
+  const professionalName = import.meta.env.GLOBAL_BUSINESS_OWNER_NAME || "Name Missing";
 
   // check the data for matching structure from placeholders..
 
@@ -313,7 +313,7 @@ export function replacePlaceholders(
   if (globalCompanyData().globalCompanyLogoLight) {
     const beforeReplace = result;
     result = result.replace(
-      /\{\{\s*COMPANY_LOGO_LIGHT\s*\}\}/g,
+      /\{\{\s*COMPANY_LOGO\s*\}\}/g,
       globalCompanyData().globalCompanyLogoLight
     );
     if (result !== beforeReplace) {
