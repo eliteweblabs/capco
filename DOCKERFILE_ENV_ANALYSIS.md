@@ -12,7 +12,7 @@ These variables are used in the codebase but are **NOT** declared as ARG in the 
 
 - `VAPI_API_KEY` - Used extensively in API routes and scripts
 - `VAPI_WEBHOOK_SECRET` - Used in `src/pages/api/vapi/status.ts`
-- `PUBLIC_VAPI_ASSISTANT_ID` - Used in multiple files (should be PUBLIC_ prefix for client-side)
+- `PUBLIC_VAPI_ASSISTANT_ID` - Used in multiple files (should be PUBLIC\_ prefix for client-side)
 - `PUBLIC_VAPI_KEY` - Used in VapiChatWidget and voice-assistant pages
 - `GLOBAL_COMPANY_NAME` - Used in VapiChatWidget
 - `GLOBAL_COMPANY_SLOGAN` - Used in content.ts (has ENV but missing ARG)
@@ -43,7 +43,7 @@ These variables are declared as ARG but **NOT** set as ENV (won't be available a
 - `BIRD_ORIGIN` - Has ARG but ENV is commented out
 - `BIRD_WORKSPACE_ID` - Has ARG but ENV is commented out
 - `COMPANY_LOGO_DARK` - Has ARG but ENV is commented out
-- `COMPANY_LOGO_LIGHT` - Has ARG but ENV is commented out
+- `COMPANY_LOGO` - Has ARG but ENV is commented out
 - `EMAIL_LOGO_LIGHT` - Has ARG but ENV is commented out
 
 ### 3. Variables with ENV but Missing ARG
@@ -55,7 +55,7 @@ These have ENV declarations but **NO** ARG declaration (won't be passed at build
 
 ### 4. Inconsistencies
 
-- `PUBLIC_CAMPFIRE_URL` and `PUBLIC_CAMPFIRE_WIDGET_ID` - Correctly declared (PUBLIC_ vars need to be available at build time)
+- `PUBLIC_CAMPFIRE_URL` and `PUBLIC_CAMPFIRE_WIDGET_ID` - Correctly declared (PUBLIC\_ vars need to be available at build time)
 - Some variables use `PUBLIC_` prefix (for client-side) but are not consistently named
 
 ## Recommended Fixes
@@ -116,6 +116,7 @@ ARG GLOBAL_COMPANY_SLOGAN
 ### Priority 3: Review Commented Out Variables
 
 If these services are not used, remove the ARG declarations. If they are used, uncomment the ENV lines:
+
 - Twilio variables (lines 77-79)
 - Agora variables (lines 80-81)
 - Bird variables (lines 82-86)
@@ -124,6 +125,7 @@ If these services are not used, remove the ARG declarations. If they are used, u
 ## Variables Currently in Dockerfile (Complete List)
 
 ### ARG Declarations (Build-time)
+
 1. TWILIO_ACCOUNT_SID
 2. TWILIO_AUTH_TOKEN
 3. TWILIO_PHONE_NUMBER
@@ -138,7 +140,7 @@ If these services are not used, remove the ARG declarations. If they are used, u
 12. PUBLIC_CAMPFIRE_URL
 13. PUBLIC_CAMPFIRE_WIDGET_ID
 14. COMPANY_LOGO_DARK
-15. COMPANY_LOGO_LIGHT
+15. COMPANY_LOGO
 16. EMAIL_API_KEY
 17. EMAIL_LOGO_LIGHT
 18. EMAIL_PROVIDER
@@ -168,6 +170,7 @@ If these services are not used, remove the ARG declarations. If they are used, u
 42. ANTHROPIC_API_KEY
 
 ### ENV Declarations (Runtime)
+
 1. CHAT_PORT
 2. EMAIL_API_KEY
 3. EMAIL_PROVIDER
@@ -207,4 +210,3 @@ If these services are not used, remove the ARG declarations. If they are used, u
 3. Add missing ARG/ENV pairs
 4. Test Docker build with all required variables
 5. Update deployment documentation with complete variable list
-
