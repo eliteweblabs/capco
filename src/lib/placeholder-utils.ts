@@ -309,31 +309,31 @@ export function replacePlaceholders(
 
   const pdfFontFallback = process.env.FONT_FAMILY_FALLBACK || "Arial, sans-serif";
 
-  // Replace COMPANY_LOGO_LIGHT placeholders
-  if (globalCompanyData().globalCompanyLogoLight) {
-    const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*COMPANY_LOGO\s*\}\}/g,
-      globalCompanyData().globalCompanyLogoLight
-    );
-    if (result !== beforeReplace) {
-      placeholderApplied = true;
-      addBoldTags = false;
-    }
-  }
+  // Replace COMPANY_LOGO placeholders
+  // if (globalCompanyData().globalCompanyLogoLight) {
+  //   const beforeReplace = result;
+  //   result = result.replace(
+  //     /\{\{\s*COMPANY_LOGO\s*\}\}/g,
+  //     globalCompanyData().globalCompanyLogoLight
+  //   );
+  //   if (result !== beforeReplace) {
+  //     placeholderApplied = true;
+  //     addBoldTags = false;
+  //   }
+  // }
 
-  // Replace COMPANY_LOGO_DARK placeholders
-  if (globalCompanyData().globalCompanyLogoDark) {
-    const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*COMPANY_LOGO_DARK\s*\}\}/g,
-      globalCompanyData().globalCompanyLogoDark
-    );
-    if (result !== beforeReplace) {
-      placeholderApplied = true;
-      addBoldTags = false;
-    }
-  }
+  // // Replace COMPANY_LOGO_DARK placeholders
+  // if (globalCompanyData().globalCompanyLogoDark) {
+  //   const beforeReplace = result;
+  //   result = result.replace(
+  //     /\{\{\s*COMPANY_LOGO_DARK\s*\}\}/g,
+  //     globalCompanyData().globalCompanyLogoDark
+  //   );
+  //   if (result !== beforeReplace) {
+  //     placeholderApplied = true;
+  //     addBoldTags = false;
+  //   }
+  // }
 
   // Replace COMPANY_ICON_LIGHT placeholders
   if (globalCompanyData().globalCompanyIcon) {
@@ -346,11 +346,11 @@ export function replacePlaceholders(
   }
 
   // Replace COMPANY_ICON_LIGHT placeholders
-  if (globalCompanyData().globalCompanyIconLight) {
+  if (globalCompanyData().globalCompanyIcon) {
     const beforeReplace = result;
     result = result.replace(
-      /\{\{\s*COMPANY_ICON_LIGHT\s*\}\}/g,
-      globalCompanyData().globalCompanyIconLight
+      /\{\{\s*GLOBAL_COMPANY_ICON\s*\}\}/g,
+      globalCompanyData().globalCompanyIcon
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;
@@ -358,12 +358,25 @@ export function replacePlaceholders(
     }
   }
 
-  // Replace COMPANY_ICON_DARK placeholders
-  if (globalCompanyData().globalCompanyIconDark) {
+  // Replace GLOBAL_COMPANY_LOGO_SVG placeholders
+  if (globalCompanyData().globalCompanyLogo) {
     const beforeReplace = result;
     result = result.replace(
-      /\{\{\s*COMPANY_ICON_DARK\s*\}\}/g,
-      globalCompanyData().globalCompanyIconDark
+      /\{\{\s*GLOBAL_COMPANY_LOGO_SVG\s*\}\}/g,
+      globalCompanyData().globalCompanyLogo
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
+  // Replace GLOBAL_COMPANY_ICON_SVG placeholders
+  if (globalCompanyData().globalCompanyIcon) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_ICON_SVG\s*\}\}/g,
+      globalCompanyData().globalCompanyIcon
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;

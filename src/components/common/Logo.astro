@@ -1,71 +1,62 @@
 ---
-import { replacePlaceholders } from "../../lib/placeholder-utils";
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
 
-const logoSvg = replacePlaceholders("{{COMPANY_LOGO}}", null);
-const logoSvgIcon = replacePlaceholders("{{COMPANY_ICON}}", null);
+const companyData = globalCompanyData();
 
-// Check if logo is actually set (not empty and not just placeholder text)
-const hasLogo =
-  logoSvg &&
-  logoSvg.trim() &&
-  logoSvg !== "{{COMPANY_LOGO_LIGHT}}" &&
-  !logoSvg.includes("<text") && // Don't show text-based fallback logos
-  logoSvg.includes("<svg"); // Must be valid SVG
+// Load SVG file
+function loadSvgFile(): string {
+  const svgPath = join(process.cwd(), "public", "img", "capco-logo.svg");
+  if (!existsSync(svgPath)) return "";
 
+  try {
+    let svg = readFileSync(svgPath, "utf-8")
+      .replace(/<\?xml[^>]*\?>/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Fix dark mode: use currentColor for fills
+    svg = svg
+      .replace(/@media\s*\(prefers-color-scheme:\s*dark\)\s*\{[^}]*\}/gi, "")
+      .replace(/\.fill\s*\{[^}]*fill:\s*#[^;]+[^}]*\}/gi, ".fill { fill: currentColor; }")
+      .replace(/\}\s*\}/g, "}")
+      .replace(/fill="#231f20"|fill="#000"|fill="#fff"|fill="[^"]*"/gi, 'class="fill"');
+
+    return svg;
+  } catch {
+    return "";
+  }
+}
+
+// Get logo (prefer file, fallback to env var)
+const svgFromFile = loadSvgFile();
+const logoSvg = svgFromFile || companyData.globalCompanyLogo || "";
+
+// Props
 export interface Props {
-  file?: "svg" | "string" | "data-url" | "base64";
-  size?: "sm" | "md" | "lg" | "xl";
   link?: string;
   className?: string;
-  isBackend?: boolean;
 }
 
-const { file = "svg", link: rawLink = "/", size = "md", isBackend } = Astro.props;
+const { link = "/", className = "" } = Astro.props;
 
-// Defensive check: ensure link is a valid URL path (not SVG/XML content)
-let link = rawLink;
-if (
-  typeof link === "string" &&
-  (link.includes("<svg") || link.includes("<?xml") || link.includes("xmlns="))
-) {
-  console.error("🚨 [LOGO] Invalid link prop contains SVG/XML content, defaulting to '/'");
-  link = "/";
-}
-// Ensure link starts with "/" or "http" for valid URL paths
-if (typeof link === "string" && link && !link.startsWith("/") && !link.startsWith("http")) {
-  link = "/";
+// Validate link
+let validLink = link;
+if (typeof validLink === "string") {
+  if (validLink.includes("<svg") || validLink.includes("<?xml") || validLink.includes("xmlns=")) {
+    validLink = "/";
+  } else if (validLink && !validLink.startsWith("/") && !validLink.startsWith("http")) {
+    validLink = "/";
+  }
 }
 
-// If no logo is set, return null (don't render anything)
-if (!hasLogo) {
-  return null;
-}
-
-// Return different types based on the file prop
-if (file === "string") {
-  // Return just the SVG string for use in utilities
-  return logoSvg;
-} else if (file === "data-url") {
-  // Return as data URL
-  const encoded = Buffer.from(logoSvg).toString("base64");
-  return `data:image/svg+xml;base64,${encoded}`;
-} else if (file === "base64") {
-  // Return just the base64 encoded string
-  return Buffer.from(logoSvg).toString("base64");
-}
+if (!logoSvg || !logoSvg.includes("<svg")) return null;
 ---
 
-{
-  hasLogo && file === "svg" && link && isBackend && (
-    <>
-      <a class="flex sm:hidden w-10" href={link} title="Go to home page" set:html={logoSvgIcon} />
-      <a class="hidden sm:flex" href={link} title="Go to home page" set:html={logoSvg} />
-    </>
-  )
-}
-{
-  hasLogo && file === "svg" && link && !isBackend && (
-    <a href={link} title="Go to home page" set:html={logoSvg} />
-  )
-}
-{hasLogo && file === "svg" && !link && <div set:html={logoSvg} />}
+<a
+  href={validLink}
+  title="Go to home page"
+  class={`logo-svg-wrapper w-40 ${className}`.trim()}
+  set:html={logoSvg}
+/>

@@ -54,7 +54,7 @@ export default defineConfig({
       // "process.env.BIRD_ORIGIN": JSON.stringify(env.BIRD_ORIGIN),
       // "process.env.CHAT_PORT": JSON.stringify(env.CHAT_PORT),
       "process.env.COMPANY_LOGO_DARK": JSON.stringify(env.COMPANY_LOGO_DARK),
-      "process.env.COMPANY_LOGO_LIGHT": JSON.stringify(env.COMPANY_LOGO_LIGHT),
+      "process.env.COMPANY_LOGO": JSON.stringify(env.COMPANY_LOGO),
       "process.env.EMAIL_API_KEY": JSON.stringify(env.EMAIL_API_KEY),
       // "process.env.EMAIL_LOGO_LIGHT": JSON.stringify(env.EMAIL_LOGO_LIGHT),
       "process.env.EMAIL_PROVIDER": JSON.stringify(env.EMAIL_PROVIDER),
