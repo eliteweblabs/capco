@@ -1,0 +1,49 @@
+---
+/**
+ * Start Page
+ * Previously used by StudioCMS for database initialization.
+ * Now redirects to setup if no admins exist, dashboard for authenticated users, or home for guests.
+ */
+import { checkAuth } from "../lib/auth";
+import { supabaseAdmin } from "../lib/supabase-admin";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+
+// Check if any admin users exist
+let hasAdmins = false;
+try {
+  const { count, error } = await supabaseAdmin
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("role", "Admin");
+  
+  console.log("[START] Admin check result:", { count, error: error?.message });
+  
+  if (!error && count !== null) {
+    hasAdmins = count > 0;
+  } else {
+    // If query fails, assume no admins
+    hasAdmins = false;
+  }
+} catch (error) {
+  console.error("[START] Exception checking admin count:", error);
+  // On error, assume no admins to allow setup
+  hasAdmins = false;
+}
+
+console.log("[START] Final state:", { hasAdmins, currentUser: currentUser?.email });
+
+// If no admins exist, redirect to setup
+if (!hasAdmins) {
+  console.log("[START] No admins found, redirecting to /setup");
+  return Astro.redirect("/setup");
+}
+
+// Redirect authenticated users to dashboard
+if (currentUser && session) {
+  return Astro.redirect("/dashboard");
+}
+
+// Redirect guests to home
+return Astro.redirect("/");
+---
