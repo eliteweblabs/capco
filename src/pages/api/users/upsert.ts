@@ -73,25 +73,7 @@ interface UserData {
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    // Check authentication
-    const { isAuth, currentUser } = await checkAuth(cookies);
-    if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Check if user has permission to create/update users
-    const userRole = currentUser.profile?.role;
-    if (userRole !== "Admin" && userRole !== "Staff") {
-      return new Response(JSON.stringify({ error: "Insufficient permissions" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Parse request body with better error handling
+    // Parse request body first to check if this is a setup scenario
     let body;
     try {
       const bodyText = await request.text();
@@ -151,6 +133,46 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
+    }
+
+    // Check authentication and permissions
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    
+    // Check if any admin users exist
+    const { count: adminCount } = await supabaseAdmin
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "Admin");
+    
+    const hasAdmins = (adminCount || 0) > 0;
+    
+    // Check if request is from setup page (allow unauthenticated admin creation from setup page)
+    const referer = request.headers.get("referer") || "";
+    const isFromSetupPage = referer.includes("/setup");
+    
+    // Allow unauthenticated requests if:
+    // 1. Creating Admin role AND no admins exist (initial setup), OR
+    // 2. Creating Admin role AND request is from setup page (additional admin creation)
+    const isSetupScenario = !userData.id && userData.role === "Admin" && (!hasAdmins || isFromSetupPage);
+    
+    if (!isAuth || !currentUser) {
+      if (!isSetupScenario) {
+        return new Response(JSON.stringify({ error: "Authentication required" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      // Allow unauthenticated admin creation during setup or from setup page
+      console.log("📡 [USERS-UPSERT] Allowing unauthenticated admin creation (setup scenario)");
+    } else {
+      // Check if authenticated user has permission to create/update users
+      const userRole = currentUser.profile?.role;
+      if (userRole !== "Admin" && userRole !== "Staff") {
+        return new Response(JSON.stringify({ error: "Insufficient permissions" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
     }
 
     console.log(`📡 [USERS-UPSERT] ${userData.id ? "Updating" : "Creating"} user:`, userData.email);

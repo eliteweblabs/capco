@@ -6,7 +6,7 @@ import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
 import react from "@astrojs/react";
-import studiocms from "studiocms";
+// import studiocms from "studiocms"; // Disabled - not in use, causing SDK initialization errors
 
 // Load environment variables
 import { loadEnv } from "vite";
@@ -27,7 +27,7 @@ export default defineConfig({
   adapter: node({
     mode: "standalone",
   }),
-  integrations: [tailwind(), react(), studiocms()],
+  integrations: [tailwind(), react()], // studiocms() disabled - not in use
   i18n: {
     defaultLocale: "en",
     locales: ["en", "es"],

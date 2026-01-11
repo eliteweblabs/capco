@@ -1,0 +1,23 @@
+---
+/**
+ * Admin Dashboard Index
+ * Redirects to the main admin dashboard (Global Activity)
+ */
+import { checkAuth } from "../../lib/auth";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+// Redirect to login if not authenticated
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+
+// Check if user is admin
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+// Redirect to main admin dashboard
+return Astro.redirect("/admin/global-activity");
+---

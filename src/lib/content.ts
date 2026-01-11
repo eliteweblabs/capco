@@ -10,6 +10,7 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import matter from "gray-matter";
+import { supabaseAdmin } from "./supabase-admin";
 
 // Cache for performance
 const cache = new Map<string, any>();
@@ -206,7 +207,38 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
     return cache.get(cacheKey);
   }
 
-  // 1. Try environment variable override first (allows per-deployment customization)
+  // 0. Try database first (CMS - highest priority for per-deployment customization)
+  if (supabaseAdmin) {
+    try {
+      const clientId = process.env.RAILWAY_PROJECT_NAME || null;
+      const { data: dbPage, error } = await supabaseAdmin
+        .from("cms_pages")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .or(`client_id.is.null,client_id.eq.${clientId}`)
+        .order("client_id", { ascending: false }) // Client-specific takes priority
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && dbPage) {
+        const pageContent: PageContent = {
+          title: dbPage.title || slug,
+          description: dbPage.description || "",
+          template: dbPage.template || "default",
+          content: dbPage.content || "",
+          ...(dbPage.frontmatter || {}),
+        };
+        cache.set(cacheKey, pageContent);
+        console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`);
+        return pageContent;
+      }
+    } catch (error) {
+      console.warn(`⚠️ [CONTENT] Error loading ${slug} from database:`, error);
+    }
+  }
+
+  // 1. Try environment variable override (allows per-deployment customization)
   const envJson = process.env[`PAGE_${slugUpper}_JSON`];
   if (envJson) {
     try {

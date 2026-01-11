@@ -16,12 +16,23 @@ function loadSvgFile(): string {
       .replace(/\s+/g, " ")
       .trim();
 
-    // Fix dark mode: use currentColor for fills
+    // Fix dark mode: remove inline fill attributes and use class-based fills
     svg = svg
       .replace(/@media\s*\(prefers-color-scheme:\s*dark\)\s*\{[^}]*\}/gi, "")
       .replace(/\.fill\s*\{[^}]*fill:\s*#[^;]+[^}]*\}/gi, ".fill { fill: currentColor; }")
       .replace(/\}\s*\}/g, "}")
-      .replace(/fill="#231f20"|fill="#000"|fill="#fff"|fill="[^"]*"/gi, 'class="fill"');
+      // Remove all inline fill attributes from path elements (but keep class="fill" if present)
+      .replace(/<path\s+([^>]*)\s+fill="[^"]*"([^>]*)>/gi, '<path $1$2>')
+      .replace(/<path\s+fill="[^"]*"\s+([^>]*)>/gi, '<path $1>')
+      // Ensure paths have class="fill" if they don't already
+      .replace(/<path\s+([^>]*?)(?:\s+class="[^"]*")?([^>]*)>/gi, (match, p1, p2) => {
+        if (!match.includes('class=')) {
+          return `<path class="fill" ${p1}${p2}>`;
+        }
+        return match.replace(/class="([^"]*)"/gi, (m, classes) => {
+          return classes.includes('fill') ? m : `class="${classes} fill"`;
+        });
+      });
 
     return svg;
   } catch {
@@ -29,10 +40,33 @@ function loadSvgFile(): string {
   }
 }
 
+// Process SVG from env var or string to remove inline fills
+function processSvg(svg: string): string {
+  if (!svg || !svg.includes("<svg")) return svg;
+  
+  return svg
+    // Remove inline fill attributes from path elements
+    .replace(/<path\s+([^>]*)\s+fill="[^"]*"([^>]*)>/gi, '<path $1$2>')
+    .replace(/<path\s+fill="[^"]*"\s+([^>]*)>/gi, '<path $1>')
+    // Ensure paths have class="fill"
+    .replace(/<path\s+([^>]*?)(?:\s+class="[^"]*")?([^>]*)>/gi, (match) => {
+      if (!match.includes('class=')) {
+        return match.replace(/<path\s+/, '<path class="fill" ');
+      }
+      if (!match.includes('class="fill"') && !match.includes("class='fill'")) {
+        return match.replace(/class="([^"]*)"/gi, (m, classes) => {
+          return `class="${classes} fill"`;
+        });
+      }
+      return match;
+    });
+}
+
 // Get logo: prefer env var if set, otherwise use file
 // This allows Railway variables to override the default file
 const svgFromFile = loadSvgFile();
-const logoSvg = companyData.globalCompanyLogo || svgFromFile || "";
+const logoSvgRaw = companyData.globalCompanyLogo || svgFromFile || "";
+const logoSvg = processSvg(logoSvgRaw);
 
 // Props
 export interface Props {
@@ -61,3 +95,26 @@ if (!logoSvg || !logoSvg.includes("<svg")) return null;
   class={`logo-svg-wrapper w-40 ${className}`.trim()}
   set:html={logoSvg}
 />
+
+<script>
+  // Remove any remaining inline fill attributes on client side
+  document.addEventListener("DOMContentLoaded", () => {
+    const logoWrappers = document.querySelectorAll(".logo-svg-wrapper");
+    logoWrappers.forEach((wrapper) => {
+      const svg = wrapper.querySelector("svg");
+      if (!svg) return;
+      
+      const paths = svg.querySelectorAll("path");
+      paths.forEach((path) => {
+        // Remove inline fill attribute if present
+        if (path.hasAttribute("fill") && path.getAttribute("fill") !== "fill") {
+          path.removeAttribute("fill");
+        }
+        // Ensure class="fill" is present
+        if (!path.classList.contains("fill")) {
+          path.classList.add("fill");
+        }
+      });
+    });
+  });
+</script>

@@ -1,0 +1,670 @@
+---
+/**
+ * CMS Admin Page
+ * Manage page content stored in Supabase database
+ */
+import { checkAuth } from "../../lib/auth";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+import App from "../../components/common/App.astro";
+import Button from "../../components/common/Button.astro";
+import { globalCompanyData } from "../api/global/global-company-data";
+import { globalClasses } from "../api/global/global-classes";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
+import matter from "gray-matter";
+import { getPageContent } from "../../lib/content";
+
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+// Redirect to login if not authenticated
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+
+// Check if user is admin
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyLogo,
+  globalCompanyLogoDark,
+  globalCompanyLogoLight,
+} = globalCompanyData();
+
+const { globalInputClasses } = globalClasses();
+
+// Fetch existing CMS pages from database
+let cmsPages: any[] = [];
+try {
+  const baseUrl = Astro.url.origin;
+  const response = await fetch(`${baseUrl}/api/cms/pages`);
+  if (response.ok) {
+    const data = await response.json();
+    cmsPages = data.pages || [];
+  }
+} catch (error) {
+  console.error("Error fetching CMS pages:", error);
+}
+
+// Fetch existing markdown files (recursively from content/pages/)
+let markdownPages: Array<{ slug: string; title: string; source: string; path: string }> = [];
+try {
+  const contentDir = join(process.cwd(), "content", "pages");
+  if (existsSync(contentDir)) {
+    const fs = require("fs");
+    
+    // Recursive function to find all markdown files
+    function findMarkdownFiles(dir: string, basePath: string = ""): Array<{ file: string; path: string }> {
+      const results: Array<{ file: string; path: string }> = [];
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      
+      for (const item of items) {
+        const fullPath = join(dir, item.name);
+        const relativePath = basePath ? `${basePath}/${item.name}` : item.name;
+        
+        if (item.isDirectory()) {
+          // Recursively search subdirectories
+          results.push(...findMarkdownFiles(fullPath, relativePath));
+        } else if (item.isFile() && item.name.endsWith(".md")) {
+          results.push({ file: item.name, path: relativePath });
+        }
+      }
+      
+      return results;
+    }
+    
+    const mdFiles = findMarkdownFiles(contentDir);
+    
+    markdownPages = mdFiles.map(({ file, path }) => {
+      // Slug is the path without .md extension, using / as separator
+      const slug = path.replace(/\.md$/, "").replace(/\//g, "/");
+      const filePath = join(contentDir, path);
+      try {
+        const fileContent = readFileSync(filePath, "utf-8");
+        const { data } = matter(fileContent);
+        return {
+          slug,
+          title: data.title || slug,
+          source: "markdown",
+          path: path,
+        };
+      } catch (error) {
+        return {
+          slug,
+          title: slug,
+          source: "markdown",
+          path: path,
+        };
+      }
+    });
+  }
+} catch (error) {
+  console.error("Error reading markdown files:", error);
+}
+
+// Mark which markdown pages are already in the database
+const dbSlugs = new Set(cmsPages.map((p) => p.slug));
+const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
+---
+
+<App
+  title="CMS Management"
+  description="Manage page content"
+  {currentUser}
+  {session}
+  {supabase}
+  isBackend={true}
+  {globalCompanyName}
+  {globalCompanySlogan}
+  {globalCompanyLogo}
+  {globalCompanyLogoDark}
+  {globalCompanyLogoLight}
+>
+  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="px-4 py-6 sm:px-0">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">CMS Management</h1>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          Manage page content stored in the database. Database pages override markdown files. Changes take effect immediately.
+        </p>
+      </div>
+
+      <!-- Info Box -->
+      <div class="mb-6 space-y-3">
+        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <p class="text-sm text-blue-800 dark:text-blue-200">
+            <strong>How it works:</strong> Content is loaded in this order: <strong>Database</strong> → Markdown Files → Defaults.
+            Pages in the database will override markdown files with the same slug.
+          </p>
+        </div>
+        <div class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <p class="text-sm text-green-800 dark:text-green-200">
+            <strong>✨ Component Shortcodes:</strong> Embed Astro components directly in markdown using <code class="bg-white dark:bg-gray-800 px-1 rounded">&lt;ComponentName prop="value" /&gt;</code> syntax.
+            Examples: <code class="bg-white dark:bg-gray-800 px-1 rounded">&lt;Hero title="Welcome" /&gt;</code>, <code class="bg-white dark:bg-gray-800 px-1 rounded">&lt;ContactForm /&gt;</code>, <code class="bg-white dark:bg-gray-800 px-1 rounded">&lt;GoogleMap lat="37.7749" lng="-122.4194" /&gt;</code>.
+            Components are automatically discovered from <code>src/components/common/</code> and <code>src/features/*/</code>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="mb-6 flex gap-3 flex-wrap items-center">
+        <Button
+          id="create-page-btn"
+          variant="primary"
+          icon="plus"
+        >
+          Create New Page
+        </Button>
+        {markdownPages.length > 0 && (
+          <>
+            <Button
+              id="import-all-markdown-btn"
+              variant="success"
+              icon="download"
+            >
+              📥 Import All Markdown ({markdownPages.length})
+            </Button>
+            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 ml-2">
+              <span class="mr-1">💡</span>
+              <span>
+                {markdownOnlyPages.length > 0 
+                  ? `${markdownOnlyPages.length} not imported yet` 
+                  : `All ${markdownPages.length} already imported (will update existing)`}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+
+      <!-- Markdown Files Section (if any exist) -->
+      {markdownOnlyPages.length > 0 && (
+        <div class="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <h2 class="text-lg font-semibold mb-3 text-yellow-900 dark:text-yellow-200">
+            📄 Markdown Files (Not in Database)
+          </h2>
+          <p class="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
+            These pages exist as markdown files but aren't in the database yet. Import them to enable database editing.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {markdownOnlyPages.map((page) => (
+              <div class="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-yellow-200 dark:border-yellow-700">
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-sm text-gray-900 dark:text-white truncate">{page.title}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 truncate">/{page.slug}</div>
+                  {page.path && page.path !== `${page.slug}.md` && (
+                    <div class="text-xs text-gray-400 dark:text-gray-500 truncate" title={page.path}>
+                      📁 {page.path}
+                    </div>
+                  )}
+                </div>
+                <button
+                  class="ml-2 text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 import-markdown-btn flex-shrink-0"
+                  data-slug={page.slug}
+                  data-path={page.path}
+                >
+                  Import
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <!-- Pages List -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Slug
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Title
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Template
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Source
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Status
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {cmsPages.length === 0 ? (
+              <tr>
+                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                  No pages in database. {markdownOnlyPages.length > 0 ? "Import markdown files above or create a new page." : "Create your first page above."}
+                </td>
+              </tr>
+            ) : (
+              cmsPages.map((page) => (
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    {page.slug}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {page.title || "—"}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {page.template || "default"}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      Database
+                    </span>
+                    {markdownPages.some((mp) => mp.slug === page.slug) && (
+                      <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400" title="Also exists as markdown file">
+                        📄 MD
+                      </span>
+                    )}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    {page.is_active ? (
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Active
+                      </span>
+                    ) : (
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                        Inactive
+                      </span>
+                    )}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      class="text-primary hover:text-primary-dark mr-4 edit-page-btn"
+                      data-slug={page.slug}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 delete-page-btn"
+                      data-slug={page.slug}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Editor Modal -->
+  <div
+    id="page-editor-modal"
+    class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+  >
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4" id="modal-title">
+          Create New Page
+        </h3>
+        <form id="page-form" class="space-y-4">
+          <div>
+            <label for="page-slug" class="block text-sm font-medium mb-2">
+              Slug (URL path)
+            </label>
+            <input
+              type="text"
+              id="page-slug"
+              name="slug"
+              required
+              class={globalInputClasses}
+              placeholder="about"
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              The URL path for this page (e.g., "about" becomes "/about")
+            </p>
+          </div>
+
+          <div>
+            <label for="page-title" class="block text-sm font-medium mb-2">
+              Title
+            </label>
+            <input
+              type="text"
+              id="page-title"
+              name="title"
+              class={globalInputClasses}
+              placeholder="About Us"
+            />
+          </div>
+
+          <div>
+            <label for="page-description" class="block text-sm font-medium mb-2">
+              Description
+            </label>
+            <input
+              type="text"
+              id="page-description"
+              name="description"
+              class={globalInputClasses}
+              placeholder="Page meta description"
+            />
+          </div>
+
+          <div>
+            <label for="page-template" class="block text-sm font-medium mb-2">
+              Template
+            </label>
+            <select id="page-template" name="template" class={globalInputClasses}>
+              <option value="default">Default</option>
+              <option value="fullwidth">Full Width</option>
+              <option value="minimal">Minimal</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="page-content" class="block text-sm font-medium mb-2">
+              Content (Markdown)
+            </label>
+            <details class="mb-2">
+              <summary class="text-sm text-primary cursor-pointer hover:underline">
+                💡 Component Shortcodes Available
+              </summary>
+              <div class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-gray-700 dark:text-gray-300">
+                <p class="font-semibold mb-2">You can embed components directly in your markdown:</p>
+                <div class="space-y-1 font-mono text-xs">
+                  <div>&lt;Hero title="Welcome" /&gt;</div>
+                  <div>&lt;ContactForm /&gt;</div>
+                  <div>&lt;GoogleMap lat="37.7749" lng="-122.4194" zoom="12" /&gt;</div>
+                  <div>&lt;Testimonials count="3" /&gt;</div>
+                  <div>&lt;CalComBooking /&gt;</div>
+                  <div>&lt;VapiChatWidget /&gt;</div>
+                  <div>&lt;PricingCard title="Pro" price="99" /&gt;</div>
+                </div>
+                <p class="mt-2 text-xs">
+                  Components are automatically discovered from <code>src/components/common/</code> and <code>src/features/*/</code>.
+                  Use PascalCase component names with props: <code>&lt;ComponentName prop="value" /&gt;</code>
+                </p>
+              </div>
+            </details>
+            <textarea
+              id="page-content"
+              name="content"
+              required
+              rows="15"
+              class={globalInputClasses}
+              placeholder="# Page Title&#10;&#10;Your markdown content here...&#10;&#10;You can embed components:&#10;&lt;Hero title="Welcome" /&gt;&#10;&lt;ContactForm /&gt;"
+            ></textarea>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Markdown content for this page. Supports standard Markdown syntax and component shortcodes.
+            </p>
+          </div>
+
+          <div id="form-error" class="hidden text-red-600 dark:text-red-400 text-sm"></div>
+          <div id="form-success" class="hidden text-green-600 dark:text-green-400 text-sm"></div>
+
+          <div class="flex justify-end gap-3">
+            <Button
+              type="button"
+              id="cancel-btn"
+              variant="secondary"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+            >
+              Save Page
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script define:vars={{ markdownOnlyPages, markdownPages }}>
+    let editingSlug = null;
+    const markdownPagesList = markdownPages || [];
+    const markdownOnlyPagesList = markdownOnlyPages || [];
+
+    function initCMS() {
+      const modal = document.getElementById("page-editor-modal");
+      const form = document.getElementById("page-form");
+      const createBtn = document.getElementById("create-page-btn");
+      const cancelBtn = document.getElementById("cancel-btn");
+      const errorDiv = document.getElementById("form-error");
+      const successDiv = document.getElementById("form-success");
+      const modalTitle = document.getElementById("modal-title");
+
+      if (!modal || !form || !createBtn) {
+        console.error("[CMS] Required elements not found:", { modal, form, createBtn });
+        return;
+      }
+
+      // Open modal for creating new page
+      createBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("[CMS] Create button clicked");
+        editingSlug = null;
+        form.reset();
+        if (modalTitle) modalTitle.textContent = "Create New Page";
+        modal.classList.remove("hidden");
+        if (errorDiv) errorDiv.classList.add("hidden");
+        if (successDiv) successDiv.classList.add("hidden");
+      });
+
+      // Open modal for editing existing page
+      document.querySelectorAll(".edit-page-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const slug = btn.getAttribute("data-slug");
+          if (!slug) return;
+
+          editingSlug = slug;
+          if (modalTitle) modalTitle.textContent = `Edit Page: ${slug}`;
+
+          try {
+            const response = await fetch(`/api/cms/pages?slug=${slug}`);
+            const data = await response.json();
+            const page = data.page;
+
+            if (page) {
+              const slugInput = document.getElementById("page-slug");
+              const titleInput = document.getElementById("page-title");
+              const descInput = document.getElementById("page-description");
+              const templateSelect = document.getElementById("page-template");
+              const contentTextarea = document.getElementById("page-content");
+              
+              if (slugInput) slugInput.value = page.slug || "";
+              if (titleInput) titleInput.value = page.title || "";
+              if (descInput) descInput.value = page.description || "";
+              if (templateSelect) templateSelect.value = page.template || "default";
+              if (contentTextarea) contentTextarea.value = page.content || "";
+            }
+
+            modal.classList.remove("hidden");
+            if (errorDiv) errorDiv.classList.add("hidden");
+            if (successDiv) successDiv.classList.add("hidden");
+          } catch (error) {
+            console.error("Error loading page:", error);
+            alert("Failed to load page data");
+          }
+        });
+      });
+
+      // Delete page
+      document.querySelectorAll(".delete-page-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const slug = btn.getAttribute("data-slug");
+          if (!slug) return;
+
+          if (!confirm(`Are you sure you want to delete the page "${slug}"?`)) {
+            return;
+          }
+
+          try {
+            const response = await fetch(`/api/cms/pages?slug=${slug}`, {
+              method: "DELETE",
+            });
+
+            if (response.ok) {
+              location.reload();
+            } else {
+              const data = await response.json();
+              alert(data.error || "Failed to delete page");
+            }
+          } catch (error) {
+            console.error("Error deleting page:", error);
+            alert("Failed to delete page");
+          }
+        });
+      });
+
+      // Close modal
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", () => {
+          modal.classList.add("hidden");
+        });
+      }
+
+      // Close modal on outside click
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.classList.add("hidden");
+        }
+      });
+
+      // Import markdown file
+      async function importMarkdownFile(slug, filePath) {
+        try {
+          const url = filePath 
+            ? `/api/cms/import-markdown?slug=${slug}&path=${encodeURIComponent(filePath)}`
+            : `/api/cms/import-markdown?slug=${slug}`;
+          const response = await fetch(url);
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || "Failed to import markdown file");
+          }
+
+          alert(`Successfully imported "${slug}" from markdown!`);
+          location.reload();
+        } catch (error) {
+          alert(`Error importing: ${error.message || error}`);
+        }
+      }
+
+      // Import all markdown files (bulk import)
+      const importAllBtn = document.getElementById("import-all-markdown-btn");
+      if (importAllBtn) {
+        importAllBtn.addEventListener("click", async () => {
+          const alreadyImported = markdownPagesList.length - markdownOnlyPagesList.length;
+          const message = alreadyImported > 0
+            ? `Import all ${markdownPagesList.length} markdown files into the database?\n\n${alreadyImported} are already imported and will be updated. This will add them to the CMS so you can edit them through this interface.`
+            : `Import all ${markdownPagesList.length} markdown files into the database?\n\nThis will add them to the CMS so you can edit them through this interface.`;
+          
+          if (!confirm(message)) {
+            return;
+          }
+
+          try {
+            importAllBtn.textContent = "Importing...";
+            importAllBtn.disabled = true;
+
+            const response = await fetch("/api/cms/import-all-markdown", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              throw new Error(result.error || "Failed to import markdown files");
+            }
+
+            if (result.errors && result.errors.length > 0) {
+              const errorList = result.errors.map((e) => `- ${e.slug}: ${e.error}`).join("\n");
+              alert(`Imported ${result.imported} files, but ${result.errors.length} failed:\n\n${errorList}`);
+            } else {
+              alert(`Successfully imported ${result.imported} markdown files!`);
+            }
+
+            // Reload page to show imported pages
+            location.reload();
+          } catch (error) {
+            alert(`Error importing files: ${error.message || error}`);
+            importAllBtn.textContent = "Import All Markdown";
+            importAllBtn.disabled = false;
+          }
+        });
+      }
+
+      // Import individual markdown file
+      document.querySelectorAll(".import-markdown-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const slug = btn.getAttribute("data-slug");
+          const filePath = btn.getAttribute("data-path");
+          if (!slug) return;
+          await importMarkdownFile(slug, filePath || undefined);
+        });
+      });
+
+      // Handle form submission
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (errorDiv) errorDiv.classList.add("hidden");
+        if (successDiv) successDiv.classList.add("hidden");
+
+        const formData = new FormData(form);
+        const data = {
+          slug: formData.get("slug"),
+          title: formData.get("title") || null,
+          description: formData.get("description") || null,
+          content: formData.get("content"),
+          template: formData.get("template") || "default",
+        };
+
+        try {
+          const response = await fetch("/api/cms/pages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || "Failed to save page");
+          }
+
+          if (successDiv) {
+            successDiv.textContent = "Page saved successfully! Reloading...";
+            successDiv.classList.remove("hidden");
+          }
+
+          setTimeout(() => {
+            location.reload();
+          }, 1000);
+        } catch (error) {
+          if (errorDiv) {
+            errorDiv.textContent = error.message || error || "An error occurred";
+            errorDiv.classList.remove("hidden");
+          }
+        }
+      });
+    }
+
+    // Initialize on DOM ready
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initCMS);
+    } else {
+      initCMS();
+    }
+  </script>
+</App>
