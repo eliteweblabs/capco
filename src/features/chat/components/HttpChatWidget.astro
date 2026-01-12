@@ -133,8 +133,14 @@ if (!currentUser || (currentRole !== "Admin" && currentRole !== "Staff")) {
     // Join chat (disabled - API not working)
     joinChat();
 
-    // Start heartbeat (disabled - API not working)
-    startHeartbeat();
+    // Start heartbeat only if chat is open (from cookie or user action)
+    // Delay initialization to avoid blocking page load
+    setTimeout(() => {
+      // Check again in case cookie check set isChatOpen
+      if (isChatOpen) {
+        startHeartbeat();
+      }
+    }, 3000); // Wait 3 seconds after page load before starting polling to avoid blocking initial page load
 
     isInitialized = true;
     console.log("🔔 [HTTP-CHAT] HTTP chat widget initialization complete");
@@ -161,12 +167,26 @@ if (!currentUser || (currentRole !== "Admin" && currentRole !== "Staff")) {
         resetUnreadCount();
         // Save chat state to cookie
         saveChatStateToCookie(true);
+        // Start polling when chat is opened
+        if (!heartbeatInterval && !messagePollInterval) {
+          startHeartbeat();
+        }
       } else {
         // Closing chat
         chatPanel?.classList.add("hidden");
         isChatOpen = false;
         // Save chat state to cookie
         saveChatStateToCookie(false);
+        // Stop polling when chat is closed to save resources
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+          heartbeatInterval = null;
+        }
+        if (messagePollInterval) {
+          clearInterval(messagePollInterval);
+          messagePollInterval = null;
+        }
+        consecutiveErrors = 0; // Reset error count
       }
     });
 
@@ -380,8 +400,18 @@ if (!currentUser || (currentRole !== "Admin" && currentRole !== "Staff")) {
   }
 
   // Start heartbeat to maintain connection
+  let messagePollInterval: any = null;
+  let consecutiveErrors = 0;
+  const MAX_CONSECUTIVE_ERRORS = 3;
+
   function startHeartbeat() {
+    // Only start heartbeat if chat is open
     heartbeatInterval = setInterval(async () => {
+      // Skip if chat is not open or page is not visible
+      if (!isChatOpen || document.hidden) {
+        return;
+      }
+
       try {
         const response = await fetch("/api/utils/chat", {
           method: "POST",
@@ -402,14 +432,37 @@ if (!currentUser || (currentRole !== "Admin" && currentRole !== "Staff")) {
             onlineUsers = data.onlineUsers;
             updateOnlineCount();
           }
+          consecutiveErrors = 0; // Reset error count on success
+        } else {
+          consecutiveErrors++;
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            console.warn("🔔 [HTTP-CHAT] Too many errors, stopping heartbeat");
+            if (heartbeatInterval) {
+              clearInterval(heartbeatInterval);
+              heartbeatInterval = null;
+            }
+          }
         }
       } catch (error) {
+        consecutiveErrors++;
         console.error("🔔 [HTTP-CHAT] Heartbeat error:", error);
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+          console.warn("🔔 [HTTP-CHAT] Too many errors, stopping heartbeat");
+          if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
+          }
+        }
       }
-    }, 30000); // Every 30 seconds
+    }, 60000); // Every 60 seconds (reduced from 30)
 
-    // Also poll for new messages every 5 seconds
-    setInterval(async () => {
+    // Poll for new messages only when chat is open and page is visible
+    messagePollInterval = setInterval(async () => {
+      // Skip if chat is not open or page is not visible
+      if (!isChatOpen || document.hidden) {
+        return;
+      }
+
       try {
         const response = await fetch("/api/utils/chat", {
           method: "POST",
@@ -444,11 +497,39 @@ if (!currentUser || (currentRole !== "Admin" && currentRole !== "Staff")) {
               });
             }
           }
+          consecutiveErrors = 0; // Reset error count on success
+        } else {
+          consecutiveErrors++;
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            console.warn("🔔 [HTTP-CHAT] Too many errors, stopping message polling");
+            if (messagePollInterval) {
+              clearInterval(messagePollInterval);
+              messagePollInterval = null;
+            }
+          }
         }
       } catch (error) {
+        consecutiveErrors++;
         console.error("🔔 [HTTP-CHAT] Message polling error:", error);
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+          console.warn("🔔 [HTTP-CHAT] Too many errors, stopping message polling");
+          if (messagePollInterval) {
+            clearInterval(messagePollInterval);
+            messagePollInterval = null;
+          }
+        }
       }
-    }, 30000); // Every 30 seconds (reduced from 5 seconds)
+    }, 60000); // Every 60 seconds (reduced from 30, only when chat is open)
+
+    // Pause polling when page becomes hidden
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        console.log("🔔 [HTTP-CHAT] Page hidden, pausing polling");
+      } else if (isChatOpen) {
+        console.log("🔔 [HTTP-CHAT] Page visible, resuming polling");
+        consecutiveErrors = 0; // Reset error count when page becomes visible
+      }
+    });
   }
 
   // Update online count and show usernames

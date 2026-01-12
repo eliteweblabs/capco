@@ -51,8 +51,32 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const body = await request.json();
-    const { action, userId, userName, userRole, message } = body;
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error("❌ [CHAT-API] JSON parse error:", parseError);
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const { action, userId, userName, userRole, message } = body || {};
+    
+    // Validate required fields
+    if (!action) {
+      return new Response(
+        JSON.stringify({ error: "Missing required field: action" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
     // console.log("🔔 [CHAT-API] Request data:", {
     //   action,
     //   userId,
@@ -274,18 +298,36 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
     }
-  } catch (error) {
-    console.error("❌ [CHAT-API] Error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Credentials": "true",
-      },
-    });
+  } catch (error: any) {
+    console.error("❌ [CHAT-API] Unexpected error:", error);
+    console.error("❌ [CHAT-API] Error stack:", error?.stack);
+    console.error("❌ [CHAT-API] Error name:", error?.name);
+    console.error("❌ [CHAT-API] Error message:", error?.message);
+    
+    // Provide more helpful error messages
+    let errorMessage = "Internal server error";
+    if (error?.message?.includes("JSON")) {
+      errorMessage = "Invalid request format";
+    } else if (error?.message) {
+      errorMessage = error.message;
+    }
+    
+    return new Response(
+      JSON.stringify({ 
+        error: errorMessage,
+        details: import.meta.env.DEV ? error?.message : undefined 
+      }), 
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Credentials": "true",
+        },
+      }
+    );
   }
 };
 

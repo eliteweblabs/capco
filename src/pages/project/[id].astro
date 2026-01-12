@@ -31,20 +31,8 @@ if (!id || id === "dashboard" || id === "new") {
   }
 }
 
-console.log("🏗️ [PROJECT] Project ID:", id);
-console.log("🏗️ [PROJECT] Project ID type:", typeof id);
-console.log("🏗️ [PROJECT] Project ID length:", id?.length);
-console.log("🏗️ [PROJECT] Astro.params:", Astro.params);
-console.log("🏗️ [PROJECT] Astro.url:", Astro.url);
-console.log("🏗️ [PROJECT] Astro.url.pathname:", Astro.url.pathname);
-console.log("🏗️ [PROJECT] Astro.url.search:", Astro.url.search);
-console.log("🏗️ [PROJECT] Astro.url.hash:", Astro.url.hash);
-console.log("🏗️ [PROJECT] Astro.request.url:", Astro.request.url);
-console.log("🏗️ [PROJECT] Astro.request.method:", Astro.request.method);
-console.log(
-  "🏗️ [PROJECT] Astro.request.headers.get('referer'):",
-  Astro.request.headers.get("referer")
-);
+// Debug logging (can be enabled for troubleshooting)
+// console.log("🏗️ [PROJECT] Project ID:", id);
 import App from "../../components/common/App.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
 import SlidingPillNav from "../../components/common/SlidingPillNav.astro";
@@ -114,21 +102,23 @@ if (id) {
     const baseUrl = Astro.url.origin;
     const apiUrl = `${baseUrl}/api/projects/get?id=${numericId}`;
 
-    console.log("🏗️ [PROJECT] Fetching project from API:", apiUrl);
+    // Fetch project data directly via internal API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     const response = await fetch(apiUrl, {
       headers: {
         Cookie: Astro.request.headers.get("Cookie") || "",
       },
+      signal: controller.signal,
     });
 
-    console.log("🏗️ [PROJECT] Response status:", response.status);
+    clearTimeout(timeoutId);
 
     if (response.ok) {
       const data = await response.json();
-      // console.log("🏗️ [PROJECT] Data:", data);
       if (data.data) {
         project = data.data;
-        console.log("✅ [PROJECT] Project loaded:", project?.title);
       } else {
         console.error("🏗️ [PROJECT] API returned error:", data.error);
         return Astro.redirect("/dashboard");
@@ -137,9 +127,12 @@ if (id) {
       console.error("🏗️ [PROJECT] Error fetching project:", response.status, response.statusText);
       return Astro.redirect("/dashboard");
     }
-  } catch (error) {
-    console.error("🏗️ [PROJECT] Error fetching project:", error);
-
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      console.error("🏗️ [PROJECT] Request timeout while fetching project");
+    } else {
+      console.error("🏗️ [PROJECT] Error fetching project:", error?.message || error);
+    }
     return Astro.redirect("/dashboard");
   }
 } else {
@@ -156,28 +149,48 @@ let currentStatusColor = "gray";
 let currentStatusProjectAction: string | null = null;
 
 // Initialize data arrays (same as dashboard)
-// Fetch project statuses using the unified API (POST to avoid URL length limits)
-const statusResponse = await fetch(`${Astro.url.origin}/api/status/get`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Cookie: Astro.request.headers.get("Cookie") || "",
-  },
-  body: JSON.stringify({ project }),
-});
+// Fetch project statuses using the unified API (GET with projectId for better performance)
+let statusData: Record<number, any> = {};
+let statusOptions: Array<{ value: string; label: string }> = [];
 
-if (!statusResponse.ok) {
-  console.error(
-    "❌ [PROJECT-PAGE] Status API failed:",
-    statusResponse.status,
-    statusResponse.statusText
+try {
+  const statusController = new AbortController();
+  const statusTimeoutId = setTimeout(() => statusController.abort(), 8000); // 8 second timeout
+
+  const statusResponse = await fetch(
+    `${Astro.url.origin}/api/status/get?projectId=${project?.id || ""}`,
+    {
+      method: "GET",
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+      signal: statusController.signal,
+    }
   );
-  throw new Error(`Status API failed: ${statusResponse.status}`);
-}
 
-const statusResponseData = await statusResponse.json();
-const statusData = statusResponseData.statuses || [];
-const statusOptions = statusResponseData.selectOptions || [];
+  clearTimeout(statusTimeoutId);
+
+  if (statusResponse.ok) {
+    const statusResponseData = await statusResponse.json();
+    statusData = statusResponseData.statuses || {};
+    statusOptions = statusResponseData.selectOptions || [];
+  } else {
+    console.warn(
+      "⚠️ [PROJECT-PAGE] Status API failed:",
+      statusResponse.status,
+      statusResponse.statusText,
+      "- continuing with empty status data"
+    );
+    // Don't throw - allow page to load without status data
+  }
+} catch (error: any) {
+  if (error.name === "AbortError") {
+    console.warn("⚠️ [PROJECT-PAGE] Status API timeout - continuing without status data");
+  } else {
+    console.warn("⚠️ [PROJECT-PAGE] Status API error:", error?.message || error, "- continuing without status data");
+  }
+  // Don't throw - allow page to load without status data
+}
 
 // Get current status data by keying into the project status code (API already handles role-based filtering)
 if (currentStatusInt && statusData[currentStatusInt]) {
@@ -214,8 +227,6 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   globalCompanyEmail={project?.authorProfile?.email}
   globalCompanyWebsite={project?.authorProfile?.website}
   globalCompanyLogo={project?.authorProfile?.logo}
-  globalCompanyLogoDark={project?.authorProfile?.logoDark}
-  globalCompanyLogoLight={project?.authorProfile?.logoLight}
   {globalInputClasses}
   {primaryTextClasses}
   {secondaryTextClasses}

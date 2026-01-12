@@ -104,13 +104,39 @@ const enableSearch = !!searchText;
 
 // Find the selected option to get the button text
 const selectedOption = optionsArray.find((option) => option.value === selectedValue);
-const displayText = selectedOption?.label || placeholder;
+// Use buttonText if provided (highest priority), then selectedOption label, then placeholder
+// buttonText is often calculated from project data and is more reliable after refresh
+const displayText = buttonText || selectedOption?.label || placeholder;
 ---
 
 {
   component === "UserIcon" ? (
-    <a {id}>
-      <UserIcon users={[project?.assignedToProfile]} {...componentProps} />
+    <a {id} title={displayText || selectedValue || placeholder}>
+      {project?.assignedToProfile ? (
+        <UserIcon users={[project.assignedToProfile]} {...componentProps} />
+      ) : selectedValue ? (
+        // Fallback: Show button text if profile not loaded but value exists
+        <Button
+          variant={buttonVariant || "outline"}
+          class={buttonClass || ""}
+          size="sm"
+          icon={icon || "user"}
+          iconPosition="left"
+        >
+          {displayText}
+        </Button>
+      ) : (
+        // No value selected - show placeholder
+        <Button
+          variant={buttonVariant || "outline"}
+          class={buttonClass || ""}
+          size="sm"
+          icon={icon || "chevron-down"}
+          iconPosition="right"
+        >
+          {placeholder}
+        </Button>
+      )}
     </a>
   ) : (
     <Button
@@ -194,11 +220,6 @@ const displayText = selectedOption?.label || placeholder;
         selectedValue: currentValue,
         showCloseButton: showCloseButton,
         showCancelButton: showCancelButton,
-        valueField: valueField,
-        labelField: labelField,
-        fetchOnLoad: fetchOnLoad,
-        searchText: searchText,
-        searchPlaceholder: searchPlaceholder,
         globalInputClasses: globalInputClasses,
         onSelect: (value, label) => {
           // Update hidden input

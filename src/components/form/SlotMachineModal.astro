@@ -1513,8 +1513,11 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   // Observe changes to the hidden input and update button text
   // Use a function that works both on DOMContentLoaded and immediately
   function setupInputObserver() {
-    const hiddenInput = document.getElementById(`${id}-value`) as HTMLInputElement;
-    const triggerButton = document.getElementById(id) as HTMLElement;
+    const hiddenInput = document.getElementById(`${id}-value`);
+    const triggerButton = document.getElementById(id);
+    
+    if (!hiddenInput || !(hiddenInput instanceof HTMLInputElement)) return;
+    if (!triggerButton || !(triggerButton instanceof HTMLElement)) return;
     
     if (!hiddenInput || !triggerButton) {
       // If elements don't exist yet, try again after a short delay
@@ -1610,7 +1613,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     
     // Clean up interval when component is removed (if needed)
     // Store interval ID for potential cleanup
-    (hiddenInput as any).__valueCheckInterval = valueCheckInterval;
+    if (hiddenInput instanceof HTMLInputElement) {
+      (hiddenInput as any).__valueCheckInterval = valueCheckInterval;
+    }
     
     // Initial update in case value is already set
     if (hiddenInput.value) {

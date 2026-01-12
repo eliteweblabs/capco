@@ -1,57 +1,98 @@
-export const globalCompanyData = () => {
-  // Get logos from environment variables
-  // Support separate logos for light/dark mode, with fallback to single logo
-  const logoLight =
-    process.env.GLOBAL_COMPANY_LOGO_SVG_LIGHT || process.env.GLOBAL_COMPANY_LOGO_SVG || "";
-  const logoDark =
-    process.env.GLOBAL_COMPANY_LOGO_SVG_DARK || process.env.GLOBAL_COMPANY_LOGO_SVG || "";
-  const logo = process.env.GLOBAL_COMPANY_LOGO_SVG || ""; // Fallback for backward compatibility
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 
-  const iconLight =
-    process.env.GLOBAL_COMPANY_ICON_SVG_LIGHT || process.env.GLOBAL_COMPANY_ICON_SVG || "";
-  const iconDark =
-    process.env.GLOBAL_COMPANY_ICON_SVG_DARK || process.env.GLOBAL_COMPANY_ICON_SVG || "";
-  const icon = process.env.GLOBAL_COMPANY_ICON_SVG || ""; // Fallback for backward compatibility
+// Cache for settings to avoid repeated DB calls
+let settingsCache: Record<string, string> | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_TTL = 60000; // 1 minute cache
+
+/**
+ * Get all settings from database, with caching
+ */
+async function getAllSettings(): Promise<Record<string, string>> {
+  const now = Date.now();
+  
+  // Return cached settings if still valid
+  if (settingsCache && (now - cacheTimestamp) < CACHE_TTL) {
+    return settingsCache;
+  }
+
+  // Only try to fetch from database if supabaseAdmin is available
+  if (!supabaseAdmin) {
+    return {};
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("global_settings")
+      .select("key, value");
+
+    if (!error && data) {
+      settingsCache = data.reduce((acc, item) => {
+        acc[item.key] = item.value || "";
+        return acc;
+      }, {} as Record<string, string>);
+      cacheTimestamp = now;
+      return settingsCache;
+    }
+  } catch (error) {
+    console.warn("[global-company-data] Failed to fetch settings:", error);
+  }
+
+  return {};
+}
+
+/**
+ * Clear settings cache (call after updates)
+ */
+export function clearSettingsCache() {
+  settingsCache = null;
+  cacheTimestamp = 0;
+}
+
+export const globalCompanyData = async () => {
+  // Try to get settings from database first
+  const settings = await getAllSettings();
+
+  // Helper function to get setting with env fallback
+  const get = (key: string, envKey?: string) => {
+    return settings[key] || (envKey ? process.env[envKey] : undefined) || "";
+  };
+
+  // Get logo and icon - single SVG with CSS for theme support
+  const logo = get("logo", "GLOBAL_COMPANY_LOGO_SVG") || "";
+  const icon = get("icon", "GLOBAL_COMPANY_ICON_SVG") || "";
 
   // Website URL - ensure it has protocol
-  const websiteRaw = process.env.RAILWAY_PUBLIC_DOMAIN;
+  const websiteRaw = get("website", "RAILWAY_PUBLIC_DOMAIN");
   const website = websiteRaw?.startsWith("http") ? websiteRaw : `https://${websiteRaw}`;
-
-  // Logo URL for OG images - derived from website
 
   // Favicon paths - consistent format with leading slash
   const faviconSvgPath = "/img/favicon.svg";
   const faviconPngPath = "/img/favicon.png";
 
   return {
-    globalCompanyName: process.env.RAILWAY_PROJECT_NAME,
-    globalCompanySlogan: process.env.GLOBAL_COMPANY_SLOGAN,
-    globalCompanyAddress: process.env.GLOBAL_COMPANY_ADDRESS,
-    globalCompanyPhone: process.env.VAPI_PHONE_NUMBER,
-    globalCompanyEmail: process.env.GLOBAL_COMPANY_EMAIL,
-    globalCompanyWebsite: process.env.RAILWAY_PUBLIC_DOMAIN,
+    globalCompanyName: get("company_name", "RAILWAY_PROJECT_NAME"),
+    globalCompanySlogan: get("slogan", "GLOBAL_COMPANY_SLOGAN"),
+    globalCompanyAddress: get("address", "GLOBAL_COMPANY_ADDRESS"),
+    globalCompanyPhone: get("phone", "VAPI_PHONE_NUMBER"),
+    globalCompanyEmail: get("email", "GLOBAL_COMPANY_EMAIL"),
+    globalCompanyWebsite: get("website", "RAILWAY_PUBLIC_DOMAIN"),
 
-    // SVG markup for logos (used in UI components)
-    // Support light/dark mode variants
-    globalCompanyLogo: logo, // Fallback for backward compatibility
-    globalCompanyLogoLight: logoLight,
-    globalCompanyLogoDark: logoDark,
+    // SVG markup for logo (used in UI components)
+    // Single SVG with CSS in <defs> or <style> for theme support
+    globalCompanyLogo: logo,
 
-    // Logo URL for OG images and social sharing (must be a file path, not SVG markup)
-
-    // SVG markup for icons (used for favicons, converted to data URIs)
-    // Support light/dark mode variants
-    globalCompanyIcon: icon, // Fallback for backward compatibility
-    globalCompanyIconLight: iconLight,
-    globalCompanyIconDark: iconDark,
+    // SVG markup for icon (used for favicons, converted to data URIs)
+    // Single SVG with CSS for theme support
+    globalCompanyIcon: icon,
 
     // Favicon file paths (used in manifest.json and link tags)
     globalCompanyFaviconSvg: faviconSvgPath,
     globalCompanyFaviconPng: faviconPngPath,
 
     // Theme colors
-    primaryColor: process.env.GLOBAL_COLOR_PRIMARY,
-    secondaryColor: process.env.GLOBAL_COLOR_SECONDARY,
+    primaryColor: get("primary_color", "GLOBAL_COLOR_PRIMARY"),
+    secondaryColor: get("secondary_color", "GLOBAL_COLOR_SECONDARY"),
   };
 };
 

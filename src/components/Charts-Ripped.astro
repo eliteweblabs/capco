@@ -157,8 +157,8 @@
 
   // Chart initialization functions
   function initClientGrowthChart() {
-    const clientGrowthCtx = document.getElementById("clientGrowthChart") as HTMLCanvasElement;
-    if (!clientGrowthCtx) {
+    const clientGrowthCtx = document.getElementById("clientGrowthChart");
+    if (!clientGrowthCtx || !(clientGrowthCtx instanceof HTMLCanvasElement)) {
       console.error("Client growth chart canvas not found");
       return null;
     }
@@ -214,8 +214,8 @@
   }
 
   function initPlansProcessedChart() {
-    const plansProcessedCtx = document.getElementById("plansProcessedChart") as HTMLCanvasElement;
-    if (!plansProcessedCtx) {
+    const plansProcessedCtx = document.getElementById("plansProcessedChart");
+    if (!plansProcessedCtx || !(plansProcessedCtx instanceof HTMLCanvasElement)) {
       console.error("Plans processed chart canvas not found");
       return null;
     }
@@ -270,8 +270,8 @@
   function initSystemPerformanceChart() {
     const systemPerformanceCtx = document.getElementById(
       "systemPerformanceChart"
-    ) as HTMLCanvasElement;
-    if (!systemPerformanceCtx) {
+    );
+    if (!systemPerformanceCtx || !(systemPerformanceCtx instanceof HTMLCanvasElement)) {
       console.error("System performance chart canvas not found");
       return null;
     }
@@ -324,8 +324,8 @@
   }
 
   function initFireSafetyChart() {
-    const fireSafetyCtx = document.getElementById("fireSafetyChart") as HTMLCanvasElement;
-    if (!fireSafetyCtx) {
+    const fireSafetyCtx = document.getElementById("fireSafetyChart");
+    if (!fireSafetyCtx || !(fireSafetyCtx instanceof HTMLCanvasElement)) {
       console.error("Fire safety chart canvas not found");
       return null;
     }
@@ -380,40 +380,49 @@
     });
     return chart;
   }
-</script>
 
-<script>
-  const clientGrowthChart = initClientGrowthChart();
-  const plansProcessedChart = initPlansProcessedChart();
-  const systemPerformanceChart = initSystemPerformanceChart();
-  const fireSafetyChart = initFireSafetyChart();
-
-  // Live data simulation
-  function updateLiveData() {
-    const liveClients = document.getElementById("liveClients");
-    const livePlans = document.getElementById("livePlans");
-    const lastUpdated = document.getElementById("lastUpdated");
-
-    if (liveClients && livePlans && lastUpdated) {
-      liveClients.textContent = (Math.floor(Math.random() * 50) + 350).toString();
-      livePlans.textContent = (Math.floor(Math.random() * 20) + 15).toString();
-      lastUpdated.textContent = new Date().toLocaleTimeString();
-    }
+  // Initialize charts when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCharts);
+  } else {
+    initializeCharts();
   }
 
-  // Update live data every 5 seconds
-  // setInterval(updateLiveData, 5000);
-  updateLiveData(); // Initial call
+  function initializeCharts() {
+    const clientGrowthChart = initClientGrowthChart();
+    const plansProcessedChart = initPlansProcessedChart();
+    const systemPerformanceChart = initSystemPerformanceChart();
+    const fireSafetyChart = initFireSafetyChart();
 
-  // Add hover effects to charts
-  document.querySelectorAll("canvas").forEach((canvas) => {
-    canvas.addEventListener("mouseenter", () => {
-      (canvas as HTMLElement).style.transform = "scale(1.02)";
-      (canvas as HTMLElement).style.transition = "transform 0.3s ease";
-    });
+    // Live data simulation
+    function updateLiveData() {
+      const liveClients = document.getElementById("liveClients");
+      const livePlans = document.getElementById("livePlans");
+      const lastUpdated = document.getElementById("lastUpdated");
 
-    canvas.addEventListener("mouseleave", () => {
-      (canvas as HTMLElement).style.transform = "scale(1)";
+      if (liveClients && livePlans && lastUpdated) {
+        liveClients.textContent = (Math.floor(Math.random() * 50) + 350).toString();
+        livePlans.textContent = (Math.floor(Math.random() * 20) + 15).toString();
+        lastUpdated.textContent = new Date().toLocaleTimeString();
+      }
+    }
+
+    // Update live data every 5 seconds
+    // setInterval(updateLiveData, 5000);
+    updateLiveData(); // Initial call
+
+    // Add hover effects to charts
+    document.querySelectorAll("canvas").forEach((canvas) => {
+      if (canvas instanceof HTMLElement) {
+        canvas.addEventListener("mouseenter", () => {
+          canvas.style.transform = "scale(1.02)";
+          canvas.style.transition = "transform 0.3s ease";
+        });
+
+        canvas.addEventListener("mouseleave", () => {
+          canvas.style.transform = "scale(1)";
+        });
+      }
     });
-  });
+  }
 </script>

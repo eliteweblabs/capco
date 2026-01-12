@@ -1,0 +1,691 @@
+---
+/**
+ * Global Settings Page
+ * Edit and manage global company branding settings (colors, logos, icons, company info)
+ * Settings are stored in database, with fallback to environment variables
+ */
+import { checkAuth } from "../../lib/auth";
+import App from "../../components/common/App.astro";
+import Button from "../../components/common/Button.astro";
+import { globalCompanyData } from "../api/global/global-company-data";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+// Redirect to login if not authenticated
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+
+// Check if user is admin
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const companyData = await globalCompanyData();
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+
+// Check which settings exist in database
+import { supabaseAdmin } from "../../lib/supabase-admin";
+let dbSettings: Record<string, boolean> = {};
+if (supabaseAdmin) {
+  try {
+    const { data } = await supabaseAdmin
+      .from("global_settings")
+      .select("key");
+    
+    if (data) {
+      dbSettings = data.reduce((acc, item) => {
+        acc[item.key] = true;
+        return acc;
+      }, {} as Record<string, boolean>);
+    }
+  } catch (error) {
+    console.warn("[settings] Failed to check database settings:", error);
+  }
+}
+
+// Helper to check if setting is from database
+const isFromDatabase = (key: string) => dbSettings[key] || false;
+
+// Get current values (from database or env vars)
+const settings = {
+  // Company Info
+  companyName: companyData.globalCompanyName || "",
+  slogan: companyData.globalCompanySlogan || "",
+  address: companyData.globalCompanyAddress || "",
+  phone: companyData.globalCompanyPhone || "",
+  email: companyData.globalCompanyEmail || "",
+  website: companyData.globalCompanyWebsite || "",
+  
+  // Colors
+  primaryColor: companyData.primaryColor || "#825BDD",
+  secondaryColor: companyData.secondaryColor || "#0ea5e9",
+  
+  // Logos & Icons (single SVG with CSS for theme support)
+  logo: companyData.globalCompanyLogo || "",
+  icon: companyData.globalCompanyIcon || "",
+};
+
+---
+
+<App
+  title="Global Settings"
+  description="Manage company branding and global settings"
+  {currentUser}
+  {session}
+  globalCompanyName={companyData.globalCompanyName}
+  globalCompanySlogan={companyData.globalCompanySlogan}
+  globalCompanyLogo={companyData.globalCompanyLogo}
+>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold mb-2">Global Settings</h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        Manage company branding, colors, logos, and other global settings. Changes are saved to the database and take effect immediately.
+      </p>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="success-message" class="hidden mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+      <p class="text-sm text-green-800 dark:text-green-200"></p>
+    </div>
+    <div id="error-message" class="hidden mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <p class="text-sm text-red-800 dark:text-red-200"></p>
+    </div>
+
+    <!-- Info Box -->
+    <div class="mb-6 space-y-3">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <p class="text-sm text-blue-800 dark:text-blue-200 mb-2">
+          <strong>✅ Database Storage:</strong> Settings are now stored in the database and can be edited here. 
+          Environment variables are used as fallback if database values are not set.
+        </p>
+        <p class="text-xs text-blue-700 dark:text-blue-300 mb-2">
+          <strong>💡 Tip:</strong> Changes take effect immediately. Colors will regenerate the full palette on next page load.
+        </p>
+        <div class="flex items-start gap-2 text-xs text-blue-700 dark:text-blue-300">
+          <span>💾</span>
+          <span>Indicates settings stored in database (vs environment variables)</span>
+        </div>
+      </div>
+    </div>
+
+    <form id="settings-form" class="space-y-6">
+      <!-- Company Information -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Company Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="company_name" class="block text-sm font-medium mb-2">
+              Company Name
+              {isFromDatabase("company_name") && (
+                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+              )}
+            </label>
+            <input
+              type="text"
+              id="company_name"
+              name="company_name"
+              value={settings.companyName}
+              class={globalInputClasses}
+              placeholder="Your Company Name"
+            />
+          </div>
+          
+          <div>
+            <label for="slogan" class="block text-sm font-medium mb-2">
+              Slogan
+              {isFromDatabase("slogan") && (
+                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+              )}
+            </label>
+            <input
+              type="text"
+              id="slogan"
+              name="slogan"
+              value={settings.slogan}
+              class={globalInputClasses}
+              placeholder="Your company slogan"
+            />
+          </div>
+          
+          <div>
+            <label for="address" class="block text-sm font-medium mb-2">
+              Address
+              {isFromDatabase("address") && (
+                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+              )}
+            </label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              value={settings.address}
+              class={globalInputClasses}
+              placeholder="123 Main St, City, ST 12345"
+            />
+          </div>
+          
+          <div>
+            <label for="phone" class="block text-sm font-medium mb-2">
+              Phone
+              {isFromDatabase("phone") && (
+                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+              )}
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={settings.phone}
+              class={globalInputClasses}
+              placeholder="+1234567890"
+            />
+          </div>
+          
+          <div>
+            <label for="email" class="block text-sm font-medium mb-2">
+              Email
+              {isFromDatabase("email") && (
+                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+              )}
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={settings.email}
+              class={globalInputClasses}
+              placeholder="contact@company.com"
+            />
+          </div>
+          
+          <div>
+            <label for="website" class="block text-sm font-medium mb-2">
+              Website
+              {isFromDatabase("website") && (
+                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+              )}
+            </label>
+            <input
+              type="url"
+              id="website"
+              name="website"
+              value={settings.website}
+              class={globalInputClasses}
+              placeholder="https://yourcompany.com"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Brand Colors -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Brand Colors</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="primary_color" class="block text-sm font-medium mb-2">
+              Primary Color
+              {isFromDatabase("primary_color") && (
+                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+              )}
+            </label>
+            <div class="flex items-center gap-3">
+              <input
+                type="color"
+                id="primary_color_picker"
+                value={settings.primaryColor}
+                class="w-16 h-16 rounded border-2 border-gray-300 dark:border-gray-600 cursor-pointer"
+              />
+              <div class="flex-1">
+                <input
+                  type="text"
+                  id="primary_color"
+                  name="primary_color"
+                  value={settings.primaryColor}
+                  class={globalInputClasses + " font-mono"}
+                  placeholder="#825BDD"
+                  pattern="^#[0-9A-Fa-f]{6}$"
+                />
+                <p class="text-xs text-gray-500 mt-1">Hex color code (e.g., #825BDD)</p>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label for="secondary_color" class="block text-sm font-medium mb-2">
+              Secondary Color
+              {isFromDatabase("secondary_color") && (
+                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+              )}
+            </label>
+            <div class="flex items-center gap-3">
+              <input
+                type="color"
+                id="secondary_color_picker"
+                value={settings.secondaryColor}
+                class="w-16 h-16 rounded border-2 border-gray-300 dark:border-gray-600 cursor-pointer"
+              />
+              <div class="flex-1">
+                <input
+                  type="text"
+                  id="secondary_color"
+                  name="secondary_color"
+                  value={settings.secondaryColor}
+                  class={globalInputClasses + " font-mono"}
+                  placeholder="#0ea5e9"
+                  pattern="^#[0-9A-Fa-f]{6}$"
+                />
+                <p class="text-xs text-gray-500 mt-1">Hex color code (e.g., #0ea5e9)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logos -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Company Logo (SVG)</h2>
+        <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700">
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            <strong>💡 Tip:</strong> Use a single SVG with CSS styles in <code>&lt;defs&gt;</code> or <code>&lt;style&gt;</code> to handle both light and dark modes. 
+            Use <code>currentColor</code> or media queries like <code>@media (prefers-color-scheme: dark)</code> for automatic theme switching.
+          </p>
+        </div>
+        <div>
+          <label for="logo" class="block text-sm font-medium mb-2">
+            Logo SVG
+            {isFromDatabase("logo") && (
+              <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+            )}
+          </label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <textarea
+                id="logo"
+                name="logo"
+                rows={8}
+                class={globalInputClasses + " font-mono text-xs"}
+                placeholder={`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <defs>
+    <style>
+      .logo-fill { fill: currentColor; }
+      @media (prefers-color-scheme: dark) {
+        .logo-fill { fill: #ffffff; }
+      }
+    </style>
+  </defs>
+  <path class="logo-fill" d="..."/>
+</svg>`}
+              >{settings.logo}</textarea>
+              <p class="text-xs text-gray-500 mt-1">
+                Complete SVG markup with CSS for theme support. Use <code>currentColor</code> or CSS media queries for automatic light/dark mode.
+              </p>
+            </div>
+            <div class="space-y-3">
+              <div id="logo-preview-light" class="flex items-center justify-center p-4 bg-white rounded border border-gray-200">
+                <p class="text-xs text-gray-500 mb-2 absolute top-1 left-2">Light Mode</p>
+                {settings.logo ? (
+                  <div 
+                    class="max-w-full max-h-32 mt-4"
+                    set:html={settings.logo}
+                  ></div>
+                ) : (
+                  <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
+                )}
+              </div>
+              <div id="logo-preview-dark" class="flex items-center justify-center p-4 bg-gray-900 rounded border border-gray-700">
+                <p class="text-xs text-gray-400 mb-2 absolute top-1 left-2">Dark Mode</p>
+                {settings.logo ? (
+                  <div 
+                    class="max-w-full max-h-32 mt-4"
+                    set:html={settings.logo}
+                  ></div>
+                ) : (
+                  <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Icons -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Company Icon (SVG)</h2>
+        <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700">
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            <strong>💡 Tip:</strong> Use a single SVG with CSS for theme support. The icon is used for favicons and app icons.
+          </p>
+        </div>
+        <div>
+          <label for="icon" class="block text-sm font-medium mb-2">
+            Icon SVG
+            {isFromDatabase("icon") && (
+              <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
+            )}
+          </label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <textarea
+                id="icon"
+                name="icon"
+                rows={8}
+                class={globalInputClasses + " font-mono text-xs"}
+                placeholder={`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <style>
+      .icon-fill { fill: currentColor; }
+      @media (prefers-color-scheme: dark) {
+        .icon-fill { fill: #ffffff; }
+      }
+    </style>
+  </defs>
+  <path class="icon-fill" d="..."/>
+</svg>`}
+              >{settings.icon}</textarea>
+              <p class="text-xs text-gray-500 mt-1">
+                Square SVG icon (used for favicon). Use CSS for automatic theme support.
+              </p>
+            </div>
+            <div class="space-y-3">
+              <div id="icon-preview-light" class="flex items-center justify-center p-4 bg-white rounded border border-gray-200 relative">
+                <p class="text-xs text-gray-500 mb-2 absolute top-1 left-2">Light Mode</p>
+                {settings.icon ? (
+                  <div 
+                    class="w-16 h-16 mt-4"
+                    set:html={settings.icon}
+                  ></div>
+                ) : (
+                  <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
+                )}
+              </div>
+              <div id="icon-preview-dark" class="flex items-center justify-center p-4 bg-gray-900 rounded border border-gray-700 relative">
+                <p class="text-xs text-gray-400 mb-2 absolute top-1 left-2">Dark Mode</p>
+                {settings.icon ? (
+                  <div 
+                    class="w-16 h-16 mt-4"
+                    set:html={settings.icon}
+                  ></div>
+                ) : (
+                  <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="flex justify-between items-center">
+        <a href="/admin/cms" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+          ← Back to CMS
+        </a>
+        <div class="flex gap-3">
+          <Button 
+            type="button" 
+            variant="secondary" 
+            id="reset-form-btn"
+          >
+            Reset
+          </Button>
+          <Button type="submit" variant="primary" id="save-settings-btn">
+            Save Settings
+          </Button>
+        </div>
+      </div>
+    </form>
+  </div>
+</App>
+
+<script>
+  const form = document.getElementById("settings-form") as HTMLFormElement;
+  const successMessage = document.getElementById("success-message");
+  const errorMessage = document.getElementById("error-message");
+  const saveBtn = document.getElementById("save-settings-btn") as HTMLButtonElement;
+
+  // Sync color pickers with text inputs
+  const primaryColorPicker = document.getElementById("primary_color_picker") as HTMLInputElement;
+  const primaryColorInput = document.getElementById("primary_color") as HTMLInputElement;
+  const secondaryColorPicker = document.getElementById("secondary_color_picker") as HTMLInputElement;
+  const secondaryColorInput = document.getElementById("secondary_color") as HTMLInputElement;
+
+  primaryColorPicker?.addEventListener("input", (e) => {
+    primaryColorInput.value = (e.target as HTMLInputElement).value;
+  });
+
+  primaryColorInput?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+      primaryColorPicker.value = value;
+    }
+  });
+
+  secondaryColorPicker?.addEventListener("input", (e) => {
+    secondaryColorInput.value = (e.target as HTMLInputElement).value;
+  });
+
+  secondaryColorInput?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+      secondaryColorPicker.value = value;
+    }
+  });
+
+  // Live preview for logos and icons
+  function updatePreview(textareaId: string, previewSelector: string) {
+    const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+    const preview = document.querySelector(previewSelector) as HTMLElement;
+    
+    if (textarea && preview) {
+      textarea.addEventListener("input", (e) => {
+        const svgContent = (e.target as HTMLTextAreaElement).value.trim();
+        if (svgContent && svgContent.startsWith("<svg")) {
+          preview.innerHTML = svgContent;
+          preview.querySelector("p")?.remove();
+        } else {
+          preview.innerHTML = '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
+        }
+      });
+    }
+  }
+
+  // Set up live previews for both light and dark mode
+  function updatePreviewBoth(textareaId: string, lightSelector: string, darkSelector: string, isIcon: boolean = false) {
+    const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+    const lightPreview = document.querySelector(lightSelector) as HTMLElement;
+    const darkPreview = document.querySelector(darkSelector) as HTMLElement;
+    
+    if (textarea && lightPreview && darkPreview) {
+      textarea.addEventListener("input", (e) => {
+        const svgContent = (e.target as HTMLTextAreaElement).value.trim();
+        if (svgContent && svgContent.startsWith("<svg")) {
+          // Determine size class based on whether it's an icon or logo
+          const sizeClass = isIcon ? "w-16 h-16" : "max-w-full max-h-32";
+          
+          // Update light preview
+          const lightContent = lightPreview.querySelector("div");
+          if (lightContent) {
+            lightContent.innerHTML = svgContent;
+            lightPreview.querySelector("p.text-xs")?.remove();
+          } else {
+            // Remove placeholder text and add SVG
+            const placeholder = lightPreview.querySelector("p");
+            if (placeholder) placeholder.remove();
+            lightPreview.innerHTML = `<p class="text-xs text-gray-500 mb-2 absolute top-1 left-2">Light Mode</p><div class="${sizeClass} mt-4">${svgContent}</div>`;
+          }
+          
+          // Update dark preview
+          const darkContent = darkPreview.querySelector("div");
+          if (darkContent) {
+            darkContent.innerHTML = svgContent;
+            darkPreview.querySelector("p.text-xs")?.remove();
+          } else {
+            // Remove placeholder text and add SVG
+            const placeholder = darkPreview.querySelector("p");
+            if (placeholder) placeholder.remove();
+            darkPreview.innerHTML = `<p class="text-xs text-gray-400 mb-2 absolute top-1 left-2">Dark Mode</p><div class="${sizeClass} mt-4">${svgContent}</div>`;
+          }
+        } else {
+          // Reset to placeholder
+          const lightLabel = lightPreview.querySelector("p.text-xs.text-gray-500");
+          const darkLabel = darkPreview.querySelector("p.text-xs.text-gray-400");
+          lightPreview.innerHTML = lightLabel ? `${lightLabel.outerHTML}<p class="text-xs text-gray-400 text-center">Preview will appear here</p>` : '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
+          darkPreview.innerHTML = darkLabel ? `${darkLabel.outerHTML}<p class="text-xs text-gray-400 text-center">Preview will appear here</p>` : '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
+        }
+      });
+    }
+  }
+
+  updatePreviewBoth("logo", "#logo-preview-light", "#logo-preview-dark", false);
+  updatePreviewBoth("icon", "#icon-preview-light", "#icon-preview-dark", true);
+
+  // Reset button
+  const resetBtn = document.getElementById("reset-form-btn");
+  resetBtn?.addEventListener("click", () => {
+    if (confirm("Reset all fields to current saved values? This will discard any unsaved changes.")) {
+      window.location.reload();
+    }
+  });
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Hide previous messages
+    successMessage?.classList.add("hidden");
+    errorMessage?.classList.add("hidden");
+
+    // Disable submit button
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving...";
+    }
+
+    // Collect form data
+    const formData = new FormData(form);
+    const settings: Record<string, string> = {};
+
+    // Map form field names to database keys
+    const fieldMapping: Record<string, string> = {
+      company_name: "company_name",
+      slogan: "slogan",
+      address: "address",
+      phone: "phone",
+      email: "email",
+      website: "website",
+      primary_color: "primary_color",
+      secondary_color: "secondary_color",
+      logo: "logo",
+      icon: "icon",
+    };
+
+    // Validation errors
+    const validationErrors: string[] = [];
+
+    for (const [formKey, dbKey] of Object.entries(fieldMapping)) {
+      const value = formData.get(formKey);
+      if (value !== null && value !== undefined) {
+        const trimmedValue = value.toString().trim();
+        
+        // Validate colors
+        if (dbKey.includes("color") && trimmedValue) {
+          if (!/^#[0-9A-Fa-f]{6}$/.test(trimmedValue)) {
+            validationErrors.push(`${formKey.replace("_", " ")} must be a valid hex color (e.g., #825BDD)`);
+            continue;
+          }
+        }
+        
+        // Validate email
+        if (dbKey === "email" && trimmedValue) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(trimmedValue)) {
+            validationErrors.push("Email must be a valid email address");
+            continue;
+          }
+        }
+        
+        // Validate URL
+        if (dbKey === "website" && trimmedValue) {
+          try {
+            new URL(trimmedValue.startsWith("http") ? trimmedValue : `https://${trimmedValue}`);
+          } catch {
+            validationErrors.push("Website must be a valid URL");
+            continue;
+          }
+        }
+        
+        // Validate SVG (basic check)
+        if ((dbKey.includes("logo") || dbKey.includes("icon")) && trimmedValue) {
+          if (!trimmedValue.trim().startsWith("<svg")) {
+            validationErrors.push(`${formKey.replace("_", " ")} must be valid SVG markup starting with <svg>`);
+            continue;
+          }
+        }
+        
+        settings[dbKey] = trimmedValue;
+      }
+    }
+
+    // Show validation errors
+    if (validationErrors.length > 0) {
+      if (errorMessage) {
+        const messageText = errorMessage.querySelector("p");
+        if (messageText) {
+          messageText.textContent = "Validation errors:\n" + validationErrors.join("\n");
+        }
+        errorMessage.classList.remove("hidden");
+      }
+      
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save Settings";
+      }
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/settings/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || result.message || "Failed to save settings");
+      }
+
+      // Show success message
+      if (successMessage) {
+        const messageText = successMessage.querySelector("p");
+        if (messageText) {
+          messageText.textContent = "Settings saved successfully! Changes will take effect immediately.";
+        }
+        successMessage.classList.remove("hidden");
+      }
+
+      // Reload page after 1 second to show updated values
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error: any) {
+      // Show error message
+      if (errorMessage) {
+        const messageText = errorMessage.querySelector("p");
+        if (messageText) {
+          messageText.textContent = error.message || "An error occurred while saving settings.";
+        }
+        errorMessage.classList.remove("hidden");
+      }
+
+      // Re-enable submit button
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save Settings";
+      }
+    }
+  });
+</script>
