@@ -1,19 +1,24 @@
 import React from 'react';
-import ReactFlow, { 
+import { 
+    ReactFlow,
     MiniMap, 
     Controls, 
-    Background, 
+    Background,
+    BackgroundVariant,
     useNodesState, 
     useEdgesState,
     addEdge,
+    Handle,
+    Position
+} from '@xyflow/react';
+import type {
     Connection,
     Edge,
     Node,
     NodeTypes,
-    Handle,
-    Position
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+    ConnectionLineType
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
 // Custom Node Component matching your design
 const CustomNode = ({ data, selected }: any) => {
@@ -130,11 +135,11 @@ const initialEdges: Edge[] = [
 ];
 
 export default function ReactFlowDemo() {
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+    const [nodes, , onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
     const onConnect = (params: Connection) => {
-        setEdges((eds) => addEdge({
+        setEdges((eds: Edge[]) => addEdge({
             ...params,
             type: 'smoothstep',
             animated: true,
@@ -153,11 +158,11 @@ export default function ReactFlowDemo() {
                 nodeTypes={nodeTypes}
                 fitView
                 attributionPosition="bottom-left"
-                connectionLineType="smoothstep"
+                connectionLineType={"smoothstep" as ConnectionLineType}
             >
                 <Controls />
                 <MiniMap 
-                    nodeColor={(node) => {
+                    nodeColor={(node: Node) => {
                         if (node.data?.status === 'active') return '#48bb78';
                         if (node.data?.status === 'pending') return '#ed8936';
                         return '#4a5568';
@@ -167,7 +172,7 @@ export default function ReactFlowDemo() {
                         border: '1px solid #4a5568'
                     }}
                 />
-                <Background variant="dots" gap={20} size={1} color="#4a5568" />
+                <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
             </ReactFlow>
         </div>
     );

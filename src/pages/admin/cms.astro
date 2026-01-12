@@ -4,7 +4,6 @@
  * Manage page content stored in Supabase database
  */
 import { checkAuth } from "../../lib/auth";
-import { supabaseAdmin } from "../../lib/supabase-admin";
 import App from "../../components/common/App.astro";
 import Button from "../../components/common/Button.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
@@ -31,11 +30,97 @@ const {
   globalCompanyName,
   globalCompanySlogan,
   globalCompanyLogo,
-  globalCompanyLogoDark,
-  globalCompanyLogoLight,
-} = globalCompanyData();
+} = await globalCompanyData();
 
 const { globalInputClasses } = globalClasses();
+
+// Discover available components for the accordion
+function discoverComponents() {
+  // Use import.meta.glob to discover components (similar to MarkdownPage.astro)
+  const commonComponents = import.meta.glob("../../components/common/*.astro", { eager: false });
+  const featureComponents = import.meta.glob("../../features/**/*.astro", { eager: false });
+  
+  const components: Array<{ name: string; category: string; path: string }> = [];
+  
+  // Process common components
+  Object.keys(commonComponents).forEach((path) => {
+    const fileName = path.split("/").pop()?.replace(".astro", "");
+    if (fileName && fileName[0] === fileName[0].toUpperCase()) {
+      // Only include PascalCase components (exclude utilities, layouts, etc.)
+      const excluded = ["App", "Layout", "MarkdownPage", "Aside", "Navbar", "Footer", "Header", "Preloader"];
+      if (!excluded.includes(fileName)) {
+        components.push({
+          name: fileName,
+          category: "Common Components",
+          path: path.replace("../../", ""),
+        });
+      }
+    }
+  });
+  
+  // Process feature components
+  Object.keys(featureComponents).forEach((path) => {
+    const fileName = path.split("/").pop()?.replace(".astro", "");
+    if (fileName && fileName[0] === fileName[0].toUpperCase()) {
+      // Extract feature name from path (handles nested paths like features/calendar/components/CalComBooking.astro)
+      const pathParts = path.split("/");
+      const featureIndex = pathParts.findIndex((p) => p === "features");
+      if (featureIndex !== -1 && pathParts[featureIndex + 1]) {
+        let featureName: string | undefined;
+        
+        // Check if next part is "components" (nested structure)
+        if (pathParts[featureIndex + 2] === "components") {
+          // Path: features/calendar/components/CalComBooking.astro
+          featureName = pathParts[featureIndex + 1];
+        } else {
+          // Path: features/ai-chat-agent/AIChatAgent.astro
+          featureName = pathParts[featureIndex + 1];
+        }
+        
+        if (featureName && featureName !== "components") {
+          // Format feature name (e.g., "ai-chat-agent" -> "AI Chat Agent")
+          const formattedFeatureName = featureName
+            .split("-")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+          
+          components.push({
+            name: fileName,
+            category: `${formattedFeatureName} Features`,
+            path: path.replace("../../", ""),
+          });
+        }
+      }
+    }
+  });
+  
+  // Group by category
+  const grouped = components.reduce((acc, comp) => {
+    if (!acc[comp.category]) {
+      acc[comp.category] = [];
+    }
+    acc[comp.category].push(comp);
+    return acc;
+  }, {} as Record<string, Array<{ name: string; category: string; path: string }>>);
+  
+  // Sort categories and components
+  const sortedCategories = Object.keys(grouped).sort();
+  const sortedGrouped: Record<string, Array<{ name: string; category: string; path: string }>> = {};
+  
+  sortedCategories.forEach((category) => {
+    sortedGrouped[category] = grouped[category].sort((a, b) => a.name.localeCompare(b.name));
+  });
+  
+  return sortedGrouped;
+}
+
+const componentGroups = discoverComponents();
+
+// Separate Common Components from Features
+const commonComponents = componentGroups["Common Components"] || [];
+const featureGroups = Object.fromEntries(
+  Object.entries(componentGroups).filter(([category]) => category !== "Common Components")
+);
 
 // Fetch existing CMS pages from database
 let cmsPages: any[] = [];
@@ -121,8 +206,6 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
   {globalCompanyName}
   {globalCompanySlogan}
   {globalCompanyLogo}
-  {globalCompanyLogoDark}
-  {globalCompanyLogoLight}
 >
   <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="px-4 py-6 sm:px-0">
@@ -135,19 +218,13 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
 
       <!-- Info Box -->
       <div class="mb-6 space-y-3">
-        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div class="hidden p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p class="text-sm text-blue-800 dark:text-blue-200">
             <strong>How it works:</strong> Content is loaded in this order: <strong>Database</strong> → Markdown Files → Defaults.
             Pages in the database will override markdown files with the same slug.
           </p>
         </div>
-        <div class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <p class="text-sm text-green-800 dark:text-green-200">
-            <strong>✨ Component Shortcodes:</strong> Embed Astro components directly in markdown using <code class="bg-white dark:bg-gray-800 px-1 rounded">&lt;ComponentName prop="value" /&gt;</code> syntax.
-            Examples: <code class="bg-white dark:bg-gray-800 px-1 rounded">&lt;Hero title="Welcome" /&gt;</code>, <code class="bg-white dark:bg-gray-800 px-1 rounded">&lt;ContactForm /&gt;</code>, <code class="bg-white dark:bg-gray-800 px-1 rounded">&lt;GoogleMap lat="37.7749" lng="-122.4194" /&gt;</code>.
-            Components are automatically discovered from <code>src/components/common/</code> and <code>src/features/*/</code>.
-          </p>
-        </div>
+      
       </div>
 
       <!-- Action Buttons -->
@@ -159,6 +236,14 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
         >
           Create New Page
         </Button>
+        <a href="/admin/settings">
+          <Button
+            variant="secondary"
+            icon="cog"
+          >
+            Global Settings
+          </Button>
+        </a>
         {markdownPages.length > 0 && (
           <>
             <Button
@@ -371,34 +456,181 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
             <label for="page-content" class="block text-sm font-medium mb-2">
               Content (Markdown)
             </label>
-            <details class="mb-2">
-              <summary class="text-sm text-primary cursor-pointer hover:underline">
-                💡 Component Shortcodes Available
-              </summary>
-              <div class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-gray-700 dark:text-gray-300">
-                <p class="font-semibold mb-2">You can embed components directly in your markdown:</p>
-                <div class="space-y-1 font-mono text-xs">
-                  <div>&lt;Hero title="Welcome" /&gt;</div>
-                  <div>&lt;ContactForm /&gt;</div>
-                  <div>&lt;GoogleMap lat="37.7749" lng="-122.4194" zoom="12" /&gt;</div>
-                  <div>&lt;Testimonials count="3" /&gt;</div>
-                  <div>&lt;CalComBooking /&gt;</div>
-                  <div>&lt;VapiChatWidget /&gt;</div>
-                  <div>&lt;PricingCard title="Pro" price="99" /&gt;</div>
+            <!-- Component Shortcodes Section -->
+            <div class="mb-2 space-y-2">
+              <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                💡 Embed components in markdown: <code class="bg-white dark:bg-gray-800 px-1 rounded">&lt;ComponentName prop="value" /&gt;</code>
+              </p>
+              
+              <!-- Common Components Accordion -->
+              {commonComponents.length > 0 && (
+                <div id="modal-common-components-accordion" data-accordion="collapse" class="mb-2">
+                  <h2>
+                    <button
+                      type="button"
+                      class="flex items-center justify-between w-full p-3 text-sm font-medium text-primary border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800"
+                      data-accordion-target="#modal-common-components-body"
+                      aria-expanded="false"
+                      aria-controls="modal-common-components-body"
+                    >
+                      <span class="flex items-center gap-2">
+                        <span>📦</span>
+                        <span>Common Components ({commonComponents.length})</span>
+                      </span>
+                      <svg
+                        data-accordion-icon
+                        class="w-3 h-3 rotate-180 shrink-0"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 10 6"
+                      >
+                        <path
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5 5 1 1 5"
+                        />
+                      </svg>
+                    </button>
+                  </h2>
+                  <div
+                    id="modal-common-components-body"
+                    class="hidden"
+                    aria-labelledby="modal-common-components-heading"
+                  >
+                    <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-blue-50 dark:bg-blue-900/20">
+                      <div class="space-y-1.5 font-mono text-xs">
+                        {commonComponents.map((comp) => (
+                          <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
+                            <span class="text-primary-600 dark:text-primary-400">•</span>
+                            <code class="flex-1 break-all">
+                              &lt;{comp.name} /&gt;
+                            </code>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <p class="mt-2 text-xs">
-                  Components are automatically discovered from <code>src/components/common/</code> and <code>src/features/*/</code>.
-                  Use PascalCase component names with props: <code>&lt;ComponentName prop="value" /&gt;</code>
-                </p>
-              </div>
-            </details>
+              )}
+              
+              <!-- Features Accordion -->
+              {Object.keys(featureGroups).length > 0 && (
+                <div id="modal-feature-components-accordion" data-accordion="collapse" class="mb-2">
+                  <h2>
+                    <button
+                      type="button"
+                      class="flex items-center justify-between w-full p-3 text-sm font-medium text-primary border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800"
+                      data-accordion-target="#modal-feature-components-body"
+                      aria-expanded="false"
+                      aria-controls="modal-feature-components-body"
+                    >
+                      <span class="flex items-center gap-2">
+                        <span>⚡</span>
+                        <span>Feature Components ({Object.values(featureGroups).flat().length})</span>
+                      </span>
+                      <svg
+                        data-accordion-icon
+                        class="w-3 h-3 rotate-180 shrink-0"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 10 6"
+                      >
+                        <path
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5 5 1 1 5"
+                        />
+                      </svg>
+                    </button>
+                  </h2>
+                  <div
+                    id="modal-feature-components-body"
+                    class="hidden"
+                    aria-labelledby="modal-feature-components-heading"
+                  >
+                    <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-blue-50 dark:bg-blue-900/20">
+                      <!-- Nested Accordion for Feature Categories -->
+                      <div id="modal-feature-categories-accordion" data-accordion="collapse" class="space-y-2">
+                        {Object.entries(featureGroups).map(([category, components], categoryIndex) => (
+                          <div>
+                            <h3>
+                              <button
+                                type="button"
+                                class="flex items-center justify-between w-full p-2 text-xs font-semibold text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
+                                data-accordion-target={`#modal-feature-category-${categoryIndex}-body`}
+                                aria-expanded="false"
+                                aria-controls={`modal-feature-category-${categoryIndex}-body`}
+                              >
+                                <span>
+                                  {category} ({components.length})
+                                </span>
+                                <svg
+                                  data-accordion-icon
+                                  class="w-3 h-3 rotate-180 shrink-0"
+                                  aria-hidden="true"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 10 6"
+                                >
+                                  <path
+                                    stroke="currentColor"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5 5 1 1 5"
+                                  />
+                                </svg>
+                              </button>
+                            </h3>
+                            <div
+                              id={`modal-feature-category-${categoryIndex}-body`}
+                              class="hidden"
+                              aria-labelledby={`modal-feature-category-${categoryIndex}-heading`}
+                            >
+                              <div class="p-3 border border-t-0 border-gray-300 dark:border-gray-600 rounded-b bg-white dark:bg-gray-800">
+                                <div class="space-y-1.5 font-mono text-xs">
+                                  {components.map((comp) => (
+                                    <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
+                                      <span class="text-primary-600 dark:text-primary-400">•</span>
+                                      <code class="flex-1 break-all">
+                                        &lt;{comp.name} /&gt;
+                                      </code>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                Components discovered from <code class="bg-white dark:bg-gray-800 px-1 rounded">src/components/common/</code> and <code class="bg-white dark:bg-gray-800 px-1 rounded">src/features/*/</code>.
+              </p>
+            </div>
             <textarea
               id="page-content"
               name="content"
               required
-              rows="15"
+              rows={15}
               class={globalInputClasses}
-              placeholder="# Page Title&#10;&#10;Your markdown content here...&#10;&#10;You can embed components:&#10;&lt;Hero title="Welcome" /&gt;&#10;&lt;ContactForm /&gt;"
+              placeholder={`# Page Title
+
+Your markdown content here...
+
+You can embed components:
+<Hero title="Welcome" />
+<ContactForm />`}
             ></textarea>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Markdown content for this page. Supports standard Markdown syntax and component shortcodes.
