@@ -178,14 +178,33 @@ const { globalInputClasses } = Astro.props;
         return;
       }
 
+      // CRITICAL: Ensure Supabase client is fully initialized before initiating OAuth
+      // This ensures the code verifier will be stored properly
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Get the redirect URL based on current origin
       // IMPORTANT: For Supabase PKCE flow, we MUST use /auth/callback directly (client-side)
       // The /api/auth/callback route is only for Google People API OAuth (server-side)
       // PKCE requires localStorage access which is only available client-side
+      // 
+      // CRITICAL: The redirect URL MUST exactly match one of the URLs in Supabase's Redirect URLs list
+      // For production: https://capcofire.com/auth/callback
+      // For development: http://localhost:4321/auth/callback
+      // Both should be in the Supabase Redirect URLs list
       const redirectUrl = `${window.location.origin}/auth/callback`;
       console.log("[GOOGLE-SIGNIN] Redirect URL:", redirectUrl);
+      console.log("[GOOGLE-SIGNIN] Current origin:", window.location.origin);
+      console.log("[GOOGLE-SIGNIN] Make sure this URL is in Supabase Redirect URLs list!");
 
-      // Initiate OAuth (this will store code verifier in localStorage)
+      // CRITICAL: Ensure Supabase client is fully initialized before OAuth
+      // This ensures the code verifier will be stored properly
+      // Wait a bit longer to ensure Supabase's internal state is ready
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Initiate OAuth (this will store code verifier internally in Supabase)
+      // Note: Supabase stores the code verifier internally, not necessarily in localStorage
+      // The exchangeCodeForSession method will retrieve it automatically
+      console.log("[GOOGLE-SIGNIN] Initiating OAuth with Supabase...");
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
