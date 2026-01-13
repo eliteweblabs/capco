@@ -105,7 +105,10 @@ export const globalCompanyData = async () => {
     // Analytics settings
     plausibleDomain: get("plausible_domain", "PLAUSIBLE_DOMAIN") || "",
     plausibleScriptUrl: get("plausible_script_url", "PLAUSIBLE_SCRIPT_URL") || "",
-    plausibleSiteId: get("plausible_site_id", "PLAUSIBLE_SITE_ID") || (get("website", "RAILWAY_PUBLIC_DOMAIN")?.replace(/^https?:\/\//, "") || ""),
+    plausibleSiteId:
+      get("plausible_site_id", "PLAUSIBLE_SITE_ID") ||
+      get("website", "RAILWAY_PUBLIC_DOMAIN")?.replace(/^https?:\/\//, "") ||
+      "",
   };
 };
 
