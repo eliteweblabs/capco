@@ -4,6 +4,8 @@
  * Displays clickable appointment times when assistant returns availability
  */
 
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
+
 interface Props {
   assistantId?: string;
   publicKey?: string;
@@ -14,13 +16,16 @@ interface Props {
   theme?: "light" | "dark";
 }
 
+// Get company data from database
+const companyData = await globalCompanyData();
+
 const {
   assistantId = import.meta.env.PUBLIC_VAPI_ASSISTANT_ID || "",
   publicKey = import.meta.env.PUBLIC_VAPI_KEY || "",
   basic = false,
-  primaryColor = import.meta.env.GLOBAL_COLOR_PRIMARY || "#000000",
-  secondaryColor = import.meta.env.GLOBAL_COLOR_SECONDARY || "#000000",
-  globalCompanyName = import.meta.env.GLOBAL_COMPANY_NAME || "",
+  primaryColor = Astro.props.primaryColor || companyData.primaryColor || "#000000",
+  secondaryColor = Astro.props.secondaryColor || companyData.secondaryColor || "#000000",
+  globalCompanyName = Astro.props.globalCompanyName || companyData.globalCompanyName || "",
 } = Astro.props;
 
 const themeCookie = Astro.cookies.get("theme");

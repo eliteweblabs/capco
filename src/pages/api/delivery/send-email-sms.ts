@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { globalCompanyData } from "../global/global-company-data";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -9,7 +10,8 @@ export const POST: APIRoute = async ({ request }) => {
     const carrier2 = formData.get("carrier2") as string;
     const message = formData.get("message") as string;
     const contactInfo = formData.get("contact_info") as string;
-    const globalCompanyName = import.meta.env.RAILWAY_PROJECT_NAME;
+    const companyData = await globalCompanyData();
+    const globalCompanyName = companyData.globalCompanyName;
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
     const fromEmail = import.meta.env.FROM_EMAIL;
     const fromName = import.meta.env.FROM_NAME;

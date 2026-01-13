@@ -339,9 +339,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           },
         });
       } else {
+        // Get company name from database
+        const { globalCompanyData } = await import("../global/global-company-data");
+        const companyData = await globalCompanyData();
+        const companyName = companyData.globalCompanyName || "the platform";
+        
         // Fallback welcome message if template doesn't exist
         userEmailContent = `
-          <h2>Welcome to ${import.meta.env.RAILWAY_PROJECT_NAME || "the platform"}!</h2>
+          <h2>Welcome to ${companyName}!</h2>
           <p>Your account has been created successfully. You can now access your dashboard using the link below.</p>
         `;
       }
@@ -374,7 +379,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           method: "magicLink",
           trackLinks: false,
           usersToNotify: [userData.email.trim().toLowerCase()],
-          emailSubject: `Welcome to ${import.meta.env.RAILWAY_PROJECT_NAME || "the platform"} → ${displayName}`,
+          emailSubject: `Welcome to ${companyName} → ${displayName}`,
           emailContent: userEmailContent,
           buttonText: "Access Your Dashboard",
           buttonLink: "/dashboard",

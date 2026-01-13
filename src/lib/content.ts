@@ -89,9 +89,9 @@ export interface PageContent {
 
 /**
  * Get site configuration
- * Reads from environment variables for site info, merges with JSON for structure
+ * Reads from database first, then environment variables as fallback, merges with JSON for structure
  */
-export function getSiteConfig(): SiteConfig {
+export async function getSiteConfig(): Promise<SiteConfig> {
   const cacheKey = "site-config";
 
   // Skip cache in development for live updates
@@ -101,26 +101,36 @@ export function getSiteConfig(): SiteConfig {
 
   const configPath = join(process.cwd(), "site-config.json");
 
-  // Start with defaults from environment variables
+  // Get company data from database
+  let companyData;
+  try {
+    const { globalCompanyData } = await import("../pages/api/global/global-company-data");
+    companyData = await globalCompanyData();
+  } catch (error) {
+    console.warn("[CONTENT] Failed to load company data from database, using env fallbacks:", error);
+    companyData = null;
+  }
+
+  // Start with defaults from database, then environment variables
   const config: SiteConfig = {
     site: {
-      name: process.env.RAILWAY_PROJECT_NAME || "Fire Protection Services",
-      slogan: process.env.GLOBAL_COMPANY_SLOGAN || "Professional Services",
+      name: companyData?.globalCompanyName || process.env.RAILWAY_PROJECT_NAME || "Fire Protection Services",
+      slogan: companyData?.globalCompanySlogan || process.env.GLOBAL_COMPANY_SLOGAN || "Professional Services",
       description:
-        process.env.GLOBAL_COMPANY_SLOGAN || "Fire protection system review and approval",
-      url: process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321",
-      email: process.env.GLOBAL_COMPANY_EMAIL || "admin@example.com",
-      phone: process.env.GLOBAL_COMPANY_PHONE || "+15551234567",
-      address: process.env.GLOBAL_COMPANY_ADDRESS || "123 Main St",
+        companyData?.globalCompanySlogan || process.env.GLOBAL_COMPANY_SLOGAN || "Fire protection system review and approval",
+      url: companyData?.globalCompanyWebsite || process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321",
+      email: companyData?.globalCompanyEmail || process.env.GLOBAL_COMPANY_EMAIL || "admin@example.com",
+      phone: companyData?.globalCompanyPhone || process.env.GLOBAL_COMPANY_PHONE || "+15551234567",
+      address: companyData?.globalCompanyAddress || process.env.GLOBAL_COMPANY_ADDRESS || "123 Main St",
       year: process.env.YEAR || new Date().getFullYear().toString(),
     },
     branding: {
-      primaryColor: process.env.GLOBAL_COLOR_PRIMARY || "#825BDD",
-      secondaryColor: process.env.GLOBAL_COLOR_SECONDARY || "#0ea5e9",
-      fontFamily: process.env.FONT_FAMILY || "Outfit Variable",
-      fontFallback: process.env.FONT_FAMILY_FALLBACK || "sans-serif",
-      logoSvg: process.env.GLOBAL_COMPANY_LOGO_SVG,
-      iconSvg: process.env.GLOBAL_COMPANY_ICON_SVG,
+      primaryColor: companyData?.primaryColor || process.env.GLOBAL_COLOR_PRIMARY || "#825BDD",
+      secondaryColor: companyData?.secondaryColor || process.env.GLOBAL_COLOR_SECONDARY || "#0ea5e9",
+      fontFamily: companyData?.fontFamily || process.env.FONT_FAMILY || "Outfit Variable",
+      fontFallback: companyData?.secondaryFontFamily || process.env.FONT_FAMILY_FALLBACK || "sans-serif",
+      logoSvg: companyData?.globalCompanyLogo || process.env.GLOBAL_COMPANY_LOGO_SVG,
+      iconSvg: companyData?.globalCompanyIcon || process.env.GLOBAL_COMPANY_ICON_SVG,
     },
     navigation: {
       main: [
@@ -163,11 +173,22 @@ export function getSiteConfig(): SiteConfig {
 /**
  * Get default page content (fallback when markdown file doesn't exist)
  */
-function getDefaultPageContent(slug: string): PageContent | null {
+async function getDefaultPageContent(slug: string): Promise<PageContent | null> {
+  // Get company data from database
+  let companyData;
+  try {
+    const { globalCompanyData } = await import("../pages/api/global/global-company-data");
+    companyData = await globalCompanyData();
+  } catch (error) {
+    console.warn("[CONTENT] Failed to load company data for default page content:", error);
+    companyData = null;
+  }
+
   const defaults: Record<string, PageContent> = {
     home: {
-      title: process.env.RAILWAY_PROJECT_NAME || "Fire Protection Services",
+      title: companyData?.globalCompanyName || process.env.RAILWAY_PROJECT_NAME || "Fire Protection Services",
       description:
+        companyData?.globalCompanySlogan ||
         process.env.GLOBAL_COMPANY_SLOGAN ||
         "Professional fire protection plan review and approval",
       template: "fullwidth",
@@ -324,7 +345,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
   }
 
   // 3. Fallback to default content
-  const defaultContent = getDefaultPageContent(slug);
+  const defaultContent = await getDefaultPageContent(slug);
   if (defaultContent) {
     console.log(`ℹ️ [CONTENT] Using default content for: ${slug}`);
     cache.set(cacheKey, defaultContent);
@@ -339,8 +360,8 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
 /**
  * Check if a feature is enabled
  */
-export function isFeatureEnabled(featureKey: string): boolean {
-  const config = getSiteConfig();
+export async function isFeatureEnabled(featureKey: string): Promise<boolean> {
+  const config = await getSiteConfig();
   const feature = config.features[featureKey];
   if (typeof feature === 'boolean') {
     return feature;
@@ -354,8 +375,8 @@ export function isFeatureEnabled(featureKey: string): boolean {
 /**
  * Get navigation items
  */
-export function getNavigation(type: "main" | "footer" = "main") {
-  const config = getSiteConfig();
+export async function getNavigation(type: "main" | "footer" = "main") {
+  const config = await getSiteConfig();
   return config.navigation[type] || [];
 }
 

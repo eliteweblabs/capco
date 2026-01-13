@@ -88,6 +88,9 @@ export async function replacePlaceholders(
     return message;
   }
 
+  // Get global company data once and cache it for the entire function
+  const companyData = await globalCompanyData();
+
   let result = message;
   let placeholderApplied = false;
 
@@ -111,7 +114,6 @@ export async function replacePlaceholders(
       value = getNestedValue(data.statusData, path);
     } else if (placeholderPath.startsWith("global.")) {
       const path = placeholderPath.replace("global.", "");
-      const companyData = await globalCompanyData();
       value = getNestedValue(companyData, path);
     }
 
@@ -207,7 +209,8 @@ export async function replacePlaceholders(
   // undone
   const registrationExpirationDate = "06/30/2026";
   const registrationNumber = "48388";
-  const professionalName = import.meta.env.GLOBAL_BUSINESS_OWNER_NAME || "Name Missing";
+  // Use company data for professional name (already fetched at top of function)
+  const professionalName = companyData.globalCompanyName || "Name Missing";
 
   // check the data for matching structure from placeholders..
 
@@ -275,8 +278,7 @@ export async function replacePlaceholders(
   //   addBoldTags = true;
   // }
 
-  // Get global company data once and cache it
-  const companyData = await globalCompanyData();
+  // Use company data (already fetched at top of function)
 
   // Replace GLOBAL_COLOR_PRIMARY placeholders
   if (companyData.primaryColor) {
@@ -308,10 +310,10 @@ export async function replacePlaceholders(
     }
   }
 
-  // Replace FONT_FAMILY placeholders (use environment variables or defaults)
-  const primaryFontFamily = process.env.FONT_FAMILY || '"Outfit Variable", sans-serif';
+  // Replace FONT_FAMILY placeholders (use database first, then environment variables or defaults)
+  const primaryFontFamily = companyData.fontFamily || process.env.FONT_FAMILY || '"Outfit Variable", sans-serif';
 
-  const pdfFontFallback = process.env.FONT_FAMILY_FALLBACK || "Arial, sans-serif";
+  const pdfFontFallback = companyData.secondaryFontFamily || process.env.FONT_FAMILY_FALLBACK || "Arial, sans-serif";
 
   // Replace COMPANY_LOGO placeholders
   // if (globalCompanyData().globalCompanyLogoLight) {

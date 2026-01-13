@@ -23,8 +23,8 @@ export interface GroupedNavigation {
 /**
  * Get all navigation items from enabled features
  */
-export function getFeatureNavigation(userRole?: string): NavigationItem[] {
-  const config = getSiteConfig();
+export async function getFeatureNavigation(userRole?: string): Promise<NavigationItem[]> {
+  const config = await getSiteConfig();
   const navItems: NavigationItem[] = [];
 
   // Loop through features
@@ -68,8 +68,8 @@ export function getFeatureNavigation(userRole?: string): NavigationItem[] {
 /**
  * Get navigation grouped by section
  */
-export function getGroupedNavigation(userRole?: string): GroupedNavigation {
-  const items = getFeatureNavigation(userRole);
+export async function getGroupedNavigation(userRole?: string): Promise<GroupedNavigation> {
+  const items = await getFeatureNavigation(userRole);
   const grouped: GroupedNavigation = {};
 
   for (const item of items) {
@@ -85,8 +85,8 @@ export function getGroupedNavigation(userRole?: string): GroupedNavigation {
 /**
  * Get navigation for a specific section
  */
-export function getSectionNavigation(section: string, userRole?: string): NavigationItem[] {
-  const grouped = getGroupedNavigation(userRole);
+export async function getSectionNavigation(section: string, userRole?: string): Promise<NavigationItem[]> {
+  const grouped = await getGroupedNavigation(userRole);
   return grouped[section] || [];
 }
 

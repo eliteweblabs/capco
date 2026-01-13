@@ -392,7 +392,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
     id="page-editor-modal"
     class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
   >
-    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div id="page-editor-modal-content" class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800">
       <div class="mt-3">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4" id="modal-title">
           Create New Page
@@ -905,8 +905,19 @@ You can embed components:
         });
       }
 
-      // Close modal on outside click
+      // Close modal on outside click (only when clicking the backdrop, not the content)
+      const modalContent = document.getElementById("page-editor-modal-content");
+      
+      // Prevent clicks inside the modal content from closing the modal
+      if (modalContent) {
+        modalContent.addEventListener("click", (e) => {
+          e.stopPropagation();
+        });
+      }
+      
+      // Close modal when clicking the backdrop (outside the content)
       modal.addEventListener("click", (e) => {
+        // Only close if clicking directly on the modal backdrop (not on any child elements)
         if (e.target === modal) {
           modal.classList.add("hidden");
         }
