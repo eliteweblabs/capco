@@ -259,12 +259,19 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
   if (supabaseAdmin) {
     try {
       const clientId = process.env.RAILWAY_PROJECT_NAME || null;
-      const { data: dbPage, error } = await supabaseAdmin
+      let query = supabaseAdmin
         .from("cms_pages")
         .select("*")
         .eq("slug", slug)
-        .eq("is_active", true)
-        .or(`client_id.is.null,client_id.eq.${clientId}`)
+        .eq("is_active", true);
+      
+      // Filter by client_id: show global (null) or matching client_id
+      if (clientId) {
+        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+      }
+      // If no clientId set, show all pages (no filter)
+      
+      const { data: dbPage, error } = await query
         .order("client_id", { ascending: false }) // Client-specific takes priority
         .limit(1)
         .maybeSingle();

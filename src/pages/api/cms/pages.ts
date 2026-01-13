@@ -22,11 +22,21 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     if (slug) {
       // Get specific page
-      const { data, error } = await supabaseAdmin
+      let query = supabaseAdmin
         .from("cms_pages")
         .select("*")
-        .eq("slug", slug)
-        .or(`client_id.is.null,client_id.eq.${clientId}`)
+        .eq("slug", slug);
+      
+      // Filter by client_id: show global (null) or matching client_id
+      if (clientId) {
+        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+      } else {
+        // If no clientId set, show all pages (both null and non-null client_id)
+        // This ensures pages aren't hidden if RAILWAY_PROJECT_NAME is not set
+        query = query;
+      }
+      
+      const { data, error } = await query
         .order("client_id", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -41,11 +51,17 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     } else {
       // Get all pages
-      const { data, error } = await supabaseAdmin
+      let query = supabaseAdmin
         .from("cms_pages")
-        .select("*")
-        .or(`client_id.is.null,client_id.eq.${clientId}`)
-        .order("slug");
+        .select("*");
+      
+      // Filter by client_id: show global (null) or matching client_id
+      if (clientId) {
+        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+      }
+      // If no clientId set, show all pages (no filter)
+      
+      const { data, error } = await query.order("slug");
 
       if (error) {
         throw error;
