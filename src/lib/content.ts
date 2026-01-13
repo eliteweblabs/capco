@@ -49,7 +49,17 @@ export interface SiteConfig {
     }>;
   };
   features: {
-    [key: string]: boolean;
+    [key: string]: boolean | {
+      enabled: boolean;
+      navigation?: {
+        label: string;
+        href: string;
+        icon?: string;
+        roles?: string[];
+        position?: number;
+        section?: string;
+      };
+    };
   };
   pages?: {
     [pageSlug: string]: any;
@@ -331,7 +341,14 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
  */
 export function isFeatureEnabled(featureKey: string): boolean {
   const config = getSiteConfig();
-  return config.features[featureKey] ?? false;
+  const feature = config.features[featureKey];
+  if (typeof feature === 'boolean') {
+    return feature;
+  }
+  if (feature && typeof feature === 'object' && 'enabled' in feature) {
+    return feature.enabled;
+  }
+  return false;
 }
 
 /**

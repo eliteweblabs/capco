@@ -4,6 +4,7 @@ import { supabase } from "../../../lib/supabase";
 import { signPDF, type SigningOptions } from "../../../lib/pdf-signing";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { globalCompanyData } from "../global/global-company-data";
 
 /**
  * Sign PDF API
@@ -36,11 +37,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return createErrorResponse("Only Admin and Staff can sign PDFs", 403);
     }
 
+    // Get company name from database for default location
+    const companyData = await globalCompanyData();
+    const defaultLocation = `Certified by ${companyData.globalCompanyName || "Company"}`;
+
     // Parse form data
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const reason = (formData.get("reason") as string) || "Document certification";
-    const location = (formData.get("location") as string) || "Certified by CAPCO Design Group";
+    const location = (formData.get("location") as string) || defaultLocation;
     const contactInfo = (formData.get("contactInfo") as string) || "";
     const visible = formData.get("visible") === "true";
     const pageNumberStr = formData.get("pageNumber") as string;

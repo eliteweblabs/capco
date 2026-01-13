@@ -57,7 +57,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     primary:
       "hover:scale-102 hover:-translate-y-1 hover:shadow-xl transition-all duration-200 rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl",
     secondary:
-      "hover:scale-102 hover:-translate-y-1 hover:shadow-xl rounded-full border-2 border-neutral-300 text-neutral-700 hover:text-white dark:border-neutral-600 dark:text-neutral-300 hover:bg-primary-500 dark:hover:bg-primary-500 backdrop-blur-sm",
+      "hover:scale-102 hover:-translate-y-1 hover:shadow-xl transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600 shadow-lg hover:shadow-xl",
     success:
       "rounded-full bg-success-500 text-white hover:bg-success-600 dark:bg-success-500 dark:hover:bg-success-600 shadow-lg hover:shadow-xl",
     warning:

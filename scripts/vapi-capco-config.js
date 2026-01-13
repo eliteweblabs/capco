@@ -41,8 +41,25 @@ const CALENDAR_TYPE = "calcom";
 // Client phone number (optional - for reference)
 const CLIENT_PHONE = undefined; // e.g., "+19783479161"
 
+// Logging prefix for this client (defined early for use in validation)
+const LOG_PREFIX = "[VAPI-CAPCO]";
+
 // Webhook domain - the live URL where the webhook is hosted
-const WEBHOOK_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com";
+let WEBHOOK_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.WEBHOOK_DOMAIN || "https://capcofire.com";
+
+// Validate that WEBHOOK_DOMAIN is not a placeholder (like ${LOCALTUNNEL_URL})
+// JavaScript template literals use ${} but env vars shouldn't contain these as literal strings
+if (WEBHOOK_DOMAIN.includes("${") || WEBHOOK_DOMAIN.includes("{{")) {
+  console.warn(`⚠️ ${LOG_PREFIX} WEBHOOK_DOMAIN contains a placeholder: ${WEBHOOK_DOMAIN}`);
+  console.warn(`⚠️ ${LOG_PREFIX} Placeholders like \${LOCALTUNNEL_URL} are not evaluated in env vars`);
+  console.warn(`⚠️ ${LOG_PREFIX} Using fallback: https://capcofire.com`);
+  WEBHOOK_DOMAIN = "https://capcofire.com";
+}
+
+// Ensure WEBHOOK_DOMAIN has protocol
+if (!WEBHOOK_DOMAIN.startsWith("http://") && !WEBHOOK_DOMAIN.startsWith("https://")) {
+  WEBHOOK_DOMAIN = `https://${WEBHOOK_DOMAIN}`;
+}
 
 // Company name environment variable name (used for placeholder replacement)
 const COMPANY_NAME_ENV_VAR = "RAILWAY_PROJECT_NAME";
@@ -52,9 +69,6 @@ const DEFAULT_COMPANY_NAME = "CAPCo Fire Protection";
 
 // Assistant ID (hardcoded per client)
 const ASSISTANT_ID = "3ae002d5-fe9c-4870-8034-4c66a9b43b51";
-
-// Logging prefix for this client
-const LOG_PREFIX = "[VAPI-CAPCO]";
 
 // ============================================================================
 // END CLIENT-SPECIFIC CONFIGURATION

@@ -1,35 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 
-// Load environment variables
-import dotenv from "dotenv";
-dotenv.config();
-
-// Import color generation utility
-import { generateColorPalette } from "./color-generator.js";
-
-// Get primary color from environment variable or use default
-const primaryColor = process.env.GLOBAL_COLOR_PRIMARY || "#825BDD";
-
-// Get secondary color from environment variable or use default
-const secondaryColor = process.env.GLOBAL_COLOR_SECONDARY || "#0ea5e9";
-
-// Get font family from environment variable or use default
-const fontFamily = process.env.FONT_FAMILY || "Outfit Variable";
-const fontFamilyFallback = process.env.FONT_FAMILY_FALLBACK || "sans-serif";
-
-// Generate complete color palettes automatically from the hex colors
-const primaryColorPalette = generateColorPalette(primaryColor);
-const secondaryColorPalette = generateColorPalette(secondaryColor);
-
-// Debug: Log what color and font are being used
-console.log("🎨 [TAILWIND] GLOBAL_COLOR_PRIMARY from env:", process.env.GLOBAL_COLOR_PRIMARY);
-console.log("🎨 [TAILWIND] Using primary color:", primaryColor);
-console.log("🎨 [TAILWIND] GLOBAL_COLOR_SECONDARY from env:", process.env.GLOBAL_COLOR_SECONDARY);
-console.log("🎨 [TAILWIND] Using secondary color:", secondaryColor);
-console.log("🎨 [TAILWIND] Generated primary palette:", primaryColorPalette);
-console.log("🎨 [TAILWIND] Generated secondary palette:", secondaryColorPalette);
-console.log("🎨 [TAILWIND] FONT_FAMILY from env:", process.env.FONT_FAMILY);
-console.log("🎨 [TAILWIND] Using font family:", fontFamily);
+// Tailwind Configuration
+// Colors and fonts are now managed via CMS global settings and injected as CSS variables at runtime
+// This config uses CSS variables so values can be updated dynamically from the database
+// See: src/components/common/App.astro for dynamic color/font injection
 
 export default {
   content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
@@ -73,7 +47,8 @@ export default {
       //      ### Fonts
       fontFamily: {
         // #### Headings, Call- to - actions, Header Navigation
-        sans: [`"${fontFamily}"`, fontFamilyFallback], // Dynamic font from environment
+        // Use CSS variables so fonts can be updated dynamically from database
+        sans: ['var(--font-family, "Outfit Variable")', "var(--font-family-secondary, sans-serif)"],
         // #### Body
         // "serif": ['"Open Sans"', "serif"], // Otra fuente para el cuerpo
       },
@@ -83,11 +58,11 @@ export default {
         body: "14px",
       },
       zIndex: {
-        '-1': '-1',
-        '1': '1',
+        "-1": "-1",
+        1: "1",
       },
       animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
       colors: {
         // Text Colors
@@ -97,9 +72,36 @@ export default {
           600: "#525252", // Secondary text (gray)
           400: "#a3a3a3", // Secondary text (dark mode)
         },
-        // Brand Colors - Automatically generated from GLOBAL_COLOR_PRIMARY and GLOBAL_COLOR_SECONDARY environment variables
-        primary: primaryColorPalette,
-        secondary: secondaryColorPalette,
+        // Brand Colors - Use CSS variables so they can be updated dynamically from database
+        // These CSS variables are set in colors.css and can be overridden at runtime
+        primary: {
+          DEFAULT: "var(--color-primary-500)",
+          50: "var(--color-primary-50)",
+          100: "var(--color-primary-100)",
+          200: "var(--color-primary-200)",
+          300: "var(--color-primary-300)",
+          400: "var(--color-primary-400)",
+          500: "var(--color-primary-500)",
+          600: "var(--color-primary-600)",
+          700: "var(--color-primary-700)",
+          800: "var(--color-primary-800)",
+          900: "var(--color-primary-900)",
+          950: "var(--color-primary-950)",
+        },
+        secondary: {
+          DEFAULT: "var(--color-secondary-500)",
+          50: "var(--color-secondary-50)",
+          100: "var(--color-secondary-100)",
+          200: "var(--color-secondary-200)",
+          300: "var(--color-secondary-300)",
+          400: "var(--color-secondary-400)",
+          500: "var(--color-secondary-500)",
+          600: "var(--color-secondary-600)",
+          700: "var(--color-secondary-700)",
+          800: "var(--color-secondary-800)",
+          900: "var(--color-secondary-900)",
+          950: "var(--color-secondary-950)",
+        },
 
         // Semantic Colors
         success: {
@@ -204,7 +206,8 @@ export default {
         },
       },
       backgroundImage: {
-        "btn-gradient": `linear-gradient(to right, ${primaryColorPalette[500]}, ${primaryColorPalette[700]})`, // Gradient for buttons - uses primary color palette
+        "btn-gradient":
+          "linear-gradient(to right, var(--color-primary-500), var(--color-primary-700))", // Gradient for buttons - uses CSS variables for dynamic updates
       },
     },
   },

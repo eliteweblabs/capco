@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { checkAuth } from "../../../lib/auth";
+import { globalCompanyData } from "../global/global-company-data";
 
 export const GET: APIRoute = async ({ request, cookies }) => {
   try {
@@ -41,10 +42,14 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
 // Self-hosted Plausible Analytics integration
 async function fetchSelfHostedAnalytics(period: string) {
+  // Get company data from database
+  const companyData = await globalCompanyData();
   const PLAUSIBLE_URL =
+    companyData.plausibleDomain ||
     import.meta.env.PLAUSIBLE_URL ||
-    "https://plausible-analytics-ce-production-6fd8.up.railway.app";
+    "";
   const PLAUSIBLE_API_KEY = import.meta.env.PLAUSIBLE_API_KEY;
+  const PLAUSIBLE_SITE_ID = companyData.plausibleSiteId || companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "";
 
   if (!PLAUSIBLE_API_KEY) {
     console.log("🔍 No Plausible API key found, using mock data");
@@ -95,7 +100,7 @@ async function fetchSelfHostedAnalytics(period: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        site_id: "capcofire.com",
+        site_id: PLAUSIBLE_SITE_ID,
         period,
         metrics: ["pageviews", "visitors", "bounce_rate", "visit_duration"],
       }),
@@ -111,11 +116,11 @@ async function fetchSelfHostedAnalytics(period: string) {
       period,
       data: {
         ...data,
-        top_pages: await fetchTopPages(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period),
-        referrers: await fetchReferrers(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period),
-        countries: await fetchCountries(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period),
-        devices: await fetchDevices(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period),
-        browsers: await fetchBrowsers(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period),
+        top_pages: await fetchTopPages(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
+        referrers: await fetchReferrers(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
+        countries: await fetchCountries(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
+        devices: await fetchDevices(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
+        browsers: await fetchBrowsers(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
       },
     };
   } catch (error) {
@@ -175,7 +180,7 @@ async function fetchExternalAnalytics(period: string) {
 }
 
 // Helper functions for fetching additional analytics data
-async function fetchTopPages(url: string, apiKey: string, period: string) {
+async function fetchTopPages(url: string, apiKey: string, period: string, siteId: string) {
   try {
     const response = await fetch(`${url}/api/v1/stats/breakdown`, {
       method: "POST",
@@ -184,7 +189,7 @@ async function fetchTopPages(url: string, apiKey: string, period: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        site_id: "capcofire.com",
+        site_id: siteId,
         period,
         property: "event:page",
         limit: 10,
@@ -196,7 +201,7 @@ async function fetchTopPages(url: string, apiKey: string, period: string) {
   }
 }
 
-async function fetchReferrers(url: string, apiKey: string, period: string) {
+async function fetchReferrers(url: string, apiKey: string, period: string, siteId: string) {
   try {
     const response = await fetch(`${url}/api/v1/stats/breakdown`, {
       method: "POST",
@@ -205,7 +210,7 @@ async function fetchReferrers(url: string, apiKey: string, period: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        site_id: "capcofire.com",
+        site_id: siteId,
         period,
         property: "visit:referrer",
         limit: 10,
@@ -217,7 +222,7 @@ async function fetchReferrers(url: string, apiKey: string, period: string) {
   }
 }
 
-async function fetchCountries(url: string, apiKey: string, period: string) {
+async function fetchCountries(url: string, apiKey: string, period: string, siteId: string) {
   try {
     const response = await fetch(`${url}/api/v1/stats/breakdown`, {
       method: "POST",
@@ -226,7 +231,7 @@ async function fetchCountries(url: string, apiKey: string, period: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        site_id: "capcofire.com",
+        site_id: siteId,
         period,
         property: "visit:country",
         limit: 10,
@@ -238,7 +243,7 @@ async function fetchCountries(url: string, apiKey: string, period: string) {
   }
 }
 
-async function fetchDevices(url: string, apiKey: string, period: string) {
+async function fetchDevices(url: string, apiKey: string, period: string, siteId: string) {
   try {
     const response = await fetch(`${url}/api/v1/stats/breakdown`, {
       method: "POST",
@@ -247,7 +252,7 @@ async function fetchDevices(url: string, apiKey: string, period: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        site_id: "capcofire.com",
+        site_id: siteId,
         period,
         property: "visit:device",
         limit: 10,
@@ -259,7 +264,7 @@ async function fetchDevices(url: string, apiKey: string, period: string) {
   }
 }
 
-async function fetchBrowsers(url: string, apiKey: string, period: string) {
+async function fetchBrowsers(url: string, apiKey: string, period: string, siteId: string) {
   try {
     const response = await fetch(`${url}/api/v1/stats/breakdown`, {
       method: "POST",
@@ -268,7 +273,7 @@ async function fetchBrowsers(url: string, apiKey: string, period: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        site_id: "capcofire.com",
+        site_id: siteId,
         period,
         property: "visit:browser",
         limit: 10,

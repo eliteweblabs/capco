@@ -1,4 +1,3 @@
----
 /**
  * API Endpoint: Clear Global Settings
  * Allows admins to delete settings from database to fall back to environment variables

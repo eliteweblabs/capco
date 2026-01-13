@@ -182,7 +182,7 @@ async function processPDFFile(file: File) {
 
     // Import pdf-parse dynamically
     const pdfParseModule = await import("pdf-parse");
-    const pdfParse = pdfParseModule.default || pdfParseModule;
+    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
     console.log("📄 [PDF-PROCESS-FILE] pdf-parse imported successfully");
 
     // Extract text from PDF
@@ -234,14 +234,14 @@ async function processPDFWithOCR(buffer: Buffer) {
     const pdfPoppler = await import("pdf-poppler");
 
     // Convert PDF to images
-    const options = {
+    const options: any = {
       format: "png",
       out_dir: "/tmp",
       out_prefix: "pdf_page",
       page: null, // Convert all pages
     };
 
-    const images = await pdfPoppler.convert(buffer, options);
+    const images = await (pdfPoppler as any).convert(buffer, options);
     console.log("🔍 [PDF-PROCESS-FILE] Converted PDF to", images.length, "images");
 
     // Run OCR on each page

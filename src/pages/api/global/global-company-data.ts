@@ -10,9 +10,9 @@ const CACHE_TTL = 60000; // 1 minute cache
  */
 async function getAllSettings(): Promise<Record<string, string>> {
   const now = Date.now();
-  
+
   // Return cached settings if still valid
-  if (settingsCache && (now - cacheTimestamp) < CACHE_TTL) {
+  if (settingsCache && now - cacheTimestamp < CACHE_TTL) {
     return settingsCache;
   }
 
@@ -22,15 +22,16 @@ async function getAllSettings(): Promise<Record<string, string>> {
   }
 
   try {
-    const { data, error } = await supabaseAdmin
-      .from("global_settings")
-      .select("key, value");
+    const { data, error } = await supabaseAdmin.from("global_settings").select("key, value");
 
     if (!error && data) {
-      settingsCache = data.reduce((acc, item) => {
-        acc[item.key] = item.value || "";
-        return acc;
-      }, {} as Record<string, string>);
+      settingsCache = data.reduce(
+        (acc, item) => {
+          acc[item.key] = item.value || "";
+          return acc;
+        },
+        {} as Record<string, string>
+      );
       cacheTimestamp = now;
       return settingsCache;
     }
@@ -54,8 +55,11 @@ export const globalCompanyData = async () => {
   const settings = await getAllSettings();
 
   // Helper function to get setting with env fallback
-  const get = (key: string, envKey?: string) => {
-    return settings[key] || (envKey ? process.env[envKey] : undefined) || "";
+  const get = (key: string, envKey?: string): string => {
+    const dbValue = settings[key];
+    if (dbValue) return dbValue;
+    if (envKey && process.env[envKey]) return process.env[envKey];
+    return "";
   };
 
   // Get logo and icon - single SVG with CSS for theme support
@@ -93,6 +97,15 @@ export const globalCompanyData = async () => {
     // Theme colors
     primaryColor: get("primary_color", "GLOBAL_COLOR_PRIMARY"),
     secondaryColor: get("secondary_color", "GLOBAL_COLOR_SECONDARY"),
+
+    // Typography
+    fontFamily: get("font_family", "FONT_FAMILY") || "Outfit Variable",
+    secondaryFontFamily: get("secondary_font_family", "FONT_FAMILY_FALLBACK") || "sans-serif",
+
+    // Analytics settings
+    plausibleDomain: get("plausible_domain", "PLAUSIBLE_DOMAIN") || "",
+    plausibleScriptUrl: get("plausible_script_url", "PLAUSIBLE_SCRIPT_URL") || "",
+    plausibleSiteId: get("plausible_site_id", "PLAUSIBLE_SITE_ID") || (get("website", "RAILWAY_PUBLIC_DOMAIN")?.replace(/^https?:\/\//, "") || ""),
   };
 };
 

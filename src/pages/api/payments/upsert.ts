@@ -86,7 +86,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         );
       }
 
-      if (invoice.projects.authorId !== currentUser.id) {
+      if ((invoice.projects as any)?.authorId !== currentUser.id) {
         return new Response(
           JSON.stringify({
             error: "Unauthorized to create payments for this invoice",

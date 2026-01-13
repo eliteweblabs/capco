@@ -73,13 +73,17 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       console.error("❌ [GLOBAL-COMPANY-DATA] Error fetching company settings:", settingsError);
     }
 
+    // Get company data from global settings as fallback
+    const { globalCompanyData } = await import("./global-company-data");
+    const globalData = await globalCompanyData();
+
     companyData.company = {
-      name: companySettings?.name || "CAPCo Fire Protection",
-      description: companySettings?.description || "Professional fire protection services",
+      name: companySettings?.name || globalData.globalCompanyName || "Company",
+      description: companySettings?.description || globalData.globalCompanySlogan || "Professional services",
       contact: {
-        email: companySettings?.email || "info@capcofire.com",
-        phone: companySettings?.phone || "",
-        address: companySettings?.address || "",
+        email: companySettings?.email || globalData.globalCompanyEmail || "",
+        phone: companySettings?.phone || globalData.globalCompanyPhone || "",
+        address: companySettings?.address || globalData.globalCompanyAddress || "",
       },
       settings: {
         timezone: companySettings?.timezone || "America/New_York",

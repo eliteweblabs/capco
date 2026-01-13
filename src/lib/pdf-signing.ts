@@ -13,6 +13,7 @@ import { P12Signer } from "@signpdf/signer-p12";
 import { plainAddPlaceholder } from "@signpdf/placeholder-plain";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { globalCompanyData } from "../pages/api/global/global-company-data";
 
 export interface SigningOptions {
   reason?: string; // Reason for signing (e.g., "Document certification")
@@ -121,13 +122,17 @@ export async function signPDF(
       };
     }
 
+    // Get company name from database for default location
+    const companyData = await globalCompanyData();
+    const defaultLocation = `Certified by ${companyData.globalCompanyName || "Company"}`;
+
     // Create signature metadata
     const signingMetadata = {
       signed: true,
       signer: certData.commonName,
       signedAt: new Date(),
       reason: options.reason || "Document certification",
-      location: options.location || "Certified by CAPCO Design Group",
+      location: options.location || defaultLocation,
     };
 
     console.log("✍️ [PDF-SIGNING] Adding placeholder for signature...");

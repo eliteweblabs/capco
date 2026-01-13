@@ -3,6 +3,7 @@
 ## Problem
 
 You're seeing this error:
+
 > "qudlxlryegnainztkrtk.supabase.co has not completed the Google verification process. The app is currently being tested, and can only be accessed by developer-approved testers."
 
 ## What Happened?
@@ -10,10 +11,12 @@ You're seeing this error:
 **This is a Google policy change, not a Supabase issue.**
 
 Google has been tightening OAuth security policies. Your app requests sensitive scopes:
+
 - `gmail.readonly` - Access to Gmail
 - `contacts.readonly` - Access to Google Contacts
 
 When Google detects these sensitive scopes without proper verification, they automatically move the OAuth app to **"Testing" mode**, which restricts access to:
+
 - Only developer-approved test users
 - Maximum 100 test users
 - No public access
@@ -21,6 +24,7 @@ When Google detects these sensitive scopes without proper verification, they aut
 ## Why This Happened Now
 
 Possible reasons:
+
 1. **Google automatically moved your app to testing mode** after detecting sensitive scopes
 2. **OAuth app was reset/recreated** (lost published status)
 3. **Google policy enforcement** - stricter verification requirements for sensitive scopes
@@ -153,10 +157,12 @@ You have **two OAuth apps** potentially:
 ## Recommended Approach
 
 **For immediate access:**
+
 1. Add test users to the OAuth app (quick fix)
 2. Continue using the app while working on verification
 
 **For long-term:**
+
 1. Decide if you actually need Gmail/Contacts scopes
 2. If yes → Complete Google verification
 3. If no → Remove sensitive scopes and publish app
@@ -188,11 +194,3 @@ A: Yes, but you need to manage both OAuth apps separately in Google Cloud Consol
 
 **Q: Will this affect existing users?**
 A: Existing authenticated users should be fine. New sign-ins will be blocked until test users are added or app is published.
-
-
-
-
-
-
-
-

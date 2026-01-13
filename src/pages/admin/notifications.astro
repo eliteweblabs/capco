@@ -2,7 +2,7 @@
 import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import App from "../../components/common/App.astro";
-import Footer from "../../components/common/Footer.astro";
+import Footer from "../../components/ui/Footer.astro";
 
 import { globalCompanyData } from "../api/global/global-company-data";
 const {
@@ -13,7 +13,7 @@ const {
   globalCompanyEmail,
   globalCompanyWebsite,
   globalCompanyLogo,
-} = globalCompanyData();
+} = await globalCompanyData();
 
 import { globalClasses } from "../api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
@@ -116,7 +116,7 @@ if (supabaseAdmin) {
           id="recipients"
           name="recipients"
           multiple
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
           required
         >
           <option value="all">All Users</option>
@@ -138,7 +138,7 @@ if (supabaseAdmin) {
           <select
             id="type"
             name="type"
-            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="info">Info</option>
             <option value="success">Success</option>
@@ -154,7 +154,7 @@ if (supabaseAdmin) {
           <select
             id="priority"
             name="priority"
-            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="low">Low</option>
             <option value="normal" selected>Normal</option>
@@ -172,7 +172,7 @@ if (supabaseAdmin) {
           id="title"
           name="title"
           required
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
           placeholder="Notification title"
         />
       </div>
@@ -187,7 +187,7 @@ if (supabaseAdmin) {
           name="message"
           rows="4"
           required
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
           placeholder="Notification message"></textarea>
       </div>
 
@@ -200,7 +200,7 @@ if (supabaseAdmin) {
           type="url"
           id="actionUrl"
           name="actionUrl"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
           placeholder="https://example.com/action"
         />
       </div>
@@ -214,7 +214,7 @@ if (supabaseAdmin) {
           type="text"
           id="actionText"
           name="actionText"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
           placeholder="View Details"
         />
       </div>
@@ -224,7 +224,7 @@ if (supabaseAdmin) {
         <button
           type="submit"
           id="submit-btn"
-          class="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          class="rounded-md bg-primary-600 px-6 py-2 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Send Notifications
         </button>
@@ -242,13 +242,13 @@ if (supabaseAdmin) {
         recentNotifications.length > 0 ? (
           <div class="space-y-4">
             {recentNotifications.map((notification) => (
-              <div class="border-l-4 border-blue-500 bg-blue-50 p-4">
+              <div class="border-l-4 border-primary-500 bg-primary-50 p-4">
                 <div class="flex justify-between">
                   <div>
-                    <h3 class="font-medium text-blue-900">{notification.title}</h3>
-                    <p class="text-blue-700">{notification.message}</p>
+                    <h3 class="font-medium text-primary-900">{notification.title}</h3>
+                    <p class="text-primary-700">{notification.message}</p>
                   </div>
-                  <div class="text-sm text-blue-600">
+                  <div class="text-sm text-primary-600">
                     {new Date(notification.createdAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -343,21 +343,25 @@ if (supabaseAdmin) {
             (option: HTMLOptionElement) => {
               const value = option.value;
               // Must be a valid UUID format (not "all" or other invalid values)
-              return value && 
-                     value !== "all" && 
-                     value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+              return (
+                value &&
+                value !== "all" &&
+                value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+              );
             }
           );
-          
-          const individualNotifications = validIndividualSelections.map((option: HTMLOptionElement) => ({
-            userId: option.value,
-            title: formData.get("title"),
-            message: formData.get("message"),
-            type: formData.get("type"),
-            priority: formData.get("priority"),
-            actionUrl: formData.get("actionUrl") || undefined,
-            actionText: formData.get("actionText") || undefined,
-          }));
+
+          const individualNotifications = validIndividualSelections.map(
+            (option: HTMLOptionElement) => ({
+              userId: option.value,
+              title: formData.get("title"),
+              message: formData.get("message"),
+              type: formData.get("type"),
+              priority: formData.get("priority"),
+              actionUrl: formData.get("actionUrl") || undefined,
+              actionText: formData.get("actionText") || undefined,
+            })
+          );
 
           // Send individual notifications
           const individualResults = await Promise.allSettled(

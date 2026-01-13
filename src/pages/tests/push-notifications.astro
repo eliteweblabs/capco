@@ -199,7 +199,7 @@
         }
         html += '</div>';
         
-        statusDiv.innerHTML = html;
+        if (statusDiv) (statusDiv as HTMLElement).innerHTML = html;
         
         log(`Browser: ${mobileInfo.browser} on ${mobileInfo.isIOS ? 'iOS' : mobileInfo.isAndroid ? 'Android' : 'Desktop'}`, 'info');
         log(`PWA Mode: ${mobileInfo.isStandalone ? 'YES' : 'NO'}`, mobileInfo.isStandalone ? 'success' : 'warning');
@@ -229,8 +229,8 @@
             message += '</div>';
           }
           
-          statusDiv.innerHTML = message;
-          btn.disabled = true;
+          if (statusDiv) (statusDiv as HTMLElement).innerHTML = message;
+          if (btn) (btn as HTMLButtonElement).disabled = true;
           return;
         }
 
@@ -242,25 +242,29 @@
             statusClass = 'success';
             statusText = '✅ Permission granted! You can receive notifications.';
             icon = '✅';
-            btn.disabled = true;
-            btn.textContent = 'Permission Already Granted';
+            if (btn) {
+              (btn as HTMLButtonElement).disabled = true;
+              btn.textContent = 'Permission Already Granted';
+            }
             break;
           case 'denied':
             statusClass = 'error';
             statusText = '❌ Permission denied. You need to enable notifications in browser settings.';
             icon = '❌';
-            btn.disabled = true;
-            btn.textContent = 'Permission Denied (Check Browser Settings)';
+            if (btn) {
+              (btn as HTMLButtonElement).disabled = true;
+              btn.textContent = 'Permission Denied (Check Browser Settings)';
+            }
             break;
           case 'default':
             statusClass = 'warning';
             statusText = '⚠️ Permission not yet requested. Click the button below to request it.';
             icon = '⚠️';
-            btn.disabled = false;
+            if (btn) (btn as HTMLButtonElement).disabled = false;
             break;
         }
         
-        statusDiv.innerHTML = `<div class="status ${statusClass}">${statusText}</div>`;
+        if (statusDiv) (statusDiv as HTMLElement).innerHTML = `<div class="status ${statusClass}">${statusText}</div>`;
         log(`Notification permission: ${permission}`, permission === 'granted' ? 'success' : permission === 'denied' ? 'error' : 'warning');
       }
 
@@ -288,29 +292,31 @@
 
       // 3. Check Service Worker
       async function checkServiceWorker() {
-        const statusDiv = document.getElementById('sw-status');
-        const btn = document.getElementById('register-sw-btn');
+        const statusDiv = document.getElementById('sw-status') as HTMLElement;
+        const btn = document.getElementById('register-sw-btn') as HTMLButtonElement;
         
         if (!('serviceWorker' in navigator)) {
-          statusDiv.innerHTML = '<div class="status error">❌ Service Workers not supported</div>';
-          btn.disabled = true;
+          if (statusDiv) statusDiv.innerHTML = '<div class="status error">❌ Service Workers not supported</div>';
+          if (btn) btn.disabled = true;
           return;
         }
 
         try {
           const registration = await navigator.serviceWorker.getRegistration();
           if (registration) {
-            statusDiv.innerHTML = '<div class="status success">✅ Service Worker registered</div>';
-            btn.disabled = true;
-            btn.textContent = 'Service Worker Already Registered';
+            if (statusDiv) statusDiv.innerHTML = '<div class="status success">✅ Service Worker registered</div>';
+            if (btn) {
+              btn.disabled = true;
+              btn.textContent = 'Service Worker Already Registered';
+            }
             log('Service Worker: Already registered', 'success');
           } else {
-            statusDiv.innerHTML = '<div class="status warning">⚠️ No Service Worker registered. Click to register.</div>';
-            btn.disabled = false;
+            if (statusDiv) statusDiv.innerHTML = '<div class="status warning">⚠️ No Service Worker registered. Click to register.</div>';
+            if (btn) btn.disabled = false;
             log('Service Worker: Not registered', 'warning');
           }
-        } catch (error) {
-          statusDiv.innerHTML = '<div class="status error">❌ Error checking Service Worker</div>';
+        } catch (error: any) {
+          if (statusDiv) statusDiv.innerHTML = '<div class="status error">❌ Error checking Service Worker</div>';
           log(`Error checking Service Worker: ${error.message}`, 'error');
         }
       }
@@ -334,9 +340,10 @@
             checkServiceWorker();
           } else {
             log('Note: Campfire handles its own service worker registration. This is normal.', 'info');
-            statusDiv.innerHTML = '<div class="status info">ℹ️ Campfire manages its own service worker for push notifications.</div>';
+            const statusDiv = document.getElementById('sw-status') as HTMLElement;
+            if (statusDiv) statusDiv.innerHTML = '<div class="status info">ℹ️ Campfire manages its own service worker for push notifications.</div>';
           }
-        } catch (error) {
+        } catch (error: any) {
           log(`Error registering service worker: ${error.message}`, 'error');
           log('Note: Campfire will register its own service worker when you open the chat.', 'info');
         }

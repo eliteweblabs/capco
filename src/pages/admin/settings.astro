@@ -31,15 +31,16 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 let dbSettings: Record<string, boolean> = {};
 if (supabaseAdmin) {
   try {
-    const { data } = await supabaseAdmin
-      .from("global_settings")
-      .select("key");
-    
+    const { data } = await supabaseAdmin.from("global_settings").select("key");
+
     if (data) {
-      dbSettings = data.reduce((acc, item) => {
-        acc[item.key] = true;
-        return acc;
-      }, {} as Record<string, boolean>);
+      dbSettings = data.reduce(
+        (acc, item) => {
+          acc[item.key] = true;
+          return acc;
+        },
+        {} as Record<string, boolean>
+      );
     }
   } catch (error) {
     console.warn("[settings] Failed to check database settings:", error);
@@ -58,16 +59,24 @@ const settings = {
   phone: companyData.globalCompanyPhone || "",
   email: companyData.globalCompanyEmail || "",
   website: companyData.globalCompanyWebsite || "",
-  
+
   // Colors
   primaryColor: companyData.primaryColor || "#825BDD",
   secondaryColor: companyData.secondaryColor || "#0ea5e9",
-  
+
+  // Typography
+  fontFamily: companyData.fontFamily || "Outfit Variable",
+  secondaryFontFamily: companyData.secondaryFontFamily || "sans-serif",
+
   // Logos & Icons (single SVG with CSS for theme support)
   logo: companyData.globalCompanyLogo || "",
   icon: companyData.globalCompanyIcon || "",
-};
 
+  // Analytics
+  plausibleScriptUrl: companyData?.plausibleScriptUrl || "",
+  plausibleSiteId: companyData?.plausibleSiteId || "",
+  plausibleDomain: companyData?.plausibleDomain || "",
+};
 ---
 
 <App
@@ -83,29 +92,39 @@ const settings = {
     <div class="mb-6">
       <h1 class="text-3xl font-bold mb-2">Global Settings</h1>
       <p class="text-gray-600 dark:text-gray-400">
-        Manage company branding, colors, logos, and other global settings. Changes are saved to the database and take effect immediately.
+        Manage company branding, colors, logos, and other global settings. Changes are saved to the
+        database and take effect immediately.
       </p>
     </div>
 
     <!-- Success/Error Messages -->
-    <div id="success-message" class="hidden mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+    <div
+      id="success-message"
+      class="hidden mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+    >
       <p class="text-sm text-green-800 dark:text-green-200"></p>
     </div>
-    <div id="error-message" class="hidden mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+    <div
+      id="error-message"
+      class="hidden mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+    >
       <p class="text-sm text-red-800 dark:text-red-200"></p>
     </div>
 
     <!-- Info Box -->
-    <div class="mb-6 space-y-3">
-      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-        <p class="text-sm text-blue-800 dark:text-blue-200 mb-2">
-          <strong>✅ Database Storage:</strong> Settings are now stored in the database and can be edited here. 
-          Environment variables are used as fallback if database values are not set.
+    <div class="hidden mb-6 space-y-3">
+      <div
+        class="p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg"
+      >
+        <p class="hidden text-sm text-primary-800 dark:text-primary-200 mb-2">
+          <strong>✅ Database Storage:</strong> Settings are now stored in the database and can be edited
+          here. Environment variables are used as fallback if database values are not set.
         </p>
-        <p class="text-xs text-blue-700 dark:text-blue-300 mb-2">
-          <strong>💡 Tip:</strong> Changes take effect immediately. Colors will regenerate the full palette on next page load.
+        <p class="hidden text-xs text-primary-700 dark:text-primary-300 mb-2">
+          <strong>💡 Tip:</strong> Changes take effect immediately. Colors will regenerate the full palette
+          on next page load.
         </p>
-        <div class="flex items-start gap-2 text-xs text-blue-700 dark:text-blue-300">
+        <div class="hidden flex items-start gap-2 text-xs text-primary-700 dark:text-primary-300">
           <span>💾</span>
           <span>Indicates settings stored in database (vs environment variables)</span>
         </div>
@@ -120,9 +139,16 @@ const settings = {
           <div>
             <label for="company_name" class="block text-sm font-medium mb-2">
               Company Name
-              {isFromDatabase("company_name") && (
-                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-              )}
+              {
+                isFromDatabase("company_name") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
             </label>
             <input
               type="text"
@@ -133,13 +159,20 @@ const settings = {
               placeholder="Your Company Name"
             />
           </div>
-          
+
           <div>
             <label for="slogan" class="block text-sm font-medium mb-2">
               Slogan
-              {isFromDatabase("slogan") && (
-                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-              )}
+              {
+                isFromDatabase("slogan") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
             </label>
             <input
               type="text"
@@ -150,13 +183,20 @@ const settings = {
               placeholder="Your company slogan"
             />
           </div>
-          
+
           <div>
             <label for="address" class="block text-sm font-medium mb-2">
               Address
-              {isFromDatabase("address") && (
-                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-              )}
+              {
+                isFromDatabase("address") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
             </label>
             <input
               type="text"
@@ -167,13 +207,20 @@ const settings = {
               placeholder="123 Main St, City, ST 12345"
             />
           </div>
-          
+
           <div>
             <label for="phone" class="block text-sm font-medium mb-2">
               Phone
-              {isFromDatabase("phone") && (
-                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-              )}
+              {
+                isFromDatabase("phone") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
             </label>
             <input
               type="tel"
@@ -184,13 +231,20 @@ const settings = {
               placeholder="+1234567890"
             />
           </div>
-          
+
           <div>
             <label for="email" class="block text-sm font-medium mb-2">
               Email
-              {isFromDatabase("email") && (
-                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-              )}
+              {
+                isFromDatabase("email") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
             </label>
             <input
               type="email"
@@ -201,13 +255,20 @@ const settings = {
               placeholder="contact@company.com"
             />
           </div>
-          
+
           <div>
             <label for="website" class="block text-sm font-medium mb-2">
               Website
-              {isFromDatabase("website") && (
-                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-              )}
+              {
+                isFromDatabase("website") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
             </label>
             <input
               type="url"
@@ -221,6 +282,358 @@ const settings = {
         </div>
       </div>
 
+      <!-- Analytics Settings -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Analytics Settings</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Configure Plausible Analytics integration. Leave empty to disable analytics tracking.
+        </p>
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label for="plausible_script_url" class="block text-sm font-medium mb-2">
+              Plausible Script URL
+              {
+                isFromDatabase("plausible_script_url") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
+            </label>
+            <input
+              type="url"
+              id="plausible_script_url"
+              name="plausible_script_url"
+              value={settings.plausibleScriptUrl}
+              class={globalInputClasses}
+              placeholder="https://plausible.example.com/js/script.file-downloads.outbound-links.js"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Full URL to your Plausible analytics script (e.g., https://plausible.example.com/js/script.js)
+            </p>
+          </div>
+
+          <div>
+            <label for="plausible_site_id" class="block text-sm font-medium mb-2">
+              Plausible Site ID
+              {
+                isFromDatabase("plausible_site_id") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
+            </label>
+            <input
+              type="text"
+              id="plausible_site_id"
+              name="plausible_site_id"
+              value={settings.plausibleSiteId}
+              class={globalInputClasses}
+              placeholder="yourdomain.com"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Your website domain (without https://). If empty, will use your website setting above.
+            </p>
+          </div>
+
+          <div>
+            <label for="plausible_domain" class="block text-sm font-medium mb-2">
+              Plausible Domain (Optional)
+              {
+                isFromDatabase("plausible_domain") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
+            </label>
+            <input
+              type="url"
+              id="plausible_domain"
+              name="plausible_domain"
+              value={settings.plausibleDomain}
+              class={globalInputClasses}
+              placeholder="https://plausible.example.com"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Your self-hosted Plausible instance URL (for API calls). Leave empty if using Plausible.io.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Typography -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Typography</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="font_family" class="block text-sm font-medium mb-2">
+              Primary Font Family
+              {
+                isFromDatabase("font_family") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
+            </label>
+            <select id="font_family" name="font_family" class={globalInputClasses}>
+              <option value="Outfit Variable" selected={settings.fontFamily === "Outfit Variable"}
+                >Outfit Variable</option
+              >
+              <option value="Roboto" selected={settings.fontFamily === "Roboto"}>Roboto</option>
+              <option value="Open Sans" selected={settings.fontFamily === "Open Sans"}
+                >Open Sans</option
+              >
+              <option value="Lato" selected={settings.fontFamily === "Lato"}>Lato</option>
+              <option value="Montserrat" selected={settings.fontFamily === "Montserrat"}
+                >Montserrat</option
+              >
+              <option value="Poppins" selected={settings.fontFamily === "Poppins"}>Poppins</option>
+              <option value="Inter" selected={settings.fontFamily === "Inter"}>Inter</option>
+              <option value="Raleway" selected={settings.fontFamily === "Raleway"}>Raleway</option>
+              <option value="Source Sans Pro" selected={settings.fontFamily === "Source Sans Pro"}
+                >Source Sans Pro</option
+              >
+              <option value="Nunito" selected={settings.fontFamily === "Nunito"}>Nunito</option>
+              <option value="Playfair Display" selected={settings.fontFamily === "Playfair Display"}
+                >Playfair Display</option
+              >
+              <option value="Merriweather" selected={settings.fontFamily === "Merriweather"}
+                >Merriweather</option
+              >
+              <option value="Oswald" selected={settings.fontFamily === "Oswald"}>Oswald</option>
+              <option value="Lora" selected={settings.fontFamily === "Lora"}>Lora</option>
+              <option value="PT Sans" selected={settings.fontFamily === "PT Sans"}>PT Sans</option>
+              <option value="Ubuntu" selected={settings.fontFamily === "Ubuntu"}>Ubuntu</option>
+              <option value="Noto Sans" selected={settings.fontFamily === "Noto Sans"}
+                >Noto Sans</option
+              >
+              <option value="Work Sans" selected={settings.fontFamily === "Work Sans"}
+                >Work Sans</option
+              >
+              <option value="Crimson Text" selected={settings.fontFamily === "Crimson Text"}
+                >Crimson Text</option
+              >
+              <option value="Fira Sans" selected={settings.fontFamily === "Fira Sans"}
+                >Fira Sans</option
+              >
+              <option value="Dancing Script" selected={settings.fontFamily === "Dancing Script"}
+                >Dancing Script</option
+              >
+              <option value="Bebas Neue" selected={settings.fontFamily === "Bebas Neue"}
+                >Bebas Neue</option
+              >
+              <option value="Comfortaa" selected={settings.fontFamily === "Comfortaa"}
+                >Comfortaa</option
+              >
+              <option value="Quicksand" selected={settings.fontFamily === "Quicksand"}
+                >Quicksand</option
+              >
+              <option value="Rubik" selected={settings.fontFamily === "Rubik"}>Rubik</option>
+              <option value="Josefin Sans" selected={settings.fontFamily === "Josefin Sans"}
+                >Josefin Sans</option
+              >
+              <option
+                value="Libre Baskerville"
+                selected={settings.fontFamily === "Libre Baskerville"}>Libre Baskerville</option
+              >
+              <option value="Cabin" selected={settings.fontFamily === "Cabin"}>Cabin</option>
+              <option value="Dosis" selected={settings.fontFamily === "Dosis"}>Dosis</option>
+              <option value="Arvo" selected={settings.fontFamily === "Arvo"}>Arvo</option>
+              <option value="Titillium Web" selected={settings.fontFamily === "Titillium Web"}
+                >Titillium Web</option
+              >
+              <option value="Mukta" selected={settings.fontFamily === "Mukta"}>Mukta</option>
+              <option value="Karla" selected={settings.fontFamily === "Karla"}>Karla</option>
+              <option value="Barlow" selected={settings.fontFamily === "Barlow"}>Barlow</option>
+              <option value="DM Sans" selected={settings.fontFamily === "DM Sans"}>DM Sans</option>
+              <option value="Manrope" selected={settings.fontFamily === "Manrope"}>Manrope</option>
+              <option value="Space Grotesk" selected={settings.fontFamily === "Space Grotesk"}
+                >Space Grotesk</option
+              >
+              <option
+                value="Plus Jakarta Sans"
+                selected={settings.fontFamily === "Plus Jakarta Sans"}>Plus Jakarta Sans</option
+              >
+            </select>
+            <p class="text-xs text-gray-500 mt-1">
+              Primary font used throughout the site (headings, body text, UI elements).
+            </p>
+          </div>
+          <div>
+            <label for="secondary_font_family" class="block text-sm font-medium mb-2">
+              Secondary Font Family
+              {
+                isFromDatabase("secondary_font_family") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
+            </label>
+            <select
+              id="secondary_font_family"
+              name="secondary_font_family"
+              class={globalInputClasses}
+            >
+              <option value="sans-serif" selected={settings.secondaryFontFamily === "sans-serif"}
+                >sans-serif (System Default)</option
+              >
+              <option value="serif" selected={settings.secondaryFontFamily === "serif"}
+                >serif (System Default)</option
+              >
+              <option value="monospace" selected={settings.secondaryFontFamily === "monospace"}
+                >monospace (System Default)</option
+              >
+              <option
+                value="Outfit Variable"
+                selected={settings.secondaryFontFamily === "Outfit Variable"}
+                >Outfit Variable</option
+              >
+              <option value="Roboto" selected={settings.secondaryFontFamily === "Roboto"}
+                >Roboto</option
+              >
+              <option value="Open Sans" selected={settings.secondaryFontFamily === "Open Sans"}
+                >Open Sans</option
+              >
+              <option value="Lato" selected={settings.secondaryFontFamily === "Lato"}>Lato</option>
+              <option value="Montserrat" selected={settings.secondaryFontFamily === "Montserrat"}
+                >Montserrat</option
+              >
+              <option value="Poppins" selected={settings.secondaryFontFamily === "Poppins"}
+                >Poppins</option
+              >
+              <option value="Inter" selected={settings.secondaryFontFamily === "Inter"}
+                >Inter</option
+              >
+              <option value="Raleway" selected={settings.secondaryFontFamily === "Raleway"}
+                >Raleway</option
+              >
+              <option
+                value="Source Sans Pro"
+                selected={settings.secondaryFontFamily === "Source Sans Pro"}
+                >Source Sans Pro</option
+              >
+              <option value="Nunito" selected={settings.secondaryFontFamily === "Nunito"}
+                >Nunito</option
+              >
+              <option
+                value="Playfair Display"
+                selected={settings.secondaryFontFamily === "Playfair Display"}
+                >Playfair Display</option
+              >
+              <option
+                value="Merriweather"
+                selected={settings.secondaryFontFamily === "Merriweather"}>Merriweather</option
+              >
+              <option value="Oswald" selected={settings.secondaryFontFamily === "Oswald"}
+                >Oswald</option
+              >
+              <option value="Lora" selected={settings.secondaryFontFamily === "Lora"}>Lora</option>
+              <option value="PT Sans" selected={settings.secondaryFontFamily === "PT Sans"}
+                >PT Sans</option
+              >
+              <option value="Ubuntu" selected={settings.secondaryFontFamily === "Ubuntu"}
+                >Ubuntu</option
+              >
+              <option value="Noto Sans" selected={settings.secondaryFontFamily === "Noto Sans"}
+                >Noto Sans</option
+              >
+              <option value="Work Sans" selected={settings.secondaryFontFamily === "Work Sans"}
+                >Work Sans</option
+              >
+              <option
+                value="Crimson Text"
+                selected={settings.secondaryFontFamily === "Crimson Text"}>Crimson Text</option
+              >
+              <option value="Fira Sans" selected={settings.secondaryFontFamily === "Fira Sans"}
+                >Fira Sans</option
+              >
+              <option
+                value="Dancing Script"
+                selected={settings.secondaryFontFamily === "Dancing Script"}>Dancing Script</option
+              >
+              <option value="Bebas Neue" selected={settings.secondaryFontFamily === "Bebas Neue"}
+                >Bebas Neue</option
+              >
+              <option value="Comfortaa" selected={settings.secondaryFontFamily === "Comfortaa"}
+                >Comfortaa</option
+              >
+              <option value="Quicksand" selected={settings.secondaryFontFamily === "Quicksand"}
+                >Quicksand</option
+              >
+              <option value="Rubik" selected={settings.secondaryFontFamily === "Rubik"}
+                >Rubik</option
+              >
+              <option
+                value="Josefin Sans"
+                selected={settings.secondaryFontFamily === "Josefin Sans"}>Josefin Sans</option
+              >
+              <option
+                value="Libre Baskerville"
+                selected={settings.secondaryFontFamily === "Libre Baskerville"}
+                >Libre Baskerville</option
+              >
+              <option value="Cabin" selected={settings.secondaryFontFamily === "Cabin"}
+                >Cabin</option
+              >
+              <option value="Dosis" selected={settings.secondaryFontFamily === "Dosis"}
+                >Dosis</option
+              >
+              <option value="Arvo" selected={settings.secondaryFontFamily === "Arvo"}>Arvo</option>
+              <option
+                value="Titillium Web"
+                selected={settings.secondaryFontFamily === "Titillium Web"}>Titillium Web</option
+              >
+              <option value="Mukta" selected={settings.secondaryFontFamily === "Mukta"}
+                >Mukta</option
+              >
+              <option value="Karla" selected={settings.secondaryFontFamily === "Karla"}
+                >Karla</option
+              >
+              <option value="Barlow" selected={settings.secondaryFontFamily === "Barlow"}
+                >Barlow</option
+              >
+              <option value="DM Sans" selected={settings.secondaryFontFamily === "DM Sans"}
+                >DM Sans</option
+              >
+              <option value="Manrope" selected={settings.secondaryFontFamily === "Manrope"}
+                >Manrope</option
+              >
+              <option
+                value="Space Grotesk"
+                selected={settings.secondaryFontFamily === "Space Grotesk"}>Space Grotesk</option
+              >
+              <option
+                value="Plus Jakarta Sans"
+                selected={settings.secondaryFontFamily === "Plus Jakarta Sans"}
+                >Plus Jakarta Sans</option
+              >
+            </select>
+            <p class="text-xs text-gray-500 mt-1">
+              Secondary font used as fallback or for specific elements (optional).
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Brand Colors -->
       <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <h2 class="text-xl font-semibold mb-4">Brand Colors</h2>
@@ -228,9 +641,16 @@ const settings = {
           <div>
             <label for="primary_color" class="block text-sm font-medium mb-2">
               Primary Color
-              {isFromDatabase("primary_color") && (
-                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-              )}
+              {
+                isFromDatabase("primary_color") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
             </label>
             <div class="flex items-center gap-3">
               <input
@@ -253,13 +673,20 @@ const settings = {
               </div>
             </div>
           </div>
-          
+
           <div>
             <label for="secondary_color" class="block text-sm font-medium mb-2">
               Secondary Color
-              {isFromDatabase("secondary_color") && (
-                <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-              )}
+              {
+                isFromDatabase("secondary_color") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
             </label>
             <div class="flex items-center gap-3">
               <input
@@ -288,18 +715,30 @@ const settings = {
       <!-- Logos -->
       <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <h2 class="text-xl font-semibold mb-4">Company Logo (SVG)</h2>
-        <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700">
+        <div
+          class="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700"
+        >
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            <strong>💡 Tip:</strong> Use a single SVG with CSS styles in <code>&lt;defs&gt;</code> or <code>&lt;style&gt;</code> to handle both light and dark modes. 
-            Use <code>currentColor</code> or media queries like <code>@media (prefers-color-scheme: dark)</code> for automatic theme switching.
+            <strong>💡 Tip:</strong> Use a single SVG with CSS styles in <code>&lt;defs&gt;</code> or
+            <code>&lt;style&gt;</code> to handle both light and dark modes. Use <code
+              >currentColor</code
+            > or media queries like <code>@media (prefers-color-scheme: dark)</code> for automatic theme
+            switching.
           </p>
         </div>
         <div>
           <label for="logo" class="block text-sm font-medium mb-2">
             Logo SVG
-            {isFromDatabase("logo") && (
-              <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-            )}
+            {
+              isFromDatabase("logo") && (
+                <span
+                  class="ml-2 text-xs text-green-600 dark:text-green-400"
+                  title="Stored in database"
+                >
+                  💾
+                </span>
+              )
+            }
           </label>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -318,34 +757,39 @@ const settings = {
     </style>
   </defs>
   <path class="logo-fill" d="..."/>
-</svg>`}
-              >{settings.logo}</textarea>
+</svg>`}>{settings.logo}</textarea
+              >
               <p class="text-xs text-gray-500 mt-1">
-                Complete SVG markup with CSS for theme support. Use <code>currentColor</code> or CSS media queries for automatic light/dark mode.
+                Complete SVG markup with CSS for theme support. Use <code>currentColor</code> or CSS
+                media queries for automatic light/dark mode.
               </p>
             </div>
             <div class="space-y-3">
-              <div id="logo-preview-light" class="flex items-center justify-center p-4 bg-white rounded border border-gray-200">
+              <div
+                id="logo-preview-light"
+                class="relative flex items-center justify-center p-4 bg-white rounded border border-gray-200"
+              >
                 <p class="text-xs text-gray-500 mb-2 absolute top-1 left-2">Light Mode</p>
-                {settings.logo ? (
-                  <div 
-                    class="max-w-full max-h-32 mt-4"
-                    set:html={settings.logo}
-                  ></div>
-                ) : (
-                  <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
-                )}
+                {
+                  settings.logo ? (
+                    <div class="max-w-full max-h-32 mt-4" set:html={settings.logo} />
+                  ) : (
+                    <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
+                  )
+                }
               </div>
-              <div id="logo-preview-dark" class="flex items-center justify-center p-4 bg-gray-900 rounded border border-gray-700">
+              <div
+                id="logo-preview-dark"
+                class="relative flex items-center justify-center p-4 bg-gray-900 rounded border border-gray-700"
+              >
                 <p class="text-xs text-gray-400 mb-2 absolute top-1 left-2">Dark Mode</p>
-                {settings.logo ? (
-                  <div 
-                    class="max-w-full max-h-32 mt-4"
-                    set:html={settings.logo}
-                  ></div>
-                ) : (
-                  <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
-                )}
+                {
+                  settings.logo ? (
+                    <div class="max-w-full max-h-32 mt-4" set:html={settings.logo} />
+                  ) : (
+                    <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
+                  )
+                }
               </div>
             </div>
           </div>
@@ -355,17 +799,27 @@ const settings = {
       <!-- Icons -->
       <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <h2 class="text-xl font-semibold mb-4">Company Icon (SVG)</h2>
-        <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700">
+        <div
+          class="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700"
+        >
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            <strong>💡 Tip:</strong> Use a single SVG with CSS for theme support. The icon is used for favicons and app icons.
+            <strong>💡 Tip:</strong> Use a single SVG with CSS for theme support. The icon is used for
+            favicons and app icons.
           </p>
         </div>
         <div>
           <label for="icon" class="block text-sm font-medium mb-2">
             Icon SVG
-            {isFromDatabase("icon") && (
-              <span class="ml-2 text-xs text-green-600 dark:text-green-400" title="Stored in database">💾</span>
-            )}
+            {
+              isFromDatabase("icon") && (
+                <span
+                  class="ml-2 text-xs text-green-600 dark:text-green-400"
+                  title="Stored in database"
+                >
+                  💾
+                </span>
+              )
+            }
           </label>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -384,34 +838,38 @@ const settings = {
     </style>
   </defs>
   <path class="icon-fill" d="..."/>
-</svg>`}
-              >{settings.icon}</textarea>
+</svg>`}>{settings.icon}</textarea
+              >
               <p class="text-xs text-gray-500 mt-1">
                 Square SVG icon (used for favicon). Use CSS for automatic theme support.
               </p>
             </div>
             <div class="space-y-3">
-              <div id="icon-preview-light" class="flex items-center justify-center p-4 bg-white rounded border border-gray-200 relative">
+              <div
+                id="icon-preview-light"
+                class="flex items-center justify-center p-4 bg-white rounded border border-gray-200 relative"
+              >
                 <p class="text-xs text-gray-500 mb-2 absolute top-1 left-2">Light Mode</p>
-                {settings.icon ? (
-                  <div 
-                    class="w-16 h-16 mt-4"
-                    set:html={settings.icon}
-                  ></div>
-                ) : (
-                  <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
-                )}
+                {
+                  settings.icon ? (
+                    <div class="w-16 h-16 mt-4" set:html={settings.icon} />
+                  ) : (
+                    <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
+                  )
+                }
               </div>
-              <div id="icon-preview-dark" class="flex items-center justify-center p-4 bg-gray-900 rounded border border-gray-700 relative">
+              <div
+                id="icon-preview-dark"
+                class="flex items-center justify-center p-4 bg-gray-900 rounded border border-gray-700 relative"
+              >
                 <p class="text-xs text-gray-400 mb-2 absolute top-1 left-2">Dark Mode</p>
-                {settings.icon ? (
-                  <div 
-                    class="w-16 h-16 mt-4"
-                    set:html={settings.icon}
-                  ></div>
-                ) : (
-                  <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
-                )}
+                {
+                  settings.icon ? (
+                    <div class="w-16 h-16 mt-4" set:html={settings.icon} />
+                  ) : (
+                    <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
+                  )
+                }
               </div>
             </div>
           </div>
@@ -420,20 +878,15 @@ const settings = {
 
       <!-- Submit Button -->
       <div class="flex justify-between items-center">
-        <a href="/admin/cms" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+        <a
+          href="/admin/cms"
+          class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+        >
           ← Back to CMS
         </a>
         <div class="flex gap-3">
-          <Button 
-            type="button" 
-            variant="secondary" 
-            id="reset-form-btn"
-          >
-            Reset
-          </Button>
-          <Button type="submit" variant="primary" id="save-settings-btn">
-            Save Settings
-          </Button>
+          <Button type="button" variant="secondary" id="reset-form-btn"> Reset </Button>
+          <Button type="submit" variant="primary" id="save-settings-btn"> Save Settings </Button>
         </div>
       </div>
     </form>
@@ -449,7 +902,9 @@ const settings = {
   // Sync color pickers with text inputs
   const primaryColorPicker = document.getElementById("primary_color_picker") as HTMLInputElement;
   const primaryColorInput = document.getElementById("primary_color") as HTMLInputElement;
-  const secondaryColorPicker = document.getElementById("secondary_color_picker") as HTMLInputElement;
+  const secondaryColorPicker = document.getElementById(
+    "secondary_color_picker"
+  ) as HTMLInputElement;
   const secondaryColorInput = document.getElementById("secondary_color") as HTMLInputElement;
 
   primaryColorPicker?.addEventListener("input", (e) => {
@@ -478,7 +933,7 @@ const settings = {
   function updatePreview(textareaId: string, previewSelector: string) {
     const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
     const preview = document.querySelector(previewSelector) as HTMLElement;
-    
+
     if (textarea && preview) {
       textarea.addEventListener("input", (e) => {
         const svgContent = (e.target as HTMLTextAreaElement).value.trim();
@@ -486,25 +941,31 @@ const settings = {
           preview.innerHTML = svgContent;
           preview.querySelector("p")?.remove();
         } else {
-          preview.innerHTML = '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
+          preview.innerHTML =
+            '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
         }
       });
     }
   }
 
   // Set up live previews for both light and dark mode
-  function updatePreviewBoth(textareaId: string, lightSelector: string, darkSelector: string, isIcon: boolean = false) {
+  function updatePreviewBoth(
+    textareaId: string,
+    lightSelector: string,
+    darkSelector: string,
+    isIcon: boolean = false
+  ) {
     const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
     const lightPreview = document.querySelector(lightSelector) as HTMLElement;
     const darkPreview = document.querySelector(darkSelector) as HTMLElement;
-    
+
     if (textarea && lightPreview && darkPreview) {
       textarea.addEventListener("input", (e) => {
         const svgContent = (e.target as HTMLTextAreaElement).value.trim();
         if (svgContent && svgContent.startsWith("<svg")) {
           // Determine size class based on whether it's an icon or logo
           const sizeClass = isIcon ? "w-16 h-16" : "max-w-full max-h-32";
-          
+
           // Update light preview
           const lightContent = lightPreview.querySelector("div");
           if (lightContent) {
@@ -516,7 +977,7 @@ const settings = {
             if (placeholder) placeholder.remove();
             lightPreview.innerHTML = `<p class="text-xs text-gray-500 mb-2 absolute top-1 left-2">Light Mode</p><div class="${sizeClass} mt-4">${svgContent}</div>`;
           }
-          
+
           // Update dark preview
           const darkContent = darkPreview.querySelector("div");
           if (darkContent) {
@@ -532,8 +993,12 @@ const settings = {
           // Reset to placeholder
           const lightLabel = lightPreview.querySelector("p.text-xs.text-gray-500");
           const darkLabel = darkPreview.querySelector("p.text-xs.text-gray-400");
-          lightPreview.innerHTML = lightLabel ? `${lightLabel.outerHTML}<p class="text-xs text-gray-400 text-center">Preview will appear here</p>` : '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
-          darkPreview.innerHTML = darkLabel ? `${darkLabel.outerHTML}<p class="text-xs text-gray-400 text-center">Preview will appear here</p>` : '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
+          lightPreview.innerHTML = lightLabel
+            ? `${lightLabel.outerHTML}<p class="text-xs text-gray-400 text-center">Preview will appear here</p>`
+            : '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
+          darkPreview.innerHTML = darkLabel
+            ? `${darkLabel.outerHTML}<p class="text-xs text-gray-400 text-center">Preview will appear here</p>`
+            : '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
         }
       });
     }
@@ -545,7 +1010,9 @@ const settings = {
   // Reset button
   const resetBtn = document.getElementById("reset-form-btn");
   resetBtn?.addEventListener("click", () => {
-    if (confirm("Reset all fields to current saved values? This will discard any unsaved changes.")) {
+    if (
+      confirm("Reset all fields to current saved values? This will discard any unsaved changes.")
+    ) {
       window.location.reload();
     }
   });
@@ -577,8 +1044,13 @@ const settings = {
       website: "website",
       primary_color: "primary_color",
       secondary_color: "secondary_color",
+      font_family: "font_family",
+      secondary_font_family: "secondary_font_family",
       logo: "logo",
       icon: "icon",
+      plausible_script_url: "plausible_script_url",
+      plausible_site_id: "plausible_site_id",
+      plausible_domain: "plausible_domain",
     };
 
     // Validation errors
@@ -588,15 +1060,17 @@ const settings = {
       const value = formData.get(formKey);
       if (value !== null && value !== undefined) {
         const trimmedValue = value.toString().trim();
-        
+
         // Validate colors
         if (dbKey.includes("color") && trimmedValue) {
           if (!/^#[0-9A-Fa-f]{6}$/.test(trimmedValue)) {
-            validationErrors.push(`${formKey.replace("_", " ")} must be a valid hex color (e.g., #825BDD)`);
+            validationErrors.push(
+              `${formKey.replace("_", " ")} must be a valid hex color (e.g., #825BDD)`
+            );
             continue;
           }
         }
-        
+
         // Validate email
         if (dbKey === "email" && trimmedValue) {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -605,25 +1079,27 @@ const settings = {
             continue;
           }
         }
-        
+
         // Validate URL
-        if (dbKey === "website" && trimmedValue) {
+        if ((dbKey === "website" || dbKey === "plausible_script_url" || dbKey === "plausible_domain") && trimmedValue) {
           try {
             new URL(trimmedValue.startsWith("http") ? trimmedValue : `https://${trimmedValue}`);
           } catch {
-            validationErrors.push("Website must be a valid URL");
+            validationErrors.push(`${formKey.replace("_", " ")} must be a valid URL`);
             continue;
           }
         }
-        
+
         // Validate SVG (basic check)
         if ((dbKey.includes("logo") || dbKey.includes("icon")) && trimmedValue) {
           if (!trimmedValue.trim().startsWith("<svg")) {
-            validationErrors.push(`${formKey.replace("_", " ")} must be valid SVG markup starting with <svg>`);
+            validationErrors.push(
+              `${formKey.replace("_", " ")} must be valid SVG markup starting with <svg>`
+            );
             continue;
           }
         }
-        
+
         settings[dbKey] = trimmedValue;
       }
     }
@@ -637,7 +1113,7 @@ const settings = {
         }
         errorMessage.classList.remove("hidden");
       }
-      
+
       if (saveBtn) {
         saveBtn.disabled = false;
         saveBtn.textContent = "Save Settings";
@@ -655,22 +1131,83 @@ const settings = {
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || result.message || "Failed to save settings");
+        // Show detailed error information
+        const errorMsg = result.errorDetails
+          ? `${result.message || "Failed to save settings"}\n\nDetails:\n${result.errorDetails}`
+          : result.error || result.message || "Failed to save settings";
+        throw new Error(errorMsg);
       }
 
       // Show success message
       if (successMessage) {
         const messageText = successMessage.querySelector("p");
         if (messageText) {
-          messageText.textContent = "Settings saved successfully! Changes will take effect immediately.";
+          messageText.textContent = "Settings saved successfully! Regenerating colors...";
         }
         successMessage.classList.remove("hidden");
       }
 
-      // Reload page after 1 second to show updated values
+      // Inject dynamic colors and fonts if they were updated
+      if (
+        settings.primary_color ||
+        settings.secondary_color ||
+        settings.font_family ||
+        settings.secondary_font_family
+      ) {
+        try {
+          // Import and inject dynamic colors
+          const { injectDynamicColors } = await import("../../lib/dynamic-colors");
+
+          // Get the new color values from the settings object we just saved
+          const newPrimaryColor = settings.primary_color || primaryColorInput?.value;
+          const newSecondaryColor = settings.secondary_color || secondaryColorInput?.value;
+          const fontFamilySelect = document.getElementById("font_family") as HTMLSelectElement;
+          const secondaryFontFamilySelect = document.getElementById(
+            "secondary_font_family"
+          ) as HTMLSelectElement;
+          const newFontFamily = settings.font_family || fontFamilySelect?.value;
+          const newSecondaryFontFamily =
+            settings.secondary_font_family || secondaryFontFamilySelect?.value;
+
+          if (newPrimaryColor || newSecondaryColor) {
+            console.log("[settings] Injecting dynamic colors:", {
+              newPrimaryColor,
+              newSecondaryColor,
+            });
+            injectDynamicColors(newPrimaryColor || "#825BDD", newSecondaryColor || "#0ea5e9");
+          }
+
+          // Inject font families if they were updated
+          if (newFontFamily) {
+            document.documentElement.style.setProperty("--font-family", newFontFamily);
+            console.log("[settings] Primary font family updated:", newFontFamily);
+          }
+          if (newSecondaryFontFamily) {
+            document.documentElement.style.setProperty(
+              "--font-family-secondary",
+              newSecondaryFontFamily
+            );
+            console.log("[settings] Secondary font family updated:", newSecondaryFontFamily);
+          }
+
+          if (successMessage) {
+            const messageText = successMessage.querySelector("p");
+            if (messageText) {
+              const updates = [];
+              if (settings.primary_color || settings.secondary_color) updates.push("colors");
+              if (settings.font_family || settings.secondary_font_family) updates.push("fonts");
+              messageText.textContent = `Settings saved successfully! ${updates.join(" and ")} updated. Reloading page...`;
+            }
+          }
+        } catch (error) {
+          console.error("[settings] Failed to inject dynamic colors/fonts:", error);
+        }
+      }
+
+      // Reload page after 1.5 seconds to show updated values and ensure all changes are applied
       setTimeout(() => {
         window.location.reload();
-      }, 1000);
+      }, 1500);
     } catch (error: any) {
       // Show error message
       if (errorMessage) {

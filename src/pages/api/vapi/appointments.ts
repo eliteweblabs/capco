@@ -12,7 +12,7 @@ import { ensureProtocol } from "../../../lib/url-utils";
 
 interface VapiAppointmentRequest {
   type: "appointment";
-  action: "read" | "write" | "update" | "delete";
+  action: "read" | "write" | "update" | "delete" | "availability";
   data?: any;
   appointmentId?: string;
   userId?: string;

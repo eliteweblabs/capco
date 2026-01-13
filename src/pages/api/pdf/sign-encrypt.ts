@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Create combined options from form data
-    const options = createSignAndEncryptOptionsFromForm(formData);
+    const options = await createSignAndEncryptOptionsFromForm(formData);
 
     console.log("🔐✍️ [PDF-SIGN-ENCRYPT] Processing PDF:", {
       fileName: file.name,

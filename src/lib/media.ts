@@ -786,7 +786,7 @@ export function getFileIcon(fileType: string): string {
     type.includes("gif") ||
     type.includes("webp")
   ) {
-    return `<svg class="h-6 w-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+    return `<svg class="h-6 w-6 text-primary-500" fill="currentColor" viewBox="0 0 24 24">
       <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
     </svg>`;
   }
@@ -805,7 +805,7 @@ export function getFileIcon(fileType: string): string {
     type.includes("txt") ||
     type.includes("rtf")
   ) {
-    return `<svg class="h-6 w-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+    return `<svg class="h-6 w-6 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1v5h5v10H6V3h7z"/>
       <path d="M9 12h6v2H9zm0 4h6v2H9z"/>
     </svg>`;

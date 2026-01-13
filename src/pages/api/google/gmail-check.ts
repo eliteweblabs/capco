@@ -6,7 +6,7 @@ import { checkGoogleAuth } from "../../../lib/google-auth";
  * Checks for new emails in the authenticated user's Gmail inbox
  */
 
-async function getValidAccessToken(cookies: any): Promise<string | null> {
+async function getValidAccessToken(cookies: any, requestUrl?: string): Promise<string | null> {
   // First try to get access token from cookies
   let accessToken = cookies.get("google_access_token")?.value;
 
@@ -26,10 +26,11 @@ async function getValidAccessToken(cookies: any): Promise<string | null> {
 
     // Token expired, try to refresh
     console.log("🔄 [GMAIL-CHECK] Access token expired, refreshing...");
-    const refreshResponse = await fetch(new URL("/api/google/refresh-token", request.url).toString(), {
+    const baseUrl = requestUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+    const refreshResponse = await fetch(new URL("/api/google/refresh-token", baseUrl).toString(), {
       method: "POST",
       headers: {
-        Cookie: request.headers.get("Cookie") || "",
+        Cookie: cookies.toString() || "",
       },
     });
 
@@ -61,7 +62,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Get valid access token (refresh if needed)
-    const accessToken = await getValidAccessToken(cookies);
+    const accessToken = await getValidAccessToken(cookies, new URL(request.url).origin);
 
     if (!accessToken) {
       return new Response(

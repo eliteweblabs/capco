@@ -308,7 +308,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         // Add any additional data needed for placeholders
       };
 
-      emailHtml = replacePlaceholders(emailHtml, placeholderData);
+      emailHtml = await replacePlaceholders(emailHtml, placeholderData);
 
       // Apply SMS email logic if selectedUsers are provided (from test page)
       let finalUsersToNotify = resolvedUsersToNotify;
@@ -478,10 +478,23 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             method,
           });
 
-          // // Validate from field
-          const validFromName = fromName && fromName.trim() !== "" ? fromName.trim() : "CAPCo";
+          // Get company data from database for fallback values
+          let defaultFromName = "Company";
+          let defaultFromEmail = "noreply@example.com";
+          try {
+            const { globalCompanyData } = await import("../../global/global-company-data");
+            const companyData = await globalCompanyData();
+            defaultFromName = companyData.globalCompanyName || "Company";
+            const websiteDomain = companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "example.com";
+            defaultFromEmail = `noreply@${websiteDomain}`;
+          } catch (error) {
+            console.warn("📧 [EMAIL-DELIVERY] Failed to load company data, using defaults");
+          }
+
+          // Validate from field
+          const validFromName = fromName && fromName.trim() !== "" ? fromName.trim() : defaultFromName;
           const validFromEmail =
-            fromEmail && fromEmail.trim() !== "" ? fromEmail.trim() : "noreply@capcofire.com";
+            fromEmail && fromEmail.trim() !== "" ? fromEmail.trim() : defaultFromEmail;
 
           // Strip HTML from email subject line
           const cleanSubject = emailSubject.replace(/<[^>]*>/g, "").trim();

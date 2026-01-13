@@ -36,7 +36,7 @@ async function saveHTMLTemplate(
 }
 
 // Function to convert HTML to PDF
-async function convertHtmlToPdf(htmlContent: string): Promise<Buffer> {
+export async function convertHtmlToPdf(htmlContent: string): Promise<Buffer> {
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],

@@ -78,11 +78,11 @@ function getNestedValue(obj: any, path: string): any {
  * Replace placeholders in a message string
  */
 
-export function replacePlaceholders(
+export async function replacePlaceholders(
   message: string,
   data?: PlaceholderData | null,
   addBoldTags: boolean = false
-): string {
+): Promise<string> {
   if (!message) {
     console.log("🔄 [PLACEHOLDER-UTILS] No message or data, returning original");
     return message;
@@ -111,7 +111,8 @@ export function replacePlaceholders(
       value = getNestedValue(data.statusData, path);
     } else if (placeholderPath.startsWith("global.")) {
       const path = placeholderPath.replace("global.", "");
-      value = getNestedValue(globalCompanyData(), path);
+      const companyData = await globalCompanyData();
+      value = getNestedValue(companyData, path);
     }
 
     // If we found a value, replace it
@@ -274,10 +275,13 @@ export function replacePlaceholders(
   //   addBoldTags = true;
   // }
 
+  // Get global company data once and cache it
+  const companyData = await globalCompanyData();
+
   // Replace GLOBAL_COLOR_PRIMARY placeholders
-  if (globalCompanyData().primaryColor) {
+  if (companyData.primaryColor) {
     // Ensure primary color starts with # for hexadecimal format
-    let hexColor = globalCompanyData().primaryColor;
+    let hexColor = companyData.primaryColor;
     if (!hexColor?.startsWith("#")) {
       hexColor = "#" + hexColor;
     }
@@ -290,9 +294,9 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COLOR_SECONDARY placeholders
-  if (globalCompanyData().secondaryColor) {
-    // Ensure primary color starts with # for hexadecimal format
-    let hexColor = globalCompanyData().secondaryColor;
+  if (companyData.secondaryColor) {
+    // Ensure secondary color starts with # for hexadecimal format
+    let hexColor = companyData.secondaryColor;
     if (!hexColor?.startsWith("#")) {
       hexColor = "#" + hexColor;
     }
@@ -336,21 +340,21 @@ export function replacePlaceholders(
   // }
 
   // Replace COMPANY_ICON_LIGHT placeholders
-  if (globalCompanyData().globalCompanyIcon) {
+  if (companyData.globalCompanyIcon) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*COMPANY_ICON\s*\}\}/g, globalCompanyData().globalCompanyIcon);
+    result = result.replace(/\{\{\s*COMPANY_ICON\s*\}\}/g, companyData.globalCompanyIcon);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = false;
     }
   }
 
-  // Replace COMPANY_ICON_LIGHT placeholders
-  if (globalCompanyData().globalCompanyIcon) {
+  // Replace GLOBAL_COMPANY_ICON placeholders
+  if (companyData.globalCompanyIcon) {
     const beforeReplace = result;
     result = result.replace(
       /\{\{\s*GLOBAL_COMPANY_ICON\s*\}\}/g,
-      globalCompanyData().globalCompanyIcon
+      companyData.globalCompanyIcon
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;
@@ -359,11 +363,11 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COMPANY_LOGO_SVG placeholders
-  if (globalCompanyData().globalCompanyLogo) {
+  if (companyData.globalCompanyLogo) {
     const beforeReplace = result;
     result = result.replace(
       /\{\{\s*GLOBAL_COMPANY_LOGO_SVG\s*\}\}/g,
-      globalCompanyData().globalCompanyLogo
+      companyData.globalCompanyLogo
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;
@@ -372,11 +376,11 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COMPANY_ICON_SVG placeholders
-  if (globalCompanyData().globalCompanyIcon) {
+  if (companyData.globalCompanyIcon) {
     const beforeReplace = result;
     result = result.replace(
       /\{\{\s*GLOBAL_COMPANY_ICON_SVG\s*\}\}/g,
-      globalCompanyData().globalCompanyIcon
+      companyData.globalCompanyIcon
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;
@@ -385,7 +389,7 @@ export function replacePlaceholders(
   }
 
   // Replace RAILWAY_PROJECT_NAME placeholders
-  const globalCompanyName = globalCompanyData().globalCompanyName;
+  const globalCompanyName = companyData.globalCompanyName;
   if (globalCompanyName) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g, globalCompanyName);
@@ -398,11 +402,11 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COMPANY_SLOGAN placeholders
-  if (globalCompanyData().globalCompanySlogan) {
+  if (companyData.globalCompanySlogan) {
     const beforeReplace = result;
     result = result.replace(
       /\{\{\s*GLOBAL_COMPANY_SLOGAN\s*\}\}/g,
-      globalCompanyData().globalCompanySlogan
+      companyData.globalCompanySlogan
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;
@@ -411,7 +415,7 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COMPANY_PHONE placeholders
-  const globalCompanyPhone = globalCompanyData().globalCompanyPhone;
+  const globalCompanyPhone = companyData.globalCompanyPhone;
   if (globalCompanyPhone) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*GLOBAL_COMPANY_PHONE\s*\}\}/g, globalCompanyPhone);
@@ -422,11 +426,11 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COMPANY_EMAIL placeholders
-  if (globalCompanyData().globalCompanyEmail) {
+  if (companyData.globalCompanyEmail) {
     const beforeReplace = result;
     result = result.replace(
       /\{\{\s*GLOBAL_COMPANY_EMAIL\s*\}\}/g,
-      globalCompanyData().globalCompanyEmail
+      companyData.globalCompanyEmail
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;
@@ -435,7 +439,7 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COMPANY_WEBSITE placeholders
-  const globalCompanyWebsite = globalCompanyData().globalCompanyWebsite;
+  const globalCompanyWebsite = companyData.globalCompanyWebsite;
   if (globalCompanyWebsite) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*GLOBAL_COMPANY_WEBSITE\s*\}\}/g, globalCompanyWebsite);
@@ -466,11 +470,11 @@ export function replacePlaceholders(
   }
 
   // Replace GLOBAL_COMPANY_ADDRESS placeholders
-  if (globalCompanyData().globalCompanyAddress) {
+  if (companyData.globalCompanyAddress) {
     const beforeReplace = result;
     result = result.replace(
       /\{\{\s*GLOBAL_COMPANY_ADDRESS\s*\}\}/g,
-      globalCompanyData().globalCompanyAddress
+      companyData.globalCompanyAddress
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;
@@ -641,11 +645,11 @@ export function replacePlaceholders(
   }
 
   // Company placeholders
-  if (globalCompanyData().globalCompanyAddress) {
+  if (companyData.globalCompanyAddress) {
     const beforeReplace = result;
     result = result.replace(
       /\{\{\s*COMPANY_ADDRESS\s*\}\}/g,
-      globalCompanyData().globalCompanyAddress
+      companyData.globalCompanyAddress
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;
@@ -653,7 +657,7 @@ export function replacePlaceholders(
     }
   }
 
-  const companyPhone = globalCompanyData().globalCompanyPhone;
+  const companyPhone = companyData.globalCompanyPhone;
   if (companyPhone) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*COMPANY_PHONE\s*\}\}/g, companyPhone);
@@ -663,16 +667,16 @@ export function replacePlaceholders(
     }
   }
 
-  if (globalCompanyData().globalCompanyEmail) {
+  if (companyData.globalCompanyEmail) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*COMPANY_EMAIL\s*\}\}/g, globalCompanyData().globalCompanyEmail);
+    result = result.replace(/\{\{\s*COMPANY_EMAIL\s*\}\}/g, companyData.globalCompanyEmail);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
     }
   }
 
-  const companyWebsite = globalCompanyData().globalCompanyWebsite;
+  const companyWebsite = companyData.globalCompanyWebsite;
   if (companyWebsite) {
     const beforeReplace = result;
     result = result.replace(/\{\{\s*COMPANY_WEBSITE\s*\}\}/g, companyWebsite);
@@ -682,11 +686,11 @@ export function replacePlaceholders(
     }
   }
 
-  if (globalCompanyData().globalCompanyLogo) {
+  if (companyData.globalCompanyLogo) {
     const beforeReplace = result;
     result = result.replace(
       /\{\{\s*COMPANY_LOGO_URL\s*\}\}/g,
-      globalCompanyData().globalCompanyLogo
+      companyData.globalCompanyLogo
     );
     if (result !== beforeReplace) {
       placeholderApplied = true;

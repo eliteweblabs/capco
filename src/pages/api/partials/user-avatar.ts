@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request }) => {
       ? "border-2 border-white dark:border-gray-700 shadow-sm"
       : "";
 
-    const containerClasses = `${sizeClasses[size]} rounded-full ${borderClass} bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium ${className}`.trim();
+    const containerClasses = `${sizeClasses[size]} rounded-full ${borderClass} bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center text-white font-medium ${className}`.trim();
 
     const idAttr = id ? ` id="${id}"` : "";
     const titleAttr = title ? ` title="${title}"` : ` title="${fullName}"`;

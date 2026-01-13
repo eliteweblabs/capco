@@ -76,7 +76,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const body = await request.json();
+    console.log("📥 [CMS-PAGES] Received body:", JSON.stringify(body, null, 2));
     const { slug, title, description, content, frontmatter, template } = body;
+    console.log("📥 [CMS-PAGES] Extracted values:", { slug, title, description, content: content?.substring(0, 50) + "...", template });
 
     if (!slug || !content) {
       return new Response(
