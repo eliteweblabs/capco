@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { Pool } from "pg";
-import { ensureProtocol } from "../../../lib/url-utils";
+import { getApiBaseUrl } from "../../../lib/url-utils";
 // import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
 // Cal.com database connection using Railway environment variables
@@ -2555,8 +2555,8 @@ async function handleCalComCreateBooking(params: any) {
           ${process.env.RAILWAY_PROJECT_NAME}</p>
         `;
 
-      // Send email using the existing update-delivery API
-      const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
+      // Send email using the existing update-delivery API - use request URL
+      const baseUrl = getApiBaseUrl(request);
       const emailResponse = await fetch(`${baseUrl}/api/delivery/update-delivery`, {
         method: "POST",
         headers: {

@@ -308,7 +308,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         // Add any additional data needed for placeholders
       };
 
-      emailHtml = await replacePlaceholders(emailHtml, placeholderData);
+      emailHtml = await replacePlaceholders(emailHtml, placeholderData, false, request);
 
       // Apply SMS email logic if selectedUsers are provided (from test page)
       let finalUsersToNotify = resolvedUsersToNotify;

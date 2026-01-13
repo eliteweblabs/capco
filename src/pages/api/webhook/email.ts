@@ -5,7 +5,7 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
-import { getApiBaseUrl, ensureProtocol } from "../../../lib/url-utils";
+import { getApiBaseUrl } from "../../../lib/url-utils";
 // Import validateEmail from ux-utils (server-side API routes need explicit import)
 import { validateEmail } from "../../../lib/ux-utils";
 
@@ -97,7 +97,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("📧 [EMAIL-WEBHOOK] Subject:", emailData.subject);
 
     // Step 2: Find or create user based on original sender email
-    const user = await findOrCreateUser(originalSender, emailData.headers);
+    const user = await findOrCreateUser(originalSender, emailData.headers, request);
     if (!user) {
       console.error("❌ [EMAIL-WEBHOOK] Failed to find or create user");
       return new Response(
@@ -429,7 +429,7 @@ function extractNameFromEmail(email: string, headers?: Record<string, string>): 
 }
 
 // Find existing user or create new one
-async function findOrCreateUser(email: string, headers?: Record<string, string>) {
+async function findOrCreateUser(email: string, headers?: Record<string, string>, request?: Request) {
   try {
     console.log("🔍 [EMAIL-WEBHOOK] Looking for user with email:", email);
     console.log("🔍 [EMAIL-WEBHOOK] Raw email value:", JSON.stringify(email));
@@ -493,7 +493,7 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       formData.append("smsAlerts", "false");
       formData.append("role", "Client");
 
-      const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
+      const baseUrl = getApiBaseUrl(request);
       const createUserResponse = await fetch(`${baseUrl}/api/users/upsert`, {
         method: "POST",
         body: formData,
@@ -646,7 +646,7 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
     console.log("🏗️ [EMAIL-WEBHOOK] Project data for API:", JSON.stringify(projectData, null, 2));
 
     // Call the create-project API endpoint to ensure proper processing
-    const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
+    const baseUrl = getApiBaseUrl(request);
     const createProjectResponse = await fetch(`${baseUrl}/api/projects/upsert`, {
       method: "POST",
       headers: {

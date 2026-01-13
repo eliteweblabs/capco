@@ -3,7 +3,7 @@ import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-op
 import { checkAuth } from "../../../lib/auth";
 import { replacePlaceholders } from "../../../lib/placeholder-utils";
 
-export const GET: APIRoute = async ({ url, cookies }) => {
+export const GET: APIRoute = async ({ url, cookies, request }) => {
   try {
     // Get current user
     const { currentUser, isAuth } = await checkAuth(cookies);
@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Replace placeholders in contract HTML
     const contractHtml = await replacePlaceholders(project.contractData?.html, {
       project: project as any,
-    });
+    }, false, request);
 
     return createSuccessResponse(
       {

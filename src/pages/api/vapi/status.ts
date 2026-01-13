@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { ensureProtocol } from "../../../lib/url-utils";
+import { getApiBaseUrl } from "../../../lib/url-utils";
 
 /**
  * Vapi.ai Status API
@@ -7,7 +7,7 @@ import { ensureProtocol } from "../../../lib/url-utils";
  * Checks the status of Vapi.ai configuration without requiring assistant setup
  */
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ request }) => {
   try {
     const vapiApiKey = process.env.VAPI_API_KEY;
     const assistantId = process.env.PUBLIC_VAPI_ASSISTANT_ID;
@@ -41,7 +41,7 @@ export const GET: APIRoute = async () => {
             hasValue: webhookSecret ? webhookSecret.length > 0 : false,
           },
           environment: {
-            siteUrl: ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"),
+            siteUrl: getApiBaseUrl(request),
           },
         },
       }),

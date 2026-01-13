@@ -37,7 +37,7 @@ interface DiscussionFilters {
   includeTotal?: boolean;
 }
 
-export const GET: APIRoute = async ({ url, cookies }) => {
+export const GET: APIRoute = async ({ url, cookies, request }) => {
   try {
     // Check authentication
     const { isAuth, currentUser, currentRole } = await checkAuth(cookies);
@@ -276,7 +276,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     };
 
     // Enrich discussions with author and project owner information
-    const enrichedDiscussions = (discussions || []).map((discussion: any) => {
+    const enrichedDiscussions = await Promise.all((discussions || []).map(async (discussion: any) => {
       const authorProfile = profilesMap.get(discussion.authorId);
       const ownerProfile = ownerProfilesMap.get(discussion.projects?.authorId);
 
@@ -294,7 +294,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         authorFirstName: authorProfile?.firstName || null,
         authorLastName: authorProfile?.lastName || null,
         message: filters.projectId
-          ? replacePlaceholders(discussion.message, placeholderData, true)
+          ? await replacePlaceholders(discussion.message, placeholderData, true, request)
           : discussion.message,
         internal: discussion.internal || false,
         markCompleted: discussion.markCompleted || false,
@@ -306,7 +306,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         createdAt: discussion.createdAt,
         updatedAt: discussion.updatedAt,
       };
-    });
+    }));
 
     // Get total count if requested
     let totalCount = null;
