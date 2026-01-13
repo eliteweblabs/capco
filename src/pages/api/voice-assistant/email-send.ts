@@ -23,7 +23,7 @@ export const POST: APIRoute = async ({ request }) => {
     let defaultFromName = "Company";
     let defaultFromEmail = "noreply@example.com";
     try {
-      const { globalCompanyData } = await import("../../global/global-company-data");
+      const { globalCompanyData } = await import("../global/global-company-data");
       const companyData = await globalCompanyData();
       defaultFromName = companyData.globalCompanyName || "Company";
       const websiteDomain = companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "example.com";

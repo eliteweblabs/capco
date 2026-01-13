@@ -119,21 +119,27 @@ export function hexToRgb(hex: string): string {
 }
 
 /**
- * Get primary color from environment or default
+ * Get primary color from database or default
  */
-export function getPrimaryColor(): string {
-  // Check various environment variable sources
-  if (typeof process !== "undefined" && process.env && process.env.GLOBAL_COLOR_PRIMARY) {
-    return process.env.GLOBAL_COLOR_PRIMARY;
-  }
-
-  // Try import.meta.env if available (Vite/Astro environment)
+export async function getPrimaryColor(): Promise<string> {
   try {
-    if (import.meta && import.meta.env && import.meta.env.GLOBAL_COLOR_PRIMARY) {
-      return import.meta.env.GLOBAL_COLOR_PRIMARY;
+    const { globalCompanyData } = await import("../pages/api/global/global-company-data");
+    const companyData = await globalCompanyData();
+    if (companyData.primaryColor) {
+      return companyData.primaryColor;
     }
   } catch (e) {
-    // import.meta might not be available in all contexts
+    // Fallback to env if database call fails
+    if (typeof process !== "undefined" && process.env && process.env.GLOBAL_COLOR_PRIMARY) {
+      return process.env.GLOBAL_COLOR_PRIMARY;
+    }
+    try {
+      if (import.meta && import.meta.env && import.meta.env.GLOBAL_COLOR_PRIMARY) {
+        return import.meta.env.GLOBAL_COLOR_PRIMARY;
+      }
+    } catch (e2) {
+      // import.meta might not be available in all contexts
+    }
   }
 
   return "#825BDD"; // Fallback
@@ -142,8 +148,8 @@ export function getPrimaryColor(): string {
 /**
  * Get the complete primary color palette for Tailwind
  */
-export function getPrimaryColorPalette(): Record<string | number, string> {
-  const primaryColor = getPrimaryColor();
+export async function getPrimaryColorPalette(): Promise<Record<string | number, string>> {
+  const primaryColor = await getPrimaryColor();
   console.log("🎨 [COLOR-UTILS] Generating color palette from:", primaryColor);
 
   const palette = generateColorPalette(primaryColor);

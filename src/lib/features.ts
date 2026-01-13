@@ -12,15 +12,15 @@ export { baseIsFeatureEnabled as isFeatureEnabled };
 /**
  * Feature gate - returns component or null based on feature flag
  */
-export function featureGate<T>(featureKey: string, component: T): T | null {
-  return baseIsFeatureEnabled(featureKey) ? component : null;
+export async function featureGate<T>(featureKey: string, component: T): Promise<T | null> {
+  return (await baseIsFeatureEnabled(featureKey)) ? component : null;
 }
 
 /**
  * Get all enabled features
  */
-export function getEnabledFeatures(): string[] {
-  const config = getSiteConfig();
+export async function getEnabledFeatures(): Promise<string[]> {
+  const config = await getSiteConfig();
   return Object.entries(config.features)
     .filter(([_, value]) => {
       if (typeof value === 'boolean') {
@@ -37,22 +37,24 @@ export function getEnabledFeatures(): string[] {
 /**
  * Check if any of the features are enabled
  */
-export function anyFeatureEnabled(...features: string[]): boolean {
-  return features.some(f => baseIsFeatureEnabled(f));
+export async function anyFeatureEnabled(...features: string[]): Promise<boolean> {
+  const results = await Promise.all(features.map(f => baseIsFeatureEnabled(f)));
+  return results.some(r => r);
 }
 
 /**
  * Check if all features are enabled
  */
-export function allFeaturesEnabled(...features: string[]): boolean {
-  return features.every(f => baseIsFeatureEnabled(f));
+export async function allFeaturesEnabled(...features: string[]): Promise<boolean> {
+  const results = await Promise.all(features.map(f => baseIsFeatureEnabled(f)));
+  return results.every(r => r);
 }
 
 /**
  * Get feature configuration for a specific feature
  */
-export function getFeatureConfig(featureKey: string): boolean {
-  const config = getSiteConfig();
+export async function getFeatureConfig(featureKey: string): Promise<boolean> {
+  const config = await getSiteConfig();
   const feature = config.features[featureKey];
   if (typeof feature === 'boolean') {
     return feature;
@@ -66,8 +68,8 @@ export function getFeatureConfig(featureKey: string): boolean {
 /**
  * Check if feature is explicitly disabled (not just missing)
  */
-export function isFeatureDisabled(featureKey: string): boolean {
-  const config = getSiteConfig();
+export async function isFeatureDisabled(featureKey: string): Promise<boolean> {
+  const config = await getSiteConfig();
   const feature = config.features[featureKey];
   if (typeof feature === 'boolean') {
     return feature === false;

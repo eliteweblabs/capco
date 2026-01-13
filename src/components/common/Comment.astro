@@ -1,5 +1,6 @@
 ---
 import SimpleIcon from "./SimpleIcon.astro";
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
 export const partial = true;
 
@@ -18,6 +19,10 @@ const canToggleCompleted = Astro.request.headers.get("x-can-toggle-completed") =
 const canReply = Astro.request.headers.get("x-can-reply") === "true";
 const marginLeft = Astro.request.headers.get("x-margin-left") || "";
 const borderLeft = Astro.request.headers.get("x-border-left") || "";
+
+// Get company name from database
+const companyData = await globalCompanyData();
+const defaultCompanyName = companyData.globalCompanyName || "";
 ---
 
 {
@@ -30,14 +35,14 @@ const borderLeft = Astro.request.headers.get("x-border-left") || "";
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {comment.companyName
                   ? comment.companyName.charAt(0).toUpperCase()
-                  : import.meta.env.RAILWAY_PROJECT_NAME}
+                  : defaultCompanyName.charAt(0).toUpperCase() || "?"}
               </span>
             </div>
             <div>
               <p class="text-sm font-medium text-gray-900 dark:text-white">
                 {comment.companyName !== null && comment.companyName !== "Unknown User"
                   ? comment.companyName
-                  : import.meta.env.RAILWAY_PROJECT_NAME}
+                  : defaultCompanyName}
                 {isInternal && (
                   <span class="ml-2 inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-200">
                     <SimpleIcon name="lock" class="mr-1" />

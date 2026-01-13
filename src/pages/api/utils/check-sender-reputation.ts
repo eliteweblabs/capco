@@ -21,7 +21,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     }
 
     // Get domain from database
-    const { globalCompanyData } = await import("../../global/global-company-data");
+    const { globalCompanyData } = await import("../global/global-company-data");
     const companyData = await globalCompanyData();
     const domain = companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "";
 
