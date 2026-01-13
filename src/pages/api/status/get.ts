@@ -137,20 +137,20 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     // Apply placeholder replacement to all string properties in statuses
 
     if (placeholderData) {
-      statusesData.forEach((status: any) => {
+      for (const status of statusesData) {
         // Loop through all properties of the status object
-        Object.keys(status).forEach((key) => {
+        for (const key of Object.keys(status)) {
           const value = status[key];
           placeholderData.project.estTime = statusesData.find(
             (s: any) => s.statusCode === status.statusCode
           )?.estTime;
           // Only process string values
           if (typeof value === "string" && value.trim()) {
-            status[key] = replacePlaceholders(value, placeholderData);
+            status[key] = await replacePlaceholders(value, placeholderData, false, request);
             // console.log("🔍 [PROJECT-STATUSES-API] Key:", key, "Value:", status[key]);
           }
-        });
-      });
+        }
+      }
 
       console.log("🔍 [PROJECT-STATUSES-API] Applied placeholder replacement to all statuses");
     }
@@ -383,9 +383,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Apply placeholder replacement to all string properties in statuses
     if (placeholderData) {
-      statusesData.forEach((status: any) => {
+      for (const status of statusesData) {
         // Loop through all properties of the status object
-        Object.keys(status).forEach((key) => {
+        for (const key of Object.keys(status)) {
           const value = status[key];
 
           placeholderData.project.estTime = statusesData.find(
@@ -393,10 +393,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           )?.estTime;
           // Only process string values
           if (typeof value === "string" && value.trim()) {
-            status[key] = replacePlaceholders(value, placeholderData);
+            status[key] = await replacePlaceholders(value, placeholderData, false, request);
           }
-        });
-      });
+        }
+      }
     }
 
     // Get admin and staff emails using reusable API (same as GET route)

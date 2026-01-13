@@ -297,7 +297,7 @@ export function extractNameFromEmail(email: string, headers?: Record<string, str
 }
 
 // Find existing user or create new one
-export async function findOrCreateUser(email: string, headers?: Record<string, string>) {
+export async function findOrCreateUser(email: string, headers?: Record<string, string>, request?: Request) {
   try {
     console.log("🔍 [EMAIL-WEBHOOK] Looking for user with email:", email);
     console.log("🔍 [EMAIL-WEBHOOK] Raw email value:", JSON.stringify(email));
@@ -361,7 +361,8 @@ export async function findOrCreateUser(email: string, headers?: Record<string, s
       formData.append("smsAlerts", "false");
       formData.append("role", "Client");
 
-      const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
+      // Use request URL if available, otherwise fallback to localhost
+      const baseUrl = request ? getApiBaseUrl(request) : "http://localhost:4321";
       const createUserResponse = await fetch(`${baseUrl}/api/users/upsert`, {
         method: "POST",
         body: formData,

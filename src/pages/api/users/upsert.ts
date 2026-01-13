@@ -338,7 +338,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               phone: userData.phone || "Not provided",
             },
           },
-        });
+        }, false, request);
       } else {
         // Get company name from database
         const { globalCompanyData } = await import("../global/global-company-data");
@@ -366,14 +366,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       userEmailContent += emailFooterContent;
 
-      // Send welcome email to the new user
-      let apiBaseUrl;
-      try {
-        apiBaseUrl = getApiBaseUrl();
-      } catch (error) {
-        console.warn("⚠️ [USERS-UPSERT] RAILWAY_PUBLIC_DOMAIN not set, using localhost fallback");
-        apiBaseUrl = "http://localhost:4321";
-      }
+      // Send welcome email to the new user - use request URL
+      const apiBaseUrl = getApiBaseUrl(request);
 
       try {
         const emailPayload = {

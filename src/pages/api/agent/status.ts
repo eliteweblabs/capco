@@ -43,7 +43,7 @@ export const GET: APIRoute = async ({ cookies }) => {
         },
         environment: {
           nodeEnv: process.env.NODE_ENV,
-          railwayDomain: process.env.RAILWAY_PUBLIC_DOMAIN,
+          railwayDomain: request ? new URL(request.url).origin : undefined,
         },
         debugging: {
           allAnthropicKeys: anthropicKeys,

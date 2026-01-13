@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { ensureProtocol } from "../../../lib/url-utils";
+import { getApiBaseUrl } from "../../../lib/url-utils";
 
 /**
  * Vapi.ai Webhook Handler
@@ -186,9 +186,7 @@ async function handleToolCalls(
 
         console.log(`[---VAPI-WEBHOOK] Creating project with params:`, args);
 
-        const baseUrl = ensureProtocol(
-          process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"
-        );
+        const baseUrl = getApiBaseUrl(request);
         const projectResponse = await fetch(`${baseUrl}/api/projects/upsert`, {
           method: "POST",
           headers: {
@@ -231,9 +229,7 @@ async function handleToolCalls(
 
         console.log(`[---VAPI-WEBHOOK] Saving conversation to memory:`, args);
 
-        const baseUrl = ensureProtocol(
-          process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"
-        );
+        const baseUrl = getApiBaseUrl(request);
         const rememberResponse = await fetch(`${baseUrl}/api/voice-assistant/remember`, {
           method: "POST",
           headers: {
@@ -374,9 +370,7 @@ async function handleToolCalls(
         console.log(`[---VAPI-WEBHOOK] Processing file:`, args);
 
         try {
-          const baseUrl = ensureProtocol(
-            process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"
-          );
+          const baseUrl = getApiBaseUrl(request);
 
           // Download the file from the provided URL
           let fileBuffer: ArrayBuffer | null = null;
@@ -453,7 +447,7 @@ async function handleToolCalls(
         continue;
       }
 
-      const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
+      const baseUrl = getApiBaseUrl(request);
       const response = await fetch(`${baseUrl}/api/vapi/cal-integration`, {
         method: "POST",
         headers: {
@@ -704,9 +698,7 @@ async function handleFunctionCall(
             break;
         }
 
-        const baseUrl = ensureProtocol(
-          process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"
-        );
+        const baseUrl = getApiBaseUrl(request);
         const response = await fetch(`${baseUrl}/api/vapi/cal-integration`, {
           method: "POST",
           headers: {

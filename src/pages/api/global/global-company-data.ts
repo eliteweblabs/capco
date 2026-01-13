@@ -66,9 +66,10 @@ export const globalCompanyData = async () => {
   const logo = get("logo", "GLOBAL_COMPANY_LOGO_SVG") || "";
   const icon = get("icon", "GLOBAL_COMPANY_ICON_SVG") || "";
 
-  // Website URL - ensure it has protocol
-  const websiteRaw = get("website", "RAILWAY_PUBLIC_DOMAIN");
-  const website = websiteRaw?.startsWith("http") ? websiteRaw : `https://${websiteRaw}`;
+  // Website URL - get from database only, no env fallback
+  // If not in database, will be empty and caller should use request URL
+  const websiteRaw = get("website");
+  const website = websiteRaw?.startsWith("http") ? websiteRaw : websiteRaw ? `https://${websiteRaw}` : "";
 
   // Favicon paths - consistent format with leading slash
   const faviconSvgPath = "/img/favicon.svg";
@@ -76,11 +77,11 @@ export const globalCompanyData = async () => {
 
   return {
     globalCompanyName: get("company_name", "RAILWAY_PROJECT_NAME"),
-    globalCompanySlogan: get("slogan", "GLOBAL_COMPANY_SLOGAN"),
+    globalCompanySlogan: get("slogan"), // Database only, no env fallback
     globalCompanyAddress: get("address", "GLOBAL_COMPANY_ADDRESS"),
     globalCompanyPhone: get("phone", "VAPI_PHONE_NUMBER"),
     globalCompanyEmail: get("email", "GLOBAL_COMPANY_EMAIL"),
-    globalCompanyWebsite: get("website", "RAILWAY_PUBLIC_DOMAIN"),
+    globalCompanyWebsite: get("website"), // Database only, no env fallback
 
     // SVG markup for logo (used in UI components)
     // Single SVG with CSS in <defs> or <style> for theme support
@@ -107,7 +108,7 @@ export const globalCompanyData = async () => {
     plausibleScriptUrl: get("plausible_script_url", "PLAUSIBLE_SCRIPT_URL") || "",
     plausibleSiteId:
       get("plausible_site_id", "PLAUSIBLE_SITE_ID") ||
-      get("website", "RAILWAY_PUBLIC_DOMAIN")?.replace(/^https?:\/\//, "") ||
+      get("website")?.replace(/^https?:\/\//, "") ||
       "",
   };
 };

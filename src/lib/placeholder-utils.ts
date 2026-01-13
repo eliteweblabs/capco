@@ -81,7 +81,8 @@ function getNestedValue(obj: any, path: string): any {
 export async function replacePlaceholders(
   message: string,
   data?: PlaceholderData | null,
-  addBoldTags: boolean = false
+  addBoldTags: boolean = false,
+  request?: Request
 ): Promise<string> {
   if (!message) {
     console.log("🔄 [PLACEHOLDER-UTILS] No message or data, returning original");
@@ -133,36 +134,32 @@ export async function replacePlaceholders(
   // === LEGACY PLACEHOLDER REPLACEMENT ===
   // Extract data from project object and additional data
   const projectId = data?.project?.id;
-  // Support both Astro (import.meta.env) and Node.js (process.env) environments
+  
+  // Get base URL from request first, then database, then fallback
   let baseUrl: string | undefined;
-  try {
-    // Try Astro/Vite environment first
-    if (typeof import.meta !== "undefined" && import.meta.env?.RAILWAY_PUBLIC_DOMAIN) {
-      baseUrl = import.meta.env.RAILWAY_PUBLIC_DOMAIN;
+  
+  // First priority: Use request URL if available
+  if (request) {
+    try {
+      const url = new URL(request.url);
+      baseUrl = `${url.protocol}//${url.host}`;
+    } catch (e) {
+      console.error("🚨 [PLACEHOLDER-UTILS] Failed to parse request URL:", e);
     }
-  } catch (e) {
-    // import.meta not available, will use process.env
   }
-  // Fallback to Node.js process.env if not found
-  if (!baseUrl && typeof process !== "undefined" && process.env?.RAILWAY_PUBLIC_DOMAIN) {
-    baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN;
+  
+  // Second priority: Get from database (companyData already fetched above)
+  if (!baseUrl && companyData?.globalCompanyWebsite) {
+    baseUrl = companyData.globalCompanyWebsite;
   }
-
-  // Debug: Log what we're getting as baseUrl
-  if (typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml"))) {
-    console.error(
-      "🚨 [PLACEHOLDER-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG content:",
-      baseUrl.substring(0, 100) + "..."
-    );
-    console.error(
-      "🚨 [PLACEHOLDER-UTILS] This will cause malformed URLs. Check your environment variables."
-    );
-    // Fallback to prevent malformed URLs
-    baseUrl = "failure.com";
+  
+  // Final fallback: localhost for development
+  if (!baseUrl) {
+    baseUrl = "http://localhost:4321";
   }
-
+  
   // Ensure baseUrl has proper protocol
-  if (typeof baseUrl === "string" && baseUrl && !baseUrl.startsWith("http")) {
+  if (baseUrl && !baseUrl.startsWith("http")) {
     baseUrl = `https://${baseUrl}`;
   }
   const baseProjectLink = `${baseUrl}/project`;

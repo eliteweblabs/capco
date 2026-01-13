@@ -43,10 +43,9 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Send password reset email
-    const baseUrl = ensureProtocol(
-      import.meta.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"
-    );
+    // Send password reset email - use request URL
+    const { getBaseUrl } = await import("../../../lib/url-utils");
+    const baseUrl = getBaseUrl(request);
     const { error } = await supabase.auth.resetPasswordForEmail(resetData.email.trim(), {
       redirectTo: resetData.redirectTo || `${baseUrl}/auth/reset-password`,
     });
