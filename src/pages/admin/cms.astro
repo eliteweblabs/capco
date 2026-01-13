@@ -218,8 +218,8 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
 
       <!-- Info Box -->
       <div class="mb-6 space-y-3">
-        <div class="hidden p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <p class="text-sm text-blue-800 dark:text-blue-200">
+        <div class="hidden p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
+          <p class="text-sm text-primary-800 dark:text-primary-200">
             <strong>How it works:</strong> Content is loaded in this order: <strong>Database</strong> → Markdown Files → Defaults.
             Pages in the database will override markdown files with the same slug.
           </p>
@@ -344,7 +344,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                     {page.template || "default"}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200">
                       Database
                     </span>
                     {markdownPages.some((mp) => mp.slug === page.slug) && (
@@ -500,7 +500,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                     class="hidden"
                     aria-labelledby="modal-common-components-heading"
                   >
-                    <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-blue-50 dark:bg-blue-900/20">
+                    <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-primary-50 dark:bg-primary-900/20">
                       <div class="space-y-1.5 font-mono text-xs">
                         {commonComponents.map((comp) => (
                           <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
@@ -554,7 +554,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                     class="hidden"
                     aria-labelledby="modal-feature-components-heading"
                   >
-                    <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-blue-50 dark:bg-blue-900/20">
+                    <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-primary-50 dark:bg-primary-900/20">
                       <!-- Nested Accordion for Feature Categories -->
                       <div id="modal-feature-categories-accordion" data-accordion="collapse" class="space-y-2">
                         {Object.entries(featureGroups).map(([category, components], categoryIndex) => (
@@ -853,14 +853,53 @@ You can embed components:
         if (errorDiv) errorDiv.classList.add("hidden");
         if (successDiv) successDiv.classList.add("hidden");
 
-        const formData = new FormData(form);
+        // Get form values directly from inputs (more reliable than FormData)
+        const slugInput = document.getElementById("page-slug");
+        const titleInput = document.getElementById("page-title");
+        const descInput = document.getElementById("page-description");
+        const templateSelect = document.getElementById("page-template");
+        const contentTextarea = document.getElementById("page-content");
+        
+        const slug = slugInput?.value?.trim() || "";
+        const title = titleInput?.value?.trim() || null;
+        const description = descInput?.value?.trim() || null;
+        const content = contentTextarea?.value?.trim() || "";
+        const template = templateSelect?.value?.trim() || "default";
+        
+        // Validate required fields
+        if (!slug) {
+          if (errorDiv) {
+            errorDiv.textContent = "Slug is required";
+            errorDiv.classList.remove("hidden");
+          }
+          return;
+        }
+        
+        if (!content) {
+          if (errorDiv) {
+            errorDiv.textContent = "Content is required";
+            errorDiv.classList.remove("hidden");
+          }
+          return;
+        }
+
         const data = {
-          slug: formData.get("slug"),
-          title: formData.get("title") || null,
-          description: formData.get("description") || null,
-          content: formData.get("content"),
-          template: formData.get("template") || "default",
+          slug,
+          title,
+          description,
+          content,
+          template,
         };
+
+        // Debug logging
+        console.log("[CMS] Form data being sent:", data);
+        console.log("[CMS] Input values:", {
+          slug: slugInput?.value,
+          title: titleInput?.value,
+          description: descInput?.value,
+          content: contentTextarea?.value?.substring(0, 50) + "...",
+          template: templateSelect?.value,
+        });
 
         try {
           const response = await fetch("/api/cms/pages", {
@@ -872,7 +911,7 @@ You can embed components:
           const result = await response.json();
 
           if (!response.ok) {
-            throw new Error(result.error || "Failed to save page");
+            throw new Error(result.error || result.message || "Failed to save page");
           }
 
           if (successDiv) {
@@ -885,9 +924,15 @@ You can embed components:
           }, 1000);
         } catch (error) {
           if (errorDiv) {
-            errorDiv.textContent = error.message || error || "An error occurred";
+            const errorMessage = error instanceof Error 
+              ? error.message 
+              : typeof error === 'string' 
+                ? error 
+                : "An error occurred while saving the page";
+            errorDiv.textContent = errorMessage;
             errorDiv.classList.remove("hidden");
           }
+          console.error("CMS page save error:", error);
         }
       });
     }

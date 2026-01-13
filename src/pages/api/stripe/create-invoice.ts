@@ -5,7 +5,7 @@ import { supabase } from "../../../lib/supabase";
 import Stripe from "stripe";
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2025-09-30.clover",
 });
 
 /**
@@ -124,8 +124,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         invoice: invoice.id,
         description: item.description,
         quantity: item.quantity,
-        unit_amount: item.unit_amount,
-      });
+        price_data: {
+          currency: "usd",
+          unit_amount: item.unit_amount,
+          product_data: {
+            name: item.description,
+          },
+        },
+      } as any);
     }
 
     // Finalize the invoice

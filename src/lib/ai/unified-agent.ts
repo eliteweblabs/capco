@@ -34,6 +34,8 @@ export interface AgentResponse {
   }>;
   metadata: {
     tokensUsed: number;
+    inputTokens?: number;
+    outputTokens?: number;
     model: string;
     generatedAt: string;
   };
@@ -355,13 +357,10 @@ Remember: Be helpful, accurate, and professional. If you need more information t
     currentMessage: string,
     context?: any,
     imageUrls?: string[]
-  ): Array<{ 
-    role: 'user' | 'assistant'; 
-    content: string | Array<string | { type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }> 
-  }> {
+  ): any[] {
     const messages: Array<{ 
       role: 'user' | 'assistant'; 
-      content: string | Array<string | { type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }> 
+      content: string | Array<{ type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }> 
     }> = [];
 
     const hasImages = imageUrls && imageUrls.length > 0;
@@ -395,21 +394,16 @@ Remember: Be helpful, accurate, and professional. If you need more information t
     }
 
     // Build content array - include text and images if present
-    // When images are present, ALL content blocks must be objects (not strings)
-    const contentBlocks: Array<string | { type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }> = [];
+    // Anthropic API: content can be string OR array of objects (not mixed strings/objects)
+    const contentBlocks: Array<{ type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }> = [];
     
     // Add text message if present
     if (enrichedMessage) {
-      // If we have images, text MUST be an object. Otherwise, string is fine.
-      if (hasImages) {
-        contentBlocks.push({
-          type: 'text',
-          text: enrichedMessage,
-        });
-      } else {
-        // No images - can use string directly
-        contentBlocks.push(enrichedMessage);
-      }
+      // Always use object format when building array
+      contentBlocks.push({
+        type: 'text',
+        text: enrichedMessage,
+      });
     }
     
     // Add images if present
@@ -420,52 +414,37 @@ Remember: Be helpful, accurate, and professional. If you need more information t
       });
       imageUrls.forEach(url => {
         contentBlocks.push({
-          type: 'image',
+          type: 'image' as const,
           source: {
-            type: 'url',
+            type: 'url' as const,
             url: url,
           },
-        });
+        } as any); // Type assertion needed due to SDK type definitions
       });
     }
 
     // Ensure we always have content
     if (contentBlocks.length === 0) {
       const defaultMessage = hasImages ? 'Please analyze these images' : 'Hello';
-      if (hasImages) {
-        contentBlocks.push({ type: 'text', text: defaultMessage });
-      } else {
-        contentBlocks.push(defaultMessage);
-      }
+      contentBlocks.push({ type: 'text', text: defaultMessage });
     }
 
     // Format content based on whether we have images
     // Anthropic API: 
     // - With images: content MUST be array of objects [{type: 'text', text: '...'}, {type: 'image', ...}]
-    // - Without images: content can be string OR array of strings
-    let finalContent: string | Array<string | { type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }>;
+    // - Without images: content can be string OR array of objects
+    let finalContent: string | Array<{ type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }>;
     
     if (hasImages) {
-      // With images: ensure all blocks are objects
-      finalContent = contentBlocks.map(block => {
-        if (typeof block === 'string') {
-          return { type: 'text' as const, text: block };
-        }
-        return block;
-      });
+      // With images: content MUST be array of objects
+      finalContent = contentBlocks;
     } else {
-      // Without images: use string if single item, otherwise array of strings
-      if (contentBlocks.length === 1 && typeof contentBlocks[0] === 'string') {
-        finalContent = contentBlocks[0];
+      // Without images: use string if single text block, otherwise array of objects
+      if (contentBlocks.length === 1 && contentBlocks[0].type === 'text') {
+        finalContent = contentBlocks[0].text || '';
       } else {
-        // Multiple blocks or mixed - convert all to strings
-        finalContent = contentBlocks.map(block => {
-          if (typeof block === 'string') {
-            return block;
-          }
-          // Convert object to string (shouldn't happen without images)
-          return block.text || '';
-        });
+        // Multiple blocks - keep as array of objects
+        finalContent = contentBlocks;
       }
     }
 

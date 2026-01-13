@@ -85,10 +85,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       </div>
     `;
 
-    // Prefer a direct, dependency-light email path to avoid DB requirements
+    // Get company data from database for fallback values
+    let defaultFromName = "Company";
+    let defaultFromEmail = "noreply@example.com";
+    try {
+      const { globalCompanyData } = await import("../../global/global-company-data");
+      const companyData = await globalCompanyData();
+      defaultFromName = companyData.globalCompanyName || "Company";
+      const websiteDomain = companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "example.com";
+      defaultFromEmail = `noreply@${websiteDomain}`;
+    } catch (error) {
+      console.warn("📧 [VAPI-CONFIRMATION-EMAIL] Failed to load company data, using defaults");
+    }
+
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
-    const fromEmail = import.meta.env.FROM_EMAIL || "noreply@capcofire.com";
-    const fromName = import.meta.env.FROM_NAME || "CAPCo";
+    const fromEmail = import.meta.env.FROM_EMAIL || defaultFromEmail;
+    const fromName = import.meta.env.FROM_NAME || defaultFromName;
 
     if (!emailApiKey) {
       console.error("📧 [VAPI-CONFIRMATION-EMAIL] EMAIL_API_KEY not configured");

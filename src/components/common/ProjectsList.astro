@@ -72,138 +72,147 @@ function formatDate(dateString: string | null | undefined): string {
 ---
 
 <div class="mx-auto max-w-7xl">
-  {error ? (
-    <div class="py-16 text-center">
-      <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
-        <SimpleIcon name="alert-circle" class="text-primary-600 dark:text-primary-400" />
+  {
+    error ? (
+      <div class="py-16 text-center">
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+          <SimpleIcon name="alert-circle" class="text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Projects Found</h2>
+        <p class="mb-6 text-gray-800 dark:text-gray-200">{error}</p>
+        <Button
+          onclick="window.location.reload()"
+          variant="danger"
+          icon="refresh"
+          iconPosition="left"
+        >
+          Try Again
+        </Button>
       </div>
-      <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Projects Found</h2>
-      <p class="mb-6 text-gray-800 dark:text-gray-200">{error}</p>
-      <Button onclick="window.location.reload()" variant="danger" icon="refresh" iconPosition="left">
-        Try Again
-      </Button>
-    </div>
-  ) : featuredProjects.length === 0 ? (
-    <div class="py-16 text-center">
-      <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-        <SimpleIcon name="building" class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+    ) : featuredProjects.length === 0 ? (
+      <div class="py-16 text-center">
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+          <SimpleIcon name="building" class="h-8 w-8 text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
+          No Featured Projects Yet
+        </h2>
+        <p class="mb-6 text-gray-600 dark:text-gray-300">
+          We're working on exciting fire protection projects. Check back soon to see our latest
+          completed work!
+        </p>
+        <Button href="/" variant="primary" icon="home" iconPosition="left">
+          Back to Home
+        </Button>
       </div>
-      <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Featured Projects Yet</h2>
-      <p class="mb-6 text-gray-600 dark:text-gray-300">
-        We're working on exciting fire protection projects. Check back soon to see our latest completed
-        work!
-      </p>
-      <Button href="/" variant="primary" icon="home" iconPosition="left">
-        Back to Home
-      </Button>
-    </div>
-  ) : (
-    <div class="projects-container">
-      <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {featuredProjects.map((project) => (
-          <div class="group overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl color-background">
-            <div class="border-border-light dark:border-border-dark border-b p-6">
-              <div class="mb-4 flex items-start justify-between">
-                <div class="flex-1">
-                  <h3 class="mb-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
-                    {project.address}
-                  </h3>
+    ) : (
+      <div class="projects-container">
+        <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {featuredProjects.map((project) => (
+            <div class="group overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl color-background">
+              <div class="border-border-light dark:border-border-dark border-b p-6">
+                <div class="mb-4 flex items-start justify-between">
+                  <div class="flex-1">
+                    <h3 class="mb-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
+                      {project.address}
+                    </h3>
+                  </div>
+                  <div class="ml-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-black dark:bg-primary-900/30 dark:text-white">
+                    <SimpleIcon name="building" />
+                  </div>
                 </div>
-                <div class="ml-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-black dark:bg-primary-900/30 dark:text-white">
-                  <SimpleIcon name="building" />
-                </div>
-              </div>
 
-              {project.featuredImageData?.publicUrl ? (
-                <div class="relative mb-3 overflow-hidden rounded-lg">
-                  <img
-                    src={project.featuredImageData.publicUrl}
-                    alt={`Featured image for ${project.address}`}
-                    class="h-32 w-full object-cover transition-transform duration-200 hover:scale-105"
-                    loading="lazy"
-                    referrerpolicy="strict-origin-when-cross-origin"
-                    crossorigin="anonymous"
-                    onerror="console.warn('Featured image failed to load:', this.src); this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex';"
-                  />
-                  <div class="hidden h-32 w-full items-center justify-center bg-neutral-100 dark:bg-neutral-700">
-                    <div class="text-center text-gray-400 dark:text-gray-500">
-                      <SimpleIcon name="image" class="mx-auto mb-2 h-8 w-8" />
-                      <p class="text-xs">Image unavailable</p>
+                {project.featuredImageData?.publicUrl ? (
+                  <div class="relative mb-3 overflow-hidden rounded-lg">
+                    <img
+                      src={project.featuredImageData.publicUrl}
+                      alt={`Featured image for ${project.address}`}
+                      class="h-32 w-full object-cover transition-transform duration-200 hover:scale-105"
+                      loading="lazy"
+                      referrerpolicy="strict-origin-when-cross-origin"
+                      crossorigin="anonymous"
+                      onerror="console.warn('Featured image failed to load:', this.src); this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex';"
+                    />
+                    <div class="hidden h-32 w-full items-center justify-center bg-neutral-100 dark:bg-neutral-700">
+                      <div class="text-center text-gray-400 dark:text-gray-500">
+                        <SimpleIcon name="image" class="mx-auto mb-2 h-8 w-8" />
+                        <p class="text-xs">Image unavailable</p>
+                      </div>
+                    </div>
+                    <div class="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-xs font-medium text-white">
+                      <SimpleIcon name="star" class="h-3 w-3" />
+                      Featured
                     </div>
                   </div>
-                  <div class="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-xs font-medium text-white">
-                    <SimpleIcon name="star" class="h-3 w-3" />
-                    Featured
+                ) : (
+                  <div class="mb-3 flex h-32 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700">
+                    <div class="text-center text-gray-400 dark:text-gray-500">
+                      <SimpleIcon name="image" class="mx-auto mb-2 h-8 w-8" />
+                      <p class="text-xs">No featured image</p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div class="mb-3 flex h-32 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700">
-                  <div class="text-center text-gray-400 dark:text-gray-500">
-                    <SimpleIcon name="image" class="mx-auto mb-2 h-8 w-8" />
-                    <p class="text-xs">No featured image</p>
-                  </div>
-                </div>
-              )}
+                )}
 
-              {project.description && (
-                <p class="line-clamp-3 text-sm text-gray-600 dark:text-gray-400">
-                  {project.description}
-                </p>
-              )}
-            </div>
-
-            <div class="space-y-4 p-6">
-              <div class="grid grid-cols-2 gap-4">
-                <div class="flex items-center space-x-2">
-                  <SimpleIcon name="expand" class="h-4 w-4 text-gray-400" />
-                  <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
-                      {formatSquareFootage(project.squareFootage)}
-                    </p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <SimpleIcon
-                    name={project.isNewConstruction ? "plus-circle" : "edit"}
-                    class="h-4 w-4 text-gray-400"
-                  />
-                  <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Type</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
-                      {project.isNewConstruction ? "New Construction" : "Renovation"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="border-border-light dark:border-border-dark flex items-center space-x-2 border-t pt-2">
-                <SimpleIcon name="calendar-check" class="h-4 w-4 text-green-500" />
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">
-                    {formatDate(project.completedAt)}
+                {project.description && (
+                  <p class="line-clamp-3 text-sm text-gray-600 dark:text-gray-400">
+                    {project.description}
                   </p>
-                </div>
+                )}
               </div>
-            </div>
 
-            <div class="bg-neutral-50 px-6 py-4 dark:bg-neutral-900/50">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="h-2 w-2 rounded-full bg-green-500" />
-                  <span class="text-sm font-medium text-green-600 dark:text-green-400">
-                    Project Complete
-                  </span>
+              <div class="space-y-4 p-6">
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="flex items-center space-x-2">
+                    <SimpleIcon name="expand" class="h-4 w-4 text-gray-400" />
+                    <div>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">
+                        {formatSquareFootage(project.squareFootage)}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <SimpleIcon
+                      name={project.isNewConstruction ? "plus-circle" : "edit"}
+                      class="h-4 w-4 text-gray-400"
+                    />
+                    <div>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Type</p>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">
+                        {project.isNewConstruction ? "New Construction" : "Renovation"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <SimpleIcon name="shield-check" class="h-5 w-5 text-green-500" />
+
+                <div class="border-border-light dark:border-border-dark flex items-center space-x-2 border-t pt-2">
+                  <SimpleIcon name="calendar-check" class="h-4 w-4 text-green-500" />
+                  <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                      {formatDate(project.completedAt)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-neutral-50 px-6 py-4 dark:bg-neutral-900/50">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <div class="h-2 w-2 rounded-full bg-green-500" />
+                    <span class="text-sm font-medium text-green-600 dark:text-green-400">
+                      Project Complete
+                    </span>
+                  </div>
+                  <SimpleIcon name="shield-check" class="h-5 w-5 text-green-500" />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  )}
+    )
+  }
 </div>
 
 <style>
@@ -214,4 +223,3 @@ function formatDate(dateString: string | null | undefined): string {
     overflow: hidden;
   }
 </style>
-

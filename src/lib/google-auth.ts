@@ -1,4 +1,4 @@
-import type { Cookies } from "astro";
+import type { AstroCookies } from "astro";
 
 export interface GoogleUser {
   id: string;
@@ -14,7 +14,7 @@ export interface AuthResult {
   accessToken?: string;
 }
 
-export function checkGoogleAuth(cookies: Cookies): AuthResult {
+export function checkGoogleAuth(cookies: AstroCookies): AuthResult {
   const accessToken = cookies.get("google_access_token")?.value;
   const userDataCookie = cookies.get("google_user_data")?.value;
 
@@ -35,7 +35,7 @@ export function checkGoogleAuth(cookies: Cookies): AuthResult {
   }
 }
 
-export function clearGoogleAuth(cookies: Cookies): void {
+export function clearGoogleAuth(cookies: AstroCookies): void {
   cookies.delete("google_access_token");
   cookies.delete("google_refresh_token");
   cookies.delete("google_user_data");

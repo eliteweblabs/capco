@@ -106,7 +106,7 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
       }
       
       return new Response(
-        JSON.stringify({ error: `Markdown file not found: ${slugPath}.md or ${slug}.md` }),
+        JSON.stringify({ error: `Markdown file not found: ${slug}.md` }),
         { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }

@@ -22,7 +22,15 @@ export function featureGate<T>(featureKey: string, component: T): T | null {
 export function getEnabledFeatures(): string[] {
   const config = getSiteConfig();
   return Object.entries(config.features)
-    .filter(([_, value]) => value === true)
+    .filter(([_, value]) => {
+      if (typeof value === 'boolean') {
+        return value === true;
+      }
+      if (value && typeof value === 'object' && 'enabled' in value) {
+        return value.enabled === true;
+      }
+      return false;
+    })
     .map(([key]) => key);
 }
 
@@ -45,7 +53,14 @@ export function allFeaturesEnabled(...features: string[]): boolean {
  */
 export function getFeatureConfig(featureKey: string): boolean {
   const config = getSiteConfig();
-  return config.features[featureKey] ?? false;
+  const feature = config.features[featureKey];
+  if (typeof feature === 'boolean') {
+    return feature;
+  }
+  if (feature && typeof feature === 'object' && 'enabled' in feature) {
+    return feature.enabled;
+  }
+  return false;
 }
 
 /**
@@ -53,6 +68,13 @@ export function getFeatureConfig(featureKey: string): boolean {
  */
 export function isFeatureDisabled(featureKey: string): boolean {
   const config = getSiteConfig();
-  return config.features[featureKey] === false;
+  const feature = config.features[featureKey];
+  if (typeof feature === 'boolean') {
+    return feature === false;
+  }
+  if (feature && typeof feature === 'object' && 'enabled' in feature) {
+    return !feature.enabled;
+  }
+  return false;
 }
 

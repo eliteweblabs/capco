@@ -130,33 +130,8 @@ const { globalInputClasses } = Astro.props;
   // Use singleton Supabase client to avoid multiple instances
   import { getSupabaseClient } from "../../lib/supabase-client";
 
-  // Handle client-side OAuth for PKCE (code verifier must be stored in browser)
-  document.addEventListener("DOMContentLoaded", async () => {
-    // Check if OAuth should be auto-triggered from URL params
-    const urlParams = new URLSearchParams(window.location.search);
-    const provider = urlParams.get("provider");
-    const oauth = urlParams.get("oauth");
-
-    // Auto-trigger OAuth if provider and oauth params are present
-    if (provider === "google" && oauth === "true") {
-      console.log("[GOOGLE-SIGNIN] Auto-triggering OAuth from URL params...");
-      // Remove params from URL to prevent re-triggering
-      window.history.replaceState({}, document.title, window.location.pathname);
-      // Trigger OAuth immediately
-      await triggerGoogleOAuth();
-      return;
-    }
-
-    const googleSignInButton = document.getElementById("google-signin-button");
-
-    if (googleSignInButton) {
-      googleSignInButton.addEventListener("click", async (e) => {
-        await triggerGoogleOAuth(e);
-      });
-    }
-
-    // Extract OAuth initiation logic into a reusable function
-    async function triggerGoogleOAuth(e?: Event) {
+  // Extract OAuth initiation logic into a reusable function
+  async function triggerGoogleOAuth(e?: Event) {
       if (e) {
         e.preventDefault();
       }
@@ -180,7 +155,7 @@ const { globalInputClasses } = Astro.props;
 
       // CRITICAL: Ensure Supabase client is fully initialized before initiating OAuth
       // This ensures the code verifier will be stored properly
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Get the redirect URL based on current origin
       // IMPORTANT: For Supabase PKCE flow, we MUST use /auth/callback directly (client-side)
@@ -196,14 +171,9 @@ const { globalInputClasses } = Astro.props;
       console.log("[GOOGLE-SIGNIN] Current origin:", window.location.origin);
       console.log("[GOOGLE-SIGNIN] Make sure this URL is in Supabase Redirect URLs list!");
 
-      // CRITICAL: Ensure Supabase client is fully initialized before OAuth
-      // This ensures the code verifier will be stored properly
-      // Wait a bit longer to ensure Supabase's internal state is ready
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
       // Initiate OAuth (this will store code verifier internally in Supabase)
-      // Note: Supabase stores the code verifier internally, not necessarily in localStorage
-      // The exchangeCodeForSession method will retrieve it automatically
+      // Supabase stores the code verifier in localStorage with a specific key format
+      // We need to ensure it's stored before redirecting
       console.log("[GOOGLE-SIGNIN] Initiating OAuth with Supabase...");
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -217,6 +187,11 @@ const { globalInputClasses } = Astro.props;
         },
       });
 
+      // CRITICAL: After signInWithOAuth is called, Supabase generates and stores the code verifier
+      // We need to wait for this to complete before redirecting
+      // Give Supabase time to store the code verifier in its internal storage
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       if (error) {
         console.error("[GOOGLE-SIGNIN] OAuth error:", error);
         if (window.showModal) {
@@ -226,57 +201,13 @@ const { globalInputClasses } = Astro.props;
       }
 
       if (data?.url) {
-        // CRITICAL: Verify code verifier is stored in localStorage before redirecting
-        // PKCE flow REQUIRES the code verifier to be in localStorage for the callback to work
-        // This prevents race conditions where the callback page loads before storage is ready
+        // With Supabase PKCE flow, the code verifier is stored internally by Supabase
+        // We don't need to manually check for it - Supabase will retrieve it automatically
+        // during the callback exchange. However, we should ensure the client is fully
+        // initialized and give it a moment to store the verifier internally.
+        
         const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-        if (supabaseUrl) {
-          const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-          const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
-
-          // Wait for code verifier to be stored (with retry and longer delays)
-          let codeVerifier = localStorage.getItem(codeVerifierKey);
-          let attempts = 0;
-          const maxAttempts = 20; // Increased attempts
-          const baseDelay = 100; // Increased base delay
-
-          while (!codeVerifier && attempts < maxAttempts) {
-            await new Promise((resolve) => setTimeout(resolve, baseDelay * (attempts + 1)));
-            codeVerifier = localStorage.getItem(codeVerifierKey);
-            attempts++;
-            
-            if (codeVerifier) {
-              console.log(`[GOOGLE-SIGNIN] Code verifier found after ${attempts} attempts`);
-              break;
-            }
-          }
-
-          if (codeVerifier) {
-            console.log("[GOOGLE-SIGNIN] ✅ Code verifier confirmed in localStorage, redirecting...");
-            console.log("[GOOGLE-SIGNIN] Code verifier key:", codeVerifierKey);
-            console.log("[GOOGLE-SIGNIN] Code verifier length:", codeVerifier.length);
-          } else {
-            console.error(
-              "[GOOGLE-SIGNIN] ❌ Code verifier NOT found after waiting - this will cause auth failure!"
-            );
-            console.error("[GOOGLE-SIGNIN] This usually means:");
-            console.error("[GOOGLE-SIGNIN] 1. Supabase client didn't generate/store the verifier");
-            console.error("[GOOGLE-SIGNIN] 2. localStorage is blocked or not available");
-            console.error("[GOOGLE-SIGNIN] 3. There's a race condition");
-            
-            // Show error to user instead of proceeding
-            if (window.showModal) {
-              window.showModal(
-                "error",
-                "Authentication Error",
-                "Failed to initialize authentication. Please try again. If this persists, check your browser's localStorage settings."
-              );
-            } else {
-              alert("Failed to initialize authentication. Please try again.");
-            }
-            return; // Don't redirect if code verifier is missing
-          }
-        } else {
+        if (!supabaseUrl) {
           console.error("[GOOGLE-SIGNIN] PUBLIC_SUPABASE_URL not configured");
           if (window.showModal) {
             window.showModal("error", "Configuration Error", "Supabase URL not configured");
@@ -284,13 +215,96 @@ const { globalInputClasses } = Astro.props;
           return;
         }
 
+        // Give Supabase a moment to store the code verifier internally
+        // Supabase stores it in its internal state, not necessarily in localStorage
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Debug: Check all localStorage keys that might contain the code verifier
+        const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+        const possibleKeys = [
+          `sb-${supabaseProjectRef}-auth-token-code-verifier`,
+          `sb-${supabaseProjectRef}-code-verifier`,
+          `supabase.auth.token.code_verifier`,
+        ];
+        
+        console.log("[GOOGLE-SIGNIN] Checking for code verifier in localStorage...");
+        const foundKeys = possibleKeys.filter(key => localStorage.getItem(key));
+        if (foundKeys.length > 0) {
+          console.log("[GOOGLE-SIGNIN] ✅ Code verifier found in localStorage:", foundKeys);
+        } else {
+          console.log("[GOOGLE-SIGNIN] ⚠️ Code verifier not found in localStorage, but Supabase may store it internally");
+          console.log("[GOOGLE-SIGNIN] Supabase will retrieve it automatically during exchangeCodeForSession");
+        }
+
         console.log("[GOOGLE-SIGNIN] Redirecting to OAuth provider...");
+        console.log("[GOOGLE-SIGNIN] OAuth URL:", data.url);
         // Redirect to Google OAuth
         window.location.href = data.url;
       }
     }
 
-    // Handle email/password form submission
+  // Handle client-side OAuth for PKCE (code verifier must be stored in browser)
+  function initGoogleSignIn() {
+    // Check if OAuth should be auto-triggered from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const provider = urlParams.get("provider");
+    const oauth = urlParams.get("oauth");
+
+    // Auto-trigger OAuth if provider and oauth params are present
+    if (provider === "google" && oauth === "true") {
+      console.log("[GOOGLE-SIGNIN] Auto-triggering OAuth from URL params...");
+      // Remove params from URL to prevent re-triggering
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Trigger OAuth immediately
+      triggerGoogleOAuth();
+      return;
+    }
+
+    const googleSignInButton = document.getElementById("google-signin-button");
+    console.log("[GOOGLE-SIGNIN] Looking for button:", googleSignInButton);
+
+    if (googleSignInButton) {
+      console.log("[GOOGLE-SIGNIN] Button found, attaching event listener");
+      googleSignInButton.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("[GOOGLE-SIGNIN] Button clicked!");
+        await triggerGoogleOAuth(e);
+      });
+    } else {
+      console.error("[GOOGLE-SIGNIN] Button not found! ID: google-signin-button");
+      // Retry after a short delay in case DOM isn't ready
+      setTimeout(() => {
+        const retryButton = document.getElementById("google-signin-button");
+        if (retryButton) {
+          console.log("[GOOGLE-SIGNIN] Button found on retry, attaching event listener");
+          retryButton.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("[GOOGLE-SIGNIN] Button clicked!");
+            await triggerGoogleOAuth(e);
+          });
+        } else {
+          console.error("[GOOGLE-SIGNIN] Button still not found after retry");
+        }
+      }, 100);
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      initGoogleSignIn();
+      initEmailPasswordForm();
+    });
+  } else {
+    // DOM is already ready
+    initGoogleSignIn();
+    initEmailPasswordForm();
+  }
+
+  // Handle email/password form submission
+  function initEmailPasswordForm() {
     const loginForm = document.querySelector('form[action="/api/auth/signin"]');
     if (loginForm) {
       loginForm.addEventListener("submit", (e) => {
@@ -324,5 +338,5 @@ const { globalInputClasses } = Astro.props;
         }
       });
     }
-  });
+  }
 </script>

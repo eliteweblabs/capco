@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { checkAuth } from "../../../lib/auth";
+import { globalCompanyData } from "../global/global-company-data";
 
 export const GET: APIRoute = async ({ request, cookies }) => {
   try {
@@ -21,9 +22,12 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     const period = url.searchParams.get("period") || "30d";
     const metrics = url.searchParams.get("metrics") || "pageviews,visitors,bounce_rate";
 
+    // Get company data from database
+    const companyData = await globalCompanyData();
+    const PLAUSIBLE_SITE_ID = companyData.plausibleSiteId || companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "";
+
     // Plausible API configuration
     const PLAUSIBLE_API_URL = "https://plausible.io/api/v1/stats/aggregate";
-    const PLAUSIBLE_SITE_ID = "capcofire.com";
     const PLAUSIBLE_API_TOKEN = import.meta.env.PLAUSIBLE_API_TOKEN;
 
     if (!PLAUSIBLE_API_TOKEN) {
@@ -72,11 +76,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return createErrorResponse("Access denied - Admin access required", 403);
     }
 
+    // Get company data from database
+    const companyData = await globalCompanyData();
+    const defaultSiteId = companyData.plausibleSiteId || companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "";
+
     const body = await request.json();
     const {
       period = "30d",
       metrics = "pageviews,visitors,bounce_rate",
-      site_id = "capcofire.com",
+      site_id = defaultSiteId,
     } = body;
 
     const PLAUSIBLE_API_URL = "https://plausible.io/api/v1/stats/aggregate";

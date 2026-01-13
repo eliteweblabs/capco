@@ -324,7 +324,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       let userEmailContent = "";
       if (userTemplate?.value) {
-        userEmailContent = replacePlaceholders(userTemplate.value, {
+        userEmailContent = await replacePlaceholders(userTemplate.value, {
           project: {
             id: 0,
             address: "",

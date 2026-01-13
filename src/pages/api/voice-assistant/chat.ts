@@ -221,7 +221,7 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
     systemPrompt += `\n\nCurrent conversation context: You are in an active voice conversation. Respond naturally and helpfully.`;
 
     // Build messages array
-    const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
+    const messages: any[] = [];
 
     // Add conversation history (last 10 exchanges)
     const recentHistory = conversationHistory.slice(-10);
@@ -364,13 +364,13 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
     ];
 
     // Call Anthropic API with tools
-    let response = await client.messages.create({
+    let response = await (client.messages.create as any)({
       model,
       max_tokens: 2048, // Increased for better responses (VAPI uses 1000, but we can be more generous)
       temperature: 0.7, // Same as VAPI for natural responses
       system: systemPrompt,
-      messages,
-      tools,
+      messages: messages as any,
+      tools: tools as any,
     });
 
     // Handle tool calls
@@ -380,9 +380,10 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
     // Process tool calls if any
     if (response.content && response.content.length > 0) {
       for (const block of response.content) {
-        if (block.type === "tool_use") {
-          const toolName = block.name;
-          const toolInput = block.input;
+        const blockAny = block as any;
+        if (blockAny.type === "tool_use") {
+          const toolName = blockAny.name;
+          const toolInput = blockAny.input;
 
           console.log(`🔧 [VOICE-ASSISTANT-API] Tool call: ${toolName}`, toolInput);
 
@@ -455,14 +456,14 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
             }
 
             toolResults.push({
-              tool_use_id: block.id,
+              tool_use_id: blockAny.id,
               type: "tool_result",
               content: typeof toolResult === "string" ? toolResult : JSON.stringify(toolResult),
             });
           } catch (error: any) {
             console.error(`❌ [VOICE-ASSISTANT-API] Error executing tool ${toolName}:`, error);
             toolResults.push({
-              tool_use_id: block.id,
+              tool_use_id: blockAny.id,
               type: "tool_result",
               content: JSON.stringify({
                 success: false,
@@ -479,23 +480,34 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
 
     // If there are tool results, make another API call with the results
     if (toolResults.length > 0) {
+      // Extract text from response content
+      let assistantContent = "";
+      if (response.content && Array.isArray(response.content)) {
+        assistantContent = response.content
+          .filter((block: any) => block.type === "text")
+          .map((block: any) => block.text)
+          .join("\n");
+      } else if (typeof response.content === "string") {
+        assistantContent = response.content;
+      }
+      
       // Add tool results to messages
       messages.push({
         role: "assistant",
-        content: response.content,
-      });
+        content: assistantContent,
+      } as any);
       messages.push({
         role: "user",
-        content: toolResults,
-      });
+        content: typeof toolResults === "string" ? toolResults : JSON.stringify(toolResults),
+      } as any);
 
       // Get final response with tool results
-      response = await client.messages.create({
+      response = await (client.messages.create as any)({
         model,
         max_tokens: 1024,
         system: systemPrompt,
-        messages,
-        tools,
+        messages: messages as any,
+        tools: tools as any,
       });
 
       // Extract final response text

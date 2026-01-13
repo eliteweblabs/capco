@@ -121,11 +121,16 @@ export async function signAndEncryptPDF(
 /**
  * Create combined options from form data
  */
-export function createSignAndEncryptOptionsFromForm(formData: FormData): SignAndEncryptOptions {
+export async function createSignAndEncryptOptionsFromForm(formData: FormData): Promise<SignAndEncryptOptions> {
+  // Get company name from database for default location
+  const { globalCompanyData } = await import("../pages/api/global/global-company-data");
+  const companyData = await globalCompanyData();
+  const defaultLocation = `Certified by ${companyData.globalCompanyName || "Company"}`;
+
   // Signing options
   const signing: SigningOptions = {
     reason: (formData.get("reason") as string) || "Document certification",
-    location: (formData.get("location") as string) || "Certified by CAPCO Design Group",
+    location: (formData.get("location") as string) || defaultLocation,
     contactInfo: (formData.get("contactInfo") as string) || "",
     visible: formData.get("visible") === "true",
     pageNumber: formData.get("pageNumber")

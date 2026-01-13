@@ -75,7 +75,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("❌ [AI-IMAGE-UPLOAD] Upload error:", uploadError);
       
       // If bucket doesn't exist, provide helpful error message
-      if (uploadError.message?.includes("Bucket not found") || uploadError.statusCode === 404) {
+      if (uploadError.message?.includes("Bucket not found") || (uploadError as any).statusCode === 404) {
         return new Response(
           JSON.stringify({
             error: "Storage bucket not configured",

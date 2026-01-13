@@ -20,9 +20,14 @@ export const GET: APIRoute = async ({ cookies }) => {
       });
     }
 
+    // Get domain from database
+    const { globalCompanyData } = await import("../../global/global-company-data");
+    const companyData = await globalCompanyData();
+    const domain = companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "";
+
     const results: any = {
       timestamp: new Date().toISOString(),
-      domain: "capcofire.com",
+      domain: domain,
       checks: {},
       recommendations: [],
       reputation_status: "unknown",
@@ -42,7 +47,7 @@ export const GET: APIRoute = async ({ cookies }) => {
 
       if (domainResponse.ok) {
         const domainData = await domainResponse.json();
-        const capcoFireDomain = domainData.data?.find((d: any) => d.name === "capcofire.com");
+        const capcoFireDomain = domainData.data?.find((d: any) => d.name === domain);
 
         results.checks.domain_verification = {
           status: capcoFireDomain ? "found" : "not_found",
@@ -52,7 +57,7 @@ export const GET: APIRoute = async ({ cookies }) => {
         };
 
         if (!capcoFireDomain) {
-          results.recommendations.push("Add capcofire.com domain to Resend dashboard");
+          results.recommendations.push(`Add ${domain} domain to Resend dashboard`);
           results.reputation_status = "poor";
         } else if (capcoFireDomain.status !== "verified") {
           results.recommendations.push("Complete domain verification in Resend dashboard");

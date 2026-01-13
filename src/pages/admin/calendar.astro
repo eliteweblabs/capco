@@ -20,7 +20,7 @@ const {
   globalCompanyEmail,
   globalCompanyWebsite,
   globalCompanyLogo,
-} = globalCompanyData();
+} = await globalCompanyData();
 
 import { globalClasses } from "../api/global/global-classes.ts";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
@@ -61,7 +61,7 @@ const CALCOM_IFRAME_URL = `${CALCOM_BASE_URL}/auth/login`; // Start with login -
     <div class="flex-shrink-0 color-background border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center justify-between px-4 py-3">
         <div class="flex items-center gap-3">
-          <SimpleIcon name="calendar" size="lg" class="text-blue-600 dark:text-blue-400" />
+          <SimpleIcon name="calendar" size="lg" class="text-primary-600 dark:text-primary-400" />
           <div>
             <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Calendar Management</h1>
             <!-- <p class="text-xs text-gray-600 dark:text-gray-400">
@@ -84,7 +84,7 @@ const CALCOM_IFRAME_URL = `${CALCOM_BASE_URL}/auth/login`; // Start with login -
             href={CALCOM_ADMIN_URL}
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
             title="Open admin settings in new tab"
           >
             <SimpleIcon name="external-link" size="sm" />
@@ -96,14 +96,14 @@ const CALCOM_IFRAME_URL = `${CALCOM_BASE_URL}/auth/login`; // Start with login -
       <!-- Separate Login Notice (Compact) -->
       <div class="px-4 pb-3">
         <div
-          class="flex items-start gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-2"
+          class="flex items-start gap-2 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded p-2"
         >
           <SimpleIcon
             name="info"
             size="md"
-            class="text-blue-600 dark:text-blue-400 flex-shrink-0"
+            class="text-primary-600 dark:text-primary-400 flex-shrink-0"
           />
-          <p class="text-xs text-blue-800 dark:text-blue-200">
+          <p class="text-xs text-primary-800 dark:text-primary-200">
             <strong>Note:</strong> Cal.com uses separate authentication. You'll need to log in with your
             Cal.com credentials.
           </p>
@@ -120,7 +120,7 @@ const CALCOM_IFRAME_URL = `${CALCOM_BASE_URL}/auth/login`; // Start with login -
       >
         <div class="text-center">
           <div
-            class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"
+            class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-primary-600 mb-4"
           >
           </div>
           <p class="text-gray-600 dark:text-gray-400">Loading calendar...</p>
@@ -139,14 +139,14 @@ const CALCOM_IFRAME_URL = `${CALCOM_BASE_URL}/auth/login`; // Start with login -
     </div>
   </div>
 
-  <script>
+  <script define:vars={{ CALCOM_ADMIN_URL }}>
     // Handle iframe loading
-    const iframe = document.getElementById("calcom-admin-iframe") as HTMLIFrameElement;
+    const iframe = document.getElementById("calcom-admin-iframe");
     const loading = document.getElementById("iframe-loading");
 
     if (iframe && loading) {
       iframe.addEventListener("load", () => {
-        loading.style.display = "none";
+        if (loading) loading.style.display = "none";
       });
 
       // Fallback: hide loading after 5 seconds
@@ -172,7 +172,7 @@ const CALCOM_IFRAME_URL = `${CALCOM_BASE_URL}/auth/login`; // Start with login -
               <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Calendar Unavailable</h3>
               <p class="text-gray-600 dark:text-gray-400 mb-4">Unable to load the calendar interface.</p>
               <a href="${CALCOM_ADMIN_URL}" target="_blank" rel="noopener noreferrer" 
-                 class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                 class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                 Open Cal.com Directly
               </a>
             </div>

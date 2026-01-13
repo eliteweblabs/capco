@@ -1,4 +1,3 @@
----
 /**
  * API Endpoint: Update Global Settings
  * Allows admins to update global company settings stored in database
@@ -34,7 +33,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     const { settings } = body;
 
+    console.log("[settings/update] Received request:", {
+      settingsCount: settings ? Object.keys(settings).length : 0,
+      settingsKeys: settings ? Object.keys(settings) : [],
+      hasSupabaseAdmin: !!supabaseAdmin,
+    });
+
     if (!settings || typeof settings !== "object") {
+      console.error("[settings/update] Invalid settings data:", body);
       return new Response(JSON.stringify({ error: "Invalid settings data" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -42,6 +48,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!supabaseAdmin) {
+      console.error("[settings/update] supabaseAdmin not available");
       return new Response(JSON.stringify({ error: "Database not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -67,25 +74,104 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     for (const [key, value] of Object.entries(settings)) {
       const { category, valueType } = getCategoryAndType(key);
       
-      // Use upsert to insert or update in one operation
-      const { error } = await supabaseAdmin
-        .from("global_settings")
-        .upsert({
+      try {
+        // First, check if the setting exists (use maybeSingle to avoid error if not found)
+        const { data: existing, error: checkError } = await supabaseAdmin
+          .from("global_settings")
+          .select("id")
+          .eq("key", key)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error(`[settings/update] Error checking for existing setting ${key}:`, checkError);
+          throw checkError;
+        }
+
+        const settingData: any = {
           key,
           value: value as string,
           category,
           value_type: valueType,
-          updated_by: currentUser.id,
           updated_at: new Date().toISOString(),
-        }, {
-          onConflict: "key",
+        };
+        
+        // Only include updated_by if currentUser.id exists and is valid UUID
+        if (currentUser?.id) {
+          settingData.updated_by = currentUser.id;
+        }
+        
+        console.log(`[settings/update] Setting data for ${key}:`, {
+          ...settingData,
+          value: settingData.value?.substring(0, 50) + (settingData.value?.length > 50 ? '...' : ''),
         });
 
-      if (error) {
-        console.error(`Error upserting setting ${key}:`, error);
-        updates.push({ key, success: false, error: error.message });
-      } else {
-        updates.push({ key, success: true });
+        let error;
+        if (existing) {
+          // Update existing record
+          console.log(`[settings/update] Updating existing setting: ${key}`);
+          const { error: updateError } = await supabaseAdmin
+            .from("global_settings")
+            .update(settingData)
+            .eq("key", key);
+          error = updateError;
+        } else {
+          // Insert new record
+          console.log(`[settings/update] Inserting new setting: ${key}`);
+          const { error: insertError } = await supabaseAdmin
+            .from("global_settings")
+            .insert(settingData);
+          error = insertError;
+        }
+
+        if (error) {
+          console.error(`[settings/update] Error upserting setting ${key}:`, JSON.stringify(error, null, 2));
+          console.error(`[settings/update] Error type:`, typeof error);
+          console.error(`[settings/update] Error keys:`, Object.keys(error || {}));
+          
+          // Extract error message from various possible formats
+          let errorMessage = "Unknown error";
+          let errorDetails = null;
+          
+          if (typeof error === 'string') {
+            errorMessage = error;
+          } else if (error && typeof error === 'object') {
+            errorMessage = error.message || error.error || error.msg || JSON.stringify(error);
+            errorDetails = error.details || error.hint || error.code || JSON.stringify(error);
+          }
+          
+          updates.push({ 
+            key, 
+            success: false, 
+            error: errorMessage,
+            details: errorDetails
+          });
+        } else {
+          updates.push({ key, success: true });
+        }
+      } catch (err: any) {
+        console.error(`[settings/update] Exception upserting setting ${key}:`, err);
+        console.error(`[settings/update] Exception type:`, typeof err);
+        console.error(`[settings/update] Exception stack:`, err?.stack);
+        
+        let errorMessage = "Unexpected error occurred";
+        let errorDetails = null;
+        
+        if (err instanceof Error) {
+          errorMessage = err.message;
+          errorDetails = err.stack || err.toString();
+        } else if (typeof err === 'string') {
+          errorMessage = err;
+        } else if (err && typeof err === 'object') {
+          errorMessage = err.message || err.error || JSON.stringify(err);
+          errorDetails = err.details || err.hint || err.code || JSON.stringify(err);
+        }
+        
+        updates.push({ 
+          key, 
+          success: false, 
+          error: errorMessage,
+          details: errorDetails
+        });
       }
     }
 
@@ -101,11 +187,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
+    // Get failed updates for detailed error message
+    const failedUpdates = updates.filter(u => !u.success);
+    const errorDetails = failedUpdates.length > 0 
+      ? failedUpdates.map(u => `${u.key}: ${u.error}${u.details ? ` (${u.details})` : ''}`).join('; ')
+      : '';
+
     return new Response(
       JSON.stringify({
         success: allSuccess,
         updates,
-        message: allSuccess ? "Settings updated successfully" : "Some settings failed to update",
+        message: allSuccess 
+          ? "Settings updated successfully" 
+          : `Some settings failed to update. ${errorDetails}`,
+        errorDetails: failedUpdates.length > 0 ? errorDetails : undefined,
       }),
       {
         status: allSuccess ? 200 : 207, // 207 Multi-Status

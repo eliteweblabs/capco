@@ -146,17 +146,27 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     const { getBaseUrl } = await import("../../../lib/url-utils");
     const currentBaseUrl = getBaseUrl(request);
 
-    // Get user data from Supabase using the correct admin API method
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers({
-      filter: { email: email },
-    });
+    // Get user data from Supabase using profiles table
+    const { data: userProfile, error: userError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email")
+      .eq("email", email.toLowerCase())
+      .single();
 
-    if (userError || !userData.users || userData.users.length === 0) {
+    if (userError || !userProfile) {
       console.error("🔐 [VERIFY-CUSTOM] Error getting user data:", userError);
       return redirect("/auth/login?error=user_not_found");
     }
+    
+    // Get auth user data
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userProfile.id);
+    
+    if (!userData || !userData.user) {
+      console.error("🔐 [VERIFY-CUSTOM] Error getting auth user data");
+      return redirect("/auth/login?error=user_not_found");
+    }
 
-    const user = userData.users[0];
+    const user = userData.user;
     console.log("🔐 [VERIFY-CUSTOM] User found, creating session...");
 
     // Create a custom session using Supabase admin - bypass magic link system entirely

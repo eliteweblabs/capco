@@ -26,10 +26,10 @@ export const POST: APIRoute = async ({ request }) => {
         buttonClasses.push("bg-red-600 text-white hover:bg-red-700");
         break;
       case "anchor":
-        buttonClasses.push("text-blue-600 hover:text-blue-800 underline");
+        buttonClasses.push("text-primary-600 hover:text-primary-800 underline");
         break;
       case "primary":
-        buttonClasses.push("bg-blue-600 text-white hover:bg-blue-700");
+        buttonClasses.push("bg-primary-600 text-white hover:bg-primary-700");
         break;
       case "secondary":
         buttonClasses.push("bg-gray-200 text-gray-900 hover:bg-gray-300");

@@ -325,23 +325,54 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               console.warn("[AUTH-CALLBACK] Automatic detection failed, attempting manual exchange...");
               console.warn("[AUTH-CALLBACK] This requires code_verifier to be stored by Supabase");
               
-              try {
-                // Supabase's exchangeCodeForSession should retrieve the code_verifier automatically
-                // from its internal storage (not necessarily localStorage)
-                const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
-                data = exchangeResult.data;
-                exchangeError = exchangeResult.error;
-
-                if (exchangeError) {
-                  console.error("[AUTH-CALLBACK] Manual exchange failed:", exchangeError);
-                  console.error("[AUTH-CALLBACK] Error:", exchangeError.message);
-                } else if (data?.session) {
-                  console.log("[AUTH-CALLBACK] ✅ Manual exchange succeeded!");
-                  console.log("[AUTH-CALLBACK] User:", data.session.user?.email);
+              // Check if code verifier exists in localStorage before attempting exchange
+              const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+              if (supabaseUrl) {
+                const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+                const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
+                const codeVerifier = localStorage.getItem(codeVerifierKey);
+                
+                console.log("[AUTH-CALLBACK] Code verifier check:", {
+                  key: codeVerifierKey,
+                  found: !!codeVerifier,
+                  codeLength: code?.length || 0,
+                });
+                
+                if (!codeVerifier) {
+                  console.error("[AUTH-CALLBACK] ❌ Code verifier not found in localStorage!");
+                  console.error("[AUTH-CALLBACK] Available localStorage keys:", Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('auth')));
+                  exchangeError = new Error("Code verifier not found. Please try signing in again.");
+                } else {
+                  console.log("[AUTH-CALLBACK] ✅ Code verifier found, proceeding with exchange...");
                 }
-              } catch (err) {
-                console.error("[AUTH-CALLBACK] Manual exchange exception:", err);
-                exchangeError = err instanceof Error ? err : new Error("Unknown error");
+              }
+              
+              if (!exchangeError) {
+                try {
+                  // Supabase's exchangeCodeForSession should retrieve the code_verifier automatically
+                  // from its internal storage (not necessarily localStorage)
+                  // But we've verified it exists in localStorage above
+                  console.log("[AUTH-CALLBACK] Calling exchangeCodeForSession with code:", code?.substring(0, 20) + "...");
+                  const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
+                  data = exchangeResult.data;
+                  exchangeError = exchangeResult.error;
+
+                  if (exchangeError) {
+                    console.error("[AUTH-CALLBACK] Manual exchange failed:", exchangeError);
+                    console.error("[AUTH-CALLBACK] Error:", exchangeError.message);
+                    console.error("[AUTH-CALLBACK] Error details:", {
+                      message: exchangeError.message,
+                      status: exchangeError.status,
+                      code: exchangeError.code,
+                    });
+                  } else if (data?.session) {
+                    console.log("[AUTH-CALLBACK] ✅ Manual exchange succeeded!");
+                    console.log("[AUTH-CALLBACK] User:", data.session.user?.email);
+                  }
+                } catch (err) {
+                  console.error("[AUTH-CALLBACK] Manual exchange exception:", err);
+                  exchangeError = err instanceof Error ? err : new Error("Unknown error");
+                }
               }
             }
           }

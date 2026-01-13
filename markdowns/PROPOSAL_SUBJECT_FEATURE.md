@@ -126,9 +126,9 @@ const proposalSubject = project.proposal_subject || defaultSubject;
 <!-- Editable Subject Line -->
 <div class="mt-3">
   <div id="proposal-subject-display" class="cursor-pointer">
-    <p class="text-lg font-medium text-gray-800 hover:text-blue-600 transition-colors">
+    <p class="text-lg font-medium text-gray-800 hover:text-primary-600 transition-colors">
       <span id="proposal-subject-text">Fire Protection Services Proposal</span>
-      <button id="edit-subject-btn" class="ml-2 text-gray-400 hover:text-blue-600">
+      <button id="edit-subject-btn" class="ml-2 text-gray-400 hover:text-primary-600">
         <i class="bx bx-edit text-sm"></i>
       </button>
     </p>
@@ -137,7 +137,7 @@ const proposalSubject = project.proposal_subject || defaultSubject;
   <div id="proposal-subject-edit" class="hidden">
     <div class="flex items-center space-x-2">
       <input type="text" id="proposal-subject-input" class="flex-1 px-3 py-2 border rounded-lg" />
-      <button id="save-subject-btn" class="px-3 py-2 bg-blue-600 text-white rounded-lg">
+      <button id="save-subject-btn" class="px-3 py-2 bg-primary-600 text-white rounded-lg">
         <i class="bx bx-check"></i>
       </button>
       <button id="cancel-subject-btn" class="px-3 py-2 bg-gray-500 text-white rounded-lg">

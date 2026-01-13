@@ -177,21 +177,16 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         selectedValue: currentValue,
         showCloseButton: showCloseButton,
         showCancelButton: showCancelButton,
-        valueField: valueField,
         labelField: labelField,
         searchText: searchText,
         searchPlaceholder: searchPlaceholder,
         globalInputClasses: globalInputClasses,
         enableSearch: enableSearch,
         fetchApiEndpoint: fetchApiEndpoint,
-        searchText: searchText,
-        searchPlaceholder: searchPlaceholder,
         apiParams: apiParams,
         dataTransform: dataTransform,
         valueField: valueField,
-        labelField: labelField,
         noResultsText: noResultsText,
-        globalInputClasses: globalInputClasses,
         // project: project,
       });
     });
@@ -1070,7 +1065,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
             let rawData = undefined;
             try {
               rawData = span.dataset.json ? JSON.parse(span.dataset.json) : undefined;
-            } catch {}
+            } catch (error) {
+              console.error(`🔍 [SLOT-MACHINE] Error parsing JSON:`, error);
+            }
 
             // Notify global listeners first
             window.dispatchEvent(
@@ -1515,42 +1512,42 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   function setupInputObserver() {
     const hiddenInput = document.getElementById(`${id}-value`);
     const triggerButton = document.getElementById(id);
-    
+
     if (!hiddenInput || !(hiddenInput instanceof HTMLInputElement)) return;
     if (!triggerButton || !(triggerButton instanceof HTMLElement)) return;
-    
+
     if (!hiddenInput || !triggerButton) {
       // If elements don't exist yet, try again after a short delay
       setTimeout(setupInputObserver, 100);
       return;
     }
-    
+
     // Function to update button text from hidden input value
     const updateButtonText = () => {
       const value = hiddenInput.value;
       if (value && triggerButton) {
         // Try to find the button text element (most common case)
-        const buttonTextSpan = triggerButton.querySelector(".button-text") as HTMLElement;
+        const buttonTextSpan = triggerButton.querySelector(".button-text");
         if (buttonTextSpan) {
           buttonTextSpan.textContent = value;
-          console.log(`🔄 [SLOT-MACHINE-${id}] Button text updated via .button-text span: ${value}`);
+          console.log(
+            `🔄 [SLOT-MACHINE-${id}] Button text updated via .button-text span: ${value}`
+          );
           return;
         }
-        
+
         // Fallback: find any text span that's not an icon and doesn't contain SVG
-        const textSpans = Array.from(triggerButton.querySelectorAll("span")).filter(
-          span => {
-            const hasIcon = span.classList.contains("icon") || span.className.includes("icon");
-            const hasSVG = span.querySelector("svg") !== null;
-            return !hasIcon && !hasSVG;
-          }
-        );
+        const textSpans = Array.from(triggerButton.querySelectorAll("span")).filter((span) => {
+          const hasIcon = span.classList.contains("icon") || span.className.includes("icon");
+          const hasSVG = span.querySelector("svg") !== null;
+          return !hasIcon && !hasSVG;
+        });
         if (textSpans.length > 0) {
           textSpans[0].textContent = value;
           console.log(`🔄 [SLOT-MACHINE-${id}] Button text updated via text span: ${value}`);
           return;
         }
-        
+
         // Last resort: preserve icon and update text
         const icon = triggerButton.querySelector("svg");
         if (icon) {
@@ -1563,7 +1560,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
             triggerButton.insertBefore(textElement, icon.nextSibling);
           }
           textElement.textContent = value;
-          console.log(`🔄 [SLOT-MACHINE-${id}] Button text updated (created/updated text element): ${value}`);
+          console.log(
+            `🔄 [SLOT-MACHINE-${id}] Button text updated (created/updated text element): ${value}`
+          );
         } else {
           // No icon found, just update text
           triggerButton.textContent = value;
@@ -1571,11 +1570,11 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         }
       }
     };
-    
+
     // Listen for input/change events
     hiddenInput.addEventListener("input", updateButtonText);
     hiddenInput.addEventListener("change", updateButtonText);
-    
+
     // Use MutationObserver to watch for value attribute changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -1588,14 +1587,14 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         }
       });
     });
-    
+
     observer.observe(hiddenInput, {
       attributes: true,
       attributeFilter: ["value"],
       childList: false,
-      subtree: false
+      subtree: false,
     });
-    
+
     // Also watch for property changes using a different approach
     // This is important because setting .value programmatically doesn't always trigger events
     let lastValue = hiddenInput.value;
@@ -1607,22 +1606,22 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         }
       }
     };
-    
+
     // Check more frequently for programmatic changes (every 50ms)
     const valueCheckInterval = setInterval(checkValue, 50);
-    
+
     // Clean up interval when component is removed (if needed)
     // Store interval ID for potential cleanup
     if (hiddenInput instanceof HTMLInputElement) {
-      (hiddenInput as any).__valueCheckInterval = valueCheckInterval;
+      hiddenInput.__valueCheckInterval = valueCheckInterval;
     }
-    
+
     // Initial update in case value is already set
     if (hiddenInput.value) {
       updateButtonText();
     }
   }
-  
+
   // Try to set up immediately, and also on DOMContentLoaded
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", setupInputObserver);
