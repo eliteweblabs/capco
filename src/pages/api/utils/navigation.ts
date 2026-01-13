@@ -53,8 +53,26 @@ export const navigation = async (
         query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
       }
       // If no clientId set, show all pages (no filter)
-
-      const { data: cmsPages } = await query.order("title");
+      
+      // Try to order by display_order if column exists, otherwise order by title
+      let { data: cmsPages, error } = await query.order("display_order", { ascending: true, nullsFirst: false });
+      
+      // If ordering by display_order fails (column doesn't exist), fall back to title ordering
+      if (error && error.code === "42703") {
+        // Column doesn't exist, use title ordering instead
+        let fallbackQuery = supabaseAdmin
+          .from("cms_pages")
+          .select(
+            "slug, title, include_in_navigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
+          )
+          .eq("is_active", true)
+          .eq("include_in_navigation", true);
+        if (clientId) {
+          fallbackQuery = fallbackQuery.or(`client_id.is.null,client_id.eq.${clientId}`);
+        }
+        const fallbackResult = await fallbackQuery.order("title");
+        cmsPages = fallbackResult.data;
+      }
 
       if (cmsPages && cmsPages.length > 0) {
         cmsNavItems = cmsPages.map((page: any) => ({
@@ -119,16 +137,16 @@ export const navigation = async (
     //   isDrawer: false, // Special flag for drawer trigger
     //   isPrimary: currentUrl.startsWith("/projects"),
     // },
-    {
-      label: "Book Demo",
-      href: "/demo",
-      roles: ["any"],
-      pageType: "frontend",
-      isPrimary: currentUrl.startsWith("/demo"),
-      buttonStyle: "outline",
-      desktopOnly: true,
-      hideWhenAuth: true,
-    },
+    // {
+    //   label: "Book Demo",
+    //   href: "/demo",
+    //   roles: ["any"],
+    //   pageType: "frontend",
+    //   isPrimary: currentUrl.startsWith("/demo"),
+    //   buttonStyle: "outline",
+    //   desktopOnly: true,
+    //   hideWhenAuth: true,
+    // },
     // {
     //   label: "Email Your Project",
     //   href: "mailto:project@new.capcofire.com",

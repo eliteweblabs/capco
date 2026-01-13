@@ -61,7 +61,21 @@ export const GET: APIRoute = async ({ request, url }) => {
       }
       // If no clientId set, show all pages (no filter)
       
-      const { data, error } = await query.order("slug");
+      // Try to order by display_order if column exists, otherwise order by slug
+      // Note: If display_order column doesn't exist yet, this will fall back gracefully
+      let { data, error } = await query.order("display_order", { ascending: true, nullsFirst: false });
+      
+      // If ordering by display_order fails (column doesn't exist), fall back to slug ordering
+      if (error && error.code === "42703") {
+        // Column doesn't exist, use slug ordering instead
+        let fallbackQuery = supabaseAdmin.from("cms_pages").select("*");
+        if (clientId) {
+          fallbackQuery = fallbackQuery.or(`client_id.is.null,client_id.eq.${clientId}`);
+        }
+        const fallbackResult = await fallbackQuery.order("slug");
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) {
         throw error;
@@ -206,8 +220,13 @@ export const POST: APIRoute = async ({ request }) => {
         nav_hide_when_auth: nav_hide_when_auth === true,
         client_id: clientId,
         is_active: true,
+        // display_order will be set if column exists, otherwise ignored
         updated_at: new Date().toISOString(),
       };
+      
+      // Only set display_order if column exists (check by trying to get max value)
+      // For now, we'll let it default to NULL if column doesn't exist
+      // The migration will set initial values
 
       const result = await supabaseAdmin.from("cms_pages").insert(insertData).select().single();
 
@@ -285,6 +304,58 @@ export const DELETE: APIRoute = async ({ request, url }) => {
   } catch (error: any) {
     console.error("❌ [CMS-PAGES] Error:", error);
     return new Response(JSON.stringify({ error: error.message || "Failed to delete page" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+};
+
+// Reorder pages
+export const PUT: APIRoute = async ({ request }) => {
+  try {
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await request.json();
+    const { orders } = body;
+
+    if (!orders || !Array.isArray(orders)) {
+      return new Response(JSON.stringify({ error: "Invalid request: orders array required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Update display_order for each page
+    const updatePromises = orders.map((item: { id: string; display_order: number }) =>
+      supabaseAdmin
+        .from("cms_pages")
+        .update({ display_order: item.display_order })
+        .eq("id", item.id)
+    );
+
+    const results = await Promise.all(updatePromises);
+    const errors = results.filter((r) => r.error);
+
+    if (errors.length > 0) {
+      console.error("❌ [CMS-PAGES] Errors updating order:", errors);
+      return new Response(
+        JSON.stringify({ error: "Some pages failed to update", details: errors }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(JSON.stringify({ success: true, message: "Order updated successfully" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error: any) {
+    console.error("❌ [CMS-PAGES] Error reordering pages:", error);
+    return new Response(JSON.stringify({ error: error.message || "Failed to reorder pages" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

@@ -259,10 +259,14 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
   if (supabaseAdmin) {
     try {
       const clientId = process.env.RAILWAY_PROJECT_NAME || null;
+      
+      // Normalize slug: "/" and "home" are equivalent for the home page
+      const normalizedSlug = slug === "home" || slug === "/" ? ["home", "/"] : [slug];
+      
       let query = supabaseAdmin
         .from("cms_pages")
         .select("*")
-        .eq("slug", slug)
+        .in("slug", normalizedSlug)
         .eq("is_active", true);
       
       // Filter by client_id: show global (null) or matching client_id
@@ -277,10 +281,16 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         .maybeSingle();
 
       if (!error && dbPage) {
+        // Normalize template value (e.g., "Full Width" -> "fullwidth")
+        let normalizedTemplate = (dbPage.template || "default").toLowerCase();
+        if (normalizedTemplate === "full width") {
+          normalizedTemplate = "fullwidth";
+        }
+        
         const pageContent: PageContent = {
           title: dbPage.title || slug,
           description: dbPage.description || "",
-          template: dbPage.template || "default",
+          template: normalizedTemplate,
           content: dbPage.content || "",
           ...(dbPage.frontmatter || {}),
         };
