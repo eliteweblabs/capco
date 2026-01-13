@@ -452,6 +452,97 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
             </select>
           </div>
 
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="page-include-in-navigation"
+              name="include_in_navigation"
+              class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <label for="page-include-in-navigation" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+              Include in primary navigation
+            </label>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 -mt-2 mb-2">
+            If checked, this page will appear in the main navigation menu
+          </p>
+
+          <!-- Navigation Properties (shown when include_in_navigation is checked) -->
+          <div id="navigation-properties" class="hidden space-y-4 border-t pt-4 mt-4">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Navigation Settings</h4>
+            
+            <div>
+              <label for="page-nav-roles" class="block text-sm font-medium mb-2">
+                Visible to Roles
+              </label>
+              <div class="flex flex-wrap gap-2">
+                <label class="flex items-center">
+                  <input type="checkbox" name="nav_roles" value="any" checked class="w-4 h-4 text-primary-600 rounded" />
+                  <span class="ml-2 text-sm">Any</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="nav_roles" value="Client" class="w-4 h-4 text-primary-600 rounded" />
+                  <span class="ml-2 text-sm">Client</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="nav_roles" value="Admin" class="w-4 h-4 text-primary-600 rounded" />
+                  <span class="ml-2 text-sm">Admin</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="nav_roles" value="Staff" class="w-4 h-4 text-primary-600 rounded" />
+                  <span class="ml-2 text-sm">Staff</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label for="page-nav-page-type" class="block text-sm font-medium mb-2">
+                Page Type
+              </label>
+              <select id="page-nav-page-type" name="nav_page_type" class={globalInputClasses}>
+                <option value="frontend">Frontend</option>
+                <option value="backend">Backend</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="page-nav-button-style" class="block text-sm font-medium mb-2">
+                Button Style (Optional)
+              </label>
+              <select id="page-nav-button-style" name="nav_button_style" class={globalInputClasses}>
+                <option value="">None (Regular Link)</option>
+                <option value="primary">Primary</option>
+                <option value="secondary">Secondary</option>
+                <option value="ghost">Ghost</option>
+                <option value="outline">Outline</option>
+              </select>
+            </div>
+
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                id="page-nav-desktop-only"
+                name="nav_desktop_only"
+                class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
+              <label for="page-nav-desktop-only" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+                Desktop Only
+              </label>
+            </div>
+
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                id="page-nav-hide-when-auth"
+                name="nav_hide_when_auth"
+                class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
+              <label for="page-nav-hide-when-auth" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+                Hide When Authenticated
+              </label>
+            </div>
+          </div>
+
           <div>
             <label for="page-content" class="block text-sm font-medium mb-2">
               Content (Markdown)
@@ -673,10 +764,23 @@ You can embed components:
       const errorDiv = document.getElementById("form-error");
       const successDiv = document.getElementById("form-success");
       const modalTitle = document.getElementById("modal-title");
+      const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
+      const navPropertiesSection = document.getElementById("navigation-properties");
 
       if (!modal || !form || !createBtn) {
         console.error("[CMS] Required elements not found:", { modal, form, createBtn });
         return;
+      }
+
+      // Toggle navigation properties section based on checkbox
+      if (includeInNavCheckbox && navPropertiesSection) {
+        const toggleNavProperties = () => {
+          if (includeInNavCheckbox instanceof HTMLInputElement) {
+            navPropertiesSection.classList.toggle("hidden", !includeInNavCheckbox.checked);
+          }
+        };
+        includeInNavCheckbox.addEventListener("change", toggleNavProperties);
+        toggleNavProperties(); // Initial state
       }
 
       // Open modal for creating new page
@@ -686,6 +790,10 @@ You can embed components:
         console.log("[CMS] Create button clicked");
         editingSlug = null;
         form.reset();
+        const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
+        if (includeInNavCheckbox && includeInNavCheckbox instanceof HTMLInputElement) {
+          includeInNavCheckbox.checked = false;
+        }
         if (modalTitle) modalTitle.textContent = "Create New Page";
         modal.classList.remove("hidden");
         if (errorDiv) errorDiv.classList.add("hidden");
@@ -712,12 +820,44 @@ You can embed components:
               const descInput = document.getElementById("page-description");
               const templateSelect = document.getElementById("page-template");
               const contentTextarea = document.getElementById("page-content");
+              const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
+              const navPageTypeSelect = document.getElementById("page-nav-page-type");
+              const navButtonStyleSelect = document.getElementById("page-nav-button-style");
+              const navDesktopOnlyCheckbox = document.getElementById("page-nav-desktop-only");
+              const navHideWhenAuthCheckbox = document.getElementById("page-nav-hide-when-auth");
               
               if (slugInput) slugInput.value = page.slug || "";
               if (titleInput) titleInput.value = page.title || "";
               if (descInput) descInput.value = page.description || "";
               if (templateSelect) templateSelect.value = page.template || "default";
               if (contentTextarea) contentTextarea.value = page.content || "";
+              if (includeInNavCheckbox && includeInNavCheckbox instanceof HTMLInputElement) {
+                includeInNavCheckbox.checked = page.include_in_navigation || false;
+                // Trigger change event to show/hide navigation properties
+                includeInNavCheckbox.dispatchEvent(new Event("change"));
+              }
+              
+              // Set navigation properties
+              if (navPageTypeSelect && navPageTypeSelect instanceof HTMLSelectElement) {
+                navPageTypeSelect.value = page.nav_page_type || "frontend";
+              }
+              if (navButtonStyleSelect && navButtonStyleSelect instanceof HTMLSelectElement) {
+                navButtonStyleSelect.value = page.nav_button_style || "";
+              }
+              if (navDesktopOnlyCheckbox && navDesktopOnlyCheckbox instanceof HTMLInputElement) {
+                navDesktopOnlyCheckbox.checked = page.nav_desktop_only || false;
+              }
+              if (navHideWhenAuthCheckbox && navHideWhenAuthCheckbox instanceof HTMLInputElement) {
+                navHideWhenAuthCheckbox.checked = page.nav_hide_when_auth || false;
+              }
+              
+              // Set nav roles checkboxes
+              const navRoles = page.nav_roles || ["any"];
+              document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
+                if (cb instanceof HTMLInputElement) {
+                  cb.checked = navRoles.includes(cb.value);
+                }
+              });
             }
 
             modal.classList.remove("hidden");
@@ -859,12 +999,30 @@ You can embed components:
         const descInput = document.getElementById("page-description");
         const templateSelect = document.getElementById("page-template");
         const contentTextarea = document.getElementById("page-content");
+        const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
         
         const slug = slugInput?.value?.trim() || "";
         const title = titleInput?.value?.trim() || null;
         const description = descInput?.value?.trim() || null;
         const content = contentTextarea?.value?.trim() || "";
         const template = templateSelect?.value?.trim() || "default";
+        const includeInNavigation = (includeInNavCheckbox && includeInNavCheckbox instanceof HTMLInputElement && includeInNavCheckbox.checked) || false;
+        
+        // Get navigation properties
+        const navRolesCheckboxes = document.querySelectorAll('input[name="nav_roles"]:checked');
+        const navRoles = Array.from(navRolesCheckboxes).map((cb) => {
+          if (cb instanceof HTMLInputElement) return cb.value;
+          return "";
+        }).filter(v => v);
+        const navPageTypeSelect = document.getElementById("page-nav-page-type");
+        const navButtonStyleSelect = document.getElementById("page-nav-button-style");
+        const navDesktopOnlyCheckbox = document.getElementById("page-nav-desktop-only");
+        const navHideWhenAuthCheckbox = document.getElementById("page-nav-hide-when-auth");
+        
+        const navPageType = navPageTypeSelect instanceof HTMLSelectElement ? navPageTypeSelect.value : "frontend";
+        const navButtonStyle = navButtonStyleSelect instanceof HTMLSelectElement && navButtonStyleSelect.value ? navButtonStyleSelect.value : null;
+        const navDesktopOnly = navDesktopOnlyCheckbox instanceof HTMLInputElement && navDesktopOnlyCheckbox.checked;
+        const navHideWhenAuth = navHideWhenAuthCheckbox instanceof HTMLInputElement && navHideWhenAuthCheckbox.checked;
         
         // Validate required fields
         if (!slug) {
@@ -889,6 +1047,12 @@ You can embed components:
           description,
           content,
           template,
+          include_in_navigation: includeInNavigation,
+          nav_roles: navRoles.length > 0 ? navRoles : ["any"],
+          nav_page_type: navPageType,
+          nav_button_style: navButtonStyle,
+          nav_desktop_only: navDesktopOnly,
+          nav_hide_when_auth: navHideWhenAuth,
         };
 
         // Debug logging
@@ -899,6 +1063,7 @@ You can embed components:
           description: descInput?.value,
           content: contentTextarea?.value?.substring(0, 50) + "...",
           template: templateSelect?.value,
+          include_in_navigation: includeInNavCheckbox?.checked,
         });
 
         try {

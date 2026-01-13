@@ -28,12 +28,55 @@ interface DropdownMenu {
   items: DropdownItem[];
 }
 
-export const navigation = (
+export const navigation = async (
   currentUrl: string,
   isAuth: boolean,
   currentRole: string | null,
   isBackend: boolean
 ) => {
+  // Fetch CMS pages that should be included in navigation
+  let cmsNavItems: NavItem[] = [];
+  try {
+    const { supabaseAdmin } = await import("../../../lib/supabase-admin");
+    if (supabaseAdmin) {
+      const clientId = process.env.RAILWAY_PROJECT_NAME || null;
+      let query = supabaseAdmin
+        .from("cms_pages")
+        .select(
+          "slug, title, include_in_navigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
+        )
+        .eq("is_active", true)
+        .eq("include_in_navigation", true);
+
+      if (clientId) {
+        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+      } else {
+        query = query.is("client_id", null);
+      }
+
+      const { data: cmsPages } = await query.order("title");
+
+      if (cmsPages && cmsPages.length > 0) {
+        cmsNavItems = cmsPages.map((page: any) => ({
+          label: page.title || page.slug,
+          href: `/${page.slug}`,
+          roles:
+            page.nav_roles && Array.isArray(page.nav_roles) && page.nav_roles.length > 0
+              ? (page.nav_roles as UserRole[])
+              : ["any"],
+          pageType: (page.nav_page_type === "backend" ? "backend" : "frontend") as NavType,
+          isPrimary: currentUrl === `/${page.slug}` || currentUrl.startsWith(`/${page.slug}/`),
+          buttonStyle: page.nav_button_style || undefined,
+          desktopOnly: page.nav_desktop_only === true,
+          hideWhenAuth: page.nav_hide_when_auth === true,
+        }));
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to fetch CMS navigation pages:", error);
+    // Continue without CMS pages if fetch fails
+  }
+
   // Navigation items
   const navItems: NavItem[] = [
     // Frontend navigation (hidden on backend pages to reduce clutter)
@@ -68,14 +111,14 @@ export const navigation = (
       pageType: "backend",
       isPrimary: currentUrl.startsWith("/project/new"),
     },
-    {
-      label: "Projects",
-      href: "/projects",
-      roles: ["any"],
-      pageType: "frontend",
-      isDrawer: false, // Special flag for drawer trigger
-      isPrimary: currentUrl.startsWith("/projects"),
-    },
+    // {
+    //   label: "Projects",
+    //   href: "/projects",
+    //   roles: ["any"],
+    //   pageType: "frontend",
+    //   isDrawer: false, // Special flag for drawer trigger
+    //   isPrimary: currentUrl.startsWith("/projects"),
+    // },
     {
       label: "Book Demo",
       href: "/demo",
@@ -131,6 +174,8 @@ export const navigation = (
       pageType: "backend",
       isPrimary: currentUrl.startsWith("/analytics"),
     },
+    // Add CMS pages that are marked for navigation
+    ...cmsNavItems,
   ];
 
   // Dropdown menus are now integrated into navItems array above
