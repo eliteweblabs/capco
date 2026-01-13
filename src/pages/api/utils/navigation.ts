@@ -53,10 +53,13 @@ export const navigation = async (
         query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
       }
       // If no clientId set, show all pages (no filter)
-      
+
       // Try to order by display_order if column exists, otherwise order by title
-      let { data: cmsPages, error } = await query.order("display_order", { ascending: true, nullsFirst: false });
-      
+      let { data: cmsPages, error } = await query.order("display_order", {
+        ascending: true,
+        nullsFirst: false,
+      });
+
       // If ordering by display_order fails (column doesn't exist), fall back to title ordering
       if (error && error.code === "42703") {
         // Column doesn't exist, use title ordering instead
