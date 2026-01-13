@@ -48,11 +48,11 @@ export const navigation = async (
         .eq("is_active", true)
         .eq("include_in_navigation", true);
 
+      // Filter by client_id: show global (null) or matching client_id
       if (clientId) {
         query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
-      } else {
-        query = query.is("client_id", null);
       }
+      // If no clientId set, show all pages (no filter)
 
       const { data: cmsPages } = await query.order("title");
 
