@@ -169,7 +169,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           const adminResponse = await fetch(`${baseUrl}/api/users/get?role=Admin`, {
             method: "GET",
-            headers: { 
+            headers: {
               "Content-Type": "application/json",
               Cookie: request.headers.get("cookie") || "",
             },

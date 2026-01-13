@@ -30,29 +30,32 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const contentDir = join(process.cwd(), "content", "pages");
     if (!existsSync(contentDir)) {
-      return new Response(
-        JSON.stringify({ error: "Content directory not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Content directory not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Recursive function to find all markdown files
-    function findMarkdownFiles(dir: string, basePath: string = ""): Array<{ file: string; path: string }> {
+    function findMarkdownFiles(
+      dir: string,
+      basePath: string = ""
+    ): Array<{ file: string; path: string }> {
       const results: Array<{ file: string; path: string }> = [];
       const items = readdirSync(dir, { withFileTypes: true });
-      
+
       for (const item of items) {
         const fullPath = join(dir, item.name);
         const relativePath = basePath ? `${basePath}/${item.name}` : item.name;
-        
+
         if (item.isDirectory()) {
           // Recursively search subdirectories
           results.push(...findMarkdownFiles(fullPath, relativePath));
@@ -60,7 +63,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           results.push({ file: item.name, path: relativePath });
         }
       }
-      
+
       return results;
     }
 

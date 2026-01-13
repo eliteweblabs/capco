@@ -11,9 +11,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!to || !subject || !body) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Missing required fields: to, subject, and body are required" 
+        JSON.stringify({
+          success: false,
+          error: "Missing required fields: to, subject, and body are required",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
@@ -26,7 +26,8 @@ export const POST: APIRoute = async ({ request }) => {
       const { globalCompanyData } = await import("../global/global-company-data");
       const companyData = await globalCompanyData();
       defaultFromName = companyData.globalCompanyName || "Company";
-      const websiteDomain = companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "example.com";
+      const websiteDomain =
+        companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "example.com";
       defaultFromEmail = `noreply@${websiteDomain}`;
     } catch (error) {
       console.warn("📧 [VOICE-ASSISTANT-EMAIL] Failed to load company data, using defaults");
@@ -39,9 +40,9 @@ export const POST: APIRoute = async ({ request }) => {
     if (!emailApiKey) {
       console.error("📧 [VOICE-ASSISTANT-EMAIL] EMAIL_API_KEY not configured");
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Email service not configured" 
+        JSON.stringify({
+          success: false,
+          error: "Email service not configured",
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
@@ -82,10 +83,10 @@ export const POST: APIRoute = async ({ request }) => {
       const errorText = await response.text();
       console.error("📧 [VOICE-ASSISTANT-EMAIL] Resend error:", errorText);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: "Failed to send email",
-          details: errorText 
+          details: errorText,
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
@@ -120,4 +121,3 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
-

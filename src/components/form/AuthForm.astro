@@ -11,7 +11,7 @@ const { globalInputClasses } = Astro.props;
   <Button
     type="button"
     id="google-signin-button"
-    variant="secondary"
+    variant="outline"
     fullWidth
     class="flex items-center justify-center gap-2"
   >
@@ -132,116 +132,120 @@ const { globalInputClasses } = Astro.props;
 
   // Extract OAuth initiation logic into a reusable function
   async function triggerGoogleOAuth(e?: Event) {
-      if (e) {
-        e.preventDefault();
-      }
-
-      console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
-
-      // Get singleton Supabase client (prevents multiple GoTrueClient instances)
-      const supabase = getSupabaseClient();
-
-      if (!supabase) {
-        console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
-        if (window.showModal) {
-          window.showModal(
-            "error",
-            "Configuration Error",
-            "Supabase is not configured. Please contact support."
-          );
-        }
-        return;
-      }
-
-      // CRITICAL: Ensure Supabase client is fully initialized before initiating OAuth
-      // This ensures the code verifier will be stored properly
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      // Get the redirect URL based on current origin
-      // IMPORTANT: For Supabase PKCE flow, we MUST use /auth/callback directly (client-side)
-      // The /api/auth/callback route is only for Google People API OAuth (server-side)
-      // PKCE requires localStorage access which is only available client-side
-      // 
-      // CRITICAL: The redirect URL MUST exactly match one of the URLs in Supabase's Redirect URLs list
-      // For production: https://capcofire.com/auth/callback
-      // For development: http://localhost:4321/auth/callback
-      // Both should be in the Supabase Redirect URLs list
-      const redirectUrl = `${window.location.origin}/auth/callback`;
-      console.log("[GOOGLE-SIGNIN] Redirect URL:", redirectUrl);
-      console.log("[GOOGLE-SIGNIN] Current origin:", window.location.origin);
-      console.log("[GOOGLE-SIGNIN] Make sure this URL is in Supabase Redirect URLs list!");
-
-      // Initiate OAuth (this will store code verifier internally in Supabase)
-      // Supabase stores the code verifier in localStorage with a specific key format
-      // We need to ensure it's stored before redirecting
-      console.log("[GOOGLE-SIGNIN] Initiating OAuth with Supabase...");
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
-            scope: "openid email profile",
-          },
-        },
-      });
-
-      // CRITICAL: After signInWithOAuth is called, Supabase generates and stores the code verifier
-      // We need to wait for this to complete before redirecting
-      // Give Supabase time to store the code verifier in its internal storage
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      if (error) {
-        console.error("[GOOGLE-SIGNIN] OAuth error:", error);
-        if (window.showModal) {
-          window.showModal("error", "Authentication Error", error.message);
-        }
-        return;
-      }
-
-      if (data?.url) {
-        // With Supabase PKCE flow, the code verifier is stored internally by Supabase
-        // We don't need to manually check for it - Supabase will retrieve it automatically
-        // during the callback exchange. However, we should ensure the client is fully
-        // initialized and give it a moment to store the verifier internally.
-        
-        const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-        if (!supabaseUrl) {
-          console.error("[GOOGLE-SIGNIN] PUBLIC_SUPABASE_URL not configured");
-          if (window.showModal) {
-            window.showModal("error", "Configuration Error", "Supabase URL not configured");
-          }
-          return;
-        }
-
-        // Give Supabase a moment to store the code verifier internally
-        // Supabase stores it in its internal state, not necessarily in localStorage
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        // Debug: Check all localStorage keys that might contain the code verifier
-        const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-        const possibleKeys = [
-          `sb-${supabaseProjectRef}-auth-token-code-verifier`,
-          `sb-${supabaseProjectRef}-code-verifier`,
-          `supabase.auth.token.code_verifier`,
-        ];
-        
-        console.log("[GOOGLE-SIGNIN] Checking for code verifier in localStorage...");
-        const foundKeys = possibleKeys.filter(key => localStorage.getItem(key));
-        if (foundKeys.length > 0) {
-          console.log("[GOOGLE-SIGNIN] ✅ Code verifier found in localStorage:", foundKeys);
-        } else {
-          console.log("[GOOGLE-SIGNIN] ⚠️ Code verifier not found in localStorage, but Supabase may store it internally");
-          console.log("[GOOGLE-SIGNIN] Supabase will retrieve it automatically during exchangeCodeForSession");
-        }
-
-        console.log("[GOOGLE-SIGNIN] Redirecting to OAuth provider...");
-        console.log("[GOOGLE-SIGNIN] OAuth URL:", data.url);
-        // Redirect to Google OAuth
-        window.location.href = data.url;
-      }
+    if (e) {
+      e.preventDefault();
     }
+
+    console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
+
+    // Get singleton Supabase client (prevents multiple GoTrueClient instances)
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
+      if (window.showModal) {
+        window.showModal(
+          "error",
+          "Configuration Error",
+          "Supabase is not configured. Please contact support."
+        );
+      }
+      return;
+    }
+
+    // CRITICAL: Ensure Supabase client is fully initialized before initiating OAuth
+    // This ensures the code verifier will be stored properly
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // Get the redirect URL based on current origin
+    // IMPORTANT: For Supabase PKCE flow, we MUST use /auth/callback directly (client-side)
+    // The /api/auth/callback route is only for Google People API OAuth (server-side)
+    // PKCE requires localStorage access which is only available client-side
+    //
+    // CRITICAL: The redirect URL MUST exactly match one of the URLs in Supabase's Redirect URLs list
+    // For production: https://capcofire.com/auth/callback
+    // For development: http://localhost:4321/auth/callback
+    // Both should be in the Supabase Redirect URLs list
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+    console.log("[GOOGLE-SIGNIN] Redirect URL:", redirectUrl);
+    console.log("[GOOGLE-SIGNIN] Current origin:", window.location.origin);
+    console.log("[GOOGLE-SIGNIN] Make sure this URL is in Supabase Redirect URLs list!");
+
+    // Initiate OAuth (this will store code verifier internally in Supabase)
+    // Supabase stores the code verifier in localStorage with a specific key format
+    // We need to ensure it's stored before redirecting
+    console.log("[GOOGLE-SIGNIN] Initiating OAuth with Supabase...");
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+          scope: "openid email profile",
+        },
+      },
+    });
+
+    // CRITICAL: After signInWithOAuth is called, Supabase generates and stores the code verifier
+    // We need to wait for this to complete before redirecting
+    // Give Supabase time to store the code verifier in its internal storage
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    if (error) {
+      console.error("[GOOGLE-SIGNIN] OAuth error:", error);
+      if (window.showModal) {
+        window.showModal("error", "Authentication Error", error.message);
+      }
+      return;
+    }
+
+    if (data?.url) {
+      // With Supabase PKCE flow, the code verifier is stored internally by Supabase
+      // We don't need to manually check for it - Supabase will retrieve it automatically
+      // during the callback exchange. However, we should ensure the client is fully
+      // initialized and give it a moment to store the verifier internally.
+
+      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+      if (!supabaseUrl) {
+        console.error("[GOOGLE-SIGNIN] PUBLIC_SUPABASE_URL not configured");
+        if (window.showModal) {
+          window.showModal("error", "Configuration Error", "Supabase URL not configured");
+        }
+        return;
+      }
+
+      // Give Supabase a moment to store the code verifier internally
+      // Supabase stores it in its internal state, not necessarily in localStorage
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Debug: Check all localStorage keys that might contain the code verifier
+      const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+      const possibleKeys = [
+        `sb-${supabaseProjectRef}-auth-token-code-verifier`,
+        `sb-${supabaseProjectRef}-code-verifier`,
+        `supabase.auth.token.code_verifier`,
+      ];
+
+      console.log("[GOOGLE-SIGNIN] Checking for code verifier in localStorage...");
+      const foundKeys = possibleKeys.filter((key) => localStorage.getItem(key));
+      if (foundKeys.length > 0) {
+        console.log("[GOOGLE-SIGNIN] ✅ Code verifier found in localStorage:", foundKeys);
+      } else {
+        console.log(
+          "[GOOGLE-SIGNIN] ⚠️ Code verifier not found in localStorage, but Supabase may store it internally"
+        );
+        console.log(
+          "[GOOGLE-SIGNIN] Supabase will retrieve it automatically during exchangeCodeForSession"
+        );
+      }
+
+      console.log("[GOOGLE-SIGNIN] Redirecting to OAuth provider...");
+      console.log("[GOOGLE-SIGNIN] OAuth URL:", data.url);
+      // Redirect to Google OAuth
+      window.location.href = data.url;
+    }
+  }
 
   // Handle client-side OAuth for PKCE (code verifier must be stored in browser)
   function initGoogleSignIn() {

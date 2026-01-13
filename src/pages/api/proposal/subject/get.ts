@@ -5,14 +5,14 @@ import { supabase } from "../../../../lib/supabase";
 
 /**
  * Standardized Subject GET API
- * 
+ *
  * Query Parameters:
  * - projectId: Get subject for specific project
  * - search: Search subjects catalog
  * - category: Filter by category
  * - limit: Max items to return (default: 20)
  * - checkColumn: Check if subject column exists (Admin only)
- * 
+ *
  * Examples:
  * - /api/proposal/subject/get?projectId=123
  * - /api/proposal/subject/get?search=fire&category=design
@@ -52,9 +52,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       return createSuccessResponse({
         column_exists: !error && data,
         column_info: data,
-        message: !error && data
-          ? "subject column exists"
-          : "subject column not found - please verify column exists",
+        message:
+          !error && data
+            ? "subject column exists"
+            : "subject column not found - please verify column exists",
       });
     }
 

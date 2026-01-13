@@ -28,9 +28,12 @@ const isPartial =
   Astro.request.headers.has("x-user-avatar-first-name");
 
 // Extract props from either Astro.props or X-headers
-const size = (Astro.props.size ||
-  Astro.request.headers.get("x-user-avatar-size") ||
-  "md") as "xs" | "sm" | "md" | "lg" | "xl";
+const size = (Astro.props.size || Astro.request.headers.get("x-user-avatar-size") || "md") as
+  | "xs"
+  | "sm"
+  | "md"
+  | "lg"
+  | "xl";
 
 const showBorder =
   Astro.props.showBorder !== undefined
@@ -117,33 +120,36 @@ const sizeClasses = {
 
 const borderClass = showBorder ? "border-2 border-white dark:border-gray-700 shadow-sm" : "";
 
-const containerClasses = `${sizeClasses[size]} rounded-full ${borderClass} bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center text-white font-medium ${className}`.trim();
+const containerClasses =
+  `${sizeClasses[size]} rounded-full ${borderClass} bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center text-white font-medium ${className}`.trim();
 ---
 
 <div
   class={containerClasses}
-  id={id}
+  {id}
   title={title || fullName}
   data-avatar-url={shouldShowAvatar ? avatarUrl : undefined}
   data-user-name={fullName}
   data-user-initials={initials}
 >
-  {shouldShowAvatar ? (
-    <>
-      {/* Avatar image (hidden initially, shown if load succeeds) */}
-      {/* Don't set src initially - let JavaScript handle loading to avoid double requests */}
-      <img
-        alt={fullName}
-        class="rounded-full w-full h-full object-cover user-avatar-img"
-        style="display: none;"
-        onerror="this.style.display='none'; this.parentElement?.querySelector('.user-avatar-fallback')?.classList.remove('hidden');"
-      />
-      {/* Fallback initials (visible initially, hidden if avatar loads) */}
-      <span class="user-avatar-fallback">{initials}</span>
-    </>
-  ) : (
-    <span>{initials}</span>
-  )}
+  {
+    shouldShowAvatar ? (
+      <>
+        {/* Avatar image (hidden initially, shown if load succeeds) */}
+        {/* Don't set src initially - let JavaScript handle loading to avoid double requests */}
+        <img
+          alt={fullName}
+          class="rounded-full w-full h-full object-cover user-avatar-img"
+          style="display: none;"
+          onerror="this.style.display='none'; this.parentElement?.querySelector('.user-avatar-fallback')?.classList.remove('hidden');"
+        />
+        {/* Fallback initials (visible initially, hidden if avatar loads) */}
+        <span class="user-avatar-fallback">{initials}</span>
+      </>
+    ) : (
+      <span>{initials}</span>
+    )
+  }
 </div>
 
 <script>
@@ -161,21 +167,21 @@ const containerClasses = `${sizeClasses[size]} rounded-full ${borderClass} bg-gr
         if (avatarUrl.includes("supabase.co/storage")) {
           // Create a silent image loader that suppresses network errors
           const img = new Image();
-          
+
           // Suppress the error event from bubbling
           img.onerror = () => {
             // Silent fail - just show fallback, don't log
             avatarImg.style.display = "none";
             fallbackSpan.classList.remove("hidden");
           };
-          
+
           img.onload = () => {
             // Success - show the image
             avatarImg.src = avatarUrl;
             avatarImg.style.display = "block";
             fallbackSpan.classList.add("hidden");
           };
-          
+
           // Use a data URL as a test to see if the image element works
           // Then try loading the actual URL
           img.src = avatarUrl;
@@ -199,4 +205,3 @@ const containerClasses = `${sizeClasses[size]} rounded-full ${borderClass} bg-gr
     });
   });
 </script>
-

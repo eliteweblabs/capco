@@ -8,13 +8,19 @@ import { createClient } from "@supabase/supabase-js";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { title, content, category = "conversation_memory", tags = [], priority = 0 } = await request.json();
+    const {
+      title,
+      content,
+      category = "conversation_memory",
+      tags = [],
+      priority = 0,
+    } = await request.json();
 
     if (!title || !content) {
-      return new Response(
-        JSON.stringify({ error: "Title and content are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Title and content are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Initialize Supabase client
@@ -26,10 +32,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!supabaseUrl || !supabaseKey) {
       console.error("❌ [VOICE-ASSISTANT-REMEMBER] Supabase not configured");
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -78,13 +84,9 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (error: any) {
     console.error("❌ [VOICE-ASSISTANT-REMEMBER] Error:", error);
 
-    return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message || "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
-

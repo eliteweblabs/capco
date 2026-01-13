@@ -92,7 +92,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const { globalCompanyData } = await import("../global/global-company-data");
       const companyData = await globalCompanyData();
       defaultFromName = companyData.globalCompanyName || "Company";
-      const websiteDomain = companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "example.com";
+      const websiteDomain =
+        companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "example.com";
       defaultFromEmail = `noreply@${websiteDomain}`;
     } catch (error) {
       console.warn("📧 [VAPI-CONFIRMATION-EMAIL] Failed to load company data, using defaults");

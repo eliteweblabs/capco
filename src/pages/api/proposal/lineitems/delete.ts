@@ -6,12 +6,12 @@ import { apiCache } from "../../../../lib/api-cache";
 
 /**
  * Standardized Line Items DELETE API
- * 
+ *
  * Query Parameters:
  * - invoiceId: Invoice ID containing the line item
  * - itemId: Catalog item ID to remove
  * - id: Catalog item ID to delete (Admin only)
- * 
+ *
  * Examples:
  * - Remove from invoice: DELETE /api/proposal/lineitems/delete?invoiceId=123&itemId=456
  * - Delete catalog item: DELETE /api/proposal/lineitems/delete?id=789
@@ -84,10 +84,7 @@ export const DELETE: APIRoute = async ({ url, cookies }) => {
       }
 
       if (invoices && invoices.length > 0) {
-        return createErrorResponse(
-          "Cannot delete item - it is used in existing invoices",
-          400
-        );
+        return createErrorResponse("Cannot delete item - it is used in existing invoices", 400);
       }
 
       // Delete the catalog item

@@ -15,7 +15,7 @@ async function saveHTMLTemplate(
 ): Promise<void> {
   try {
     const templatesDir = join(process.cwd(), "src", "components", "pdf-system", "templates");
-    
+
     // Ensure directory exists
     await mkdir(templatesDir, { recursive: true });
 
@@ -87,7 +87,10 @@ export const POST: APIRoute = async ({ request }) => {
     console.log(`📁 [PDF-SAVE] Converting HTML to PDF: ${fileName}`);
 
     // Optionally save HTML to local templates directory for preview purposes
-    if (import.meta.env.SAVE_HTML_TEMPLATES === "true" || import.meta.env.SAVE_HTML_TEMPLATES === "1") {
+    if (
+      import.meta.env.SAVE_HTML_TEMPLATES === "true" ||
+      import.meta.env.SAVE_HTML_TEMPLATES === "1"
+    ) {
       try {
         await saveHTMLTemplate(htmlContent, projectId, templateId, documentName);
       } catch (htmlSaveError) {

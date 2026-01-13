@@ -23,11 +23,11 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     // Redirect to a client-side OAuth initiation page instead
     const baseUrl = getBaseUrl(request);
     const redirectUrl = `${baseUrl}/auth/callback`;
-    
+
     console.log("[---AUTH-SIGNIN] OAuth provider requested:", provider);
     console.log("[---AUTH-SIGNIN] Redirecting to client-side OAuth initiation...");
     console.log("[---AUTH-SIGNIN] OAuth redirect URL:", redirectUrl);
-    
+
     // Store provider in a temporary session/cookie so client-side can use it
     // Or redirect to a page that initiates OAuth client-side
     // For now, redirect to login page with provider parameter
@@ -89,7 +89,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   // We'll handle the actual Campfire login client-side to avoid cross-domain cookie issues
   try {
     const { shouldAutoAuthCampfire } = await import("../../../lib/campfire-auth");
-    
+
     // Get user profile to check role
     const { data: profile } = await supabase
       .from("profiles")
@@ -98,7 +98,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       .single();
 
     const userRole = profile?.role || data.user.user_metadata?.role || "Client";
-    
+
     if (shouldAutoAuthCampfire(userRole)) {
       // Store a flag in a cookie that the client-side script can read
       // This tells the dashboard to attempt Campfire auto-login
@@ -109,7 +109,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         sameSite: "lax",
         maxAge: 300, // 5 minutes - just long enough for redirect
       });
-      
+
       console.log(`✅ [AUTH-SIGNIN] Set Campfire auto-login flag for ${userRole} user`);
     }
   } catch (campfireError) {

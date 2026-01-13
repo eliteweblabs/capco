@@ -137,24 +137,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Check authentication and permissions
     const { isAuth, currentUser } = await checkAuth(cookies);
-    
+
     // Check if any admin users exist
     const { count: adminCount } = await supabaseAdmin
       .from("profiles")
       .select("*", { count: "exact", head: true })
       .eq("role", "Admin");
-    
+
     const hasAdmins = (adminCount || 0) > 0;
-    
+
     // Check if request is from setup page (allow unauthenticated admin creation from setup page)
     const referer = request.headers.get("referer") || "";
     const isFromSetupPage = referer.includes("/setup");
-    
+
     // Allow unauthenticated requests if:
     // 1. Creating Admin role AND no admins exist (initial setup), OR
     // 2. Creating Admin role AND request is from setup page (additional admin creation)
-    const isSetupScenario = !userData.id && userData.role === "Admin" && (!hasAdmins || isFromSetupPage);
-    
+    const isSetupScenario =
+      !userData.id && userData.role === "Admin" && (!hasAdmins || isFromSetupPage);
+
     if (!isAuth || !currentUser) {
       if (!isSetupScenario) {
         return new Response(JSON.stringify({ error: "Authentication required" }), {
@@ -343,7 +344,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const { globalCompanyData } = await import("../global/global-company-data");
         const companyData = await globalCompanyData();
         const companyName = companyData.globalCompanyName || "the platform";
-        
+
         // Fallback welcome message if template doesn't exist
         userEmailContent = `
           <h2>Welcome to ${companyName}!</h2>
@@ -399,7 +400,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         });
 
         const emailResult = await userEmailResponse.json();
-        
+
         if (!userEmailResponse.ok) {
           console.error("❌ [USERS-UPSERT] Failed to send welcome email:", {
             status: userEmailResponse.status,
@@ -443,7 +444,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         });
 
         const adminEmailResult = await adminEmailResponse.json();
-        
+
         if (!adminEmailResponse.ok) {
           console.error("❌ [USERS-UPSERT] Failed to send admin notifications:", {
             status: adminEmailResponse.status,

@@ -24,7 +24,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
     // Get company data from database
     const companyData = await globalCompanyData();
-    const PLAUSIBLE_SITE_ID = companyData.plausibleSiteId || companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "";
+    const PLAUSIBLE_SITE_ID =
+      companyData.plausibleSiteId ||
+      companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") ||
+      "";
 
     // Plausible API configuration
     const PLAUSIBLE_API_URL = "https://plausible.io/api/v1/stats/aggregate";
@@ -78,7 +81,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get company data from database
     const companyData = await globalCompanyData();
-    const defaultSiteId = companyData.plausibleSiteId || companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "";
+    const defaultSiteId =
+      companyData.plausibleSiteId ||
+      companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") ||
+      "";
 
     const body = await request.json();
     const {

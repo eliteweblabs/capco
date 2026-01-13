@@ -6,13 +6,13 @@ import { supabase } from "../../../../lib/supabase";
 
 /**
  * Standardized Subject UPSERT API
- * 
+ *
  * POST Body:
  * - title: string (required)
  * - description?: string
  * - category?: string
  * - subject?: string (legacy format)
- * 
+ *
  * Examples:
  * - Create/Update: POST /api/proposal/subject/upsert { title: "Fire Protection", category: "design" }
  * - Legacy: POST /api/proposal/subject/upsert { subject: "Fire Protection" }

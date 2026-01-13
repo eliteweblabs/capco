@@ -5,10 +5,10 @@ import { supabase } from "../../../lib/supabase";
 
 /**
  * Standardized Proposal DELETE API
- * 
+ *
  * Query Parameters:
  * - id: Invoice ID to delete
- * 
+ *
  * Example:
  * - DELETE /api/proposal/delete?id=123
  */
@@ -48,10 +48,7 @@ export const DELETE: APIRoute = async ({ url, cookies }) => {
     }
 
     // Delete the invoice
-    const { error: deleteError } = await supabase
-      .from("invoices")
-      .delete()
-      .eq("id", id);
+    const { error: deleteError } = await supabase.from("invoices").delete().eq("id", id);
 
     if (deleteError) {
       return createErrorResponse("Failed to delete invoice", 500);

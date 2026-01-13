@@ -79,7 +79,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     companyData.company = {
       name: companySettings?.name || globalData.globalCompanyName || "Company",
-      description: companySettings?.description || globalData.globalCompanySlogan || "Professional services",
+      description:
+        companySettings?.description || globalData.globalCompanySlogan || "Professional services",
       contact: {
         email: companySettings?.email || globalData.globalCompanyEmail || "",
         phone: companySettings?.phone || globalData.globalCompanyPhone || "",

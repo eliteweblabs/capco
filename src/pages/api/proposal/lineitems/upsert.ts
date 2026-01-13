@@ -6,20 +6,20 @@ import { apiCache } from "../../../../lib/api-cache";
 
 /**
  * Standardized Line Items UPSERT API
- * 
+ *
  * POST Body:
  * For updating invoice line items:
  * - invoiceId: number
  * - lineItems: Array<{ catalogItemId: number, quantity: number, unitPrice: number }>
  * - subject?: string
  * - notes?: string
- * 
+ *
  * For adding catalog item to invoice:
  * - invoiceId: number
  * - catalogItemId: number
  * - quantity?: number
  * - customDescription?: string
- * 
+ *
  * For creating/updating catalog item:
  * - id?: number (if updating)
  * - name: string
@@ -27,7 +27,7 @@ import { apiCache } from "../../../../lib/api-cache";
  * - unitPrice: number
  * - category?: string
  * - isActive?: boolean
- * 
+ *
  * Examples:
  * - Update invoice items: POST /api/proposal/lineitems/upsert { invoiceId: 123, lineItems: [...] }
  * - Add catalog item: POST /api/proposal/lineitems/upsert { invoiceId: 123, catalogItemId: 456 }
@@ -168,24 +168,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       };
 
       const { data: item, error } = await (id
-        ? supabase
-            .from("lineItemsCatalog")
-            .update(catalogData)
-            .eq("id", id)
-            .select()
-            .single()
-        : supabase
-            .from("lineItemsCatalog")
-            .insert(catalogData)
-            .select()
-            .single()
-      );
+        ? supabase.from("lineItemsCatalog").update(catalogData).eq("id", id).select().single()
+        : supabase.from("lineItemsCatalog").insert(catalogData).select().single());
 
       if (error) {
-        return createErrorResponse(
-          `Failed to ${id ? "update" : "create"} catalog item`,
-          500
-        );
+        return createErrorResponse(`Failed to ${id ? "update" : "create"} catalog item`, 500);
       }
 
       // Clear cache

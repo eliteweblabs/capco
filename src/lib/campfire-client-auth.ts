@@ -4,7 +4,8 @@
  * This runs in the browser after successful login
  */
 
-const CAMPFIRE_URL = import.meta.env.PUBLIC_CAMPFIRE_URL || "https://campfire-production-8c1a.up.railway.app";
+const CAMPFIRE_URL =
+  import.meta.env.PUBLIC_CAMPFIRE_URL || "https://campfire-production-8c1a.up.railway.app";
 
 /**
  * Attempt to auto-login to Campfire by opening it in a new window
@@ -13,7 +14,7 @@ const CAMPFIRE_URL = import.meta.env.PUBLIC_CAMPFIRE_URL || "https://campfire-pr
 export function openCampfireAutoLogin(email: string, password: string): void {
   try {
     console.log("[CAMPFIRE-CLIENT] Opening Campfire for auto-login...");
-    
+
     // Open Campfire in a new window
     const campfireWindow = window.open(
       `${CAMPFIRE_URL}/session/new`,
@@ -37,10 +38,10 @@ export function openCampfireAutoLogin(email: string, password: string): void {
         // Try to access the Campfire window's document
         // This will only work if Campfire is on the same origin (which it's not)
         // So we'll need a different approach
-        
+
         // Since we can't access cross-origin iframe/window content due to CORS,
         // we'll need to use a server-side proxy or API endpoint
-        
+
         // For now, just open Campfire and let the user login manually
         // The server-side cookie setting might work if Campfire accepts it
         console.log("[CAMPFIRE-CLIENT] Campfire window opened - user can login manually");
@@ -60,4 +61,3 @@ export function openCampfireAutoLogin(email: string, password: string): void {
     console.error("[CAMPFIRE-CLIENT] Error opening Campfire:", error);
   }
 }
-

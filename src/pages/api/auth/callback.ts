@@ -124,7 +124,7 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
         // Call save-avatar function directly instead of HTTP request to avoid SSL issues
         const { saveAvatarDirect } = await import("./save-avatar");
         const result = await saveAvatarDirect(data.user.id, googleAvatarUrl);
-        
+
         if (result.success) {
           console.log("[---AUTH-CALLBACK] Avatar saved successfully:", result.avatarUrl);
         } else {

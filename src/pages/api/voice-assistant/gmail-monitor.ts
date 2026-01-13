@@ -33,17 +33,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const userSeenEmails = seenEmails.get(userIdentifier)!;
 
     // Call Gmail check API
-    const gmailResponse = await fetch(
-      new URL("/api/google/gmail-check", request.url).toString(),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: cookies.toString(),
-        },
-        body: JSON.stringify({ maxResults: 20, query: "is:unread" }),
-      }
-    );
+    const gmailResponse = await fetch(new URL("/api/google/gmail-check", request.url).toString(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookies.toString(),
+      },
+      body: JSON.stringify({ maxResults: 20, query: "is:unread" }),
+    });
 
     if (!gmailResponse.ok) {
       const errorData = await gmailResponse.json().catch(() => ({}));
@@ -82,7 +79,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       toKeep.forEach((id) => userSeenEmails.add(id));
     }
 
-    console.log(`📧 [GMAIL-MONITOR] User: ${userIdentifier}, New emails: ${newEmails.length}, Total checked: ${allEmails.length}`);
+    console.log(
+      `📧 [GMAIL-MONITOR] User: ${userIdentifier}, New emails: ${newEmails.length}, Total checked: ${allEmails.length}`
+    );
 
     return new Response(
       JSON.stringify({
@@ -112,4 +111,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

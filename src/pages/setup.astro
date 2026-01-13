@@ -36,7 +36,12 @@ try {
   hasAdmins = false;
 }
 
-console.log("[SETUP] Final state:", { hasAdmins, adminCount, currentUser: currentUser?.email, role: currentUser?.profile?.role });
+console.log("[SETUP] Final state:", {
+  hasAdmins,
+  adminCount,
+  currentUser: currentUser?.email,
+  role: currentUser?.profile?.role,
+});
 
 // Only redirect if user is already an admin
 if (currentUser && currentUser.profile?.role === "Admin") {
@@ -45,11 +50,7 @@ if (currentUser && currentUser.profile?.role === "Admin") {
 }
 
 import { globalCompanyData } from "./api/global/global-company-data";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyLogo,
-} = await globalCompanyData();
+const { globalCompanyName, globalCompanySlogan, globalCompanyLogo } = await globalCompanyData();
 
 import { globalClasses } from "./api/global/global-classes";
 const { globalInputClasses } = globalClasses();
@@ -69,106 +70,103 @@ const { globalInputClasses } = globalClasses();
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
       <h1 class="text-2xl font-bold mb-4 text-center">Admin Setup</h1>
 
-      {hasAdmins ? (
-        <div class="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-          <p class="text-sm text-yellow-800 dark:text-yellow-200">
-            ⚠️ Admin users already exist ({adminCount}). You can still create additional admin accounts below.
+      {
+        hasAdmins ? (
+          <div class="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p class="text-sm text-yellow-800 dark:text-yellow-200">
+              ⚠️ Admin users already exist ({adminCount}). You can still create additional admin
+              accounts below.
+            </p>
+          </div>
+        ) : (
+          <p class="mb-6 text-gray-600 dark:text-gray-400 text-center">
+            No admin users found. Create your first admin account below.
           </p>
-        </div>
-      ) : (
-        <p class="mb-6 text-gray-600 dark:text-gray-400 text-center">
-          No admin users found. Create your first admin account below.
-        </p>
-      )}
+        )
+      }
 
       <form id="admin-setup-form" class="space-y-4">
-            <div>
-              <label for="email" class="block text-sm font-medium mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                required
-                class={globalInputClasses}
-                placeholder="admin@example.com"
-              />
-            </div>
+        <div>
+          <label for="email" class="block text-sm font-medium mb-2"> Email Address </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            class={globalInputClasses}
+            placeholder="admin@example.com"
+          />
+        </div>
 
-            <div>
-              <label for="password" class="block text-sm font-medium mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                required
-                minlength="6"
-                class={globalInputClasses}
-                placeholder="Enter a secure password"
-              />
-            </div>
+        <div>
+          <label for="password" class="block text-sm font-medium mb-2"> Password </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            minlength="6"
+            class={globalInputClasses}
+            placeholder="Enter a secure password"
+          />
+        </div>
 
-            <div>
-              <label for="firstName" class="block text-sm font-medium mb-2">
-                First Name
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                required
-                class={globalInputClasses}
-                placeholder="John"
-              />
-            </div>
+        <div>
+          <label for="firstName" class="block text-sm font-medium mb-2"> First Name </label>
+          <input
+            type="text"
+            id="firstName"
+            name="firstName"
+            required
+            class={globalInputClasses}
+            placeholder="John"
+          />
+        </div>
 
-            <div>
-              <label for="lastName" class="block text-sm font-medium mb-2">
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                required
-                class={globalInputClasses}
-                placeholder="Doe"
-              />
-            </div>
+        <div>
+          <label for="lastName" class="block text-sm font-medium mb-2"> Last Name </label>
+          <input
+            type="text"
+            id="lastName"
+            name="lastName"
+            required
+            class={globalInputClasses}
+            placeholder="Doe"
+          />
+        </div>
 
-            <div>
-              <label for="companyName" class="block text-sm font-medium mb-2">
-                Company Name
-              </label>
-              <input
-                type="text"
-                id="companyName"
-                name="companyName"
-                class={globalInputClasses}
-                placeholder="Your Company"
-              />
-            </div>
+        <div>
+          <label for="companyName" class="block text-sm font-medium mb-2"> Company Name </label>
+          <input
+            type="text"
+            id="companyName"
+            name="companyName"
+            class={globalInputClasses}
+            placeholder="Your Company"
+          />
+        </div>
 
-            <div id="error-message" class="hidden text-red-600 dark:text-red-400 text-sm mb-4"></div>
-            <div id="success-message" class="hidden text-green-600 dark:text-green-400 text-sm mb-4"></div>
+        <div id="error-message" class="hidden text-red-600 dark:text-red-400 text-sm mb-4"></div>
+        <div id="success-message" class="hidden text-green-600 dark:text-green-400 text-sm mb-4">
+        </div>
 
-            <Button type="submit" variant="primary" fullWidth>
-              Create Admin Account
-            </Button>
-          </form>
+        <Button type="submit" variant="primary" fullWidth> Create Admin Account </Button>
+      </form>
 
       <p class="mt-6 text-xs text-gray-500 dark:text-gray-400 text-center">
-        Already have an account? <a href="/auth/login" class="text-primary hover:underline">Log in</a>
+        Already have an account? <a href="/auth/login" class="text-primary hover:underline"
+          >Log in</a
+        >
       </p>
     </div>
 
     <div class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
       <p class="mb-2">Alternative: Update existing user to Admin via SQL:</p>
-      <code class="block text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded mt-2 text-left overflow-x-auto">
-        UPDATE profiles SET role = 'Admin' WHERE id = (SELECT id FROM auth.users WHERE email = 'your-email@example.com');
+      <code
+        class="block text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded mt-2 text-left overflow-x-auto"
+      >
+        UPDATE profiles SET role = 'Admin' WHERE id = (SELECT id FROM auth.users WHERE email =
+        'your-email@example.com');
       </code>
     </div>
   </div>
@@ -176,7 +174,7 @@ const { globalInputClasses } = globalClasses();
   <script>
     document.getElementById("admin-setup-form")?.addEventListener("submit", async (e) => {
       e.preventDefault();
-      
+
       const form = e.target as HTMLFormElement;
       const formData = new FormData(form);
       const errorDiv = document.getElementById("error-message");

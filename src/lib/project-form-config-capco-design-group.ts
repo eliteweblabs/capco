@@ -1,6 +1,6 @@
 // Project form configuration for CAPCO Design Group
 // This is the default/fallback configuration
-// 
+//
 // To create a client-specific config:
 // 1. Copy this file to: project-form-config-{company-slug}.ts
 //    Example: project-form-config-acme-corp.ts (for "ACME Corp")

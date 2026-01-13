@@ -4,7 +4,7 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 /**
  * Download Google avatar and save to Supabase Storage
  * This prevents rate limiting from Google's CDN
- * 
+ *
  * Can be called directly (saveAvatarDirect) or via HTTP POST
  */
 export async function saveAvatarDirect(
@@ -105,7 +105,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const { userId, avatarUrl } = await request.json();
     const result = await saveAvatarDirect(userId, avatarUrl);
-    
+
     return new Response(JSON.stringify(result), {
       status: result.success ? 200 : 500,
       headers: { "Content-Type": "application/json" },

@@ -4,11 +4,11 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 /**
  * Standardized Appointments DELETE API for AI Virtual Agent
- * 
+ *
  * DELETE Body:
  * - id: number (appointment ID to delete)
  * - calUid?: string (Cal.com UID for additional verification)
- * 
+ *
  * Example:
  * - DELETE /api/appointments/delete { "id": 123 }
  * - DELETE /api/appointments/delete { "id": 123, "calUid": "abc123" }
@@ -19,29 +19,29 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
-      return new Response(
-        JSON.stringify({ error: "Authentication required" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const body = await request.json();
     const { id, calUid } = body;
 
     if (!id) {
-      return new Response(
-        JSON.stringify({ error: "Appointment ID is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Appointment ID is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     console.log(`📅 [APPOINTMENTS-DELETE] Deleting appointment:`, id);
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ error: "Database connection not available" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Check if appointment exists
@@ -52,25 +52,22 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (appointmentError || !appointment) {
-      return new Response(
-        JSON.stringify({ error: "Appointment not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Appointment not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Verify Cal.com UID if provided
     if (calUid && appointment.calUid !== calUid) {
-      return new Response(
-        JSON.stringify({ error: "Cal.com UID mismatch" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Cal.com UID mismatch" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Delete the appointment
-    const { error: deleteError } = await supabaseAdmin
-      .from("appointments")
-      .delete()
-      .eq("id", id);
+    const { error: deleteError } = await supabaseAdmin.from("appointments").delete().eq("id", id);
 
     if (deleteError) {
       console.error("❌ [APPOINTMENTS-DELETE] Error deleting appointment:", deleteError);
@@ -122,7 +119,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 async function notifyAIAgent(eventType: string, appointment: any) {
   try {
     const aiWebhookUrl = import.meta.env.AI_AGENT_WEBHOOK_URL;
-    
+
     if (!aiWebhookUrl) {
       console.log("📅 [APPOINTMENTS-DELETE] No AI agent webhook URL configured");
       return;
@@ -144,7 +141,7 @@ async function notifyAIAgent(eventType: string, appointment: any) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${import.meta.env.AI_AGENT_API_KEY}`,
+        Authorization: `Bearer ${import.meta.env.AI_AGENT_API_KEY}`,
       },
       body: JSON.stringify(payload),
     });

@@ -216,7 +216,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     };
 
     // Filter by specific metric if requested
-    let responseData: typeof analyticsData | { metric: string; value: any; period: typeof analyticsData.period } = analyticsData;
+    let responseData:
+      | typeof analyticsData
+      | { metric: string; value: any; period: typeof analyticsData.period } = analyticsData;
     if (filters.metric) {
       const metricValue =
         analyticsData.overview[filters.metric as keyof typeof analyticsData.overview];

@@ -70,7 +70,7 @@ async function getProjectFormConfig() {
   // Try to load client-specific config
   // Use explicit imports for each client to avoid dynamic import issues
   let configModule = defaultConfig;
-  
+
   // Map company slugs to their config modules
   // Add new client configs here as they are created
   // Import them at the top of the file, then reference here
@@ -85,10 +85,14 @@ async function getProjectFormConfig() {
       // Try dynamic import - this will fail if file doesn't exist, which is fine
       const dynamicImport = await import(`./project-form-config-${companySlug}`);
       configModule = dynamicImport;
-      console.log(`✅ [PROJECT-FORM-CONFIG] Loaded client-specific config for: ${companyName} (${companySlug})`);
+      console.log(
+        `✅ [PROJECT-FORM-CONFIG] Loaded client-specific config for: ${companyName} (${companySlug})`
+      );
     } catch (error) {
       // Fall back to default
-      console.log(`⚠️ [PROJECT-FORM-CONFIG] No client-specific config for "${companySlug}", using default (capco-design-group)`);
+      console.log(
+        `⚠️ [PROJECT-FORM-CONFIG] No client-specific config for "${companySlug}", using default (capco-design-group)`
+      );
       configModule = defaultConfig;
     }
   }

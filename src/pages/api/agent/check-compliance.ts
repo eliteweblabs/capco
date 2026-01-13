@@ -1,8 +1,8 @@
 /**
  * AI Agent Compliance Check API
- * 
+ *
  * Check project compliance against NFPA standards
- * 
+ *
  * POST /api/agent/check-compliance
  */
 
@@ -116,4 +116,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

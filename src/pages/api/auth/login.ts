@@ -103,8 +103,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Auto-authenticate to Campfire for Staff and Admin users
     let campfireAuthSuccess = false;
     try {
-      const { shouldAutoAuthCampfire, authenticateCampfire } = await import("../../../lib/campfire-auth");
-      
+      const { shouldAutoAuthCampfire, authenticateCampfire } = await import(
+        "../../../lib/campfire-auth"
+      );
+
       // Get user profile to check role
       const { data: profile } = await supabase
         .from("profiles")
@@ -113,19 +115,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .single();
 
       const userRole = profile?.role || data.user.user_metadata?.role || "Client";
-      
+
       if (shouldAutoAuthCampfire(userRole)) {
-        console.log(`🔐 [AUTH-LOGIN] User is ${userRole}, attempting Campfire auto-authentication...`);
-        
+        console.log(
+          `🔐 [AUTH-LOGIN] User is ${userRole}, attempting Campfire auto-authentication...`
+        );
+
         // Try to authenticate to Campfire using the same password
         const campfireResult = await authenticateCampfire(email, password);
-        
+
         if (campfireResult.success && campfireResult.cookies) {
           // Set Campfire session cookies
           campfireResult.cookies.forEach((cookieString) => {
             const [nameValue] = cookieString.split(";");
             const [name, value] = nameValue.split("=");
-            
+
             if (name && value) {
               cookies.set(name.trim(), value.trim(), {
                 path: "/",
@@ -136,11 +140,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               });
             }
           });
-          
+
           campfireAuthSuccess = true;
-          console.log(`✅ [AUTH-LOGIN] Campfire auto-authentication successful for ${userRole} user`);
+          console.log(
+            `✅ [AUTH-LOGIN] Campfire auto-authentication successful for ${userRole} user`
+          );
         } else {
-          console.warn(`⚠️ [AUTH-LOGIN] Campfire auto-authentication failed: ${campfireResult.error || "Unknown error"}`);
+          console.warn(
+            `⚠️ [AUTH-LOGIN] Campfire auto-authentication failed: ${campfireResult.error || "Unknown error"}`
+          );
         }
       }
     } catch (campfireError) {

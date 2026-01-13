@@ -115,7 +115,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       allUsers: body.allUsers,
       groupType: body.groupType,
     });
-    
+
     const {
       userId,
       userEmail,
@@ -280,10 +280,16 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     let targetUserId = userId;
 
     // Validate userId is not "all" or other invalid values
-    if (userId && (userId === "all" || userId === "allUsers" || !userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))) {
+    if (
+      userId &&
+      (userId === "all" ||
+        userId === "allUsers" ||
+        !userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))
+    ) {
       return new Response(
-        JSON.stringify({ 
-          error: "Invalid userId. Use 'allUsers: true' for all users or 'groupType' for role groups" 
+        JSON.stringify({
+          error:
+            "Invalid userId. Use 'allUsers: true' for all users or 'groupType' for role groups",
         }),
         {
           status: 400,
@@ -311,7 +317,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     }
 
     // Validate we have a valid UUID before inserting
-    if (!targetUserId || !targetUserId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    if (
+      !targetUserId ||
+      !targetUserId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    ) {
       return new Response(
         JSON.stringify({ error: "Invalid userId format. Must be a valid UUID." }),
         {
@@ -331,7 +340,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     });
 
     let data, error;
-    
+
     // First try camelCase (preferred)
     const insertData = {
       userId: targetUserId,
@@ -344,17 +353,14 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       viewed: false,
     };
 
-    const result = await supabaseAdmin
-      .from("notifications")
-      .insert(insertData)
-      .select()
-      .single();
+    const result = await supabaseAdmin.from("notifications").insert(insertData).select().single();
 
     data = result.data;
     error = result.error;
 
     // If camelCase fails, try snake_case (legacy table format)
-    if (error && error.code === '42703') { // Column doesn't exist error
+    if (error && error.code === "42703") {
+      // Column doesn't exist error
       console.log("🔔 [NOTIFICATIONS] camelCase failed, trying snake_case...");
       const snakeCaseResult = await supabaseAdmin
         .from("notifications")
@@ -370,7 +376,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         })
         .select()
         .single();
-      
+
       data = snakeCaseResult.data;
       error = snakeCaseResult.error;
     }
@@ -385,7 +391,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         targetUserId,
       });
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: "Failed to create notification",
           details: error.message,
           code: error.code,

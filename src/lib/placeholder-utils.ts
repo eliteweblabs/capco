@@ -311,9 +311,11 @@ export async function replacePlaceholders(
   }
 
   // Replace FONT_FAMILY placeholders (use database first, then environment variables or defaults)
-  const primaryFontFamily = companyData.fontFamily || process.env.FONT_FAMILY || '"Outfit Variable", sans-serif';
+  const primaryFontFamily =
+    companyData.fontFamily || process.env.FONT_FAMILY || '"Outfit Variable", sans-serif';
 
-  const pdfFontFallback = companyData.secondaryFontFamily || process.env.FONT_FAMILY_FALLBACK || "Arial, sans-serif";
+  const pdfFontFallback =
+    companyData.secondaryFontFamily || process.env.FONT_FAMILY_FALLBACK || "Arial, sans-serif";
 
   // Replace COMPANY_LOGO placeholders
   // if (globalCompanyData().globalCompanyLogoLight) {
@@ -354,10 +356,7 @@ export async function replacePlaceholders(
   // Replace GLOBAL_COMPANY_ICON placeholders
   if (companyData.globalCompanyIcon) {
     const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*GLOBAL_COMPANY_ICON\s*\}\}/g,
-      companyData.globalCompanyIcon
-    );
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_ICON\s*\}\}/g, companyData.globalCompanyIcon);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = false;
@@ -430,10 +429,7 @@ export async function replacePlaceholders(
   // Replace GLOBAL_COMPANY_EMAIL placeholders
   if (companyData.globalCompanyEmail) {
     const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*GLOBAL_COMPANY_EMAIL\s*\}\}/g,
-      companyData.globalCompanyEmail
-    );
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_EMAIL\s*\}\}/g, companyData.globalCompanyEmail);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -649,10 +645,7 @@ export async function replacePlaceholders(
   // Company placeholders
   if (companyData.globalCompanyAddress) {
     const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*COMPANY_ADDRESS\s*\}\}/g,
-      companyData.globalCompanyAddress
-    );
+    result = result.replace(/\{\{\s*COMPANY_ADDRESS\s*\}\}/g, companyData.globalCompanyAddress);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -690,10 +683,7 @@ export async function replacePlaceholders(
 
   if (companyData.globalCompanyLogo) {
     const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*COMPANY_LOGO_URL\s*\}\}/g,
-      companyData.globalCompanyLogo
-    );
+    result = result.replace(/\{\{\s*COMPANY_LOGO_URL\s*\}\}/g, companyData.globalCompanyLogo);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = false;

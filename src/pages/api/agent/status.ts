@@ -1,8 +1,8 @@
 /**
  * AI Agent Status API
- * 
+ *
  * Check if AI agent is properly configured
- * 
+ *
  * GET /api/agent/status
  */
 
@@ -70,4 +70,3 @@ export const GET: APIRoute = async ({ cookies }) => {
     );
   }
 };
-

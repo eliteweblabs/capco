@@ -4,15 +4,15 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 /**
  * Cal.com Webhook Integration for AI Virtual Agent
- * 
+ *
  * Handles appointment booking, reading, and management for general public
- * 
+ *
  * Webhook Events:
  * - BOOKING_CREATED: New appointment booked
  * - BOOKING_CANCELLED: Appointment cancelled
  * - BOOKING_RESCHEDULED: Appointment rescheduled
  * - BOOKING_CONFIRMED: Appointment confirmed
- * 
+ *
  * AI Agent Capabilities:
  * - Read existing appointments
  * - Book new appointments
@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Verify webhook signature (optional but recommended)
     const signature = request.headers.get("cal-signature");
     const webhookSecret = import.meta.env.CAL_WEBHOOK_SECRET;
-    
+
     if (webhookSecret && signature) {
       // TODO: Implement signature verification
       console.log("🔐 [CAL-WEBHOOK] Signature verification would go here");
@@ -95,10 +95,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!supabase || !supabaseAdmin) {
       console.error("❌ [CAL-WEBHOOK] Database not available");
-      return new Response(
-        JSON.stringify({ error: "Database not available" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Database not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Process different event types
@@ -260,7 +260,7 @@ async function handleBookingConfirmed(event: CalWebhookEvent) {
 async function notifyAIAgent(eventType: string, data: any) {
   try {
     const aiWebhookUrl = import.meta.env.AI_AGENT_WEBHOOK_URL;
-    
+
     if (!aiWebhookUrl) {
       console.log("📅 [CAL-WEBHOOK] No AI agent webhook URL configured");
       return;
@@ -276,7 +276,7 @@ async function notifyAIAgent(eventType: string, data: any) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${import.meta.env.AI_AGENT_API_KEY}`,
+        Authorization: `Bearer ${import.meta.env.AI_AGENT_API_KEY}`,
       },
       body: JSON.stringify(payload),
     });

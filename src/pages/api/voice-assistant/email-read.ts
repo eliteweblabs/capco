@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 
 /**
  * Read Email API for Voice Assistant
- * 
+ *
  * NOTE: This is a placeholder implementation. To fully implement email reading:
  * - Resend doesn't support reading emails from inbox
  * - You would need to integrate with:
@@ -10,7 +10,7 @@ import type { APIRoute } from "astro";
  *   - Outlook/Microsoft Graph API (for Outlook accounts)
  *   - IMAP (for generic email servers)
  *   - Or a service like Mailgun that provides email receiving APIs
- * 
+ *
  * For now, this returns a helpful message about email reading capabilities.
  */
 
@@ -20,9 +20,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!emailId) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Email ID is required" 
+        JSON.stringify({
+          success: false,
+          error: "Email ID is required",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
@@ -36,7 +36,8 @@ export const POST: APIRoute = async ({ request }) => {
         JSON.stringify({
           success: false,
           error: "Email reading is not configured",
-          message: "To read emails, you need to configure email reading. This requires setting up Gmail API, Outlook API, IMAP, or a service that supports email receiving.",
+          message:
+            "To read emails, you need to configure email reading. This requires setting up Gmail API, Outlook API, IMAP, or a service that supports email receiving.",
           setupRequired: true,
         }),
         { status: 501, headers: { "Content-Type": "application/json" } }
@@ -48,7 +49,8 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(
       JSON.stringify({
         success: false,
-        message: "Email reading is not yet fully implemented. Please configure Gmail API, Outlook API, or IMAP to enable this feature.",
+        message:
+          "Email reading is not yet fully implemented. Please configure Gmail API, Outlook API, or IMAP to enable this feature.",
         emailId,
       }),
       {
@@ -71,4 +73,3 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
-

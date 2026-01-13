@@ -13,4 +13,3 @@ declare module "pdf-poppler" {
   const pdfPoppler: PdfPoppler;
   export = pdfPoppler;
 }
-

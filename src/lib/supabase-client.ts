@@ -52,4 +52,3 @@ export function getSupabaseClient(): SupabaseClient | null {
 export function resetSupabaseClient(): void {
   clientInstance = null;
 }
-

@@ -1,8 +1,8 @@
 /**
  * AI Agent Knowledge Base API
- * 
+ *
  * Manage knowledge base entries for the AI agent
- * 
+ *
  * GET /api/agent/knowledge - List knowledge entries
  * POST /api/agent/knowledge - Create knowledge entry
  * PUT /api/agent/knowledge?id={id} - Update knowledge entry
@@ -124,13 +124,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { title, content, category, tags, priority, metadata, projectId } = body;
 
     if (!title || !content) {
-      return new Response(
-        JSON.stringify({ error: "Title and content are required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Title and content are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const { data: entry, error } = await supabaseAdmin
@@ -334,10 +331,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    const { error } = await supabaseAdmin
-      .from("ai_agent_knowledge")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabaseAdmin.from("ai_agent_knowledge").delete().eq("id", id);
 
     if (error) {
       throw error;
@@ -367,4 +361,3 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

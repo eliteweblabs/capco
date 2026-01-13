@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Parse the request body
     let requestData;
     const contentType = request.headers.get("content-type") || "";
-    
+
     if (contentType.includes("application/json")) {
       requestData = await request.json();
     } else if (contentType.includes("application/x-www-form-urlencoded")) {
@@ -28,7 +28,10 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    console.log(`🔍 [N8N-INCOMING-${requestId}] Request data:`, JSON.stringify(requestData, null, 2));
+    console.log(
+      `🔍 [N8N-INCOMING-${requestId}] Request data:`,
+      JSON.stringify(requestData, null, 2)
+    );
     console.log(`🔍 [N8N-INCOMING-${requestId}] Content-Type:`, contentType);
 
     // Extract call information
@@ -73,7 +76,6 @@ export const POST: APIRoute = async ({ request }) => {
         "Content-Type": "application/json",
       },
     });
-
   } catch (error) {
     console.error(`❌ [N8N-INCOMING-${requestId}] Error:`, error);
 

@@ -157,10 +157,10 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       console.error("🔐 [VERIFY-CUSTOM] Error getting user data:", userError);
       return redirect("/auth/login?error=user_not_found");
     }
-    
+
     // Get auth user data
     const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userProfile.id);
-    
+
     if (!userData || !userData.user) {
       console.error("🔐 [VERIFY-CUSTOM] Error getting auth user data");
       return redirect("/auth/login?error=user_not_found");

@@ -104,7 +104,12 @@ import { navigation } from "@/pages/api/utils/navigation";
 import { isBackendPage } from "../../pages/api/utils/backend-page-check";
 
 const isBackend = isBackendPage(Astro.url.pathname);
-const navigationData = await navigation(currentUrl, isAuth, currentRole || "Client", isBackend || false);
+const navigationData = await navigation(
+  currentUrl,
+  isAuth,
+  currentRole || "Client",
+  isBackend || false
+);
 const { desktopNavigationHTML, visibleNavItems } = navigationData;
 
 import "../../styles/global.css"; // Import Tailwind CSS
@@ -246,7 +251,7 @@ const debugData = {
     <!-- Dynamic Color & Font Injection - MUST run BEFORE CSS is parsed to prevent flash -->
     <script
       is:inline
-      define:vars={{ primaryColor, secondaryColor, fontFamily, secondaryFontFamily }}
+      define:vars={{ primaryColor, secondaryColor, fontFamily, secondaryFontFamily, globalCompanyName }}
     >
       (function () {
         // Inject colors and font immediately, synchronously BEFORE any CSS is parsed
@@ -491,7 +496,7 @@ const debugData = {
 
       <div id="main-content" class=`w-full pt-16 overflow-x-hidden ${mainClasses}`>
         <main
-          class={` flex-1 mx-2 sm:mx-4 relative min-h-[calc(100dvh-8rem)] m-min-h-[calc(100dvh-8rem)] ${centerContent ? "flex items-center justify-center" : ""}`}
+          class={` flex-1 mx-4 sm:mx-4 relative min-h-[calc(100dvh-8rem)] m-min-h-[calc(100dvh-8rem)] ${centerContent ? "flex items-center justify-center" : ""}`}
         >
           <slot />
         </main>
@@ -859,22 +864,49 @@ const debugData = {
 
       (window as any).hideOnFormFocus = function () {
         // Check if we should only hide on mobile
-        if (!(window as any).isMobile()) return;
+        // if (!(window as any).isMobile()) return;
 
         const element = document.querySelectorAll(".hide-on-form-focus");
         if (!element.length) return;
 
-        // Hide on input focus
+        // Set up CSS transitions for fade effect
+        const transitionDuration = 300; // milliseconds
+        element.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          htmlEl.style.transition = `opacity ${transitionDuration}ms ease-in-out`;
+          htmlEl.style.opacity = "1";
+        });
+
+        // Hide on input focus (fade out)
         const hideOnFocus = () => {
-          element.forEach((element) => {
-            (element as HTMLElement).style.visibility = "hidden";
+          element.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            htmlEl.style.opacity = "0";
+            // Set visibility hidden after transition completes
+            setTimeout(() => {
+              htmlEl.style.visibility = "hidden";
+            }, transitionDuration);
           });
         };
 
-        // Show on input blur
+        // Show on input blur (fade in)
         const showOnBlur = () => {
-          element.forEach((element) => {
-            (element as HTMLElement).style.visibility = "visible";
+          element.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            // Set visibility visible first, then fade in
+            htmlEl.style.visibility = "visible";
+            // Use requestAnimationFrame to ensure visibility is set before opacity change
+            requestAnimationFrame(() => {
+              htmlEl.style.opacity = "1";
+              // Refresh AOS to allow animation when element becomes visible
+              setTimeout(() => {
+                // @ts-ignore - AOS loaded from CDN
+                if (typeof AOS !== "undefined" && htmlEl.hasAttribute("data-aos")) {
+                  // @ts-ignore
+                  AOS.refresh();
+                }
+              }, 50);
+            });
           });
         };
 
@@ -1369,6 +1401,7 @@ const debugData = {
         type: "error" | "success",
         param: string
       ): void {
+        const companyName = (window as any).globalCompanyName || "the company";
         const notifications = {
           // Error notifications
           error: {
@@ -1460,7 +1493,7 @@ const debugData = {
             },
             sms_sent_success: {
               title: "Message Sent",
-              message: `Your message has been sent to ${globalCompanyName} successfully.`,
+              message: `Your message has been sent to ${companyName} successfully.`,
             },
             // oauth_success: {
             //   title: "OAuth Success",
