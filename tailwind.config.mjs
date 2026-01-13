@@ -9,6 +9,13 @@ export default {
   content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
   darkMode: "class", // Esto permite usar 'dark:' en clases
   safelist: [
+    // Button outline variant hover classes (ensure they're always generated)
+    "hover:bg-primary-500",
+    "hover:bg-primary-600",
+    "hover:bg-primary-400",
+    "hover:text-white",
+    "dark:hover:bg-primary-400",
+    "dark:hover:text-white",
     // Drawer animation classes
     "translate-x-full",
     "translate-x-0",
