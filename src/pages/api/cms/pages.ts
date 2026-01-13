@@ -77,8 +77,33 @@ export const POST: APIRoute = async ({ request }) => {
 
     const body = await request.json();
     console.log("📥 [CMS-PAGES] Received body:", JSON.stringify(body, null, 2));
-    const { slug, title, description, content, frontmatter, template } = body;
-    console.log("📥 [CMS-PAGES] Extracted values:", { slug, title, description, content: content?.substring(0, 50) + "...", template });
+    const { 
+      slug, 
+      title, 
+      description, 
+      content, 
+      frontmatter, 
+      template, 
+      include_in_navigation,
+      nav_roles,
+      nav_page_type,
+      nav_button_style,
+      nav_desktop_only,
+      nav_hide_when_auth
+    } = body;
+    console.log("📥 [CMS-PAGES] Extracted values:", { 
+      slug, 
+      title, 
+      description, 
+      content: content?.substring(0, 50) + "...", 
+      template, 
+      include_in_navigation,
+      nav_roles,
+      nav_page_type,
+      nav_button_style,
+      nav_desktop_only,
+      nav_hide_when_auth
+    });
 
     if (!slug || !content) {
       return new Response(
@@ -135,6 +160,12 @@ export const POST: APIRoute = async ({ request }) => {
         content,
         frontmatter: frontmatter || {},
         template: template || "default",
+        include_in_navigation: include_in_navigation === true,
+        nav_roles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
+        nav_page_type: nav_page_type || "frontend",
+        nav_button_style: nav_button_style || null,
+        nav_desktop_only: nav_desktop_only === true,
+        nav_hide_when_auth: nav_hide_when_auth === true,
         is_active: true,
         updated_at: new Date().toISOString(),
       };
@@ -157,6 +188,12 @@ export const POST: APIRoute = async ({ request }) => {
         content,
         frontmatter: frontmatter || {},
         template: template || "default",
+        include_in_navigation: include_in_navigation === true,
+        nav_roles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
+        nav_page_type: nav_page_type || "frontend",
+        nav_button_style: nav_button_style || null,
+        nav_desktop_only: nav_desktop_only === true,
+        nav_hide_when_auth: nav_hide_when_auth === true,
         client_id: clientId,
         is_active: true,
         updated_at: new Date().toISOString(),
