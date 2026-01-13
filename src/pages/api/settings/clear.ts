@@ -44,10 +44,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Delete settings
-    const { error } = await supabaseAdmin
-      .from("global_settings")
-      .delete()
-      .in("key", keys);
+    const { error } = await supabaseAdmin.from("global_settings").delete().in("key", keys);
 
     if (error) {
       console.error("[settings/clear] Error:", error);

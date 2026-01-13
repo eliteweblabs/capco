@@ -183,10 +183,12 @@ async function handleToolCalls(
           typeof toolCall.function?.arguments === "string"
             ? JSON.parse(toolCall.function.arguments)
             : toolCall.function?.arguments || {};
-        
+
         console.log(`[---VAPI-WEBHOOK] Creating project with params:`, args);
-        
-        const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
+
+        const baseUrl = ensureProtocol(
+          process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"
+        );
         const projectResponse = await fetch(`${baseUrl}/api/projects/upsert`, {
           method: "POST",
           headers: {
@@ -202,7 +204,7 @@ async function handleToolCalls(
         });
 
         const projectData = await projectResponse.json();
-        
+
         if (!projectResponse.ok || !projectData.success) {
           const errorMsg = projectData.error || "Failed to create project";
           console.error(`❌ [VAPI-WEBHOOK] Project creation failed:`, errorMsg);
@@ -217,7 +219,7 @@ async function handleToolCalls(
             result: `Great! I've created the project "${projectData.project?.title || args.title || args.address}" with ID ${projectData.project?.id}. The project is now in the system and ready for review.`,
           });
         }
-        
+
         // Skip the cal-integration fetch for createProject
         continue;
       } else if (functionName === "rememberConversation") {
@@ -226,10 +228,12 @@ async function handleToolCalls(
           typeof toolCall.function?.arguments === "string"
             ? JSON.parse(toolCall.function.arguments)
             : toolCall.function?.arguments || {};
-        
+
         console.log(`[---VAPI-WEBHOOK] Saving conversation to memory:`, args);
-        
-        const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
+
+        const baseUrl = ensureProtocol(
+          process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"
+        );
         const rememberResponse = await fetch(`${baseUrl}/api/voice-assistant/remember`, {
           method: "POST",
           headers: {
@@ -245,7 +249,7 @@ async function handleToolCalls(
         });
 
         const rememberData = await rememberResponse.json();
-        
+
         if (!rememberResponse.ok || !rememberData.success) {
           const errorMsg = rememberData.error || "Failed to save conversation";
           console.error(`❌ [VAPI-WEBHOOK] Remember failed:`, errorMsg);
@@ -255,15 +259,16 @@ async function handleToolCalls(
           });
         } else {
           console.log(`✅ [VAPI-WEBHOOK] Conversation saved successfully:`, rememberData.id);
-          const tagsDisplay = args.tags && args.tags.length > 0 
-            ? ` with tags: ${args.tags.map(t => `#${t}`).join(", ")}`
-            : "";
+          const tagsDisplay =
+            args.tags && args.tags.length > 0
+              ? ` with tags: ${args.tags.map((t) => `#${t}`).join(", ")}`
+              : "";
           results.push({
             toolCallId: toolCall.id,
             result: `I've saved that conversation to my memory${tagsDisplay}. I'll remember this for future conversations.`,
           });
         }
-        
+
         // Skip the cal-integration fetch for rememberConversation
         continue;
       } else if (functionName === "loadKnowledge") {
@@ -272,12 +277,12 @@ async function handleToolCalls(
           typeof toolCall.function?.arguments === "string"
             ? JSON.parse(toolCall.function.arguments)
             : toolCall.function?.arguments || {};
-        
+
         console.log(`[---VAPI-WEBHOOK] Loading knowledge:`, args);
-        
+
         try {
           const { createClient } = await import("@supabase/supabase-js");
-          
+
           const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
           const supabaseKey =
             process.env.SUPABASE_SECRET ||
@@ -325,8 +330,10 @@ async function handleToolCalls(
               result: `I'm having trouble accessing my memory right now. ${error.message}`,
             });
           } else {
-            console.log(`✅ [VAPI-WEBHOOK] Loaded ${knowledgeEntries?.length || 0} knowledge entries`);
-            
+            console.log(
+              `✅ [VAPI-WEBHOOK] Loaded ${knowledgeEntries?.length || 0} knowledge entries`
+            );
+
             if (!knowledgeEntries || knowledgeEntries.length === 0) {
               results.push({
                 toolCallId: toolCall.id,
@@ -335,11 +342,12 @@ async function handleToolCalls(
             } else {
               // Format knowledge for the assistant
               const knowledgeText = knowledgeEntries
-                .map((entry, index) => 
-                  `${index + 1}. [${entry.category || "general"}] ${entry.title}: ${entry.content}`
+                .map(
+                  (entry, index) =>
+                    `${index + 1}. [${entry.category || "general"}] ${entry.title}: ${entry.content}`
                 )
                 .join("\n");
-              
+
               results.push({
                 toolCallId: toolCall.id,
                 result: `Here's what I found in my memory:\n\n${knowledgeText}`,
@@ -353,7 +361,7 @@ async function handleToolCalls(
             result: `I'm having trouble accessing my memory right now. ${error.message || "Please try again."}`,
           });
         }
-        
+
         // Skip the cal-integration fetch for loadKnowledge
         continue;
       } else if (functionName === "processFile") {
@@ -362,12 +370,14 @@ async function handleToolCalls(
           typeof toolCall.function?.arguments === "string"
             ? JSON.parse(toolCall.function.arguments)
             : toolCall.function?.arguments || {};
-        
+
         console.log(`[---VAPI-WEBHOOK] Processing file:`, args);
-        
+
         try {
-          const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
-          
+          const baseUrl = ensureProtocol(
+            process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"
+          );
+
           // Download the file from the provided URL
           let fileBuffer: ArrayBuffer | null = null;
           if (args.fileUrl) {
@@ -381,25 +391,29 @@ async function handleToolCalls(
           } else {
             throw new Error("No file URL provided");
           }
-          
+
           // Convert to File object for the API
-          const fileBlob = new Blob([fileBuffer!], { type: args.fileType || "application/octet-stream" });
-          const file = new File([fileBlob], args.fileName || "uploaded-file", { type: args.fileType });
-          
+          const fileBlob = new Blob([fileBuffer!], {
+            type: args.fileType || "application/octet-stream",
+          });
+          const file = new File([fileBlob], args.fileName || "uploaded-file", {
+            type: args.fileType,
+          });
+
           // Create FormData and send to processing API
           const formData = new FormData();
           formData.append("file", file);
           if (args.saveToKnowledge) {
             formData.append("saveToKnowledge", "true");
           }
-          
+
           const processResponse = await fetch(`${baseUrl}/api/voice-assistant/process-file`, {
             method: "POST",
             body: formData,
           });
-          
+
           const processData = await processResponse.json();
-          
+
           if (!processResponse.ok || !processData.success) {
             const errorMsg = processData.error || "Failed to process file";
             console.error(`❌ [VAPI-WEBHOOK] File processing failed:`, errorMsg);
@@ -408,15 +422,20 @@ async function handleToolCalls(
               result: `I'm sorry, I couldn't process that file. ${errorMsg}`,
             });
           } else {
-            console.log(`✅ [VAPI-WEBHOOK] File processed successfully:`, processData.data?.fileName);
-            const contentPreview = processData.data?.content?.substring(0, 500) || "No content extracted";
-            const fieldsInfo = processData.data?.fields?.length > 0
-              ? ` I found ${processData.data.fields.length} field(s): ${processData.data.fields.map((f: any) => f.name).join(", ")}.`
-              : "";
+            console.log(
+              `✅ [VAPI-WEBHOOK] File processed successfully:`,
+              processData.data?.fileName
+            );
+            const contentPreview =
+              processData.data?.content?.substring(0, 500) || "No content extracted";
+            const fieldsInfo =
+              processData.data?.fields?.length > 0
+                ? ` I found ${processData.data.fields.length} field(s): ${processData.data.fields.map((f: any) => f.name).join(", ")}.`
+                : "";
             const savedInfo = processData.data?.knowledgeEntryId
               ? " I've also saved this to my knowledge base for future reference."
               : "";
-            
+
             results.push({
               toolCallId: toolCall.id,
               result: `I've processed the file "${processData.data?.fileName || args.fileName}". Here's what I found:\n\n${contentPreview}${fieldsInfo}${savedInfo}`,
@@ -429,7 +448,7 @@ async function handleToolCalls(
             result: `I'm sorry, I couldn't process that file. ${error.message || "Please try again."}`,
           });
         }
-        
+
         // Skip the cal-integration fetch for processFile
         continue;
       }

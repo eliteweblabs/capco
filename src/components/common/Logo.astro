@@ -22,15 +22,15 @@ function loadSvgFile(): string {
       .replace(/\.fill\s*\{[^}]*fill:\s*#[^;]+[^}]*\}/gi, ".fill { fill: currentColor; }")
       .replace(/\}\s*\}/g, "}")
       // Remove all inline fill attributes from path elements (but keep class="fill" if present)
-      .replace(/<path\s+([^>]*)\s+fill="[^"]*"([^>]*)>/gi, '<path $1$2>')
-      .replace(/<path\s+fill="[^"]*"\s+([^>]*)>/gi, '<path $1>')
+      .replace(/<path\s+([^>]*)\s+fill="[^"]*"([^>]*)>/gi, "<path $1$2>")
+      .replace(/<path\s+fill="[^"]*"\s+([^>]*)>/gi, "<path $1>")
       // Ensure paths have class="fill" if they don't already
       .replace(/<path\s+([^>]*?)(?:\s+class="[^"]*")?([^>]*)>/gi, (match, p1, p2) => {
-        if (!match.includes('class=')) {
+        if (!match.includes("class=")) {
           return `<path class="fill" ${p1}${p2}>`;
         }
         return match.replace(/class="([^"]*)"/gi, (m, classes) => {
-          return classes.includes('fill') ? m : `class="${classes} fill"`;
+          return classes.includes("fill") ? m : `class="${classes} fill"`;
         });
       });
 
@@ -43,23 +43,25 @@ function loadSvgFile(): string {
 // Process SVG from env var or string to remove inline fills
 function processSvg(svg: string): string {
   if (!svg || !svg.includes("<svg")) return svg;
-  
-  return svg
-    // Remove inline fill attributes from path elements
-    .replace(/<path\s+([^>]*)\s+fill="[^"]*"([^>]*)>/gi, '<path $1$2>')
-    .replace(/<path\s+fill="[^"]*"\s+([^>]*)>/gi, '<path $1>')
-    // Ensure paths have class="fill"
-    .replace(/<path\s+([^>]*?)(?:\s+class="[^"]*")?([^>]*)>/gi, (match) => {
-      if (!match.includes('class=')) {
-        return match.replace(/<path\s+/, '<path class="fill" ');
-      }
-      if (!match.includes('class="fill"') && !match.includes("class='fill'")) {
-        return match.replace(/class="([^"]*)"/gi, (m, classes) => {
-          return `class="${classes} fill"`;
-        });
-      }
-      return match;
-    });
+
+  return (
+    svg
+      // Remove inline fill attributes from path elements
+      .replace(/<path\s+([^>]*)\s+fill="[^"]*"([^>]*)>/gi, "<path $1$2>")
+      .replace(/<path\s+fill="[^"]*"\s+([^>]*)>/gi, "<path $1>")
+      // Ensure paths have class="fill"
+      .replace(/<path\s+([^>]*?)(?:\s+class="[^"]*")?([^>]*)>/gi, (match) => {
+        if (!match.includes("class=")) {
+          return match.replace(/<path\s+/, '<path class="fill" ');
+        }
+        if (!match.includes('class="fill"') && !match.includes("class='fill'")) {
+          return match.replace(/class="([^"]*)"/gi, (m, classes) => {
+            return `class="${classes} fill"`;
+          });
+        }
+        return match;
+      })
+  );
 }
 
 // Get logo: prefer env var if set, otherwise use file
@@ -103,7 +105,7 @@ if (!logoSvg || !logoSvg.includes("<svg")) return null;
     logoWrappers.forEach((wrapper) => {
       const svg = wrapper.querySelector("svg");
       if (!svg) return;
-      
+
       const paths = svg.querySelectorAll("path");
       paths.forEach((path) => {
         // Remove inline fill attribute if present

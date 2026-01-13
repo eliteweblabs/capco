@@ -30,20 +30,20 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const slug = url.searchParams.get("slug");
     const filePath = url.searchParams.get("path"); // Optional: specific file path
-    
+
     if (!slug) {
-      return new Response(
-        JSON.stringify({ error: "Slug parameter is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Slug parameter is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Read markdown file (handle nested paths like "data/page")
@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
       const slugPath = slug.replace(/\//g, "/");
       contentPath = join(process.cwd(), "content", "pages", `${slugPath}.md`);
     }
-    
+
     if (!existsSync(contentPath)) {
       // Try without subdirectory (flat structure)
       const flatPath = join(process.cwd(), "content", "pages", `${slug.split("/").pop()}.md`);
@@ -66,7 +66,7 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
         const fileContent = readFileSync(flatPath, "utf-8");
         const { data, content } = matter(fileContent);
         const finalSlug = slug.split("/").pop() || slug;
-        
+
         const clientId = process.env.RAILWAY_PROJECT_NAME || null;
         const { data: dbPage, error } = await supabaseAdmin
           .from("cms_pages")
@@ -104,11 +104,11 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
           }
         );
       }
-      
-      return new Response(
-        JSON.stringify({ error: `Markdown file not found: ${slug}.md` }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
+
+      return new Response(JSON.stringify({ error: `Markdown file not found: ${slug}.md` }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const fileContent = readFileSync(contentPath, "utf-8");

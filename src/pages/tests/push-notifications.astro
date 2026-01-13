@@ -9,7 +9,10 @@
     <title>Push Notification Test - Campfire</title>
     <style>
       body {
-        font-family: system-ui, -apple-system, sans-serif;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
         max-width: 800px;
         margin: 50px auto;
         padding: 20px;
@@ -19,7 +22,7 @@
         background: white;
         border-radius: 8px;
         padding: 30px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         margin-bottom: 20px;
       }
       .status {
@@ -27,10 +30,22 @@
         border-radius: 4px;
         margin: 10px 0;
       }
-      .status.success { background: #d4edda; color: #155724; }
-      .status.warning { background: #fff3cd; color: #856404; }
-      .status.error { background: #f8d7da; color: #721c24; }
-      .status.info { background: #d1ecf1; color: #0c5460; }
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+      }
+      .status.warning {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .status.info {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
       button {
         background: #007bff;
         color: white;
@@ -41,8 +56,13 @@
         font-size: 16px;
         margin: 10px 5px;
       }
-      button:hover { background: #0056b3; }
-      button:disabled { background: #ccc; cursor: not-allowed; }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
       .code {
         background: #f4f4f4;
         padding: 15px;
@@ -52,13 +72,18 @@
         overflow-x: auto;
         margin: 10px 0;
       }
-      h1 { color: #333; }
-      h2 { color: #555; margin-top: 30px; }
+      h1 {
+        color: #333;
+      }
+      h2 {
+        color: #555;
+        margin-top: 30px;
+      }
     </style>
   </head>
   <body>
     <h1>🔔 Push Notification Test - Campfire</h1>
-    
+
     <div class="card">
       <h2>1. Browser Support Check</h2>
       <div id="support-status"></div>
@@ -67,19 +92,24 @@
     <div class="card">
       <h2>2. Permission Status</h2>
       <div id="permission-status"></div>
-      <button id="request-permission-btn" onclick="requestPermission()">Request Notification Permission</button>
+      <button id="request-permission-btn" onclick="requestPermission()"
+        >Request Notification Permission</button
+      >
     </div>
 
     <div class="card">
       <h2>3. Service Worker Check</h2>
       <div id="sw-status"></div>
-      <button id="register-sw-btn" onclick="registerServiceWorker()">Register Service Worker</button>
+      <button id="register-sw-btn" onclick="registerServiceWorker()">Register Service Worker</button
+      >
     </div>
 
     <div class="card">
       <h2>4. Test Notification</h2>
       <p>Click the button below to send a test notification (if permission is granted):</p>
-      <button id="test-notification-btn" onclick="sendTestNotification()">Send Test Notification</button>
+      <button id="test-notification-btn" onclick="sendTestNotification()"
+        >Send Test Notification</button
+      >
     </div>
 
     <div class="card">
@@ -100,15 +130,15 @@
 
     <script>
       let debugInfo = [];
-      
-      function log(message, type = 'info') {
+
+      function log(message, type = "info") {
         console.log(`[PUSH-TEST] ${message}`);
         debugInfo.push(`[${new Date().toLocaleTimeString()}] ${message}`);
         updateDebugInfo();
       }
 
       function updateDebugInfo() {
-        document.getElementById('debug-info').textContent = debugInfo.join('\n');
+        document.getElementById("debug-info").textContent = debugInfo.join("\n");
       }
 
       // Detect mobile browser
@@ -117,118 +147,143 @@
         const isIOS = /iphone|ipad|ipod/.test(ua);
         const isAndroid = /android/.test(ua);
         const isMobile = isIOS || isAndroid;
-        
-        let browser = 'Unknown';
+
+        let browser = "Unknown";
         if (/safari/.test(ua) && !/chrome|crios|fxios/.test(ua)) {
-          browser = 'Safari';
+          browser = "Safari";
         } else if (/chrome|crios/.test(ua)) {
-          browser = 'Chrome';
+          browser = "Chrome";
         } else if (/firefox|fxios/.test(ua)) {
-          browser = 'Firefox';
+          browser = "Firefox";
         } else if (/edg/.test(ua)) {
-          browser = 'Edge';
+          browser = "Edge";
         }
-        
+
         // Check if running as PWA
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                            (window.navigator as any).standalone === true;
-        
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          (window.navigator as any).standalone === true;
+
         return { isMobile, isIOS, isAndroid, browser, isStandalone };
       }
 
       // 1. Check browser support
       function checkBrowserSupport() {
-        const statusDiv = document.getElementById('support-status');
+        const statusDiv = document.getElementById("support-status");
         const mobileInfo = detectMobileBrowser();
-        
+
         // On iOS Safari, Notifications API might not be available in regular browsing
         // but is available when installed as PWA
-        const hasNotificationAPI = 'Notification' in window;
-        const hasServiceWorker = 'serviceWorker' in navigator;
-        const hasPushManager = hasServiceWorker && 'PushManager' in window;
-        const hasHTTPS = location.protocol === 'https:' || location.hostname === 'localhost';
-        
+        const hasNotificationAPI = "Notification" in window;
+        const hasServiceWorker = "serviceWorker" in navigator;
+        const hasPushManager = hasServiceWorker && "PushManager" in window;
+        const hasHTTPS = location.protocol === "https:" || location.hostname === "localhost";
+
         const features = {
-          'Notifications API': hasNotificationAPI,
-          'Service Workers': hasServiceWorker,
-          'Push Manager': hasPushManager,
-          'HTTPS': hasHTTPS
+          "Notifications API": hasNotificationAPI,
+          "Service Workers": hasServiceWorker,
+          "Push Manager": hasPushManager,
+          HTTPS: hasHTTPS,
         };
 
-        let allSupported = Object.values(features).every(v => v);
-        
-        let html = '';
-        
+        let allSupported = Object.values(features).every((v) => v);
+
+        let html = "";
+
         // Mobile-specific guidance
         if (mobileInfo.isMobile) {
           html += '<div class="status info">';
           html += `<strong>📱 Mobile Device Detected</strong><br>`;
           html += `Browser: ${mobileInfo.browser}<br>`;
-          html += `Platform: ${mobileInfo.isIOS ? 'iOS' : 'Android'}<br>`;
-          html += `PWA Mode: ${mobileInfo.isStandalone ? '✅ Installed' : '❌ Not Installed'}<br>`;
-          html += '</div><br>';
-          
-          if (mobileInfo.isIOS && mobileInfo.browser === 'Safari') {
+          html += `Platform: ${mobileInfo.isIOS ? "iOS" : "Android"}<br>`;
+          html += `PWA Mode: ${mobileInfo.isStandalone ? "✅ Installed" : "❌ Not Installed"}<br>`;
+          html += "</div><br>";
+
+          if (mobileInfo.isIOS && mobileInfo.browser === "Safari") {
             if (!mobileInfo.isStandalone) {
               html += '<div class="status warning">';
-              html += '<strong>⚠️ iOS Safari Push Notification Requirements:</strong><br>';
-              html += 'On iOS Safari, push notifications only work when the site is <strong>added to Home Screen</strong> as a PWA.<br>';
-              html += '<strong>To enable:</strong><br>';
-              html += '1. Tap the Share button (square with arrow)<br>';
+              html += "<strong>⚠️ iOS Safari Push Notification Requirements:</strong><br>";
+              html +=
+                "On iOS Safari, push notifications only work when the site is <strong>added to Home Screen</strong> as a PWA.<br>";
+              html += "<strong>To enable:</strong><br>";
+              html += "1. Tap the Share button (square with arrow)<br>";
               html += '2. Scroll and tap "Add to Home Screen"<br>';
-              html += '3. Open the app from your Home Screen<br>';
-              html += '4. Grant notification permission<br>';
-              html += '</div>';
+              html += "3. Open the app from your Home Screen<br>";
+              html += "4. Grant notification permission<br>";
+              html += "</div>";
             } else {
               html += '<div class="status success">';
-              html += '✅ App is installed as PWA! Push notifications should work.';
-              html += '</div>';
+              html += "✅ App is installed as PWA! Push notifications should work.";
+              html += "</div>";
             }
-          } else if (mobileInfo.isAndroid || (mobileInfo.isIOS && mobileInfo.browser !== 'Safari')) {
+          } else if (
+            mobileInfo.isAndroid ||
+            (mobileInfo.isIOS && mobileInfo.browser !== "Safari")
+          ) {
             html += '<div class="status success">';
-            html += `✅ ${mobileInfo.browser} on ${mobileInfo.isIOS ? 'iOS' : 'Android'} has good push notification support!`;
-            html += '</div>';
+            html += `✅ ${mobileInfo.browser} on ${mobileInfo.isIOS ? "iOS" : "Android"} has good push notification support!`;
+            html += "</div>";
           }
         }
-        
-        html += '<div class="status ' + (allSupported ? 'success' : mobileInfo.isMobile ? 'warning' : 'error') + '">';
-        html += '<strong>' + (allSupported ? '✅ All features supported' : mobileInfo.isMobile ? '⚠️ Mobile limitations detected' : '❌ Some features missing') + '</strong><br>';
-        
+
+        html +=
+          '<div class="status ' +
+          (allSupported ? "success" : mobileInfo.isMobile ? "warning" : "error") +
+          '">';
+        html +=
+          "<strong>" +
+          (allSupported
+            ? "✅ All features supported"
+            : mobileInfo.isMobile
+              ? "⚠️ Mobile limitations detected"
+              : "❌ Some features missing") +
+          "</strong><br>";
+
         for (const [name, supported] of Object.entries(features)) {
-          html += `<br>${supported ? '✅' : '❌'} ${name}: ${supported ? 'Supported' : 'Not Supported'}`;
+          html += `<br>${supported ? "✅" : "❌"} ${name}: ${supported ? "Supported" : "Not Supported"}`;
         }
-        html += '</div>';
-        
+        html += "</div>";
+
         if (statusDiv) (statusDiv as HTMLElement).innerHTML = html;
-        
-        log(`Browser: ${mobileInfo.browser} on ${mobileInfo.isIOS ? 'iOS' : mobileInfo.isAndroid ? 'Android' : 'Desktop'}`, 'info');
-        log(`PWA Mode: ${mobileInfo.isStandalone ? 'YES' : 'NO'}`, mobileInfo.isStandalone ? 'success' : 'warning');
-        log(`Browser support check: ${allSupported ? 'PASS' : 'FAIL'}`, allSupported ? 'success' : 'error');
+
+        log(
+          `Browser: ${mobileInfo.browser} on ${mobileInfo.isIOS ? "iOS" : mobileInfo.isAndroid ? "Android" : "Desktop"}`,
+          "info"
+        );
+        log(
+          `PWA Mode: ${mobileInfo.isStandalone ? "YES" : "NO"}`,
+          mobileInfo.isStandalone ? "success" : "warning"
+        );
+        log(
+          `Browser support check: ${allSupported ? "PASS" : "FAIL"}`,
+          allSupported ? "success" : "error"
+        );
         for (const [name, supported] of Object.entries(features)) {
-          log(`${name}: ${supported}`, supported ? 'success' : 'error');
+          log(`${name}: ${supported}`, supported ? "success" : "error");
         }
       }
 
       // 2. Check permission status
       function checkPermission() {
-        const statusDiv = document.getElementById('permission-status');
-        const btn = document.getElementById('request-permission-btn');
+        const statusDiv = document.getElementById("permission-status");
+        const btn = document.getElementById("request-permission-btn");
         const mobileInfo = detectMobileBrowser();
-        
-        if (!('Notification' in window)) {
+
+        if (!("Notification" in window)) {
           let message = '<div class="status error">❌ Notifications API not supported</div>';
-          
+
           // Mobile Safari specific guidance
-          if (mobileInfo.isIOS && mobileInfo.browser === 'Safari' && !mobileInfo.isStandalone) {
+          if (mobileInfo.isIOS && mobileInfo.browser === "Safari" && !mobileInfo.isStandalone) {
             message = '<div class="status warning">';
-            message += '<strong>⚠️ Notifications API not available in mobile Safari</strong><br>';
-            message += 'This is normal! iOS Safari only supports push notifications when:<br>';
-            message += '1. The site is added to Home Screen (PWA)<br>';
-            message += '2. AND opened from the Home Screen icon<br><br>';
-            message += '<strong>Solution:</strong> Add this site to your Home Screen, then open it from there.';
-            message += '</div>';
+            message += "<strong>⚠️ Notifications API not available in mobile Safari</strong><br>";
+            message += "This is normal! iOS Safari only supports push notifications when:<br>";
+            message += "1. The site is added to Home Screen (PWA)<br>";
+            message += "2. AND opened from the Home Screen icon<br><br>";
+            message +=
+              "<strong>Solution:</strong> Add this site to your Home Screen, then open it from there.";
+            message += "</div>";
           }
-          
+
           if (statusDiv) (statusDiv as HTMLElement).innerHTML = message;
           if (btn) (btn as HTMLButtonElement).disabled = true;
           return;
@@ -236,67 +291,78 @@
 
         const permission = Notification.permission;
         let statusClass, statusText, icon;
-        
-        switch(permission) {
-          case 'granted':
-            statusClass = 'success';
-            statusText = '✅ Permission granted! You can receive notifications.';
-            icon = '✅';
+
+        switch (permission) {
+          case "granted":
+            statusClass = "success";
+            statusText = "✅ Permission granted! You can receive notifications.";
+            icon = "✅";
             if (btn) {
               (btn as HTMLButtonElement).disabled = true;
-              btn.textContent = 'Permission Already Granted';
+              btn.textContent = "Permission Already Granted";
             }
             break;
-          case 'denied':
-            statusClass = 'error';
-            statusText = '❌ Permission denied. You need to enable notifications in browser settings.';
-            icon = '❌';
+          case "denied":
+            statusClass = "error";
+            statusText =
+              "❌ Permission denied. You need to enable notifications in browser settings.";
+            icon = "❌";
             if (btn) {
               (btn as HTMLButtonElement).disabled = true;
-              btn.textContent = 'Permission Denied (Check Browser Settings)';
+              btn.textContent = "Permission Denied (Check Browser Settings)";
             }
             break;
-          case 'default':
-            statusClass = 'warning';
-            statusText = '⚠️ Permission not yet requested. Click the button below to request it.';
-            icon = '⚠️';
+          case "default":
+            statusClass = "warning";
+            statusText = "⚠️ Permission not yet requested. Click the button below to request it.";
+            icon = "⚠️";
             if (btn) (btn as HTMLButtonElement).disabled = false;
             break;
         }
-        
-        if (statusDiv) (statusDiv as HTMLElement).innerHTML = `<div class="status ${statusClass}">${statusText}</div>`;
-        log(`Notification permission: ${permission}`, permission === 'granted' ? 'success' : permission === 'denied' ? 'error' : 'warning');
+
+        if (statusDiv)
+          (statusDiv as HTMLElement).innerHTML =
+            `<div class="status ${statusClass}">${statusText}</div>`;
+        log(
+          `Notification permission: ${permission}`,
+          permission === "granted" ? "success" : permission === "denied" ? "error" : "warning"
+        );
       }
 
       // Request permission
       async function requestPermission() {
-        if (!('Notification' in window)) {
-          alert('Notifications are not supported in this browser.');
+        if (!("Notification" in window)) {
+          alert("Notifications are not supported in this browser.");
           return;
         }
 
         try {
           const permission = await Notification.requestPermission();
-          log(`Permission request result: ${permission}`, permission === 'granted' ? 'success' : 'error');
+          log(
+            `Permission request result: ${permission}`,
+            permission === "granted" ? "success" : "error"
+          );
           checkPermission();
-          
-          if (permission === 'granted') {
+
+          if (permission === "granted") {
             // Send a test notification immediately
             sendTestNotification();
           }
         } catch (error) {
-          log(`Error requesting permission: ${error.message}`, 'error');
-          alert('Error requesting permission: ' + error.message);
+          log(`Error requesting permission: ${error.message}`, "error");
+          alert("Error requesting permission: " + error.message);
         }
       }
 
       // 3. Check Service Worker
       async function checkServiceWorker() {
-        const statusDiv = document.getElementById('sw-status') as HTMLElement;
-        const btn = document.getElementById('register-sw-btn') as HTMLButtonElement;
-        
-        if (!('serviceWorker' in navigator)) {
-          if (statusDiv) statusDiv.innerHTML = '<div class="status error">❌ Service Workers not supported</div>';
+        const statusDiv = document.getElementById("sw-status") as HTMLElement;
+        const btn = document.getElementById("register-sw-btn") as HTMLButtonElement;
+
+        if (!("serviceWorker" in navigator)) {
+          if (statusDiv)
+            statusDiv.innerHTML =
+              '<div class="status error">❌ Service Workers not supported</div>';
           if (btn) btn.disabled = true;
           return;
         }
@@ -304,77 +370,91 @@
         try {
           const registration = await navigator.serviceWorker.getRegistration();
           if (registration) {
-            if (statusDiv) statusDiv.innerHTML = '<div class="status success">✅ Service Worker registered</div>';
+            if (statusDiv)
+              statusDiv.innerHTML =
+                '<div class="status success">✅ Service Worker registered</div>';
             if (btn) {
               btn.disabled = true;
-              btn.textContent = 'Service Worker Already Registered';
+              btn.textContent = "Service Worker Already Registered";
             }
-            log('Service Worker: Already registered', 'success');
+            log("Service Worker: Already registered", "success");
           } else {
-            if (statusDiv) statusDiv.innerHTML = '<div class="status warning">⚠️ No Service Worker registered. Click to register.</div>';
+            if (statusDiv)
+              statusDiv.innerHTML =
+                '<div class="status warning">⚠️ No Service Worker registered. Click to register.</div>';
             if (btn) btn.disabled = false;
-            log('Service Worker: Not registered', 'warning');
+            log("Service Worker: Not registered", "warning");
           }
         } catch (error: any) {
-          if (statusDiv) statusDiv.innerHTML = '<div class="status error">❌ Error checking Service Worker</div>';
-          log(`Error checking Service Worker: ${error.message}`, 'error');
+          if (statusDiv)
+            statusDiv.innerHTML =
+              '<div class="status error">❌ Error checking Service Worker</div>';
+          log(`Error checking Service Worker: ${error.message}`, "error");
         }
       }
 
       async function registerServiceWorker() {
-        if (!('serviceWorker' in navigator)) {
-          alert('Service Workers are not supported in this browser.');
+        if (!("serviceWorker" in navigator)) {
+          alert("Service Workers are not supported in this browser.");
           return;
         }
 
         try {
           // Campfire handles its own service worker, but we can check if it exists
-          log('Attempting to register service worker...', 'info');
-          
+          log("Attempting to register service worker...", "info");
+
           // For Campfire, the service worker is typically registered by Campfire itself
           // This is just for testing purposes
-          const registration = await navigator.serviceWorker.register('/sw.js').catch(() => null);
-          
+          const registration = await navigator.serviceWorker.register("/sw.js").catch(() => null);
+
           if (registration) {
-            log('Service Worker registered successfully', 'success');
+            log("Service Worker registered successfully", "success");
             checkServiceWorker();
           } else {
-            log('Note: Campfire handles its own service worker registration. This is normal.', 'info');
-            const statusDiv = document.getElementById('sw-status') as HTMLElement;
-            if (statusDiv) statusDiv.innerHTML = '<div class="status info">ℹ️ Campfire manages its own service worker for push notifications.</div>';
+            log(
+              "Note: Campfire handles its own service worker registration. This is normal.",
+              "info"
+            );
+            const statusDiv = document.getElementById("sw-status") as HTMLElement;
+            if (statusDiv)
+              statusDiv.innerHTML =
+                '<div class="status info">ℹ️ Campfire manages its own service worker for push notifications.</div>';
           }
         } catch (error: any) {
-          log(`Error registering service worker: ${error.message}`, 'error');
-          log('Note: Campfire will register its own service worker when you open the chat.', 'info');
+          log(`Error registering service worker: ${error.message}`, "error");
+          log(
+            "Note: Campfire will register its own service worker when you open the chat.",
+            "info"
+          );
         }
       }
 
       // 4. Send test notification
       async function sendTestNotification() {
-        if (!('Notification' in window)) {
-          alert('Notifications are not supported in this browser.');
+        if (!("Notification" in window)) {
+          alert("Notifications are not supported in this browser.");
           return;
         }
 
-        if (Notification.permission !== 'granted') {
-          alert('Please grant notification permission first.');
+        if (Notification.permission !== "granted") {
+          alert("Please grant notification permission first.");
           requestPermission();
           return;
         }
 
         try {
-          const notification = new Notification('🧪 Test Notification', {
-            body: 'This is a test notification! If you see this, push notifications are working.',
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
-            tag: 'test-notification',
-            requireInteraction: false
+          const notification = new Notification("🧪 Test Notification", {
+            body: "This is a test notification! If you see this, push notifications are working.",
+            icon: "/favicon.ico",
+            badge: "/favicon.ico",
+            tag: "test-notification",
+            requireInteraction: false,
           });
 
-          log('Test notification sent successfully', 'success');
-          
+          log("Test notification sent successfully", "success");
+
           notification.onclick = () => {
-            log('Notification clicked', 'info');
+            log("Notification clicked", "info");
             window.focus();
             notification.close();
           };
@@ -384,25 +464,24 @@
             notification.close();
           }, 5000);
         } catch (error) {
-          log(`Error sending notification: ${error.message}`, 'error');
-          alert('Error sending notification: ' + error.message);
+          log(`Error sending notification: ${error.message}`, "error");
+          alert("Error sending notification: " + error.message);
         }
       }
 
       // Initialize on page load
-      window.addEventListener('load', () => {
-        log('Page loaded - initializing tests...', 'info');
+      window.addEventListener("load", () => {
+        log("Page loaded - initializing tests...", "info");
         checkBrowserSupport();
         checkPermission();
         checkServiceWorker();
       });
 
       // Update permission status if it changes
-      if ('Notification' in window) {
+      if ("Notification" in window) {
         // Listen for permission changes (some browsers support this)
         setInterval(checkPermission, 2000);
       }
     </script>
   </body>
 </html>
-

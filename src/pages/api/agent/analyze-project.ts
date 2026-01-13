@@ -1,8 +1,8 @@
 /**
  * AI Agent Project Analysis API
- * 
+ *
  * Analyze a project and provide insights
- * 
+ *
  * POST /api/agent/analyze-project
  */
 
@@ -115,4 +115,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

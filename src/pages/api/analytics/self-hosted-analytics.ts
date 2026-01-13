@@ -44,12 +44,12 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 async function fetchSelfHostedAnalytics(period: string) {
   // Get company data from database
   const companyData = await globalCompanyData();
-  const PLAUSIBLE_URL =
-    companyData.plausibleDomain ||
-    import.meta.env.PLAUSIBLE_URL ||
-    "";
+  const PLAUSIBLE_URL = companyData.plausibleDomain || import.meta.env.PLAUSIBLE_URL || "";
   const PLAUSIBLE_API_KEY = import.meta.env.PLAUSIBLE_API_KEY;
-  const PLAUSIBLE_SITE_ID = companyData.plausibleSiteId || companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "";
+  const PLAUSIBLE_SITE_ID =
+    companyData.plausibleSiteId ||
+    companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") ||
+    "";
 
   if (!PLAUSIBLE_API_KEY) {
     console.log("🔍 No Plausible API key found, using mock data");
@@ -117,8 +117,18 @@ async function fetchSelfHostedAnalytics(period: string) {
       data: {
         ...data,
         top_pages: await fetchTopPages(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
-        referrers: await fetchReferrers(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
-        countries: await fetchCountries(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
+        referrers: await fetchReferrers(
+          PLAUSIBLE_URL,
+          PLAUSIBLE_API_KEY,
+          period,
+          PLAUSIBLE_SITE_ID
+        ),
+        countries: await fetchCountries(
+          PLAUSIBLE_URL,
+          PLAUSIBLE_API_KEY,
+          period,
+          PLAUSIBLE_SITE_ID
+        ),
         devices: await fetchDevices(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
         browsers: await fetchBrowsers(PLAUSIBLE_URL, PLAUSIBLE_API_KEY, period, PLAUSIBLE_SITE_ID),
       },

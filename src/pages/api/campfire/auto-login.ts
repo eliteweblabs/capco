@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check if user is authenticated
     const authResult = await checkAuth(cookies);
-    
+
     if (!authResult.isAuth || !authResult.currentUser) {
       return new Response(
         JSON.stringify({
@@ -76,7 +76,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(
         JSON.stringify({
           success: true,
-          loginUrl: campfireResult.loginUrl || `${process.env.PUBLIC_CAMPFIRE_URL || "https://campfire-production-8c1a.up.railway.app"}/`,
+          loginUrl:
+            campfireResult.loginUrl ||
+            `${process.env.PUBLIC_CAMPFIRE_URL || "https://campfire-production-8c1a.up.railway.app"}/`,
           cookies: campfireResult.cookies || [],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } }
@@ -101,4 +103,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

@@ -12,19 +12,19 @@ export const POST: APIRoute = async ({ request }) => {
     const { text } = await request.json();
 
     if (!text || typeof text !== "string") {
-      return new Response(
-        JSON.stringify({ error: "Text is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Text is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get API key
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "AI service not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "AI service not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Initialize Anthropic client
@@ -82,12 +82,15 @@ Return ONLY a JSON array, no other text.`;
     let tags: string[] = [];
     try {
       // Remove markdown code blocks if present
-      tagsText = tagsText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      
+      tagsText = tagsText
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+
       // Try to parse as JSON
       const parsed = JSON.parse(tagsText);
       if (Array.isArray(parsed)) {
-        tags = parsed.map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0);
+        tags = parsed.map((tag) => tag.toLowerCase().trim()).filter((tag) => tag.length > 0);
       }
     } catch (error) {
       // If JSON parsing fails, try to extract array from text
@@ -99,8 +102,8 @@ Return ONLY a JSON array, no other text.`;
           // Fallback: split by comma and clean
           tags = arrayMatch[1]
             .split(",")
-            .map(tag => tag.trim().replace(/['"]/g, "").toLowerCase())
-            .filter(tag => tag.length > 0);
+            .map((tag) => tag.trim().replace(/['"]/g, "").toLowerCase())
+            .filter((tag) => tag.length > 0);
         }
       }
     }
@@ -130,4 +133,3 @@ Return ONLY a JSON array, no other text.`;
     );
   }
 };
-

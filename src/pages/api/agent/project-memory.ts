@@ -1,9 +1,9 @@
 /**
  * AI Agent Project Memory API
- * 
+ *
  * Manage project-specific memory (like Claude.ai's project memory)
  * Stores "Purpose & context" and "Current state" for each project
- * 
+ *
  * GET /api/agent/project-memory?projectId={id} - Get project memory
  * POST /api/agent/project-memory - Create/update project memory
  * PUT /api/agent/project-memory?projectId={id} - Update project memory
@@ -247,4 +247,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 export const PUT: APIRoute = async (context) => {
   return POST(context);
 };
-

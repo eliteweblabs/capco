@@ -33,10 +33,7 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
   googleAuthUrl.searchParams.set("client_id", clientId);
   googleAuthUrl.searchParams.set("redirect_uri", redirectUrl);
   googleAuthUrl.searchParams.set("response_type", "code");
-  googleAuthUrl.searchParams.set(
-    "scope",
-    "openid email profile"
-  );
+  googleAuthUrl.searchParams.set("scope", "openid email profile");
   googleAuthUrl.searchParams.set("access_type", "offline");
   googleAuthUrl.searchParams.set("prompt", "consent");
   googleAuthUrl.searchParams.set("state", state);

@@ -26,7 +26,7 @@ async function getValidAccessToken(cookies: any, requestUrl?: string): Promise<s
 
     // Token expired, try to refresh
     console.log("🔄 [GMAIL-CHECK] Access token expired, refreshing...");
-    const baseUrl = requestUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+    const baseUrl = requestUrl || (typeof window !== "undefined" ? window.location.origin : "");
     const refreshResponse = await fetch(new URL("/api/google/refresh-token", baseUrl).toString(), {
       method: "POST",
       headers: {
@@ -49,7 +49,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check if user is authenticated with Google
     const googleAuth = checkGoogleAuth(cookies);
-    
+
     if (!googleAuth.isAuthenticated) {
       return new Response(
         JSON.stringify({
@@ -155,7 +155,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         const messageData = await messageResponse.json();
-        
+
         // Extract headers
         const headers = messageData.payload?.headers || [];
         const from = headers.find((h: any) => h.name === "From")?.value || "Unknown";
@@ -208,4 +208,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

@@ -49,17 +49,19 @@ export interface SiteConfig {
     }>;
   };
   features: {
-    [key: string]: boolean | {
-      enabled: boolean;
-      navigation?: {
-        label: string;
-        href: string;
-        icon?: string;
-        roles?: string[];
-        position?: number;
-        section?: string;
-      };
-    };
+    [key: string]:
+      | boolean
+      | {
+          enabled: boolean;
+          navigation?: {
+            label: string;
+            href: string;
+            icon?: string;
+            roles?: string[];
+            position?: number;
+            section?: string;
+          };
+        };
   };
   pages?: {
     [pageSlug: string]: any;
@@ -107,28 +109,46 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     const { globalCompanyData } = await import("../pages/api/global/global-company-data");
     companyData = await globalCompanyData();
   } catch (error) {
-    console.warn("[CONTENT] Failed to load company data from database, using env fallbacks:", error);
+    console.warn(
+      "[CONTENT] Failed to load company data from database, using env fallbacks:",
+      error
+    );
     companyData = null;
   }
 
   // Start with defaults from database, then environment variables
   const config: SiteConfig = {
     site: {
-      name: companyData?.globalCompanyName || process.env.RAILWAY_PROJECT_NAME || "Fire Protection Services",
-      slogan: companyData?.globalCompanySlogan || process.env.GLOBAL_COMPANY_SLOGAN || "Professional Services",
+      name:
+        companyData?.globalCompanyName ||
+        process.env.RAILWAY_PROJECT_NAME ||
+        "Fire Protection Services",
+      slogan:
+        companyData?.globalCompanySlogan ||
+        process.env.GLOBAL_COMPANY_SLOGAN ||
+        "Professional Services",
       description:
-        companyData?.globalCompanySlogan || process.env.GLOBAL_COMPANY_SLOGAN || "Fire protection system review and approval",
-      url: companyData?.globalCompanyWebsite || process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321",
-      email: companyData?.globalCompanyEmail || process.env.GLOBAL_COMPANY_EMAIL || "admin@example.com",
+        companyData?.globalCompanySlogan ||
+        process.env.GLOBAL_COMPANY_SLOGAN ||
+        "Fire protection system review and approval",
+      url:
+        companyData?.globalCompanyWebsite ||
+        process.env.RAILWAY_PUBLIC_DOMAIN ||
+        "http://localhost:4321",
+      email:
+        companyData?.globalCompanyEmail || process.env.GLOBAL_COMPANY_EMAIL || "admin@example.com",
       phone: companyData?.globalCompanyPhone || process.env.GLOBAL_COMPANY_PHONE || "+15551234567",
-      address: companyData?.globalCompanyAddress || process.env.GLOBAL_COMPANY_ADDRESS || "123 Main St",
+      address:
+        companyData?.globalCompanyAddress || process.env.GLOBAL_COMPANY_ADDRESS || "123 Main St",
       year: process.env.YEAR || new Date().getFullYear().toString(),
     },
     branding: {
       primaryColor: companyData?.primaryColor || process.env.GLOBAL_COLOR_PRIMARY || "#825BDD",
-      secondaryColor: companyData?.secondaryColor || process.env.GLOBAL_COLOR_SECONDARY || "#0ea5e9",
+      secondaryColor:
+        companyData?.secondaryColor || process.env.GLOBAL_COLOR_SECONDARY || "#0ea5e9",
       fontFamily: companyData?.fontFamily || process.env.FONT_FAMILY || "Outfit Variable",
-      fontFallback: companyData?.secondaryFontFamily || process.env.FONT_FAMILY_FALLBACK || "sans-serif",
+      fontFallback:
+        companyData?.secondaryFontFamily || process.env.FONT_FAMILY_FALLBACK || "sans-serif",
       logoSvg: companyData?.globalCompanyLogo || process.env.GLOBAL_COMPANY_LOGO_SVG,
       iconSvg: companyData?.globalCompanyIcon || process.env.GLOBAL_COMPANY_ICON_SVG,
     },
@@ -186,7 +206,10 @@ async function getDefaultPageContent(slug: string): Promise<PageContent | null> 
 
   const defaults: Record<string, PageContent> = {
     home: {
-      title: companyData?.globalCompanyName || process.env.RAILWAY_PROJECT_NAME || "Fire Protection Services",
+      title:
+        companyData?.globalCompanyName ||
+        process.env.RAILWAY_PROJECT_NAME ||
+        "Fire Protection Services",
       description:
         companyData?.globalCompanySlogan ||
         process.env.GLOBAL_COMPANY_SLOGAN ||
@@ -363,10 +386,10 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
 export async function isFeatureEnabled(featureKey: string): Promise<boolean> {
   const config = await getSiteConfig();
   const feature = config.features[featureKey];
-  if (typeof feature === 'boolean') {
+  if (typeof feature === "boolean") {
     return feature;
   }
-  if (feature && typeof feature === 'object' && 'enabled' in feature) {
+  if (feature && typeof feature === "object" && "enabled" in feature) {
     return feature.enabled;
   }
   return false;

@@ -55,6 +55,7 @@ const { globalInputClasses } = Astro.props;
           size="lg"
           class="prev-step px-0 hide-on-form-focus"
           icon="arrow-left"
+          iconClasses="m-0 md:ml-2"
           iconPosition="left"
         >
           have an account?
@@ -72,17 +73,17 @@ const { globalInputClasses } = Astro.props;
       </div>
     </div>
     <div
-      class="mx-auto w-full max-w-lg my-6 md:my-8 lg:my-12 relative bottom-0 left-0 right-0 hide-on-form-focus"
+      class="mx-auto w-full max-w-lg my-6 md:my-8 lg:my-12"
       data-aos="fade-up"
       data-aos-delay="600"
     >
       <Button
-        variant="secondary"
+        variant="outline"
         fullWidth
         name="provider"
         value="google"
         onclick="handleGoogleSignup()"
-        class="flex items-center justify-center gap-2"
+        class="hide-on-form-focus"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -175,6 +176,7 @@ const { globalInputClasses } = Astro.props;
           class="prev-step"
           dataAttributes={{ "data-prev": "1" }}
           icon="arrow-left"
+          iconClasses="m-0 md:ml-2"
           iconPosition="left"
         />
         <Button
@@ -184,6 +186,7 @@ const { globalInputClasses } = Astro.props;
           class="next-step"
           icon="arrow-right"
           iconPosition="right"
+          iconClasses="m-0 md:mr-2"
           dataAttributes={{ "data-next": "3" }}
         />
       </div>
@@ -225,6 +228,7 @@ const { globalInputClasses } = Astro.props;
           size="xl"
           class="prev-step"
           icon="arrow-left"
+          iconClasses="m-0 md:ml-2"
           iconPosition="left"
           dataAttributes={{ "data-prev": "2" }}
         />
@@ -234,6 +238,7 @@ const { globalInputClasses } = Astro.props;
           size="xl"
           class="next-step"
           icon="arrow-right"
+          iconClasses="m-0 md:mr-2"
           iconPosition="right"
           dataAttributes={{ "data-next": "4" }}
         />
@@ -281,6 +286,7 @@ const { globalInputClasses } = Astro.props;
           class="prev-step"
           dataAttributes={{ "data-prev": "3" }}
           icon="arrow-left"
+          iconClasses="m-0 md:ml-2"
           iconPosition="left"
         />
         <Button
@@ -290,6 +296,7 @@ const { globalInputClasses } = Astro.props;
           class="next-step"
           icon="arrow-right"
           iconPosition="right"
+          iconClasses="m-0 md:mr-2"
           dataAttributes={{ "data-next": "5" }}
         />
       </div>
@@ -331,6 +338,7 @@ const { globalInputClasses } = Astro.props;
           dataAttributes={{ "data-prev": "4" }}
           icon="arrow-left"
           iconPosition="left"
+          iconClasses="m-0 md:ml-2"
         />
         <Button
           type="button"
@@ -340,6 +348,7 @@ const { globalInputClasses } = Astro.props;
           icon="arrow-right"
           iconPosition="right"
           dataAttributes={{ "data-next": "6" }}
+          iconClasses="m-0 md:mr-2"
         />
       </div>
     </div>
@@ -635,9 +644,12 @@ const { globalInputClasses } = Astro.props;
           // @ts-ignore - AOS loaded from CDN
           if (typeof AOS !== "undefined") AOS.refresh();
 
-          // Focus first input in the new step
-          const firstInput = targetStep.querySelector("input:not([type=hidden])") as HTMLElement;
-          if (firstInput) firstInput.focus();
+          // Delay auto-focus to allow AOS animations to trigger first
+          // This is especially important for elements with hide-on-form-focus class
+          setTimeout(() => {
+            const firstInput = targetStep.querySelector("input:not([type=hidden])") as HTMLElement;
+            if (firstInput) firstInput.focus();
+          }, 400); // Give AOS time to animate elements before hiding them
         }, 100);
       }
     }

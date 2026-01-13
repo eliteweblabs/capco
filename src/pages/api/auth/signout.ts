@@ -8,13 +8,10 @@ export const GET: APIRoute = async ({ cookies, redirect, request }) => {
   try {
     const { currentUser } = await checkAuth(cookies);
     if (currentUser?.email) {
-      await SimpleProjectLogger.logUserLogout(
-        currentUser.email,
-        {
-          userAgent: request.headers.get("user-agent"),
-          timestamp: new Date().toISOString(),
-        }
-      );
+      await SimpleProjectLogger.logUserLogout(currentUser.email, {
+        userAgent: request.headers.get("user-agent"),
+        timestamp: new Date().toISOString(),
+      });
       console.log("✅ [SIGNOUT] Logout event logged successfully");
     }
   } catch (logError) {

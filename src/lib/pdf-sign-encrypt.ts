@@ -77,7 +77,10 @@ export async function signAndEncryptPDF(
 
     if (!encryptionResult.success || !encryptionResult.encryptedBuffer) {
       // Encryption failed, but signing succeeded - fall back to signing-only
-      console.warn("⚠️ [PDF-SIGN-ENCRYPT] Encryption failed, falling back to signing-only:", encryptionResult.error);
+      console.warn(
+        "⚠️ [PDF-SIGN-ENCRYPT] Encryption failed, falling back to signing-only:",
+        encryptionResult.error
+      );
       return {
         success: true,
         signedAndEncryptedBuffer: signingResult.signedBuffer,
@@ -121,7 +124,9 @@ export async function signAndEncryptPDF(
 /**
  * Create combined options from form data
  */
-export async function createSignAndEncryptOptionsFromForm(formData: FormData): Promise<SignAndEncryptOptions> {
+export async function createSignAndEncryptOptionsFromForm(
+  formData: FormData
+): Promise<SignAndEncryptOptions> {
   // Get company name from database for default location
   const { globalCompanyData } = await import("../pages/api/global/global-company-data");
   const companyData = await globalCompanyData();

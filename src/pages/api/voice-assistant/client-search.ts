@@ -12,9 +12,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!query || typeof query !== "string" || query.trim().length === 0) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Search query is required" 
+        JSON.stringify({
+          success: false,
+          error: "Search query is required",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
@@ -30,9 +30,9 @@ export const POST: APIRoute = async ({ request }) => {
     if (!supabaseUrl || !supabaseKey) {
       console.error("❌ [VOICE-ASSISTANT-CLIENT-SEARCH] Supabase not configured");
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Database not configured" 
+        JSON.stringify({
+          success: false,
+          error: "Database not configured",
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
@@ -77,13 +77,16 @@ export const POST: APIRoute = async ({ request }) => {
     // Format results for easier use
     const formattedClients = (clients || []).map((client) => ({
       id: client.id,
-      name: client.companyName || `${client.firstName || ""} ${client.lastName || ""}`.trim() || "Unknown",
+      name:
+        client.companyName ||
+        `${client.firstName || ""} ${client.lastName || ""}`.trim() ||
+        "Unknown",
       firstName: client.firstName,
       lastName: client.lastName,
       companyName: client.companyName,
       email: client.email,
       phone: client.phone,
-      displayName: client.companyName 
+      displayName: client.companyName
         ? `${client.companyName}${client.firstName ? ` (${client.firstName} ${client.lastName})` : ""}`
         : `${client.firstName || ""} ${client.lastName || ""}`.trim(),
     }));
@@ -115,4 +118,3 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
-

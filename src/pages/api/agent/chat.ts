@@ -1,9 +1,9 @@
 /**
  * Unified AI Agent Chat API
- * 
+ *
  * This is the main endpoint for interacting with the AI agent
  * Similar to Claude.ai's chat interface
- * 
+ *
  * POST /api/agent/chat
  */
 
@@ -52,14 +52,12 @@ async function saveConversationMessage(
 ) {
   if (!supabaseAdmin) return;
 
-  const { error } = await supabaseAdmin
-    .from("ai_agent_messages")
-    .insert({
-      conversationId,
-      role,
-      content,
-      metadata: metadata || {},
-    });
+  const { error } = await supabaseAdmin.from("ai_agent_messages").insert({
+    conversationId,
+    role,
+    content,
+    metadata: metadata || {},
+  });
 
   if (error) {
     console.error("❌ [AGENT-CHAT] Error saving message:", error);
@@ -120,14 +118,11 @@ async function trackUsage(
   const totalTokens = inputTokens + outputTokens;
 
   // Calculate estimated cost using database function
-  const { data: costData, error: costError } = await supabaseAdmin.rpc(
-    "calculate_ai_cost",
-    {
-      p_model: model,
-      p_input_tokens: inputTokens,
-      p_output_tokens: outputTokens,
-    }
-  );
+  const { data: costData, error: costError } = await supabaseAdmin.rpc("calculate_ai_cost", {
+    p_model: model,
+    p_input_tokens: inputTokens,
+    p_output_tokens: outputTokens,
+  });
 
   const estimatedCost = costError ? null : costData;
 
@@ -186,13 +181,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Require either message text or images
     if (!message?.trim() && (!images || images.length === 0)) {
-      return new Response(
-        JSON.stringify({ error: "Message or images are required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Message or images are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Initialize AI agent
@@ -204,43 +196,63 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       hasApiKey: !!apiKey,
       apiKeyLength: apiKey?.length || 0,
       apiKeyPrefix: apiKey ? apiKey.substring(0, 8) + "..." : "none",
-      allAnthropicKeys: Object.keys(process.env).filter(k => k.includes('ANTHROPIC')),
+      allAnthropicKeys: Object.keys(process.env).filter((k) => k.includes("ANTHROPIC")),
       nodeEnv: process.env.NODE_ENV,
     });
 
     if (!apiKey) {
       console.error("❌ [AGENT-CHAT] AI API key not configured");
       console.error("❌ [AGENT-CHAT] Checking environment variables...");
-      console.error("❌ [AGENT-CHAT] process.env.ANTHROPIC_API_KEY:", process.env.ANTHROPIC_API_KEY ? "***exists***" : "undefined");
-      console.error("❌ [AGENT-CHAT] import.meta.env.ANTHROPIC_API_KEY:", import.meta.env.ANTHROPIC_API_KEY ? "***exists***" : "undefined");
-      console.error("❌ [AGENT-CHAT] Available env vars with 'ANTHROPIC':", Object.keys(process.env).filter(k => k.includes('ANTHROPIC')));
-      console.error("❌ [AGENT-CHAT] Available env vars with 'API':", Object.keys(process.env).filter(k => k.includes('API')).slice(0, 10));
+      console.error(
+        "❌ [AGENT-CHAT] process.env.ANTHROPIC_API_KEY:",
+        process.env.ANTHROPIC_API_KEY ? "***exists***" : "undefined"
+      );
+      console.error(
+        "❌ [AGENT-CHAT] import.meta.env.ANTHROPIC_API_KEY:",
+        import.meta.env.ANTHROPIC_API_KEY ? "***exists***" : "undefined"
+      );
+      console.error(
+        "❌ [AGENT-CHAT] Available env vars with 'ANTHROPIC':",
+        Object.keys(process.env).filter((k) => k.includes("ANTHROPIC"))
+      );
+      console.error(
+        "❌ [AGENT-CHAT] Available env vars with 'API':",
+        Object.keys(process.env)
+          .filter((k) => k.includes("API"))
+          .slice(0, 10)
+      );
       console.error("❌ [AGENT-CHAT] Total env vars:", Object.keys(process.env).length);
-      
-      return new Response(JSON.stringify({ 
-        error: "AI API key not configured",
-        hint: "Please ensure ANTHROPIC_API_KEY is set in Railway environment variables",
-        debug: {
-          checkedProcessEnv: true,
-          checkedImportMetaEnv: true,
-          anthropicKeysFound: Object.keys(process.env).filter(k => k.includes('ANTHROPIC')),
+
+      return new Response(
+        JSON.stringify({
+          error: "AI API key not configured",
+          hint: "Please ensure ANTHROPIC_API_KEY is set in Railway environment variables",
+          debug: {
+            checkedProcessEnv: true,
+            checkedImportMetaEnv: true,
+            anthropicKeysFound: Object.keys(process.env).filter((k) => k.includes("ANTHROPIC")),
+          },
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
         }
-      }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      );
     }
 
     // Validate API key format (should start with sk-ant-)
-    if (!apiKey.startsWith('sk-ant-')) {
+    if (!apiKey.startsWith("sk-ant-")) {
       console.error("❌ [AGENT-CHAT] Invalid API key format (should start with 'sk-ant-')");
-      return new Response(JSON.stringify({ 
-        error: "Invalid API key format",
-        hint: "ANTHROPIC_API_KEY should start with 'sk-ant-'"
-      }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Invalid API key format",
+          hint: "ANTHROPIC_API_KEY should start with 'sk-ant-'",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     console.log("[---AGENT-CHAT] API key found, initializing agent...");
@@ -294,13 +306,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-      // Build agent context (include images)
-      const agentContext = {
-        userId: currentUser.id,
-        conversationHistory,
-        images: images || [],
-        ...context,
-      };
+    // Build agent context (include images)
+    const agentContext = {
+      userId: currentUser.id,
+      conversationHistory,
+      images: images || [],
+      ...context,
+    };
 
     // Save user message (only if we have a real conversation ID)
     if (finalConversationId && !finalConversationId.startsWith("temp_")) {
@@ -352,10 +364,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
       const inputTokens = response.metadata.inputTokens || 0;
       const outputTokens = response.metadata.outputTokens || 0;
-      
+
       await trackUsage(
         currentUser.id,
-        finalConversationId && !finalConversationId.startsWith("temp_") ? finalConversationId : null,
+        finalConversationId && !finalConversationId.startsWith("temp_")
+          ? finalConversationId
+          : null,
         savedMessageId,
         response.metadata.model,
         inputTokens,
@@ -390,7 +404,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       name: error.name,
       cause: error.cause,
     });
-    
+
     // Provide more helpful error messages
     let errorMessage = "Failed to process message";
     if (error.message?.includes("API key")) {
@@ -402,7 +416,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
+
     return new Response(
       JSON.stringify({
         error: errorMessage,
@@ -416,4 +430,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

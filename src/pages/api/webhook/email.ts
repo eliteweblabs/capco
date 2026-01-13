@@ -494,13 +494,10 @@ async function findOrCreateUser(email: string, headers?: Record<string, string>)
       formData.append("role", "Client");
 
       const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
-      const createUserResponse = await fetch(
-        `${baseUrl}/api/users/upsert`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const createUserResponse = await fetch(`${baseUrl}/api/users/upsert`, {
+        method: "POST",
+        body: formData,
+      });
 
       const createUserResult = await createUserResponse.json();
 
@@ -650,16 +647,13 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
 
     // Call the create-project API endpoint to ensure proper processing
     const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
-    const createProjectResponse = await fetch(
-      `${baseUrl}/api/projects/upsert`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(projectData),
-      }
-    );
+    const createProjectResponse = await fetch(`${baseUrl}/api/projects/upsert`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(projectData),
+    });
 
     if (!createProjectResponse.ok) {
       const errorText = await createProjectResponse.text();

@@ -57,23 +57,14 @@ let campfireWidgetId =
 const themeMode = theme;
 ---
 
-{
-  campfireUrl || campfireWidgetId ? (
-    <div id="campfire-chat-widget-container" data-position={position}>
-      {/* <!-- Campfire Chat Widget will be injected here by the script --> */}
-    </div>
-  ) : (
-    <script is:inline>
-      console.warn('[---CAMPFIRE-WIDGET] Widget not rendered - missing environment variables:', {
-        hasPublicUrl: false,
-        hasUrl: false,
-        hasPublicWidgetId: false,
-        hasWidgetId: false,
-        message: 'Set PUBLIC_CAMPFIRE_URL or PUBLIC_CAMPFIRE_WIDGET_ID in environment variables'
-      });
-    </script>
-  )
-}
+{campfireUrl || campfireWidgetId ? (
+  <div id="campfire-chat-widget-container" data-position={position}>
+    {/* <!-- Campfire Chat Widget will be injected here by the script --> */}
+  </div>
+) : !campfireUrl && !campfireWidgetId ? (
+  <script is:inline set:html="console.warn('[---CAMPFIRE-WIDGET] Widget not rendered - missing environment variables:', { hasPublicUrl: false, hasUrl: false, hasPublicWidgetId: false, hasWidgetId: false, message: 'Set PUBLIC_CAMPFIRE_URL or PUBLIC_CAMPFIRE_WIDGET_ID in environment variables' });"></script>
+) : null}
+
 
 {
   campfireUrl || campfireWidgetId ? (

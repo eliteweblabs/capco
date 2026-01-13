@@ -29,15 +29,10 @@ Import and use the component in any page:
 
 ```astro
 ---
-import PDFSystem from '../../features/pdf-system/PDFSystem.astro';
+import PDFSystem from "../../features/pdf-system/PDFSystem.astro";
 ---
 
-<PDFSystem 
-  {currentUser} 
-  {globalInputClasses}
-  {secondaryTextClasses}
-  {primaryTextClasses}
-/>
+<PDFSystem {currentUser} {globalInputClasses} {secondaryTextClasses} {primaryTextClasses} />
 ```
 
 ## 🔌 Plugin Installation
@@ -52,16 +47,13 @@ This system is designed to be self-contained and easily repurposeable. For detai
 4. **Page**: Import the component in your page file
 
 Example page (`src/pages/admin/pdf-system.astro`):
+
 ```astro
 ---
 import PDFSystem from "../../features/pdf-system/PDFSystem.astro";
 ---
 
-<PDFSystem 
-  {globalInputClasses}
-  {secondaryTextClasses}
-  {primaryTextClasses}
-/>
+<PDFSystem {globalInputClasses} {secondaryTextClasses} {primaryTextClasses} />
 ```
 
 ## 📡 API Endpoints
@@ -69,7 +61,7 @@ import PDFSystem from "../../features/pdf-system/PDFSystem.astro";
 **Note**: Astro requires API routes to be in `pages/api/`, so these remain there but are part of this plugin:
 
 - `GET /api/pdf/templates` - List all templates
-- `POST /api/pdf/templates/upsert` - Create/update template  
+- `POST /api/pdf/templates/upsert` - Create/update template
 - `DELETE /api/pdf/templates/[id]` - Delete template
 
 ## ✨ Features
@@ -95,6 +87,7 @@ import PDFSystem from "../../features/pdf-system/PDFSystem.astro";
 The plugin uses environment variables or a config file for customization:
 
 **Option 1: Environment Variables (Recommended)**
+
 ```bash
 # Copy the example file
 cp pdf-system.env.example .env.local
@@ -106,8 +99,9 @@ PDF_DEFAULT_PAGE_SIZE=8.5x11
 ```
 
 **Option 2: Config File**
+
 ```typescript
-import { loadConfig } from './features/pdf-system/pdf-system.config';
+import { loadConfig } from "./features/pdf-system/pdf-system.config";
 
 const config = loadConfig({
   saveHtmlTemplates: true,

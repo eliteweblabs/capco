@@ -19,7 +19,6 @@ interface Props {
   currentRole?: string;
 }
 
-
 // Only show for Admin users
 const isAdmin = currentRole === "Admin";
 
@@ -59,8 +58,8 @@ const categories = {
   "User & Auth": ["currentUser", "session", "isAuth", "currentUserId", "currentRole"],
   "Project Data": ["project", "projectId", "projects"],
   "System Config": ["supabase", "supabaseUrl", "isBackend"],
-  "Navigation": ["navigationData", "desktopNavigationHTML", "visibleNavItems"],
-  "Other": []
+  Navigation: ["navigationData", "desktopNavigationHTML", "visibleNavItems"],
+  Other: [],
 };
 
 // Categorize the debug data
@@ -68,11 +67,11 @@ const categorizedData: Record<string, Array<[string, any]>> = {};
 const usedKeys = new Set<string>();
 
 // Check if debugData exists
-if (debugData && typeof debugData === 'object') {
+if (debugData && typeof debugData === "object") {
   // First, categorize known keys
   Object.entries(categories).forEach(([category, keys]) => {
     categorizedData[category] = [];
-    keys.forEach(key => {
+    keys.forEach((key) => {
       if (key in debugData) {
         categorizedData[category].push([key, debugData[key]]);
         usedKeys.add(key);
@@ -90,19 +89,14 @@ if (debugData && typeof debugData === 'object') {
 }
 
 // Remove empty categories
-Object.keys(categorizedData).forEach(category => {
+Object.keys(categorizedData).forEach((category) => {
   if (categorizedData[category].length === 0) {
     delete categorizedData[category];
   }
 });
 ---
 
-<!-- Debug Sticky Button (Admin Only) -->
-
-
-
-
-<!-- Debug Modal -->
+<!-- Debug Sticky Button (Admin Only) --><!-- Debug Modal -->
 <div
   id="debug-modal"
   class="fixed inset-0 z-50 hidden overflow-y-auto"
@@ -111,23 +105,38 @@ Object.keys(categorizedData).forEach(category => {
   aria-modal="true"
 >
   <!-- Backdrop -->
-  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+  <div
+    class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+  >
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true">
+    </div>
 
     <!-- Modal panel -->
-    <div class="inline-block align-bottom bg-gray-100 color-background rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full sm:p-6">
+    <div
+      class="inline-block align-bottom bg-gray-100 color-background rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full sm:p-6"
+    >
       <!-- Header -->
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center space-x-2">
           <div class="flex-shrink-0">
             <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"
+              ></path>
             </svg>
           </div>
-          <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="debug-modal-project-title">
+          <h3
+            class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
+            id="debug-modal-project-title"
+          >
             Debug Panel - App Component Parameters
           </h3>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+          <span
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+          >
             Admin Only
           </span>
         </div>
@@ -138,7 +147,11 @@ Object.keys(categorizedData).forEach(category => {
         >
           <span class="sr-only">Close</span>
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         </button>
       </div>
@@ -146,65 +159,88 @@ Object.keys(categorizedData).forEach(category => {
       <!-- Content -->
       <div class="max-h-96 overflow-y-auto">
         <div class="space-y-2">
-          {Object.entries(categorizedData).map(([category, items]) => (
-            <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
-              {/* <!-- Accordion Header --> */}
-              <button
-                type="button"
-                class="debug-accordion-header w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 color-background hover:bg-gray-100 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center justify-between rounded-lg"
-                data-category={category}
-              >
-                <span class="flex items-center space-x-2">
-                  <span>{category}</span>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200">
-                    {items.length}
+          {
+            Object.entries(categorizedData).map(([category, items]) => (
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
+                {/* <!-- Accordion Header --> */}
+                <button
+                  type="button"
+                  class="debug-accordion-header w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 color-background hover:bg-gray-100 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center justify-between rounded-lg"
+                  data-category={category}
+                >
+                  <span class="flex items-center space-x-2">
+                    <span>{category}</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200">
+                      {items.length}
+                    </span>
                   </span>
-                </span>
-                <svg class="debug-accordion-icon h-5 w-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              
-              {/* <!-- Accordion Content --> */}
-              <div class="debug-accordion-content hidden px-4 py-3 border-t border-gray-200 dark:border-gray-600">
-                <div class="space-y-3">
-                  {items.map(([key, value]) => {
-                    const dataType = getDataType(value);
-                    const formattedValue = formatValue(value);
-                    
-                    return (
-                      <div class="color-background rounded-md p-3">
-                        <div class="flex items-start justify-between mb-2">
-                          <div class="flex items-center space-x-2">
-                            <span class="text-sm font-mono font-semibold text-primary-600 dark:text-primary-400">{key}</span>
-                            <span class={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-                              dataType === 'string' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              dataType === 'number' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                              dataType === 'boolean' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                              dataType === 'object' ? 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200' :
-                              dataType === 'array' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
-                            }`}>
-                              {dataType}
-                            </span>
+                  <svg
+                    class="debug-accordion-icon h-5 w-5 transform transition-transform duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {/* <!-- Accordion Content --> */}
+                <div class="debug-accordion-content hidden px-4 py-3 border-t border-gray-200 dark:border-gray-600">
+                  <div class="space-y-3">
+                    {items.map(([key, value]) => {
+                      const dataType = getDataType(value);
+                      const formattedValue = formatValue(value);
+
+                      return (
+                        <div class="color-background rounded-md p-3">
+                          <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                              <span class="text-sm font-mono font-semibold text-primary-600 dark:text-primary-400">
+                                {key}
+                              </span>
+                              <span
+                                class={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                                  dataType === "string"
+                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                    : dataType === "number"
+                                      ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                      : dataType === "boolean"
+                                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                        : dataType === "object"
+                                          ? "bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200"
+                                          : dataType === "array"
+                                            ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                                            : "bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200"
+                                }`}
+                              >
+                                {dataType}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              class="debug-copy-btn text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                              data-value={formattedValue}
+                              title="Copy to clipboard"
+                            >
+                              Copy
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            class="debug-copy-btn text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                            data-value={formattedValue}
-                            title="Copy to clipboard"
-                          >
-                            Copy
-                          </button>
+                          <pre class="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-all bg-gray-100 color-background p-2 rounded border max-h-32 overflow-y-auto">
+                            {formattedValue}
+                          </pre>
                         </div>
-                        <pre class="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-all bg-gray-100 color-background p-2 rounded border max-h-32 overflow-y-auto">{formattedValue}</pre>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          }
         </div>
       </div>
 
@@ -223,84 +259,85 @@ Object.keys(categorizedData).forEach(category => {
       </div>
     </div>
   </div>
-
-  </div>
-
+</div>
 
 <script>
   // Debug Panel JavaScript
-  document.addEventListener('DOMContentLoaded', function() {
-    const toggleBtn = document.getElementById('debug-toggle-btn');
-    const modal = document.getElementById('debug-modal');
-    const closeBtns = [document.getElementById('debug-close-btn'), document.getElementById('debug-close-btn-2')];
-    const backdrop = modal?.querySelector('.fixed.inset-0');
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggleBtn = document.getElementById("debug-toggle-btn");
+    const modal = document.getElementById("debug-modal");
+    const closeBtns = [
+      document.getElementById("debug-close-btn"),
+      document.getElementById("debug-close-btn-2"),
+    ];
+    const backdrop = modal?.querySelector(".fixed.inset-0");
 
     // Toggle modal
     function toggleModal() {
       if (modal) {
-        modal.classList.toggle('hidden');
-        document.body.style.overflow = modal.classList.contains('hidden') ? '' : 'hidden';
+        modal.classList.toggle("hidden");
+        document.body.style.overflow = modal.classList.contains("hidden") ? "" : "hidden";
       }
     }
 
     // Open modal
-    toggleBtn?.addEventListener('click', toggleModal);
+    toggleBtn?.addEventListener("click", toggleModal);
 
     // Close modal
-    closeBtns.forEach(btn => {
-      btn?.addEventListener('click', toggleModal);
+    closeBtns.forEach((btn) => {
+      btn?.addEventListener("click", toggleModal);
     });
 
     // Close on backdrop click
-    backdrop?.addEventListener('click', toggleModal);
+    backdrop?.addEventListener("click", toggleModal);
 
     // Close on Escape key
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && !modal?.classList.contains('hidden')) {
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !modal?.classList.contains("hidden")) {
         toggleModal();
       }
     });
 
     // Accordion functionality
-    const accordionHeaders = document.querySelectorAll('.debug-accordion-header');
-    accordionHeaders.forEach(header => {
-      header.addEventListener('click', function(this: HTMLElement) {
-        const category = this.getAttribute('data-category');
+    const accordionHeaders = document.querySelectorAll(".debug-accordion-header");
+    accordionHeaders.forEach((header) => {
+      header.addEventListener("click", function (this: HTMLElement) {
+        const category = this.getAttribute("data-category");
         const content = this.nextElementSibling;
-        const icon = this.querySelector('.debug-accordion-icon') as HTMLElement;
-        
+        const icon = this.querySelector(".debug-accordion-icon") as HTMLElement;
+
         if (content && icon) {
-          const isHidden = content.classList.contains('hidden');
-          
+          const isHidden = content.classList.contains("hidden");
+
           if (isHidden) {
-            content.classList.remove('hidden');
-            icon.style.transform = 'rotate(180deg)';
+            content.classList.remove("hidden");
+            icon.style.transform = "rotate(180deg)";
           } else {
-            content.classList.add('hidden');
-            icon.style.transform = 'rotate(0deg)';
+            content.classList.add("hidden");
+            icon.style.transform = "rotate(0deg)";
           }
         }
       });
     });
 
     // Copy to clipboard functionality
-    const copyBtns = document.querySelectorAll('.debug-copy-btn');
-    copyBtns.forEach(btn => {
-      btn.addEventListener('click', async function(this: HTMLElement, e: Event) {
+    const copyBtns = document.querySelectorAll(".debug-copy-btn");
+    copyBtns.forEach((btn) => {
+      btn.addEventListener("click", async function (this: HTMLElement, e: Event) {
         e.stopPropagation();
-        const value = this.getAttribute('data-value');
-        
+        const value = this.getAttribute("data-value");
+
         try {
-          await navigator.clipboard.writeText(value || '');
-          this.textContent = 'Copied!';
+          await navigator.clipboard.writeText(value || "");
+          this.textContent = "Copied!";
           setTimeout(() => {
-            this.textContent = 'Copy';
+            this.textContent = "Copy";
           }, 2000);
         } catch (err) {
-          console.error('Failed to copy to clipboard:', err);
-          this.textContent = 'Failed';
+          console.error("Failed to copy to clipboard:", err);
+          this.textContent = "Failed";
           setTimeout(() => {
-            this.textContent = 'Copy';
+            this.textContent = "Copy";
           }, 2000);
         }
       });
@@ -308,174 +345,198 @@ Object.keys(categorizedData).forEach(category => {
   });
 </script>
 
+{
+  isAuth && (
+    <div id="feedback-widget" class="fixed bottom-4 right-4 z-50">
+      {/* <!-- Feedback Button --> */}
 
-{isAuth && (
-    
-  <div id="feedback-widget" class="fixed bottom-4 right-4 z-50">
-    {/* <!-- Feedback Button --> */}
-    
+      {/* <!-- Feedback Modal --> */}
+      <div
+        id="feedback-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 items-center justify-center p-4"
+        role="dialog"
+        aria-labelledby="feedback-modal-project-title"
+        aria-hidden="true"
+      >
+        <div class="bg-gray-100 color-background rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
+          {/* <!-- Modal Header --> */}
+          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3
+              id="feedback-modal-project-title"
+              class="text-lg font-semibold text-gray-900 dark:text-white"
+            >
+              Leave Feedback
+            </h3>
+            <button
+              id="feedback-close"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="Close feedback form"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
 
-    {/* <!-- Feedback Modal --> */}
-    <div
-      id="feedback-modal"
-      class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 items-center justify-center p-4"
-      role="dialog"
-      aria-labelledby="feedback-modal-project-title"
-      aria-hidden="true"
-    >
-      <div class="bg-gray-100 color-background rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
-        {/* <!-- Modal Header --> */}
-        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 id="feedback-modal-project-title" class="text-lg font-semibold text-gray-900 dark:text-white">
-            Leave Feedback
-          </h3>
-          <button
-            id="feedback-close"
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            aria-label="Close feedback form"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="p-4">
-          <form id="feedback-form" class="space-y-4">
-            <!-- Feedback Type -->
-            <div>
-              <label for="feedback-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Type of Feedback
-              </label>
-              <select
-                id="feedback-type"
-                name="type"
-                required
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">Select feedback type...</option>
-                <option value="bug">🐛 Bug Report</option>
-                <option value="feature">💡 Feature Request</option>
-                <option value="improvement">⚡ Improvement</option>
-                <option value="design">🎨 Design Feedback</option>
-                <option value="general">💬 General Comment</option>
-              </select>
-            </div>
-
-            <!-- Priority -->
-            <div>
-              <label for="feedback-priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Priority
-              </label>
-              <select
-                id="feedback-priority"
-                name="priority"
-                required
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="low">🟢 Low</option>
-                <option value="medium" selected>🟡 Medium</option>
-                <option value="high">🟠 High</option>
-                <option value="urgent">🔴 Urgent</option>
-              </select>
-            </div>
-
-            <!-- Subject -->
-            <div>
-              <label for="feedback-subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Subject
-              </label>
-              <input
-                type="text"
-                id="feedback-subject"
-                name="subject"
-                required
-                maxlength="100"
-                placeholder="Brief description of your feedback..."
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-
-            <!-- Message -->
-            <div>
-              <label for="feedback-message" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Message
-              </label>
-              <textarea
-                id="feedback-message"
-                name="message"
-                required
-                rows="4"
-                maxlength="1000"
-                placeholder="Please provide detailed feedback..."
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white resize-none"
-              ></textarea>
-              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                <span id="message-count">0</span>/1000 characters
+          {/* Modal Body */}
+          <div class="p-4">
+            <form id="feedback-form" class="space-y-4">
+              {/* Feedback Type */}
+              <div>
+                <label
+                  for="feedback-type"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Type of Feedback
+                </label>
+                <select
+                  id="feedback-type"
+                  name="type"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Select feedback type...</option>
+                  <option value="bug">🐛 Bug Report</option>
+                  <option value="feature">💡 Feature Request</option>
+                  <option value="improvement">⚡ Improvement</option>
+                  <option value="design">🎨 Design Feedback</option>
+                  <option value="general">💬 General Comment</option>
+                </select>
               </div>
-            </div>
 
-            <!-- Anonymous Option -->
-            <div class="flex items-center">
-              <input
-                type="checkbox"
-                id="feedback-anonymous"
-                name="anonymous"
-                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
-              />
-              <label for="feedback-anonymous" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                Submit anonymously
-              </label>
-            </div>
-          </form>
-        </div>
+              {/* Priority */}
+              <div>
+                <label
+                  for="feedback-priority"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Priority
+                </label>
+                <select
+                  id="feedback-priority"
+                  name="priority"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="low">🟢 Low</option>
+                  <option value="medium" selected>
+                    🟡 Medium
+                  </option>
+                  <option value="high">🟠 High</option>
+                  <option value="urgent">🔴 Urgent</option>
+                </select>
+              </div>
 
-        <!-- Modal Footer -->
-        <div class="flex justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700 color-background">
-          <button
-            type="button"
-            id="feedback-cancel"
-            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            id="feedback-submit"
-            form="feedback-form"
-            class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <span class="submit-text">Submit Feedback</span>
-            <span class="loading-text hidden">Submitting...</span>
-          </button>
+              {/* Subject */}
+              <div>
+                <label
+                  for="feedback-subject"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  id="feedback-subject"
+                  name="subject"
+                  required
+                  maxlength="100"
+                  placeholder="Brief description of your feedback..."
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              {/* Message */}
+              <div>
+                <label
+                  for="feedback-message"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Message
+                </label>
+                <textarea
+                  id="feedback-message"
+                  name="message"
+                  required
+                  rows="4"
+                  maxlength="1000"
+                  placeholder="Please provide detailed feedback..."
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white resize-none"
+                />
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <span id="message-count">0</span>/1000 characters
+                </div>
+              </div>
+
+              {/* Anonymous Option */}
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="feedback-anonymous"
+                  name="anonymous"
+                  class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+                />
+                <label
+                  for="feedback-anonymous"
+                  class="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                >
+                  Submit anonymously
+                </label>
+              </div>
+            </form>
+          </div>
+
+          {/* Modal Footer */}
+          <div class="flex justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700 color-background">
+            <button
+              type="button"
+              id="feedback-cancel"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              id="feedback-submit"
+              form="feedback-form"
+              class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span class="submit-text">Submit Feedback</span>
+              <span class="loading-text hidden">Submitting...</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-)}
+  )
+}
 
 <script>
   // Feedback Widget JavaScript
-  document.addEventListener('DOMContentLoaded', function() {
-    const feedbackButton = document.getElementById('feedback-button') as HTMLButtonElement;
-    const feedbackModal = document.getElementById('feedback-modal') as HTMLDivElement;
-    const feedbackClose = document.getElementById('feedback-close') as HTMLButtonElement;
-    const feedbackCancel = document.getElementById('feedback-cancel') as HTMLButtonElement;
-    const feedbackForm = document.getElementById('feedback-form') as HTMLFormElement;
-    const feedbackSubmit = document.getElementById('feedback-submit') as HTMLButtonElement;
-    const messageTextarea = document.getElementById('feedback-message') as HTMLTextAreaElement;
-    const messageCount = document.getElementById('message-count') as HTMLSpanElement;
+  document.addEventListener("DOMContentLoaded", function () {
+    const feedbackButton = document.getElementById("feedback-button") as HTMLButtonElement;
+    const feedbackModal = document.getElementById("feedback-modal") as HTMLDivElement;
+    const feedbackClose = document.getElementById("feedback-close") as HTMLButtonElement;
+    const feedbackCancel = document.getElementById("feedback-cancel") as HTMLButtonElement;
+    const feedbackForm = document.getElementById("feedback-form") as HTMLFormElement;
+    const feedbackSubmit = document.getElementById("feedback-submit") as HTMLButtonElement;
+    const messageTextarea = document.getElementById("feedback-message") as HTMLTextAreaElement;
+    const messageCount = document.getElementById("message-count") as HTMLSpanElement;
 
     // Show modal
     function showModal() {
-      feedbackModal.classList.remove('hidden');
-      feedbackModal.classList.add('flex');
-      feedbackModal.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-      
+      feedbackModal.classList.remove("hidden");
+      feedbackModal.classList.add("flex");
+      feedbackModal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+
       // Focus first input
-      const firstInput = feedbackForm.querySelector('input, select, textarea') as HTMLElement;
+      const firstInput = feedbackForm.querySelector("input, select, textarea") as HTMLElement;
       if (firstInput) {
         setTimeout(() => firstInput.focus(), 100);
       }
@@ -483,11 +544,11 @@ Object.keys(categorizedData).forEach(category => {
 
     // Hide modal
     function hideModal() {
-      feedbackModal.classList.add('hidden');
-      feedbackModal.classList.remove('flex');
-      feedbackModal.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-      
+      feedbackModal.classList.add("hidden");
+      feedbackModal.classList.remove("flex");
+      feedbackModal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+
       // Reset form
       feedbackForm.reset();
       updateMessageCount();
@@ -496,67 +557,67 @@ Object.keys(categorizedData).forEach(category => {
     // Update character count
     function updateMessageCount() {
       if (!messageTextarea || !messageCount) return;
-      
+
       const count = messageTextarea.value.length;
       messageCount.textContent = count.toString();
-      
+
       if (count > 900) {
-        messageCount.classList.add('text-red-500');
+        messageCount.classList.add("text-red-500");
       } else {
-        messageCount.classList.remove('text-red-500');
+        messageCount.classList.remove("text-red-500");
       }
     }
 
     // Event listeners
-    feedbackButton?.addEventListener('click', showModal);
-    feedbackClose?.addEventListener('click', hideModal);
-    feedbackCancel?.addEventListener('click', hideModal);
-    messageTextarea?.addEventListener('input', updateMessageCount);
+    feedbackButton?.addEventListener("click", showModal);
+    feedbackClose?.addEventListener("click", hideModal);
+    feedbackCancel?.addEventListener("click", hideModal);
+    messageTextarea?.addEventListener("input", updateMessageCount);
 
     // Close modal on backdrop click
-    feedbackModal?.addEventListener('click', function(e) {
+    feedbackModal?.addEventListener("click", function (e) {
       if (e.target === feedbackModal) {
         hideModal();
       }
     });
 
     // Close modal on Escape key
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && !feedbackModal.classList.contains('hidden')) {
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !feedbackModal.classList.contains("hidden")) {
         hideModal();
       }
     });
 
     // Form submission
-    feedbackForm?.addEventListener('submit', async function(e) {
+    feedbackForm?.addEventListener("submit", async function (e) {
       e.preventDefault();
-      
+
       if (!feedbackSubmit) return;
-      
-      const submitText = feedbackSubmit.querySelector('.submit-text') as HTMLElement;
-      const loadingText = feedbackSubmit.querySelector('.loading-text') as HTMLElement;
-      
+
+      const submitText = feedbackSubmit.querySelector(".submit-text") as HTMLElement;
+      const loadingText = feedbackSubmit.querySelector(".loading-text") as HTMLElement;
+
       // Show loading state
       feedbackSubmit.disabled = true;
-      submitText?.classList.add('hidden');
-      loadingText?.classList.remove('hidden');
+      submitText?.classList.add("hidden");
+      loadingText?.classList.remove("hidden");
 
       try {
         const formData = new FormData(feedbackForm);
         const feedbackData = {
-          type: formData.get('type'),
-          priority: formData.get('priority'),
-          subject: formData.get('subject'),
-          message: formData.get('message'),
-          anonymous: formData.get('anonymous') === 'on'
+          type: formData.get("type"),
+          priority: formData.get("priority"),
+          subject: formData.get("subject"),
+          message: formData.get("message"),
+          anonymous: formData.get("anonymous") === "on",
         };
 
-        const response = await fetch('/api/feedback', {
-          method: 'POST',
+        const response = await fetch("/api/feedback", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify(feedbackData)
+          body: JSON.stringify(feedbackData),
         });
 
         const result = await response.json();
@@ -565,38 +626,38 @@ Object.keys(categorizedData).forEach(category => {
           // Show success notification
           if ((window as any).showNotification) {
             (window as any).showNotification({
-              type: 'success',
-              title: 'Feedback Submitted',
-              message: 'Thank you for your feedback! We appreciate your input.',
-              duration: 3000
+              type: "success",
+              title: "Feedback Submitted",
+              message: "Thank you for your feedback! We appreciate your input.",
+              duration: 3000,
             });
           } else {
-            alert('Feedback submitted successfully! Thank you for your input.');
+            alert("Feedback submitted successfully! Thank you for your input.");
           }
-          
+
           hideModal();
         } else {
-          throw new Error(result.error || 'Failed to submit feedback');
+          throw new Error(result.error || "Failed to submit feedback");
         }
       } catch (error) {
-        console.error('Feedback submission error:', error);
-        
+        console.error("Feedback submission error:", error);
+
         // Show error notification
         if ((window as any).showNotification) {
           (window as any).showNotification({
-            type: 'error',
-            title: 'Submission Failed',
-            message: 'Failed to submit feedback. Please try again.',
-            duration: 5000
+            type: "error",
+            title: "Submission Failed",
+            message: "Failed to submit feedback. Please try again.",
+            duration: 5000,
           });
         } else {
-          alert('Failed to submit feedback. Please try again.');
+          alert("Failed to submit feedback. Please try again.");
         }
       } finally {
         // Reset button state
         feedbackSubmit.disabled = false;
-        submitText?.classList.remove('hidden');
-        loadingText?.classList.add('hidden');
+        submitText?.classList.remove("hidden");
+        loadingText?.classList.add("hidden");
       }
     });
 

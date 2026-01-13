@@ -87,7 +87,9 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
       // This MUST happen before Supabase client is imported/initialized
       // Supabase's detectSessionInUrl only checks the URL once during client creation
       if (capturedCode && !initialSearch.includes("code=") && !initialHash.includes("code=")) {
-        console.log("[AUTH-CALLBACK] ⚠️ Code was stripped from URL, restoring BEFORE client init...");
+        console.log(
+          "[AUTH-CALLBACK] ⚠️ Code was stripped from URL, restoring BEFORE client init..."
+        );
         const restoreUrl = new URL(window.location.href);
         restoreUrl.searchParams.set("code", capturedCode);
         window.history.replaceState({}, "", restoreUrl.toString());
@@ -98,15 +100,17 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
       // Use singleton Supabase client to avoid multiple instances
       // IMPORTANT: Import happens synchronously, but client creation happens when getSupabaseClient() is called
       import { getSupabaseClient } from "../../lib/supabase-client";
-      
+
       // CRITICAL: Create Supabase client IMMEDIATELY (synchronously) to ensure detectSessionInUrl runs
       // This must happen before any async operations
       const supabase = getSupabaseClient();
-      
+
       if (!supabase) {
         console.error("[AUTH-CALLBACK] Failed to create Supabase client");
       } else {
-        console.log("[AUTH-CALLBACK] Supabase client created, detectSessionInUrl should process URL");
+        console.log(
+          "[AUTH-CALLBACK] Supabase client created, detectSessionInUrl should process URL"
+        );
       }
 
       async function handleCallback() {
@@ -122,14 +126,14 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
           showError("Supabase configuration missing");
           return;
         }
-        
+
         console.log("[AUTH-CALLBACK] Using pre-initialized Supabase client");
 
         // CRITICAL: Set up auth state change listener BEFORE doing anything else
         // This will catch when Supabase automatically exchanges the code
         let sessionReceived = false;
         let authStateSubscription: any = null;
-        
+
         const authStatePromise = new Promise((resolve, reject) => {
           const timeout = setTimeout(() => {
             if (authStateSubscription) {
@@ -141,7 +145,12 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
           const {
             data: { subscription },
           } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log("[AUTH-CALLBACK] Auth state changed:", event, "INITIAL_SESSION", session?.user?.email || "undefined");
+            console.log(
+              "[AUTH-CALLBACK] Auth state changed:",
+              event,
+              "INITIAL_SESSION",
+              session?.user?.email || "undefined"
+            );
             if (event === "SIGNED_IN" && session) {
               clearTimeout(timeout);
               sessionReceived = true;
@@ -159,7 +168,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               resolve(session);
             }
           });
-          
+
           authStateSubscription = subscription;
         });
 
@@ -168,7 +177,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
         // With detectSessionInUrl: true, Supabase should automatically handle the exchange
         // Wait a bit longer to ensure Supabase has time to process the URL
         await new Promise((resolve) => setTimeout(resolve, 800));
-        
+
         // Manually trigger a session check to ensure Supabase processes the URL
         // This helps if detectSessionInUrl didn't catch it on initialization
         console.log("[AUTH-CALLBACK] Manually checking for session...");
@@ -187,7 +196,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               token_type: initialSession.session.token_type || "bearer",
             }),
           });
-          
+
           if (response.ok) {
             console.log("[AUTH-CALLBACK] Authentication successful, redirecting...");
             await new Promise((resolve) => setTimeout(resolve, 300));
@@ -257,7 +266,9 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
             return;
           }
 
-          console.log("[AUTH-CALLBACK] Code found in URL, relying on Supabase automatic detection...");
+          console.log(
+            "[AUTH-CALLBACK] Code found in URL, relying on Supabase automatic detection..."
+          );
           console.log("[AUTH-CALLBACK] Current URL:", window.location.href);
           console.log("[AUTH-CALLBACK] Code from URL:", code);
 
@@ -269,7 +280,11 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
           // Supabase's detectSessionInUrl: true requires the code to be in the URL
           // Since we captured it immediately, restore it if it was stripped
           // Do this BEFORE Supabase client initialization to ensure it can detect it
-          if (code && !window.location.search.includes("code=") && !window.location.hash.includes("code=")) {
+          if (
+            code &&
+            !window.location.search.includes("code=") &&
+            !window.location.hash.includes("code=")
+          ) {
             console.log(
               "[AUTH-CALLBACK] Code was stripped from URL, restoring for Supabase auto-detection..."
             );
@@ -278,7 +293,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
             // Use replaceState to update URL without reloading - this is critical for Supabase's auto-detection
             window.history.replaceState({}, "", newUrl.toString());
             console.log("[AUTH-CALLBACK] URL restored with code:", newUrl.toString());
-            
+
             // Give Supabase a moment to detect the restored code
             await new Promise((resolve) => setTimeout(resolve, 300));
           }
@@ -305,7 +320,9 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               data = { session: autoSession };
               exchangeError = null;
             } else {
-              console.log("[AUTH-CALLBACK] Auth state change didn't fire, checking getSession()...");
+              console.log(
+                "[AUTH-CALLBACK] Auth state change didn't fire, checking getSession()..."
+              );
             }
           } catch (err) {
             console.log("[AUTH-CALLBACK] Auth state change error:", err);
@@ -322,37 +339,51 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               exchangeError = null;
             } else {
               // If automatic detection failed, try manual exchange as last resort
-              console.warn("[AUTH-CALLBACK] Automatic detection failed, attempting manual exchange...");
+              console.warn(
+                "[AUTH-CALLBACK] Automatic detection failed, attempting manual exchange..."
+              );
               console.warn("[AUTH-CALLBACK] This requires code_verifier to be stored by Supabase");
-              
+
               // Check if code verifier exists in localStorage before attempting exchange
               const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
               if (supabaseUrl) {
                 const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
                 const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
                 const codeVerifier = localStorage.getItem(codeVerifierKey);
-                
+
                 console.log("[AUTH-CALLBACK] Code verifier check:", {
                   key: codeVerifierKey,
                   found: !!codeVerifier,
                   codeLength: code?.length || 0,
                 });
-                
+
                 if (!codeVerifier) {
                   console.error("[AUTH-CALLBACK] ❌ Code verifier not found in localStorage!");
-                  console.error("[AUTH-CALLBACK] Available localStorage keys:", Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('auth')));
-                  exchangeError = new Error("Code verifier not found. Please try signing in again.");
+                  console.error(
+                    "[AUTH-CALLBACK] Available localStorage keys:",
+                    Object.keys(localStorage).filter(
+                      (k) => k.includes("supabase") || k.includes("auth")
+                    )
+                  );
+                  exchangeError = new Error(
+                    "Code verifier not found. Please try signing in again."
+                  );
                 } else {
-                  console.log("[AUTH-CALLBACK] ✅ Code verifier found, proceeding with exchange...");
+                  console.log(
+                    "[AUTH-CALLBACK] ✅ Code verifier found, proceeding with exchange..."
+                  );
                 }
               }
-              
+
               if (!exchangeError) {
                 try {
                   // Supabase's exchangeCodeForSession should retrieve the code_verifier automatically
                   // from its internal storage (not necessarily localStorage)
                   // But we've verified it exists in localStorage above
-                  console.log("[AUTH-CALLBACK] Calling exchangeCodeForSession with code:", code?.substring(0, 20) + "...");
+                  console.log(
+                    "[AUTH-CALLBACK] Calling exchangeCodeForSession with code:",
+                    code?.substring(0, 20) + "..."
+                  );
                   const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
                   data = exchangeResult.data;
                   exchangeError = exchangeResult.error;

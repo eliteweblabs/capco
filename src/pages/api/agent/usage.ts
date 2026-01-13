@@ -1,8 +1,8 @@
 /**
  * AI Agent Usage Tracking API
- * 
+ *
  * Get usage statistics for billing/monitoring
- * 
+ *
  * GET /api/agent/usage - Get usage statistics
  */
 
@@ -32,9 +32,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const endDate = url.searchParams.get("endDate");
 
     // Build query
-    let query = supabaseAdmin
-      .from("ai_agent_usage")
-      .select("*");
+    let query = supabaseAdmin.from("ai_agent_usage").select("*");
 
     // Filter by user (unless admin viewing all)
     if (!isAdmin) {
@@ -112,4 +110,3 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     );
   }
 };
-

@@ -9,15 +9,21 @@
  * @param defaultUrl - Optional default URL if input is empty
  * @returns URL with protocol
  */
-export function ensureProtocol(url?: string | null, defaultUrl: string = "http://localhost:4321"): string {
+export function ensureProtocol(
+  url?: string | null,
+  defaultUrl: string = "http://localhost:4321"
+): string {
   if (!url) return defaultUrl;
-  
+
   // Defensive check: ensure url doesn't contain SVG/XML content
-  if (typeof url === "string" && (url.includes("<svg") || url.includes("<?xml") || url.includes("xmlns="))) {
+  if (
+    typeof url === "string" &&
+    (url.includes("<svg") || url.includes("<?xml") || url.includes("xmlns="))
+  ) {
     console.error("🚨 [URL-UTILS] ensureProtocol received SVG/XML content, using defaultUrl");
     return defaultUrl;
   }
-  
+
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
@@ -34,9 +40,14 @@ export function getBaseUrl(request?: Request): string {
     try {
       const url = new URL(request.url);
       const hostname = url.hostname;
-      
+
       // If we're on localhost, always use the request URL (even if RAILWAY_PUBLIC_DOMAIN is set)
-      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
+      if (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname.startsWith("192.168.") ||
+        hostname.startsWith("10.")
+      ) {
         return `${url.protocol}//${url.host}`;
       }
     } catch (e) {
@@ -46,23 +57,32 @@ export function getBaseUrl(request?: Request): string {
 
   // Check for RAILWAY_PUBLIC_DOMAIN environment variable (for production)
   let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
-  
+
   if (baseUrl) {
     // Defensive check: ensure baseUrl doesn't contain placeholder patterns like ${...}
     if (typeof baseUrl === "string" && baseUrl.includes("${")) {
-      console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains unresolved placeholder:", baseUrl);
+      console.error(
+        "🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains unresolved placeholder:",
+        baseUrl
+      );
       baseUrl = null; // Treat as invalid, will use fallback
     }
-    
+
     // Defensive check: ensure baseUrl doesn't contain SVG/XML content
-    if (baseUrl && typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))) {
-      console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG/XML content, using fallback");
+    if (
+      baseUrl &&
+      typeof baseUrl === "string" &&
+      (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))
+    ) {
+      console.error(
+        "🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG/XML content, using fallback"
+      );
       baseUrl = null; // Treat as invalid, will use fallback
     }
-    
+
     if (baseUrl) {
       // Ensure baseUrl has proper protocol
-      if (!baseUrl.startsWith('http')) {
+      if (!baseUrl.startsWith("http")) {
         baseUrl = `https://${baseUrl}`;
       }
       return baseUrl;
@@ -94,9 +114,14 @@ export function getApiBaseUrl(request?: Request): string {
     try {
       const url = new URL(request.url);
       const hostname = url.hostname;
-      
+
       // If we're on localhost, always use the request URL (even if RAILWAY_PUBLIC_DOMAIN is set)
-      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
+      if (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname.startsWith("192.168.") ||
+        hostname.startsWith("10.")
+      ) {
         return `${url.protocol}//${url.host}`;
       }
     } catch (e) {
@@ -106,23 +131,32 @@ export function getApiBaseUrl(request?: Request): string {
 
   // Check for RAILWAY_PUBLIC_DOMAIN environment variable (for production)
   let baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.RAILWAY_PUBLIC_DOMAIN;
-  
+
   if (baseUrl) {
     // Defensive check: ensure baseUrl doesn't contain placeholder patterns like ${...}
     if (typeof baseUrl === "string" && baseUrl.includes("${")) {
-      console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains unresolved placeholder:", baseUrl);
+      console.error(
+        "🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains unresolved placeholder:",
+        baseUrl
+      );
       baseUrl = null; // Treat as invalid, will use fallback
     }
-    
+
     // Defensive check: ensure baseUrl doesn't contain SVG/XML content
-    if (baseUrl && typeof baseUrl === "string" && (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))) {
-      console.error("🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG/XML content, using fallback");
+    if (
+      baseUrl &&
+      typeof baseUrl === "string" &&
+      (baseUrl.includes("<svg") || baseUrl.includes("<?xml") || baseUrl.includes("xmlns="))
+    ) {
+      console.error(
+        "🚨 [URL-UTILS] RAILWAY_PUBLIC_DOMAIN contains SVG/XML content, using fallback"
+      );
       baseUrl = null; // Treat as invalid, will use fallback
     }
-    
+
     if (baseUrl) {
       // Ensure baseUrl has proper protocol
-      if (!baseUrl.startsWith('http')) {
+      if (!baseUrl.startsWith("http")) {
         baseUrl = `https://${baseUrl}`;
       }
       return baseUrl;

@@ -56,26 +56,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       body = await request.json();
     } catch (parseError) {
       console.error("❌ [CHAT-API] JSON parse error:", parseError);
-      return new Response(
-        JSON.stringify({ error: "Invalid JSON in request body" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const { action, userId, userName, userRole, message } = body || {};
-    
+
     // Validate required fields
     if (!action) {
-      return new Response(
-        JSON.stringify({ error: "Missing required field: action" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Missing required field: action" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
     // console.log("🔔 [CHAT-API] Request data:", {
     //   action,
@@ -303,7 +297,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.error("❌ [CHAT-API] Error stack:", error?.stack);
     console.error("❌ [CHAT-API] Error name:", error?.name);
     console.error("❌ [CHAT-API] Error message:", error?.message);
-    
+
     // Provide more helpful error messages
     let errorMessage = "Internal server error";
     if (error?.message?.includes("JSON")) {
@@ -311,12 +305,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else if (error?.message) {
       errorMessage = error.message;
     }
-    
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: errorMessage,
-        details: import.meta.env.DEV ? error?.message : undefined 
-      }), 
+        details: import.meta.env.DEV ? error?.message : undefined,
+      }),
       {
         status: 500,
         headers: {

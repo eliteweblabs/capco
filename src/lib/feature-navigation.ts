@@ -1,10 +1,10 @@
 /**
  * Feature Navigation Helper
- * 
+ *
  * Generates navigation from enabled features with navigation metadata
  */
 
-import { getSiteConfig } from './content';
+import { getSiteConfig } from "./content";
 
 export interface NavigationItem {
   label: string;
@@ -30,7 +30,7 @@ export async function getFeatureNavigation(userRole?: string): Promise<Navigatio
   // Loop through features
   for (const [featureKey, featureData] of Object.entries(config.features)) {
     // Skip if not enabled
-    if (typeof featureData === 'boolean') {
+    if (typeof featureData === "boolean") {
       // Old format - skip
       continue;
     }
@@ -56,7 +56,7 @@ export async function getFeatureNavigation(userRole?: string): Promise<Navigatio
       href: nav.href,
       icon: nav.icon,
       position: nav.position || 999,
-      section: nav.section || 'main',
+      section: nav.section || "main",
       roles: nav.roles,
     });
   }
@@ -85,8 +85,10 @@ export async function getGroupedNavigation(userRole?: string): Promise<GroupedNa
 /**
  * Get navigation for a specific section
  */
-export async function getSectionNavigation(section: string, userRole?: string): Promise<NavigationItem[]> {
+export async function getSectionNavigation(
+  section: string,
+  userRole?: string
+): Promise<NavigationItem[]> {
   const grouped = await getGroupedNavigation(userRole);
   return grouped[section] || [];
 }
-

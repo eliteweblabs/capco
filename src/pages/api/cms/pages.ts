@@ -11,10 +11,10 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 export const GET: APIRoute = async ({ request, url }) => {
   try {
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const slug = url.searchParams.get("slug");
@@ -58,10 +58,10 @@ export const GET: APIRoute = async ({ request, url }) => {
     }
   } catch (error: any) {
     console.error("❌ [CMS-PAGES] Error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Failed to fetch pages" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error.message || "Failed to fetch pages" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -69,57 +69,54 @@ export const GET: APIRoute = async ({ request, url }) => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const body = await request.json();
     console.log("📥 [CMS-PAGES] Received body:", JSON.stringify(body, null, 2));
-    const { 
-      slug, 
-      title, 
-      description, 
-      content, 
-      frontmatter, 
-      template, 
+    const {
+      slug,
+      title,
+      description,
+      content,
+      frontmatter,
+      template,
       include_in_navigation,
       nav_roles,
       nav_page_type,
       nav_button_style,
       nav_desktop_only,
-      nav_hide_when_auth
+      nav_hide_when_auth,
     } = body;
-    console.log("📥 [CMS-PAGES] Extracted values:", { 
-      slug, 
-      title, 
-      description, 
-      content: content?.substring(0, 50) + "...", 
-      template, 
+    console.log("📥 [CMS-PAGES] Extracted values:", {
+      slug,
+      title,
+      description,
+      content: content?.substring(0, 50) + "...",
+      template,
       include_in_navigation,
       nav_roles,
       nav_page_type,
       nav_button_style,
       nav_desktop_only,
-      nav_hide_when_auth
+      nav_hide_when_auth,
     });
 
     if (!slug || !content) {
-      return new Response(
-        JSON.stringify({ error: "Slug and content are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Slug and content are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const clientId = process.env.RAILWAY_PROJECT_NAME || null;
 
     // First, verify the table exists by attempting a simple query
-    const { error: tableCheckError } = await supabaseAdmin
-      .from("cms_pages")
-      .select("id")
-      .limit(1);
-    
+    const { error: tableCheckError } = await supabaseAdmin.from("cms_pages").select("id").limit(1);
+
     if (tableCheckError) {
       // Check if it's a "relation does not exist" error
       if (tableCheckError.code === "42P01" || tableCheckError.message?.includes("does not exist")) {
@@ -132,11 +129,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Check if page already exists
-    let query = supabaseAdmin
-      .from("cms_pages")
-      .select("*")
-      .eq("slug", slug);
-    
+    let query = supabaseAdmin.from("cms_pages").select("*").eq("slug", slug);
+
     if (clientId) {
       query = query.eq("client_id", clientId);
     } else {
@@ -144,14 +138,14 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const { data: existingPage, error: queryError } = await query.maybeSingle();
-    
+
     if (queryError) {
       console.error("❌ [CMS-PAGES] Error checking for existing page:", queryError);
       throw queryError;
     }
 
     let data, error;
-    
+
     if (existingPage) {
       // Update existing page
       const updateData: any = {
@@ -169,14 +163,14 @@ export const POST: APIRoute = async ({ request }) => {
         is_active: true,
         updated_at: new Date().toISOString(),
       };
-      
+
       const result = await supabaseAdmin
         .from("cms_pages")
         .update(updateData)
         .eq("id", existingPage.id)
         .select()
         .single();
-      
+
       data = result.data;
       error = result.error;
     } else {
@@ -198,13 +192,9 @@ export const POST: APIRoute = async ({ request }) => {
         is_active: true,
         updated_at: new Date().toISOString(),
       };
-      
-      const result = await supabaseAdmin
-        .from("cms_pages")
-        .insert(insertData)
-        .select()
-        .single();
-      
+
+      const result = await supabaseAdmin.from("cms_pages").insert(insertData).select().single();
+
       data = result.data;
       error = result.error;
     }
@@ -229,7 +219,7 @@ export const POST: APIRoute = async ({ request }) => {
       hint: error.hint,
     });
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message || "Failed to save page",
         details: error.details || error.hint || null,
       }),
@@ -242,27 +232,24 @@ export const POST: APIRoute = async ({ request }) => {
 export const DELETE: APIRoute = async ({ request, url }) => {
   try {
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const slug = url.searchParams.get("slug");
     if (!slug) {
-      return new Response(
-        JSON.stringify({ error: "Slug is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Slug is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const clientId = process.env.RAILWAY_PROJECT_NAME || null;
 
-    let deleteQuery = supabaseAdmin
-      .from("cms_pages")
-      .delete()
-      .eq("slug", slug);
-    
+    let deleteQuery = supabaseAdmin.from("cms_pages").delete().eq("slug", slug);
+
     if (clientId) {
       deleteQuery = deleteQuery.eq("client_id", clientId);
     } else {
@@ -281,10 +268,9 @@ export const DELETE: APIRoute = async ({ request, url }) => {
     });
   } catch (error: any) {
     console.error("❌ [CMS-PAGES] Error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Failed to delete page" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error.message || "Failed to delete page" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
-

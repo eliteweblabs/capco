@@ -5,7 +5,7 @@ import { PDFDocument } from "pdf-lib";
  *
  * Provides password-based encryption for PDFs
  * Supports AES-256 encryption with granular permission controls
- * 
+ *
  * NOTE: Encryption is temporarily disabled.
  * pdf-lib doesn't support encryption natively.
  * We need to find an alternative library that works on Railway.
@@ -141,10 +141,10 @@ export async function encryptPDF(
     // Please disable encryption for now, or use signing only
     throw new Error(
       "PDF encryption is temporarily unavailable. " +
-      "Please disable encryption in the form and use signing only, " +
-      "or try again later once encryption support is restored."
+        "Please disable encryption in the form and use signing only, " +
+        "or try again later once encryption support is restored."
     );
-    
+
     /* DISABLED CODE - Muhammara encryption
     console.log("🔐 [PDF-ENCRYPTION] Starting muhammara encryption (PDF size:", pdfBuffer.length, "bytes)...");
     
@@ -199,7 +199,7 @@ export async function encryptPDF(
       }
     });
     */
-    
+
     // Placeholder - this code won't execute due to throw above
     const encryptedBuffer = pdfBuffer;
 

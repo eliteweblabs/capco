@@ -73,7 +73,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const updates = [];
     for (const [key, value] of Object.entries(settings)) {
       const { category, valueType } = getCategoryAndType(key);
-      
+
       try {
         // First, check if the setting exists (use maybeSingle to avoid error if not found)
         const { data: existing, error: checkError } = await supabaseAdmin
@@ -83,7 +83,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           .maybeSingle();
 
         if (checkError) {
-          console.error(`[settings/update] Error checking for existing setting ${key}:`, checkError);
+          console.error(
+            `[settings/update] Error checking for existing setting ${key}:`,
+            checkError
+          );
           throw checkError;
         }
 
@@ -94,15 +97,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           value_type: valueType,
           updated_at: new Date().toISOString(),
         };
-        
+
         // Only include updated_by if currentUser.id exists and is valid UUID
         if (currentUser?.id) {
           settingData.updated_by = currentUser.id;
         }
-        
+
         console.log(`[settings/update] Setting data for ${key}:`, {
           ...settingData,
-          value: settingData.value?.substring(0, 50) + (settingData.value?.length > 50 ? '...' : ''),
+          value:
+            settingData.value?.substring(0, 50) + (settingData.value?.length > 50 ? "..." : ""),
         });
 
         let error;
@@ -124,26 +128,29 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         if (error) {
-          console.error(`[settings/update] Error upserting setting ${key}:`, JSON.stringify(error, null, 2));
+          console.error(
+            `[settings/update] Error upserting setting ${key}:`,
+            JSON.stringify(error, null, 2)
+          );
           console.error(`[settings/update] Error type:`, typeof error);
           console.error(`[settings/update] Error keys:`, Object.keys(error || {}));
-          
+
           // Extract error message from various possible formats
           let errorMessage = "Unknown error";
           let errorDetails = null;
-          
-          if (typeof error === 'string') {
+
+          if (typeof error === "string") {
             errorMessage = error;
-          } else if (error && typeof error === 'object') {
+          } else if (error && typeof error === "object") {
             errorMessage = error.message || error.error || error.msg || JSON.stringify(error);
             errorDetails = error.details || error.hint || error.code || JSON.stringify(error);
           }
-          
-          updates.push({ 
-            key, 
-            success: false, 
+
+          updates.push({
+            key,
+            success: false,
             error: errorMessage,
-            details: errorDetails
+            details: errorDetails,
           });
         } else {
           updates.push({ key, success: true });
@@ -152,25 +159,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         console.error(`[settings/update] Exception upserting setting ${key}:`, err);
         console.error(`[settings/update] Exception type:`, typeof err);
         console.error(`[settings/update] Exception stack:`, err?.stack);
-        
+
         let errorMessage = "Unexpected error occurred";
         let errorDetails = null;
-        
+
         if (err instanceof Error) {
           errorMessage = err.message;
           errorDetails = err.stack || err.toString();
-        } else if (typeof err === 'string') {
+        } else if (typeof err === "string") {
           errorMessage = err;
-        } else if (err && typeof err === 'object') {
+        } else if (err && typeof err === "object") {
           errorMessage = err.message || err.error || JSON.stringify(err);
           errorDetails = err.details || err.hint || err.code || JSON.stringify(err);
         }
-        
-        updates.push({ 
-          key, 
-          success: false, 
+
+        updates.push({
+          key,
+          success: false,
           error: errorMessage,
-          details: errorDetails
+          details: errorDetails,
         });
       }
     }
@@ -180,7 +187,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Clear cache after successful update
     if (allSuccess) {
       try {
-        const { clearSettingsCache } = await import("../../../pages/api/global/global-company-data");
+        const { clearSettingsCache } = await import(
+          "../../../pages/api/global/global-company-data"
+        );
         clearSettingsCache();
       } catch (error) {
         console.warn("[settings/update] Failed to clear cache:", error);
@@ -188,17 +197,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Get failed updates for detailed error message
-    const failedUpdates = updates.filter(u => !u.success);
-    const errorDetails = failedUpdates.length > 0 
-      ? failedUpdates.map(u => `${u.key}: ${u.error}${u.details ? ` (${u.details})` : ''}`).join('; ')
-      : '';
+    const failedUpdates = updates.filter((u) => !u.success);
+    const errorDetails =
+      failedUpdates.length > 0
+        ? failedUpdates
+            .map((u) => `${u.key}: ${u.error}${u.details ? ` (${u.details})` : ""}`)
+            .join("; ")
+        : "";
 
     return new Response(
       JSON.stringify({
         success: allSuccess,
         updates,
-        message: allSuccess 
-          ? "Settings updated successfully" 
+        message: allSuccess
+          ? "Settings updated successfully"
           : `Some settings failed to update. ${errorDetails}`,
         errorDetails: failedUpdates.length > 0 ? errorDetails : undefined,
       }),

@@ -14,21 +14,25 @@ When `SAVE_HTML_TEMPLATES` environment variable is set to `true` or `1`, HTML ve
 ## File Naming Convention
 
 Files are named using the following pattern:
+
 ```
 project-{projectId}_template-{templateId}_{documentName}_{timestamp}.html
 ```
 
 Example:
+
 - `project-303_template-5_Proposal_1234567890.html`
 
 ## Enabling HTML Saving
 
 Add to your `.env` file:
+
 ```bash
 SAVE_HTML_TEMPLATES=true
 ```
 
 Or set as an environment variable:
+
 ```bash
 export SAVE_HTML_TEMPLATES=1
 ```
@@ -43,8 +47,8 @@ export SAVE_HTML_TEMPLATES=1
 ## Future Enhancements
 
 These HTML files can be used to:
+
 - Create a document preview API endpoint
 - Build an online document viewer
 - Generate shareable preview links
 - Enable client-side document previews
-

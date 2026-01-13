@@ -1,7 +1,10 @@
 import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { supabase } from "../../../lib/supabase";
-import { signAndEncryptPDF, createSignAndEncryptOptionsFromForm } from "../../../lib/pdf-sign-encrypt";
+import {
+  signAndEncryptPDF,
+  createSignAndEncryptOptionsFromForm,
+} from "../../../lib/pdf-sign-encrypt";
 
 /**
  * Sign and Encrypt PDF API
@@ -129,4 +132,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

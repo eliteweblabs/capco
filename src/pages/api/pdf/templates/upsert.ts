@@ -104,7 +104,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         await saveHTMLTemplateToFile(content, result.id, name);
       } catch (htmlSaveError) {
         // Don't fail the entire operation if HTML saving fails
-        console.warn("⚠️ [PDF-TEMPLATES-UPSERT] Failed to save HTML template (non-fatal):", htmlSaveError);
+        console.warn(
+          "⚠️ [PDF-TEMPLATES-UPSERT] Failed to save HTML template (non-fatal):",
+          htmlSaveError
+        );
       }
     }
 
@@ -128,7 +131,7 @@ async function saveHTMLTemplateToFile(
 ): Promise<void> {
   try {
     const templatesDir = join(process.cwd(), "src", "components", "pdf-system", "templates");
-    
+
     // Ensure directory exists
     await mkdir(templatesDir, { recursive: true });
 
@@ -140,7 +143,7 @@ async function saveHTMLTemplateToFile(
       .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
       .toLowerCase()
       .trim();
-    
+
     // Use template name as primary identifier, with ID and timestamp as suffix for uniqueness
     const fileName = `${safeTemplateName}_template-${templateId}_${Date.now()}.html`;
     const filePath = join(templatesDir, fileName);

@@ -143,7 +143,11 @@ const projectId = project?.id;
               </svg>
               Documents Submitted ✓
             `;
-                window.handleNewStatusModalAndEmail(data, "PROPOSAL-VIEW");
+                if (window.handleNewStatusModalAndEmail && typeof window.handleNewStatusModalAndEmail === "function") {
+                  window.handleNewStatusModalAndEmail(data, "PROPOSAL-VIEW");
+                } else {
+                  console.warn("⚠️ [PROPOSAL-VIEW] handleNewStatusModalAndEmail not available yet");
+                }
               } else {
                 window.showModal("error", "Error", data.error || "Failed to update project status");
               }

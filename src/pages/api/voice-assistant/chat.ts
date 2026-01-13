@@ -490,7 +490,7 @@ You are Bee, an intelligent voice assistant for a fire protection systems compan
       } else if (typeof response.content === "string") {
         assistantContent = response.content;
       }
-      
+
       // Add tool results to messages
       messages.push({
         role: "assistant",

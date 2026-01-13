@@ -13,9 +13,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: false,
-          error: "Authentication required" 
+          error: "Authentication required",
         }),
         {
           status: 401,
@@ -28,7 +28,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let body;
     try {
       const bodyText = await request.text();
-      
+
       if (!bodyText || bodyText.trim() === "") {
         return new Response(
           JSON.stringify({
@@ -63,14 +63,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const {
-      companyName,
-      firstName,
-      lastName,
-      phone,
-      smsAlerts,
-      mobileCarrier,
-    } = body;
+    const { companyName, firstName, lastName, phone, smsAlerts, mobileCarrier } = body;
 
     // Validate required fields
     if (!firstName?.trim() || !lastName?.trim()) {
@@ -86,9 +79,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (!supabase || !supabaseAdmin) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: false,
-          error: "Database connection not available" 
+          error: "Database connection not available",
         }),
         {
           status: 500,
@@ -179,4 +172,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

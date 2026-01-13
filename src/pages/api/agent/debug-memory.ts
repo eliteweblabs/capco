@@ -1,6 +1,6 @@
 /**
  * Debug Memory Loading API
- * 
+ *
  * This endpoint helps debug what memory/knowledge is being loaded for the agent
  * GET /api/agent/debug-memory?projectId=123
  */
@@ -119,4 +119,3 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     );
   }
 };
-

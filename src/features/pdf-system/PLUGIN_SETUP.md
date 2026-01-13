@@ -63,11 +63,11 @@ Then edit `.env.local` and customize the values.
 Import and customize `pdf-system.config.ts`:
 
 ```typescript
-import { loadConfig } from './features/pdf-system/pdf-system.config';
+import { loadConfig } from "./features/pdf-system/pdf-system.config";
 
 const pdfConfig = loadConfig({
   saveHtmlTemplates: true,
-  templatesDirectory: 'custom/path/templates',
+  templatesDirectory: "custom/path/templates",
   // ... other overrides
 });
 ```
@@ -84,6 +84,7 @@ See `SETUP_DATABASE.md` for SQL schema (if created).
 ### 5. Storage Setup
 
 Ensure your Supabase storage has the bucket:
+
 - `project-media` (or configure via `PDF_STORAGE_BUCKET`)
 
 ### 6. Use the Component
@@ -92,15 +93,10 @@ Import and use in any page:
 
 ```astro
 ---
-import PDFSystem from '../../features/pdf-system/PDFSystem.astro';
+import PDFSystem from "../../features/pdf-system/PDFSystem.astro";
 ---
 
-<PDFSystem 
-  {currentUser} 
-  {globalInputClasses}
-  {secondaryTextClasses}
-  {primaryTextClasses}
-/>
+<PDFSystem {currentUser} {globalInputClasses} {secondaryTextClasses} {primaryTextClasses} />
 ```
 
 ## 🔧 Configuration Options
@@ -109,27 +105,27 @@ import PDFSystem from '../../features/pdf-system/PDFSystem.astro';
 
 All settings can be configured via environment variables (see `pdf-system.env.example`):
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SAVE_HTML_TEMPLATES` | `false` | Save HTML versions for preview |
-| `PDF_TEMPLATES_DIR` | `src/features/pdf-system/templates` | HTML templates directory |
-| `PDF_STORAGE_BUCKET` | `project-media` | Supabase storage bucket |
-| `PDF_DEFAULT_PAGE_SIZE` | `8.5x11` | Default PDF page size |
-| `PDF_DEFAULT_ORIENTATION` | `portrait` | Default orientation |
-| `PDF_ENABLE_ENCRYPTION` | `true` | Enable PDF encryption |
-| `PDF_ENABLE_HTML_PREVIEW` | `true` | Enable HTML previews |
-| `PDF_ENABLE_GOOGLE_CONTACTS` | `true` | Enable Google Contacts |
+| Variable                     | Default                             | Description                    |
+| ---------------------------- | ----------------------------------- | ------------------------------ |
+| `SAVE_HTML_TEMPLATES`        | `false`                             | Save HTML versions for preview |
+| `PDF_TEMPLATES_DIR`          | `src/features/pdf-system/templates` | HTML templates directory       |
+| `PDF_STORAGE_BUCKET`         | `project-media`                     | Supabase storage bucket        |
+| `PDF_DEFAULT_PAGE_SIZE`      | `8.5x11`                            | Default PDF page size          |
+| `PDF_DEFAULT_ORIENTATION`    | `portrait`                          | Default orientation            |
+| `PDF_ENABLE_ENCRYPTION`      | `true`                              | Enable PDF encryption          |
+| `PDF_ENABLE_HTML_PREVIEW`    | `true`                              | Enable HTML previews           |
+| `PDF_ENABLE_GOOGLE_CONTACTS` | `true`                              | Enable Google Contacts         |
 
 ### Programmatic Configuration
 
 ```typescript
-import { loadConfig } from './components/pdf-system/pdf-system.config';
+import { loadConfig } from "./components/pdf-system/pdf-system.config";
 
 const config = loadConfig({
   saveHtmlTemplates: true,
   api: {
     templates: {
-      list: '/custom/api/path',
+      list: "/custom/api/path",
     },
   },
 });
@@ -223,6 +219,7 @@ The plugin requires:
 ### HTML Templates Not Saving
 
 Check:
+
 - `SAVE_HTML_TEMPLATES=true` in environment
 - Directory permissions for templates folder
 - File system access (not available in some serverless environments)
@@ -234,6 +231,7 @@ Ensure routes are in `pages/api/pdf/` (Astro requirement)
 ### PDF Generation Fails
 
 Check:
+
 - Puppeteer is installed
 - Storage bucket exists and has correct permissions
 - Database tables are set up correctly
@@ -243,4 +241,3 @@ Check:
 - [Plugin README](./README.md)
 - [Configuration Reference](./pdf-system.config.ts)
 - [Environment Variables](./pdf-system.env.example)
-

@@ -485,14 +485,16 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
             const { globalCompanyData } = await import("../global/global-company-data");
             const companyData = await globalCompanyData();
             defaultFromName = companyData.globalCompanyName || "Company";
-            const websiteDomain = companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "example.com";
+            const websiteDomain =
+              companyData.globalCompanyWebsite?.replace(/^https?:\/\//, "") || "example.com";
             defaultFromEmail = `noreply@${websiteDomain}`;
           } catch (error) {
             console.warn("📧 [EMAIL-DELIVERY] Failed to load company data, using defaults");
           }
 
           // Validate from field
-          const validFromName = fromName && fromName.trim() !== "" ? fromName.trim() : defaultFromName;
+          const validFromName =
+            fromName && fromName.trim() !== "" ? fromName.trim() : defaultFromName;
           const validFromEmail =
             fromEmail && fromEmail.trim() !== "" ? fromEmail.trim() : defaultFromEmail;
 

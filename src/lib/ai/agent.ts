@@ -4,7 +4,7 @@
  * Adapted for Astro framework
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic from "@anthropic-ai/sdk";
 
 interface DocumentGenerationRequest {
   projectId: number; // Changed from string to number to match existing projects table (serial id)
@@ -24,11 +24,11 @@ interface DocumentGenerationResponse {
 
 export class FireProtectionAgent {
   private client: Anthropic;
-  private model: string = 'claude-3-opus-20240229';
+  private model: string = "claude-3-opus-20240229";
 
   constructor(apiKey: string) {
     if (!apiKey) {
-      throw new Error('Anthropic API key is required');
+      throw new Error("Anthropic API key is required");
     }
     this.client = new Anthropic({ apiKey });
   }
@@ -36,18 +36,16 @@ export class FireProtectionAgent {
   /**
    * Generate a fire protection document based on template and project data
    */
-  async generateDocument(
-    request: DocumentGenerationRequest
-  ): Promise<DocumentGenerationResponse> {
+  async generateDocument(request: DocumentGenerationRequest): Promise<DocumentGenerationResponse> {
     const prompt = this.buildPrompt(request);
-    
+
     try {
       const message = await this.client.messages.create({
         model: this.model,
         max_tokens: 4096,
         messages: [
           {
-            role: 'user',
+            role: "user",
             content: prompt,
           },
         ],
@@ -65,8 +63,8 @@ export class FireProtectionAgent {
         },
       };
     } catch (error) {
-      console.error('❌ [AI-AGENT] AI generation error:', error);
-      throw new Error('Failed to generate document');
+      console.error("❌ [AI-AGENT] AI generation error:", error);
+      throw new Error("Failed to generate document");
     }
   }
 
@@ -81,7 +79,7 @@ export class FireProtectionAgent {
 PROJECT DATA:
 ${JSON.stringify(projectData, null, 2)}
 
-${requirements ? `SPECIFIC REQUIREMENTS:\n${requirements.join('\n')}\n` : ''}
+${requirements ? `SPECIFIC REQUIREMENTS:\n${requirements.join("\n")}\n` : ""}
 
 GUIDELINES:
 1. Ensure compliance with NFPA (National Fire Protection Association) standards
@@ -98,10 +96,8 @@ Generate a comprehensive, professional document that meets fire protection indus
    * Extract text content from Claude API response
    */
   private extractContent(message: any): string {
-    const contentBlock = message.content.find(
-      (block: any) => block.type === 'text'
-    );
-    return contentBlock?.text || '';
+    const contentBlock = message.content.find((block: any) => block.type === "text");
+    return contentBlock?.text || "";
   }
 
   /**
@@ -119,20 +115,21 @@ Generate a comprehensive, professional document that meets fire protection indus
     request: DocumentGenerationRequest,
     refinementSteps: number = 2
   ): Promise<DocumentGenerationResponse> {
-    let currentContent = '';
+    let currentContent = "";
     let totalTokens = 0;
-    
+
     for (let step = 0; step < refinementSteps; step++) {
-      const prompt = step === 0
-        ? this.buildPrompt(request)
-        : this.buildRefinementPrompt(request, currentContent, step);
+      const prompt =
+        step === 0
+          ? this.buildPrompt(request)
+          : this.buildRefinementPrompt(request, currentContent, step);
 
       const message = await this.client.messages.create({
         model: this.model,
         max_tokens: 4096,
         messages: [
           {
-            role: 'user',
+            role: "user",
             content: prompt,
           },
         ],
@@ -172,4 +169,3 @@ Please:
 Provide the refined, improved version of the document.`;
   }
 }
-

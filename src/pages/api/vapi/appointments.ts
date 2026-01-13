@@ -291,22 +291,19 @@ async function handleCheckAvailability(currentUser: any, data: any) {
 
     // Call the availability API
     const baseUrl = ensureProtocol(process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321");
-    const availabilityResponse = await fetch(
-      `${baseUrl}/api/appointments/availability`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Note: In a real implementation, you'd need to pass authentication
-        },
-        body: JSON.stringify({
-          date,
-          startDate,
-          endDate,
-          duration: duration || 60,
-        }),
-      }
-    );
+    const availabilityResponse = await fetch(`${baseUrl}/api/appointments/availability`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Note: In a real implementation, you'd need to pass authentication
+      },
+      body: JSON.stringify({
+        date,
+        startDate,
+        endDate,
+        duration: duration || 60,
+      }),
+    });
 
     if (!availabilityResponse.ok) {
       throw new Error(`Availability API error: ${availabilityResponse.status}`);

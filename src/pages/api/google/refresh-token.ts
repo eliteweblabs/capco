@@ -11,9 +11,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (!refreshToken) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "No refresh token available. Please re-authenticate with Google." 
+        JSON.stringify({
+          success: false,
+          error: "No refresh token available. Please re-authenticate with Google.",
         }),
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
@@ -24,9 +24,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (!clientId || !clientSecret) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Google OAuth not configured" 
+        JSON.stringify({
+          success: false,
+          error: "Google OAuth not configured",
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
@@ -51,10 +51,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!tokenResponse.ok) {
       console.error("❌ [GOOGLE-REFRESH] Token refresh failed:", tokenData);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: "Failed to refresh token",
-          details: tokenData.error_description || tokenData.error 
+          details: tokenData.error_description || tokenData.error,
         }),
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
@@ -98,4 +98,3 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 };
-

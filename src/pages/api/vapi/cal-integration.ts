@@ -108,12 +108,16 @@ function generateMockAvailability(dateFrom: string, dateTo: string): CalComAvail
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { action, calendarType = 'calcom', ...params } = body;
-    
+    const { action, calendarType = "calcom", ...params } = body;
+
     // calendarType is passed from webhook (extracted from URL query parameter in config files)
     const effectiveCalendarType = calendarType;
 
-    console.log("🔗 [CAL-INTEGRATION] Received request:", { action, calendarType: effectiveCalendarType, params });
+    console.log("🔗 [CAL-INTEGRATION] Received request:", {
+      action,
+      calendarType: effectiveCalendarType,
+      params,
+    });
 
     switch (action) {
       case "get_staff_schedule":
@@ -743,15 +747,15 @@ async function handleGetEventTypes() {
 }
 
 // Get account info with real Cal.com availability
-async function handlegetStaffSchedule(params: any = {}, calendarType: string = 'calcom') {
+async function handlegetStaffSchedule(params: any = {}, calendarType: string = "calcom") {
   try {
     // Route to appropriate calendar handler based on calendar type
     switch (calendarType.toLowerCase()) {
-      case 'google':
+      case "google":
         return await handleGoogleCalendarGetStaffSchedule(params);
-      case 'ical':
+      case "ical":
         return await handleICalGetStaffSchedule(params);
-      case 'calcom':
+      case "calcom":
       default:
         return await handleCalComGetStaffSchedule(params);
     }
@@ -1146,11 +1150,13 @@ async function handleGoogleCalendarGetStaffSchedule(params: any = {}) {
     // 4. Format response similar to Cal.com format
 
     // Placeholder implementation
-    const googleCalendarId = process.env.GOOGLE_CALENDAR_ID || providedUsername || 'primary';
+    const googleCalendarId = process.env.GOOGLE_CALENDAR_ID || providedUsername || "primary";
     const googleApiKey = process.env.GOOGLE_CALENDAR_API_KEY;
-    
+
     if (!googleApiKey) {
-      throw new Error("Google Calendar API key not configured. Please set GOOGLE_CALENDAR_API_KEY environment variable.");
+      throw new Error(
+        "Google Calendar API key not configured. Please set GOOGLE_CALENDAR_API_KEY environment variable."
+      );
     }
 
     // Example: Use Google Calendar Freebusy API
@@ -1159,9 +1165,10 @@ async function handleGoogleCalendarGetStaffSchedule(params: any = {}) {
 
     return new Response(
       JSON.stringify({
-        result: "Google Calendar integration is not yet fully implemented. Please use Cal.com for now.",
+        result:
+          "Google Calendar integration is not yet fully implemented. Please use Cal.com for now.",
         data: {
-          calendarType: 'google',
+          calendarType: "google",
           message: "Google Calendar support coming soon",
         },
       }),
@@ -1205,9 +1212,11 @@ async function handleICalGetStaffSchedule(params: any = {}) {
     // 5. Format response similar to Cal.com format
 
     const icalUrl = process.env.ICAL_URL || params.icalUrl;
-    
+
     if (!icalUrl) {
-      throw new Error("iCal URL not configured. Please set ICAL_URL environment variable or provide icalUrl parameter.");
+      throw new Error(
+        "iCal URL not configured. Please set ICAL_URL environment variable or provide icalUrl parameter."
+      );
     }
 
     // Example: Fetch and parse iCal
@@ -1219,7 +1228,7 @@ async function handleICalGetStaffSchedule(params: any = {}) {
       JSON.stringify({
         result: "iCal integration is not yet fully implemented. Please use Cal.com for now.",
         data: {
-          calendarType: 'ical',
+          calendarType: "ical",
           message: "iCal support coming soon",
         },
       }),
@@ -1511,15 +1520,15 @@ async function handleGetAvailability(params: any) {
   }
 }
 
-async function handleCreateBooking(params: any, calendarType: string = 'calcom') {
+async function handleCreateBooking(params: any, calendarType: string = "calcom") {
   try {
     // Route to appropriate calendar handler based on calendar type
     switch (calendarType.toLowerCase()) {
-      case 'google':
+      case "google":
         return await handleGoogleCalendarCreateBooking(params);
-      case 'ical':
+      case "ical":
         return await handleICalCreateBooking(params);
-      case 'calcom':
+      case "calcom":
       default:
         return await handleCalComCreateBooking(params);
     }
@@ -2648,11 +2657,13 @@ async function handleGoogleCalendarCreateBooking(params: any) {
     // 4. Set reminders (SMS if smsReminderNumber provided)
     // 5. Return confirmation
 
-    const googleCalendarId = process.env.GOOGLE_CALENDAR_ID || username || 'primary';
+    const googleCalendarId = process.env.GOOGLE_CALENDAR_ID || username || "primary";
     const googleApiKey = process.env.GOOGLE_CALENDAR_API_KEY;
-    
+
     if (!googleApiKey) {
-      throw new Error("Google Calendar API key not configured. Please set GOOGLE_CALENDAR_API_KEY environment variable.");
+      throw new Error(
+        "Google Calendar API key not configured. Please set GOOGLE_CALENDAR_API_KEY environment variable."
+      );
     }
 
     // Parse start time
@@ -2672,10 +2683,11 @@ async function handleGoogleCalendarCreateBooking(params: any) {
 
     return new Response(
       JSON.stringify({
-        result: "Google Calendar integration is not yet fully implemented. Please use Cal.com for now.",
+        result:
+          "Google Calendar integration is not yet fully implemented. Please use Cal.com for now.",
         success: false,
         data: {
-          calendarType: 'google',
+          calendarType: "google",
           message: "Google Calendar support coming soon",
         },
       }),
@@ -2730,9 +2742,11 @@ async function handleICalCreateBooking(params: any) {
     // 5. Return confirmation
 
     const icalUrl = process.env.ICAL_URL || params.icalUrl;
-    
+
     if (!icalUrl) {
-      throw new Error("iCal URL not configured. Please set ICAL_URL environment variable or provide icalUrl parameter.");
+      throw new Error(
+        "iCal URL not configured. Please set ICAL_URL environment variable or provide icalUrl parameter."
+      );
     }
 
     // Parse start time
@@ -2753,7 +2767,7 @@ async function handleICalCreateBooking(params: any) {
         result: "iCal integration is not yet fully implemented. Please use Cal.com for now.",
         success: false,
         data: {
-          calendarType: 'ical',
+          calendarType: "ical",
           message: "iCal support coming soon",
         },
       }),

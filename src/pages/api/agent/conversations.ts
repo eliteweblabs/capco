@@ -1,8 +1,8 @@
 /**
  * AI Agent Conversations API
- * 
+ *
  * Manage conversations (list, get, delete)
- * 
+ *
  * GET /api/agent/conversations - List user's conversations
  * GET /api/agent/conversations/[id] - Get conversation with messages
  * DELETE /api/agent/conversations/[id] - Delete conversation
@@ -191,4 +191,3 @@ export const DELETE: APIRoute = async ({ request, cookies, url }) => {
     );
   }
 };
-

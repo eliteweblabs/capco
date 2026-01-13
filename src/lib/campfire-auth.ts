@@ -3,7 +3,10 @@
  * Handles automatic authentication to Campfire chat for Staff and Admin users
  */
 
-const CAMPFIRE_URL = process.env.PUBLIC_CAMPFIRE_URL || process.env.CAMPFIRE_URL || "https://campfire-production-8c1a.up.railway.app";
+const CAMPFIRE_URL =
+  process.env.PUBLIC_CAMPFIRE_URL ||
+  process.env.CAMPFIRE_URL ||
+  "https://campfire-production-8c1a.up.railway.app";
 
 /**
  * Authenticate user to Campfire using their email and password
@@ -18,7 +21,7 @@ export async function authenticateCampfire(
 
     // Campfire typically uses POST to /session endpoint
     const loginUrl = `${CAMPFIRE_URL}/session`;
-    
+
     // Create a form submission request
     const formData = new URLSearchParams();
     formData.append("email", email);
@@ -28,7 +31,7 @@ export async function authenticateCampfire(
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "User-Agent": "Mozilla/5.0 (compatible; Campfire-AutoLogin/1.0)",
       },
       body: formData.toString(),
@@ -39,14 +42,20 @@ export async function authenticateCampfire(
     if (response.status === 302 || response.status === 303) {
       // Get the redirect location
       const location = response.headers.get("location");
-      const redirectUrl = location ? (location.startsWith("http") ? location : `${CAMPFIRE_URL}${location}`) : `${CAMPFIRE_URL}/`;
-      
+      const redirectUrl = location
+        ? location.startsWith("http")
+          ? location
+          : `${CAMPFIRE_URL}${location}`
+        : `${CAMPFIRE_URL}/`;
+
       // Extract cookies from response
       const cookies = response.headers.get("set-cookie");
       const cookieArray = cookies ? cookies.split(",").map((c) => c.trim()) : [];
 
-      console.log(`✅ [CAMPFIRE-AUTH] Successfully authenticated ${email} to Campfire, redirect: ${redirectUrl}`);
-      
+      console.log(
+        `✅ [CAMPFIRE-AUTH] Successfully authenticated ${email} to Campfire, redirect: ${redirectUrl}`
+      );
+
       return {
         success: true,
         loginUrl: redirectUrl,
@@ -55,9 +64,16 @@ export async function authenticateCampfire(
     } else if (response.status === 200) {
       // Check if we got an error page (usually 200 with error message)
       const text = await response.text();
-      
-      if (text.includes("Invalid") || text.includes("error") || text.includes("Error") || text.includes("incorrect")) {
-        console.warn(`⚠️ [CAMPFIRE-AUTH] Campfire authentication failed for ${email}: Invalid credentials`);
+
+      if (
+        text.includes("Invalid") ||
+        text.includes("error") ||
+        text.includes("Error") ||
+        text.includes("incorrect")
+      ) {
+        console.warn(
+          `⚠️ [CAMPFIRE-AUTH] Campfire authentication failed for ${email}: Invalid credentials`
+        );
         return {
           success: false,
           error: "Invalid Campfire credentials",
@@ -68,7 +84,7 @@ export async function authenticateCampfire(
       console.log(`✅ [CAMPFIRE-AUTH] Campfire authentication successful (status 200)`);
       const cookies = response.headers.get("set-cookie");
       const cookieArray = cookies ? cookies.split(",").map((c) => c.trim()) : [];
-      
+
       return {
         success: true,
         loginUrl: `${CAMPFIRE_URL}/`,
@@ -97,4 +113,3 @@ export async function authenticateCampfire(
 export function shouldAutoAuthCampfire(role: string | null | undefined): boolean {
   return role === "Admin" || role === "Staff";
 }
-

@@ -1,18 +1,18 @@
 /**
  * Unified AI Agent Platform
- * 
+ *
  * A comprehensive AI agent similar to Claude.ai that can handle multiple tasks:
  * - Document generation
  * - Project analysis
  * - Code compliance checking
  * - Data analysis
  * - And more...
- * 
+ *
  * This is the core agent that powers the marketable product.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
-import { supabaseAdmin } from '../supabase-admin';
+import Anthropic from "@anthropic-ai/sdk";
+import { supabaseAdmin } from "../supabase-admin";
 
 export interface AgentRequest {
   message: string;
@@ -20,7 +20,7 @@ export interface AgentRequest {
   context?: {
     projectId?: number;
     userId?: string;
-    conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
     images?: string[];
     [key: string]: any;
   };
@@ -44,27 +44,27 @@ export interface AgentResponse {
 export class UnifiedFireProtectionAgent {
   private client: Anthropic;
   // Using Claude 3 Haiku - confirmed working model for this account
-  private model: string = 'claude-3-haiku-20240307';
+  private model: string = "claude-3-haiku-20240307";
 
   constructor(apiKey: string) {
     if (!apiKey) {
-      throw new Error('Anthropic API key is required');
+      throw new Error("Anthropic API key is required");
     }
-    
+
     // Validate API key format
-    if (!apiKey.startsWith('sk-ant-')) {
-      console.warn('[---UNIFIED-AGENT] API key format warning - should start with sk-ant-');
+    if (!apiKey.startsWith("sk-ant-")) {
+      console.warn("[---UNIFIED-AGENT] API key format warning - should start with sk-ant-");
     }
-    
+
     // Initialize Anthropic client
-    this.client = new Anthropic({ 
+    this.client = new Anthropic({
       apiKey,
     });
-    
-    console.log('[---UNIFIED-AGENT] Anthropic client initialized:', {
-      keyPrefix: apiKey.substring(0, 12) + '...',
+
+    console.log("[---UNIFIED-AGENT] Anthropic client initialized:", {
+      keyPrefix: apiKey.substring(0, 12) + "...",
       keyLength: apiKey.length,
-      keyFormat: apiKey.startsWith('sk-ant-') ? 'valid' : 'unexpected',
+      keyFormat: apiKey.startsWith("sk-ant-") ? "valid" : "unexpected",
     });
   }
 
@@ -73,15 +73,15 @@ export class UnifiedFireProtectionAgent {
    */
   async processQuery(request: AgentRequest): Promise<AgentResponse> {
     const { message, context, images } = request;
-    
+
     // Build comprehensive system prompt with all agent capabilities and knowledge base
     const systemPrompt = await this.buildSystemPrompt(context);
-    
+
     // Build conversation messages (including images)
     const messages = this.buildMessages(message, context, images);
-    
+
     // Log API call details (without exposing sensitive data)
-    console.log('[---UNIFIED-AGENT] Making Anthropic API call:', {
+    console.log("[---UNIFIED-AGENT] Making Anthropic API call:", {
       model: this.model,
       messageCount: messages.length,
       systemPromptLength: systemPrompt.length,
@@ -89,7 +89,7 @@ export class UnifiedFireProtectionAgent {
       hasImages: images && images.length > 0,
       imageCount: images?.length || 0,
     });
-    
+
     try {
       const response = await this.client.messages.create({
         model: this.model,
@@ -97,8 +97,8 @@ export class UnifiedFireProtectionAgent {
         system: systemPrompt,
         messages: messages,
       });
-      
-      console.log('[---UNIFIED-AGENT] API call successful:', {
+
+      console.log("[---UNIFIED-AGENT] API call successful:", {
         hasResponse: !!response,
         hasUsage: !!response.usage,
         inputTokens: response.usage?.input_tokens,
@@ -128,24 +128,24 @@ export class UnifiedFireProtectionAgent {
         },
       };
     } catch (error: any) {
-      console.error('❌ [UNIFIED-AGENT] Error calling Anthropic API:', error);
-      console.error('❌ [UNIFIED-AGENT] Error details:', {
+      console.error("❌ [UNIFIED-AGENT] Error calling Anthropic API:", error);
+      console.error("❌ [UNIFIED-AGENT] Error details:", {
         message: error.message,
         status: error.status,
         statusText: error.statusText,
         type: error.type,
         cause: error.cause,
       });
-      
+
       // Re-throw with more context
       if (error.status === 401) {
-        throw new Error('Invalid API key. Please check ANTHROPIC_API_KEY configuration.');
+        throw new Error("Invalid API key. Please check ANTHROPIC_API_KEY configuration.");
       } else if (error.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.');
+        throw new Error("Rate limit exceeded. Please try again later.");
       } else if (error.message) {
         throw new Error(`Anthropic API error: ${error.message}`);
       } else {
-        throw new Error('Failed to process query. Please check API configuration.');
+        throw new Error("Failed to process query. Please check API configuration.");
       }
     }
   }
@@ -153,7 +153,10 @@ export class UnifiedFireProtectionAgent {
   /**
    * Load knowledge base entries for agent context
    */
-  private async loadKnowledgeBase(category?: string, projectId?: number): Promise<Array<{ title: string; content: string; category?: string }>> {
+  private async loadKnowledgeBase(
+    category?: string,
+    projectId?: number
+  ): Promise<Array<{ title: string; content: string; category?: string }>> {
     if (!supabaseAdmin) {
       console.warn("⚠️ [UNIFIED-AGENT] Supabase admin client not available for knowledge base");
       return [];
@@ -179,12 +182,13 @@ export class UnifiedFireProtectionAgent {
       }
 
       // Order by priority (descending) then by createdAt (descending)
-      query = query.order("priority", { ascending: false })
-                   .order("createdAt", { ascending: false })
-                   .limit(50); // Increased limit to get more knowledge
+      query = query
+        .order("priority", { ascending: false })
+        .order("createdAt", { ascending: false })
+        .limit(50); // Increased limit to get more knowledge
 
       const { data: entries, error } = await query;
-      
+
       if (error) {
         console.error("❌ [UNIFIED-AGENT] Error loading knowledge base:", error);
         return [];
@@ -206,7 +210,9 @@ export class UnifiedFireProtectionAgent {
   /**
    * Load project-specific memory (like Claude.ai's project memory)
    */
-  private async loadProjectMemory(projectId: number): Promise<{ purposeContext?: string; currentState?: string } | null> {
+  private async loadProjectMemory(
+    projectId: number
+  ): Promise<{ purposeContext?: string; currentState?: string } | null> {
     if (!supabaseAdmin) {
       console.warn("⚠️ [UNIFIED-AGENT] Supabase admin client not available for project memory");
       return null;
@@ -225,7 +231,7 @@ export class UnifiedFireProtectionAgent {
 
       if (error) {
         // If no rows found, that's okay - project might not have memory yet
-        if (error.code === 'PGRST116') {
+        if (error.code === "PGRST116") {
           console.log(`ℹ️ [UNIFIED-AGENT] No project memory found for project ${projectId}`);
           return null;
         }
@@ -258,13 +264,13 @@ export class UnifiedFireProtectionAgent {
     });
 
     // Load project-specific memory (like Claude.ai's project memory)
-    const projectMemory = context?.projectId 
+    const projectMemory = context?.projectId
       ? await this.loadProjectMemory(context.projectId)
       : null;
 
     // Load knowledge base entries (global + project-specific)
     const knowledgeEntries = await this.loadKnowledgeBase(undefined, context?.projectId);
-    
+
     // Format project memory (like Claude.ai)
     let projectMemorySection = "";
     if (projectMemory) {
@@ -279,7 +285,7 @@ export class UnifiedFireProtectionAgent {
     } else {
       console.log(`ℹ️ [UNIFIED-AGENT] No project memory to add`);
     }
-    
+
     // Format knowledge base for system prompt
     let knowledgeSection = "";
     if (knowledgeEntries.length > 0) {
@@ -287,9 +293,13 @@ export class UnifiedFireProtectionAgent {
       knowledgeEntries.forEach((entry) => {
         knowledgeSection += `\n### ${entry.title}${entry.category ? ` (${entry.category})` : ""}\n${entry.content}\n`;
       });
-      console.log(`📚 [UNIFIED-AGENT] Added ${knowledgeEntries.length} knowledge entries to system prompt`);
+      console.log(
+        `📚 [UNIFIED-AGENT] Added ${knowledgeEntries.length} knowledge entries to system prompt`
+      );
     } else {
-      console.warn(`⚠️ [UNIFIED-AGENT] No knowledge entries found! Check database and RLS policies.`);
+      console.warn(
+        `⚠️ [UNIFIED-AGENT] No knowledge entries found! Check database and RLS policies.`
+      );
     }
 
     return `You are an expert AI assistant specialized in fire protection engineering and project management. You help users with:
@@ -344,8 +354,8 @@ You have access to:
 - Document templates (can generate various document types)
 - Historical data (can reference past projects or documents)
 
-${projectMemorySection}${knowledgeSection}${context?.projectId ? `\n## Current Context\n- Working with Project ID: ${context.projectId}\n` : ''}
-${context?.userId ? `- User ID: ${context.userId}\n` : ''}
+${projectMemorySection}${knowledgeSection}${context?.projectId ? `\n## Current Context\n- Working with Project ID: ${context.projectId}\n` : ""}
+${context?.userId ? `- User ID: ${context.userId}\n` : ""}
 
 Remember: Be helpful, accurate, and professional. If you need more information to complete a task, ask for it.`;
   }
@@ -353,14 +363,12 @@ Remember: Be helpful, accurate, and professional. If you need more information t
   /**
    * Build conversation messages from history and current message
    */
-  private buildMessages(
-    currentMessage: string,
-    context?: any,
-    imageUrls?: string[]
-  ): any[] {
-    const messages: Array<{ 
-      role: 'user' | 'assistant'; 
-      content: string | Array<{ type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }> 
+  private buildMessages(currentMessage: string, context?: any, imageUrls?: string[]): any[] {
+    const messages: Array<{
+      role: "user" | "assistant";
+      content:
+        | string
+        | Array<{ type: "text" | "image"; text?: string; source?: { type: "url"; url: string } }>;
     }> = [];
 
     const hasImages = imageUrls && imageUrls.length > 0;
@@ -370,10 +378,10 @@ Remember: Be helpful, accurate, and professional. If you need more information t
     if (context?.conversationHistory) {
       context.conversationHistory.forEach((msg: any) => {
         // Assistant messages can be strings, user messages should match current format if we have images
-        if (msg.role === 'assistant') {
+        if (msg.role === "assistant") {
           messages.push({
             role: msg.role,
-            content: typeof msg.content === 'string' ? msg.content : msg.content,
+            content: typeof msg.content === "string" ? msg.content : msg.content,
           });
         } else {
           // User messages: if we have images in current message, ensure format consistency
@@ -387,36 +395,40 @@ Remember: Be helpful, accurate, and professional. If you need more information t
     }
 
     // Add current message with any relevant context
-    let enrichedMessage = (currentMessage || '').trim();
-    
+    let enrichedMessage = (currentMessage || "").trim();
+
     if (context?.projectId) {
       enrichedMessage += `\n\n[Context: Working with project ${context.projectId}]`;
     }
 
     // Build content array - include text and images if present
     // Anthropic API: content can be string OR array of objects (not mixed strings/objects)
-    const contentBlocks: Array<{ type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }> = [];
-    
+    const contentBlocks: Array<{
+      type: "text" | "image";
+      text?: string;
+      source?: { type: "url"; url: string };
+    }> = [];
+
     // Add text message if present
     if (enrichedMessage) {
       // Always use object format when building array
       contentBlocks.push({
-        type: 'text',
+        type: "text",
         text: enrichedMessage,
       });
     }
-    
+
     // Add images if present
     if (hasImages) {
-      console.log('[---UNIFIED-AGENT] Adding images to message:', {
+      console.log("[---UNIFIED-AGENT] Adding images to message:", {
         imageCount: imageUrls.length,
-        imageUrls: imageUrls.map(url => url.substring(0, 50) + '...'), // Log partial URLs
+        imageUrls: imageUrls.map((url) => url.substring(0, 50) + "..."), // Log partial URLs
       });
-      imageUrls.forEach(url => {
+      imageUrls.forEach((url) => {
         contentBlocks.push({
-          type: 'image' as const,
+          type: "image" as const,
           source: {
-            type: 'url' as const,
+            type: "url" as const,
             url: url,
           },
         } as any); // Type assertion needed due to SDK type definitions
@@ -425,42 +437,47 @@ Remember: Be helpful, accurate, and professional. If you need more information t
 
     // Ensure we always have content
     if (contentBlocks.length === 0) {
-      const defaultMessage = hasImages ? 'Please analyze these images' : 'Hello';
-      contentBlocks.push({ type: 'text', text: defaultMessage });
+      const defaultMessage = hasImages ? "Please analyze these images" : "Hello";
+      contentBlocks.push({ type: "text", text: defaultMessage });
     }
 
     // Format content based on whether we have images
-    // Anthropic API: 
+    // Anthropic API:
     // - With images: content MUST be array of objects [{type: 'text', text: '...'}, {type: 'image', ...}]
     // - Without images: content can be string OR array of objects
-    let finalContent: string | Array<{ type: 'text' | 'image'; text?: string; source?: { type: 'url'; url: string } }>;
-    
+    let finalContent:
+      | string
+      | Array<{ type: "text" | "image"; text?: string; source?: { type: "url"; url: string } }>;
+
     if (hasImages) {
       // With images: content MUST be array of objects
       finalContent = contentBlocks;
     } else {
       // Without images: use string if single text block, otherwise array of objects
-      if (contentBlocks.length === 1 && contentBlocks[0].type === 'text') {
-        finalContent = contentBlocks[0].text || '';
+      if (contentBlocks.length === 1 && contentBlocks[0].type === "text") {
+        finalContent = contentBlocks[0].text || "";
       } else {
         // Multiple blocks - keep as array of objects
         finalContent = contentBlocks;
       }
     }
 
-    console.log('[---UNIFIED-AGENT] Message content format:', {
+    console.log("[---UNIFIED-AGENT] Message content format:", {
       hasImages,
       hasText: !!enrichedMessage,
       contentType: typeof finalContent,
       isArray: Array.isArray(finalContent),
       arrayLength: Array.isArray(finalContent) ? finalContent.length : 0,
-      firstItemType: Array.isArray(finalContent) && finalContent.length > 0 
-        ? (typeof finalContent[0] === 'string' ? 'string' : typeof finalContent[0]) 
-        : 'N/A',
+      firstItemType:
+        Array.isArray(finalContent) && finalContent.length > 0
+          ? typeof finalContent[0] === "string"
+            ? "string"
+            : typeof finalContent[0]
+          : "N/A",
     });
 
     messages.push({
-      role: 'user',
+      role: "user",
       content: finalContent,
     });
 
@@ -471,10 +488,8 @@ Remember: Be helpful, accurate, and professional. If you need more information t
    * Extract text content from Claude API response
    */
   private extractContent(message: any): string {
-    const contentBlock = message.content.find(
-      (block: any) => block.type === 'text'
-    );
-    return contentBlock?.text || '';
+    const contentBlock = message.content.find((block: any) => block.type === "text");
+    return contentBlock?.text || "";
   }
 
   /**
@@ -490,11 +505,11 @@ Remember: Be helpful, accurate, and professional. If you need more information t
    */
   private extractActions(content: string): Array<{ type: string; data: any }> {
     const actions: Array<{ type: string; data: any }> = [];
-    
+
     // Look for action blocks in format: <action type="..." data="...">
     const actionRegex = /<action\s+type="([^"]+)"\s+data="([^"]+)">/g;
     let match;
-    
+
     while ((match = actionRegex.exec(content)) !== null) {
       try {
         actions.push({
@@ -505,7 +520,7 @@ Remember: Be helpful, accurate, and professional. If you need more information t
         // Ignore malformed actions
       }
     }
-    
+
     return actions;
   }
 
@@ -523,7 +538,7 @@ Remember: Be helpful, accurate, and professional. If you need more information t
 Project Data:
 ${JSON.stringify(projectData, null, 2)}
 
-${requirements ? `Requirements:\n${requirements.join('\n')}\n` : ''}
+${requirements ? `Requirements:\n${requirements.join("\n")}\n` : ""}
 
 Generate a professional, compliant document following NFPA standards.`;
 
@@ -539,31 +554,31 @@ Generate a professional, compliant document following NFPA standards.`;
   async analyzeProject(projectId: number): Promise<AgentResponse> {
     // Fetch project data
     if (!supabaseAdmin) {
-      throw new Error('Database connection not available');
+      throw new Error("Database connection not available");
     }
 
     const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
+      .from("projects")
+      .select("*")
+      .eq("id", projectId)
       .single();
 
     if (!project) {
-      throw new Error('Project not found');
+      throw new Error("Project not found");
     }
 
     // Fetch related files
     const { data: files } = await supabaseAdmin
-      .from('files')
-      .select('*')
-      .eq('projectId', projectId);
+      .from("files")
+      .select("*")
+      .eq("projectId", projectId);
 
     // Fetch generated documents
     const { data: documents } = await supabaseAdmin
-      .from('ai_generated_documents')
-      .select('*')
-      .eq('projectId', projectId)
-      .order('createdAt', { ascending: false })
+      .from("ai_generated_documents")
+      .select("*")
+      .eq("projectId", projectId)
+      .order("createdAt", { ascending: false })
       .limit(10);
 
     const prompt = `Analyze this fire protection project and provide comprehensive insights:
@@ -571,9 +586,17 @@ Generate a professional, compliant document following NFPA standards.`;
 Project Data:
 ${JSON.stringify(project, null, 2)}
 
-${files && files.length > 0 ? `\nFiles (${files.length}):\n${JSON.stringify(files.map(f => ({ name: f.file_path, status: f.status, uploadedAt: f.uploaded_at })), null, 2)}` : ''}
+${
+  files && files.length > 0
+    ? `\nFiles (${files.length}):\n${JSON.stringify(
+        files.map((f) => ({ name: f.file_path, status: f.status, uploadedAt: f.uploaded_at })),
+        null,
+        2
+      )}`
+    : ""
+}
 
-${documents && documents.length > 0 ? `\nGenerated Documents (${documents.length}):\n${documents.map(d => ({ template: d.templateId, createdAt: d.createdAt })).join('\n')}` : ''}
+${documents && documents.length > 0 ? `\nGenerated Documents (${documents.length}):\n${documents.map((d) => ({ template: d.templateId, createdAt: d.createdAt })).join("\n")}` : ""}
 
 Please provide a comprehensive analysis:
 1. **Project Status Assessment**
@@ -614,46 +637,46 @@ Format your response clearly with sections and bullet points.`;
    */
   async checkCompliance(projectId: number, standard?: string): Promise<AgentResponse> {
     if (!supabaseAdmin) {
-      throw new Error('Database connection not available');
+      throw new Error("Database connection not available");
     }
 
     const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
+      .from("projects")
+      .select("*")
+      .eq("id", projectId)
       .single();
 
     if (!project) {
-      throw new Error('Project not found');
+      throw new Error("Project not found");
     }
 
     // Fetch files and documents
     const { data: files } = await supabaseAdmin
-      .from('files')
-      .select('*')
-      .eq('projectId', projectId);
+      .from("files")
+      .select("*")
+      .eq("projectId", projectId);
 
     const { data: documents } = await supabaseAdmin
-      .from('ai_generated_documents')
-      .select('*')
-      .eq('projectId', projectId);
+      .from("ai_generated_documents")
+      .select("*")
+      .eq("projectId", projectId);
 
-    const standardsToCheck = standard 
+    const standardsToCheck = standard
       ? [standard]
-      : ['NFPA 13', 'NFPA 13R', 'NFPA 13D', 'NFPA 72', 'NFPA 25', 'NFPA 14'];
+      : ["NFPA 13", "NFPA 13R", "NFPA 13D", "NFPA 72", "NFPA 25", "NFPA 14"];
 
     const prompt = `Perform a comprehensive compliance check for this fire protection project against NFPA standards.
 
 Project Information:
-- Type: ${project.new_construction ? 'New Construction' : 'Existing Building'}
-- Square Footage: ${project.sq_ft || 'Not specified'}
-- Address: ${project.address || 'Not specified'}
-- Status: ${project.status || 'Unknown'}
+- Type: ${project.new_construction ? "New Construction" : "Existing Building"}
+- Square Footage: ${project.sq_ft || "Not specified"}
+- Address: ${project.address || "Not specified"}
+- Status: ${project.status || "Unknown"}
 
 Files Available: ${files?.length || 0}
 Documents Generated: ${documents?.length || 0}
 
-Standards to Check: ${standardsToCheck.join(', ')}
+Standards to Check: ${standardsToCheck.join(", ")}
 
 Please provide:
 
@@ -687,10 +710,10 @@ Be specific and reference actual NFPA code sections where applicable.`;
 
     return this.processQuery({
       message: prompt,
-      context: { 
-        projectId, 
-        projectData: project, 
-        files, 
+      context: {
+        projectId,
+        projectData: project,
+        files,
         documents,
         complianceCheck: true,
         standards: standardsToCheck,
@@ -701,30 +724,33 @@ Be specific and reference actual NFPA code sections where applicable.`;
   /**
    * Generate project report
    */
-  async generateProjectReport(projectId: number, reportType: 'summary' | 'detailed' | 'compliance' = 'summary'): Promise<AgentResponse> {
+  async generateProjectReport(
+    projectId: number,
+    reportType: "summary" | "detailed" | "compliance" = "summary"
+  ): Promise<AgentResponse> {
     if (!supabaseAdmin) {
-      throw new Error('Database connection not available');
+      throw new Error("Database connection not available");
     }
 
     const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
+      .from("projects")
+      .select("*")
+      .eq("id", projectId)
       .single();
 
     if (!project) {
-      throw new Error('Project not found');
+      throw new Error("Project not found");
     }
 
     const { data: files } = await supabaseAdmin
-      .from('files')
-      .select('*')
-      .eq('projectId', projectId);
+      .from("files")
+      .select("*")
+      .eq("projectId", projectId);
 
     const { data: documents } = await supabaseAdmin
-      .from('ai_generated_documents')
-      .select('*')
-      .eq('projectId', projectId);
+      .from("ai_generated_documents")
+      .select("*")
+      .eq("projectId", projectId);
 
     const prompt = `Generate a ${reportType} project report for this fire protection project.
 
@@ -736,13 +762,17 @@ Documents: ${documents?.length || 0} generated documents
 
 Create a professional ${reportType} report that includes:
 
-${reportType === 'summary' ? `
+${
+  reportType === "summary"
+    ? `
 - Executive Summary
 - Project Overview
 - Current Status
 - Key Metrics
 - Next Steps
-` : reportType === 'detailed' ? `
+`
+    : reportType === "detailed"
+      ? `
 - Executive Summary
 - Project Overview and Background
 - Detailed Status Analysis
@@ -751,27 +781,28 @@ ${reportType === 'summary' ? `
 - Risk Assessment
 - Recommendations
 - Appendices
-` : `
+`
+      : `
 - Compliance Overview
 - NFPA Standard Compliance Status
 - Code Violations and Issues
 - Required Documentation Status
 - Compliance Recommendations
 - Action Plan
-`}
+`
+}
 
 Format the report professionally with clear sections, headings, and bullet points.`;
 
     return this.processQuery({
       message: prompt,
-      context: { 
-        projectId, 
-        projectData: project, 
-        files, 
+      context: {
+        projectId,
+        projectData: project,
+        files,
         documents,
         reportType,
       },
     });
   }
 }
-

@@ -58,7 +58,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Get total count if requested
     let totalCount = null;
     if (filters.includeTotal) {
-      const { count } = await supabase!.from("projects").select("*", { count: "exact", head: true });
+      const { count } = await supabase!
+        .from("projects")
+        .select("*", { count: "exact", head: true });
       totalCount = count;
     }
 
