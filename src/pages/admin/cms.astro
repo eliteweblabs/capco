@@ -137,7 +137,15 @@ try {
   const response = await fetch(`${baseUrl}/api/cms/pages`);
   if (response.ok) {
     const data = await response.json();
-    cmsPages = data.pages || [];
+    // Sort pages - use display_order if available, otherwise sort by created_at
+    cmsPages = (data.pages || []).sort((a: any, b: any) => {
+      // If display_order exists and is not null, use it
+      if (a.display_order != null && b.display_order != null) {
+        return a.display_order - b.display_order;
+      }
+      // Fallback to created_at
+      return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+    });
   }
 } catch (error) {
   console.error("Error fetching CMS pages:", error);
@@ -316,6 +324,11 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
           <thead class="bg-gray-50 dark:bg-gray-900">
             <tr>
               <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12"
+              >
+                {/* Drag handle column */}
+              </th>
+              <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
               >
                 Slug
@@ -352,7 +365,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               cmsPages.length === 0 ? (
                 <tr>
                   <td
-                    colspan="6"
+                    colspan="7"
                     class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     No pages in database.{" "}
@@ -362,8 +375,30 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                   </td>
                 </tr>
               ) : (
-                cmsPages.map((page) => (
-                  <tr>
+                cmsPages.map((page, index) => (
+                  <tr
+                    class="cursor-move hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    draggable="true"
+                    data-page-id={page.id}
+                    data-page-slug={page.slug}
+                    data-display-order={page.display_order ?? index}
+                  >
+                    <td class="px-2 py-4 text-center text-gray-400 dark:text-gray-500 cursor-grab active:cursor-grabbing">
+                      <svg
+                        class="w-5 h-5 mx-auto"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 8h16M4 16h16"
+                        />
+                      </svg>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {page.slug}
                     </td>
@@ -431,9 +466,31 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
       class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800"
     >
       <div class="mt-3">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4" id="modal-title">
-          Create New Page
-        </h3>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="modal-title">
+            Create New Page
+          </h3>
+          <button
+            id="close-modal-btn"
+            type="button"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded p-1"
+            aria-label="Close modal"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
         <form id="page-form" class="space-y-4">
           <div>
             <label for="page-slug" class="block text-sm font-medium mb-2"> Slug (URL path) </label>
@@ -838,6 +895,7 @@ You can embed components:
       const form = document.getElementById("page-form");
       const createBtn = document.getElementById("create-page-btn");
       const cancelBtn = document.getElementById("cancel-btn");
+      const closeBtn = document.getElementById("close-modal-btn");
       const errorDiv = document.getElementById("form-error");
       const successDiv = document.getElementById("form-success");
       const modalTitle = document.getElementById("modal-title");
@@ -975,30 +1033,117 @@ You can embed components:
         });
       });
 
-      // Close modal
+      // Close modal function
+      const closeModal = () => {
+        modal.classList.add("hidden");
+      };
+
+      // Close modal - via cancel button or close X button
       if (cancelBtn) {
-        cancelBtn.addEventListener("click", () => {
-          modal.classList.add("hidden");
-        });
+        cancelBtn.addEventListener("click", closeModal);
       }
 
-      // Close modal on outside click (only when clicking the backdrop, not the content)
-      const modalContent = document.getElementById("page-editor-modal-content");
-
-      // Prevent clicks inside the modal content from closing the modal
-      if (modalContent) {
-        modalContent.addEventListener("click", (e) => {
-          e.stopPropagation();
-        });
+      if (closeBtn) {
+        closeBtn.addEventListener("click", closeModal);
       }
 
-      // Close modal when clicking the backdrop (outside the content)
-      modal.addEventListener("click", (e) => {
-        // Only close if clicking directly on the modal backdrop (not on any child elements)
-        if (e.target === modal) {
-          modal.classList.add("hidden");
-        }
-      });
+      // Drag and drop functionality for reordering pages
+      let draggedElement = null;
+      let draggedIndex = -1;
+
+      const tbody = document.querySelector("tbody");
+      if (tbody) {
+        // Make rows draggable
+        const rows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
+
+        rows.forEach((row, index) => {
+          row.addEventListener("dragstart", (e) => {
+            draggedElement = row;
+            draggedIndex = index;
+            row.classList.add("opacity-50");
+            if (e.dataTransfer) {
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData("text/html", row.innerHTML);
+            }
+          });
+
+          row.addEventListener("dragend", () => {
+            if (draggedElement) {
+              draggedElement.classList.remove("opacity-50");
+            }
+            rows.forEach((r) => {
+              r.classList.remove("border-t-2", "border-primary-500");
+            });
+          });
+
+          row.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            if (e.dataTransfer) {
+              e.dataTransfer.dropEffect = "move";
+            }
+            if (draggedElement && row !== draggedElement) {
+              row.classList.add("border-t-2", "border-primary-500");
+            }
+          });
+
+          row.addEventListener("dragleave", () => {
+            row.classList.remove("border-t-2", "border-primary-500");
+          });
+
+          row.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            row.classList.remove("border-t-2", "border-primary-500");
+
+            if (draggedElement && draggedElement !== row) {
+              const dropIndex = rows.indexOf(row);
+
+              // Reorder DOM
+              if (draggedIndex < dropIndex) {
+                tbody.insertBefore(draggedElement, row.nextSibling);
+              } else {
+                tbody.insertBefore(draggedElement, row);
+              }
+
+              // Update display_order in database
+              const newRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
+              const orderUpdates = [];
+
+              newRows.forEach((r, idx) => {
+                const pageId = r.getAttribute("data-page-id");
+                if (pageId) {
+                  orderUpdates.push({
+                    id: pageId,
+                    display_order: idx,
+                  });
+                }
+              });
+
+              // Save new order to database
+              try {
+                const response = await fetch("/api/cms/pages", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ orders: orderUpdates }),
+                });
+
+                if (!response.ok) {
+                  const error = await response.json();
+                  throw new Error(error.error || "Failed to update order");
+                }
+
+                // Update data attributes
+                newRows.forEach((r, idx) => {
+                  r.setAttribute("data-display-order", idx.toString());
+                });
+              } catch (error) {
+                console.error("Error updating page order:", error);
+                alert("Failed to save new order. Reloading page...");
+                location.reload();
+              }
+            }
+          });
+        });
+      }
 
       // Import markdown file
       async function importMarkdownFile(slug, filePath) {
