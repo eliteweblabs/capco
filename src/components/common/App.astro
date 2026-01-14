@@ -877,6 +877,9 @@ const debugData = {
 
         // Set up CSS transitions for fade effect
         const transitionDuration = 300; // milliseconds
+        const blurDelay = 100; // Delay before showing (prevents flash when tabbing between inputs)
+        let blurTimeout: ReturnType<typeof setTimeout> | null = null;
+        
         element.forEach((el) => {
           const htmlEl = el as HTMLElement;
           htmlEl.style.transition = `opacity ${transitionDuration}ms ease-in-out`;
@@ -885,6 +888,12 @@ const debugData = {
 
         // Hide on input focus (fade out)
         const hideOnFocus = () => {
+          // Cancel any pending show operation
+          if (blurTimeout) {
+            clearTimeout(blurTimeout);
+            blurTimeout = null;
+          }
+          
           element.forEach((el) => {
             const htmlEl = el as HTMLElement;
             htmlEl.style.opacity = "0";
@@ -895,25 +904,28 @@ const debugData = {
           });
         };
 
-        // Show on input blur (fade in)
+        // Show on input blur (fade in) - debounced to prevent flash
         const showOnBlur = () => {
-          element.forEach((el) => {
-            const htmlEl = el as HTMLElement;
-            // Set visibility visible first, then fade in
-            htmlEl.style.visibility = "visible";
-            // Use requestAnimationFrame to ensure visibility is set before opacity change
-            requestAnimationFrame(() => {
-              htmlEl.style.opacity = "1";
-              // Refresh AOS to allow animation when element becomes visible
-              setTimeout(() => {
-                // @ts-ignore - AOS loaded from CDN
-                if (typeof AOS !== "undefined" && htmlEl.hasAttribute("data-aos")) {
-                  // @ts-ignore
-                  AOS.refresh();
-                }
-              }, 50);
+          // Delay showing to see if focus moves to another input
+          blurTimeout = setTimeout(() => {
+            element.forEach((el) => {
+              const htmlEl = el as HTMLElement;
+              // Set visibility visible first, then fade in
+              htmlEl.style.visibility = "visible";
+              // Use requestAnimationFrame to ensure visibility is set before opacity change
+              requestAnimationFrame(() => {
+                htmlEl.style.opacity = "1";
+                // Refresh AOS to allow animation when element becomes visible
+                setTimeout(() => {
+                  // @ts-ignore - AOS loaded from CDN
+                  if (typeof AOS !== "undefined" && htmlEl.hasAttribute("data-aos")) {
+                    // @ts-ignore
+                    AOS.refresh();
+                  }
+                }, 50);
+              });
             });
-          });
+          }, blurDelay);
         };
 
         const selector = "input, textarea, select, form, button, label, .slot-machine-modal";
