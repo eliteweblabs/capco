@@ -162,7 +162,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    const origin = getOrigin(url, request);
     console.log("✅ [GOOGLE-OAUTH] Cookies set:", {
       isDev,
       secure: !isDev,
