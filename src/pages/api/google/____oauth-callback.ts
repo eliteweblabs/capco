@@ -1,6 +1,45 @@
 import type { APIRoute } from "astro";
 
-export const GET: APIRoute = async ({ url, cookies, redirect }) => {
+// Helper function to get the correct origin in production (handles proxy/load balancer)
+function getOrigin(url: URL, request: Request): string {
+  // Check for explicit production URL environment variable first
+  const productionUrl = import.meta.env.PUBLIC_SITE_URL || import.meta.env.SITE_URL;
+  if (productionUrl) {
+    try {
+      const prodUrl = new URL(productionUrl);
+      console.log("🔍 [GOOGLE-OAUTH] Using production URL from env:", prodUrl.origin);
+      return prodUrl.origin;
+    } catch (e) {
+      console.warn("⚠️ [GOOGLE-OAUTH] Invalid production URL in env, falling back to header detection");
+    }
+  }
+
+  // In production, use forwarded headers if available (Railway/Cloudflare/etc)
+  if (import.meta.env.PROD) {
+    const forwardedProto = request.headers.get("x-forwarded-proto") || request.headers.get("x-forwarded-protocol");
+    const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    
+    if (forwardedProto && forwardedHost) {
+      const origin = `${forwardedProto}://${forwardedHost}`;
+      console.log("🔍 [GOOGLE-OAUTH] Using forwarded headers origin:", origin);
+      return origin;
+    }
+    
+    // Fallback: use host header with https in production
+    const host = request.headers.get("host");
+    if (host) {
+      const origin = `https://${host}`;
+      console.log("🔍 [GOOGLE-OAUTH] Using host header origin:", origin);
+      return origin;
+    }
+  }
+
+  // Development fallback
+  console.log("🔍 [GOOGLE-OAUTH] Using url.origin fallback:", url.origin);
+  return url.origin;
+}
+
+export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
   console.log("🔍 [GOOGLE-OAUTH] OAuth callback received:", {
     fullUrl: url.toString(),
     pathname: url.pathname,
@@ -8,6 +47,13 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     hasCode: url.searchParams.has("code"),
     hasState: url.searchParams.has("state"),
     hasError: url.searchParams.has("error"),
+    urlOrigin: url.origin,
+    requestHeaders: {
+      host: request.headers.get("host"),
+      "x-forwarded-host": request.headers.get("x-forwarded-host"),
+      "x-forwarded-proto": request.headers.get("x-forwarded-proto"),
+      origin: request.headers.get("origin"),
+    },
   });
 
   const code = url.searchParams.get("code");
@@ -43,6 +89,12 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   }
 
   try {
+    // Get the correct origin for redirect URI (must match what was sent to Google)
+    const origin = getOrigin(url, request);
+    const redirectUri = `${origin}/api/auth/callback`;
+    
+    console.log("🔍 [GOOGLE-OAUTH] Using redirect URI for token exchange:", redirectUri);
+    
     // Exchange code for access token
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -54,7 +106,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
         client_secret: import.meta.env.GOOGLE_PEOPLE_CLIENT_SECRET,
         code: code,
         grant_type: "authorization_code",
-        redirect_uri: `${url.origin}/api/auth/callback`,
+        redirect_uri: redirectUri,
       }),
     });
 
@@ -107,12 +159,14 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
+    const origin = getOrigin(url, request);
     console.log("✅ [GOOGLE-OAUTH] Cookies set:", {
       isDev,
       secure: !isDev,
       hasAccessToken: !!tokenData.access_token,
       hasRefreshToken: !!tokenData.refresh_token,
-      origin: url.origin,
+      origin: origin,
+      urlOrigin: url.origin,
     });
 
     console.log("✅ [GOOGLE-OAUTH] OAuth flow completed successfully");

@@ -1,6 +1,45 @@
 import type { APIRoute } from "astro";
 
-export const GET: APIRoute = async ({ url, redirect, cookies }) => {
+// Helper function to get the correct origin in production (handles proxy/load balancer)
+function getOrigin(url: URL, request: Request): string {
+  // Check for explicit production URL environment variable first
+  const productionUrl = import.meta.env.PUBLIC_SITE_URL || import.meta.env.SITE_URL;
+  if (productionUrl) {
+    try {
+      const prodUrl = new URL(productionUrl);
+      console.log("🔐 [GOOGLE-OAUTH] Using production URL from env:", prodUrl.origin);
+      return prodUrl.origin;
+    } catch (e) {
+      console.warn("⚠️ [GOOGLE-OAUTH] Invalid production URL in env, falling back to header detection");
+    }
+  }
+
+  // In production, use forwarded headers if available (Railway/Cloudflare/etc)
+  if (import.meta.env.PROD) {
+    const forwardedProto = request.headers.get("x-forwarded-proto") || request.headers.get("x-forwarded-protocol");
+    const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    
+    if (forwardedProto && forwardedHost) {
+      const origin = `${forwardedProto}://${forwardedHost}`;
+      console.log("🔐 [GOOGLE-OAUTH] Using forwarded headers origin:", origin);
+      return origin;
+    }
+    
+    // Fallback: use host header with https in production
+    const host = request.headers.get("host");
+    if (host) {
+      const origin = `https://${host}`;
+      console.log("🔐 [GOOGLE-OAUTH] Using host header origin:", origin);
+      return origin;
+    }
+  }
+
+  // Development fallback
+  console.log("🔐 [GOOGLE-OAUTH] Using url.origin fallback:", url.origin);
+  return url.origin;
+}
+
+export const GET: APIRoute = async ({ url, redirect, cookies, request }) => {
   // Google OAuth credentials from environment variables
   const clientId = import.meta.env.GOOGLE_PEOPLE_CLIENT_ID;
   const clientSecret = import.meta.env.GOOGLE_PEOPLE_CLIENT_SECRET;
@@ -26,7 +65,16 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
 
   // Store state in a cookie for verification
   // Use /api/auth/callback so the GET handler can process Google OAuth server-side
-  const redirectUrl = `${url.origin}/api/auth/callback`;
+  const origin = getOrigin(url, request);
+  const redirectUrl = `${origin}/api/auth/callback`;
+  
+  console.log("🔐 [GOOGLE-OAUTH] Redirect URL:", redirectUrl);
+  console.log("🔐 [GOOGLE-OAUTH] Request headers:", {
+    host: request.headers.get("host"),
+    "x-forwarded-host": request.headers.get("x-forwarded-host"),
+    "x-forwarded-proto": request.headers.get("x-forwarded-proto"),
+    origin: request.headers.get("origin"),
+  });
 
   // Build Google OAuth URL
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
