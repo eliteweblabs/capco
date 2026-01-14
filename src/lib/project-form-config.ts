@@ -24,12 +24,12 @@ export {
 // Import default config for fallback
 import * as defaultConfig from "./project-form-config-capco-design-group";
 
-// Export default UNIFIED_FORM_ELEMENTS for backwards compatibility
-export const UNIFIED_FORM_ELEMENTS = defaultConfig.UNIFIED_FORM_ELEMENTS;
-
 // Import client-specific configs here as they are created
 // This allows static analysis and proper bundling
-// Example: import * as acmeConfig from "./project-form-config-acme-corp";
+import * as rothcoBuiltConfig from "./project-form-config-rothco-built";
+
+// Export default UNIFIED_FORM_ELEMENTS for backwards compatibility
+export const UNIFIED_FORM_ELEMENTS = defaultConfig.UNIFIED_FORM_ELEMENTS;
 
 // Helper function to slugify company name
 function slugifyCompanyName(name: string): string {
@@ -74,27 +74,21 @@ async function getProjectFormConfig() {
   // Map company slugs to their config modules
   // Add new client configs here as they are created
   // Import them at the top of the file, then reference here
-  if (companySlug === "capco-design-group") {
-    // Already using defaultConfig, no need to import again
-    configModule = defaultConfig;
-    console.log(`✅ [PROJECT-FORM-CONFIG] Using config for: ${companyName} (${companySlug})`);
-  } else {
-    // For other clients, try to dynamically import
-    // This will be expanded as new client configs are added
-    try {
-      // Try dynamic import - this will fail if file doesn't exist, which is fine
-      const dynamicImport = await import(`./project-form-config-${companySlug}`);
-      configModule = dynamicImport;
-      console.log(
-        `✅ [PROJECT-FORM-CONFIG] Loaded client-specific config for: ${companyName} (${companySlug})`
-      );
-    } catch (error) {
-      // Fall back to default
+  switch (companySlug) {
+    case "capco-design-group":
+      configModule = defaultConfig;
+      console.log(`✅ [PROJECT-FORM-CONFIG] Using config for: ${companyName} (${companySlug})`);
+      break;
+    case "rothco-built":
+      configModule = rothcoBuiltConfig;
+      console.log(`✅ [PROJECT-FORM-CONFIG] Using config for: ${companyName} (${companySlug})`);
+      break;
+    default:
+      // Fall back to default config
       console.log(
         `⚠️ [PROJECT-FORM-CONFIG] No client-specific config for "${companySlug}", using default (capco-design-group)`
       );
       configModule = defaultConfig;
-    }
   }
 
   // Cache the config
