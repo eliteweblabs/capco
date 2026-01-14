@@ -1,0 +1,395 @@
+---
+/**
+ * ImageSlider - Grid-Based Multi-Directional Image Slider with Hero Overlay
+ * ==========================================================================
+ * A dynamic grid slider where multiple images are visible and slide
+ * in different directions at different times. Creates a Ken Burns-like effect.
+ * Includes optional title, description, and button overlay like Hero component.
+ *
+ * Supports both direct Astro props AND flat shortcode props for CMS usage.
+ *
+ * @property {Array} slides - Array of slide objects (for direct Astro usage)
+ * @property {string} containerClass - Additional CSS classes for container
+ * @property {string} gridTemplate - CSS grid template (default: '1fr 1fr / 1fr 1fr')
+ * @property {string} height - Container height (default: '400px')
+ * @property {string} title - Main headline (h1)
+ * @property {string} description - Subtitle (h2)
+ * @property {boolean} overlay - Show dark overlay (default: true)
+ * @property {number} overlayOpacity - Overlay opacity 0-1 (default: 0.5)
+ *
+ * Shortcode flat props (for CMS usage):
+ * @property {string} image1, image2, image3, image4 - Image URLs
+ * @property {string} alt1, alt2, alt3, alt4 - Alt text for images
+ * @property {string} direction1, direction2, etc. - Animation direction: left, right, up, down
+ * @property {string} leftButtonText, leftButtonHref, etc. - Button props
+ *
+ * Usage Examples:
+ * ---------------
+ * CMS Shortcode with overlay text:
+ * <ImageSlider
+ *   title="Our Projects"
+ *   description="Quality construction across the Northeast"
+ *   image1="https://example.com/img1.jpg"
+ *   image2="https://example.com/img2.jpg"
+ *   overlay="true"
+ *   overlayOpacity="0.5"
+ *   leftButtonText="View Projects"
+ *   leftButtonHref="/projects"
+ *   height="500px"
+ * />
+ */
+
+import Button from "../common/Button.astro";
+
+interface SlideData {
+  src: string;
+  alt: string;
+  direction?: "left" | "right" | "up" | "down";
+  delay?: number;
+  duration?: number;
+  gridArea?: string;
+}
+
+interface ButtonProps {
+  text: string;
+  href: string;
+  icon?: string;
+  variant?: "primary" | "secondary" | "outline";
+}
+
+interface Props {
+  slides?: SlideData[];
+  containerClass?: string;
+  gridTemplate?: string;
+  height?: string;
+  // Overlay text props
+  title?: string;
+  description?: string;
+  overlay?: boolean | string;
+  overlayOpacity?: number | string;
+  // Object-based button props (for direct Astro usage)
+  leftButton?: ButtonProps;
+  rightButton?: ButtonProps;
+  // Flat shortcode props for CMS usage - Images
+  image1?: string;
+  image2?: string;
+  image3?: string;
+  image4?: string;
+  alt1?: string;
+  alt2?: string;
+  alt3?: string;
+  alt4?: string;
+  direction1?: string;
+  direction2?: string;
+  direction3?: string;
+  direction4?: string;
+  // Flat shortcode props for CMS usage - Buttons
+  leftButtonText?: string;
+  leftButtonHref?: string;
+  leftButtonIcon?: string;
+  leftButtonVariant?: string;
+  rightButtonText?: string;
+  rightButtonHref?: string;
+  rightButtonIcon?: string;
+  rightButtonVariant?: string;
+}
+
+const props = Astro.props;
+
+const {
+  containerClass = "",
+  gridTemplate: customGridTemplate,
+  height = "400px",
+  title,
+  description,
+} = props;
+
+// Handle boolean/string conversion for shortcode compatibility
+const showOverlay = props.overlay === "false" ? false : (props.overlay ?? true);
+const overlayOpacity =
+  typeof props.overlayOpacity === "string"
+    ? parseFloat(props.overlayOpacity)
+    : (props.overlayOpacity ?? 0.5);
+
+// Build button objects from either format
+const leftButton: ButtonProps | undefined =
+  props.leftButton ||
+  (props.leftButtonText
+    ? {
+        text: props.leftButtonText,
+        href: props.leftButtonHref || "#",
+        icon: props.leftButtonIcon,
+        variant: (props.leftButtonVariant as "primary" | "secondary" | "outline") || "primary",
+      }
+    : undefined);
+
+const rightButton: ButtonProps | undefined =
+  props.rightButton ||
+  (props.rightButtonText
+    ? {
+        text: props.rightButtonText,
+        href: props.rightButtonHref || "#",
+        icon: props.rightButtonIcon,
+        variant: (props.rightButtonVariant as "primary" | "secondary" | "outline") || "secondary",
+      }
+    : undefined);
+
+const hasButtons = leftButton || rightButton;
+const hasOverlayContent = title || description || hasButtons;
+
+// Build slides from either format
+let slides: SlideData[] = props.slides || [];
+
+// If no slides array, build from flat props (shortcode usage)
+if (slides.length === 0) {
+  const flatSlides: SlideData[] = [];
+
+  // Default grid areas for 1-4 images
+  const defaultGridAreas = [
+    "1 / 1 / 2 / 3", // Image 1: top, spans 2 columns
+    "2 / 1 / 3 / 2", // Image 2: bottom left
+    "2 / 2 / 3 / 3", // Image 3: bottom right
+    "1 / 3 / 3 / 4", // Image 4: right side, spans 2 rows
+  ];
+
+  const defaultDirections: Array<"left" | "right" | "up" | "down"> = ["left", "right", "up", "down"];
+  const defaultDelays = [0, 2000, 1000, 3000];
+  const defaultDurations = [25000, 30000, 28000, 32000];
+
+  for (let i = 1; i <= 4; i++) {
+    const imageKey = `image${i}` as keyof Props;
+    const altKey = `alt${i}` as keyof Props;
+    const directionKey = `direction${i}` as keyof Props;
+
+    const imageSrc = props[imageKey] as string | undefined;
+    if (imageSrc) {
+      flatSlides.push({
+        src: imageSrc,
+        alt: (props[altKey] as string) || `Image ${i}`,
+        direction: ((props[directionKey] as string) || defaultDirections[i - 1]) as SlideData["direction"],
+        delay: defaultDelays[i - 1],
+        duration: defaultDurations[i - 1],
+        gridArea: defaultGridAreas[i - 1],
+      });
+    }
+  }
+
+  slides = flatSlides;
+}
+
+// Determine grid template based on number of slides
+let gridTemplate = customGridTemplate;
+if (!gridTemplate) {
+  switch (slides.length) {
+    case 1:
+      gridTemplate = "1fr / 1fr";
+      break;
+    case 2:
+      gridTemplate = "1fr / 1fr 1fr";
+      break;
+    case 3:
+      gridTemplate = "1fr 1fr / 1fr 1fr";
+      break;
+    case 4:
+    default:
+      gridTemplate = "repeat(2, 1fr) / repeat(3, 1fr)";
+      break;
+  }
+}
+
+// Generate unique ID for this instance
+const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
+---
+
+{slides.length > 0 && (
+  <div
+    class={`image-slider-container ${containerClass}`}
+    id={gridId}
+    style={`height: ${height};`}
+  >
+    {/* Image Grid */}
+    <div class="image-slider-grid" style={`grid-template: ${gridTemplate};`}>
+      {slides.map((slide, index) => {
+        const slideId = `slide-${index}`;
+        const direction = slide.direction || "left";
+        const delay = slide.delay || 0;
+        const duration = slide.duration || 20000;
+        const gridArea = slide.gridArea || "auto";
+
+        return (
+          <div
+            class={`grid-slide slide-${direction}`}
+            data-direction={direction}
+            data-delay={delay}
+            data-duration={duration}
+            style={`grid-area: ${gridArea};`}
+            id={`${gridId}-${slideId}`}
+          >
+            <img src={slide.src} alt={slide.alt} class="slide-image" loading="lazy" />
+          </div>
+        );
+      })}
+    </div>
+
+    {/* Dark Overlay */}
+    {showOverlay && hasOverlayContent && (
+      <div 
+        class="absolute inset-0 bg-black rounded-md pointer-events-none" 
+        style={`opacity: ${overlayOpacity};`} 
+      />
+    )}
+
+    {/* Content Overlay */}
+    {hasOverlayContent && (
+      <div class="absolute inset-0 flex items-center justify-center z-10">
+        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+          {title && (
+            <h1 class="md:text-6xl sm:text-4xl text-3xl font-bold text-white drop-shadow-lg">
+              {title}
+            </h1>
+          )}
+          {description && (
+            <h2 
+              class="text-xl mt-6 text-gray-200 drop-shadow-md"
+              set:html={description}
+            />
+          )}
+          {hasButtons && (
+            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              {leftButton && (
+                <Button href={leftButton.href} variant={leftButton.variant} icon={leftButton.icon}>
+                  {leftButton.text}
+                </Button>
+              )}
+              {rightButton && (
+                <Button href={rightButton.href} variant={rightButton.variant} icon={rightButton.icon}>
+                  {rightButton.text}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
+<style>
+  .image-slider-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 0.5rem;
+  }
+
+  .image-slider-grid {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    gap: 4px;
+    position: absolute;
+    inset: 0;
+  }
+
+  .grid-slide {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    border-radius: 0.25rem;
+  }
+
+  /* Ensure overlay content is clickable */
+  .image-slider-container .z-10 {
+    pointer-events: auto;
+  }
+
+  .image-slider-container .z-10 a,
+  .image-slider-container .z-10 button {
+    pointer-events: auto;
+  }
+
+  .slide-image {
+    width: 130%;
+    height: 130%;
+    object-fit: cover;
+    object-position: center;
+    will-change: transform;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 130%;
+    min-height: 130%;
+  }
+
+  /* Animation keyframes for different directions */
+  @keyframes slide-left {
+    0% {
+      transform: translate(-50%, -50%) translateX(0);
+    }
+    100% {
+      transform: translate(-50%, -50%) translateX(-8%);
+    }
+  }
+
+  @keyframes slide-right {
+    0% {
+      transform: translate(-50%, -50%) translateX(0);
+    }
+    100% {
+      transform: translate(-50%, -50%) translateX(8%);
+    }
+  }
+
+  @keyframes slide-up {
+    0% {
+      transform: translate(-50%, -50%) translateY(0);
+    }
+    100% {
+      transform: translate(-50%, -50%) translateY(-8%);
+    }
+  }
+
+  @keyframes slide-down {
+    0% {
+      transform: translate(-50%, -50%) translateY(0);
+    }
+    100% {
+      transform: translate(-50%, -50%) translateY(8%);
+    }
+  }
+
+  /* Apply animations based on direction */
+  .slide-left .slide-image {
+    animation: slide-left var(--duration, 20s) var(--delay, 0s) infinite alternate ease-in-out;
+  }
+
+  .slide-right .slide-image {
+    animation: slide-right var(--duration, 20s) var(--delay, 0s) infinite alternate ease-in-out;
+  }
+
+  .slide-up .slide-image {
+    animation: slide-up var(--duration, 20s) var(--delay, 0s) infinite alternate ease-in-out;
+  }
+
+  .slide-down .slide-image {
+    animation: slide-down var(--duration, 20s) var(--delay, 0s) infinite alternate ease-in-out;
+  }
+</style>
+
+<script>
+  // Apply custom animation properties to each slide
+  document.addEventListener("DOMContentLoaded", () => {
+    const slides = document.querySelectorAll(".grid-slide");
+    slides.forEach((slide) => {
+      const duration = slide.getAttribute("data-duration") || "20000";
+      const delay = slide.getAttribute("data-delay") || "0";
+      const img = slide.querySelector(".slide-image") as HTMLElement;
+      if (img) {
+        img.style.setProperty("--duration", `${parseInt(duration)}ms`);
+        img.style.setProperty("--delay", `${parseInt(delay)}ms`);
+      }
+    });
+  });
+</script>

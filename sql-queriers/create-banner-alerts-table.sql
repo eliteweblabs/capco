@@ -1,8 +1,8 @@
 -- Banner Alerts Table
 -- Stores site-wide banner alerts with position and expiration settings
 
--- Create the banner_alerts table
-CREATE TABLE IF NOT EXISTS banner_alerts (
+-- Create the bannerAlerts table
+CREATE TABLE IF NOT EXISTS "bannerAlerts" (
   id SERIAL PRIMARY KEY,
   title TEXT,
   description TEXT NOT NULL,
@@ -19,17 +19,17 @@ CREATE TABLE IF NOT EXISTS banner_alerts (
 );
 
 -- Create index for active banners query
-CREATE INDEX IF NOT EXISTS idx_banner_alerts_active ON banner_alerts (isActive, startDate, endDate);
+CREATE INDEX IF NOT EXISTS "idx_bannerAlerts_active" ON "bannerAlerts" ("isActive", "startDate", "endDate");
 
 -- Enable RLS
-ALTER TABLE banner_alerts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "bannerAlerts" ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Anyone can read active banners
-CREATE POLICY "Anyone can read active banners" ON banner_alerts
-  FOR SELECT USING (isActive = true);
+CREATE POLICY "Anyone can read active banners" ON "bannerAlerts"
+  FOR SELECT USING ("isActive" = true);
 
 -- Policy: Admins can do everything
-CREATE POLICY "Admins can manage banner alerts" ON banner_alerts
+CREATE POLICY "Admins can manage banner alerts" ON "bannerAlerts"
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM profiles
@@ -39,21 +39,21 @@ CREATE POLICY "Admins can manage banner alerts" ON banner_alerts
   );
 
 -- Create updated_at trigger
-CREATE OR REPLACE FUNCTION update_banner_alerts_updated_at()
+CREATE OR REPLACE FUNCTION update_bannerAlerts_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.updatedAt = NOW();
+  NEW."updatedAt" = NOW();
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER banner_alerts_updated_at
-  BEFORE UPDATE ON banner_alerts
+CREATE TRIGGER "bannerAlerts_updated_at"
+  BEFORE UPDATE ON "bannerAlerts"
   FOR EACH ROW
-  EXECUTE FUNCTION update_banner_alerts_updated_at();
+  EXECUTE FUNCTION update_bannerAlerts_updated_at();
 
 -- Grant permissions
-GRANT SELECT ON banner_alerts TO authenticated;
-GRANT ALL ON banner_alerts TO service_role;
-GRANT USAGE, SELECT ON SEQUENCE banner_alerts_id_seq TO authenticated;
-GRANT USAGE, SELECT ON SEQUENCE banner_alerts_id_seq TO service_role;
+GRANT SELECT ON "bannerAlerts" TO authenticated;
+GRANT ALL ON "bannerAlerts" TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE "bannerAlerts_id_seq" TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE "bannerAlerts_id_seq" TO service_role;
