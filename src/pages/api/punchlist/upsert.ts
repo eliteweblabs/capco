@@ -142,7 +142,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Continue with the response instead of returning
       }
 
-      const adminContent = ` ${punchlistMessage} marked complete by ${currentUser.profile.companyName}:<br><br>`;
+      const adminContent = ` ${punchlistMessage} marked complete by ${currentUser?.profile?.companyName || currentUser?.email || "Unknown User"}:<br><br>`;
 
       // THIS IS TO THE ADMINS EMAIL
       // Send email using the email delivery API
@@ -155,7 +155,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         body: JSON.stringify({
           usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"], // Use resolved user email
           method: "email",
-          emailSubject: `Punchlist Item Completed → ${punchlistMessage.message} → ${currentUser.profile.companyName}`,
+          emailSubject: `Punchlist Item Completed → ${punchlistMessage.message} → ${currentUser?.profile?.companyName || currentUser?.email || "Unknown User"}`,
           emailContent: adminContent,
           buttonText: "Access Your Dashboard",
           buttonLink: "/dashboard",
