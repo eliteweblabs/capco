@@ -9,6 +9,47 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 let clientInstance: SupabaseClient | null = null;
 
 /**
+ * Custom storage wrapper that provides better debugging for auth state
+ */
+const createAuthStorage = () => {
+  return {
+    getItem: (key: string): string | null => {
+      try {
+        const value = window.localStorage.getItem(key);
+        // Only log for auth-related keys during debugging
+        if (key.includes("code-verifier") || key.includes("auth-token")) {
+          console.log(`[SUPABASE-STORAGE] getItem(${key}):`, value ? "found" : "not found");
+        }
+        return value;
+      } catch (error) {
+        console.error(`[SUPABASE-STORAGE] Error reading ${key}:`, error);
+        return null;
+      }
+    },
+    setItem: (key: string, value: string): void => {
+      try {
+        window.localStorage.setItem(key, value);
+        if (key.includes("code-verifier")) {
+          console.log(`[SUPABASE-STORAGE] setItem(${key}): stored code verifier`);
+        }
+      } catch (error) {
+        console.error(`[SUPABASE-STORAGE] Error writing ${key}:`, error);
+      }
+    },
+    removeItem: (key: string): void => {
+      try {
+        window.localStorage.removeItem(key);
+        if (key.includes("code-verifier")) {
+          console.log(`[SUPABASE-STORAGE] removeItem(${key}): removed code verifier`);
+        }
+      } catch (error) {
+        console.error(`[SUPABASE-STORAGE] Error removing ${key}:`, error);
+      }
+    },
+  };
+};
+
+/**
  * Get or create the singleton Supabase client for client-side use
  * This ensures only one GoTrueClient instance exists, preventing auth state conflicts
  */
@@ -32,14 +73,15 @@ export function getSupabaseClient(): SupabaseClient | null {
     return null;
   }
 
-  // Create singleton instance
+  // Create singleton instance with custom storage for better debugging
   clientInstance = createClient(supabaseUrl, supabasePublishableKey, {
     auth: {
       flowType: "pkce",
       autoRefreshToken: true,
       detectSessionInUrl: true,
       persistSession: true,
-      storage: window.localStorage, // Explicitly use localStorage
+      storage: createAuthStorage(),
+      storageKey: `sb-${supabaseUrl.split("//")[1].split(".")[0]}-auth-token`,
     },
   });
 

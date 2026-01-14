@@ -348,29 +348,47 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
               if (supabaseUrl) {
                 const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-                const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
-                const codeVerifier = localStorage.getItem(codeVerifierKey);
+                
+                // Try multiple possible key formats for the code verifier
+                const possibleKeys = [
+                  `sb-${supabaseProjectRef}-auth-token-code-verifier`,
+                  `sb-${supabaseProjectRef}-code-verifier`,
+                  `supabase.auth.token.code_verifier`,
+                  `supabase-auth-token-code-verifier`,
+                ];
+                
+                let codeVerifier = null;
+                let foundKey = null;
+                
+                for (const key of possibleKeys) {
+                  const value = localStorage.getItem(key);
+                  if (value) {
+                    codeVerifier = value;
+                    foundKey = key;
+                    break;
+                  }
+                }
 
                 console.log("[AUTH-CALLBACK] Code verifier check:", {
-                  key: codeVerifierKey,
+                  checkedKeys: possibleKeys,
+                  foundKey: foundKey,
                   found: !!codeVerifier,
                   codeLength: code?.length || 0,
                 });
 
                 if (!codeVerifier) {
                   console.error("[AUTH-CALLBACK] ❌ Code verifier not found in localStorage!");
-                  console.error(
-                    "[AUTH-CALLBACK] Available localStorage keys:",
-                    Object.keys(localStorage).filter(
-                      (k) => k.includes("supabase") || k.includes("auth")
-                    )
+                  const allAuthKeys = Object.keys(localStorage).filter(
+                    (k) => k.includes("supabase") || k.includes("sb-") || k.includes("auth")
                   );
-                  exchangeError = new Error(
-                    "Code verifier not found. Please try signing in again."
-                  );
+                  console.error("[AUTH-CALLBACK] Available localStorage keys:", allAuthKeys);
+                  
+                  // Don't set an error here - let Supabase try to handle it
+                  // The verifier might be stored internally by Supabase
+                  console.warn("[AUTH-CALLBACK] Proceeding anyway - Supabase may have stored verifier internally");
                 } else {
                   console.log(
-                    "[AUTH-CALLBACK] ✅ Code verifier found, proceeding with exchange..."
+                    "[AUTH-CALLBACK] ✅ Code verifier found at key:", foundKey
                   );
                 }
               }
@@ -415,6 +433,32 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
               status: exchangeError.status,
               code: exchangeError.code,
             });
+            
+            // Handle specific error cases
+            const errorMsg = exchangeError.message || "";
+            
+            if (errorMsg.includes("code verifier") || errorMsg.includes("Code verifier")) {
+              // Code verifier issue - user needs to sign in again from scratch
+              console.warn("[AUTH-CALLBACK] Code verifier missing - clearing auth state and redirecting");
+              
+              // Clear any stale localStorage items
+              const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+              if (supabaseUrl) {
+                const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+                const keysToRemove = Object.keys(localStorage).filter(
+                  (k) => k.includes(`sb-${supabaseProjectRef}`) || k.includes("supabase")
+                );
+                keysToRemove.forEach((k) => localStorage.removeItem(k));
+                console.log("[AUTH-CALLBACK] Cleared stale localStorage keys:", keysToRemove);
+              }
+              
+              showError("Session expired. Redirecting to sign in...");
+              setTimeout(() => {
+                window.location.href = "/auth/login?error=session_expired&message=Please+sign+in+again";
+              }, 1500);
+              return;
+            }
+            
             showError(`Session exchange failed: ${exchangeError.message}`);
             setTimeout(() => {
               window.location.href = "/auth/login?error=session_exchange_failed";
