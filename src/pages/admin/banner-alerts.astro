@@ -364,7 +364,16 @@ const expireOptions = [
                     <button
                       type="button"
                       class="edit-banner-btn rounded p-2 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-600 dark:hover:text-gray-300"
-                      data-banner={JSON.stringify(banner)}
+                      data-id={banner.id}
+                      data-title={banner.title || ""}
+                      data-description={banner.description || ""}
+                      data-type={banner.type || "info"}
+                      data-position={banner.position || "top"}
+                      data-expire-ms={banner.expireMs || ""}
+                      data-dismissible={banner.dismissible !== false}
+                      data-is-active={banner.isActive !== false}
+                      data-start-date={banner.startDate || ""}
+                      data-end-date={banner.endDate || ""}
                       title="Edit"
                     >
                       <i class="bx bx-edit text-lg" />
@@ -439,7 +448,18 @@ const expireOptions = [
       document.querySelectorAll(".edit-banner-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           const target = e.currentTarget as HTMLElement;
-          const banner = JSON.parse(target.dataset.banner || "{}");
+          const banner = {
+            id: parseInt(target.dataset.id || "0"),
+            title: target.dataset.title || "",
+            description: target.dataset.description || "",
+            type: target.dataset.type || "info",
+            position: target.dataset.position || "top",
+            expireMs: target.dataset.expireMs ? parseInt(target.dataset.expireMs) : null,
+            dismissible: target.dataset.dismissible === "true",
+            isActive: target.dataset.isActive === "true",
+            startDate: target.dataset.startDate || null,
+            endDate: target.dataset.endDate || null,
+          };
           this.editBanner(banner);
         });
       });
