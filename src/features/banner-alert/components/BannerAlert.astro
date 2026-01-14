@@ -2,6 +2,7 @@
 /**
  * BannerAlert Component
  * Displays a site-wide banner alert with position and expiration settings
+ * Top banners push header down, bottom banners push footer up
  */
 export const partial = true;
 
@@ -28,33 +29,25 @@ const {
   dismissible = true,
   class: className = "",
 } = Astro.props;
-
-// Position classes
-const positionClasses = {
-  top: "fixed top-0 left-0 right-0 z-[9999]",
-  bottom: "fixed bottom-0 left-0 right-0 z-[9999]",
-};
 ---
 
 <div
-  class={`banner-alert ${positionClasses[position]} ${className}`}
+  class={`banner-alert w-full ${className}`}
   data-banner-id={id}
   data-expire-ms={expireMs}
   data-position={position}
 >
-  <div class="mx-auto max-w-7xl px-4">
-    <div class="relative">
-      <Alert type={type} title={title} description={description} class="mb-0 shadow-lg" />
-      {dismissible && (
-        <button
-          type="button"
-          class="banner-dismiss absolute right-6 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          aria-label="Dismiss banner"
-        >
-          <i class="bx bx-x text-xl"></i>
-        </button>
-      )}
-    </div>
+  <div class="relative w-full">
+    <Alert type={type} title={title} description={description} class="mb-0 rounded-none border-x-0" />
+    {dismissible && (
+      <button
+        type="button"
+        class="banner-dismiss absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        aria-label="Dismiss banner"
+      >
+        <i class="bx bx-x text-xl"></i>
+      </button>
+    )}
   </div>
 </div>
 
@@ -121,56 +114,30 @@ const positionClasses = {
             this.dismissBanner(element);
           });
         }
-
-        // Adjust body padding for fixed position
-        this.adjustBodyPadding(element);
       });
     }
 
     private dismissBanner(element: HTMLElement): void {
       const bannerId = element.dataset.bannerId;
-      
-      // Animate out
-      element.style.transition = "transform 0.3s ease-out, opacity 0.3s ease-out";
-      element.style.opacity = "0";
-      
       const position = element.dataset.position;
-      if (position === "top") {
-        element.style.transform = "translateY(-100%)";
-      } else {
-        element.style.transform = "translateY(100%)";
-      }
+
+      // Animate out
+      element.style.transition =
+        "max-height 0.3s ease-out, opacity 0.3s ease-out, margin 0.3s ease-out";
+      element.style.opacity = "0";
+      element.style.maxHeight = "0";
+      element.style.overflow = "hidden";
+      element.style.marginTop = "0";
+      element.style.marginBottom = "0";
 
       setTimeout(() => {
         element.style.display = "none";
-        this.removeBodyPadding(element);
       }, 300);
 
       // Save dismissal
       if (bannerId) {
         this.dismissedBanners.add(bannerId);
         this.saveDismissedBanners();
-      }
-    }
-
-    private adjustBodyPadding(element: HTMLElement): void {
-      const position = element.dataset.position;
-      const height = element.offsetHeight;
-      
-      if (position === "top") {
-        document.body.style.paddingTop = `${height}px`;
-      } else {
-        document.body.style.paddingBottom = `${height}px`;
-      }
-    }
-
-    private removeBodyPadding(element: HTMLElement): void {
-      const position = element.dataset.position;
-      
-      if (position === "top") {
-        document.body.style.paddingTop = "";
-      } else {
-        document.body.style.paddingBottom = "";
       }
     }
   }
