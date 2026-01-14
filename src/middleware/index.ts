@@ -111,61 +111,76 @@ export const onRequest = defineMiddleware(
         if (profileError && profileError.code === "PGRST116") {
           console.log(
             "🔐 [MIDDLEWARE] User profile not found, creating missing profile for user:",
-            data.user.id
+            data.user.id,
+            "email:",
+            data.user.email
           );
 
-          const metadata = data.user.user_metadata || {};
-          
-          // Extract firstName (handle Google OAuth: given_name)
-          const firstName = 
-            metadata.firstName || 
-            metadata.first_name || 
-            metadata.given_name ||  // Google OAuth
-            "";
-          
-          // Extract lastName (handle Google OAuth: family_name)
-          const lastName = 
-            metadata.lastName || 
-            metadata.last_name || 
-            metadata.family_name ||  // Google OAuth
-            "";
-          
-          // Extract companyName (handle Google OAuth: name = full name)
-          const companyName =
-            metadata.companyName ||
-            metadata.company_name ||
-            metadata.name ||  // Google OAuth full name
-            metadata.full_name ||
-            data.user.email?.split("@")[0] ||
-            "Unknown Company";
-          
-          // Extract avatarUrl (handle Google OAuth: picture)
-          const avatarUrl =
-            metadata.avatarUrl ||
-            metadata.avatar_url ||
-            metadata.picture ||  // Google OAuth
-            null;
-
-          // Use admin client to bypass RLS policies
-          const { error: createProfileError } = await supabaseAdmin.from("profiles").insert({
-            id: data.user.id,
-            email: data.user.email,
-            companyName: companyName,
-            role: "Client", // Default role for missing profiles
-            firstName: firstName,
-            lastName: lastName,
-            avatarUrl: avatarUrl,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-
-          if (createProfileError) {
-            console.error("🔐 [MIDDLEWARE] Error creating missing profile:", createProfileError);
-            // Continue with default role if profile creation fails
+          // Check if admin client is available
+          if (!supabaseAdmin) {
+            console.error("🔐 [MIDDLEWARE] supabaseAdmin is null - cannot create profile. Check SUPABASE_SECRET env var.");
             profile = { role: "Client" };
           } else {
-            console.log("🔐 [MIDDLEWARE] Missing profile created successfully for:", data.user.email);
-            profile = { role: "Client" };
+            const metadata = data.user.user_metadata || {};
+            console.log("🔐 [MIDDLEWARE] User metadata:", JSON.stringify(metadata, null, 2));
+            
+            // Extract firstName (handle Google OAuth: given_name)
+            const firstName = 
+              metadata.firstName || 
+              metadata.first_name || 
+              metadata.given_name ||  // Google OAuth
+              "";
+            
+            // Extract lastName (handle Google OAuth: family_name)
+            const lastName = 
+              metadata.lastName || 
+              metadata.last_name || 
+              metadata.family_name ||  // Google OAuth
+              "";
+            
+            // Extract companyName (handle Google OAuth: name = full name)
+            const companyName =
+              metadata.companyName ||
+              metadata.company_name ||
+              metadata.name ||  // Google OAuth full name
+              metadata.full_name ||
+              data.user.email?.split("@")[0] ||
+              "Unknown Company";
+            
+            // Extract avatarUrl (handle Google OAuth: picture)
+            const avatarUrl =
+              metadata.avatarUrl ||
+              metadata.avatar_url ||
+              metadata.picture ||  // Google OAuth
+              null;
+
+            console.log("🔐 [MIDDLEWARE] Creating profile with:", { firstName, lastName, companyName, avatarUrl: !!avatarUrl });
+
+            // Use admin client to bypass RLS policies
+            const { data: newProfile, error: createProfileError } = await supabaseAdmin
+              .from("profiles")
+              .insert({
+                id: data.user.id,
+                email: data.user.email,
+                companyName: companyName,
+                role: "Client", // Default role for missing profiles
+                firstName: firstName,
+                lastName: lastName,
+                avatarUrl: avatarUrl,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              })
+              .select()
+              .single();
+
+            if (createProfileError) {
+              console.error("🔐 [MIDDLEWARE] Error creating missing profile:", createProfileError);
+              // Continue with default role if profile creation fails
+              profile = { role: "Client" };
+            } else {
+              console.log("🔐 [MIDDLEWARE] ✅ Missing profile created successfully for:", data.user.email, newProfile);
+              profile = { role: "Client" };
+            }
           }
         }
 
