@@ -110,6 +110,9 @@ export const globalCompanyData = async () => {
       get("plausible_site_id", "PLAUSIBLE_SITE_ID") ||
       get("website")?.replace(/^https?:\/\//, "") ||
       "",
+
+    // OG Image for social sharing (URL path like /images/og-image.png)
+    ogImage: get("og_image", "OG_IMAGE") || "",
   };
 };
 

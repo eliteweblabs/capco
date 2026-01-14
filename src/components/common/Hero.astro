@@ -1,5 +1,14 @@
 ---
 // Hero section component
+// Supports both direct Astro props AND flat shortcode props
+import SimpleIcon from "./SimpleIcon.astro";
+
+interface ButtonProps {
+  text: string;
+  href: string;
+  icon?: string;
+  variant?: "primary" | "secondary" | "outline";
+}
 
 interface Props {
   title: string;
@@ -7,33 +16,119 @@ interface Props {
   primaryTextClasses?: string;
   secondaryTextClasses?: string;
   globalInputClasses?: string;
+  backgroundImage?: string;
+  backgroundOverlay?: boolean | string;
+  overlayOpacity?: number | string;
+  // Object-based button props (for direct Astro usage)
+  leftButton?: ButtonProps;
+  rightButton?: ButtonProps;
+  // Flat shortcode props (for CMS shortcode usage)
+  leftButtonText?: string;
+  leftButtonHref?: string;
+  leftButtonIcon?: string;
+  leftButtonVariant?: string;
+  rightButtonText?: string;
+  rightButtonHref?: string;
+  rightButtonIcon?: string;
+  rightButtonVariant?: string;
 }
 
-const { title, description, primaryTextClasses, secondaryTextClasses, globalInputClasses } =
-  Astro.props;
+const props = Astro.props;
+
+// Destructure with support for both formats
+const {
+  title,
+  description,
+  primaryTextClasses,
+  secondaryTextClasses,
+  globalInputClasses,
+  backgroundImage,
+} = props;
+
+// Handle boolean/string conversion for shortcode compatibility
+const backgroundOverlay = props.backgroundOverlay === "false" ? false : (props.backgroundOverlay ?? true);
+const overlayOpacity = typeof props.overlayOpacity === "string" ? parseFloat(props.overlayOpacity) : (props.overlayOpacity ?? 0.5);
+
+// Build button objects from either format
+const leftButton: ButtonProps | undefined = props.leftButton || (props.leftButtonText ? {
+  text: props.leftButtonText,
+  href: props.leftButtonHref || "#",
+  icon: props.leftButtonIcon,
+  variant: (props.leftButtonVariant as "primary" | "secondary" | "outline") || "primary",
+} : undefined);
+
+const rightButton: ButtonProps | undefined = props.rightButton || (props.rightButtonText ? {
+  text: props.rightButtonText,
+  href: props.rightButtonHref || "#",
+  icon: props.rightButtonIcon,
+  variant: (props.rightButtonVariant as "primary" | "secondary" | "outline") || "secondary",
+} : undefined);
+
+const hasButtons = leftButton || rightButton;
+
+const getButtonClasses = (variant: string = "primary") => {
+  const baseClasses =
+    "inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200";
+
+  switch (variant) {
+    case "primary":
+      return `${baseClasses} bg-primary-600 text-white hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 dark:focus:ring-primary-800`;
+    case "secondary":
+      return `${baseClasses} bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600`;
+    case "outline":
+      return `${baseClasses} border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-400 dark:hover:text-gray-900`;
+    default:
+      return `${baseClasses} bg-primary-600 text-white hover:bg-primary-700`;
+  }
+};
 ---
 
-<div class="col-span-12 rounded-md py-8 md:py-12 w-max-w-7xl mx-auto">
-  <!-- <div class="align-center col-span-full justify-between md:flex"></div> -->
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<div
+  class={`col-span-12 rounded-md py-8 md:py-12 w-max-w-7xl mx-auto relative ${backgroundImage ? "min-h-[400px] flex items-center" : ""}`}
+  style={backgroundImage
+    ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
+    : ""}
+>
+  {
+    backgroundImage && backgroundOverlay && (
+      <div class="absolute inset-0 bg-black rounded-md" style={`opacity: ${overlayOpacity};`} />
+    )
+  }
+
+  <div class={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${backgroundImage ? "relative z-10" : ""}`}>
     <div class="text-center">
       <!-- Main Headline -->
-      <h1 class={`${primaryTextClasses || ""} md:text-6xl sm:text-3xl text-2xl font-bold`}>
+      <h1
+        class={`${primaryTextClasses || ""} md:text-6xl sm:text-3xl text-2xl font-bold ${backgroundImage ? "text-white" : ""}`}
+      >
         {title}
       </h1>
       {
         description && (
           <h2
             id="page-subtitle"
-            class="text-xl text-black dark:text-white mt-6"
+            class={`text-xl mt-6 ${backgroundImage ? "text-gray-200" : "text-black dark:text-white"}`}
             set:html={description}
           />
+        )
+      }
 
-          // <h2
-          //   id="page-subtitle"
-          //   class={`${secondaryTextClasses || ""} mb-6 mt-6 text-xl sm:text-2xl md:text-3xl`}
-          //   set:html={description}
-          // />
+      {
+        hasButtons && (
+          <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            {leftButton && (
+              <a href={leftButton.href} class={getButtonClasses(leftButton.variant)}>
+                {leftButton.icon && <SimpleIcon name={leftButton.icon} size="sm" />}
+                {leftButton.text}
+              </a>
+            )}
+            {rightButton && (
+              <a href={rightButton.href} class={getButtonClasses(rightButton.variant)}>
+                {rightButton.icon && <SimpleIcon name={rightButton.icon} size="sm" />}
+                {rightButton.text}
+              </a>
+            )}
+          </div>
         )
       }
     </div>

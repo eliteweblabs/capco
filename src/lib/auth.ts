@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { clearAuthCookies } from "./auth-cookies";
+import { clearAuthCookies, setAuthCookies } from "./auth-cookies";
 import { supabase } from "./supabase";
 import { isBackendPage } from "../pages/api/utils/backend-page-check";
 
@@ -16,6 +16,11 @@ export interface AuthResult {
   supabase: any;
   currentRole: string | null;
 }
+
+// Cache for preventing concurrent session refreshes
+let sessionRefreshPromise: Promise<any> | null = null;
+let lastRefreshTime = 0;
+const MIN_REFRESH_INTERVAL = 5000; // Minimum 5 seconds between refresh attempts
 
 export async function checkAuth(cookies: any): Promise<AuthResult> {
   // console.log("🔐 [AUTH] Starting authentication check...");
@@ -102,22 +107,47 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     // console.log("🔐 [AUTH] Tokens found, attempting to set session...");
 
     try {
-      // Add timeout handling for Supabase connection issues
-      const sessionPromise = supabase.auth.setSession({
-        refresh_token: refreshToken.value,
-        access_token: accessToken.value,
-      });
+      // Prevent concurrent refresh attempts - reuse existing promise if within interval
+      const now = Date.now();
+      if (sessionRefreshPromise && now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
+        console.log("🔐 [AUTH] Reusing existing session refresh promise...");
+        session = await sessionRefreshPromise;
+      } else {
+        // Create new session refresh
+        lastRefreshTime = now;
+        
+        // Add timeout handling for Supabase connection issues
+        sessionRefreshPromise = supabase.auth.setSession({
+          refresh_token: refreshToken.value,
+          access_token: accessToken.value,
+        });
 
-      // Set a 10-second timeout for the session request
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Connection timeout")), 10000)
-      );
+        // Set a 10-second timeout for the session request
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Connection timeout")), 10000)
+        );
 
-      session = (await Promise.race([sessionPromise, timeoutPromise])) as any;
+        session = (await Promise.race([sessionRefreshPromise, timeoutPromise])) as any;
+        
+        // Clear the promise after completion
+        sessionRefreshPromise = null;
+      }
 
       if (!session.error) {
         isAuth = true;
         currentUser = session.data.user as ExtendedUser;
+        
+        // Update cookies if tokens were refreshed
+        if (session.data?.session?.access_token && session.data?.session?.refresh_token) {
+          const newAccessToken = session.data.session.access_token;
+          const newRefreshToken = session.data.session.refresh_token;
+          
+          // Only update if tokens actually changed
+          if (newAccessToken !== accessToken.value || newRefreshToken !== refreshToken.value) {
+            console.log("🔐 [AUTH] Tokens refreshed, updating cookies...");
+            setAuthCookies(cookies, newAccessToken, newRefreshToken);
+          }
+        }
 
         // Get user profile and role
         if (currentUser && currentUser.id) {
@@ -159,12 +189,34 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           }
         }
       } else {
+        // Handle specific error cases
+        const errorMessage = session.error?.message || "";
+        
+        // "Invalid Refresh Token: Already Used" means the token was already consumed
+        // This can happen with concurrent requests - don't clear cookies, just return unauthenticated
+        if (errorMessage.includes("Invalid Refresh Token") || errorMessage.includes("Already Used")) {
+          console.warn("🔐 [AUTH] Refresh token already used (concurrent request race condition)");
+          // Don't clear cookies - they might be valid for another request
+          return {
+            isAuth: false,
+            session: null,
+            currentUser: null,
+            accessToken: accessToken?.value || null,
+            refreshToken: refreshToken?.value || null,
+            supabase,
+            currentRole: null,
+          };
+        }
+        
         console.error("🔐 [AUTH] Session error, clearing invalid tokens:", session.error);
         // Clear invalid tokens
         clearAuthCookies(cookies);
       }
     } catch (error) {
       console.error("🔐 [AUTH] Exception during authentication:", error);
+      
+      // Clear the refresh promise on error
+      sessionRefreshPromise = null;
 
       // Handle connection timeout specifically
       if (error instanceof Error && error.message === "Connection timeout") {

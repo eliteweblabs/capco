@@ -72,6 +72,9 @@ const settings = {
   logo: companyData.globalCompanyLogo || "",
   icon: companyData.globalCompanyIcon || "",
 
+  // OG Image (for social sharing)
+  ogImage: companyData.ogImage || "",
+
   // Analytics
   plausibleScriptUrl: companyData?.plausibleScriptUrl || "",
   plausibleSiteId: companyData?.plausibleSiteId || "",
@@ -878,6 +881,66 @@ const settings = {
         </div>
       </div>
 
+      <!-- OG Image -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">OG Image (Social Sharing)</h2>
+        <div
+          class="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700"
+        >
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            <strong>💡 Tip:</strong> This image appears when your site is shared on social media (Facebook, Twitter, LinkedIn, etc.). Recommended size: 1200x630 pixels. Supported formats: PNG, JPG, GIF, WebP.
+          </p>
+        </div>
+        <div>
+          <label for="og_image" class="block text-sm font-medium mb-2">
+            OG Image URL
+            {
+              isFromDatabase("og_image") && (
+                <span
+                  class="ml-2 text-xs text-green-600 dark:text-green-400"
+                  title="Stored in database"
+                >
+                  💾
+                </span>
+              )
+            }
+          </label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <input
+                type="text"
+                id="og_image"
+                name="og_image"
+                value={settings.ogImage}
+                class={globalInputClasses}
+                placeholder="/images/og-image.png or https://example.com/og-image.png"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                Enter a URL path (e.g., <code>/images/og-image.png</code>) or full URL. Image will be used for social media previews.
+              </p>
+            </div>
+            <div>
+              <div
+                id="og-image-preview"
+                class="flex items-center justify-center p-4 bg-gray-100 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 min-h-[120px]"
+              >
+                {
+                  settings.ogImage ? (
+                    <img
+                      src={settings.ogImage}
+                      alt="OG Image Preview"
+                      class="max-w-full max-h-32 object-contain rounded"
+                    />
+                  ) : (
+                    <p class="text-xs text-gray-400 text-center">Preview will appear here</p>
+                  )
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Submit Button -->
       <div class="flex justify-between items-center">
         <a
@@ -1009,6 +1072,19 @@ const settings = {
   updatePreviewBoth("logo", "#logo-preview-light", "#logo-preview-dark", false);
   updatePreviewBoth("icon", "#icon-preview-light", "#icon-preview-dark", true);
 
+  // Live preview for OG image
+  const ogImageInput = document.getElementById("og_image") as HTMLInputElement;
+  const ogImagePreview = document.getElementById("og-image-preview") as HTMLElement;
+  
+  ogImageInput?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value.trim();
+    if (value) {
+      ogImagePreview.innerHTML = `<img src="${value}" alt="OG Image Preview" class="max-w-full max-h-32 object-contain rounded" onerror="this.parentElement.innerHTML='<p class=\\'text-xs text-red-400 text-center\\'>Failed to load image</p>'" />`;
+    } else {
+      ogImagePreview.innerHTML = '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
+    }
+  });
+
   // Reset button
   const resetBtn = document.getElementById("reset-form-btn");
   resetBtn?.addEventListener("click", () => {
@@ -1050,6 +1126,7 @@ const settings = {
       secondary_font_family: "secondary_font_family",
       logo: "logo",
       icon: "icon",
+      og_image: "og_image",
       plausible_script_url: "plausible_script_url",
       plausible_site_id: "plausible_site_id",
       plausible_domain: "plausible_domain",

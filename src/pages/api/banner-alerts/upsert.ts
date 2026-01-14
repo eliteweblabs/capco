@@ -5,7 +5,7 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 interface BannerAlertRequest {
   id?: number;
   title?: string;
-  description: string;
+  description?: string;
   type?: "info" | "success" | "warning" | "error";
   position?: "top" | "bottom";
   expireMs?: number | null;
@@ -23,7 +23,7 @@ interface BannerAlertRequest {
  * Body:
  * - id?: number (if provided, updates existing banner)
  * - title?: string
- * - description: string (required)
+ * - description?: string
  * - type?: "info" | "success" | "warning" | "error" (default: "info")
  * - position?: "top" | "bottom" (default: "top")
  * - expireMs?: number | null (milliseconds, null = never expires)
@@ -71,7 +71,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const {
       id,
       title,
-      description,
+      description = "",
       type = "info",
       position = "top",
       expireMs = null,
@@ -80,13 +80,6 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       startDate = null,
       endDate = null,
     } = body;
-
-    if (!description) {
-      return new Response(JSON.stringify({ error: "Description is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
 
     const bannerData = {
       title,
