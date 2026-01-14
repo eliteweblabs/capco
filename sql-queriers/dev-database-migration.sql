@@ -513,31 +513,51 @@ ALTER TABLE demo_bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 
--- Profiles RLS Policies
-CREATE POLICY "Users can view own profile"
+-- Profiles RLS Policies (non-recursive to avoid infinite loop)
+
+-- 1. Users can SELECT their own profile
+CREATE POLICY "profiles_select_own"
   ON profiles FOR SELECT
   TO authenticated
-  USING (auth.uid() = id);
+  USING (id = auth.uid());
 
-CREATE POLICY "Users can insert own profile"
+-- 2. Users can INSERT their own profile
+CREATE POLICY "profiles_insert_own"
   ON profiles FOR INSERT
   TO authenticated
-  WITH CHECK (auth.uid() = id);
+  WITH CHECK (id = auth.uid());
 
-CREATE POLICY "Users can update own profile"
+-- 3. Users can UPDATE their own profile
+CREATE POLICY "profiles_update_own"
   ON profiles FOR UPDATE
   TO authenticated
-  USING (auth.uid() = id);
+  USING (id = auth.uid());
 
-CREATE POLICY "Admins can view all profiles"
-  ON profiles FOR ALL
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role IN ('Admin', 'Staff')
-    )
+-- Security definer function to check admin status (avoids RLS recursion)
+CREATE OR REPLACE FUNCTION is_admin_or_staff()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = auth.uid() 
+    AND role IN ('Admin', 'Staff')
   );
+$$;
+
+-- 4. Admins can SELECT all profiles (uses function to avoid recursion)
+CREATE POLICY "profiles_select_admin"
+  ON profiles FOR SELECT
+  TO authenticated
+  USING (is_admin_or_staff());
+
+-- 5. Admins can UPDATE all profiles
+CREATE POLICY "profiles_update_admin"
+  ON profiles FOR UPDATE
+  TO authenticated
+  USING (is_admin_or_staff());
 
 -- Projects RLS Policies
 CREATE POLICY "Users can view own projects"
