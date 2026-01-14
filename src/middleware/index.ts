@@ -5,6 +5,7 @@ import micromatch from "micromatch";
 import { clearAuthCookies, setAuthCookies } from "../lib/auth-cookies";
 import { setupConsoleInterceptor } from "../lib/console-interceptor";
 import { supabase } from "../lib/supabase";
+import { supabaseAdmin } from "../lib/supabase-admin";
 
 // Setup console interceptor for server-side (disables console.log in production)
 try {
@@ -106,29 +107,54 @@ export const onRequest = defineMiddleware(
           .eq("id", data.user.id)
           .single();
 
-        // If profile doesn't exist, create it automatically
+        // If profile doesn't exist, create it automatically using admin client (bypasses RLS)
         if (profileError && profileError.code === "PGRST116") {
           console.log(
             "🔐 [MIDDLEWARE] User profile not found, creating missing profile for user:",
             data.user.id
           );
 
-          const firstName = data.user.user_metadata?.firstName || "";
-          const lastName = data.user.user_metadata?.lastName || "";
+          const metadata = data.user.user_metadata || {};
+          
+          // Extract firstName (handle Google OAuth: given_name)
+          const firstName = 
+            metadata.firstName || 
+            metadata.first_name || 
+            metadata.given_name ||  // Google OAuth
+            "";
+          
+          // Extract lastName (handle Google OAuth: family_name)
+          const lastName = 
+            metadata.lastName || 
+            metadata.last_name || 
+            metadata.family_name ||  // Google OAuth
+            "";
+          
+          // Extract companyName (handle Google OAuth: name = full name)
           const companyName =
-            data.user.user_metadata?.companyName ||
+            metadata.companyName ||
+            metadata.company_name ||
+            metadata.name ||  // Google OAuth full name
+            metadata.full_name ||
             data.user.email?.split("@")[0] ||
             "Unknown Company";
+          
+          // Extract avatarUrl (handle Google OAuth: picture)
+          const avatarUrl =
+            metadata.avatarUrl ||
+            metadata.avatar_url ||
+            metadata.picture ||  // Google OAuth
+            null;
 
-          const { error: createProfileError } = await supabase.from("profiles").insert({
+          // Use admin client to bypass RLS policies
+          const { error: createProfileError } = await supabaseAdmin.from("profiles").insert({
             id: data.user.id,
             email: data.user.email,
             companyName: companyName,
             role: "Client", // Default role for missing profiles
             firstName: firstName,
             lastName: lastName,
-            avatarUrl:
-              data.user.user_metadata?.avatarUrl || data.user.user_metadata?.picture || null,
+            avatarUrl: avatarUrl,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });
@@ -138,7 +164,7 @@ export const onRequest = defineMiddleware(
             // Continue with default role if profile creation fails
             profile = { role: "Client" };
           } else {
-            console.log("🔐 [MIDDLEWARE] Missing profile created successfully");
+            console.log("🔐 [MIDDLEWARE] Missing profile created successfully for:", data.user.email);
             profile = { role: "Client" };
           }
         }

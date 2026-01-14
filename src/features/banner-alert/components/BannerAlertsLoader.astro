@@ -1,0 +1,79 @@
+---
+/**
+ * BannerAlertsLoader Component
+ * Automatically loads and displays all active banner alerts from the database
+ * Include this component in your layout to show site-wide banners
+ */
+
+import { supabaseAdmin } from "../../../lib/supabase-admin";
+import BannerAlert from "./BannerAlert.astro";
+
+interface Props {
+  position?: "top" | "bottom" | "all";
+}
+
+const { position = "all" } = Astro.props;
+
+// Fetch active banner alerts
+let banners: any[] = [];
+
+if (supabaseAdmin) {
+  const now = new Date().toISOString();
+  
+  let query = supabaseAdmin
+    .from("banner_alerts")
+    .select("*")
+    .eq("isActive", true)
+    .or(`startDate.is.null,startDate.lte.${now}`)
+    .or(`endDate.is.null,endDate.gte.${now}`)
+    .order("createdAt", { ascending: false });
+
+  if (position !== "all") {
+    query = query.eq("position", position);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching banner alerts:", error);
+  } else {
+    banners = data || [];
+  }
+}
+
+// Group banners by position
+const topBanners = banners.filter(b => b.position === "top");
+const bottomBanners = banners.filter(b => b.position === "bottom");
+---
+
+{topBanners.length > 0 && (position === "all" || position === "top") && (
+  <div class="banner-alerts-top">
+    {topBanners.map((banner) => (
+      <BannerAlert
+        id={banner.id}
+        type={banner.type}
+        title={banner.title}
+        description={banner.description}
+        position="top"
+        expireMs={banner.expireMs}
+        dismissible={banner.dismissible}
+      />
+    ))}
+  </div>
+)}
+
+{bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
+  <div class="banner-alerts-bottom">
+    {bottomBanners.map((banner) => (
+      <BannerAlert
+        id={banner.id}
+        type={banner.type}
+        title={banner.title}
+        description={banner.description}
+        position="bottom"
+        expireMs={banner.expireMs}
+        dismissible={banner.dismissible}
+      />
+    ))}
+  </div>
+)}
