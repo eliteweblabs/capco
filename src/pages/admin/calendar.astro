@@ -7,7 +7,7 @@ const { currentUser, session, supabase, refreshToken, accessToken } = await chec
 );
 
 // Handle auth redirect first
-if (requireAuthRedirect && (!session || !currentUser || currentUser.profile.role !== "Admin")) {
+if (requireAuthRedirect && (!session || !currentUser || currentUser?.profile?.role !== "Admin")) {
   return Astro.redirect(requireAuthRedirect);
 }
 
@@ -44,7 +44,7 @@ function slugify(text: string): string {
 
 // Get calLink from company name or default to 'capco'
 const companySlug = currentUser?.profile?.companyName
-  ? slugify(currentUser.profile.companyName)
+  ? slugify(currentUser.profile?.companyName || "")
   : "capco";
 
 // Cal.com URLs

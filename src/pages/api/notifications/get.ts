@@ -110,7 +110,12 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       console.error("❌ [NOTIFICATIONS] Error fetching notifications:", error);
 
       // Check if the error is due to table not existing
-      if (error.message && error.message.includes('relation "notifications" does not exist')) {
+      if (
+        error.message &&
+        (error.message.includes('relation "notifications" does not exist') ||
+          error.message.includes('relation "public.notifications" does not exist') ||
+          error.code === "42P01")
+      ) {
         return new Response(
           JSON.stringify({
             error: "Notifications table not found. Please run the database migration.",
@@ -118,8 +123,10 @@ export const GET: APIRoute = async ({ cookies, url }) => {
             instructions: [
               "1. Go to your Supabase dashboard",
               "2. Navigate to SQL Editor",
-              "3. Run the SQL script from: sql-queriers/create-notifications-table.sql",
+              "3. Run the SQL script from: sql-queriers/sync-notifications-schema.sql",
+              "   (This script will create the table if it doesn't exist)",
             ],
+            sqlFile: "sql-queriers/sync-notifications-schema.sql",
           }),
           {
             status: 503,
@@ -128,10 +135,42 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         );
       }
 
-      return new Response(JSON.stringify({ error: "Failed to fetch notifications" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      // Check for column name issues
+      if (
+        error.message &&
+        (error.message.includes('column') && error.message.includes('does not exist'))
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: "Notifications table schema mismatch. Please sync the database schema.",
+            migrationRequired: true,
+            instructions: [
+              "1. Go to your Supabase dashboard",
+              "2. Navigate to SQL Editor",
+              "3. Run the SQL script from: sql-queriers/sync-notifications-schema.sql",
+              "   (This script will add missing columns)",
+            ],
+            sqlFile: "sql-queriers/sync-notifications-schema.sql",
+            errorDetails: error.message,
+          }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: "Failed to fetch notifications",
+          errorDetails: error.message,
+          errorCode: error.code,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Get unread count
