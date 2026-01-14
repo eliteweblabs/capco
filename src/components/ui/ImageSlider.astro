@@ -152,7 +152,12 @@ if (slides.length === 0) {
     "1 / 3 / 3 / 4", // Image 4: right side, spans 2 rows
   ];
 
-  const defaultDirections: Array<"left" | "right" | "up" | "down"> = ["left", "right", "up", "down"];
+  const defaultDirections: Array<"left" | "right" | "up" | "down"> = [
+    "left",
+    "right",
+    "up",
+    "down",
+  ];
   const defaultDelays = [0, 2000, 1000, 3000];
   const defaultDurations = [25000, 30000, 28000, 32000];
 
@@ -166,7 +171,8 @@ if (slides.length === 0) {
       flatSlides.push({
         src: imageSrc,
         alt: (props[altKey] as string) || `Image ${i}`,
-        direction: ((props[directionKey] as string) || defaultDirections[i - 1]) as SlideData["direction"],
+        direction: ((props[directionKey] as string) ||
+          defaultDirections[i - 1]) as SlideData["direction"],
         delay: defaultDelays[i - 1],
         duration: defaultDurations[i - 1],
         gridArea: defaultGridAreas[i - 1],
@@ -201,78 +207,85 @@ if (!gridTemplate) {
 const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
 ---
 
-{slides.length > 0 && (
-  <div
-    class={`image-slider-container ${containerClass}`}
-    id={gridId}
-    style={`height: ${height};`}
-  >
-    {/* Image Grid */}
-    <div class="image-slider-grid" style={`grid-template: ${gridTemplate};`}>
-      {slides.map((slide, index) => {
-        const slideId = `slide-${index}`;
-        const direction = slide.direction || "left";
-        const delay = slide.delay || 0;
-        const duration = slide.duration || 20000;
-        const gridArea = slide.gridArea || "auto";
+{
+  slides.length > 0 && (
+    <div
+      class={`image-slider-container ${containerClass}`}
+      id={gridId}
+      style={`height: ${height};`}
+    >
+      {/* Image Grid */}
+      <div class="image-slider-grid" style={`grid-template: ${gridTemplate};`}>
+        {slides.map((slide, index) => {
+          const slideId = `slide-${index}`;
+          const direction = slide.direction || "left";
+          const delay = slide.delay || 0;
+          const duration = slide.duration || 20000;
+          const gridArea = slide.gridArea || "auto";
 
-        return (
-          <div
-            class={`grid-slide slide-${direction}`}
-            data-direction={direction}
-            data-delay={delay}
-            data-duration={duration}
-            style={`grid-area: ${gridArea};`}
-            id={`${gridId}-${slideId}`}
-          >
-            <img src={slide.src} alt={slide.alt} class="slide-image" loading="lazy" />
-          </div>
-        );
-      })}
-    </div>
-
-    {/* Dark Overlay */}
-    {showOverlay && hasOverlayContent && (
-      <div 
-        class="absolute inset-0 bg-black rounded-md pointer-events-none" 
-        style={`opacity: ${overlayOpacity};`} 
-      />
-    )}
-
-    {/* Content Overlay */}
-    {hasOverlayContent && (
-      <div class="absolute inset-0 flex items-center justify-center z-10">
-        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          {title && (
-            <h1 class="md:text-6xl sm:text-4xl text-3xl font-bold text-white drop-shadow-lg">
-              {title}
-            </h1>
-          )}
-          {description && (
-            <h2 
-              class="text-xl mt-6 text-gray-200 drop-shadow-md"
-              set:html={description}
-            />
-          )}
-          {hasButtons && (
-            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              {leftButton && (
-                <Button href={leftButton.href} variant={leftButton.variant} icon={leftButton.icon}>
-                  {leftButton.text}
-                </Button>
-              )}
-              {rightButton && (
-                <Button href={rightButton.href} variant={rightButton.variant} icon={rightButton.icon}>
-                  {rightButton.text}
-                </Button>
-              )}
+          return (
+            <div
+              class={`grid-slide slide-${direction}`}
+              data-direction={direction}
+              data-delay={delay}
+              data-duration={duration}
+              style={`grid-area: ${gridArea};`}
+              id={`${gridId}-${slideId}`}
+            >
+              <img src={slide.src} alt={slide.alt} class="slide-image" loading="lazy" />
             </div>
-          )}
-        </div>
+          );
+        })}
       </div>
-    )}
-  </div>
-)}
+
+      {/* Dark Overlay */}
+      {showOverlay && hasOverlayContent && (
+        <div
+          class="absolute inset-0 bg-black rounded-md pointer-events-none"
+          style={`opacity: ${overlayOpacity};`}
+        />
+      )}
+
+      {/* Content Overlay */}
+      {hasOverlayContent && (
+        <div class="absolute inset-0 flex items-center justify-center z-10">
+          <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+            {title && (
+              <h1 class="md:text-6xl sm:text-4xl text-3xl font-bold text-white drop-shadow-lg">
+                {title}
+              </h1>
+            )}
+            {description && (
+              <h2 class="text-xl mt-6 text-gray-200 drop-shadow-md" set:html={description} />
+            )}
+            {hasButtons && (
+              <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                {leftButton && (
+                  <Button
+                    href={leftButton.href}
+                    variant={leftButton.variant}
+                    icon={leftButton.icon}
+                  >
+                    {leftButton.text}
+                  </Button>
+                )}
+                {rightButton && (
+                  <Button
+                    href={rightButton.href}
+                    variant={rightButton.variant}
+                    icon={rightButton.icon}
+                  >
+                    {rightButton.text}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 <style>
   .image-slider-container {
