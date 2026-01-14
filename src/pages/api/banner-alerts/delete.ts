@@ -55,7 +55,7 @@ async function handleDelete(request: Request, cookies: any): Promise<Response> {
     let id: number | null = null;
     const url = new URL(request.url);
     const queryId = url.searchParams.get("id");
-    
+
     if (queryId) {
       id = parseInt(queryId);
     } else {
@@ -74,10 +74,7 @@ async function handleDelete(request: Request, cookies: any): Promise<Response> {
       });
     }
 
-    const { error } = await supabaseAdmin
-      .from("banner_alerts")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabaseAdmin.from("bannerAlerts").delete().eq("id", id);
 
     if (error) {
       console.error("❌ [BANNER-ALERTS] Error deleting banner:", error);

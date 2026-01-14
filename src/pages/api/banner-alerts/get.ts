@@ -25,7 +25,7 @@ export const GET: APIRoute = async ({ request }): Promise<Response> => {
     const showAll = url.searchParams.get("all") === "true";
     const activeOnly = url.searchParams.get("active") !== "false";
 
-    let query = supabaseAdmin.from("banner_alerts").select("*");
+    let query = supabaseAdmin.from("bannerAlerts").select("*");
 
     if (!showAll && activeOnly) {
       const now = new Date().toISOString();
