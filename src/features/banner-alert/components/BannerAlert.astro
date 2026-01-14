@@ -1,0 +1,187 @@
+---
+/**
+ * BannerAlert Component
+ * Displays a site-wide banner alert with position and expiration settings
+ */
+export const partial = true;
+
+import Alert from "../../../components/partials/Alert.astro";
+
+interface Props {
+  id?: number;
+  type?: "info" | "success" | "warning" | "error";
+  title?: string;
+  description?: string;
+  position?: "top" | "bottom";
+  expireMs?: number | null; // null = never expires
+  dismissible?: boolean;
+  class?: string;
+}
+
+const {
+  id,
+  type = "info",
+  title,
+  description,
+  position = "top",
+  expireMs = null,
+  dismissible = true,
+  class: className = "",
+} = Astro.props;
+
+// Position classes
+const positionClasses = {
+  top: "fixed top-0 left-0 right-0 z-[9999]",
+  bottom: "fixed bottom-0 left-0 right-0 z-[9999]",
+};
+---
+
+<div
+  class={`banner-alert ${positionClasses[position]} ${className}`}
+  data-banner-id={id}
+  data-expire-ms={expireMs}
+  data-position={position}
+>
+  <div class="mx-auto max-w-7xl px-4">
+    <div class="relative">
+      <Alert type={type} title={title} description={description} class="mb-0 shadow-lg" />
+      {dismissible && (
+        <button
+          type="button"
+          class="banner-dismiss absolute right-6 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          aria-label="Dismiss banner"
+        >
+          <i class="bx bx-x text-xl"></i>
+        </button>
+      )}
+    </div>
+  </div>
+</div>
+
+<script>
+  class BannerAlertManager {
+    private static instance: BannerAlertManager;
+    private dismissedBanners: Set<string>;
+
+    constructor() {
+      this.dismissedBanners = this.loadDismissedBanners();
+      this.init();
+    }
+
+    static getInstance(): BannerAlertManager {
+      if (!BannerAlertManager.instance) {
+        BannerAlertManager.instance = new BannerAlertManager();
+      }
+      return BannerAlertManager.instance;
+    }
+
+    private loadDismissedBanners(): Set<string> {
+      try {
+        const stored = localStorage.getItem("dismissedBanners");
+        return stored ? new Set(JSON.parse(stored)) : new Set();
+      } catch {
+        return new Set();
+      }
+    }
+
+    private saveDismissedBanners(): void {
+      try {
+        localStorage.setItem(
+          "dismissedBanners",
+          JSON.stringify([...this.dismissedBanners])
+        );
+      } catch {
+        // Ignore storage errors
+      }
+    }
+
+    private init(): void {
+      document.querySelectorAll(".banner-alert").forEach((banner) => {
+        const element = banner as HTMLElement;
+        const bannerId = element.dataset.bannerId;
+        const expireMs = element.dataset.expireMs;
+
+        // Check if already dismissed
+        if (bannerId && this.dismissedBanners.has(bannerId)) {
+          element.style.display = "none";
+          return;
+        }
+
+        // Setup auto-expire
+        if (expireMs && expireMs !== "null" && parseInt(expireMs) > 0) {
+          setTimeout(() => {
+            this.dismissBanner(element);
+          }, parseInt(expireMs));
+        }
+
+        // Setup dismiss button
+        const dismissBtn = element.querySelector(".banner-dismiss");
+        if (dismissBtn) {
+          dismissBtn.addEventListener("click", () => {
+            this.dismissBanner(element);
+          });
+        }
+
+        // Adjust body padding for fixed position
+        this.adjustBodyPadding(element);
+      });
+    }
+
+    private dismissBanner(element: HTMLElement): void {
+      const bannerId = element.dataset.bannerId;
+      
+      // Animate out
+      element.style.transition = "transform 0.3s ease-out, opacity 0.3s ease-out";
+      element.style.opacity = "0";
+      
+      const position = element.dataset.position;
+      if (position === "top") {
+        element.style.transform = "translateY(-100%)";
+      } else {
+        element.style.transform = "translateY(100%)";
+      }
+
+      setTimeout(() => {
+        element.style.display = "none";
+        this.removeBodyPadding(element);
+      }, 300);
+
+      // Save dismissal
+      if (bannerId) {
+        this.dismissedBanners.add(bannerId);
+        this.saveDismissedBanners();
+      }
+    }
+
+    private adjustBodyPadding(element: HTMLElement): void {
+      const position = element.dataset.position;
+      const height = element.offsetHeight;
+      
+      if (position === "top") {
+        document.body.style.paddingTop = `${height}px`;
+      } else {
+        document.body.style.paddingBottom = `${height}px`;
+      }
+    }
+
+    private removeBodyPadding(element: HTMLElement): void {
+      const position = element.dataset.position;
+      
+      if (position === "top") {
+        document.body.style.paddingTop = "";
+      } else {
+        document.body.style.paddingBottom = "";
+      }
+    }
+  }
+
+  // Initialize on page load
+  document.addEventListener("DOMContentLoaded", () => {
+    BannerAlertManager.getInstance();
+  });
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener("astro:page-load", () => {
+    BannerAlertManager.getInstance();
+  });
+</script>
