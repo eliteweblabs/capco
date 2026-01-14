@@ -19,9 +19,9 @@ let banners: any[] = [];
 
 if (supabaseAdmin) {
   const now = new Date().toISOString();
-  
+
   let query = supabaseAdmin
-    .from("banner_alerts")
+    .from("bannerAlerts")
     .select("*")
     .eq("isActive", true)
     .or(`startDate.is.null,startDate.lte.${now}`)
@@ -42,38 +42,42 @@ if (supabaseAdmin) {
 }
 
 // Group banners by position
-const topBanners = banners.filter(b => b.position === "top");
-const bottomBanners = banners.filter(b => b.position === "bottom");
+const topBanners = banners.filter((b) => b.position === "top");
+const bottomBanners = banners.filter((b) => b.position === "bottom");
 ---
 
-{topBanners.length > 0 && (position === "all" || position === "top") && (
-  <div class="banner-alerts-top">
-    {topBanners.map((banner) => (
-      <BannerAlert
-        id={banner.id}
-        type={banner.type}
-        title={banner.title}
-        description={banner.description}
-        position="top"
-        expireMs={banner.expireMs}
-        dismissible={banner.dismissible}
-      />
-    ))}
-  </div>
-)}
+{
+  topBanners.length > 0 && (position === "all" || position === "top") && (
+    <div class="banner-alerts-top">
+      {topBanners.map((banner) => (
+        <BannerAlert
+          id={banner.id}
+          type={banner.type}
+          title={banner.title}
+          description={banner.description}
+          position="top"
+          expireMs={banner.expireMs}
+          dismissible={banner.dismissible}
+        />
+      ))}
+    </div>
+  )
+}
 
-{bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
-  <div class="banner-alerts-bottom">
-    {bottomBanners.map((banner) => (
-      <BannerAlert
-        id={banner.id}
-        type={banner.type}
-        title={banner.title}
-        description={banner.description}
-        position="bottom"
-        expireMs={banner.expireMs}
-        dismissible={banner.dismissible}
-      />
-    ))}
-  </div>
-)}
+{
+  bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
+    <div class="banner-alerts-bottom">
+      {bottomBanners.map((banner) => (
+        <BannerAlert
+          id={banner.id}
+          type={banner.type}
+          title={banner.title}
+          description={banner.description}
+          position="bottom"
+          expireMs={banner.expireMs}
+          dismissible={banner.dismissible}
+        />
+      ))}
+    </div>
+  )
+}

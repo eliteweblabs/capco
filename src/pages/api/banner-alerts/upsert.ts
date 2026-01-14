@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { ensureTable, bannerAlertsSchema } from "../../../lib/db-schemas";
 
 interface BannerAlertRequest {
   id?: number;
@@ -66,6 +67,24 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       });
     }
 
+    // Ensure the bannerAlerts table exists
+    const tableCheck = await ensureTable(bannerAlertsSchema);
+    if (!tableCheck.exists) {
+      console.error("❌ [BANNER-ALERTS] Table does not exist. Run this SQL to create it:");
+      console.error(tableCheck.createSQL);
+      return new Response(
+        JSON.stringify({
+          error: "Database table 'bannerAlerts' does not exist",
+          details: "Please run the table creation SQL in Supabase Dashboard",
+          createSQL: tableCheck.createSQL,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const body: BannerAlertRequest = await request.json();
 
     const {
@@ -99,7 +118,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     if (id) {
       // Update existing banner
       const result = await supabaseAdmin
-        .from("banner_alerts")
+        .from("bannerAlerts")
         .update(bannerData)
         .eq("id", id)
         .select()
@@ -109,11 +128,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       console.log(`📢 [BANNER-ALERTS] Updated banner ${id}`);
     } else {
       // Create new banner
-      const result = await supabaseAdmin
-        .from("banner_alerts")
-        .insert(bannerData)
-        .select()
-        .single();
+      const result = await supabaseAdmin.from("bannerAlerts").insert(bannerData).select().single();
       data = result.data;
       error = result.error;
       console.log(`📢 [BANNER-ALERTS] Created new banner`);

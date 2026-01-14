@@ -4,7 +4,7 @@ Site-wide banner alerts with position (top/bottom) and expiration settings.
 
 ## Setup
 
-1. Run the SQL migration to create the `banner_alerts` table:
+1. Run the SQL migration to create the `bannerAlerts` table:
 
 ```bash
 # Copy the SQL from sql-queriers/create-banner-alerts-table.sql and run it in your Supabase dashboard
@@ -15,6 +15,7 @@ Site-wide banner alerts with position (top/bottom) and expiration settings.
 ### Admin Management
 
 Navigate to `/admin/banner-alerts` to:
+
 - Create new banner alerts
 - Edit existing banners
 - Toggle banners active/inactive
@@ -77,20 +78,20 @@ import BannerAlert from "../features/banner-alert/components/BannerAlert.astro";
 
 ### BannerAlert
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `id` | `number` | - | Banner ID (for dismissal tracking) |
-| `type` | `"info" \| "success" \| "warning" \| "error"` | `"info"` | Alert type/style |
-| `title` | `string` | - | Optional title |
-| `description` | `string` | - | Banner message content |
-| `position` | `"top" \| "bottom"` | `"top"` | Fixed position |
-| `expireMs` | `number \| null` | `null` | Auto-dismiss after X milliseconds |
-| `dismissible` | `boolean` | `true` | Show dismiss button |
+| Prop          | Type                                          | Default  | Description                        |
+| ------------- | --------------------------------------------- | -------- | ---------------------------------- |
+| `id`          | `number`                                      | -        | Banner ID (for dismissal tracking) |
+| `type`        | `"info" \| "success" \| "warning" \| "error"` | `"info"` | Alert type/style                   |
+| `title`       | `string`                                      | -        | Optional title                     |
+| `description` | `string`                                      | -        | Banner message content             |
+| `position`    | `"top" \| "bottom"`                           | `"top"`  | Fixed position                     |
+| `expireMs`    | `number \| null`                              | `null`   | Auto-dismiss after X milliseconds  |
+| `dismissible` | `boolean`                                     | `true`   | Show dismiss button                |
 
 ### BannerAlertsLoader
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
+| Prop       | Type                         | Default | Description                |
+| ---------- | ---------------------------- | ------- | -------------------------- |
 | `position` | `"top" \| "bottom" \| "all"` | `"all"` | Filter banners by position |
 
 ## API Endpoints
@@ -98,6 +99,7 @@ import BannerAlert from "../features/banner-alert/components/BannerAlert.astro";
 ### GET /api/banner-alerts/get
 
 Query params:
+
 - `active`: `boolean` - Only return active banners (default: true)
 - `all`: `boolean` - Return all banners (admin only)
 
@@ -107,16 +109,16 @@ Create or update a banner alert. Requires Admin authentication.
 
 ```json
 {
-  "id": 123,           // Optional: update existing
+  "id": 123, // Optional: update existing
   "title": "Notice",
   "description": "Important message",
   "type": "info",
   "position": "top",
-  "expireMs": 5000,    // null = never expires
+  "expireMs": 5000, // null = never expires
   "dismissible": true,
   "isActive": true,
-  "startDate": "2024-01-01T00:00:00Z",  // Optional
-  "endDate": "2024-12-31T23:59:59Z"     // Optional
+  "startDate": "2024-01-01T00:00:00Z", // Optional
+  "endDate": "2024-12-31T23:59:59Z" // Optional
 }
 ```
 
@@ -133,7 +135,7 @@ Delete a banner alert. Requires Admin authentication.
 ## Database Schema
 
 ```sql
-CREATE TABLE banner_alerts (
+CREATE TABLE bannerAlerts (
   id SERIAL PRIMARY KEY,
   title TEXT,
   description TEXT NOT NULL,

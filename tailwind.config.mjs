@@ -53,9 +53,11 @@ export default {
     extend: {
       //      ### Fonts
       fontFamily: {
-        // #### Headings, Call- to - actions, Header Navigation
+        // #### Headings, Call-to-actions, Header Navigation
         // Use CSS variables so fonts can be updated dynamically from database
         sans: ['var(--font-family, "Outfit Variable")', "var(--font-family-secondary, sans-serif)"],
+        // #### Secondary font only (use with font-secondary class)
+        secondary: ["var(--font-family-secondary, sans-serif)"],
         // #### Body
         // "serif": ['"Open Sans"', "serif"], // Otra fuente para el cuerpo
       },
