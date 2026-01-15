@@ -1,0 +1,234 @@
+---
+/**
+ * CTABlock - Call to Action Block
+ * 
+ * Supports multiple variants: centered, left, split, gradient, banner
+ * Works with both direct Astro props and flat CMS shortcode props.
+ * 
+ * @example Direct usage:
+ * <CTABlock 
+ *   title="Get Started Today" 
+ *   description="Join thousands of fire protection professionals" 
+ *   buttonText="Sign Up" 
+ *   buttonHref="/signup"
+ *   variant="centered"
+ * />
+ * 
+ * @example CMS Shortcode:
+ * {{CTABlock title="Get Started" buttonText="Sign Up" buttonHref="/signup"}}
+ */
+import Button from "../common/Button.astro";
+import SimpleIcon from "../common/SimpleIcon.astro";
+
+interface Props {
+  // Content
+  title: string;
+  description?: string;
+  eyebrow?: string;
+  
+  // Styling
+  variant?: 'centered' | 'left' | 'split' | 'gradient' | 'banner' | 'minimal';
+  backgroundColor?: string;
+  backgroundImage?: string;
+  backgroundOverlay?: boolean | string;
+  overlayOpacity?: number | string;
+  textColor?: string;
+  
+  // Primary button
+  buttonText?: string;
+  buttonHref?: string;
+  buttonVariant?: string;
+  buttonIcon?: string;
+  
+  // Secondary button
+  secondaryButtonText?: string;
+  secondaryButtonHref?: string;
+  secondaryButtonVariant?: string;
+  secondaryButtonIcon?: string;
+  
+  // Additional
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const {
+  title,
+  description,
+  eyebrow,
+  variant = 'centered',
+  backgroundColor,
+  backgroundImage,
+  textColor,
+  buttonText,
+  buttonHref,
+  buttonVariant = 'primary',
+  buttonIcon,
+  secondaryButtonText,
+  secondaryButtonHref,
+  secondaryButtonVariant = 'outline',
+  secondaryButtonIcon,
+  className = '',
+  id,
+} = props;
+
+// Handle boolean/string conversion for shortcode compatibility
+const backgroundOverlay = props.backgroundOverlay === 'false' ? false : (props.backgroundOverlay ?? !!backgroundImage);
+const overlayOpacity = typeof props.overlayOpacity === 'string' 
+  ? parseFloat(props.overlayOpacity) 
+  : (props.overlayOpacity ?? 0.6);
+
+const hasButtons = buttonText || secondaryButtonText;
+
+// Variant-specific styles
+const variantStyles = {
+  centered: 'text-center py-16 md:py-24',
+  left: 'text-left py-16 md:py-24',
+  split: 'py-16 md:py-24',
+  gradient: 'text-center py-16 md:py-24 bg-gradient-to-r from-primary-600 to-secondary-600',
+  banner: 'py-8 md:py-12',
+  minimal: 'py-12 md:py-16',
+};
+
+const containerStyles = variantStyles[variant] || variantStyles.centered;
+
+// Background styles
+const bgStyle = backgroundImage 
+  ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
+  : '';
+
+const bgColorClass = backgroundColor || (variant === 'gradient' ? '' : 'bg-gray-50 dark:bg-gray-800');
+const textColorClass = textColor || (backgroundImage || variant === 'gradient' ? 'text-white' : 'text-gray-900 dark:text-white');
+---
+
+<section 
+  id={id}
+  class:list={[
+    'cta-block relative overflow-hidden rounded-lg',
+    containerStyles,
+    bgColorClass,
+    className,
+  ]}
+  style={bgStyle}
+>
+  {backgroundImage && backgroundOverlay && (
+    <div 
+      class="absolute inset-0 bg-black rounded-lg" 
+      style={`opacity: ${overlayOpacity};`}
+    />
+  )}
+  
+  <div class={`relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${variant === 'split' ? 'lg:flex lg:items-center lg:justify-between' : ''}`}>
+    {variant === 'split' ? (
+      <>
+        <div class="lg:max-w-xl">
+          {eyebrow && (
+            <p class="text-sm font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400 mb-2">
+              {eyebrow}
+            </p>
+          )}
+          <h2 class={`text-3xl font-bold tracking-tight sm:text-4xl ${textColorClass}`}>
+            {title}
+          </h2>
+          {description && (
+            <p class={`mt-4 text-lg ${backgroundImage || variant === 'gradient' ? 'text-gray-200' : 'text-gray-600 dark:text-gray-300'}`}>
+              {description}
+            </p>
+          )}
+        </div>
+        {hasButtons && (
+          <div class="mt-8 flex flex-col sm:flex-row gap-4 lg:mt-0 lg:flex-shrink-0">
+            {buttonText && (
+              <Button 
+                href={buttonHref} 
+                variant={buttonVariant as any}
+                icon={buttonIcon}
+                size="lg"
+              >
+                {buttonText}
+              </Button>
+            )}
+            {secondaryButtonText && (
+              <Button 
+                href={secondaryButtonHref} 
+                variant={secondaryButtonVariant as any}
+                icon={secondaryButtonIcon}
+                size="lg"
+              >
+                {secondaryButtonText}
+              </Button>
+            )}
+          </div>
+        )}
+      </>
+    ) : variant === 'banner' ? (
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          {eyebrow && (
+            <span class="inline-flex items-center rounded-full bg-primary-100 px-3 py-1 text-sm font-medium text-primary-800 dark:bg-primary-900/30 dark:text-primary-300">
+              {eyebrow}
+            </span>
+          )}
+          <p class={`text-lg font-medium ${textColorClass}`}>
+            {title}
+            {description && <span class="ml-2 font-normal opacity-80">{description}</span>}
+          </p>
+        </div>
+        {hasButtons && (
+          <div class="flex gap-3">
+            {buttonText && (
+              <Button href={buttonHref} variant={buttonVariant as any} icon={buttonIcon}>
+                {buttonText}
+              </Button>
+            )}
+            {secondaryButtonText && (
+              <Button href={secondaryButtonHref} variant={secondaryButtonVariant as any} icon={secondaryButtonIcon}>
+                {secondaryButtonText}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    ) : (
+      <div class={variant === 'left' ? '' : 'text-center'}>
+        {eyebrow && (
+          <p class="text-sm font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400 mb-4">
+            {eyebrow}
+          </p>
+        )}
+        <h2 class={`text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl ${textColorClass}`}>
+          {title}
+        </h2>
+        {description && (
+          <p class={`mx-auto mt-6 max-w-2xl text-lg md:text-xl ${backgroundImage || variant === 'gradient' ? 'text-gray-200' : 'text-gray-600 dark:text-gray-300'} ${variant === 'left' ? 'mx-0' : ''}`}>
+            {description}
+          </p>
+        )}
+        {hasButtons && (
+          <div class={`mt-10 flex flex-col sm:flex-row gap-4 ${variant === 'left' ? '' : 'justify-center'}`}>
+            {buttonText && (
+              <Button 
+                href={buttonHref} 
+                variant={buttonVariant as any}
+                icon={buttonIcon}
+                size="lg"
+              >
+                {buttonText}
+              </Button>
+            )}
+            {secondaryButtonText && (
+              <Button 
+                href={secondaryButtonHref} 
+                variant={secondaryButtonVariant as any}
+                icon={secondaryButtonIcon}
+                size="lg"
+              >
+                {secondaryButtonText}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</section>

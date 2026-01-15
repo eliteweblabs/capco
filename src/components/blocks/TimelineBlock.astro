@@ -1,0 +1,279 @@
+---
+/**
+ * TimelineBlock - Process/Timeline Steps
+ * 
+ * Display a timeline of events, process steps, or history.
+ * Great for showing workflows, company history, or project phases.
+ * 
+ * @example:
+ * <TimelineBlock 
+ *   title="Our Process"
+ *   steps={[
+ *     { title: "Step 1", description: "Initial consultation", icon: "phone" },
+ *     { title: "Step 2", description: "Design review", icon: "file" },
+ *   ]}
+ * />
+ */
+import SimpleIcon from "../common/SimpleIcon.astro";
+import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
+
+interface TimelineStep {
+  title: string;
+  description?: string;
+  icon?: string;
+  date?: string;
+  status?: 'completed' | 'current' | 'upcoming';
+}
+
+interface Props {
+  // Section content
+  title?: string;
+  description?: string;
+  
+  // Layout
+  variant?: 'vertical' | 'horizontal' | 'alternating' | 'compact';
+  
+  // Steps as JSON
+  steps?: string | TimelineStep[];
+  
+  // Flat props for up to 10 steps
+  step1Title?: string;
+  step1Description?: string;
+  step1Icon?: string;
+  step1Date?: string;
+  step1Status?: string;
+  step2Title?: string;
+  step2Description?: string;
+  step2Icon?: string;
+  step2Date?: string;
+  step2Status?: string;
+  step3Title?: string;
+  step3Description?: string;
+  step3Icon?: string;
+  step3Date?: string;
+  step3Status?: string;
+  step4Title?: string;
+  step4Description?: string;
+  step4Icon?: string;
+  step4Date?: string;
+  step4Status?: string;
+  step5Title?: string;
+  step5Description?: string;
+  step5Icon?: string;
+  step5Date?: string;
+  step5Status?: string;
+  step6Title?: string;
+  step6Description?: string;
+  step6Icon?: string;
+  step6Date?: string;
+  step6Status?: string;
+  step7Title?: string;
+  step7Description?: string;
+  step7Icon?: string;
+  step7Date?: string;
+  step7Status?: string;
+  step8Title?: string;
+  step8Description?: string;
+  step8Icon?: string;
+  step8Date?: string;
+  step8Status?: string;
+  step9Title?: string;
+  step9Description?: string;
+  step9Icon?: string;
+  step9Date?: string;
+  step9Status?: string;
+  step10Title?: string;
+  step10Description?: string;
+  step10Icon?: string;
+  step10Date?: string;
+  step10Status?: string;
+  
+  // Styling
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const {
+  title,
+  description,
+  variant = 'vertical',
+  className = '',
+  id,
+} = props;
+
+// Build steps array
+let stepItems: TimelineStep[] = [];
+
+if (props.steps) {
+  stepItems = parseJsonProp<TimelineStep[]>(props.steps, []);
+} else {
+  stepItems = buildArrayFromFlatProps<TimelineStep>(
+    props,
+    'step',
+    ['title', 'description', 'icon', 'date', 'status'],
+    10
+  );
+}
+
+// Status colors
+const getStatusColor = (status?: string) => {
+  switch (status) {
+    case 'completed':
+      return 'bg-green-500 text-white';
+    case 'current':
+      return 'bg-primary-500 text-white ring-4 ring-primary-100 dark:ring-primary-900/50';
+    case 'upcoming':
+      return 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400';
+    default:
+      return 'bg-primary-500 text-white';
+  }
+};
+
+const getLineColor = (status?: string) => {
+  switch (status) {
+    case 'completed':
+      return 'bg-green-500';
+    case 'current':
+      return 'bg-primary-500';
+    default:
+      return 'bg-gray-200 dark:bg-gray-700';
+  }
+};
+---
+
+<section id={id} class:list={['timeline-block py-16 md:py-24', className]}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {(title || description) && (
+      <div class="mb-12 text-center">
+        {title && (
+          <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+            {title}
+          </h2>
+        )}
+        {description && (
+          <p class="mt-4 text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            {description}
+          </p>
+        )}
+      </div>
+    )}
+    
+    {variant === 'horizontal' ? (
+      <div class="overflow-x-auto pb-4">
+        <div class="flex min-w-max">
+          {stepItems.map((step, index) => (
+            <div class="flex items-start">
+              <div class="flex flex-col items-center">
+                <div class={`flex h-12 w-12 items-center justify-center rounded-full ${getStatusColor(step.status)}`}>
+                  {step.icon ? (
+                    <SimpleIcon name={step.icon} class="h-6 w-6" />
+                  ) : (
+                    <span class="font-bold">{index + 1}</span>
+                  )}
+                </div>
+                <div class="mt-4 text-center w-40">
+                  {step.date && (
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">{step.date}</p>
+                  )}
+                  <h3 class="font-semibold text-gray-900 dark:text-white">{step.title}</h3>
+                  {step.description && (
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{step.description}</p>
+                  )}
+                </div>
+              </div>
+              {index < stepItems.length - 1 && (
+                <div class={`h-1 w-16 mt-6 ${getLineColor(step.status)}`} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    ) : variant === 'alternating' ? (
+      <div class="relative">
+        {/* Center line */}
+        <div class="absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gray-200 dark:bg-gray-700 hidden md:block" />
+        
+        <div class="space-y-12">
+          {stepItems.map((step, index) => (
+            <div class={`relative flex flex-col md:flex-row ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
+              {/* Content */}
+              <div class={`md:w-1/2 ${index % 2 === 0 ? 'md:pr-12 md:text-right' : 'md:pl-12'}`}>
+                {step.date && (
+                  <p class="text-sm text-primary-600 dark:text-primary-400 font-medium mb-1">{step.date}</p>
+                )}
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{step.title}</h3>
+                {step.description && (
+                  <p class="mt-2 text-gray-600 dark:text-gray-300">{step.description}</p>
+                )}
+              </div>
+              
+              {/* Circle - hidden on mobile, shown on desktop */}
+              <div class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center">
+                <div class={`h-10 w-10 rounded-full ${getStatusColor(step.status)} flex items-center justify-center`}>
+                  {step.icon ? (
+                    <SimpleIcon name={step.icon} class="h-5 w-5" />
+                  ) : (
+                    <span class="font-bold text-sm">{index + 1}</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Empty space for other side */}
+              <div class="md:w-1/2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    ) : variant === 'compact' ? (
+      <div class="flex flex-wrap justify-center gap-4">
+        {stepItems.map((step, index) => (
+          <div class="flex items-center gap-3 rounded-lg bg-white dark:bg-gray-800 px-4 py-3 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class={`flex h-8 w-8 items-center justify-center rounded-full ${getStatusColor(step.status)}`}>
+              {step.icon ? (
+                <SimpleIcon name={step.icon} class="h-4 w-4" />
+              ) : (
+                <span class="font-bold text-sm">{index + 1}</span>
+              )}
+            </div>
+            <span class="font-medium text-gray-900 dark:text-white">{step.title}</span>
+            {index < stepItems.length - 1 && (
+              <SimpleIcon name="chevron-right" class="h-5 w-5 text-gray-400" />
+            )}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div class="relative max-w-3xl mx-auto">
+        {/* Vertical line */}
+        <div class="absolute left-4 md:left-8 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
+        
+        <div class="space-y-8">
+          {stepItems.map((step, index) => (
+            <div class="relative flex gap-6 md:gap-8">
+              {/* Circle */}
+              <div class={`relative z-10 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full ${getStatusColor(step.status)}`}>
+                {step.icon ? (
+                  <SimpleIcon name={step.icon} class="h-4 w-4 md:h-5 md:w-5" />
+                ) : (
+                  <span class="font-bold text-sm">{index + 1}</span>
+                )}
+              </div>
+              
+              {/* Content */}
+              <div class="pb-8">
+                {step.date && (
+                  <p class="text-sm text-primary-600 dark:text-primary-400 font-medium mb-1">{step.date}</p>
+                )}
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{step.title}</h3>
+                {step.description && (
+                  <p class="mt-1 text-gray-600 dark:text-gray-300">{step.description}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</section>

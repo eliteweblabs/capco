@@ -31,14 +31,14 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   // Debug logging for localhost OAuth issues
   if (typeof window === "undefined") {
     // Server-side only
-    console.log("🔐 [AUTH] Cookie check:", {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-      accessTokenValue: accessToken?.value ? `${accessToken.value.substring(0, 20)}...` : "missing",
-      refreshTokenValue: refreshToken?.value
-        ? `${refreshToken.value.substring(0, 20)}...`
-        : "missing",
-    });
+    // console.log("🔐 [AUTH] Cookie check:", {
+    //   hasAccessToken: !!accessToken,
+    //   hasRefreshToken: !!refreshToken,
+    //   accessTokenValue: accessToken?.value ? `${accessToken.value.substring(0, 20)}...` : "missing",
+    //   refreshTokenValue: refreshToken?.value
+    //     ? `${refreshToken.value.substring(0, 20)}...`
+    //     : "missing",
+    // });
   }
 
   // Check for custom session cookies first
@@ -110,12 +110,12 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
       // Prevent concurrent refresh attempts - reuse existing promise if within interval
       const now = Date.now();
       if (sessionRefreshPromise && now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
-        console.log("🔐 [AUTH] Reusing existing session refresh promise...");
+        // console.log("🔐 [AUTH] Reusing existing session refresh promise...");
         session = await sessionRefreshPromise;
       } else {
         // Create new session refresh
         lastRefreshTime = now;
-        
+
         // Add timeout handling for Supabase connection issues
         sessionRefreshPromise = supabase.auth.setSession({
           refresh_token: refreshToken.value,
@@ -128,7 +128,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
         );
 
         session = (await Promise.race([sessionRefreshPromise, timeoutPromise])) as any;
-        
+
         // Clear the promise after completion
         sessionRefreshPromise = null;
       }
@@ -136,15 +136,15 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
       if (!session.error) {
         isAuth = true;
         currentUser = session.data.user as ExtendedUser;
-        
+
         // Update cookies if tokens were refreshed
         if (session.data?.session?.access_token && session.data?.session?.refresh_token) {
           const newAccessToken = session.data.session.access_token;
           const newRefreshToken = session.data.session.refresh_token;
-          
+
           // Only update if tokens actually changed
           if (newAccessToken !== accessToken.value || newRefreshToken !== refreshToken.value) {
-            console.log("🔐 [AUTH] Tokens refreshed, updating cookies...");
+            // console.log("🔐 [AUTH] Tokens refreshed, updating cookies...");
             setAuthCookies(cookies, newAccessToken, newRefreshToken);
           }
         }
@@ -191,10 +191,13 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
       } else {
         // Handle specific error cases
         const errorMessage = session.error?.message || "";
-        
+
         // "Invalid Refresh Token: Already Used" means the token was already consumed
         // This can happen with concurrent requests - don't clear cookies, just return unauthenticated
-        if (errorMessage.includes("Invalid Refresh Token") || errorMessage.includes("Already Used")) {
+        if (
+          errorMessage.includes("Invalid Refresh Token") ||
+          errorMessage.includes("Already Used")
+        ) {
           console.warn("🔐 [AUTH] Refresh token already used (concurrent request race condition)");
           // Don't clear cookies - they might be valid for another request
           return {
@@ -207,14 +210,14 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
             currentRole: null,
           };
         }
-        
+
         console.error("🔐 [AUTH] Session error, clearing invalid tokens:", session.error);
         // Clear invalid tokens
         clearAuthCookies(cookies);
       }
     } catch (error) {
       console.error("🔐 [AUTH] Exception during authentication:", error);
-      
+
       // Clear the refresh promise on error
       sessionRefreshPromise = null;
 

@@ -1,0 +1,263 @@
+---
+/**
+ * LogoCloudBlock - Partner/Client Logos
+ * 
+ * Display partner, client, or technology logos.
+ * Supports static grid or animated marquee.
+ * 
+ * @example:
+ * <LogoCloudBlock 
+ *   title="Trusted By"
+ *   logos={[
+ *     { src: "/logos/company1.png", alt: "Company 1", href: "https://..." },
+ *   ]}
+ * />
+ */
+import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
+
+interface Logo {
+  src: string;
+  alt: string;
+  href?: string;
+  width?: number;
+}
+
+interface Props {
+  // Section content
+  title?: string;
+  description?: string;
+  
+  // Layout
+  variant?: 'simple' | 'grid' | 'marquee' | 'centered';
+  columns?: number | string;
+  grayscale?: boolean | string;
+  
+  // Logos as JSON
+  logos?: string | Logo[];
+  
+  // Flat props for up to 12 logos
+  logo1Src?: string;
+  logo1Alt?: string;
+  logo1Href?: string;
+  logo2Src?: string;
+  logo2Alt?: string;
+  logo2Href?: string;
+  logo3Src?: string;
+  logo3Alt?: string;
+  logo3Href?: string;
+  logo4Src?: string;
+  logo4Alt?: string;
+  logo4Href?: string;
+  logo5Src?: string;
+  logo5Alt?: string;
+  logo5Href?: string;
+  logo6Src?: string;
+  logo6Alt?: string;
+  logo6Href?: string;
+  logo7Src?: string;
+  logo7Alt?: string;
+  logo7Href?: string;
+  logo8Src?: string;
+  logo8Alt?: string;
+  logo8Href?: string;
+  logo9Src?: string;
+  logo9Alt?: string;
+  logo9Href?: string;
+  logo10Src?: string;
+  logo10Alt?: string;
+  logo10Href?: string;
+  logo11Src?: string;
+  logo11Alt?: string;
+  logo11Href?: string;
+  logo12Src?: string;
+  logo12Alt?: string;
+  logo12Href?: string;
+  
+  // Styling
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const {
+  title,
+  description,
+  variant = 'simple',
+  className = '',
+  id,
+} = props;
+
+const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 6);
+const grayscale = props.grayscale === 'false' ? false : (props.grayscale ?? true);
+
+// Build logos array
+let logoItems: Logo[] = [];
+
+if (props.logos) {
+  logoItems = parseJsonProp<Logo[]>(props.logos, []);
+} else {
+  logoItems = buildArrayFromFlatProps<Logo>(
+    props,
+    'logo',
+    ['src', 'alt', 'href', 'width'],
+    12
+  );
+}
+
+// Column classes
+const columnClasses: Record<number, string> = {
+  3: 'grid-cols-2 sm:grid-cols-3',
+  4: 'grid-cols-2 sm:grid-cols-4',
+  5: 'grid-cols-2 sm:grid-cols-5',
+  6: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6',
+};
+
+const gridClass = columnClasses[columns] || columnClasses[6];
+---
+
+<section id={id} class:list={['logo-cloud-block py-12 md:py-16', className]}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {(title || description) && (
+      <div class="mb-10 text-center">
+        {title && (
+          <h2 class="text-lg font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            {title}
+          </h2>
+        )}
+        {description && (
+          <p class="mt-2 text-gray-500 dark:text-gray-400">
+            {description}
+          </p>
+        )}
+      </div>
+    )}
+    
+    {variant === 'marquee' ? (
+      <div class="relative overflow-hidden">
+        {/* Fade edges */}
+        <div class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10" />
+        <div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10" />
+        
+        <div class="flex animate-marquee gap-16">
+          {[...logoItems, ...logoItems].map((logo) => (
+            logo.href ? (
+              <a 
+                href={logo.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex-shrink-0"
+              >
+                <img 
+                  src={logo.src} 
+                  alt={logo.alt}
+                  class:list={[
+                    'h-10 w-auto object-contain',
+                    grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
+                  ]}
+                  width={logo.width || 160}
+                />
+              </a>
+            ) : (
+              <img 
+                src={logo.src} 
+                alt={logo.alt}
+                class:list={[
+                  'h-10 w-auto object-contain flex-shrink-0',
+                  grayscale && 'grayscale opacity-60',
+                ]}
+                width={logo.width || 160}
+              />
+            )
+          ))}
+        </div>
+      </div>
+    ) : variant === 'centered' ? (
+      <div class="flex flex-wrap items-center justify-center gap-x-12 gap-y-8">
+        {logoItems.map((logo) => (
+          logo.href ? (
+            <a 
+              href={logo.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group"
+            >
+              <img 
+                src={logo.src} 
+                alt={logo.alt}
+                class:list={[
+                  'h-10 w-auto object-contain',
+                  grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
+                ]}
+                width={logo.width || 160}
+              />
+            </a>
+          ) : (
+            <img 
+              src={logo.src} 
+              alt={logo.alt}
+              class:list={[
+                'h-10 w-auto object-contain',
+                grayscale && 'grayscale opacity-60',
+              ]}
+              width={logo.width || 160}
+            />
+          )
+        ))}
+      </div>
+    ) : (
+      <div class={`grid gap-8 items-center justify-items-center ${gridClass}`}>
+        {logoItems.map((logo) => (
+          logo.href ? (
+            <a 
+              href={logo.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group"
+            >
+              <img 
+                src={logo.src} 
+                alt={logo.alt}
+                class:list={[
+                  'h-10 w-auto object-contain',
+                  grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
+                ]}
+                width={logo.width || 160}
+              />
+            </a>
+          ) : (
+            <img 
+              src={logo.src} 
+              alt={logo.alt}
+              class:list={[
+                'h-10 w-auto object-contain',
+                grayscale && 'grayscale opacity-60',
+              ]}
+              width={logo.width || 160}
+            />
+          )
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
+{variant === 'marquee' && (
+  <style>
+    @keyframes marquee {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+    
+    .animate-marquee {
+      animation: marquee 30s linear infinite;
+    }
+    
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+  </style>
+)}

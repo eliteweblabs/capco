@@ -1,0 +1,127 @@
+---
+/**
+ * BlockRenderer - Dynamic Block Renderer
+ * 
+ * Renders blocks dynamically based on type and props.
+ * Perfect for CMS integration where block type is determined at runtime.
+ * 
+ * @example Direct usage:
+ * <BlockRenderer type="CTABlock" props={{ title: "Hello", buttonText: "Click" }} />
+ * 
+ * @example With JSON:
+ * <BlockRenderer blocks={JSON.stringify([
+ *   { type: "CTABlock", props: { title: "Hello" } },
+ *   { type: "FeatureGridBlock", props: { ... } }
+ * ])} />
+ */
+
+// Import all block components
+import CTABlock from "./CTABlock.astro";
+import FeatureGridBlock from "./FeatureGridBlock.astro";
+import TestimonialBlock from "./TestimonialBlock.astro";
+import FAQBlock from "./FAQBlock.astro";
+import StatsBlock from "./StatsBlock.astro";
+import TeamBlock from "./TeamBlock.astro";
+import ContentBlock from "./ContentBlock.astro";
+import TimelineBlock from "./TimelineBlock.astro";
+import LogoCloudBlock from "./LogoCloudBlock.astro";
+import NewsletterBlock from "./NewsletterBlock.astro";
+import GalleryBlock from "./GalleryBlock.astro";
+import AlertBlock from "./AlertBlock.astro";
+import PricingBlock from "./PricingBlock.astro";
+import FooterBlock from "./FooterBlock.astro";
+
+// Block component map
+const blockComponents = {
+  CTABlock,
+  FeatureGridBlock,
+  TestimonialBlock,
+  FAQBlock,
+  StatsBlock,
+  TeamBlock,
+  ContentBlock,
+  TimelineBlock,
+  LogoCloudBlock,
+  NewsletterBlock,
+  GalleryBlock,
+  AlertBlock,
+  PricingBlock,
+  FooterBlock,
+} as const;
+
+type BlockType = keyof typeof blockComponents;
+
+interface BlockConfig {
+  type: BlockType;
+  props: Record<string, any>;
+  id?: string;
+}
+
+interface Props {
+  // Single block rendering
+  type?: BlockType;
+  props?: Record<string, any>;
+  
+  // Multiple blocks rendering (JSON string or array)
+  blocks?: string | BlockConfig[];
+  
+  // Wrapper options
+  wrapperClass?: string;
+  gap?: 'none' | 'small' | 'medium' | 'large';
+}
+
+const { 
+  type, 
+  props: blockProps = {}, 
+  blocks,
+  wrapperClass = '',
+  gap = 'none',
+} = Astro.props;
+
+// Parse blocks if JSON string
+let blockConfigs: BlockConfig[] = [];
+
+if (blocks) {
+  if (typeof blocks === 'string') {
+    try {
+      blockConfigs = JSON.parse(blocks);
+    } catch (e) {
+      console.error('BlockRenderer: Failed to parse blocks JSON', e);
+    }
+  } else {
+    blockConfigs = blocks;
+  }
+} else if (type) {
+  blockConfigs = [{ type, props: blockProps }];
+}
+
+// Gap classes
+const gapClasses = {
+  none: '',
+  small: 'space-y-8',
+  medium: 'space-y-16',
+  large: 'space-y-24',
+};
+
+// Get component for block type
+const getBlockComponent = (blockType: string) => {
+  return blockComponents[blockType as BlockType];
+};
+---
+
+<div class:list={['block-renderer', wrapperClass, gapClasses[gap]]}>
+  {blockConfigs.map((block) => {
+    const Component = getBlockComponent(block.type);
+    
+    if (!Component) {
+      console.warn(`BlockRenderer: Unknown block type "${block.type}"`);
+      return (
+        <div class="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
+          Unknown block type: {block.type}
+        </div>
+      );
+    }
+    
+    return <Component {...block.props} id={block.id} />;
+  })}
+</div>

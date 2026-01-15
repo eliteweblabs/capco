@@ -1,0 +1,197 @@
+---
+/**
+ * SectionBlock - Section Wrapper with Title
+ * 
+ * Wraps content in a section with optional title, description, and background.
+ * Great for creating consistent page sections.
+ * 
+ * @example Basic usage:
+ * <SectionBlock title="Our Services" description="What we offer">
+ *   <div>Section content here</div>
+ * </SectionBlock>
+ * 
+ * @example With background:
+ * <SectionBlock 
+ *   title="Featured" 
+ *   variant="dark"
+ *   padding="large"
+ * >
+ *   <div>Content on dark background</div>
+ * </SectionBlock>
+ */
+
+interface Props {
+  // Header content
+  title?: string;
+  description?: string;
+  eyebrow?: string;
+  
+  // Header alignment
+  headerAlign?: 'left' | 'center' | 'right';
+  
+  // Variant (predefined styles)
+  variant?: 'default' | 'light' | 'dark' | 'primary' | 'gradient';
+  
+  // Custom background
+  backgroundColor?: string;
+  backgroundImage?: string;
+  backgroundOverlay?: boolean | string;
+  overlayOpacity?: number | string;
+  
+  // Spacing
+  padding?: 'none' | 'small' | 'medium' | 'large' | 'xl';
+  
+  // Container settings
+  contained?: boolean | string;
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
+  
+  // Border/dividers
+  topDivider?: boolean | string;
+  bottomDivider?: boolean | string;
+  
+  // Styling
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const {
+  title,
+  description,
+  eyebrow,
+  headerAlign = 'center',
+  variant = 'default',
+  backgroundColor,
+  backgroundImage,
+  padding = 'large',
+  maxWidth = '2xl',
+  className = '',
+  id,
+} = props;
+
+// Handle boolean/string conversions
+const contained = props.contained !== 'false' && props.contained !== false;
+const backgroundOverlay = props.backgroundOverlay === 'false' ? false : (props.backgroundOverlay ?? !!backgroundImage);
+const overlayOpacity = typeof props.overlayOpacity === 'string' 
+  ? parseFloat(props.overlayOpacity) 
+  : (props.overlayOpacity ?? 0.6);
+const topDivider = props.topDivider === 'true' || props.topDivider === true;
+const bottomDivider = props.bottomDivider === 'true' || props.bottomDivider === true;
+
+// Variant styles
+const variantStyles = {
+  default: '',
+  light: 'bg-gray-50 dark:bg-gray-800/50',
+  dark: 'bg-gray-900 dark:bg-gray-950',
+  primary: 'bg-primary-50 dark:bg-primary-900/20',
+  gradient: 'bg-gradient-to-br from-primary-600 to-secondary-600',
+};
+
+// Text colors based on variant
+const textColors = {
+  default: 'text-gray-900 dark:text-white',
+  light: 'text-gray-900 dark:text-white',
+  dark: 'text-white',
+  primary: 'text-gray-900 dark:text-white',
+  gradient: 'text-white',
+};
+
+const subTextColors = {
+  default: 'text-gray-600 dark:text-gray-300',
+  light: 'text-gray-600 dark:text-gray-300',
+  dark: 'text-gray-300',
+  primary: 'text-gray-600 dark:text-gray-300',
+  gradient: 'text-white/80',
+};
+
+// Padding classes
+const paddingClasses = {
+  none: '',
+  small: 'py-8 md:py-12',
+  medium: 'py-12 md:py-16',
+  large: 'py-16 md:py-24',
+  xl: 'py-24 md:py-32',
+};
+
+// Max width classes
+const maxWidthClasses = {
+  sm: 'max-w-screen-sm',
+  md: 'max-w-screen-md',
+  lg: 'max-w-screen-lg',
+  xl: 'max-w-screen-xl',
+  '2xl': 'max-w-7xl',
+  full: 'max-w-full',
+};
+
+// Header alignment classes
+const headerAlignClasses = {
+  left: 'text-left',
+  center: 'text-center mx-auto',
+  right: 'text-right ml-auto',
+};
+
+const bgStyle = backgroundImage 
+  ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
+  : '';
+
+const hasHeader = title || description || eyebrow;
+---
+
+<section 
+  id={id}
+  class:list={[
+    'section-block relative',
+    paddingClasses[padding],
+    backgroundColor || variantStyles[variant],
+    topDivider && 'border-t border-gray-200 dark:border-gray-700',
+    bottomDivider && 'border-b border-gray-200 dark:border-gray-700',
+    className,
+  ]}
+  style={bgStyle}
+>
+  {backgroundImage && backgroundOverlay && (
+    <div class="absolute inset-0 bg-black" style={`opacity: ${overlayOpacity};`} />
+  )}
+  
+  <div class:list={[
+    'relative z-10',
+    contained && 'mx-auto px-4 sm:px-6 lg:px-8',
+    contained && maxWidthClasses[maxWidth],
+  ]}>
+    {hasHeader && (
+      <div class:list={[
+        'mb-12 md:mb-16 max-w-3xl',
+        headerAlignClasses[headerAlign],
+      ]}>
+        {eyebrow && (
+          <p class:list={[
+            'text-sm font-semibold uppercase tracking-wider mb-3',
+            variant === 'gradient' || variant === 'dark' || backgroundImage
+              ? 'text-primary-300'
+              : 'text-primary-600 dark:text-primary-400',
+          ]}>
+            {eyebrow}
+          </p>
+        )}
+        {title && (
+          <h2 class:list={[
+            'text-3xl font-bold tracking-tight sm:text-4xl',
+            backgroundImage ? 'text-white' : textColors[variant],
+          ]}>
+            {title}
+          </h2>
+        )}
+        {description && (
+          <p class:list={[
+            'mt-4 text-lg',
+            backgroundImage ? 'text-gray-200' : subTextColors[variant],
+          ]}>
+            {description}
+          </p>
+        )}
+      </div>
+    )}
+    
+    <slot />
+  </div>
+</section>

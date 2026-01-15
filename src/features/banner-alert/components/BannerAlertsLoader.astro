@@ -66,56 +66,67 @@ const bottomBanners = banners.filter((b) => b.position === "bottom");
 
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
-    <script>
+    <script is:inline>
       // Adjust navbar position based on top banner height
-      function adjustNavbarForBanners() {
-        const topBannerContainer = document.getElementById("top-banner-container");
-        const navbar = document.querySelector("nav.fixed.top-0") as HTMLElement;
+      (function() {
+        function adjustNavbarForBanners() {
+          const topBannerContainer = document.getElementById("top-banner-container");
+          // Try multiple selectors to find the navbar
+          const navbar = document.querySelector("nav.fixed") || document.querySelector("nav[class*='fixed']");
 
-        if (topBannerContainer && navbar) {
-          const updateNavbarPosition = () => {
-            const bannerHeight = topBannerContainer.offsetHeight;
-            // Get actual navbar height dynamically
-            const navbarHeight = navbar.offsetHeight || 64;
+          if (topBannerContainer && navbar) {
+            const updateNavbarPosition = function() {
+              const bannerHeight = topBannerContainer.offsetHeight;
+              // Get actual navbar height dynamically
+              const navbarHeight = navbar.offsetHeight || 64;
 
-            if (bannerHeight > 0) {
-              navbar.style.top = `${bannerHeight}px`;
-              // Also adjust main content padding
-              const mainContent = document.getElementById("main-content");
-              if (mainContent) {
-                mainContent.style.paddingTop = `${bannerHeight + navbarHeight}px`;
+              if (bannerHeight > 0) {
+                navbar.style.top = bannerHeight + "px";
+                // Also adjust main content padding
+                const mainContent = document.getElementById("main-content");
+                if (mainContent) {
+                  mainContent.style.paddingTop = (bannerHeight + navbarHeight) + "px";
+                }
+              } else {
+                navbar.style.top = "0";
+                const mainContent = document.getElementById("main-content");
+                if (mainContent) {
+                  mainContent.style.paddingTop = navbarHeight + "px";
+                }
               }
-            } else {
-              navbar.style.top = "0";
-              const mainContent = document.getElementById("main-content");
-              if (mainContent) {
-                mainContent.style.paddingTop = `${navbarHeight}px`;
-              }
-            }
-          };
+            };
 
-          // Initial adjustment
-          updateNavbarPosition();
+            // Initial adjustment
+            updateNavbarPosition();
 
-          // Update on resize for responsive changes
-          window.addEventListener("resize", updateNavbarPosition);
+            // Update on resize for responsive changes
+            window.addEventListener("resize", updateNavbarPosition);
 
-          // Watch for banner dismissals
-          const observer = new MutationObserver(() => {
-            setTimeout(updateNavbarPosition, 350); // After animation
-          });
+            // Watch for banner dismissals
+            const observer = new MutationObserver(function() {
+              setTimeout(updateNavbarPosition, 350); // After animation
+            });
 
-          observer.observe(topBannerContainer, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ["style"],
-          });
+            observer.observe(topBannerContainer, {
+              childList: true,
+              subtree: true,
+              attributes: true,
+              attributeFilter: ["style"]
+            });
+          }
         }
-      }
 
-      document.addEventListener("DOMContentLoaded", adjustNavbarForBanners);
-      document.addEventListener("astro:page-load", adjustNavbarForBanners);
+        // Run immediately if DOM is ready, otherwise wait
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", adjustNavbarForBanners);
+        } else {
+          // Small delay to ensure banner is rendered
+          setTimeout(adjustNavbarForBanners, 10);
+        }
+        
+        // Also run on Astro page transitions
+        document.addEventListener("astro:page-load", adjustNavbarForBanners);
+      })();
     </script>
   )
 }

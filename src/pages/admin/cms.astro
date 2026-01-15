@@ -4,7 +4,7 @@
  * Manage page content stored in Supabase database
  */
 import { checkAuth } from "../../lib/auth";
-import App from "../../components/common/App.astro";
+import App from "../../components/ui/App.astro";
 import Button from "../../components/common/Button.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
@@ -34,6 +34,7 @@ const { globalInputClasses } = globalClasses();
 function discoverComponents() {
   // Use import.meta.glob to discover components (similar to MarkdownPage.astro)
   const commonComponents = import.meta.glob("../../components/common/*.astro", { eager: false });
+  const blockComponents = import.meta.glob("../../components/blocks/*.astro", { eager: false });
   const featureComponents = import.meta.glob("../../features/**/*.astro", { eager: false });
 
   const components: Array<{ name: string; category: string; path: string }> = [];
@@ -57,6 +58,22 @@ function discoverComponents() {
         components.push({
           name: fileName,
           category: "Common Components",
+          path: path.replace("../../", ""),
+        });
+      }
+    }
+  });
+
+  // Process block components
+  Object.keys(blockComponents).forEach((path) => {
+    const fileName = path.split("/").pop()?.replace(".astro", "");
+    if (fileName && fileName[0] === fileName[0].toUpperCase()) {
+      // Exclude utility components
+      const excluded = ["BlockRenderer"];
+      if (!excluded.includes(fileName)) {
+        components.push({
+          name: fileName,
+          category: "Block Components",
           path: path.replace("../../", ""),
         });
       }
@@ -124,10 +141,11 @@ function discoverComponents() {
 
 const componentGroups = discoverComponents();
 
-// Separate Common Components from Features
+// Separate Common Components, Block Components, and Features
 const commonComponents = componentGroups["Common Components"] || [];
+const blockComponents = componentGroups["Block Components"] || [];
 const featureGroups = Object.fromEntries(
-  Object.entries(componentGroups).filter(([category]) => category !== "Common Components")
+  Object.entries(componentGroups).filter(([category]) => category !== "Common Components" && category !== "Block Components")
 );
 
 // Fetch existing CMS pages from database
@@ -722,6 +740,64 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                       <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-primary-50 dark:bg-primary-900/20">
                         <div class="space-y-1.5 font-mono text-xs">
                           {commonComponents.map((comp) => (
+                            <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
+                              <span class="text-primary-600 dark:text-primary-400">•</span>
+                              <code class="flex-1 break-all">&lt;{comp.name} /&gt;</code>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
+              <!-- Block Components Accordion -->
+              {
+                blockComponents.length > 0 && (
+                  <div
+                    id="modal-block-components-accordion"
+                    data-accordion="collapse"
+                    class="mb-2"
+                  >
+                    <h2>
+                      <button
+                        type="button"
+                        class="flex items-center justify-between w-full p-3 text-sm font-medium text-primary border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800"
+                        data-accordion-target="#modal-block-components-body"
+                        aria-expanded="false"
+                        aria-controls="modal-block-components-body"
+                      >
+                        <span class="flex items-center gap-2">
+                          <span>🧱</span>
+                          <span>Block Components ({blockComponents.length})</span>
+                        </span>
+                        <svg
+                          data-accordion-icon
+                          class="w-3 h-3 rotate-180 shrink-0"
+                          aria-hidden="true"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 10 6"
+                        >
+                          <path
+                            stroke="currentColor"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5 5 1 1 5"
+                          />
+                        </svg>
+                      </button>
+                    </h2>
+                    <div
+                      id="modal-block-components-body"
+                      class="hidden"
+                      aria-labelledby="modal-block-components-heading"
+                    >
+                      <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-primary-50 dark:bg-primary-900/20">
+                        <div class="space-y-1.5 font-mono text-xs">
+                          {blockComponents.map((comp) => (
                             <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
                               <span class="text-primary-600 dark:text-primary-400">•</span>
                               <code class="flex-1 break-all">&lt;{comp.name} /&gt;</code>
