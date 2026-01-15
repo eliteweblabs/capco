@@ -58,9 +58,7 @@ const {
   fontFamily,
   secondaryFontFamily,
   globalCompanyIcon,
-  plausibleScriptUrl,
-  plausibleSiteId,
-  plausibleDomain,
+  plausibleTrackingScript,
   ogImage,
 } = await globalCompanyData();
 
@@ -2230,28 +2228,6 @@ const debugData = {
     </script>
 
     <!-- Plausible Analytics Script -->
-    {
-      plausibleScriptUrl && plausibleSiteId && (
-        <script defer data-domain={plausibleSiteId} src={plausibleScriptUrl} />
-      )
-    }
-    <script>
-      (window as any).plausible =
-        (window as any).plausible ||
-        function () {
-          (window as any).plausible.q = (window as any).plausible.q || [];
-          (window as any).plausible.q.push(arguments);
-        };
-    </script>
-
-    <script>
-      // @ts-ignore
-      (window as any).plausible =
-        (window as any).plausible ||
-        function () {
-          // @ts-ignore
-          (window.plausible.q = window.plausible.q || []).push(arguments);
-        };
-    </script>
+    {plausibleTrackingScript && <Fragment set:html={plausibleTrackingScript} />}
   </body>
 </html>

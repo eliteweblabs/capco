@@ -104,12 +104,7 @@ export const globalCompanyData = async () => {
     secondaryFontFamily: get("secondary_font_family", "FONT_FAMILY_FALLBACK") || "sans-serif",
 
     // Analytics settings
-    plausibleDomain: get("plausible_domain", "PLAUSIBLE_DOMAIN") || "",
-    plausibleScriptUrl: get("plausible_script_url", "PLAUSIBLE_SCRIPT_URL") || "",
-    plausibleSiteId:
-      get("plausible_site_id", "PLAUSIBLE_SITE_ID") ||
-      get("website")?.replace(/^https?:\/\//, "") ||
-      "",
+    plausibleTrackingScript: get("plausible_tracking_script", "PLAUSIBLE_TRACKING_SCRIPT") || "",
 
     // OG Image for social sharing (URL path like /images/og-image.png)
     ogImage: get("og_image", "OG_IMAGE") || "",

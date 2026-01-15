@@ -76,9 +76,7 @@ const settings = {
   ogImage: companyData.ogImage || "",
 
   // Analytics
-  plausibleScriptUrl: companyData?.plausibleScriptUrl || "",
-  plausibleSiteId: companyData?.plausibleSiteId || "",
-  plausibleDomain: companyData?.plausibleDomain || "",
+  plausibleTrackingScript: companyData?.plausibleTrackingScript || "",
 };
 ---
 
@@ -293,10 +291,10 @@ const settings = {
         </p>
         <div class="grid grid-cols-1 gap-4">
           <div>
-            <label for="plausible_script_url" class="block text-sm font-medium mb-2">
-              Plausible Script URL
+            <label for="plausible_tracking_script" class="block text-sm font-medium mb-2">
+              Plausible Tracking Script
               {
-                isFromDatabase("plausible_script_url") && (
+                isFromDatabase("plausible_tracking_script") && (
                   <span
                     class="ml-2 text-xs text-green-600 dark:text-green-400"
                     title="Stored in database"
@@ -306,72 +304,15 @@ const settings = {
                 )
               }
             </label>
-            <input
-              type="url"
-              id="plausible_script_url"
-              name="plausible_script_url"
-              value={settings.plausibleScriptUrl}
+            <textarea
+              id="plausible_tracking_script"
+              name="plausible_tracking_script"
+              rows="4"
               class={globalInputClasses}
-              placeholder="https://plausible.example.com/js/script.file-downloads.outbound-links.js"
-            />
+              placeholder='<script defer data-domain="yourdomain.com" src="https://plausible.example.com/js/script.js"></script>'
+            >{settings.plausibleTrackingScript}</textarea>
             <p class="text-xs text-gray-500 mt-1">
-              Full URL to your Plausible analytics script (e.g.,
-              https://plausible.example.com/js/script.js)
-            </p>
-          </div>
-
-          <div>
-            <label for="plausible_site_id" class="block text-sm font-medium mb-2">
-              Plausible Site ID
-              {
-                isFromDatabase("plausible_site_id") && (
-                  <span
-                    class="ml-2 text-xs text-green-600 dark:text-green-400"
-                    title="Stored in database"
-                  >
-                    💾
-                  </span>
-                )
-              }
-            </label>
-            <input
-              type="text"
-              id="plausible_site_id"
-              name="plausible_site_id"
-              value={settings.plausibleSiteId}
-              class={globalInputClasses}
-              placeholder="yourdomain.com"
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Your website domain (without https://). If empty, will use your website setting above.
-            </p>
-          </div>
-
-          <div>
-            <label for="plausible_domain" class="block text-sm font-medium mb-2">
-              Plausible Domain (Optional)
-              {
-                isFromDatabase("plausible_domain") && (
-                  <span
-                    class="ml-2 text-xs text-green-600 dark:text-green-400"
-                    title="Stored in database"
-                  >
-                    💾
-                  </span>
-                )
-              }
-            </label>
-            <input
-              type="url"
-              id="plausible_domain"
-              name="plausible_domain"
-              value={settings.plausibleDomain}
-              class={globalInputClasses}
-              placeholder="https://plausible.example.com"
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Your self-hosted Plausible instance URL (for API calls). Leave empty if using
-              Plausible.io.
+              Paste your complete Plausible tracking script here. Get this from your Plausible dashboard.
             </p>
           </div>
         </div>
@@ -1127,9 +1068,7 @@ const settings = {
       logo: "logo",
       icon: "icon",
       og_image: "og_image",
-      plausible_script_url: "plausible_script_url",
-      plausible_site_id: "plausible_site_id",
-      plausible_domain: "plausible_domain",
+      plausible_tracking_script: "plausible_tracking_script",
     };
 
     // Validation errors
@@ -1160,12 +1099,7 @@ const settings = {
         }
 
         // Validate URL
-        if (
-          (dbKey === "website" ||
-            dbKey === "plausible_script_url" ||
-            dbKey === "plausible_domain") &&
-          trimmedValue
-        ) {
+        if (dbKey === "website" && trimmedValue) {
           try {
             new URL(trimmedValue.startsWith("http") ? trimmedValue : `https://${trimmedValue}`);
           } catch {
