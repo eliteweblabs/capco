@@ -48,7 +48,7 @@ const bottomBanners = banners.filter((b) => b.position === "bottom");
 
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
-    <div class="banner-alerts-top">
+    <div class="banner-alerts-top fixed top-0 left-0 right-0 z-[9999]" id="top-banner-container">
       {topBanners.map((banner) => (
         <BannerAlert
           id={banner.id}
@@ -61,6 +61,62 @@ const bottomBanners = banners.filter((b) => b.position === "bottom");
         />
       ))}
     </div>
+  )
+}
+
+{
+  topBanners.length > 0 && (position === "all" || position === "top") && (
+    <script>
+      // Adjust navbar position based on top banner height
+      function adjustNavbarForBanners() {
+        const topBannerContainer = document.getElementById("top-banner-container");
+        const navbar = document.querySelector("nav.fixed.top-0") as HTMLElement;
+
+        if (topBannerContainer && navbar) {
+          const updateNavbarPosition = () => {
+            const bannerHeight = topBannerContainer.offsetHeight;
+            // Get actual navbar height dynamically
+            const navbarHeight = navbar.offsetHeight || 64;
+
+            if (bannerHeight > 0) {
+              navbar.style.top = `${bannerHeight}px`;
+              // Also adjust main content padding
+              const mainContent = document.getElementById("main-content");
+              if (mainContent) {
+                mainContent.style.paddingTop = `${bannerHeight + navbarHeight}px`;
+              }
+            } else {
+              navbar.style.top = "0";
+              const mainContent = document.getElementById("main-content");
+              if (mainContent) {
+                mainContent.style.paddingTop = `${navbarHeight}px`;
+              }
+            }
+          };
+
+          // Initial adjustment
+          updateNavbarPosition();
+
+          // Update on resize for responsive changes
+          window.addEventListener("resize", updateNavbarPosition);
+
+          // Watch for banner dismissals
+          const observer = new MutationObserver(() => {
+            setTimeout(updateNavbarPosition, 350); // After animation
+          });
+
+          observer.observe(topBannerContainer, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["style"],
+          });
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", adjustNavbarForBanners);
+      document.addEventListener("astro:page-load", adjustNavbarForBanners);
+    </script>
   )
 }
 
