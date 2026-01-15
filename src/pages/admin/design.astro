@@ -1,12 +1,35 @@
 ---
 /**
  * Design Systems Page
- * Showcase all design system components, starting with button variants
+ * Showcase all design system components organized by category
  */
 import { checkAuth } from "../../lib/auth";
-import App from "../../components/common/App.astro";
+import App from "../../components/ui/App.astro";
 import Button from "../../components/common/Button.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
+
+// Common Components
+import Hero from "../../components/common/Hero.astro";
+import LoadingSpinner from "../../components/common/LoadingSpinner.astro";
+import Tooltip from "../../components/common/Tooltip.astro";
+import SlideToggle from "../../components/common/SlideToggle.astro";
+import Breadcrumb from "../../components/common/Breadcrumb.astro";
+import PricingCard from "../../components/common/PricingCard.astro";
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
+
+// Blocks
+import AlertBlock from "../../components/blocks/AlertBlock.astro";
+import StatsBlock from "../../components/blocks/StatsBlock.astro";
+import FAQBlock from "../../components/blocks/FAQBlock.astro";
+import CTABlock from "../../components/blocks/CTABlock.astro";
+import TimelineBlock from "../../components/blocks/TimelineBlock.astro";
+import LogoCloudBlock from "../../components/blocks/LogoCloudBlock.astro";
+
+// UI Components
+import ImageSlider from "../../components/ui/ImageSlider.astro";
+
+// Features
+import Testimonials from "../../features/testimonials/components/Testimonials.astro";
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
@@ -40,6 +63,13 @@ const buttonVariants = [
 
 // Button sizes to showcase
 const buttonSizes = ["xs", "sm", "md", "lg", "xl"] as const;
+
+// Breadcrumb items for demo
+const breadcrumbItems = [
+  { label: "Home", href: "/", icon: "home" },
+  { label: "Admin", href: "/admin" },
+  { label: "Design System", current: true },
+];
 ---
 
 <App
@@ -51,7 +81,7 @@ const buttonSizes = ["xs", "sm", "md", "lg", "xl"] as const;
   globalCompanySlogan={companyData.globalCompanySlogan}
   globalCompanyLogo={companyData.globalCompanyLogo}
 >
-  <div class="max-w-6xl mx-auto px-4 py-8">
+  <div class="max-w-7xl mx-auto px-4 py-8">
     <div class="mb-8">
       <h1 class="text-3xl font-bold mb-2">Design System</h1>
       <p class="text-gray-600 dark:text-gray-400">
@@ -60,185 +90,1159 @@ const buttonSizes = ["xs", "sm", "md", "lg", "xl"] as const;
       </p>
     </div>
 
-    <!-- Buttons Section -->
-    <section class="mb-12">
-      <div class="mb-6">
-        <h2 class="text-2xl font-semibold mb-2">Buttons</h2>
-        <p class="text-gray-600 dark:text-gray-400">
-          All available button variants and sizes. Buttons can be used with icons, loading states,
-          and disabled states.
-        </p>
+    <!-- ==================== COMMON COMPONENTS ==================== -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 text-primary-600 dark:text-primary-400">Common Components</h2>
+      
+      <!-- Buttons Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-buttons"
+            aria-expanded="false"
+            aria-controls="accordion-buttons"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Buttons</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">All button variants, sizes, and states</p>
+          </div>
+          <button
+            class="p-4 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+            data-accordion-target="#accordion-buttons"
+            aria-expanded="false"
+            type="button"
+          >
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-buttons" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6 space-y-8">
+            <!-- Button Variants -->
+            <div>
+              <h4 class="text-xl font-semibold mb-4">Variants</h4>
+              <div class="space-y-6">
+                {buttonVariants.map((variant) => (
+                  <div class="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0 last:pb-0">
+                    <div class="mb-3">
+                      <h5 class="text-lg font-medium text-gray-900 dark:text-gray-100 capitalize">{variant}</h5>
+                      <code class="text-xs text-gray-500 dark:text-gray-400 font-mono">variant="{variant}"</code>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                      <Button variant={variant}>Button Text</Button>
+                      <Button variant={variant} icon="bx-check" iconPosition="left">With Icon</Button>
+                      <Button variant={variant} loading={true}>Loading</Button>
+                      <Button variant={variant} disabled={true}>Disabled</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <!-- Button Sizes -->
+            <div>
+              <h4 class="text-xl font-semibold mb-4">Sizes</h4>
+              <div class="space-y-4">
+                {buttonSizes.map((size) => (
+                  <div class="flex items-center gap-4">
+                    <div class="w-24 text-sm text-gray-600 dark:text-gray-400 font-medium uppercase">{size}</div>
+                    <div class="flex flex-wrap items-center gap-3">
+                      <Button variant="primary" size={size}>{size.toUpperCase()} Button</Button>
+                      <Button variant="secondary" size={size}>{size.toUpperCase()} Button</Button>
+                      <Button variant="outline" size={size}>{size.toUpperCase()} Button</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <!-- Full Width -->
+            <div>
+              <h4 class="text-xl font-semibold mb-4">Full Width</h4>
+              <div class="space-y-3 max-w-md">
+                <Button variant="primary" fullWidth={true}>Full Width Primary</Button>
+                <Button variant="secondary" fullWidth={true}>Full Width Secondary</Button>
+                <Button variant="outline" fullWidth={true}>Full Width Outline</Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Button Variants -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-        <h3 class="text-xl font-semibold mb-4">Variants</h3>
+      <!-- Hero Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-hero"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Hero</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Hero sections with title, description, and buttons</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-hero" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-hero" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6 space-y-8">
+            <div>
+              <h4 class="text-lg font-medium mb-4">Basic Hero</h4>
+              <Hero
+                title="Welcome to Our Platform"
+                description="Build amazing fire protection systems with our comprehensive tools and support."
+                leftButton={{ text: "Get Started", href: "/contact", variant: "primary" }}
+                rightButton={{ text: "Learn More", href: "/about", variant: "outline" }}
+              />
+            </div>
+            <div>
+              <h4 class="text-lg font-medium mb-4">Hero with Background Image</h4>
+              <Hero
+                title="Fire Protection Experts"
+                description="Serving the Northeast since 2015"
+                backgroundImage="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&auto=format"
+                backgroundOverlay={true}
+                overlayOpacity={0.6}
+                leftButton={{ text: "Contact Us", href: "/contact", variant: "primary" }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading Spinner Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-spinner"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Loading Spinner</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Loading indicators with different sizes and colors</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-spinner" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-spinner" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <div class="flex flex-wrap items-start gap-8">
+              <div class="text-center">
+                <p class="text-sm text-gray-500 mb-2">Small / Primary</p>
+                <LoadingSpinner size="sm" color="primary" loadingText="Loading..." />
+              </div>
+              <div class="text-center">
+                <p class="text-sm text-gray-500 mb-2">Medium / Success</p>
+                <LoadingSpinner size="md" color="success" loadingText="Processing..." />
+              </div>
+              <div class="text-center">
+                <p class="text-sm text-gray-500 mb-2">Large / Danger</p>
+                <LoadingSpinner size="lg" color="danger" loadingText="Please wait..." />
+              </div>
+              <div class="text-center">
+                <p class="text-sm text-gray-500 mb-2">Warning</p>
+                <LoadingSpinner size="md" color="warning" loadingText="Saving..." />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tooltip Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-tooltip"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Tooltip</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Hover tooltips with different positions</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-tooltip" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-tooltip" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <div class="flex flex-wrap items-center gap-8">
+              <Tooltip text="This appears on top" position="top">
+                <Button variant="outline">Tooltip Top</Button>
+              </Tooltip>
+              <Tooltip text="This appears on bottom" position="bottom">
+                <Button variant="outline">Tooltip Bottom</Button>
+              </Tooltip>
+              <Tooltip text="This appears on left" position="left">
+                <Button variant="outline">Tooltip Left</Button>
+              </Tooltip>
+              <Tooltip text="This appears on right" position="right">
+                <Button variant="outline">Tooltip Right</Button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide Toggle Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-toggle"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Slide Toggle</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Toggle switches for boolean settings</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-toggle" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-toggle" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <div class="space-y-4">
+              <SlideToggle id="toggle-1" name="notifications" label="Enable notifications" checked={true} color="primary" />
+              <SlideToggle id="toggle-2" name="darkmode" label="Dark mode" color="secondary" />
+              <SlideToggle id="toggle-3" name="emails" label="Email updates" checked={true} color="success" />
+              <SlideToggle id="toggle-4" name="analytics" label="Analytics tracking" color="warning" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breadcrumb Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-breadcrumb"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Breadcrumb</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Navigation breadcrumbs</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-breadcrumb" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-breadcrumb" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <Breadcrumb items={breadcrumbItems} />
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing Card Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-pricing"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Pricing Card</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Pricing display cards</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-pricing" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-pricing" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <PricingCard
+                title="Starter"
+                description="Perfect for small projects"
+                price="$49/mo"
+                features={["5 active projects", "Basic support", "Document storage"]}
+                buttonText="Get Started"
+                buttonHref="/pricing"
+              />
+              <PricingCard
+                title="Professional"
+                description="For growing businesses"
+                price="$149/mo"
+                features={["25 active projects", "Priority support", "Advanced analytics", "Team collaboration"]}
+                buttonText="Start Free Trial"
+                buttonHref="/pricing"
+              />
+              <PricingCard
+                title="Enterprise"
+                description="For large organizations"
+                price="Custom"
+                features={["Unlimited projects", "Dedicated support", "Custom integrations", "SLA guarantee"]}
+                buttonText="Contact Sales"
+                buttonHref="/contact"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== UI COMPONENTS ==================== -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 text-primary-600 dark:text-primary-400">UI Components</h2>
+
+      <!-- Image Slider Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-imageslider"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Image Slider</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Multi-directional animated image grid with hero overlay</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-imageslider" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-imageslider" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6 space-y-8">
+            <div>
+              <h4 class="text-lg font-medium mb-4">With Hero Overlay</h4>
+              <ImageSlider
+                title="Our Projects"
+                description="Quality fire protection across the Northeast"
+                image1="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format"
+                image2="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&auto=format"
+                image3="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format"
+                image4="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format"
+                alt1="Construction site"
+                alt2="Fire sprinkler installation"
+                alt3="Fire protection equipment"
+                alt4="Commercial building"
+                direction1="left"
+                direction2="right"
+                direction3="up"
+                direction4="down"
+                height="400px"
+                overlay="true"
+                overlayOpacity="0.5"
+                leftButtonText="Get a Quote"
+                leftButtonHref="/contact"
+                rightButtonText="Learn More"
+                rightButtonHref="/services"
+              />
+            </div>
+            <div>
+              <h4 class="text-lg font-medium mb-4">Images Only (No Overlay)</h4>
+              <ImageSlider
+                image1="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&auto=format"
+                image2="https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&auto=format"
+                image3="https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format"
+                image4="https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&auto=format"
+                height="300px"
+                overlay="false"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== BLOCKS ==================== -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 text-primary-600 dark:text-primary-400">Blocks</h2>
+
+      <!-- Alert Block Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-alertblock"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">AlertBlock</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Alert/notification banners with different variants</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-alertblock" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-alertblock" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6 space-y-4">
+            <AlertBlock variant="info" title="Information" message="This is an informational message." />
+            <AlertBlock variant="success" title="Success" message="Operation completed successfully!" />
+            <AlertBlock variant="warning" title="Warning" message="Please review before proceeding." dismissible={true} />
+            <AlertBlock variant="danger" title="Error" message="Something went wrong. Please try again." buttonText="Retry" buttonHref="#" />
+            <div>
+              <p class="text-sm text-gray-500 mb-2">Card Layout:</p>
+              <AlertBlock variant="info" layout="card" title="System Update" message="A new version is available with improved performance and security fixes." buttonText="Update Now" buttonHref="#" />
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 mb-2">Toast Layout:</p>
+              <AlertBlock variant="success" layout="toast" title="Saved!" message="Your changes have been saved." dismissible={true} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Block Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-statsblock"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">StatsBlock</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Statistics and metrics display</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-statsblock" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-statsblock" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6 space-y-8">
+            <div>
+              <p class="text-sm text-gray-500 mb-4">Simple Variant:</p>
+              <StatsBlock
+                title="By The Numbers"
+                description="Our track record speaks for itself"
+                variant="simple"
+                stat1Value="500+"
+                stat1Label="Projects Completed"
+                stat1Icon="folder"
+                stat2Value="99%"
+                stat2Label="Client Satisfaction"
+                stat2Icon="heart"
+                stat3Value="24/7"
+                stat3Label="Support Available"
+                stat3Icon="phone"
+                stat4Value="15+"
+                stat4Label="Years Experience"
+                stat4Icon="award"
+              />
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 mb-4">Cards Variant:</p>
+              <StatsBlock
+                variant="cards"
+                columns="3"
+                stat1Value="1,200"
+                stat1Label="Active Users"
+                stat2Value="98%"
+                stat2Label="Uptime"
+                stat3Value="4.9"
+                stat3Label="Rating"
+                stat3Suffix="/5"
+              />
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 mb-4">Gradient Variant:</p>
+              <StatsBlock
+                variant="gradient"
+                stat1Value="$2.5M"
+                stat1Label="Revenue Generated"
+                stat2Value="150+"
+                stat2Label="Enterprise Clients"
+                stat3Value="50K"
+                stat3Label="Inspections"
+                stat4Value="Zero"
+                stat4Label="Security Incidents"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Block Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-faqblock"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">FAQBlock</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">FAQ accordion and grid layouts</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-faqblock" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-faqblock" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <FAQBlock
+              title="Frequently Asked Questions"
+              description="Find answers to common questions about our services"
+              variant="accordion"
+              faq1Question="What services do you offer?"
+              faq1Answer="We provide comprehensive fire protection services including system design, installation, inspection, and maintenance for commercial and residential properties."
+              faq2Question="How long does installation take?"
+              faq2Answer="Installation time varies based on project scope. Small projects typically take 1-2 weeks, while larger commercial installations may take 4-8 weeks."
+              faq3Question="Do you offer emergency services?"
+              faq3Answer="Yes, we offer 24/7 emergency response services for all our clients with active maintenance contracts."
+              faq4Question="What certifications do you have?"
+              faq4Answer="Our team holds NICET certifications, state licenses, and manufacturer certifications for all major fire protection system brands."
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA Block Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-ctablock"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">CTABlock</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Call-to-action sections</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-ctablock" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-ctablock" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6 space-y-8">
+            <div>
+              <p class="text-sm text-gray-500 mb-4">Centered Variant:</p>
+              <CTABlock
+                title="Ready to Get Started?"
+                description="Join thousands of fire protection professionals using our platform."
+                buttonText="Start Free Trial"
+                buttonHref="/signup"
+                secondaryButtonText="Schedule Demo"
+                secondaryButtonHref="/contact"
+                variant="centered"
+              />
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 mb-4">Split Variant:</p>
+              <CTABlock
+                eyebrow="Limited Time Offer"
+                title="Get 30% Off Your First Year"
+                description="Sign up now and save on our professional plan."
+                buttonText="Claim Offer"
+                buttonHref="/signup"
+                variant="split"
+              />
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 mb-4">Gradient Variant:</p>
+              <CTABlock
+                title="Transform Your Workflow"
+                description="Experience the future of fire protection management."
+                buttonText="Get Started"
+                buttonHref="/signup"
+                buttonVariant="secondary"
+                variant="gradient"
+              />
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 mb-4">Banner Variant:</p>
+              <CTABlock
+                eyebrow="New"
+                title="Version 2.0 is here!"
+                description="Check out the new features."
+                buttonText="Learn More"
+                buttonHref="/changelog"
+                variant="banner"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Block Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-timelineblock"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">TimelineBlock</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Process steps and timelines</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-timelineblock" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-timelineblock" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <TimelineBlock
+              title="Our Process"
+              description="How we deliver fire protection solutions"
+              variant="vertical"
+              step1Title="Initial Consultation"
+              step1Description="We assess your needs and review building plans"
+              step1Icon="phone"
+              step1Status="completed"
+              step2Title="Design & Engineering"
+              step2Description="Our engineers create a custom solution"
+              step2Icon="file"
+              step2Status="completed"
+              step3Title="Installation"
+              step3Description="Professional installation by certified technicians"
+              step3Icon="tool"
+              step3Status="current"
+              step4Title="Testing & Certification"
+              step4Description="Comprehensive testing and documentation"
+              step4Icon="check-circle"
+              step4Status="upcoming"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Logo Cloud Block Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-logocloud"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">LogoCloudBlock</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Partner and client logos</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-logocloud" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-logocloud" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <LogoCloudBlock
+              title="Trusted By Industry Leaders"
+              description="We partner with the best in the business"
+              variant="simple"
+              grayscale="true"
+              logo1Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/spotify-grayscale.svg"
+              logo1Alt="Spotify"
+              logo2Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/microsoft-grayscale.svg"
+              logo2Alt="Microsoft"
+              logo3Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/google-grayscale.svg"
+              logo3Alt="Google"
+              logo4Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/amazon-grayscale.svg"
+              logo4Alt="Amazon"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== FEATURES ==================== -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 text-primary-600 dark:text-primary-400">Features</h2>
+
+      <!-- Testimonials Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-testimonials"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Testimonials</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Customer testimonials and reviews</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-testimonials" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-testimonials" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <Testimonials 
+              companyName={companyData.globalCompanyName || "Our Company"}
+              primaryTextClasses="text-gray-900 dark:text-white"
+              secondaryTextClasses="text-gray-600 dark:text-gray-300"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== LAYOUTS ==================== -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 text-primary-600 dark:text-primary-400">Layouts</h2>
+
+      <!-- Layout Default Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-layout-default"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">LayoutDefault</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Standard content page with container, prose styling, and full app chrome</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-layout-default" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-layout-default" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Description</h4>
+              <p class="text-gray-600 dark:text-gray-400">
+                The default layout wraps content in a centered container (max-w-4xl) with prose styling 
+                for readable content. Includes full app chrome (header, footer, sidebar).
+              </p>
+            </div>
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Props</h4>
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th class="px-4 py-2 text-left">Prop</th>
+                      <th class="px-4 py-2 text-left">Type</th>
+                      <th class="px-4 py-2 text-left">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr><td class="px-4 py-2 font-mono text-xs">title</td><td class="px-4 py-2">string</td><td class="px-4 py-2">Page title</td></tr>
+                    <tr><td class="px-4 py-2 font-mono text-xs">description</td><td class="px-4 py-2">string</td><td class="px-4 py-2">Meta description</td></tr>
+                    <tr><td class="px-4 py-2 font-mono text-xs">lastUpdated</td><td class="px-4 py-2">string?</td><td class="px-4 py-2">Set to "auto" to show date banner</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Preview</h4>
+              <div class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                <div class="bg-gray-100 dark:bg-gray-700 p-2 text-xs text-center border-b border-gray-300 dark:border-gray-600">Header / Navigation</div>
+                <div class="p-8 bg-white dark:bg-gray-800">
+                  <div class="max-w-md mx-auto bg-gray-50 dark:bg-gray-700 rounded p-4 text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Centered Content (max-w-4xl)</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Prose styling applied</p>
+                  </div>
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-700 p-2 text-xs text-center border-t border-gray-300 dark:border-gray-600">Footer</div>
+              </div>
+            </div>
+            <div>
+              <h4 class="font-medium mb-2">CMS Usage</h4>
+              <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`---
+title: "My Page"
+description: "Page description"
+template: "default"
+lastUpdated: "auto"
+---
+
+# Page Content Here
+
+Your markdown content with prose styling.`}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layout FullWidth Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-layout-fullwidth"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">LayoutFullWidth</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Full-width page for landing pages and marketing content</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-layout-fullwidth" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-layout-fullwidth" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Description</h4>
+              <p class="text-gray-600 dark:text-gray-400">
+                Full-width layout without container constraints. Ideal for landing pages, marketing pages, 
+                and content that needs to span the full viewport width. Still includes app chrome.
+              </p>
+            </div>
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Props</h4>
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th class="px-4 py-2 text-left">Prop</th>
+                      <th class="px-4 py-2 text-left">Type</th>
+                      <th class="px-4 py-2 text-left">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr><td class="px-4 py-2 font-mono text-xs">title</td><td class="px-4 py-2">string</td><td class="px-4 py-2">Page title</td></tr>
+                    <tr><td class="px-4 py-2 font-mono text-xs">description</td><td class="px-4 py-2">string</td><td class="px-4 py-2">Meta description</td></tr>
+                    <tr><td class="px-4 py-2 font-mono text-xs">lastUpdated</td><td class="px-4 py-2">string?</td><td class="px-4 py-2">Set to "auto" to show date banner</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Preview</h4>
+              <div class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                <div class="bg-gray-100 dark:bg-gray-700 p-2 text-xs text-center border-b border-gray-300 dark:border-gray-600">Header / Navigation</div>
+                <div class="p-4 bg-white dark:bg-gray-800">
+                  <div class="bg-gradient-to-r from-primary-100 to-secondary-100 dark:from-primary-900/30 dark:to-secondary-900/30 rounded p-6 text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Full Width Content</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">No container constraints - spans entire width</p>
+                  </div>
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-700 p-2 text-xs text-center border-t border-gray-300 dark:border-gray-600">Footer</div>
+              </div>
+            </div>
+            <div>
+              <h4 class="font-medium mb-2">CMS Usage</h4>
+              <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`---
+title: "Landing Page"
+description: "Full width landing page"
+template: "fullwidth"
+---
+
+<Hero title="Welcome" description="Full width hero section" />
+
+<StatsBlock stat1Value="100+" stat1Label="Clients" />
+
+<CTABlock title="Get Started" buttonText="Sign Up" />`}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layout Minimal Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-layout-minimal"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">LayoutMinimal</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Minimal layout with no app chrome (no header, footer, sidebar)</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-layout-minimal" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-layout-minimal" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Description</h4>
+              <p class="text-gray-600 dark:text-gray-400">
+                Minimal layout that renders content without any app chrome. No header, footer, or sidebar.
+                Useful for embed pages, print views, or standalone content that needs to be displayed without navigation.
+              </p>
+            </div>
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Props</h4>
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th class="px-4 py-2 text-left">Prop</th>
+                      <th class="px-4 py-2 text-left">Type</th>
+                      <th class="px-4 py-2 text-left">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr><td class="px-4 py-2 font-mono text-xs">title</td><td class="px-4 py-2">string</td><td class="px-4 py-2">Page title</td></tr>
+                    <tr><td class="px-4 py-2 font-mono text-xs">description</td><td class="px-4 py-2">string</td><td class="px-4 py-2">Meta description</td></tr>
+                    <tr><td class="px-4 py-2 font-mono text-xs">lastUpdated</td><td class="px-4 py-2">string?</td><td class="px-4 py-2">Set to "auto" to show date banner</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Preview</h4>
+              <div class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                <div class="p-8 bg-white dark:bg-gray-800">
+                  <div class="max-w-md mx-auto bg-gray-50 dark:bg-gray-700 rounded p-4 text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Content Only</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">No header, footer, or sidebar</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 class="font-medium mb-2">CMS Usage</h4>
+              <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`---
+title: "Embed Content"
+description: "Standalone content"
+template: "minimal"
+---
+
+# Standalone Content
+
+This content renders without any app chrome.
+Great for embeds or print views.`}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LandingProductCapco Accordion -->
+      <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-layout-landing"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">LandingProductCapco</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Product landing page with advanced animations and sections</p>
+          </div>
+          <button class="p-4 text-gray-400" data-accordion-target="#accordion-layout-landing" type="button">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-layout-landing" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Description</h4>
+              <p class="text-gray-600 dark:text-gray-400">
+                A complete product landing page component with advanced CSS animations, 
+                smoke effects, and multiple pre-built sections. Used for marketing and product showcase pages.
+              </p>
+            </div>
+            <div class="mb-4">
+              <h4 class="font-medium mb-2">Features</h4>
+              <ul class="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
+                <li>Animated hero section with smoke effects</li>
+                <li>Feature showcase sections</li>
+                <li>Pricing tables</li>
+                <li>Testimonials integration</li>
+                <li>Call-to-action sections</li>
+                <li>Responsive design with dark mode support</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-medium mb-2">Usage</h4>
+              <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`---
+import LandingProductCapco from "../components/layouts/LandingProductCapco.astro";
+---
+
+<LandingProductCapco />`}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layout Selection Guide -->
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Layout Selection Guide</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-4 py-3 text-left font-medium">Use Case</th>
+                <th class="px-4 py-3 text-left font-medium">Recommended Layout</th>
+                <th class="px-4 py-3 text-left font-medium">Template Value</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr>
+                <td class="px-4 py-3">Blog posts, documentation, terms of service</td>
+                <td class="px-4 py-3 font-medium">LayoutDefault</td>
+                <td class="px-4 py-3 font-mono text-xs">"default"</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3">Landing pages, marketing pages, home page</td>
+                <td class="px-4 py-3 font-medium">LayoutFullWidth</td>
+                <td class="px-4 py-3 font-mono text-xs">"fullwidth"</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3">Embeds, print views, standalone content</td>
+                <td class="px-4 py-3 font-medium">LayoutMinimal</td>
+                <td class="px-4 py-3 font-mono text-xs">"minimal"</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3">Product showcase, advanced marketing</td>
+                <td class="px-4 py-3 font-medium">LandingProductCapco</td>
+                <td class="px-4 py-3 font-mono text-xs">Direct import</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CODE EXAMPLES ==================== -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 text-primary-600 dark:text-primary-400">Code Examples</h2>
+      
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h3 class="text-xl font-semibold mb-4">CMS Shortcode Usage</h3>
         <div class="space-y-6">
-          {
-            buttonVariants.map((variant) => (
-              <div class="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0 last:pb-0">
-                <div class="mb-3">
-                  <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 capitalize">
-                    {variant}
-                  </h4>
-                  <code class="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                    variant="{variant}"
-                  </code>
-                </div>
-                <div class="flex flex-wrap items-center gap-3">
-                  <Button variant={variant}>Button Text</Button>
-                  <Button variant={variant} icon="bx-check" iconPosition="left">
-                    With Icon
-                  </Button>
-                  <Button variant={variant} loading={true}>
-                    Loading
-                  </Button>
-                  <Button variant={variant} disabled={true}>
-                    Disabled
-                  </Button>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-
-      <!-- Button Sizes -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-        <h3 class="text-xl font-semibold mb-4">Sizes</h3>
-        <div class="space-y-4">
-          {
-            buttonSizes.map((size) => (
-              <div class="flex items-center gap-4">
-                <div class="w-24 text-sm text-gray-600 dark:text-gray-400 font-medium uppercase">
-                  {size}
-                </div>
-                <div class="flex flex-wrap items-center gap-3">
-                  <Button variant="primary" size={size}>
-                    {size.toUpperCase()} Button
-                  </Button>
-                  <Button variant="secondary" size={size}>
-                    {size.toUpperCase()} Button
-                  </Button>
-                  <Button variant="outline" size={size}>
-                    {size.toUpperCase()} Button
-                  </Button>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-
-      <!-- Button States -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-        <h3 class="text-xl font-semibold mb-4">States</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Default</h4>
-            <div class="flex flex-wrap gap-3">
-              <Button variant="primary">Default</Button>
-              <Button variant="secondary">Default</Button>
-              <Button variant="outline">Default</Button>
-            </div>
+            <h4 class="text-lg font-medium mb-2">ImageSlider</h4>
+            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`<ImageSlider
+  title="Our Projects"
+  description="Quality fire protection"
+  image1="https://example.com/img1.jpg"
+  image2="https://example.com/img2.jpg"
+  height="500px"
+  overlay="true"
+  overlayOpacity="0.5"
+  leftButtonText="Get a Quote"
+  leftButtonHref="/contact"
+/>`}</code></pre>
           </div>
           <div>
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Hover</h4>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              Hover over buttons to see hover states
-            </p>
-            <div class="flex flex-wrap gap-3">
-              <Button variant="primary">Hover Me</Button>
-              <Button variant="secondary">Hover Me</Button>
-              <Button variant="outline">Hover Me</Button>
-            </div>
+            <h4 class="text-lg font-medium mb-2">StatsBlock</h4>
+            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`<StatsBlock
+  title="By The Numbers"
+  stat1Value="500+"
+  stat1Label="Projects"
+  stat2Value="99%"
+  stat2Label="Satisfaction"
+  variant="cards"
+/>`}</code></pre>
           </div>
           <div>
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Loading</h4>
-            <div class="flex flex-wrap gap-3">
-              <Button variant="primary" loading={true}> Loading </Button>
-              <Button variant="secondary" loading={true}> Loading </Button>
-              <Button variant="outline" loading={true}> Loading </Button>
-            </div>
+            <h4 class="text-lg font-medium mb-2">FAQBlock</h4>
+            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`<FAQBlock
+  title="FAQ"
+  faq1Question="How does it work?"
+  faq1Answer="Easy setup in minutes."
+  faq2Question="What's included?"
+  faq2Answer="Everything you need."
+/>`}</code></pre>
           </div>
           <div>
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Disabled</h4>
-            <div class="flex flex-wrap gap-3">
-              <Button variant="primary" disabled={true}> Disabled </Button>
-              <Button variant="secondary" disabled={true}> Disabled </Button>
-              <Button variant="outline" disabled={true}> Disabled </Button>
-            </div>
+            <h4 class="text-lg font-medium mb-2">CTABlock</h4>
+            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`<CTABlock
+  title="Ready to Start?"
+  description="Join us today"
+  buttonText="Sign Up"
+  buttonHref="/signup"
+  variant="gradient"
+/>`}</code></pre>
           </div>
         </div>
       </div>
-
-      <!-- Button with Icons -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-        <h3 class="text-xl font-semibold mb-4">With Icons</h3>
-        <div class="space-y-4">
-          <div>
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Icon Left</h4>
-            <div class="flex flex-wrap gap-3">
-              <Button variant="primary" icon="bx-plus" iconPosition="left"> Add Item </Button>
-              <Button variant="secondary" icon="bx-edit" iconPosition="left"> Edit </Button>
-              <Button variant="danger" icon="bx-trash" iconPosition="left"> Delete </Button>
-            </div>
-          </div>
-          <div>
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Icon Right</h4>
-            <div class="flex flex-wrap gap-3">
-              <Button variant="primary" icon="bx-arrow-right" iconPosition="right">
-                Continue
-              </Button>
-              <Button variant="secondary" icon="bx-download" iconPosition="right">
-                Download
-              </Button>
-              <Button variant="outline" icon="bx-external-link" iconPosition="right">
-                Open Link
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Full Width Buttons -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-        <h3 class="text-xl font-semibold mb-4">Full Width</h3>
-        <div class="space-y-3">
-          <Button variant="primary" fullWidth={true}> Full Width Primary Button </Button>
-          <Button variant="secondary" fullWidth={true}> Full Width Secondary Button </Button>
-          <Button variant="outline" fullWidth={true}> Full Width Outline Button </Button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Usage Examples -->
-    <section class="mb-12">
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-        <h2 class="text-2xl font-semibold mb-4">Usage Examples</h2>
-        <div class="space-y-4">
-          <div>
-            <h3 class="text-lg font-medium mb-2">Basic Usage</h3>
-            <pre
-              class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`<Button variant="primary">Click Me</Button>
-<Button variant="secondary" size="lg">Large Button</Button>
-<Button variant="outline" icon="bx-plus" iconPosition="left">Add Item</Button>`}</code></pre>
-          </div>
-          <div>
-            <h3 class="text-lg font-medium mb-2">With States</h3>
-            <pre
-              class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`<Button variant="primary" loading={true}>Loading...</Button>
-<Button variant="primary" disabled={true}>Disabled</Button>
-<Button variant="primary" fullWidth={true}>Full Width</Button>`}</code></pre>
-          </div>
-          <div>
-            <h3 class="text-lg font-medium mb-2">As Link</h3>
-            <pre
-              class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto text-sm"><code>{`<Button variant="primary" href="/dashboard">Go to Dashboard</Button>
-<Button variant="link" href="/about">About Us</Button>`}</code></pre>
-          </div>
-        </div>
-      </div>
-    </section>
+    </div>
   </div>
 </App>
+
+<script>
+  // Accordion functionality
+  document.addEventListener("DOMContentLoaded", function () {
+    const accordionButtons = document.querySelectorAll("[data-accordion-target]");
+
+    accordionButtons.forEach((button) => {
+      button.addEventListener("click", function (this: HTMLElement) {
+        const targetId = this.getAttribute("data-accordion-target");
+        const target = document.querySelector(targetId as string);
+        const isExpanded = this.getAttribute("aria-expanded") === "true";
+
+        if (target) {
+          // Toggle visibility
+          if (isExpanded) {
+            target.classList.add("hidden");
+            this.setAttribute("aria-expanded", "false");
+          } else {
+            target.classList.remove("hidden");
+            this.setAttribute("aria-expanded", "true");
+          }
+
+          // Update the arrow
+          const arrow = this.querySelector("svg");
+          if (arrow) {
+            arrow.classList.toggle("rotate-180");
+          }
+
+          // Also update sibling toggle button if it exists
+          const parent = this.closest(".bg-white, .dark\\:bg-gray-800");
+          if (parent) {
+            const allToggles = parent.querySelectorAll(`[data-accordion-target="${targetId}"]`);
+            allToggles.forEach((toggle) => {
+              if (toggle !== this) {
+                toggle.setAttribute("aria-expanded", String(!isExpanded));
+                const toggleArrow = toggle.querySelector("svg");
+                if (toggleArrow) {
+                  toggleArrow.classList.toggle("rotate-180");
+                }
+              }
+            });
+          }
+        }
+      });
+    });
+  });
+</script>

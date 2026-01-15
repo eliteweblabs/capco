@@ -1,0 +1,283 @@
+---
+/**
+ * TestimonialBlock - Customer Testimonials
+ * 
+ * Display customer testimonials in various layouts.
+ * Supports single testimonial with flat props or multiple via JSON.
+ * 
+ * @example Single testimonial:
+ * <TestimonialBlock 
+ *   quote="Great service!" 
+ *   author="John Doe" 
+ *   role="CEO" 
+ *   company="ACME Inc"
+ *   rating="5"
+ * />
+ * 
+ * @example Multiple testimonials:
+ * <TestimonialBlock 
+ *   variant="grid"
+ *   testimonials={[...]}
+ * />
+ */
+import SimpleIcon from "../common/SimpleIcon.astro";
+import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
+
+interface Testimonial {
+  quote: string;
+  author: string;
+  role?: string;
+  company?: string;
+  avatar?: string;
+  rating?: number;
+}
+
+interface Props {
+  // Section content
+  title?: string;
+  description?: string;
+  
+  // Layout
+  variant?: 'single' | 'grid' | 'carousel' | 'featured' | 'minimal';
+  columns?: number | string;
+  
+  // Single testimonial (flat props)
+  quote?: string;
+  author?: string;
+  role?: string;
+  company?: string;
+  avatar?: string;
+  rating?: number | string;
+  
+  // Multiple testimonials as JSON
+  testimonials?: string | Testimonial[];
+  
+  // Flat props for up to 6 testimonials
+  testimonial1Quote?: string;
+  testimonial1Author?: string;
+  testimonial1Role?: string;
+  testimonial1Company?: string;
+  testimonial1Avatar?: string;
+  testimonial1Rating?: string;
+  testimonial2Quote?: string;
+  testimonial2Author?: string;
+  testimonial2Role?: string;
+  testimonial2Company?: string;
+  testimonial2Avatar?: string;
+  testimonial2Rating?: string;
+  testimonial3Quote?: string;
+  testimonial3Author?: string;
+  testimonial3Role?: string;
+  testimonial3Company?: string;
+  testimonial3Avatar?: string;
+  testimonial3Rating?: string;
+  testimonial4Quote?: string;
+  testimonial4Author?: string;
+  testimonial4Role?: string;
+  testimonial4Company?: string;
+  testimonial4Avatar?: string;
+  testimonial4Rating?: string;
+  testimonial5Quote?: string;
+  testimonial5Author?: string;
+  testimonial5Role?: string;
+  testimonial5Company?: string;
+  testimonial5Avatar?: string;
+  testimonial5Rating?: string;
+  testimonial6Quote?: string;
+  testimonial6Author?: string;
+  testimonial6Role?: string;
+  testimonial6Company?: string;
+  testimonial6Avatar?: string;
+  testimonial6Rating?: string;
+  
+  // Styling
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const {
+  title,
+  description,
+  variant = 'single',
+  className = '',
+  id,
+} = props;
+
+const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 3);
+
+// Build testimonials array
+let testimonialItems: Testimonial[] = [];
+
+if (props.testimonials) {
+  testimonialItems = parseJsonProp<Testimonial[]>(props.testimonials, []);
+} else if (props.quote) {
+  // Single testimonial from flat props
+  testimonialItems = [{
+    quote: props.quote,
+    author: props.author || 'Anonymous',
+    role: props.role,
+    company: props.company,
+    avatar: props.avatar,
+    rating: typeof props.rating === 'string' ? parseInt(props.rating) : props.rating,
+  }];
+} else {
+  // Build from numbered flat props
+  testimonialItems = buildArrayFromFlatProps<Testimonial>(
+    props,
+    'testimonial',
+    ['quote', 'author', 'role', 'company', 'avatar', 'rating'],
+    6
+  );
+}
+
+// Column classes
+const columnClasses: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-1 md:grid-cols-2',
+  3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+};
+
+const gridClass = columnClasses[columns] || columnClasses[3];
+
+// Star rating component helper
+const renderStars = (rating: number | undefined) => {
+  if (!rating) return null;
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    stars.push(i <= rating ? 'star-solid' : 'star');
+  }
+  return stars;
+};
+---
+
+<section id={id} class:list={['testimonial-block py-16 md:py-24', className]}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {(title || description) && (
+      <div class="mb-12 text-center">
+        {title && (
+          <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+            {title}
+          </h2>
+        )}
+        {description && (
+          <p class="mt-4 text-lg text-gray-600 dark:text-gray-300">
+            {description}
+          </p>
+        )}
+      </div>
+    )}
+    
+    {variant === 'single' || variant === 'featured' ? (
+      testimonialItems[0] && (
+        <div class="mx-auto max-w-4xl">
+          <figure class={`relative rounded-2xl bg-white dark:bg-gray-800 p-8 md:p-12 shadow-lg ${variant === 'featured' ? 'border-l-4 border-primary-500' : ''}`}>
+            <SimpleIcon name="quote" class="absolute top-6 left-6 h-8 w-8 text-primary-200 dark:text-primary-800" />
+            
+            {testimonialItems[0].rating && (
+              <div class="flex gap-1 mb-4">
+                {renderStars(testimonialItems[0].rating)?.map((star) => (
+                  <SimpleIcon 
+                    name={star} 
+                    class={`h-5 w-5 ${star === 'star-solid' ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} 
+                  />
+                ))}
+              </div>
+            )}
+            
+            <blockquote class="text-xl md:text-2xl font-medium text-gray-900 dark:text-white leading-relaxed">
+              "{testimonialItems[0].quote}"
+            </blockquote>
+            
+            <figcaption class="mt-8 flex items-center gap-4">
+              {testimonialItems[0].avatar ? (
+                <img 
+                  src={testimonialItems[0].avatar} 
+                  alt={testimonialItems[0].author}
+                  class="h-14 w-14 rounded-full object-cover"
+                />
+              ) : (
+                <div class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+                  <SimpleIcon name="user" class="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                </div>
+              )}
+              <div>
+                <div class="font-semibold text-gray-900 dark:text-white">
+                  {testimonialItems[0].author}
+                </div>
+                {(testimonialItems[0].role || testimonialItems[0].company) && (
+                  <div class="text-gray-600 dark:text-gray-400">
+                    {testimonialItems[0].role}
+                    {testimonialItems[0].role && testimonialItems[0].company && ' at '}
+                    {testimonialItems[0].company}
+                  </div>
+                )}
+              </div>
+            </figcaption>
+          </figure>
+        </div>
+      )
+    ) : variant === 'minimal' ? (
+      <div class={`grid gap-8 ${gridClass}`}>
+        {testimonialItems.map((testimonial) => (
+          <div class="text-center">
+            <blockquote class="text-lg text-gray-700 dark:text-gray-300 italic">
+              "{testimonial.quote}"
+            </blockquote>
+            <div class="mt-4 font-medium text-gray-900 dark:text-white">
+              — {testimonial.author}
+              {testimonial.company && <span class="text-gray-500">, {testimonial.company}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div class={`grid gap-8 ${gridClass}`}>
+        {testimonialItems.map((testimonial) => (
+          <div class="rounded-xl bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+            {testimonial.rating && (
+              <div class="flex gap-1 mb-3">
+                {renderStars(testimonial.rating)?.map((star) => (
+                  <SimpleIcon 
+                    name={star} 
+                    class={`h-4 w-4 ${star === 'star-solid' ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} 
+                  />
+                ))}
+              </div>
+            )}
+            
+            <blockquote class="text-gray-700 dark:text-gray-300">
+              "{testimonial.quote}"
+            </blockquote>
+            
+            <div class="mt-4 flex items-center gap-3">
+              {testimonial.avatar ? (
+                <img 
+                  src={testimonial.avatar} 
+                  alt={testimonial.author}
+                  class="h-10 w-10 rounded-full object-cover"
+                />
+              ) : (
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+                  <SimpleIcon name="user" class="h-5 w-5 text-gray-500" />
+                </div>
+              )}
+              <div>
+                <div class="font-medium text-gray-900 dark:text-white text-sm">
+                  {testimonial.author}
+                </div>
+                {(testimonial.role || testimonial.company) && (
+                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                    {testimonial.role}
+                    {testimonial.role && testimonial.company && ', '}
+                    {testimonial.company}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</section>

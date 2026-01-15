@@ -1,0 +1,266 @@
+---
+/**
+ * ContentBlock - Text Content with Image
+ * 
+ * Flexible content section with text and optional image.
+ * Great for about sections, service descriptions, etc.
+ * 
+ * @example:
+ * <ContentBlock 
+ *   title="About Our Services"
+ *   content="We provide comprehensive fire protection solutions..."
+ *   image="/images/team.jpg"
+ *   imagePosition="right"
+ *   buttonText="Learn More"
+ *   buttonHref="/services"
+ * />
+ */
+import Button from "../common/Button.astro";
+import SimpleIcon from "../common/SimpleIcon.astro";
+import { parseJsonProp, parseListProp } from "./BlockRegistry";
+
+interface ListItem {
+  text: string;
+  icon?: string;
+}
+
+interface Props {
+  // Content
+  title?: string;
+  eyebrow?: string;
+  content?: string;
+  
+  // List items (for bullet points)
+  listItems?: string | ListItem[];
+  list?: string; // Comma-separated simple list
+  
+  // Image
+  image?: string;
+  imageAlt?: string;
+  imagePosition?: 'left' | 'right' | 'top' | 'bottom' | 'background';
+  imageRounded?: boolean | string;
+  
+  // Layout
+  variant?: 'standard' | 'feature' | 'split' | 'overlap' | 'fullwidth';
+  reversed?: boolean | string;
+  
+  // Button
+  buttonText?: string;
+  buttonHref?: string;
+  buttonVariant?: string;
+  buttonIcon?: string;
+  
+  // Secondary button
+  secondaryButtonText?: string;
+  secondaryButtonHref?: string;
+  
+  // Styling
+  backgroundColor?: string;
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const {
+  title,
+  eyebrow,
+  content,
+  image,
+  imageAlt = '',
+  imagePosition = 'right',
+  variant = 'standard',
+  backgroundColor,
+  buttonText,
+  buttonHref,
+  buttonVariant = 'primary',
+  buttonIcon,
+  secondaryButtonText,
+  secondaryButtonHref,
+  className = '',
+  id,
+} = props;
+
+// Handle boolean/string conversions
+const imageRounded = props.imageRounded === 'false' ? false : (props.imageRounded ?? true);
+const reversed = props.reversed === 'true' || props.reversed === true;
+
+// Build list items
+let listItemsArray: ListItem[] = [];
+if (props.listItems) {
+  listItemsArray = parseJsonProp<ListItem[]>(props.listItems, []);
+} else if (props.list) {
+  listItemsArray = parseListProp(props.list).map(text => ({ text }));
+}
+
+const hasButtons = buttonText || secondaryButtonText;
+
+// Determine layout direction
+const isImageLeft = imagePosition === 'left' || (reversed && imagePosition === 'right');
+const isImageRight = imagePosition === 'right' || (reversed && imagePosition === 'left');
+---
+
+<section 
+  id={id} 
+  class:list={[
+    'content-block py-16 md:py-24',
+    backgroundColor || '',
+    className,
+  ]}
+>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {imagePosition === 'top' && image && (
+      <div class="mb-12">
+        <img 
+          src={image} 
+          alt={imageAlt}
+          class:list={[
+            'w-full object-cover max-h-96',
+            imageRounded && 'rounded-xl',
+          ]}
+        />
+      </div>
+    )}
+    
+    {imagePosition === 'background' && image ? (
+      <div 
+        class="relative rounded-2xl overflow-hidden py-16 md:py-24 px-8"
+        style={`background-image: url('${image}'); background-size: cover; background-position: center;`}
+      >
+        <div class="absolute inset-0 bg-black/60 rounded-2xl" />
+        <div class="relative z-10 max-w-2xl">
+          {eyebrow && (
+            <p class="text-sm font-semibold uppercase tracking-wider text-primary-300 mb-3">
+              {eyebrow}
+            </p>
+          )}
+          {title && (
+            <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              {title}
+            </h2>
+          )}
+          {content && (
+            <div class="mt-6 text-lg text-gray-200 prose prose-invert max-w-none" set:html={content} />
+          )}
+          {listItemsArray.length > 0 && (
+            <ul class="mt-6 space-y-3">
+              {listItemsArray.map((item) => (
+                <li class="flex items-start gap-3 text-gray-200">
+                  <SimpleIcon name={item.icon || 'check'} class="h-5 w-5 text-primary-400 mt-0.5 shrink-0" />
+                  <span>{item.text}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {hasButtons && (
+            <div class="mt-8 flex flex-wrap gap-4">
+              {buttonText && (
+                <Button href={buttonHref} variant={buttonVariant as any} icon={buttonIcon}>
+                  {buttonText}
+                </Button>
+              )}
+              {secondaryButtonText && (
+                <Button href={secondaryButtonHref} variant="outline">
+                  {secondaryButtonText}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    ) : (
+      <div 
+        class:list={[
+          'grid gap-12 items-center',
+          (isImageLeft || isImageRight) && image && 'lg:grid-cols-2',
+        ]}
+      >
+        {/* Image - Left */}
+        {isImageLeft && image && (
+          <div class:list={[variant === 'overlap' && 'lg:-mr-8 relative z-10']}>
+            <img 
+              src={image} 
+              alt={imageAlt}
+              class:list={[
+                'w-full object-cover',
+                imageRounded && 'rounded-xl',
+                variant === 'overlap' && 'shadow-xl',
+              ]}
+            />
+          </div>
+        )}
+        
+        {/* Content */}
+        <div class={variant === 'overlap' && isImageRight ? 'lg:-mr-8 relative z-10' : ''}>
+          {eyebrow && (
+            <p class="text-sm font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400 mb-3">
+              {eyebrow}
+            </p>
+          )}
+          {title && (
+            <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+              {title}
+            </h2>
+          )}
+          {content && (
+            <div 
+              class="mt-6 text-lg text-gray-600 dark:text-gray-300 prose dark:prose-invert max-w-none"
+              set:html={content}
+            />
+          )}
+          {listItemsArray.length > 0 && (
+            <ul class="mt-6 space-y-3">
+              {listItemsArray.map((item) => (
+                <li class="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                  <SimpleIcon name={item.icon || 'check'} class="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5 shrink-0" />
+                  <span>{item.text}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {hasButtons && (
+            <div class="mt-8 flex flex-wrap gap-4">
+              {buttonText && (
+                <Button href={buttonHref} variant={buttonVariant as any} icon={buttonIcon}>
+                  {buttonText}
+                </Button>
+              )}
+              {secondaryButtonText && (
+                <Button href={secondaryButtonHref} variant="outline">
+                  {secondaryButtonText}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Image - Right */}
+        {isImageRight && image && (
+          <div class={variant === 'overlap' ? 'lg:-ml-8' : ''}>
+            <img 
+              src={image} 
+              alt={imageAlt}
+              class:list={[
+                'w-full object-cover',
+                imageRounded && 'rounded-xl',
+                variant === 'overlap' && 'shadow-xl',
+              ]}
+            />
+          </div>
+        )}
+      </div>
+    )}
+    
+    {imagePosition === 'bottom' && image && (
+      <div class="mt-12">
+        <img 
+          src={image} 
+          alt={imageAlt}
+          class:list={[
+            'w-full object-cover max-h-96',
+            imageRounded && 'rounded-xl',
+          ]}
+        />
+      </div>
+    )}
+  </div>
+</section>

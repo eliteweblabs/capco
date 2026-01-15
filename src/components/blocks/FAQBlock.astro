@@ -1,0 +1,226 @@
+---
+/**
+ * FAQBlock - FAQ Accordion
+ * 
+ * Displays frequently asked questions in an accordion or grid layout.
+ * Uses Flowbite accordion pattern for interactivity.
+ * 
+ * @example With JSON:
+ * <FAQBlock 
+ *   title="Frequently Asked Questions" 
+ *   faqs={[
+ *     { question: "How does it work?", answer: "..." },
+ *     { question: "What's included?", answer: "..." }
+ *   ]}
+ * />
+ * 
+ * @example With flat props:
+ * {{FAQBlock faq1Question="How?" faq1Answer="Like this..." faq2Question="Why?" faq2Answer="Because..."}}
+ */
+import SimpleIcon from "../common/SimpleIcon.astro";
+import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
+
+interface FAQ {
+  question: string;
+  answer: string;
+  icon?: string;
+}
+
+interface Props {
+  // Section content
+  title?: string;
+  description?: string;
+  
+  // Layout
+  variant?: 'accordion' | 'grid' | 'simple' | 'cards';
+  columns?: number | string;
+  
+  // FAQs as JSON
+  faqs?: string | FAQ[];
+  
+  // Flat props for up to 12 FAQs
+  faq1Question?: string;
+  faq1Answer?: string;
+  faq2Question?: string;
+  faq2Answer?: string;
+  faq3Question?: string;
+  faq3Answer?: string;
+  faq4Question?: string;
+  faq4Answer?: string;
+  faq5Question?: string;
+  faq5Answer?: string;
+  faq6Question?: string;
+  faq6Answer?: string;
+  faq7Question?: string;
+  faq7Answer?: string;
+  faq8Question?: string;
+  faq8Answer?: string;
+  faq9Question?: string;
+  faq9Answer?: string;
+  faq10Question?: string;
+  faq10Answer?: string;
+  faq11Question?: string;
+  faq11Answer?: string;
+  faq12Question?: string;
+  faq12Answer?: string;
+  
+  // Open first item by default
+  defaultOpen?: boolean | string;
+  
+  // Styling
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const {
+  title,
+  description,
+  variant = 'accordion',
+  className = '',
+  id,
+} = props;
+
+const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 2);
+const defaultOpen = props.defaultOpen === 'false' ? false : (props.defaultOpen ?? true);
+
+// Build FAQs array
+let faqItems: FAQ[] = [];
+
+if (props.faqs) {
+  faqItems = parseJsonProp<FAQ[]>(props.faqs, []);
+} else {
+  faqItems = buildArrayFromFlatProps<FAQ>(
+    props,
+    'faq',
+    ['question', 'answer', 'icon'],
+    12
+  );
+}
+
+// Generate unique ID for accordion
+const accordionId = id || `faq-accordion-${Math.random().toString(36).slice(2, 9)}`;
+
+// Column classes for grid variant
+const columnClasses: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-1 lg:grid-cols-2',
+};
+
+const gridClass = columnClasses[columns] || columnClasses[2];
+---
+
+<section id={id} class:list={['faq-block py-16 md:py-24', className]}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {(title || description) && (
+      <div class="mb-12 text-center">
+        {title && (
+          <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+            {title}
+          </h2>
+        )}
+        {description && (
+          <p class="mt-4 text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            {description}
+          </p>
+        )}
+      </div>
+    )}
+    
+    {variant === 'accordion' ? (
+      <div class="mx-auto max-w-3xl">
+        <div id={accordionId} data-accordion="collapse" data-active-classes="bg-primary-50 dark:bg-gray-800" data-inactive-classes="text-gray-500 dark:text-gray-400">
+          {faqItems.map((faq, index) => (
+            <div class="border-b border-gray-200 dark:border-gray-700">
+              <h3 id={`${accordionId}-heading-${index}`}>
+                <button 
+                  type="button" 
+                  class="flex items-center justify-between w-full py-5 px-1 font-medium text-left text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  data-accordion-target={`#${accordionId}-body-${index}`}
+                  aria-expanded={index === 0 && defaultOpen ? 'true' : 'false'}
+                  aria-controls={`${accordionId}-body-${index}`}
+                >
+                  <span class="text-lg">{faq.question}</span>
+                  <SimpleIcon 
+                    name="chevron-down" 
+                    class="w-5 h-5 shrink-0 transition-transform"
+                    dataAttributes={{ 'data-accordion-icon': '' }}
+                  />
+                </button>
+              </h3>
+              <div 
+                id={`${accordionId}-body-${index}`} 
+                class={index === 0 && defaultOpen ? '' : 'hidden'}
+                aria-labelledby={`${accordionId}-heading-${index}`}
+              >
+                <div class="py-5 px-1">
+                  <p class="text-gray-600 dark:text-gray-300 leading-relaxed" set:html={faq.answer} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ) : variant === 'grid' ? (
+      <div class={`grid gap-8 ${gridClass}`}>
+        {faqItems.map((faq) => (
+          <div class="faq-item">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-start gap-2">
+              {faq.icon && <SimpleIcon name={faq.icon} class="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5 shrink-0" />}
+              {faq.question}
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 leading-relaxed" set:html={faq.answer} />
+          </div>
+        ))}
+      </div>
+    ) : variant === 'cards' ? (
+      <div class={`grid gap-6 ${gridClass}`}>
+        {faqItems.map((faq) => (
+          <div class="rounded-xl bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-start gap-2">
+              <SimpleIcon name="help-circle" class="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5 shrink-0" />
+              {faq.question}
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 leading-relaxed" set:html={faq.answer} />
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div class="space-y-8 max-w-3xl mx-auto">
+        {faqItems.map((faq) => (
+          <div class="faq-item">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              {faq.question}
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 leading-relaxed" set:html={faq.answer} />
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
+{variant === 'accordion' && (
+  <script>
+    // Initialize Flowbite accordion functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      const accordions = document.querySelectorAll('[data-accordion]');
+      accordions.forEach(accordion => {
+        const buttons = accordion.querySelectorAll('button[data-accordion-target]');
+        buttons.forEach(button => {
+          button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-accordion-target');
+            const target = document.querySelector(targetId!);
+            const icon = button.querySelector('[data-accordion-icon]');
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+            
+            // Toggle current item
+            button.setAttribute('aria-expanded', String(!isExpanded));
+            target?.classList.toggle('hidden');
+            icon?.classList.toggle('rotate-180');
+          });
+        });
+      });
+    });
+  </script>
+)}

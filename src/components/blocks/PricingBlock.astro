@@ -1,0 +1,329 @@
+---
+/**
+ * PricingBlock - Pricing Table Section
+ * 
+ * Display pricing plans in various layouts.
+ * 
+ * @example With flat props:
+ * <PricingBlock 
+ *   title="Choose Your Plan"
+ *   plan1Name="Starter"
+ *   plan1Price="$29"
+ *   plan1Features="Feature 1, Feature 2, Feature 3"
+ *   plan1ButtonText="Get Started"
+ *   plan1ButtonHref="/signup"
+ * />
+ */
+import Button from "../common/Button.astro";
+import SimpleIcon from "../common/SimpleIcon.astro";
+import { parseJsonProp, parseListProp, buildArrayFromFlatProps } from "./BlockRegistry";
+
+interface PricingPlan {
+  name: string;
+  price: string;
+  period?: string;
+  description?: string;
+  features?: string[] | string;
+  buttonText?: string;
+  buttonHref?: string;
+  highlighted?: boolean;
+  badge?: string;
+}
+
+interface Props {
+  // Section content
+  title?: string;
+  description?: string;
+  
+  // Layout
+  variant?: 'cards' | 'comparison' | 'simple' | 'compact';
+  columns?: number | string;
+  
+  // Plans as JSON
+  plans?: string | PricingPlan[];
+  
+  // Flat props for up to 4 plans
+  plan1Name?: string;
+  plan1Price?: string;
+  plan1Period?: string;
+  plan1Description?: string;
+  plan1Features?: string;
+  plan1ButtonText?: string;
+  plan1ButtonHref?: string;
+  plan1Highlighted?: string | boolean;
+  plan1Badge?: string;
+  
+  plan2Name?: string;
+  plan2Price?: string;
+  plan2Period?: string;
+  plan2Description?: string;
+  plan2Features?: string;
+  plan2ButtonText?: string;
+  plan2ButtonHref?: string;
+  plan2Highlighted?: string | boolean;
+  plan2Badge?: string;
+  
+  plan3Name?: string;
+  plan3Price?: string;
+  plan3Period?: string;
+  plan3Description?: string;
+  plan3Features?: string;
+  plan3ButtonText?: string;
+  plan3ButtonHref?: string;
+  plan3Highlighted?: string | boolean;
+  plan3Badge?: string;
+  
+  plan4Name?: string;
+  plan4Price?: string;
+  plan4Period?: string;
+  plan4Description?: string;
+  plan4Features?: string;
+  plan4ButtonText?: string;
+  plan4ButtonHref?: string;
+  plan4Highlighted?: string | boolean;
+  plan4Badge?: string;
+  
+  // Styling
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const {
+  title,
+  description,
+  variant = 'cards',
+  className = '',
+  id,
+} = props;
+
+const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 3);
+
+// Build plans array
+let planItems: PricingPlan[] = [];
+
+if (props.plans) {
+  planItems = parseJsonProp<PricingPlan[]>(props.plans, []);
+} else {
+  // Build from flat props
+  for (let i = 1; i <= 4; i++) {
+    const name = props[`plan${i}Name` as keyof Props] as string;
+    if (name) {
+      const featuresRaw = props[`plan${i}Features` as keyof Props] as string;
+      const highlighted = props[`plan${i}Highlighted` as keyof Props];
+      
+      planItems.push({
+        name,
+        price: (props[`plan${i}Price` as keyof Props] as string) || '$0',
+        period: props[`plan${i}Period` as keyof Props] as string,
+        description: props[`plan${i}Description` as keyof Props] as string,
+        features: featuresRaw ? parseListProp(featuresRaw) : [],
+        buttonText: (props[`plan${i}ButtonText` as keyof Props] as string) || 'Get Started',
+        buttonHref: (props[`plan${i}ButtonHref` as keyof Props] as string) || '#',
+        highlighted: highlighted === 'true' || highlighted === true,
+        badge: props[`plan${i}Badge` as keyof Props] as string,
+      });
+    }
+  }
+}
+
+// Process features for each plan (handle string -> array)
+planItems = planItems.map(plan => ({
+  ...plan,
+  features: typeof plan.features === 'string' ? parseListProp(plan.features) : (plan.features || []),
+}));
+
+// Column classes
+const columnClasses: Record<number, string> = {
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4',
+};
+
+const gridClass = columnClasses[columns] || columnClasses[3];
+---
+
+<section id={id} class:list={['pricing-block py-16 md:py-24', className]}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {(title || description) && (
+      <div class="mb-12 text-center">
+        {title && (
+          <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+            {title}
+          </h2>
+        )}
+        {description && (
+          <p class="mt-4 text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            {description}
+          </p>
+        )}
+      </div>
+    )}
+    
+    {variant === 'simple' ? (
+      <div class={`grid gap-8 ${gridClass}`}>
+        {planItems.map((plan) => (
+          <div class="text-center p-8">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{plan.name}</h3>
+            <div class="mt-4">
+              <span class="text-4xl font-bold text-gray-900 dark:text-white">{plan.price}</span>
+              {plan.period && <span class="text-gray-500 dark:text-gray-400">/{plan.period}</span>}
+            </div>
+            {plan.description && (
+              <p class="mt-2 text-gray-600 dark:text-gray-300">{plan.description}</p>
+            )}
+            {plan.buttonText && (
+              <div class="mt-6">
+                <Button 
+                  href={plan.buttonHref} 
+                  variant={plan.highlighted ? 'primary' : 'outline'}
+                >
+                  {plan.buttonText}
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    ) : variant === 'compact' ? (
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-700">
+              <th class="pb-4 pr-8 font-semibold text-gray-900 dark:text-white">Plan</th>
+              <th class="pb-4 pr-8 font-semibold text-gray-900 dark:text-white">Price</th>
+              <th class="pb-4 pr-8 font-semibold text-gray-900 dark:text-white">Features</th>
+              <th class="pb-4 font-semibold text-gray-900 dark:text-white"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {planItems.map((plan) => (
+              <tr class="border-b border-gray-100 dark:border-gray-800">
+                <td class="py-4 pr-8">
+                  <span class="font-medium text-gray-900 dark:text-white">{plan.name}</span>
+                  {plan.badge && (
+                    <span class="ml-2 inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-800 dark:bg-primary-900/30 dark:text-primary-300">
+                      {plan.badge}
+                    </span>
+                  )}
+                </td>
+                <td class="py-4 pr-8">
+                  <span class="font-bold text-gray-900 dark:text-white">{plan.price}</span>
+                  {plan.period && <span class="text-gray-500">/{plan.period}</span>}
+                </td>
+                <td class="py-4 pr-8 text-gray-600 dark:text-gray-300 text-sm">
+                  {Array.isArray(plan.features) && plan.features.slice(0, 3).join(', ')}
+                  {Array.isArray(plan.features) && plan.features.length > 3 && '...'}
+                </td>
+                <td class="py-4">
+                  <Button 
+                    href={plan.buttonHref} 
+                    variant={plan.highlighted ? 'primary' : 'outline'}
+                    size="sm"
+                  >
+                    {plan.buttonText}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div class={`grid gap-8 items-stretch ${gridClass}`}>
+        {planItems.map((plan) => (
+          <div 
+            class:list={[
+              'relative rounded-2xl p-8 flex flex-col',
+              plan.highlighted 
+                ? 'bg-primary-600 text-white shadow-xl scale-105 z-10' 
+                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm',
+            ]}
+          >
+            {plan.badge && (
+              <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span class:list={[
+                  'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold',
+                  plan.highlighted 
+                    ? 'bg-white text-primary-600' 
+                    : 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300'
+                ]}>
+                  {plan.badge}
+                </span>
+              </div>
+            )}
+            
+            <div class="text-center">
+              <h3 class:list={[
+                'text-xl font-semibold',
+                plan.highlighted ? 'text-white' : 'text-gray-900 dark:text-white'
+              ]}>
+                {plan.name}
+              </h3>
+              
+              {plan.description && (
+                <p class:list={[
+                  'mt-2 text-sm',
+                  plan.highlighted ? 'text-primary-100' : 'text-gray-500 dark:text-gray-400'
+                ]}>
+                  {plan.description}
+                </p>
+              )}
+              
+              <div class="mt-6">
+                <span class:list={[
+                  'text-5xl font-bold',
+                  plan.highlighted ? 'text-white' : 'text-gray-900 dark:text-white'
+                ]}>
+                  {plan.price}
+                </span>
+                {plan.period && (
+                  <span class:list={[
+                    'text-lg',
+                    plan.highlighted ? 'text-primary-200' : 'text-gray-500 dark:text-gray-400'
+                  ]}>
+                    /{plan.period}
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            {Array.isArray(plan.features) && plan.features.length > 0 && (
+              <ul class="mt-8 space-y-3 flex-grow">
+                {plan.features.map((feature: string) => (
+                  <li class="flex items-start gap-3">
+                    <SimpleIcon 
+                      name="check" 
+                      class:list={[
+                        'h-5 w-5 shrink-0 mt-0.5',
+                        plan.highlighted ? 'text-primary-200' : 'text-green-500 dark:text-green-400'
+                      ]} 
+                    />
+                    <span class:list={[
+                      plan.highlighted ? 'text-primary-100' : 'text-gray-600 dark:text-gray-300'
+                    ]}>
+                      {feature}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            
+            {plan.buttonText && (
+              <div class="mt-8">
+                <Button 
+                  href={plan.buttonHref}
+                  variant={plan.highlighted ? 'secondary' : 'primary'}
+                  fullWidth
+                  class={plan.highlighted ? 'bg-white text-primary-600 hover:bg-gray-100' : ''}
+                >
+                  {plan.buttonText}
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
