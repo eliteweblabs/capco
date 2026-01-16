@@ -3,7 +3,7 @@
  * TwoColumnBlock - Two Column Layout
  * 
  * Wraps content in a two-column layout with flexible column widths.
- * Uses named slots for explicit column placement.
+ * Supports both named slots (direct usage) and props-based content (CMS usage).
  * 
  * @example Basic usage with named slots:
  * <TwoColumnBlock>
@@ -11,16 +11,16 @@
  *   <div slot="right">Right column content</div>
  * </TwoColumnBlock>
  * 
+ * @example CMS usage with props:
+ * <TwoColumnBlock 
+ *   leftContent="<h2>Left Title</h2><p>Content here</p>"
+ *   rightContent="<img src='/image.jpg' />"
+ * />
+ * 
  * @example With different ratios:
  * <TwoColumnBlock ratio="2:1" gap="large">
  *   <div slot="left">Wider left column</div>
  *   <div slot="right">Narrower right</div>
- * </TwoColumnBlock>
- * 
- * @example Reversed on mobile:
- * <TwoColumnBlock reversed mobileStack="right-first">
- *   <div slot="left">Shows second on mobile</div>
- *   <div slot="right">Shows first on mobile</div>
  * </TwoColumnBlock>
  */
 
@@ -53,9 +53,17 @@ interface Props {
   // Background
   backgroundColor?: string;
   
+  // Props-based content (for CMS/dynamic rendering)
+  leftContent?: string;
+  rightContent?: string;
+  
   // Styling
   className?: string;
   id?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
 }
 
 const props = Astro.props;
@@ -67,6 +75,8 @@ const {
   divider,
   maxWidth = '2xl',
   backgroundColor,
+  leftContent,
+  rightContent,
   className = '',
   id,
 } = props;
@@ -76,6 +86,16 @@ const reversed = props.reversed === 'true' || props.reversed === true;
 const contained = props.contained !== 'false' && props.contained !== false;
 const showDivider = divider === 'true' || divider === true;
 const padding = props.padding || 'medium';
+
+// Handle animation prop - enabled by default
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-blur-scale';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-blur-scale'; // Default animation
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
 
 // Ratio to grid column classes
 const ratioClasses: Record<string, { left: string; right: string }> = {
@@ -145,6 +165,8 @@ const mobileOrder = mobileOrderClasses[mobileStack] || mobileOrderClasses['left-
     backgroundColor || '',
     className,
   ]}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
 >
   <div class:list={[
     contained && 'mx-auto px-4 sm:px-6 lg:px-8',
@@ -163,7 +185,7 @@ const mobileOrder = mobileOrderClasses[mobileStack] || mobileOrderClasses['left-
         mobileOrder.left,
         showDivider && 'lg:border-r lg:border-gray-200 lg:dark:border-gray-700 lg:pr-8',
       ]}>
-        <slot name="left" />
+        {leftContent ? <Fragment set:html={leftContent} /> : <slot name="left" />}
       </div>
       
       <!-- Right Column -->
@@ -173,7 +195,7 @@ const mobileOrder = mobileOrderClasses[mobileStack] || mobileOrderClasses['left-
         mobileOrder.right,
         showDivider && 'lg:pl-8',
       ]}>
-        <slot name="right" />
+        {rightContent ? <Fragment set:html={rightContent} /> : <slot name="right" />}
       </div>
     </div>
   </div>

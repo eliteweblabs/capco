@@ -93,6 +93,11 @@ interface Props {
   // Styling
   className?: string;
   id?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
+  animateStagger?: boolean | string;
 }
 
 const props = Astro.props;
@@ -105,6 +110,18 @@ const {
 } = props;
 
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 3);
+
+// Handle animation prop - enabled by default with stagger for grids
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-blur-scale';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-blur-scale'; // Default animation
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
+// Enable stagger by default for grids, unless explicitly disabled
+const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
 
 // Build testimonials array
 let testimonialItems: Testimonial[] = [];
@@ -151,7 +168,12 @@ const renderStars = (rating: number | undefined) => {
 };
 ---
 
-<section id={id} class:list={['testimonial-block py-16 md:py-24', className]}>
+<section 
+  id={id} 
+  class:list={['testimonial-block py-16 md:py-24', className]}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
+>
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     {(title || description) && (
       <div class="mb-12 text-center">
@@ -218,7 +240,10 @@ const renderStars = (rating: number | undefined) => {
         </div>
       )
     ) : variant === 'minimal' ? (
-      <div class={`grid gap-8 ${gridClass}`}>
+      <div 
+        class={`grid gap-8 ${gridClass}`}
+        data-animate-stagger={animateStagger || undefined}
+      >
         {testimonialItems.map((testimonial) => (
           <div class="text-center">
             <blockquote class="text-lg text-gray-700 dark:text-gray-300 italic">
@@ -232,7 +257,10 @@ const renderStars = (rating: number | undefined) => {
         ))}
       </div>
     ) : (
-      <div class={`grid gap-8 ${gridClass}`}>
+      <div 
+        class={`grid gap-8 ${gridClass}`}
+        data-animate-stagger={animateStagger || undefined}
+      >
         {testimonialItems.map((testimonial) => (
           <div class="rounded-xl bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-100 dark:border-gray-700">
             {testimonial.rating && (

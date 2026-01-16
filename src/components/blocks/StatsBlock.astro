@@ -90,6 +90,11 @@ interface Props {
   // Styling
   className?: string;
   id?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
+  animateStagger?: boolean | string;
 }
 
 const props = Astro.props;
@@ -105,6 +110,26 @@ const {
 
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 4);
 
+// Handle animation prop - enabled by default with stagger for grids
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-up-blur';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-up-blur'; // Default animation for stats
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
+// Enable stagger by default for grids, unless explicitly disabled
+const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
+
+// Default demo stats
+const defaultStats: Stat[] = [
+  { value: "500+", label: "Projects Completed", icon: "folder" },
+  { value: "99%", label: "Client Satisfaction", icon: "heart" },
+  { value: "24/7", label: "Support Available", icon: "phone" },
+  { value: "15+", label: "Years Experience", icon: "award" },
+];
+
 // Build stats array
 let statItems: Stat[] = [];
 
@@ -117,6 +142,11 @@ if (props.stats) {
     ['value', 'label', 'suffix', 'prefix', 'icon', 'description'],
     6
   );
+}
+
+// Use default stats if none provided
+if (statItems.length === 0) {
+  statItems = defaultStats;
 }
 
 // Column classes
@@ -156,6 +186,8 @@ const bgStyle = backgroundImage
     className,
   ]}
   style={bgStyle}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
 >
   {backgroundImage && (
     <div class="absolute inset-0 bg-black/60" />
@@ -177,7 +209,10 @@ const bgStyle = backgroundImage
       </div>
     )}
     
-    <div class={`grid gap-8 ${gridClass}`}>
+    <div 
+      class={`grid gap-8 ${gridClass}`}
+      data-animate-stagger={animateStagger || undefined}
+    >
       {statItems.map((stat) => (
         <div 
           class:list={[

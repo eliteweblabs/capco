@@ -14,14 +14,13 @@ interface Props {
   globalInputClasses: string;
   primaryTextClasses: string;
   projects: any[];
+  mobileNavigationHTML?: string;
 }
 
-const { currentUser, globalInputClasses, primaryTextClasses, projects } = Astro.props;
+const { currentUser, globalInputClasses, primaryTextClasses, projects, mobileNavigationHTML } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
-if (!currentUser || currentRole === "Client") {
-  return null;
-}
+
 
 // Check feature flags
 const chatEnabled = await isFeatureEnabled("chat");
@@ -37,17 +36,28 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
 
 <aside
   id="sidebar"
-  class="font-secondary w-64 transition-all duration-300 ease-in-out sm:translate-x-0 shadow-sm border-r color-border color-background flex flex-col z-10"
+  class="font-secondary w-100 md:w-64 transition-all duration-300 ease-in-out sm:translate-x-0 shadow-sm border-r color-border color-background flex flex-col z-10"
   aria-label="Sidebar"
 >
   <div
-    class="flex-1 px-3 py-4 top-16 fixed inset-0 max-h-[calc(100dvh-4rem)] overflow-y-scroll relative"
+    class="flex-1 px-3 py-4 top-16 fixed inset-0 max-h-[calc(100dvh-4rem)] overflow-y-scroll "
   >
     <ul
       class={`space-y-2 text-xs font-medium uppercase tracking-wider ${primaryTextClasses}`}
       id="sidebar-menu"
     >
+
+    <!-- front end navigation (mobile only) -->
+    <Fragment set:html={mobileNavigationHTML} />
+
       <!-- Dashboard (Always shown) -->
+
+      
+
+
+
+      {currentUser && currentUser.id && (
+
       <li>
         <a href="/dashboard" type="button" class={`${anchorClasses}`}>
           <SimpleIcon name="dashboard" class={svgClasses} />
@@ -56,8 +66,10 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           </span>
         </a>
       </li>
+      )}
+
       {
-        currentRole === "Admin" && (
+        currentUser && currentUser.id && currentRole === "Admin" && (
       <li>
         <a href="/admin/settings" type="button" class={`${anchorClasses}`}>
           <SimpleIcon name="settings" class={svgClasses} />
@@ -107,7 +119,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
       )}
       <!-- Dynamic Admin Features (from site-config.json) -->
       {
-        adminNavItems.map((item) => (
+        currentUser && currentRole === "Admin" && adminNavItems.map((item) => (
           <li>
             <a href={item.href} class={`${anchorClasses}`} data-sidebar-collapse-item="">
               {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
@@ -128,7 +140,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
 
       <!-- Notification Bell -->
       {
-        currentRole !== "Client" && (
+        currentUser && currentUser.id && currentRole !== "Client" && (
           <li>
             <a
               id="notification-bell"
@@ -176,7 +188,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
 
       <!-- Dynamic Tools Features -->
       {
-        toolsNavItems.length > 0 && (
+               currentUser && currentRole === "Admin" && toolsNavItems.length > 0 && (
           <>
             <li class="pt-4 pb-2 text-xs text-gray-500 dark:text-gray-400 uppercase">Tools</li>
             {toolsNavItems.map((item) => (
@@ -196,6 +208,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
         )
       }
 
+      {currentUser && (
       <li>
         <a
           type="button"
@@ -229,13 +242,19 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               >New</a
             >
           </li>
+          {currentUser && currentRole === "Admin" && (
           <li>
             <a href="/project/proposals" class={`${anchorClasses}`} data-sidebar-collapse-subitem=""
               >Proposals</a
             >
           </li>
+          )}
         </ul>
       </li>
+      )}
+
+
+{currentUser && currentRole === "Admin" && (
 
       <li>
         <a
@@ -294,6 +313,8 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
     <div data-sidebar-collapse-hide="">
       {chatEnabled && <HttpChatWidget {currentUser} {currentRole} {globalInputClasses} />}
     </div>
+    )}
+
   </div>
 </aside>
 

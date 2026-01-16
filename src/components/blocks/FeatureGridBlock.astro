@@ -86,6 +86,11 @@ interface Props {
   // Styling
   className?: string;
   id?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
+  animateStagger?: boolean | string;
 }
 
 const props = Astro.props;
@@ -100,6 +105,18 @@ const {
 
 // Parse columns (handle string from CMS)
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 3);
+
+// Handle animation prop - enabled by default with stagger for grids
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-up';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-up'; // Default animation for grids
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
+// Enable stagger by default for grids, unless explicitly disabled
+const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
 
 // Build features array from either JSON string, array, or flat props
 let featureItems: Feature[] = [];
@@ -144,7 +161,12 @@ const getColorClass = (color: string | undefined, index: number): string => {
 };
 ---
 
-<section id={id} class:list={['feature-grid-block py-16 md:py-24', className]}>
+<section 
+  id={id} 
+  class:list={['feature-grid-block py-16 md:py-24', className]}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
+>
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     {(title || description || eyebrow) && (
       <div class={`mb-12 md:mb-16 ${variant === 'centered' ? 'text-center' : ''}`}>
@@ -166,7 +188,10 @@ const getColorClass = (color: string | undefined, index: number): string => {
       </div>
     )}
     
-    <div class={`grid gap-8 ${gridClass}`}>
+    <div 
+      class={`grid gap-8 ${gridClass}`}
+      data-animate-stagger={animateStagger || undefined}
+    >
       {featureItems.map((feature, index) => (
         <div 
           class:list={[

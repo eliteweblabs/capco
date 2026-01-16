@@ -148,6 +148,159 @@ const featureGroups = Object.fromEntries(
   Object.entries(componentGroups).filter(([category]) => category !== "Common Components" && category !== "Block Components")
 );
 
+// Component shortcode templates with default demo values
+const componentShortcodes: Record<string, string> = {
+  // Common Components
+  Hero: `<Hero
+  title="Welcome to Our Platform"
+  description="Build amazing solutions with our comprehensive tools and dedicated support."
+  leftButtonText="Get Started"
+  leftButtonHref="/contact"
+  rightButtonText="Learn More"
+  rightButtonHref="/about"
+/>`,
+  Button: `<Button variant="primary" href="/contact">Click Me</Button>`,
+  ContactForm: `<ContactForm />`,
+  ContactFormWithUpload: `<ContactFormWithUpload />`,
+  PricingCard: `<PricingCard
+  title="Professional"
+  description="Perfect for growing businesses"
+  price="$99/mo"
+  features={["10 active projects", "Priority support", "Advanced analytics", "Team collaboration"]}
+  buttonText="Get Started"
+  buttonHref="/signup"
+/>`,
+  LoadingSpinner: `<LoadingSpinner size="md" color="primary" loadingText="Loading..." />`,
+  Tooltip: `<Tooltip text="Helpful tooltip text" position="top">Hover me</Tooltip>`,
+  SlideToggle: `<SlideToggle id="toggle-1" name="setting" label="Enable feature" checked={true} color="primary" />`,
+  Breadcrumb: `<Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Current Page", current: true }]} />`,
+  SimpleIcon: `<SimpleIcon name="check" class="h-5 w-5 text-green-500" />`,
+  Features: `<Features />`,
+  Dropzone: `<Dropzone />`,
+  
+  // Block Components
+  AlertBlock: `<AlertBlock
+  variant="info"
+  title="Information"
+  message="This is an example alert message. Customize it with your own content."
+  dismissible="true"
+  buttonText="Learn More"
+  buttonHref="/help"
+/>`,
+  CTABlock: `<CTABlock
+  title="Ready to Get Started?"
+  description="Join thousands of professionals using our platform to streamline their workflow."
+  buttonText="Start Free Trial"
+  buttonHref="/signup"
+  secondaryButtonText="Schedule Demo"
+  secondaryButtonHref="/contact"
+  variant="centered"
+/>`,
+  FAQBlock: `<FAQBlock
+  title="Frequently Asked Questions"
+  description="Find answers to common questions about our services"
+  faq1Question="What services do you offer?"
+  faq1Answer="We provide comprehensive services including design, installation, inspection, and maintenance."
+  faq2Question="How long does the process take?"
+  faq2Answer="Project timelines vary based on scope. Small projects take 1-2 weeks, larger ones 4-8 weeks."
+  faq3Question="Do you offer emergency services?"
+  faq3Answer="Yes, we offer 24/7 emergency response for all clients with active maintenance contracts."
+  variant="accordion"
+/>`,
+  StatsBlock: `<StatsBlock
+  title="By The Numbers"
+  description="Our track record speaks for itself"
+  stat1Value="500+"
+  stat1Label="Projects Completed"
+  stat1Icon="folder"
+  stat2Value="99%"
+  stat2Label="Client Satisfaction"
+  stat2Icon="heart"
+  stat3Value="24/7"
+  stat3Label="Support Available"
+  stat3Icon="phone"
+  stat4Value="15+"
+  stat4Label="Years Experience"
+  stat4Icon="award"
+  variant="simple"
+/>`,
+  TimelineBlock: `<TimelineBlock
+  title="Our Process"
+  description="How we deliver solutions"
+  step1Title="Initial Consultation"
+  step1Description="We assess your needs and review requirements"
+  step1Icon="phone"
+  step1Status="completed"
+  step2Title="Design & Planning"
+  step2Description="Our team creates a custom solution"
+  step2Icon="file"
+  step2Status="completed"
+  step3Title="Implementation"
+  step3Description="Professional execution by certified experts"
+  step3Icon="tool"
+  step3Status="current"
+  step4Title="Review & Delivery"
+  step4Description="Final testing and project handoff"
+  step4Icon="check-circle"
+  step4Status="upcoming"
+  variant="vertical"
+/>`,
+  LogoCloudBlock: `<LogoCloudBlock
+  title="Trusted By Industry Leaders"
+  description="We partner with the best in the business"
+  logo1Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/spotify-grayscale.svg"
+  logo1Alt="Spotify"
+  logo2Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/microsoft-grayscale.svg"
+  logo2Alt="Microsoft"
+  logo3Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/google-grayscale.svg"
+  logo3Alt="Google"
+  logo4Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/amazon-grayscale.svg"
+  logo4Alt="Amazon"
+  variant="simple"
+  grayscale="true"
+/>`,
+  PricingBlock: `<PricingBlock />`,
+  TestimonialBlock: `<TestimonialBlock />`,
+  GalleryBlock: `<GalleryBlock />`,
+  NewsletterBlock: `<NewsletterBlock />`,
+  TeamBlock: `<TeamBlock />`,
+  FeatureGridBlock: `<FeatureGridBlock />`,
+  
+  // UI Components
+  ImageSlider: `<ImageSlider
+  title="Our Projects"
+  description="Quality work across the region"
+  image1="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format"
+  image2="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&auto=format"
+  image3="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format"
+  image4="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format"
+  alt1="Construction site"
+  alt2="Industrial work"
+  alt3="Equipment"
+  alt4="Commercial building"
+  height="500px"
+  overlay="true"
+  overlayOpacity="0.5"
+  leftButtonText="Get a Quote"
+  leftButtonHref="/contact"
+  rightButtonText="Learn More"
+  rightButtonHref="/services"
+/>`,
+
+  // Features
+  Testimonials: `<Testimonials companyName="Our Company" />`,
+  CalComBooking: `<CalComBooking />`,
+  GoogleMap: `<GoogleMap lat="40.7128" lng="-74.0060" zoom="12" />`,
+  FeedbackWidget: `<FeedbackWidget />`,
+  VapiChatWidget: `<VapiChatWidget />`,
+  AIChatAgent: `<AIChatAgent />`,
+};
+
+// Helper function to get shortcode for a component
+function getComponentShortcode(name: string): string {
+  return componentShortcodes[name] || `<${name} />`;
+}
+
 // Fetch existing CMS pages from database
 let cmsPages: any[] = [];
 try {
@@ -737,12 +890,21 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                       class="hidden"
                       aria-labelledby="modal-common-components-heading"
                     >
-                      <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-primary-50 dark:bg-primary-900/20">
-                        <div class="space-y-1.5 font-mono text-xs">
+                      <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-primary-50 dark:bg-primary-900/20 max-h-96 overflow-y-auto">
+                        <div class="space-y-3 font-mono text-xs">
                           {commonComponents.map((comp) => (
-                            <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
-                              <span class="text-primary-600 dark:text-primary-400">•</span>
-                              <code class="flex-1 break-all">&lt;{comp.name} /&gt;</code>
+                            <div class="bg-white dark:bg-gray-800 rounded p-2 border border-gray-200 dark:border-gray-600">
+                              <div class="flex items-center justify-between mb-1">
+                                <span class="font-semibold text-primary-600 dark:text-primary-400">{comp.name}</span>
+                                <button 
+                                  type="button"
+                                  class="copy-shortcode-btn text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
+                                  data-shortcode={getComponentShortcode(comp.name)}
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                              <pre class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all text-[10px] leading-tight">{getComponentShortcode(comp.name)}</pre>
                             </div>
                           ))}
                         </div>
@@ -795,12 +957,21 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                       class="hidden"
                       aria-labelledby="modal-block-components-heading"
                     >
-                      <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-primary-50 dark:bg-primary-900/20">
-                        <div class="space-y-1.5 font-mono text-xs">
+                      <div class="p-4 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg bg-primary-50 dark:bg-primary-900/20 max-h-96 overflow-y-auto">
+                        <div class="space-y-3 font-mono text-xs">
                           {blockComponents.map((comp) => (
-                            <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
-                              <span class="text-primary-600 dark:text-primary-400">•</span>
-                              <code class="flex-1 break-all">&lt;{comp.name} /&gt;</code>
+                            <div class="bg-white dark:bg-gray-800 rounded p-2 border border-gray-200 dark:border-gray-600">
+                              <div class="flex items-center justify-between mb-1">
+                                <span class="font-semibold text-primary-600 dark:text-primary-400">{comp.name}</span>
+                                <button 
+                                  type="button"
+                                  class="copy-shortcode-btn text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
+                                  data-shortcode={getComponentShortcode(comp.name)}
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                              <pre class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all text-[10px] leading-tight">{getComponentShortcode(comp.name)}</pre>
                             </div>
                           ))}
                         </div>
@@ -899,16 +1070,21 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                                   class="hidden"
                                   aria-labelledby={`modal-feature-category-${categoryIndex}-heading`}
                                 >
-                                  <div class="p-3 border border-t-0 border-gray-300 dark:border-gray-600 rounded-b bg-white dark:bg-gray-800">
-                                    <div class="space-y-1.5 font-mono text-xs">
+                                  <div class="p-3 border border-t-0 border-gray-300 dark:border-gray-600 rounded-b bg-white dark:bg-gray-800 max-h-64 overflow-y-auto">
+                                    <div class="space-y-2 font-mono text-xs">
                                       {components.map((comp) => (
-                                        <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
-                                          <span class="text-primary-600 dark:text-primary-400">
-                                            •
-                                          </span>
-                                          <code class="flex-1 break-all">
-                                            &lt;{comp.name} /&gt;
-                                          </code>
+                                        <div class="bg-gray-50 dark:bg-gray-700 rounded p-2 border border-gray-200 dark:border-gray-600">
+                                          <div class="flex items-center justify-between mb-1">
+                                            <span class="font-semibold text-primary-600 dark:text-primary-400">{comp.name}</span>
+                                            <button 
+                                              type="button"
+                                              class="copy-shortcode-btn text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded text-gray-600 dark:text-gray-300"
+                                              data-shortcode={getComponentShortcode(comp.name)}
+                                            >
+                                              Copy
+                                            </button>
+                                          </div>
+                                          <pre class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all text-[10px] leading-tight">{getComponentShortcode(comp.name)}</pre>
                                         </div>
                                       ))}
                                     </div>
@@ -1433,5 +1609,31 @@ You can embed components:
     } else {
       initCMS();
     }
+
+    // Copy shortcode to clipboard functionality
+    document.addEventListener("click", async (e) => {
+      const target = e.target;
+      if (target && target.classList && target.classList.contains("copy-shortcode-btn")) {
+        const shortcode = target.getAttribute("data-shortcode");
+        if (shortcode) {
+          try {
+            await navigator.clipboard.writeText(shortcode);
+            const originalText = target.textContent;
+            target.textContent = "Copied!";
+            target.classList.add("bg-green-100", "dark:bg-green-800", "text-green-700", "dark:text-green-200");
+            setTimeout(() => {
+              target.textContent = originalText;
+              target.classList.remove("bg-green-100", "dark:bg-green-800", "text-green-700", "dark:text-green-200");
+            }, 1500);
+          } catch (err) {
+            console.error("Failed to copy:", err);
+            target.textContent = "Error";
+            setTimeout(() => {
+              target.textContent = "Copy";
+            }, 1500);
+          }
+        }
+      }
+    });
   </script>
 </App>

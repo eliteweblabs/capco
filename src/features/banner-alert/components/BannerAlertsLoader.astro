@@ -44,7 +44,41 @@ if (supabaseAdmin) {
 // Group banners by position
 const topBanners = banners.filter((b) => b.position === "top");
 const bottomBanners = banners.filter((b) => b.position === "bottom");
+
+// Get all banner IDs for early dismiss check
+const allBannerIds = banners.map((b) => String(b.id));
 ---
+
+<!-- 
+  CRITICAL: This script must run BEFORE banners render to prevent layout shift.
+  It injects CSS to hide dismissed banners immediately, before they cause page hop.
+-->
+<script is:inline define:vars={{ allBannerIds }}>
+  (function() {
+    try {
+      const stored = localStorage.getItem("dismissedBanners");
+      if (stored) {
+        const dismissed = JSON.parse(stored);
+        // Create a style element to hide dismissed banners IMMEDIATELY
+        const style = document.createElement("style");
+        style.id = "banner-dismiss-styles";
+        let css = "";
+        allBannerIds.forEach(function(id) {
+          if (dismissed.includes(id) || dismissed.includes(String(id))) {
+            css += `.banner-alert[data-banner-id="${id}"] { display: none !important; }\n`;
+          }
+        });
+        if (css) {
+          style.textContent = css;
+          // Insert at the start of head for highest priority
+          document.head.insertBefore(style, document.head.firstChild);
+        }
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  })();
+</script>
 
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (

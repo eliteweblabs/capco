@@ -58,6 +58,10 @@ interface Props {
   backgroundColor?: string;
   className?: string;
   id?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
 }
 
 const props = Astro.props;
@@ -84,6 +88,16 @@ const {
 const imageRounded = props.imageRounded === 'false' ? false : (props.imageRounded ?? true);
 const reversed = props.reversed === 'true' || props.reversed === true;
 
+// Handle animation prop - enabled by default
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-blur-scale';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-blur-scale'; // Default animation
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
+
 // Build list items
 let listItemsArray: ListItem[] = [];
 if (props.listItems) {
@@ -106,6 +120,8 @@ const isImageRight = imagePosition === 'right' || (reversed && imagePosition ===
     backgroundColor || '',
     className,
   ]}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
 >
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     {imagePosition === 'top' && image && (
