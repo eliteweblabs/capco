@@ -43,6 +43,9 @@ interface Props {
   // HTML element
   as?: 'div' | 'section' | 'article' | 'main' | 'aside';
   
+  // Props-based content (for CMS/dynamic rendering)
+  content?: string;
+  
   // Styling
   className?: string;
   id?: string;
@@ -58,6 +61,7 @@ const {
   backgroundImage,
   shadow = 'none',
   as: Element = 'section',
+  content,
   className = '',
   id,
 } = props;
@@ -151,6 +155,6 @@ const bgStyle = backgroundImage
     paddingXClasses[paddingX],
     textAlign && textAlignClasses[textAlign],
   ]}>
-    <slot />
+    {content ? <Fragment set:html={content} /> : <slot />}
   </div>
 </Element>

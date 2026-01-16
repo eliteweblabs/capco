@@ -49,6 +49,14 @@ interface Props {
   topDivider?: boolean | string;
   bottomDivider?: boolean | string;
   
+  // Props-based content (for CMS/dynamic rendering)
+  content?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
+  animateStagger?: boolean | string;
+  
   // Styling
   className?: string;
   id?: string;
@@ -65,9 +73,21 @@ const {
   backgroundImage,
   padding = 'large',
   maxWidth = '2xl',
+  content,
   className = '',
   id,
+  animateDelay,
 } = props;
+
+// Handle animation prop - enabled by default
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-blur-scale';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-blur-scale'; // Default animation
+};
+const animationType = getAnimationType();
+const animateStagger = props.animateStagger === 'true' || props.animateStagger === true;
 
 // Handle boolean/string conversions
 const contained = props.contained !== 'false' && props.contained !== false;
@@ -148,6 +168,9 @@ const hasHeader = title || description || eyebrow;
     className,
   ]}
   style={bgStyle}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
+  data-animate-stagger={animateStagger || undefined}
 >
   {backgroundImage && backgroundOverlay && (
     <div class="absolute inset-0 bg-black" style={`opacity: ${overlayOpacity};`} />
@@ -192,6 +215,6 @@ const hasHeader = title || description || eyebrow;
       </div>
     )}
     
-    <slot />
+    {content ? <Fragment set:html={content} /> : <slot />}
   </div>
 </section>

@@ -81,6 +81,11 @@ interface Props {
   // Styling
   className?: string;
   id?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
+  animateStagger?: boolean | string;
 }
 
 const props = Astro.props;
@@ -97,6 +102,18 @@ const {
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 3);
 const lightbox = props.lightbox === 'false' ? false : (props.lightbox ?? true);
 const showCaptions = props.showCaptions === 'false' ? false : (props.showCaptions ?? true);
+
+// Handle animation prop - enabled by default with stagger for grids
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-blur';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-blur'; // Default animation for gallery
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
+// Enable stagger by default for grids, unless explicitly disabled
+const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
 
 // Build images array
 let imageItems: GalleryImage[] = [];
@@ -142,7 +159,12 @@ const aspectClasses = {
 const galleryId = id || `gallery-${Math.random().toString(36).slice(2, 9)}`;
 ---
 
-<section id={id} class:list={['gallery-block py-16 md:py-24', className]}>
+<section 
+  id={id} 
+  class:list={['gallery-block py-16 md:py-24', className]}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
+>
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     {(title || description) && (
       <div class="mb-12 text-center">
@@ -255,7 +277,10 @@ const galleryId = id || `gallery-${Math.random().toString(36).slice(2, 9)}`;
         </div>
       </div>
     ) : (
-      <div class={`grid ${gridClass} ${gapClasses[gap]}`}>
+      <div 
+        class={`grid ${gridClass} ${gapClasses[gap]}`}
+        data-animate-stagger={animateStagger || undefined}
+      >
         {imageItems.map((image, index) => (
           <button 
             type="button"

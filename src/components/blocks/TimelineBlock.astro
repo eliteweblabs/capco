@@ -91,6 +91,11 @@ interface Props {
   // Styling
   className?: string;
   id?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
+  animateStagger?: boolean | string;
 }
 
 const props = Astro.props;
@@ -101,6 +106,26 @@ const {
   className = '',
   id,
 } = props;
+
+// Handle animation prop - enabled by default with stagger
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-up';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-up'; // Default animation for timeline
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
+// Enable stagger by default for timeline, unless explicitly disabled
+const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
+
+// Default demo steps
+const defaultSteps: TimelineStep[] = [
+  { title: "Initial Consultation", description: "We assess your needs and review requirements", icon: "phone", status: "completed" },
+  { title: "Design & Planning", description: "Our team creates a custom solution", icon: "file", status: "completed" },
+  { title: "Implementation", description: "Professional execution by certified experts", icon: "tool", status: "current" },
+  { title: "Review & Delivery", description: "Final testing and project handoff", icon: "check-circle", status: "upcoming" },
+];
 
 // Build steps array
 let stepItems: TimelineStep[] = [];
@@ -114,6 +139,11 @@ if (props.steps) {
     ['title', 'description', 'icon', 'date', 'status'],
     10
   );
+}
+
+// Use default steps if none provided
+if (stepItems.length === 0) {
+  stepItems = defaultSteps;
 }
 
 // Status colors
@@ -142,7 +172,12 @@ const getLineColor = (status?: string) => {
 };
 ---
 
-<section id={id} class:list={['timeline-block py-16 md:py-24', className]}>
+<section 
+  id={id} 
+  class:list={['timeline-block py-16 md:py-24', className]}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
+>
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     {(title || description) && (
       <div class="mb-12 text-center">
@@ -161,7 +196,7 @@ const getLineColor = (status?: string) => {
     
     {variant === 'horizontal' ? (
       <div class="overflow-x-auto pb-4">
-        <div class="flex min-w-max">
+        <div class="flex min-w-max" data-animate-stagger={animateStagger || undefined}>
           {stepItems.map((step, index) => (
             <div class="flex items-start">
               <div class="flex flex-col items-center">
@@ -194,7 +229,7 @@ const getLineColor = (status?: string) => {
         {/* Center line */}
         <div class="absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gray-200 dark:bg-gray-700 hidden md:block" />
         
-        <div class="space-y-12">
+        <div class="space-y-12" data-animate-stagger={animateStagger || undefined}>
           {stepItems.map((step, index) => (
             <div class={`relative flex flex-col md:flex-row ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
               {/* Content */}
@@ -226,7 +261,7 @@ const getLineColor = (status?: string) => {
         </div>
       </div>
     ) : variant === 'compact' ? (
-      <div class="flex flex-wrap justify-center gap-4">
+      <div class="flex flex-wrap justify-center gap-4" data-animate-stagger={animateStagger || undefined}>
         {stepItems.map((step, index) => (
           <div class="flex items-center gap-3 rounded-lg bg-white dark:bg-gray-800 px-4 py-3 shadow-sm border border-gray-100 dark:border-gray-700">
             <div class={`flex h-8 w-8 items-center justify-center rounded-full ${getStatusColor(step.status)}`}>
@@ -248,7 +283,7 @@ const getLineColor = (status?: string) => {
         {/* Vertical line */}
         <div class="absolute left-4 md:left-8 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
         
-        <div class="space-y-8">
+        <div class="space-y-8" data-animate-stagger={animateStagger || undefined}>
           {stepItems.map((step, index) => (
             <div class="relative flex gap-6 md:gap-8">
               {/* Circle */}

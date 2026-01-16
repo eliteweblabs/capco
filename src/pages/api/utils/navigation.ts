@@ -245,11 +245,14 @@ export const navigation = async (
       }
     });
 
+    // Add md:hidden class to mobile navigation items
+    const mobileClass = filterType === "mobile" ? "md:hidden" : "";
+
     const results = filteredItems.map((item: NavItem) => {
       // Handle dropdown items
       if (item.isDropdown && item.dropdownItems) {
         return `
-          <li class="group relative">
+          <li class="group relative ${mobileClass}">
             <a
               class="block px-3 py-2 md:p-0 text-black hover:text-primary dark:text-white dark:hover:text-primary ${
                 item.isPrimary
@@ -286,11 +289,11 @@ export const navigation = async (
         // Since we can't use fetch() during SSR, create the button HTML manually
         // This matches the Button component's output structure
 
-        return `<li><a href="${item.href}" class="relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-0.5 text-sm bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl w-full">${item.label}</a></li>`;
+        return `<li class="${mobileClass}"><a href="${item.href}" class="relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-0.5 text-sm bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl w-full">${item.label}</a></li>`;
       }
 
       // Handle regular links
-      return `<li>
+      return `<li class="${mobileClass}">
         <a
           href="${item.href}"
             class="block px-3 py-2 md:p-0 ${

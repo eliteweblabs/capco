@@ -46,22 +46,33 @@ interface Props {
   secondaryButtonVariant?: string;
   secondaryButtonIcon?: string;
   
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
+  
   // Additional
   className?: string;
   id?: string;
 }
 
 const props = Astro.props;
+
+// Default demo content
+const defaultTitle = "Ready to Get Started?";
+const defaultDescription = "Join thousands of professionals using our platform to streamline their workflow.";
+const defaultButtonText = "Start Free Trial";
+const defaultButtonHref = "/signup";
+
 const {
-  title,
-  description,
+  title = defaultTitle,
+  description = defaultDescription,
   eyebrow,
   variant = 'centered',
   backgroundColor,
   backgroundImage,
   textColor,
-  buttonText,
-  buttonHref,
+  buttonText = defaultButtonText,
+  buttonHref = defaultButtonHref,
   buttonVariant = 'primary',
   buttonIcon,
   secondaryButtonText,
@@ -79,6 +90,16 @@ const overlayOpacity = typeof props.overlayOpacity === 'string'
   : (props.overlayOpacity ?? 0.6);
 
 const hasButtons = buttonText || secondaryButtonText;
+
+// Handle animation prop - enabled by default
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-blur-scale';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-blur-scale'; // Default animation
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
 
 // Variant-specific styles
 const variantStyles = {
@@ -110,6 +131,8 @@ const textColorClass = textColor || (backgroundImage || variant === 'gradient' ?
     className,
   ]}
   style={bgStyle}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
 >
   {backgroundImage && backgroundOverlay && (
     <div 

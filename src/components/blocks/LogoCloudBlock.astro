@@ -4,22 +4,36 @@
  * 
  * Display partner, client, or technology logos.
  * Supports static grid or animated marquee.
+ * Now supports Font Awesome icons as well as images.
  * 
- * @example:
+ * @example with images:
  * <LogoCloudBlock 
  *   title="Trusted By"
  *   logos={[
  *     { src: "/logos/company1.png", alt: "Company 1", href: "https://..." },
  *   ]}
  * />
+ * 
+ * @example with Font Awesome icons:
+ * <LogoCloudBlock 
+ *   title="Industries We Serve"
+ *   logo1Icon="fa-solid fa-leaf"
+ *   logo1Alt="Environmental"
+ *   logo1IconColor="text-green-600"
+ *   logo2Icon="fa-solid fa-hospital"
+ *   logo2Alt="Healthcare"
+ *   logo2IconColor="text-blue-600"
+ * />
  */
 import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
 
 interface Logo {
-  src: string;
+  src?: string;
   alt: string;
   href?: string;
   width?: number;
+  icon?: string; // Font Awesome icon class (e.g., "fa-solid fa-leaf")
+  iconColor?: string; // Tailwind color class (e.g., "text-green-600")
 }
 
 interface Props {
@@ -39,43 +53,72 @@ interface Props {
   logo1Src?: string;
   logo1Alt?: string;
   logo1Href?: string;
+  logo1Icon?: string;
+  logo1IconColor?: string;
   logo2Src?: string;
   logo2Alt?: string;
   logo2Href?: string;
+  logo2Icon?: string;
+  logo2IconColor?: string;
   logo3Src?: string;
   logo3Alt?: string;
   logo3Href?: string;
+  logo3Icon?: string;
+  logo3IconColor?: string;
   logo4Src?: string;
   logo4Alt?: string;
   logo4Href?: string;
+  logo4Icon?: string;
+  logo4IconColor?: string;
   logo5Src?: string;
   logo5Alt?: string;
   logo5Href?: string;
+  logo5Icon?: string;
+  logo5IconColor?: string;
   logo6Src?: string;
   logo6Alt?: string;
   logo6Href?: string;
+  logo6Icon?: string;
+  logo6IconColor?: string;
   logo7Src?: string;
   logo7Alt?: string;
   logo7Href?: string;
+  logo7Icon?: string;
+  logo7IconColor?: string;
   logo8Src?: string;
   logo8Alt?: string;
   logo8Href?: string;
+  logo8Icon?: string;
+  logo8IconColor?: string;
   logo9Src?: string;
   logo9Alt?: string;
   logo9Href?: string;
+  logo9Icon?: string;
+  logo9IconColor?: string;
   logo10Src?: string;
   logo10Alt?: string;
   logo10Href?: string;
+  logo10Icon?: string;
+  logo10IconColor?: string;
   logo11Src?: string;
   logo11Alt?: string;
   logo11Href?: string;
+  logo11Icon?: string;
+  logo11IconColor?: string;
   logo12Src?: string;
   logo12Alt?: string;
   logo12Href?: string;
+  logo12Icon?: string;
+  logo12IconColor?: string;
   
   // Styling
   className?: string;
   id?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
+  animateStagger?: boolean | string;
 }
 
 const props = Astro.props;
@@ -90,6 +133,18 @@ const {
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 6);
 const grayscale = props.grayscale === 'false' ? false : (props.grayscale ?? true);
 
+// Handle animation prop - enabled by default with stagger for grids
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-blur';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-blur'; // Default animation
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
+// Enable stagger by default for grids, unless explicitly disabled
+const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
+
 // Build logos array
 let logoItems: Logo[] = [];
 
@@ -99,7 +154,7 @@ if (props.logos) {
   logoItems = buildArrayFromFlatProps<Logo>(
     props,
     'logo',
-    ['src', 'alt', 'href', 'width'],
+    ['src', 'alt', 'href', 'width', 'icon', 'iconColor'],
     12
   );
 }
@@ -115,8 +170,13 @@ const columnClasses: Record<number, string> = {
 const gridClass = columnClasses[columns] || columnClasses[6];
 ---
 
-<section id={id} class:list={['logo-cloud-block py-12 md:py-16', className]}>
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<section 
+  id={id} 
+  class:list={['logo-cloud-block py-12 md:py-16', className]}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
+>
+  <div class="w-full px-4 sm:px-6 lg:px-8">
     {(title || description) && (
       <div class="mb-10 text-center">
         {title && (
@@ -147,16 +207,38 @@ const gridClass = columnClasses[columns] || columnClasses[6];
                 rel="noopener noreferrer"
                 class="flex-shrink-0"
               >
-                <img 
-                  src={logo.src} 
-                  alt={logo.alt}
-                  class:list={[
-                    'h-10 w-auto object-contain',
-                    grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
-                  ]}
-                  width={logo.width || 160}
-                />
+                {logo.icon ? (
+                  <i 
+                    class:list={[
+                      logo.icon,
+                      'text-4xl',
+                      logo.iconColor || 'text-gray-600 dark:text-gray-400',
+                      grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
+                    ]}
+                    title={logo.alt}
+                  />
+                ) : (
+                  <img 
+                    src={logo.src} 
+                    alt={logo.alt}
+                    class:list={[
+                      'h-10 w-auto object-contain',
+                      grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
+                    ]}
+                    width={logo.width || 160}
+                  />
+                )}
               </a>
+            ) : logo.icon ? (
+              <i 
+                class:list={[
+                  logo.icon,
+                  'text-4xl flex-shrink-0',
+                  logo.iconColor || 'text-gray-600 dark:text-gray-400',
+                  grayscale && 'grayscale opacity-60',
+                ]}
+                title={logo.alt}
+              />
             ) : (
               <img 
                 src={logo.src} 
@@ -172,7 +254,10 @@ const gridClass = columnClasses[columns] || columnClasses[6];
         </div>
       </div>
     ) : variant === 'centered' ? (
-      <div class="flex flex-wrap items-center justify-center gap-x-12 gap-y-8">
+      <div 
+        class="flex flex-wrap items-center justify-evenly gap-y-8"
+        data-animate-stagger={animateStagger || undefined}
+      >
         {logoItems.map((logo) => (
           logo.href ? (
             <a 
@@ -181,16 +266,38 @@ const gridClass = columnClasses[columns] || columnClasses[6];
               rel="noopener noreferrer"
               class="group"
             >
-              <img 
-                src={logo.src} 
-                alt={logo.alt}
-                class:list={[
-                  'h-10 w-auto object-contain',
-                  grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
-                ]}
-                width={logo.width || 160}
-              />
+              {logo.icon ? (
+                <i 
+                  class:list={[
+                    logo.icon,
+                    'text-4xl',
+                    logo.iconColor || 'text-gray-600 dark:text-gray-400',
+                    grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
+                  ]}
+                  title={logo.alt}
+                />
+              ) : (
+                <img 
+                  src={logo.src} 
+                  alt={logo.alt}
+                  class:list={[
+                    'h-10 w-auto object-contain',
+                    grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
+                  ]}
+                  width={logo.width || 160}
+                />
+              )}
             </a>
+          ) : logo.icon ? (
+            <i 
+              class:list={[
+                logo.icon,
+                'text-4xl',
+                logo.iconColor || 'text-gray-600 dark:text-gray-400',
+                grayscale && 'grayscale opacity-60',
+              ]}
+              title={logo.alt}
+            />
           ) : (
             <img 
               src={logo.src} 
@@ -205,7 +312,10 @@ const gridClass = columnClasses[columns] || columnClasses[6];
         ))}
       </div>
     ) : (
-      <div class={`grid gap-8 items-center justify-items-center ${gridClass}`}>
+      <div 
+        class="flex flex-wrap items-center justify-evenly gap-y-8"
+        data-animate-stagger={animateStagger || undefined}
+      >
         {logoItems.map((logo) => (
           logo.href ? (
             <a 
@@ -214,16 +324,38 @@ const gridClass = columnClasses[columns] || columnClasses[6];
               rel="noopener noreferrer"
               class="group"
             >
-              <img 
-                src={logo.src} 
-                alt={logo.alt}
-                class:list={[
-                  'h-10 w-auto object-contain',
-                  grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
-                ]}
-                width={logo.width || 160}
-              />
+              {logo.icon ? (
+                <i 
+                  class:list={[
+                    logo.icon,
+                    'text-4xl',
+                    logo.iconColor || 'text-gray-600 dark:text-gray-400',
+                    grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
+                  ]}
+                  title={logo.alt}
+                />
+              ) : (
+                <img 
+                  src={logo.src} 
+                  alt={logo.alt}
+                  class:list={[
+                    'h-10 w-auto object-contain',
+                    grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
+                  ]}
+                  width={logo.width || 160}
+                />
+              )}
             </a>
+          ) : logo.icon ? (
+            <i 
+              class:list={[
+                logo.icon,
+                'text-4xl',
+                logo.iconColor || 'text-gray-600 dark:text-gray-400',
+                grayscale && 'grayscale opacity-60',
+              ]}
+              title={logo.alt}
+            />
           ) : (
             <img 
               src={logo.src} 

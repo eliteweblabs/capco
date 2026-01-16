@@ -20,6 +20,13 @@ export interface BlockDefinition {
   }>;
 }
 
+// Common animation props for all blocks
+const animationProps = {
+  animate: { type: 'string' as const, description: 'Animation type: fade-blur-scale, fade-blur, fade-scale, fade-up, fade-up-blur, zoom-blur, fade. Use "true" for default.' },
+  animateDelay: { type: 'string' as const, description: 'Animation delay in ms (100, 200, 300, etc.)' },
+  animateStagger: { type: 'boolean' as const, description: 'Stagger children animations' },
+};
+
 // Registry of all available blocks
 export const blockRegistry: Record<string, BlockDefinition> = {
   CTABlock: {
@@ -36,6 +43,7 @@ export const blockRegistry: Record<string, BlockDefinition> = {
       secondaryButtonHref: { type: 'string', description: 'Secondary button link' },
       backgroundImage: { type: 'string', description: 'Background image URL' },
       backgroundColor: { type: 'string', description: 'Background color class' },
+      ...animationProps,
     }
   },
   

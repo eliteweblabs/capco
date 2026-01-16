@@ -70,6 +70,11 @@ interface Props {
   // Styling
   className?: string;
   id?: string;
+  
+  // Animation
+  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animateDelay?: string;
+  animateStagger?: boolean | string;
 }
 
 const props = Astro.props;
@@ -83,6 +88,38 @@ const {
 
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 2);
 const defaultOpen = props.defaultOpen === 'false' ? false : (props.defaultOpen ?? true);
+
+// Handle animation prop - enabled by default with stagger
+const getAnimationType = () => {
+  if (props.animate === 'false' || props.animate === false) return null;
+  if (props.animate === 'true' || props.animate === true) return 'fade-up';
+  if (typeof props.animate === 'string') return props.animate;
+  return 'fade-up'; // Default animation for FAQ
+};
+const animationType = getAnimationType();
+const animateDelay = props.animateDelay;
+// Enable stagger by default, unless explicitly disabled
+const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
+
+// Default demo FAQs
+const defaultFaqs: FAQ[] = [
+  { 
+    question: "What services do you offer?", 
+    answer: "We provide comprehensive services including design, installation, inspection, and maintenance for commercial and residential properties." 
+  },
+  { 
+    question: "How long does the process take?", 
+    answer: "Project timelines vary based on scope. Small projects typically take 1-2 weeks, while larger installations may take 4-8 weeks." 
+  },
+  { 
+    question: "Do you offer emergency services?", 
+    answer: "Yes, we offer 24/7 emergency response services for all clients with active maintenance contracts." 
+  },
+  { 
+    question: "What certifications do you have?", 
+    answer: "Our team holds industry certifications, state licenses, and manufacturer certifications for all major brands." 
+  },
+];
 
 // Build FAQs array
 let faqItems: FAQ[] = [];
@@ -98,6 +135,11 @@ if (props.faqs) {
   );
 }
 
+// Use default FAQs if none provided
+if (faqItems.length === 0) {
+  faqItems = defaultFaqs;
+}
+
 // Generate unique ID for accordion
 const accordionId = id || `faq-accordion-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -110,7 +152,12 @@ const columnClasses: Record<number, string> = {
 const gridClass = columnClasses[columns] || columnClasses[2];
 ---
 
-<section id={id} class:list={['faq-block py-16 md:py-24', className]}>
+<section 
+  id={id} 
+  class:list={['faq-block py-16 md:py-24', className]}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
+>
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     {(title || description) && (
       <div class="mb-12 text-center">
@@ -129,7 +176,13 @@ const gridClass = columnClasses[columns] || columnClasses[2];
     
     {variant === 'accordion' ? (
       <div class="mx-auto max-w-3xl">
-        <div id={accordionId} data-accordion="collapse" data-active-classes="bg-primary-50 dark:bg-gray-800" data-inactive-classes="text-gray-500 dark:text-gray-400">
+        <div 
+          id={accordionId} 
+          data-accordion="collapse" 
+          data-active-classes="bg-primary-50 dark:bg-gray-800" 
+          data-inactive-classes="text-gray-500 dark:text-gray-400"
+          data-animate-stagger={animateStagger || undefined}
+        >
           {faqItems.map((faq, index) => (
             <div class="border-b border-gray-200 dark:border-gray-700">
               <h3 id={`${accordionId}-heading-${index}`}>

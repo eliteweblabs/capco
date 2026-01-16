@@ -44,6 +44,10 @@ interface Props {
   // Mobile behavior
   hideSidebarOnMobile?: boolean | string;
   
+  // Props-based content (for CMS/dynamic rendering)
+  mainContent?: string;
+  sidebarContent?: string;
+  
   // Styling
   className?: string;
   id?: string;
@@ -57,6 +61,8 @@ const {
   stickyOffset = '6rem',
   maxWidth = '2xl',
   backgroundColor,
+  mainContent,
+  sidebarContent,
   className = '',
   id,
 } = props;
@@ -125,7 +131,7 @@ const paddingClasses = {
         widthClasses.content,
         sidebarPosition === 'left' && 'lg:order-2',
       ]}>
-        <slot name="content" />
+        {mainContent ? <Fragment set:html={mainContent} /> : <slot name="content" />}
       </div>
       
       <!-- Sidebar -->
@@ -139,7 +145,7 @@ const paddingClasses = {
           class:list={[stickySidebar && 'lg:sticky']}
           style={stickySidebar ? `top: ${stickyOffset};` : ''}
         >
-          <slot name="sidebar" />
+          {sidebarContent ? <Fragment set:html={sidebarContent} /> : <slot name="sidebar" />}
         </div>
       </aside>
     </div>

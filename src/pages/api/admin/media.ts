@@ -211,37 +211,78 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Parse fileId to integer for database query
+    const fileIdInt = parseInt(fileId, 10);
+    if (isNaN(fileIdInt)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid file ID" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     // Get file info first
     let filePath: string | null = null;
     
     if (source === "global") {
-      const { data: file } = await supabaseAdmin
+      const { data: file, error: fetchError } = await supabaseAdmin
         .from("files_global")
         .select("filePath")
-        .eq("id", fileId)
+        .eq("id", fileIdInt)
         .single();
+      
+      if (fetchError) {
+        console.error("❌ [ADMIN-MEDIA] Error fetching global file:", fetchError);
+        return new Response(
+          JSON.stringify({ success: false, error: "File not found" }),
+          { status: 404, headers: { "Content-Type": "application/json" } }
+        );
+      }
       
       filePath = file?.filePath;
 
       // Delete from database
-      await supabaseAdmin
+      const { error: deleteError } = await supabaseAdmin
         .from("files_global")
         .delete()
-        .eq("id", fileId);
+        .eq("id", fileIdInt);
+      
+      if (deleteError) {
+        console.error("❌ [ADMIN-MEDIA] Error deleting from files_global:", deleteError);
+        return new Response(
+          JSON.stringify({ success: false, error: "Failed to delete from database" }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
     } else {
-      const { data: file } = await supabaseAdmin
+      const { data: file, error: fetchError } = await supabaseAdmin
         .from("files")
         .select("filePath")
-        .eq("id", fileId)
+        .eq("id", fileIdInt)
         .single();
+      
+      if (fetchError) {
+        console.error("❌ [ADMIN-MEDIA] Error fetching file:", fetchError);
+        return new Response(
+          JSON.stringify({ success: false, error: "File not found" }),
+          { status: 404, headers: { "Content-Type": "application/json" } }
+        );
+      }
       
       filePath = file?.filePath;
 
       // Delete from database
-      await supabaseAdmin
+      const { error: deleteError } = await supabaseAdmin
         .from("files")
         .delete()
-        .eq("id", fileId);
+        .eq("id", fileIdInt);
+      
+      if (deleteError) {
+        console.error("❌ [ADMIN-MEDIA] Error deleting from files:", deleteError);
+        return new Response(
+          JSON.stringify({ success: false, error: "Failed to delete from database" }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Delete from storage if we have the path
@@ -256,7 +297,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    console.log("✅ [ADMIN-MEDIA] File deleted:", fileId);
+    console.log("✅ [ADMIN-MEDIA] File deleted:", fileIdInt, "from", source || "project");
 
     return new Response(
       JSON.stringify({ success: true, message: "File deleted successfully" }),
