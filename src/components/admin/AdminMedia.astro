@@ -1,0 +1,475 @@
+---
+/**
+ * AdminMedia Component
+ * Media manager panel - can be embedded in any page
+ */
+import Button from "../common/Button.astro";
+import SimpleIcon from "../common/SimpleIcon.astro";
+import { checkAuth } from "../../lib/auth";
+
+export interface Props {
+  currentUser: any;
+  supabase: any;
+  globalInputClasses?: string;
+}
+
+const { currentUser, supabase, globalInputClasses = "" } = Astro.props;
+
+// Fetch media files from database
+let projectFiles: any[] = [];
+let globalFiles: any[] = [];
+let storageFiles: any[] = [];
+let error: string | null = null;
+
+try {
+  if (supabase) {
+    // Fetch project files
+    const { data: files, error: filesError } = await supabase
+      .from("files")
+      .select(`
+        id,
+        "fileName",
+        "filePath",
+        "fileType",
+        "fileSize",
+        "uploadedAt",
+        "projectId",
+        "targetLocation",
+        "bucketName",
+        title,
+        comments,
+        status
+      `)
+      .order("uploadedAt", { ascending: false })
+      .limit(100);
+
+    if (filesError) {
+      console.error("Error fetching project files:", filesError);
+    } else {
+      projectFiles = files || [];
+    }
+
+    // Fetch global files
+    const { data: gFiles, error: gFilesError } = await supabase
+      .from("files_global")
+      .select("*")
+      .order("uploadedAt", { ascending: false })
+      .limit(100);
+
+    if (gFilesError) {
+      console.error("Error fetching global files:", gFilesError);
+    } else {
+      globalFiles = gFiles || [];
+    }
+
+    // Get list of files from storage bucket
+    const { data: storageList, error: storageError } = await supabase.storage
+      .from("project-media")
+      .list("global", { limit: 100, sortBy: { column: "created_at", order: "desc" } });
+
+    if (!storageError && storageList) {
+      storageFiles = storageList.filter((f: any) => f.name !== ".emptyFolderPlaceholder");
+    }
+  }
+} catch (fetchError) {
+  console.error("Error fetching media:", fetchError);
+  error = "Failed to fetch media files";
+}
+
+// Get storage URL base
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const storageBaseUrl = supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/project-media` : "";
+
+// Combine and format all files
+const allFiles = [
+  ...projectFiles.map((f: any) => ({
+    ...f,
+    source: "project",
+    publicUrl: f.filePath ? `${storageBaseUrl}/${f.filePath}` : null,
+  })),
+  ...globalFiles.map((f: any) => ({
+    ...f,
+    source: "global",
+    publicUrl: f.filePath ? `${storageBaseUrl}/${f.filePath}` : null,
+  })),
+];
+
+// Stats
+const stats = {
+  total: allFiles.length,
+  project: projectFiles.length,
+  global: globalFiles.length,
+  images: allFiles.filter((f: any) => f.fileType?.startsWith("image/")).length,
+  documents: allFiles.filter((f: any) => f.fileType?.includes("pdf") || f.fileType?.includes("document")).length,
+};
+
+// Helper to format file size
+function formatFileSize(bytes: number | null): string {
+  if (!bytes) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Helper to get file icon
+function getFileIcon(fileType: string | null, fileName?: string | null): string {
+  if (!fileType && !fileName) return "file";
+  
+  const type = fileType?.toLowerCase() || "";
+  const name = fileName?.toLowerCase() || "";
+  
+  if (type.startsWith("image/") || name.match(/\.(webp|avif|svg|png|jpg|jpeg|gif|ico|bmp|tiff?)$/)) return "image";
+  if (type.includes("pdf") || name.endsWith(".pdf")) return "file-pdf";
+  if (type.includes("word") || type.includes("document") || name.match(/\.(doc|docx)$/)) return "file-word";
+  if (type.includes("excel") || type.includes("spreadsheet") || name.match(/\.(xls|xlsx|csv)$/)) return "spreadsheet";
+  if (type.includes("video") || name.match(/\.(mp4|webm|mov|avi|mkv)$/)) return "video";
+  if (type.includes("audio") || name.match(/\.(mp3|wav|ogg|m4a|flac)$/)) return "music";
+  if (type.includes("zip") || type.includes("archive") || name.match(/\.(zip|rar|7z|tar|gz)$/)) return "archive";
+  
+  return "file";
+}
+---
+
+<div class="admin-media-component">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Media Manager</h1>
+    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+      Browse, upload, and manage all media files across the system.
+    </p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Total Files</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.project}</div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Project Files</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="text-2xl font-bold text-green-600 dark:text-green-400">{stats.global}</div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Global Files</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.images}</div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Images</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.documents}</div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Documents</div>
+    </div>
+  </div>
+
+  <!-- Actions Bar -->
+  <div class="flex flex-wrap gap-3 mb-6 items-center">
+    <Button id="upload-btn" variant="primary" icon="upload">
+      Upload File
+    </Button>
+    <input type="file" id="file-input" class="hidden" multiple accept="image/*,image/webp,image/avif,image/svg+xml,application/pdf,.doc,.docx,.xls,.xlsx" />
+    
+    <div class="flex-1 min-w-[200px]">
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Search files..."
+        class={globalInputClasses}
+      />
+    </div>
+    
+    <select id="filter-source" class={`${globalInputClasses} w-auto`}>
+      <option value="all">All Sources</option>
+      <option value="project">Project Files</option>
+      <option value="global">Global Files</option>
+    </select>
+    
+    <select id="filter-type" class={`${globalInputClasses} w-auto`}>
+      <option value="all">All Types</option>
+      <option value="image">Images</option>
+      <option value="pdf">PDFs</option>
+      <option value="document">Documents</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+
+  <!-- Error Display -->
+  {error && (
+    <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
+      {error}
+    </div>
+  )}
+
+  <!-- Files Grid -->
+  <div id="files-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+    {allFiles.length === 0 ? (
+      <div class="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
+        <SimpleIcon name="folder-open" class="w-16 h-16 mx-auto mb-4 opacity-50" />
+        <p class="text-lg font-medium">No files found</p>
+        <p class="text-sm">Upload your first file to get started</p>
+      </div>
+    ) : (
+      allFiles.map((file: any) => (
+        <div 
+          class="file-card group bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden cursor-pointer"
+          data-file-id={file.id}
+          data-file-name={file.fileName}
+          data-file-path={file.filePath}
+          data-file-type={file.fileType}
+          data-file-size={file.fileSize}
+          data-file-url={file.publicUrl}
+          data-file-source={file.source}
+          data-project-id={file.projectId}
+        >
+          <!-- Preview -->
+          <div class="aspect-square bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+            {(file.fileType?.startsWith("image/") || file.fileName?.match(/\.(webp|avif|svg|png|jpg|jpeg|gif)$/i)) && file.publicUrl ? (
+              <img 
+                src={file.publicUrl} 
+                alt={file.fileName}
+                class="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <SimpleIcon name={getFileIcon(file.fileType, file.fileName)} class="w-12 h-12 text-gray-400" />
+            )}
+            
+            <!-- Source Badge -->
+            <span class={`absolute top-2 right-2 text-xs px-2 py-1 rounded-full ${
+              file.source === "global" 
+                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+            }`}>
+              {file.source === "global" ? "Global" : `P#${file.projectId || "?"}`}
+            </span>
+            
+            <!-- Hover Actions -->
+            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <button 
+                class="copy-url-btn p-2 bg-white rounded-full hover:bg-gray-100 text-gray-700"
+                title="Copy URL"
+              >
+                <SimpleIcon name="copy" class="w-4 h-4" />
+              </button>
+              {file.publicUrl && (
+                <a 
+                  href={file.publicUrl} 
+                  target="_blank"
+                  class="p-2 bg-white rounded-full hover:bg-gray-100 text-gray-700"
+                  title="Open in new tab"
+                >
+                  <SimpleIcon name="link-external" class="w-4 h-4" />
+                </a>
+              )}
+              <button 
+                class="delete-btn p-2 bg-red-500 rounded-full hover:bg-red-600 text-white"
+                title="Delete"
+              >
+                <SimpleIcon name="trash" class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          
+          <!-- Info -->
+          <div class="p-3">
+            <div class="text-sm font-medium text-gray-900 dark:text-white truncate" title={file.fileName}>
+              {file.fileName || "Unnamed"}
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 flex justify-between mt-1">
+              <span>{formatFileSize(file.fileSize)}</span>
+              <span>{file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : "—"}</span>
+            </div>
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+
+  <!-- Empty State for Filtered Results -->
+  <div id="no-results" class="hidden text-center py-12 text-gray-500 dark:text-gray-400">
+    <SimpleIcon name="search" class="w-16 h-16 mx-auto mb-4 opacity-50" />
+    <p class="text-lg font-medium">No matching files</p>
+    <p class="text-sm">Try adjusting your search or filters</p>
+  </div>
+
+  <!-- Upload Progress -->
+  <div id="upload-progress" class="hidden fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 min-w-[300px]">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="animate-spin">
+        <SimpleIcon name="loader-2" class="w-5 h-5 text-primary-500" />
+      </div>
+      <span class="text-sm font-medium text-gray-900 dark:text-white">Uploading...</span>
+    </div>
+    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div id="progress-bar" class="bg-primary-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+    </div>
+    <div id="progress-text" class="text-xs text-gray-500 dark:text-gray-400 mt-1">0%</div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const uploadBtn = document.getElementById("upload-btn");
+    const fileInput = document.getElementById("file-input") as HTMLInputElement;
+    const searchInput = document.getElementById("search-input") as HTMLInputElement;
+    const filterSource = document.getElementById("filter-source") as HTMLSelectElement;
+    const filterType = document.getElementById("filter-type") as HTMLSelectElement;
+    const filesGrid = document.getElementById("files-grid");
+    const noResults = document.getElementById("no-results");
+    const uploadProgress = document.getElementById("upload-progress");
+    const progressBar = document.getElementById("progress-bar");
+    const progressText = document.getElementById("progress-text");
+
+    // Format file size helper
+    function formatFileSize(bytes: number | null): string {
+      if (!bytes) return "—";
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    // Upload handler
+    uploadBtn?.addEventListener("click", () => {
+      fileInput?.click();
+    });
+
+    fileInput?.addEventListener("change", async () => {
+      const files = fileInput.files;
+      if (!files || files.length === 0) return;
+
+      uploadProgress?.classList.remove("hidden");
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const progress = ((i + 1) / files.length) * 100;
+        
+        try {
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+          });
+          reader.readAsDataURL(file);
+          const base64 = await base64Promise;
+
+          const response = await fetch("/api/admin/media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              mediaData: base64,
+              fileName: file.name,
+              fileType: file.type,
+              targetLocation: "global",
+            }),
+          });
+
+          if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.error || "Upload failed");
+          }
+
+          if (progressBar) progressBar.style.width = `${progress}%`;
+          if (progressText) progressText.textContent = `${Math.round(progress)}%`;
+        } catch (error) {
+          console.error("Upload error:", error);
+          alert(`Failed to upload ${file.name}: ${error}`);
+        }
+      }
+
+      setTimeout(() => {
+        location.reload();
+      }, 500);
+    });
+
+    // Search and filter
+    function filterFiles() {
+      const search = searchInput?.value.toLowerCase() || "";
+      const source = filterSource?.value || "all";
+      const type = filterType?.value || "all";
+      
+      const cards = filesGrid?.querySelectorAll(".file-card") as NodeListOf<HTMLElement>;
+      let visibleCount = 0;
+
+      cards?.forEach((card) => {
+        const fileName = card.dataset.fileName?.toLowerCase() || "";
+        const fileType = card.dataset.fileType?.toLowerCase() || "";
+        const fileSource = card.dataset.fileSource || "";
+
+        let show = true;
+
+        if (search && !fileName.includes(search)) show = false;
+        if (source !== "all" && fileSource !== source) show = false;
+
+        if (type !== "all") {
+          if (type === "image" && !fileType.startsWith("image/")) show = false;
+          if (type === "pdf" && !fileType.includes("pdf")) show = false;
+          if (type === "document" && !fileType.includes("word") && !fileType.includes("document") && !fileType.includes("excel")) show = false;
+          if (type === "other" && (fileType.startsWith("image/") || fileType.includes("pdf") || fileType.includes("document"))) show = false;
+        }
+
+        card.style.display = show ? "" : "none";
+        if (show) visibleCount++;
+      });
+
+      if (noResults) {
+        noResults.classList.toggle("hidden", visibleCount > 0 || cards?.length === 0);
+      }
+    }
+
+    searchInput?.addEventListener("input", filterFiles);
+    filterSource?.addEventListener("change", filterFiles);
+    filterType?.addEventListener("change", filterFiles);
+
+    // File card click handlers
+    filesGrid?.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      const card = target.closest(".file-card") as HTMLElement;
+      
+      if (!card) return;
+
+      if (target.closest(".copy-url-btn")) {
+        const url = card.dataset.fileUrl;
+        if (url) {
+          navigator.clipboard.writeText(url);
+          if ((window as any).showModal) {
+            (window as any).showModal("success", "Success", "URL copied to clipboard!", 2000);
+          }
+        }
+        return;
+      }
+
+      if (target.closest(".delete-btn")) {
+        if (confirm("Are you sure you want to delete this file?")) {
+          deleteFile(card.dataset.fileId, card.dataset.fileSource);
+        }
+        return;
+      }
+    });
+
+    async function deleteFile(fileId: string | undefined, source: string | undefined) {
+      if (!fileId) return;
+
+      try {
+        const response = await fetch("/api/admin/media", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileId, source }),
+        });
+
+        if (response.ok) {
+          if ((window as any).showModal) {
+            (window as any).showModal("success", "Success", "File deleted successfully", 2000);
+          }
+          location.reload();
+        } else {
+          const result = await response.json();
+          throw new Error(result.error || "Delete failed");
+        }
+      } catch (error) {
+        console.error("Delete error:", error);
+        alert(`Failed to delete file: ${error}`);
+      }
+    }
+  });
+</script>

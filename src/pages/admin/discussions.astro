@@ -1,4 +1,8 @@
 ---
+/**
+ * Global Discussions Admin Page
+ * Uses AdminDiscussions component for the main content
+ */
 import { checkAuth } from "../../lib/auth";
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
@@ -7,11 +11,6 @@ const currentRole = currentUser?.profile?.role;
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-
-// Allow all authenticated users (not just admins)
-// if (currentRole !== "Admin") {
-//   return Astro.redirect("/dashboard");
-// }
 
 import { globalCompanyData } from "../api/global/global-company-data";
 const {
@@ -28,51 +27,7 @@ import { globalClasses } from "../api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
 import App from "../../components/ui/App.astro";
-import Hero from "../../components/common/Hero.astro";
-import DiscussionsComponent from "../../components/form/Discussions.astro";
-import SimpleIcon from "../../components/common/SimpleIcon.astro";
-
-// Fetch projects for overview stats
-let projects: any[] = [];
-let discussionStats: any = {
-  recent_24h: 0,
-  active_users_24h: 0,
-};
-
-if (currentUser?.id) {
-  try {
-    const baseUrl = Astro.url.origin;
-    const apiUrl = `${baseUrl}/api/get-project`;
-    const response = await fetch(apiUrl);
-
-    if (response.ok) {
-      const data = await response.json();
-      projects = data.projects || [];
-    }
-  } catch (error) {
-    console.error("Error fetching projects:", error);
-  }
-
-  // Fetch discussion stats server-side
-  try {
-    const baseUrl = Astro.url.origin;
-    const statsUrl = `${baseUrl}/api/discussions/get`;
-    const statsResponse = await fetch(statsUrl, {
-      headers: {
-        Cookie: Astro.request.headers.get("cookie") || "",
-      },
-    });
-
-    if (statsResponse.ok) {
-      const statsData = await statsResponse.json();
-      if (statsData.success && statsData.stats) {
-        discussionStats = statsData.stats;
-      }
-    }
-  } catch (error) {
-    console.error("Error fetching discussion stats:", error);
-  }
-}
+import AdminDiscussions from "../../components/admin/AdminDiscussions.astro";
 ---
 
 <App
@@ -82,7 +37,6 @@ if (currentUser?.id) {
   project={undefined}
   {session}
   {supabase}
-  {projects}
   isBackend={true}
   {globalCompanyName}
   {globalCompanySlogan}
@@ -95,150 +49,10 @@ if (currentUser?.id) {
   {secondaryTextClasses}
   {globalInputClasses}
 >
-  <!-- Dashboard Container -->
-  <Hero
-    title="Global Discussions"
-    description="Monitor all project discussions, client comments, and internal conversations across the platform."
+  <AdminDiscussions
+    {currentUser}
+    {globalInputClasses}
     {primaryTextClasses}
     {secondaryTextClasses}
-    {globalInputClasses}
   />
-
-  <!-- Overview Cards -->
-  <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-    <!-- Total Projects -->
-    <div class="rounded-lg bg-gray-100 p-6 shadow color-background">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <SimpleIcon name="building" class="h-8 w-8 text-primary-600 dark:text-primary-400" />
-        </div>
-        <div class="ml-3 w-0 flex-1">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Projects</p>
-          <p id="total-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
-            {projects.length}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Active Projects -->
-    <div class="rounded-lg bg-gray-100 p-6 shadow color-background">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <SimpleIcon name="trending-up" class="h-8 w-8 text-green-600 dark:text-green-400" />
-        </div>
-        <div class="ml-3 w-0 flex-1">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
-          <p id="active-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
-            {projects.filter((p) => p.status > 0 && p.status < 90).length}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Total Discussions (24h) -->
-    <div class="rounded-lg bg-gray-100 p-6 shadow color-background">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <SimpleIcon name="message-square" class="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-        </div>
-        <div class="ml-3 w-0 flex-1">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Discussions (24h)</p>
-          <p
-            id="recent-discussions-header"
-            class="text-lg font-semibold text-gray-900 dark:text-white"
-          >
-            {discussionStats.recent_24h}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Active Users -->
-    <div class="rounded-lg bg-gray-100 p-6 shadow color-background">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <SimpleIcon name="users" class="h-8 w-8 text-purple-600 dark:text-purple-400" />
-        </div>
-        <div class="ml-3 w-0 flex-1">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
-          <p id="active-users-header" class="text-lg font-semibold text-gray-900 dark:text-white">
-            {discussionStats.active_users_24h}
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Global Discussions Component -->
-  <div class="rounded-lg bg-gray-100 shadow-sm color-background">
-    <DiscussionsComponent
-      project={null}
-      {currentUser}
-      {globalInputClasses}
-      {secondaryTextClasses}
-      {primaryTextClasses}
-    />
-  </div>
 </App>
-
-<script>
-  // Update dynamic stats when the discussions load
-  document.addEventListener("DOMContentLoaded", () => {
-    // Load stats from the unified discussions API
-    loadDiscussionStats();
-
-    // Initialize the discussions system for global discussions
-    if (typeof (window as any).initializeDiscussions === "function") {
-      console.log("🎬 [GLOBAL-DISCUSSIONS] Initializing global discussions system");
-      (window as any).initializeDiscussions();
-    } else {
-      console.error("❌ [GLOBAL-DISCUSSIONS] initializeDiscussions function not found");
-    }
-  });
-
-  async function loadDiscussionStats() {
-    try {
-      const response = await fetch("/api/discussions/get", {
-        credentials: "include",
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.stats) {
-        updateStatsDisplay(data.stats);
-      } else {
-        console.error("Failed to load discussion stats:", data.error);
-        // Set fallback values
-        updateStatsDisplay({
-          recent_24h: 0,
-          active_users_24h: 0,
-        });
-      }
-    } catch (error) {
-      console.error("Error loading discussion stats:", error);
-      // Set fallback values
-      updateStatsDisplay({
-        recent_24h: 0,
-        active_users_24h: 0,
-      });
-    }
-  }
-
-  function updateStatsDisplay(stats: any) {
-    const headerRecentEl = document.getElementById("recent-discussions-header");
-    const headerActiveUsersEl = document.getElementById("active-users-header");
-
-    if (headerRecentEl) {
-      headerRecentEl.textContent = stats.recent_24h || 0;
-    }
-    if (headerActiveUsersEl) {
-      headerActiveUsersEl.textContent = stats.active_users_24h || 0;
-    }
-
-    console.log("📊 [GLOBAL-DISCUSSIONS] Updated stats display:", {
-      recent_24h: stats.recent_24h || 0,
-      active_users_24h: stats.active_users_24h || 0,
-    });
-  }
-</script>

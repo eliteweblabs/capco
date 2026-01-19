@@ -1,4 +1,8 @@
 ---
+/**
+ * Global Activity Feed Admin Page
+ * Uses AdminGlobalActivity component for the main content
+ */
 import { checkAuth } from "../../lib/auth";
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
@@ -28,27 +32,7 @@ import { globalClasses } from "../api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
 import App from "../../components/ui/App.astro";
-import Hero from "../../components/common/Hero.astro";
-import GlobalActivityFeed from "../../components/common/GlobalActivityFeed.astro";
-import SimpleIcon from "../../components/common/SimpleIcon.astro";
-import Button from "../../components/common/Button.astro";
-
-// Fetch projects for overview stats
-let projects: any[] = [];
-if (currentUser?.id) {
-  try {
-    const baseUrl = Astro.url.origin;
-    const apiUrl = `${baseUrl}/api/get-project`;
-    const response = await fetch(apiUrl);
-
-    if (response.ok) {
-      const data = await response.json();
-      projects = data.projects || [];
-    }
-  } catch (error) {
-    console.error("Error fetching projects:", error);
-  }
-}
+import AdminGlobalActivity from "../../components/admin/AdminGlobalActivity.astro";
 ---
 
 <App
@@ -57,7 +41,6 @@ if (currentUser?.id) {
   {currentUser}
   {session}
   {supabase}
-  {projects}
   isBackend={true}
   {globalInputClasses}
   {primaryTextClasses}
@@ -70,100 +53,11 @@ if (currentUser?.id) {
   {globalCompanyWebsite}
   {globalCompanyLogo}
 >
-  <!-- Dashboard Container -->
-  <Hero
-    title="Global Activity Feed"
-    description="Monitor all project activities, status changes, and user actions across the platform."
+  <AdminGlobalActivity
+    {currentUser}
+    {globalInputClasses}
     {primaryTextClasses}
     {secondaryTextClasses}
-    {globalInputClasses}
+    limit={100}
   />
-
-  <!-- Activity Overview Cards -->
-  <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-    <!-- Total Projects -->
-    <div class="rounded-lg bg-gray-100 p-6 shadow color-background">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <SimpleIcon name="building" class="h-8 w-8 text-primary-600 dark:text-primary-400" />
-        </div>
-        <div class="ml-3 w-0 flex-1">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Projects</p>
-          <p id="total-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
-            {projects.length}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Active Projects -->
-    <div class="rounded-lg bg-gray-100 p-6 shadow color-background">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <SimpleIcon name="trending-up" class="h-8 w-8 text-green-600 dark:text-green-400" />
-        </div>
-        <div class="ml-3 w-0 flex-1">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
-          <p id="active-projects" class="text-lg font-semibold text-gray-900 dark:text-white">
-            {projects.filter((p) => p.status > 0 && p.status < 90).length}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="rounded-lg bg-gray-100 p-6 shadow color-background">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <SimpleIcon name="clock" class="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-        </div>
-        <div class="ml-3 w-0 flex-1">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Last 24h</p>
-          <p id="recent-activity" class="text-lg font-semibold text-gray-900 dark:text-white">
-            <span class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-            ></span>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Active Users -->
-    <div class="rounded-lg bg-gray-100 p-6 shadow color-background">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <SimpleIcon name="users" class="h-8 w-8 text-purple-600 dark:text-purple-400" />
-        </div>
-        <div class="ml-3 w-0 flex-1">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
-          <p id="active-users-header" class="text-lg font-semibold text-gray-900 dark:text-white">
-            <span class="inline-block h-4 w-8 animate-pulse rounded bg-gray-200 dark:bg-gray-700"
-            ></span>
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Global Activity Feed Component -->
-  <GlobalActivityFeed limit={100} />
 </App>
-
-<script is:inline>
-  // Update dynamic stats when the activity feed loads
-  document.addEventListener("DOMContentLoaded", () => {
-    // Wait for the global activity feed to load its stats
-    setTimeout(() => {
-      const recentCountEl = document.getElementById("recent-count");
-      const activeUsersEl = document.getElementById("active-users");
-      const headerRecentEl = document.getElementById("recent-activity");
-      const headerActiveUsersEl = document.getElementById("active-users-header");
-
-      if (recentCountEl && headerRecentEl && recentCountEl.textContent) {
-        headerRecentEl.textContent = recentCountEl.textContent;
-      }
-      if (activeUsersEl && headerActiveUsersEl && activeUsersEl.textContent) {
-        headerActiveUsersEl.textContent = activeUsersEl.textContent;
-      }
-    }, 2000); // Wait for global feed to load
-  });
-</script>

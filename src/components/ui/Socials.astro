@@ -1,0 +1,309 @@
+---
+/**
+ * Socials Component
+ * 
+ * Displays social network links with auto-detected icons based on URL.
+ * Icons use Font Awesome for consistency.
+ * 
+ * @example
+ * <Socials links={[
+ *   { url: "https://facebook.com/company" },
+ *   { url: "https://twitter.com/company" },
+ *   { url: "https://linkedin.com/company/name" }
+ * ]} />
+ * 
+ * @example with variant
+ * <Socials links={socialLinks} variant="footer" size="lg" />
+ */
+
+interface SocialLink {
+  url: string;
+  label?: string; // Optional custom label/title
+}
+
+interface Props {
+  // Array of social links
+  links?: SocialLink[] | string;
+  
+  // Display variant
+  variant?: 'default' | 'footer' | 'header' | 'minimal';
+  
+  // Icon size
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  
+  // Color scheme
+  colorScheme?: 'default' | 'brand' | 'mono' | 'white';
+  
+  // Show labels
+  showLabels?: boolean;
+  
+  // Gap between items
+  gap?: 'sm' | 'md' | 'lg';
+  
+  // Styling
+  className?: string;
+}
+
+const {
+  variant = 'default',
+  size = 'md',
+  colorScheme = 'default',
+  showLabels = false,
+  gap = 'md',
+  className = '',
+} = Astro.props;
+
+// Parse links if passed as JSON string
+let socialLinks: SocialLink[] = [];
+if (typeof Astro.props.links === 'string') {
+  try {
+    socialLinks = JSON.parse(Astro.props.links);
+  } catch {
+    socialLinks = [];
+  }
+} else if (Array.isArray(Astro.props.links)) {
+  socialLinks = Astro.props.links;
+}
+
+// Filter out empty URLs
+socialLinks = socialLinks.filter(link => link.url && link.url.trim() !== '');
+
+/**
+ * Detect social network from URL and return icon/label info
+ */
+function detectSocialNetwork(url: string): { 
+  icon: string; 
+  label: string; 
+  brandColor: string;
+  hoverColor: string;
+} {
+  const urlLower = url.toLowerCase();
+  
+  // Facebook
+  if (urlLower.includes('facebook.com') || urlLower.includes('fb.com') || urlLower.includes('fb.me')) {
+    return { icon: 'fa-brands fa-facebook-f', label: 'Facebook', brandColor: 'text-[#1877F2]', hoverColor: 'hover:text-[#1877F2]' };
+  }
+  
+  // Twitter/X
+  if (urlLower.includes('twitter.com') || urlLower.includes('x.com')) {
+    return { icon: 'fa-brands fa-x-twitter', label: 'X (Twitter)', brandColor: 'text-black dark:text-white', hoverColor: 'hover:text-black dark:hover:text-white' };
+  }
+  
+  // Instagram
+  if (urlLower.includes('instagram.com') || urlLower.includes('instagr.am')) {
+    return { icon: 'fa-brands fa-instagram', label: 'Instagram', brandColor: 'text-[#E4405F]', hoverColor: 'hover:text-[#E4405F]' };
+  }
+  
+  // LinkedIn
+  if (urlLower.includes('linkedin.com') || urlLower.includes('lnkd.in')) {
+    return { icon: 'fa-brands fa-linkedin-in', label: 'LinkedIn', brandColor: 'text-[#0A66C2]', hoverColor: 'hover:text-[#0A66C2]' };
+  }
+  
+  // YouTube
+  if (urlLower.includes('youtube.com') || urlLower.includes('youtu.be')) {
+    return { icon: 'fa-brands fa-youtube', label: 'YouTube', brandColor: 'text-[#FF0000]', hoverColor: 'hover:text-[#FF0000]' };
+  }
+  
+  // TikTok
+  if (urlLower.includes('tiktok.com')) {
+    return { icon: 'fa-brands fa-tiktok', label: 'TikTok', brandColor: 'text-black dark:text-white', hoverColor: 'hover:text-black dark:hover:text-white' };
+  }
+  
+  // Pinterest
+  if (urlLower.includes('pinterest.com') || urlLower.includes('pin.it')) {
+    return { icon: 'fa-brands fa-pinterest-p', label: 'Pinterest', brandColor: 'text-[#E60023]', hoverColor: 'hover:text-[#E60023]' };
+  }
+  
+  // Snapchat
+  if (urlLower.includes('snapchat.com')) {
+    return { icon: 'fa-brands fa-snapchat', label: 'Snapchat', brandColor: 'text-[#FFFC00]', hoverColor: 'hover:text-[#FFFC00]' };
+  }
+  
+  // GitHub
+  if (urlLower.includes('github.com') || urlLower.includes('github.io')) {
+    return { icon: 'fa-brands fa-github', label: 'GitHub', brandColor: 'text-[#181717] dark:text-white', hoverColor: 'hover:text-[#181717] dark:hover:text-white' };
+  }
+  
+  // GitLab
+  if (urlLower.includes('gitlab.com')) {
+    return { icon: 'fa-brands fa-gitlab', label: 'GitLab', brandColor: 'text-[#FC6D26]', hoverColor: 'hover:text-[#FC6D26]' };
+  }
+  
+  // Discord
+  if (urlLower.includes('discord.com') || urlLower.includes('discord.gg')) {
+    return { icon: 'fa-brands fa-discord', label: 'Discord', brandColor: 'text-[#5865F2]', hoverColor: 'hover:text-[#5865F2]' };
+  }
+  
+  // Slack
+  if (urlLower.includes('slack.com')) {
+    return { icon: 'fa-brands fa-slack', label: 'Slack', brandColor: 'text-[#4A154B]', hoverColor: 'hover:text-[#4A154B]' };
+  }
+  
+  // WhatsApp
+  if (urlLower.includes('whatsapp.com') || urlLower.includes('wa.me')) {
+    return { icon: 'fa-brands fa-whatsapp', label: 'WhatsApp', brandColor: 'text-[#25D366]', hoverColor: 'hover:text-[#25D366]' };
+  }
+  
+  // Telegram
+  if (urlLower.includes('telegram.org') || urlLower.includes('t.me')) {
+    return { icon: 'fa-brands fa-telegram', label: 'Telegram', brandColor: 'text-[#26A5E4]', hoverColor: 'hover:text-[#26A5E4]' };
+  }
+  
+  // Reddit
+  if (urlLower.includes('reddit.com')) {
+    return { icon: 'fa-brands fa-reddit-alien', label: 'Reddit', brandColor: 'text-[#FF4500]', hoverColor: 'hover:text-[#FF4500]' };
+  }
+  
+  // Threads
+  if (urlLower.includes('threads.net')) {
+    return { icon: 'fa-brands fa-threads', label: 'Threads', brandColor: 'text-black dark:text-white', hoverColor: 'hover:text-black dark:hover:text-white' };
+  }
+  
+  // Mastodon
+  if (urlLower.includes('mastodon') || urlLower.includes('mstdn')) {
+    return { icon: 'fa-brands fa-mastodon', label: 'Mastodon', brandColor: 'text-[#6364FF]', hoverColor: 'hover:text-[#6364FF]' };
+  }
+  
+  // Bluesky
+  if (urlLower.includes('bsky.app') || urlLower.includes('bluesky')) {
+    return { icon: 'fa-brands fa-bluesky', label: 'Bluesky', brandColor: 'text-[#0085FF]', hoverColor: 'hover:text-[#0085FF]' };
+  }
+  
+  // Twitch
+  if (urlLower.includes('twitch.tv')) {
+    return { icon: 'fa-brands fa-twitch', label: 'Twitch', brandColor: 'text-[#9146FF]', hoverColor: 'hover:text-[#9146FF]' };
+  }
+  
+  // Vimeo
+  if (urlLower.includes('vimeo.com')) {
+    return { icon: 'fa-brands fa-vimeo-v', label: 'Vimeo', brandColor: 'text-[#1AB7EA]', hoverColor: 'hover:text-[#1AB7EA]' };
+  }
+  
+  // Dribbble
+  if (urlLower.includes('dribbble.com')) {
+    return { icon: 'fa-brands fa-dribbble', label: 'Dribbble', brandColor: 'text-[#EA4C89]', hoverColor: 'hover:text-[#EA4C89]' };
+  }
+  
+  // Behance
+  if (urlLower.includes('behance.net')) {
+    return { icon: 'fa-brands fa-behance', label: 'Behance', brandColor: 'text-[#1769FF]', hoverColor: 'hover:text-[#1769FF]' };
+  }
+  
+  // Medium
+  if (urlLower.includes('medium.com')) {
+    return { icon: 'fa-brands fa-medium', label: 'Medium', brandColor: 'text-black dark:text-white', hoverColor: 'hover:text-black dark:hover:text-white' };
+  }
+  
+  // Spotify
+  if (urlLower.includes('spotify.com') || urlLower.includes('open.spotify')) {
+    return { icon: 'fa-brands fa-spotify', label: 'Spotify', brandColor: 'text-[#1DB954]', hoverColor: 'hover:text-[#1DB954]' };
+  }
+  
+  // Apple Music / Apple Podcasts
+  if (urlLower.includes('music.apple.com') || urlLower.includes('podcasts.apple.com')) {
+    return { icon: 'fa-brands fa-apple', label: 'Apple', brandColor: 'text-[#000000] dark:text-white', hoverColor: 'hover:text-[#FC3C44]' };
+  }
+  
+  // Yelp
+  if (urlLower.includes('yelp.com')) {
+    return { icon: 'fa-brands fa-yelp', label: 'Yelp', brandColor: 'text-[#FF1A1A]', hoverColor: 'hover:text-[#FF1A1A]' };
+  }
+  
+  // Google Business / Maps
+  if (urlLower.includes('google.com/maps') || urlLower.includes('goo.gl/maps') || urlLower.includes('business.google')) {
+    return { icon: 'fa-brands fa-google', label: 'Google', brandColor: 'text-[#4285F4]', hoverColor: 'hover:text-[#4285F4]' };
+  }
+  
+  // Email (mailto:)
+  if (urlLower.startsWith('mailto:')) {
+    return { icon: 'fa-solid fa-envelope', label: 'Email', brandColor: 'text-gray-600 dark:text-gray-400', hoverColor: 'hover:text-primary-600' };
+  }
+  
+  // Phone (tel:)
+  if (urlLower.startsWith('tel:')) {
+    return { icon: 'fa-solid fa-phone', label: 'Phone', brandColor: 'text-gray-600 dark:text-gray-400', hoverColor: 'hover:text-primary-600' };
+  }
+  
+  // Default/Unknown - generic link
+  return { icon: 'fa-solid fa-link', label: 'Website', brandColor: 'text-gray-600 dark:text-gray-400', hoverColor: 'hover:text-primary-600' };
+}
+
+// Size classes
+const sizeClasses = {
+  sm: 'text-sm',
+  md: 'text-lg',
+  lg: 'text-xl',
+  xl: 'text-2xl',
+};
+
+// Gap classes
+const gapClasses = {
+  sm: 'gap-2',
+  md: 'gap-4',
+  lg: 'gap-6',
+};
+
+// Get color class based on scheme
+function getColorClass(network: ReturnType<typeof detectSocialNetwork>): string {
+  switch (colorScheme) {
+    case 'brand':
+      return `${network.brandColor} ${network.hoverColor}`;
+    case 'mono':
+      return 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
+    case 'white':
+      return 'text-white/80 hover:text-white';
+    default:
+      return `text-gray-500 dark:text-gray-400 ${network.hoverColor}`;
+  }
+}
+
+// Build link classes
+function getLinkClasses(network: ReturnType<typeof detectSocialNetwork>): string {
+  const base = 'transition-colors duration-200 inline-flex items-center';
+  const colorClass = getColorClass(network);
+  const sizeClass = sizeClasses[size];
+  
+  // Variant-specific styles
+  let variantClass = '';
+  switch (variant) {
+    case 'footer':
+      variantClass = 'p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800';
+      break;
+    case 'header':
+      variantClass = 'p-1.5';
+      break;
+    case 'minimal':
+      variantClass = '';
+      break;
+    default:
+      variantClass = 'p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800';
+  }
+  
+  return `${base} ${colorClass} ${sizeClass} ${variantClass}`;
+}
+---
+
+{socialLinks.length > 0 && (
+  <div class:list={['socials-component flex flex-wrap items-center', gapClasses[gap], className]}>
+    {socialLinks.map((link) => {
+      const network = detectSocialNetwork(link.url);
+      const label = link.label || network.label;
+      
+      return (
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class={getLinkClasses(network)}
+          title={label}
+          aria-label={label}
+        >
+          <i class={network.icon} aria-hidden="true" />
+          {showLabels && (
+            <span class="ml-2 text-sm">{label}</span>
+          )}
+        </a>
+      );
+    })}
+  </div>
+)}
