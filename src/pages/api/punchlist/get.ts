@@ -129,21 +129,33 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     }
 
     // Fetch punchlist items for the project
+    // Note: Using manual join since foreign key points to auth.users, not profiles directly
     const { data: punchlistItems, error: punchlistError } = await supabaseAdmin
       .from("punchlist")
-      .select(
-        `
-        *,
-        author:profiles!authorId(
-          id,
-          companyName,
-          email,
-          role
-        )
-      `
-      )
+      .select("*")
       .eq("projectId", parseInt(projectId))
       .order("createdAt", { ascending: false });
+
+    // Manually join with profiles if punchlist items exist
+    if (punchlistItems && punchlistItems.length > 0) {
+      const authorIds = [...new Set(punchlistItems.map((item: any) => item.authorId).filter(Boolean))];
+      
+      if (authorIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabaseAdmin
+          .from("profiles")
+          .select("id, companyName, email, role")
+          .in("id", authorIds);
+
+        if (!profilesError && profiles) {
+          const profilesMap = new Map(profiles.map((p: any) => [p.id, p]));
+          punchlistItems.forEach((item: any) => {
+            if (item.authorId && profilesMap.has(item.authorId)) {
+              item.author = profilesMap.get(item.authorId);
+            }
+          });
+        }
+      }
+    }
 
     if (punchlistError) {
       console.error("Error fetching punchlist items:", punchlistError);
