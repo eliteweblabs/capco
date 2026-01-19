@@ -245,8 +245,8 @@ export const navigation = async (
       }
     });
 
-    const isAuth = currentUser ? true : false;
     // Add flex md:hidden class to mobile navigation items (show in mobile sidebar, hide on desktop)
+    // isAuth is available from parent scope
     const mobileClass = filterType === "mobile" && !isAuth ? "flex md:hidden" : "";
 
     const results = filteredItems.map((item: NavItem) => {
