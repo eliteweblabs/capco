@@ -43,7 +43,7 @@ const formElements = await getFilteredUnifiedFormElements(currentRole, isNewProj
 const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 ---
 
-<div id="project-form-container" class="w-full max-w-7xl mx-auto mb-12">
+<div id="project-form-container" class="w-full max-w-7xl mx-auto mb-12 px-8">
   {
     showPDFSelector ? (
       <>
@@ -642,10 +642,17 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
                   } else {
                     console.warn("⚠️ [PROPOSAL-VIEW] handleNewStatusModalAndEmail not available yet");
                   }
-                  // window.location.href = `/project/${data.project.id}?status=discussion`;
+                  // Redirect to project page after successful status update
+                  window.location.href = `/project/${data.project.id}?status=discussion`;
                 } else {
                   console.error("❌ [PROPOSAL-VIEW] Failed to update status:", data.error);
+                  // Fallback: redirect even if status update failed (project was created successfully)
+                  window.location.href = `/project/${project.id}`;
                 }
+              }).catch((error: any) => {
+                console.error("❌ [PROPOSAL-VIEW] Status update error:", error);
+                // Fallback: redirect even if status update errored (project was created successfully)
+                window.location.href = `/project/${project.id}`;
               });
 
               // const statusResult = await (window as any).updateStatus(result.project, nextStatus, undefined);

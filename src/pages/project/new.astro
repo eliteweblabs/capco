@@ -1,0 +1,70 @@
+---
+/**
+ * New Project Page - Renders CMS content for /project/new
+ */
+import { checkAuth } from "../../lib/auth";
+
+import { getPageContent } from "../../lib/content";
+import MarkdownPage from "../../components/common/MarkdownPage.astro";
+import Hero from "../../components/common/Hero.astro";
+import ProjectForm from "../../components/project/ProjectForm.astro";
+import App from "../../components/ui/App.astro";
+// Get auth state
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+
+// Load content from CMS (slug: "project/new")
+// const pageContent = await getPageContent("project/new");
+
+// If no CMS page exists, return 404
+// if (!pageContent) {
+//   return Astro.redirect("/404");
+// }
+
+import { globalCompanyData } from "../api/global/global-company-data.ts";
+import { globalClasses } from "../api/global/global-classes.ts";
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+const { globalCompanyName, globalCompanySlogan, globalCompanyAddress, globalCompanyPhone, globalCompanyEmail, globalCompanyWebsite, globalCompanyLogo } = globalCompanyData();
+---
+
+<!-- <MarkdownPage slug="project/new" {currentUser} {session} {supabase} /> -->
+
+<App
+  title="Global Dashboard"
+  description="View all projects."
+  {currentUser}
+  {session}
+  {supabase}
+  {globalCompanyName}
+  {globalCompanySlogan}
+  {primaryTextClasses}
+  {secondaryTextClasses}
+  {globalInputClasses}
+  {globalCompanyAddress}
+  {globalCompanyPhone}
+  {globalCompanyEmail}
+  {globalCompanyWebsite}
+  {globalCompanyLogo}
+  mainClasses="overflow-x-scroll"
+>
+
+  <>
+<Hero
+title="Start a New Project"
+description="Start a new project to get started"
+{primaryTextClasses}
+{secondaryTextClasses}
+{globalInputClasses}
+/>
+
+<ProjectForm
+{currentUser}
+isNewProject={true}
+project={undefined}
+projectStatus={0}
+{globalInputClasses}
+{secondaryTextClasses}
+{primaryTextClasses}
+/>
+
+</>
+</App>

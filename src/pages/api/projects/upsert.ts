@@ -268,8 +268,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return createErrorResponse("Project author must be a client", 400);
     }
 
+    // Use supabaseAdmin for Admin/Staff users to bypass RLS, regular supabase for Clients
+    const isAdminOrStaff = userProfile.role === "Admin" || userProfile.role === "Staff";
+    const dbClient = isAdminOrStaff && supabaseAdmin ? supabaseAdmin : supabase;
+
+    if (!dbClient) {
+      return createErrorResponse("Database connection not available", 500);
+    }
+
     // Create project
-    const { data: projects, error } = await supabase
+    const { data: projects, error } = await dbClient
       .from("projects")
       .insert([projectData])
       .select();
