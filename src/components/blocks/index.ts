@@ -23,6 +23,7 @@ export { default as AlertBlock } from './AlertBlock.astro';
 export { default as PricingBlock } from './PricingBlock.astro';
 export { default as FooterBlock } from './FooterBlock.astro';
 export { default as ImageBlock } from './ImageBlock.astro';
+export { default as ListBlock } from './ListBlock.astro';
 
 // Layout blocks (wrapper components with slots)
 export { default as TwoColumnBlock } from './TwoColumnBlock.astro';

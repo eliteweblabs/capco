@@ -231,6 +231,20 @@ export const blockRegistry: Record<string, BlockDefinition> = {
       socialLinks: { type: 'string', description: 'JSON array of social links' },
     }
   },
+  
+  ListBlock: {
+    name: 'ListBlock',
+    description: 'Simple list with line breaks and tab indentation for nesting',
+    props: {
+      items: { type: 'string', required: true, description: 'List items separated by line breaks. Use tabs or 2 spaces for nesting.' },
+      title: { type: 'string', description: 'Optional section title' },
+      type: { type: 'string', default: 'unordered', description: 'List type: unordered, ordered, none' },
+      icon: { type: 'string', description: 'Font Awesome icon class for bullets' },
+      variant: { type: 'string', default: 'default', description: 'Style: default, cards, compact, spaced, checklist' },
+      iconColor: { type: 'string', description: 'Tailwind color class for icons' },
+      ...animationProps,
+    }
+  },
 };
 
 // Helper to get all block names
