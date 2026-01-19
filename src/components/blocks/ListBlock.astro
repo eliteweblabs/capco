@@ -1,0 +1,274 @@
+---
+/**
+ * ListBlock - Simple List Component
+ * 
+ * Parses text with line breaks and tab/space indentation into nested lists.
+ * Perfect for CMS content where users can type simple lists.
+ * 
+ * @example Basic usage:
+ * <ListBlock items="
+ * Item 1
+ * Item 2
+ *   Nested item 2.1
+ *   Nested item 2.2
+ *     Deeply nested 2.2.1
+ * Item 3
+ * " />
+ * 
+ * @example Ordered list:
+ * <ListBlock items="First\nSecond\nThird" type="ordered" />
+ * 
+ * @example With title:
+ * <ListBlock title="Features" items="Feature 1\nFeature 2\nFeature 3" />
+ */
+
+interface ListItem {
+  text: string;
+  children: ListItem[];
+}
+
+interface Props {
+  // List items as text with line breaks, or JSON array
+  items: string | string[];
+  
+  // List type
+  type?: 'unordered' | 'ordered' | 'none';
+  
+  // Section title
+  title?: string;
+  
+  // Icon for list items (uses bullet by default for unordered)
+  icon?: string;
+  
+  // Styling variant
+  variant?: 'default' | 'cards' | 'compact' | 'spaced' | 'checklist';
+  
+  // Icon color
+  iconColor?: string;
+  
+  // Animation
+  animate?: boolean | string;
+  animateDelay?: string;
+  
+  // Styling
+  className?: string;
+  id?: string;
+}
+
+const {
+  type = 'unordered',
+  title,
+  icon,
+  variant = 'default',
+  iconColor = 'text-primary-600 dark:text-primary-400',
+  className = '',
+  id,
+} = Astro.props;
+
+// Handle animation prop - enabled by default
+const getAnimationType = () => {
+  if (Astro.props.animate === 'false' || Astro.props.animate === false) return null;
+  if (Astro.props.animate === 'true' || Astro.props.animate === true) return 'fade-up';
+  if (typeof Astro.props.animate === 'string') return Astro.props.animate;
+  return 'fade-up'; // Default animation
+};
+const animationType = getAnimationType();
+const animateDelay = Astro.props.animateDelay;
+
+/**
+ * Parse items from string with line breaks and indentation
+ */
+function parseItems(input: string | string[]): ListItem[] {
+  // If already an array, convert to simple items
+  if (Array.isArray(input)) {
+    return input.map(text => ({ text: text.trim(), children: [] }));
+  }
+  
+  // Split by line breaks and filter empty lines
+  const lines = input
+    .split(/\r?\n/)
+    .filter(line => line.trim() !== '');
+  
+  if (lines.length === 0) return [];
+  
+  // Parse indentation levels
+  const parsedLines = lines.map(line => {
+    // Count leading tabs or spaces (2 spaces or 1 tab = 1 level)
+    const match = line.match(/^(\t*|\s*)/);
+    const indent = match ? match[0] : '';
+    
+    // Calculate indent level (tabs count as 1, every 2 spaces count as 1)
+    let level = 0;
+    for (const char of indent) {
+      if (char === '\t') {
+        level++;
+      } else if (char === ' ') {
+        level += 0.5; // 2 spaces = 1 level
+      }
+    }
+    level = Math.floor(level);
+    
+    return {
+      text: line.trim(),
+      level,
+    };
+  });
+  
+  // Build nested structure
+  function buildNested(items: Array<{text: string; level: number}>, currentLevel: number = 0): ListItem[] {
+    const result: ListItem[] = [];
+    let i = 0;
+    
+    while (i < items.length) {
+      const item = items[i];
+      
+      if (item.level === currentLevel) {
+        // Find children (items with higher level immediately following)
+        const children: Array<{text: string; level: number}> = [];
+        let j = i + 1;
+        
+        while (j < items.length && items[j].level > currentLevel) {
+          children.push(items[j]);
+          j++;
+        }
+        
+        result.push({
+          text: item.text,
+          children: children.length > 0 ? buildNested(children, currentLevel + 1) : [],
+        });
+        
+        i = j;
+      } else if (item.level > currentLevel) {
+        // This shouldn't happen with proper input, but handle gracefully
+        // Skip items that are at a deeper level than expected
+        i++;
+      } else {
+        // Item is at a shallower level, we're done with this level
+        break;
+      }
+    }
+    
+    return result;
+  }
+  
+  return buildNested(parsedLines);
+}
+
+const listItems = parseItems(Astro.props.items);
+
+// Get list tag based on type
+const ListTag = type === 'ordered' ? 'ol' : 'ul';
+
+// Variant-specific classes
+const variantClasses = {
+  default: 'space-y-2',
+  cards: 'space-y-3',
+  compact: 'space-y-1',
+  spaced: 'space-y-4',
+  checklist: 'space-y-2',
+};
+
+const itemClasses = {
+  default: '',
+  cards: 'bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-100 dark:border-gray-700',
+  compact: 'text-sm',
+  spaced: 'pb-3 border-b border-gray-100 dark:border-gray-800 last:border-0',
+  checklist: '',
+};
+
+// Get bullet/marker based on type and variant
+function getMarker(isChecklist: boolean = false): string {
+  if (icon) return icon;
+  if (isChecklist || variant === 'checklist') return 'fa-regular fa-square';
+  if (type === 'ordered') return ''; // Use default numbers
+  return 'fa-solid fa-circle text-[6px]';
+}
+---
+
+<div 
+  id={id}
+  class:list={['list-block', className]}
+  data-animate={animationType || undefined}
+  data-animate-delay={animateDelay || undefined}
+>
+  {title && (
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      {title}
+    </h3>
+  )}
+  
+  {listItems.length > 0 && (
+    <ListTag 
+      class:list={[
+        variantClasses[variant],
+        type === 'ordered' && 'list-decimal pl-6',
+        type === 'none' && 'list-none',
+      ]}
+    >
+      {listItems.map((item, index) => (
+        <li class:list={[itemClasses[variant], 'text-gray-700 dark:text-gray-300']}>
+          <div class="flex items-start gap-3">
+            {type !== 'ordered' && (
+              <span class:list={['mt-1.5 flex-shrink-0', iconColor]}>
+                <i class={getMarker()} aria-hidden="true" />
+              </span>
+            )}
+            <div class="flex-1">
+              <span set:html={item.text} />
+              
+              {/* Render nested children */}
+              {item.children.length > 0 && (
+                <ListTag 
+                  class:list={[
+                    'mt-2 ml-4',
+                    variantClasses[variant],
+                    type === 'ordered' && 'list-decimal pl-6',
+                  ]}
+                >
+                  {item.children.map((child) => (
+                    <li class:list={[itemClasses[variant], 'text-gray-600 dark:text-gray-400']}>
+                      <div class="flex items-start gap-3">
+                        {type !== 'ordered' && (
+                          <span class:list={['mt-1.5 flex-shrink-0 opacity-70', iconColor]}>
+                            <i class={getMarker()} aria-hidden="true" />
+                          </span>
+                        )}
+                        <div class="flex-1">
+                          <span set:html={child.text} />
+                          
+                          {/* Third level nesting */}
+                          {child.children.length > 0 && (
+                            <ListTag 
+                              class:list={[
+                                'mt-2 ml-4',
+                                variantClasses[variant],
+                                type === 'ordered' && 'list-decimal pl-6',
+                              ]}
+                            >
+                              {child.children.map((grandchild) => (
+                                <li class:list={[itemClasses[variant], 'text-gray-500 dark:text-gray-500']}>
+                                  <div class="flex items-start gap-3">
+                                    {type !== 'ordered' && (
+                                      <span class:list={['mt-1.5 flex-shrink-0 opacity-50', iconColor]}>
+                                        <i class={getMarker()} aria-hidden="true" />
+                                      </span>
+                                    )}
+                                    <span class="flex-1" set:html={grandchild.text} />
+                                  </div>
+                                </li>
+                              ))}
+                            </ListTag>
+                          )}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ListTag>
+              )}
+            </div>
+          </div>
+        </li>
+      ))}
+    </ListTag>
+  )}
+</div>

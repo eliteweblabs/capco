@@ -245,24 +245,21 @@ export const navigation = async (
       }
     });
 
+    const isAuth = currentUser ? true : false;
     // Add flex md:hidden class to mobile navigation items (show in mobile sidebar, hide on desktop)
-    const mobileClass = filterType === "mobile" ? "flex md:hidden" : "";
+    const mobileClass = filterType === "mobile" && !isAuth ? "flex md:hidden" : "";
 
     const results = filteredItems.map((item: NavItem) => {
       // Handle dropdown items
       if (item.isDropdown && item.dropdownItems) {
         return `
           <li class="group relative ${mobileClass}">
-            <a
-           
-              class="md:block  hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2 pr-0 whitespace-nowrap ${
-                item.isPrimary
-                  ? "text-primary dark:text-primary-dark"
-                  : "text-black dark:text-white"
-              }"
+            <a class="md:block  hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2 pr-0 whitespace-nowrap ${
+              item.isPrimary ? "text-primary dark:text-primary-dark" : "text-black dark:text-white"
+            }"
             >
               ${item.label}
-              <SimpleIcon name="chevron-down" class="ml-1 h-4 w-4" />
+              <svg class="inline-block ml-1 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
             </a>
             <div class="invisible absolute left-0 mt-2 w-64 rounded-lg border border-border-light opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100 dark:border-border-dark color-background">
               <div class="py-1">
@@ -303,7 +300,7 @@ export const navigation = async (
                 : "text-black hover:text-primary dark:text-white dark:hover:text-primary"
             }"
         >
-          ${item.label}
+          <svg class="inline-block w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>${item.label}
         </a>
       </li>`;
     });
