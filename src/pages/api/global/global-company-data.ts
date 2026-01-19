@@ -108,8 +108,27 @@ export const globalCompanyData = async () => {
 
     // OG Image for social sharing (URL path like /images/og-image.png)
     ogImage: get("og_image", "OG_IMAGE") || "",
+    
+    // Social Networks (stored as JSON array of {url: string, label?: string})
+    socialNetworks: parseSocialNetworks(get("social_networks")),
   };
 };
+
+/**
+ * Parse social networks from JSON string
+ */
+function parseSocialNetworks(value: string): Array<{url: string; label?: string}> {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(item => item && typeof item.url === 'string' && item.url.trim() !== '');
+    }
+  } catch (e) {
+    console.warn("[global-company-data] Failed to parse social_networks:", e);
+  }
+  return [];
+}
 
 //
 //

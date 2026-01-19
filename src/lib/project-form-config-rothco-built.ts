@@ -771,7 +771,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     elementType: "submit",
     label: "Save Project",
     icon: "save",
-    variant: "primary",
+    variant: "secondary",
     // cssClass:
     // "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
     allow: ["Admin", "Staff"],
@@ -786,7 +786,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     elementType: "submit",
     label: "Save Project",
     icon: "save",
-    variant: "primary",
+    variant: "secondary",
     // cssClass:
     // "flex-1 w-full lg:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-full hover:bg-primary-700 transition-colors mt-6",
     allow: ["Client"],

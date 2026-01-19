@@ -115,10 +115,9 @@ interface Props {
   className?: string;
   id?: string;
   
-  // Animation
+  // Animation (note: stagger disabled for LogoCloudBlock to preserve grayscale filters)
   animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
   animateDelay?: string;
-  animateStagger?: boolean | string;
 }
 
 const props = Astro.props;
@@ -133,7 +132,7 @@ const {
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 6);
 const grayscale = props.grayscale === 'false' ? false : (props.grayscale ?? true);
 
-// Handle animation prop - enabled by default with stagger for grids
+// Handle animation prop - enabled by default
 const getAnimationType = () => {
   if (props.animate === 'false' || props.animate === false) return null;
   if (props.animate === 'true' || props.animate === true) return 'fade-blur';
@@ -142,8 +141,6 @@ const getAnimationType = () => {
 };
 const animationType = getAnimationType();
 const animateDelay = props.animateDelay;
-// Enable stagger by default for grids, unless explicitly disabled
-const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
 
 // Build logos array
 let logoItems: Logo[] = [];
@@ -254,10 +251,7 @@ const gridClass = columnClasses[columns] || columnClasses[6];
         </div>
       </div>
     ) : variant === 'centered' ? (
-      <div 
-        class="flex flex-wrap items-center justify-evenly gap-y-8"
-        data-animate-stagger={animateStagger || undefined}
-      >
+      <div class="flex flex-wrap items-center justify-evenly gap-y-8">
         {logoItems.map((logo) => (
           logo.href ? (
             <a 
@@ -312,10 +306,7 @@ const gridClass = columnClasses[columns] || columnClasses[6];
         ))}
       </div>
     ) : (
-      <div 
-        class="flex flex-wrap items-center justify-evenly gap-y-8"
-        data-animate-stagger={animateStagger || undefined}
-      >
+      <div class="flex flex-wrap items-center justify-evenly gap-y-8">
         {logoItems.map((logo) => (
           logo.href ? (
             <a 

@@ -1,5 +1,16 @@
 ---
-const { globalCompanyName, isBackend } = Astro.props;
+interface SocialLink {
+  url: string;
+  label?: string;
+}
+
+interface Props {
+  globalCompanyName?: string;
+  isBackend?: boolean;
+  socialNetworks?: SocialLink[];
+}
+
+const { globalCompanyName, isBackend, socialNetworks = [] } = Astro.props;
 
 import { checkAuth } from "@/lib/auth";
 const { currentUser } = await checkAuth(Astro.cookies);
@@ -10,6 +21,7 @@ const theme = (themeCookie?.value as "light" | "dark") || "light";
 
 import Tooltip from "@/components/common/Tooltip.astro";
 import VapiChatWidget from "@/features/vapi-chat-widget/VapiChatWidget.astro";
+import Socials from "./Socials.astro";
 ---
 
 <footer
@@ -36,6 +48,17 @@ import VapiChatWidget from "@/features/vapi-chat-widget/VapiChatWidget.astro";
 
     <!-- Legal Links -->
   </div>
+  
+  <!-- Social Networks -->
+  {socialNetworks && socialNetworks.length > 0 && (
+    <Socials 
+      links={socialNetworks} 
+      variant="footer" 
+      size="md" 
+      colorScheme="default"
+      gap="sm"
+    />
+  )}
 
   <div class="align-center justify-center space-x-3 w-full hidden">
     <div class="flex flex-wrap items-center justify-center gap-4 md:justify-end">

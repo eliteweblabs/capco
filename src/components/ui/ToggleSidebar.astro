@@ -5,162 +5,214 @@ interface Props {
 
 const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
+const currentUrl = Astro.url.pathname;
+// Show toggle: always on mobile, only when logged in on desktop
+const responsiveClass = !currentUser ? "sm:hidden" : "";
 
-// if (!currentUser || currentRole === "Client") {
-//   return null;
-// }
+// don't show toggle button during auto and login pages
+if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login")) {
+  return null;
+}
 ---
 
+<!-- Toggle button - visible on mobile always, on desktop only when logged in -->
 <button
-  id="togglSidebarButton"
-  aria-expanded="false"
+  id="sidebarToggleButton"
+  type="button"
   aria-controls="sidebar"
-  class="inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700"
+  data-is-auth={currentUser ? "true" : "false"}
+  class={`ml-1 mr-3 inline-flex items-center p-2 text-sm text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600 ${responsiveClass}`}
 >
+  <span class="sr-only">Open sidebar</span>
   <svg
-    class="h-7 w-7"
-    data-sidebar-toggle-collapse-icon=""
+    class="w-6 h-6"
     aria-hidden="true"
+    fill="currentColor"
+    viewBox="0 0 20 20"
     xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    fill="none"
-    viewBox="0 0 24 24"
   >
-    <path stroke="currentColor" stroke-linecap="round" stroke-width="1" d="M5 7h14M5 12h14M5 17h10"
-    ></path>
-  </svg>
-  <svg
-    class="hidden h-7 w-7"
-    data-sidebar-toggle-expand-icon=""
-    aria-hidden="true"
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    fill="none"
-    viewBox="0 0 24 24"
-  >
-    <path stroke="currentColor" stroke-linecap="round" stroke-width="1" d="M5 7h14M5 12h14M5 17h14"
+    <path
+      clip-rule="evenodd"
+      fill-rule="evenodd"
+      d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"
     ></path>
   </svg>
 </button>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const toggleButton = document.getElementById("togglSidebarButton");
+    const toggleButton = document.getElementById("sidebarToggleButton");
     const sidebar = document.getElementById("sidebar");
-    const collapseIcon = document.querySelector("[data-sidebar-toggle-collapse-icon]");
-    const expandIcon = document.querySelector("[data-sidebar-toggle-expand-icon]");
-    const sidebarCollapseHide = document.querySelectorAll("[data-sidebar-collapse-hide]");
+    const mainContent = document.getElementById("main-content");
+    const collapseHideElements = document.querySelectorAll("[data-sidebar-collapse-hide]");
+    const collapseShowElements = document.querySelectorAll("[data-sidebar-collapse-show]");
 
-    if (toggleButton && sidebar) {
-      // Initialize sidebar state from localStorage
-      const initSidebar = () => {
-        const isExpanded = localStorage.getItem("sidebaranded") === "true";
-        const sessionExpanded = sessionStorage.getItem("sidebaranded") === "true";
+    if (!toggleButton || !sidebar) return;
 
-        // Check if we're on mobile (screen width < 640px)
-        const isMobile = window.innerWidth < 640;
+    // Check if user is authenticated
+    const isAuth = toggleButton.getAttribute("data-is-auth") === "true";
 
-        if (isMobile) {
-          // On mobile, always start collapsed but visible
-          collapseSidebar();
-        } else if (sessionExpanded && !isExpanded) {
-          // Session storage overrides localStorage
-          collapseSidebar();
-        } else if (isExpanded) {
-          expandSidebar();
+    // Check if mobile (< 640px)
+    const isMobile = () => window.innerWidth < 640;
+
+    // Track if sidebar is expanded (for desktop hover behavior)
+    let isHovering = false;
+
+    // Lock body scroll (mobile only)
+    const lockBodyScroll = () => {
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+    };
+
+    // Unlock body scroll
+    const unlockBodyScroll = () => {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    };
+
+    // Show collapse-hide elements (expanded state)
+    const showCollapseElements = () => {
+      collapseHideElements.forEach((el) => el.classList.remove("hidden"));
+      collapseShowElements.forEach((el) => el.classList.add("hidden"));
+      collapseShowElements.forEach((el) => el.classList.remove("flex"));
+    };
+
+    // Hide collapse-hide elements (collapsed state)
+    const hideCollapseElements = () => {
+      collapseHideElements.forEach((el) => el.classList.add("hidden"));
+      collapseShowElements.forEach((el) => el.classList.remove("hidden"));
+      collapseShowElements.forEach((el) => el.classList.add("flex"));
+    };
+
+    // MOBILE: Show sidebar (slide in)
+    const showSidebarMobile = () => {
+      sidebar.classList.remove("-translate-x-full");
+      sidebar.classList.add("translate-x-0");
+      sidebar.classList.remove("w-16");
+      sidebar.classList.add("w-64");
+      showCollapseElements();
+      lockBodyScroll();
+      if (mainContent) {
+        mainContent.classList.add("overflow-hidden", "blur-sm", "pointer-events-none");
+      }
+      toggleButton.setAttribute("aria-expanded", "true");
+    };
+
+    // MOBILE: Hide sidebar (slide out)
+    const hideSidebarMobile = () => {
+      sidebar.classList.remove("translate-x-0");
+      sidebar.classList.add("-translate-x-full");
+      unlockBodyScroll();
+      if (mainContent) {
+        mainContent.classList.remove("overflow-hidden", "blur-sm", "pointer-events-none");
+      }
+      toggleButton.setAttribute("aria-expanded", "false");
+    };
+
+    // DESKTOP: Expand sidebar (show text labels)
+    const expandSidebarDesktop = () => {
+      sidebar.classList.remove("w-16");
+      sidebar.classList.add("w-64");
+      showCollapseElements();
+      if (mainContent) {
+        mainContent.classList.remove("sm:ml-16");
+        mainContent.classList.add("sm:ml-64");
+      }
+      toggleButton.setAttribute("aria-expanded", "true");
+    };
+
+    // DESKTOP: Collapse sidebar (icons only)
+    const collapseSidebarDesktop = () => {
+      sidebar.classList.remove("w-64");
+      sidebar.classList.add("w-16");
+      hideCollapseElements();
+      if (mainContent) {
+        mainContent.classList.remove("sm:ml-64");
+        mainContent.classList.add("sm:ml-16");
+      }
+      toggleButton.setAttribute("aria-expanded", "false");
+    };
+
+    // Toggle handler
+    toggleButton.addEventListener("click", () => {
+      if (isMobile()) {
+        // Mobile: slide in/out
+        const isHidden = sidebar.classList.contains("-translate-x-full");
+        if (isHidden) {
+          showSidebarMobile();
         } else {
-          collapseSidebar();
+          hideSidebarMobile();
         }
-      };
-
-      // Expand sidebar function
-      const expandSidebar = () => {
-        // Show sidebar with full width
-        sidebar.classList.remove("w-16");
-        sidebar.classList.add("w-64");
-
-        sidebarCollapseHide.forEach((item) => {
-          item.classList.remove("hidden");
-        });
-
-        // Update button state
-        toggleButton.setAttribute("aria-expanded", "true");
-
-        // Toggle icons
-        if (collapseIcon) collapseIcon.classList.remove("hidden");
-        if (expandIcon) expandIcon.classList.add("hidden");
-
-        // Save state
-        localStorage.setItem("sidebaranded", "true");
-      };
-
-      // Collapse sidebar function
-      const collapseSidebar = () => {
-        // Collapse sidebar to narrow width but keep it visible
-        sidebar.classList.remove("w-64");
-        sidebar.classList.add("w-16");
-
-        sidebarCollapseHide.forEach((item) => {
-          item.classList.add("hidden");
-        });
-
-        // Update button state
-        toggleButton.setAttribute("aria-expanded", "false");
-
-        // Toggle icons
-        if (collapseIcon) collapseIcon.classList.add("hidden");
-        if (expandIcon) expandIcon.classList.remove("hidden");
-
-        // Save state
-        localStorage.setItem("sidebaranded", "false");
-      };
-
-      // Click event handler
-      toggleButton.addEventListener("click", () => {
-        sessionStorage.setItem("sidebaranded", "true");
-
-        if (toggleButton.getAttribute("aria-expanded") === "true") {
-          collapseSidebar();
+      } else {
+        // Desktop: expand/collapse (icons only vs full)
+        const isCollapsed = sidebar.classList.contains("w-16");
+        if (isCollapsed) {
+          expandSidebarDesktop();
         } else {
-          expandSidebar();
+          collapseSidebarDesktop();
         }
-      });
+      }
+    });
 
-      // Mouse enter event (for hover behavior)
-      let isHovering = false;
+    // Desktop hover behavior: expand on hover, collapse on leave
+    if (isAuth) {
       sidebar.addEventListener("mouseenter", () => {
-        // Only expand if sidebar is currently collapsed
-        if (toggleButton.getAttribute("aria-expanded") === "false") {
+        if (!isMobile() && sidebar.classList.contains("w-16")) {
           isHovering = true;
-          sessionStorage.setItem("sidebaranded", "false");
-          expandSidebar();
+          expandSidebarDesktop();
         }
       });
 
-      // Mouse leave event
       sidebar.addEventListener("mouseleave", () => {
-        if (isHovering) {
+        if (!isMobile() && isHovering) {
           isHovering = false;
-          sessionStorage.setItem("sidebaranded", "true");
-          collapseSidebar();
+          collapseSidebarDesktop();
         }
       });
+    }
 
-      // Initialize sidebar on page load
-      initSidebar();
-
-      // Handle window resize for responsive behavior
-      window.addEventListener("resize", () => {
-        const isMobile = window.innerWidth < 640;
-        const isCurrentlyExpanded = toggleButton.getAttribute("aria-expanded") === "true";
-
-        if (isMobile && isCurrentlyExpanded) {
-          // On mobile, collapse to narrow width but keep visible
-          collapseSidebar();
+    // Close on escape key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
+          hideSidebarMobile();
         }
-      });
+      }
+    });
+
+    // Handle resize
+    window.addEventListener("resize", () => {
+      if (!isMobile()) {
+        // Switching to desktop
+        unlockBodyScroll();
+        if (mainContent) {
+          mainContent.classList.remove("overflow-hidden", "blur-sm", "pointer-events-none");
+        }
+        // On desktop with auth: show collapsed sidebar
+        if (isAuth) {
+          sidebar.classList.remove("-translate-x-full");
+          sidebar.classList.add("translate-x-0");
+          collapseSidebarDesktop();
+        }
+      } else {
+        // Switching to mobile
+        if (mainContent) {
+          mainContent.classList.remove("sm:ml-64", "sm:ml-16");
+        }
+        // Hide sidebar on mobile
+        hideSidebarMobile();
+      }
+    });
+
+    // Initialize
+    if (isMobile()) {
+      // Mobile: sidebar hidden by default
+      sidebar.classList.add("-translate-x-full");
+    } else if (isAuth) {
+      // Desktop with auth: show collapsed sidebar (icons only)
+      sidebar.classList.remove("-translate-x-full");
+      sidebar.classList.add("translate-x-0");
+      collapseSidebarDesktop();
     }
   });
 </script>

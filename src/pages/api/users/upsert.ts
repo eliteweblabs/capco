@@ -187,10 +187,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Check if user with this email already exists (for new users)
     if (!userData.id) {
+      // Use lowercase for case-insensitive comparison (auth stores emails lowercase)
+      const normalizedEmail = userData.email.trim().toLowerCase();
+      
       const { data: existingUser } = await supabaseAdmin
         .from("profiles")
         .select("id, email")
-        .eq("email", userData.email.trim())
+        .ilike("email", normalizedEmail)
         .single();
 
       if (existingUser) {
@@ -198,6 +201,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           JSON.stringify({
             error: "User already exists",
             details: `A user with email ${userData.email} already exists`,
+            existingUserId: existingUser.id,
           }),
           { status: 409, headers: { "Content-Type": "application/json" } }
         );
@@ -283,16 +287,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       authData = newAuthData;
 
-      // Create profile in database
+      // Create or update profile in database (use upsert to handle case where
+      // auth user exists but profile was deleted or never created)
       const { data, error } = await supabaseAdmin
         .from("profiles")
-        .insert([
+        .upsert(
           {
             ...userPayload,
             id: authData.user.id,
             createdAt: new Date().toISOString(),
           },
-        ])
+          { onConflict: "id" }
+        )
         .select()
         .single();
 
