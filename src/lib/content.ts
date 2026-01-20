@@ -206,7 +206,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
 
       const featureCount = Object.keys(config.features || {}).length;
       const configFileName = configPath.split("/").pop() || "site-config.json";
-      console.log(`✅ [CONTENT] Loaded ${configFileName} (navigation & features) - ${featureCount} features enabled`);
+      // console.log(`✅ [CONTENT] Loaded ${configFileName} (navigation & features) - ${featureCount} features enabled`);
     } catch (error) {
       console.warn("⚠️ [CONTENT] Error reading site-config.json, using defaults:", error);
     }
@@ -223,7 +223,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
           config.features = jsonConfig.features;
         }
         const featureCount = Object.keys(config.features || {}).length;
-        console.log(`✅ [CONTENT] Loaded site-config from SITE_CONFIG_JSON env var - ${featureCount} features enabled`);
+        // console.log(`✅ [CONTENT] Loaded site-config from SITE_CONFIG_JSON env var - ${featureCount} features enabled`);
       } catch (error) {
         console.warn("⚠️ [CONTENT] Error parsing SITE_CONFIG_JSON env var:", error);
       }
@@ -318,7 +318,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
       const normalizedSlug = slug === "home" || slug === "/" ? ["home", "/"] : [slug];
       
       let query = supabaseAdmin
-        .from("cms_pages")
+        .from("cmsPages")
         .select("*")
         .in("slug", normalizedSlug)
         .eq("is_active", true);

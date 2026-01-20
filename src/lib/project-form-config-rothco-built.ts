@@ -7,7 +7,7 @@
 // 2. Customize the UNIFIED_FORM_ELEMENTS array as needed
 // 3. The loader will automatically use it based on the company name slug
 //
-// Company name slug is generated from RAILWAY_PROJECT_NAME or global_settings.company_name
+// Company name slug is generated from RAILWAY_PROJECT_NAME or globalSettings.company_name
 // by converting to lowercase, removing special chars, and replacing spaces with hyphens
 
 export interface FormFieldConfig {

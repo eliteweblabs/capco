@@ -77,7 +77,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       try {
         // First, check if the setting exists (use maybeSingle to avoid error if not found)
         const { data: existing, error: checkError } = await supabaseAdmin
-          .from("global_settings")
+          .from("globalSettings")
           .select("id")
           .eq("key", key)
           .maybeSingle();
@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Update existing record
           console.log(`[settings/update] Updating existing setting: ${key}`);
           const { error: updateError } = await supabaseAdmin
-            .from("global_settings")
+            .from("globalSettings")
             .update(settingData)
             .eq("key", key);
           error = updateError;
@@ -122,7 +122,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           // Insert new record
           console.log(`[settings/update] Inserting new setting: ${key}`);
           const { error: insertError } = await supabaseAdmin
-            .from("global_settings")
+            .from("globalSettings")
             .insert(settingData);
           error = insertError;
         }

@@ -2,7 +2,7 @@
 
 ## Quick Setup
 
-The `cms_pages` table needs to be created in your Supabase database. Here are two ways to do it:
+The `cmsPages` table needs to be created in your Supabase database. Here are two ways to do it:
 
 ## Option 1: Via Supabase Dashboard (Recommended)
 
@@ -21,7 +21,7 @@ The `cms_pages` table needs to be created in your Supabase database. Here are tw
 
 4. **Verify Table Created**
    - Go to **Table Editor** in the left sidebar
-   - You should see `cms_pages` table listed
+   - You should see `cmsPages` table listed
    - Click on it to verify the columns are correct
 
 ## Option 2: Via Supabase CLI (If Installed)
@@ -41,7 +41,7 @@ supabase db push --file sql-queriers/create-cms-pages-table.sql
 
 ## What This Migration Creates
 
-- ✅ `cms_pages` table with all necessary columns
+- ✅ `cmsPages` table with all necessary columns
 - ✅ Unique constraint on `(slug, client_id)` for multi-client support
 - ✅ Indexes for fast lookups
 - ✅ Row Level Security (RLS) enabled
@@ -57,7 +57,7 @@ supabase db push --file sql-queriers/create-cms-pages-table.sql
 
 2. **Verify in Database**
    - Check Supabase Table Editor
-   - You should see your new page in the `cms_pages` table
+   - You should see your new page in the `cmsPages` table
 
 ## Troubleshooting
 
@@ -67,4 +67,4 @@ If you get an error about permissions:
 
 If the table already exists:
 - The migration uses `CREATE TABLE IF NOT EXISTS`, so it's safe to run again
-- If you need to recreate it, drop it first: `DROP TABLE IF EXISTS cms_pages CASCADE;`
+- If you need to recreate it, drop it first: `DROP TABLE IF EXISTS cmsPages CASCADE;`

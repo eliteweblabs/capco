@@ -118,6 +118,14 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       statusesData = result.data;
       statusesError = result.error;
 
+      console.log("🔍 [PROJECT-STATUSES-API] Database query result:", {
+        hasData: !!statusesData,
+        isArray: Array.isArray(statusesData),
+        dataLength: Array.isArray(statusesData) ? statusesData.length : "N/A",
+        hasError: !!statusesError,
+        error: statusesError,
+      });
+
       if (statusesError) {
         console.error("❌ [PROJECT-STATUSES-API] Database error:", statusesError);
         return new Response(JSON.stringify({ error: "Failed to fetch statuses" }), {
@@ -125,6 +133,35 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           headers: { "Content-Type": "application/json" },
         });
       }
+    }
+
+    // Check if statusesData is valid
+    if (!statusesData || !Array.isArray(statusesData)) {
+      console.error("❌ [PROJECT-STATUSES-API] Invalid statusesData:", {
+        statusesData,
+        type: typeof statusesData,
+        isNull: statusesData === null,
+        isUndefined: statusesData === undefined,
+      });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          statuses: {},
+          selectOptions: [],
+          error: "No statuses found in database",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (statusesData.length === 0) {
+      console.warn("⚠️ [PROJECT-STATUSES-API] Database returned empty array - no statuses found");
+      console.warn("⚠️ [PROJECT-STATUSES-API] This means the projectStatuses table has no rows (or all have statusCode = 0)");
+    } else {
+      console.log(`✅ [PROJECT-STATUSES-API] Found ${statusesData.length} statuses in database`);
     }
 
     let placeholderData: any = null;

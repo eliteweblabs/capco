@@ -63,7 +63,7 @@ The server is configured to allow connections from:
 
 ### Database Integration
 
-- ✅ **Message persistence** - messages saved to Supabase `chat_messages` table
+- ✅ **Message persistence** - messages saved to Supabase `chatMessages` table
 - ✅ **Chat history** - new users get recent message history
 - ✅ **Automatic cleanup** - old messages (30+ days) are automatically deleted
 
@@ -144,17 +144,17 @@ Make sure your production environment has:
 
 ## 🔒 Security
 
-- **Row Level Security (RLS)** enabled on `chat_messages` table
+- **Row Level Security (RLS)** enabled on `chatMessages` table
 - **Admin/Staff only** access enforced
 - **Service Role Key** used for server operations (bypasses RLS)
 - **CORS protection** with specific allowed origins
 
 ## 📊 Database Schema
 
-Uses the existing `chat_messages` table:
+Uses the existing `chatMessages` table:
 
 ```sql
-CREATE TABLE chat_messages (
+CREATE TABLE chatMessages (
   id SERIAL PRIMARY KEY,
   user_id UUID NOT NULL,
   user_name TEXT NOT NULL,

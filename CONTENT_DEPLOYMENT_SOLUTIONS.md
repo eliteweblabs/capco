@@ -78,7 +78,7 @@ RUN if [ ! -d "content/pages" ]; then \
 **Best for:** Dynamic content, CMS-like functionality
 
 **Changes:**
-1. Create `cms_pages` table in Supabase
+1. Create `cmsPages` table in Supabase
 2. Modify `getPageContent()` to check database first, then files
 3. Store markdown content in database
 
@@ -95,7 +95,7 @@ RUN if [ ! -d "content/pages" ]; then \
 
 **Implementation:**
 ```sql
-CREATE TABLE cms_pages (
+CREATE TABLE cmsPages (
   id SERIAL PRIMARY KEY,
   slug TEXT UNIQUE NOT NULL,
   title TEXT,

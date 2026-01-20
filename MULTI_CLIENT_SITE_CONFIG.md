@@ -8,7 +8,7 @@ The site configuration system now uses the same pattern as `project-form-config`
 
 ## How It Works
 
-1. **Company Name Detection**: Gets company name from `global_settings.company_name` or `RAILWAY_PROJECT_NAME` env var
+1. **Company Name Detection**: Gets company name from `globalSettings.company_name` or `RAILWAY_PROJECT_NAME` env var
 2. **Slug Generation**: Converts to slug using same logic as `project-form-config.ts`:
    - "CAPCo Design Group" → `capco-design-group`
    - "Rothco Built" → `rothco-built`

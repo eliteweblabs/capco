@@ -23,7 +23,7 @@ This guide helps you export critical configuration data from your production dat
 - `files` - Document files and metadata
 - `invoices` - Financial records
 - `payments` - Payment information
-- `direct_messages` - User communications
+- `directMessages` - User communications
 - `notifications` - User notifications
 
 ## Step-by-Step Export Process

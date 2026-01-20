@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS generated_documents (
 );
 
 -- Document Components table - tracks which components were used in each generated document
-CREATE TABLE IF NOT EXISTS document_components (
+CREATE TABLE IF NOT EXISTS documentComponents (
     id SERIAL PRIMARY KEY,
     document_id INTEGER REFERENCES generated_documents(id) ON DELETE CASCADE,
     component_id INTEGER REFERENCES pdf_components(id),
@@ -72,7 +72,7 @@ CREATE INDEX IF NOT EXISTS idx_pdf_components_active ON pdf_components(is_active
 CREATE INDEX IF NOT EXISTS idx_pdf_components_type ON pdf_components(component_type);
 CREATE INDEX IF NOT EXISTS idx_generated_documents_project ON generated_documents(project_id);
 CREATE INDEX IF NOT EXISTS idx_generated_documents_status ON generated_documents(generation_status);
-CREATE INDEX IF NOT EXISTS idx_document_components_document ON document_components(document_id);
+CREATE INDEX IF NOT EXISTS idx_documentComponents_document ON documentComponents(document_id);
 
 -- Enable RLS on all tables (only if not already enabled)
 DO $$ 
@@ -123,10 +123,10 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM pg_class 
-        WHERE relname = 'document_components' 
+        WHERE relname = 'documentComponents' 
         AND relrowsecurity = true
     ) THEN
-        ALTER TABLE document_components ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE documentComponents ENABLE ROW LEVEL SECURITY;
     END IF;
 END $$;
 
@@ -366,21 +366,21 @@ CREATE POLICY "generated_documents_delete_own_or_admin" ON generated_documents
         )
     );
 
--- Drop and recreate document_components policies
-DROP POLICY IF EXISTS "document_components_select_own_or_admin" ON document_components;
-DROP POLICY IF EXISTS "document_components_insert_own_or_admin" ON document_components;
-DROP POLICY IF EXISTS "document_components_update_own_or_admin" ON document_components;
-DROP POLICY IF EXISTS "document_components_delete_own_or_admin" ON document_components;
+-- Drop and recreate documentComponents policies
+DROP POLICY IF EXISTS "documentComponents_select_own_or_admin" ON documentComponents;
+DROP POLICY IF EXISTS "documentComponents_insert_own_or_admin" ON documentComponents;
+DROP POLICY IF EXISTS "documentComponents_update_own_or_admin" ON documentComponents;
+DROP POLICY IF EXISTS "documentComponents_delete_own_or_admin" ON documentComponents;
 
--- RLS Policies for document_components
-CREATE POLICY "document_components_select_own_or_admin" ON document_components
+-- RLS Policies for documentComponents
+CREATE POLICY "documentComponents_select_own_or_admin" ON documentComponents
     FOR SELECT USING (
         auth.uid() IS NOT NULL AND (
             -- Users can see components for their own project documents
             EXISTS (
                 SELECT 1 FROM generated_documents gd
                 JOIN projects p ON p.id = gd.project_id
-                WHERE gd.id = document_components.document_id 
+                WHERE gd.id = documentComponents.document_id 
                 AND p.author_id = auth.uid()
             )
             OR
@@ -393,14 +393,14 @@ CREATE POLICY "document_components_select_own_or_admin" ON document_components
         )
     );
 
-CREATE POLICY "document_components_insert_own_or_admin" ON document_components
+CREATE POLICY "documentComponents_insert_own_or_admin" ON documentComponents
     FOR INSERT WITH CHECK (
         auth.uid() IS NOT NULL AND (
             -- Users can create components for their own project documents
             EXISTS (
                 SELECT 1 FROM generated_documents gd
                 JOIN projects p ON p.id = gd.project_id
-                WHERE gd.id = document_components.document_id 
+                WHERE gd.id = documentComponents.document_id 
                 AND p.author_id = auth.uid()
             )
             OR
@@ -413,14 +413,14 @@ CREATE POLICY "document_components_insert_own_or_admin" ON document_components
         )
     );
 
-CREATE POLICY "document_components_update_own_or_admin" ON document_components
+CREATE POLICY "documentComponents_update_own_or_admin" ON documentComponents
     FOR UPDATE USING (
         auth.uid() IS NOT NULL AND (
             -- Users can update components for their own project documents
             EXISTS (
                 SELECT 1 FROM generated_documents gd
                 JOIN projects p ON p.id = gd.project_id
-                WHERE gd.id = document_components.document_id 
+                WHERE gd.id = documentComponents.document_id 
                 AND p.author_id = auth.uid()
             )
             OR
@@ -433,14 +433,14 @@ CREATE POLICY "document_components_update_own_or_admin" ON document_components
         )
     );
 
-CREATE POLICY "document_components_delete_own_or_admin" ON document_components
+CREATE POLICY "documentComponents_delete_own_or_admin" ON documentComponents
     FOR DELETE USING (
         auth.uid() IS NOT NULL AND (
             -- Users can delete components for their own project documents
             EXISTS (
                 SELECT 1 FROM generated_documents gd
                 JOIN projects p ON p.id = gd.project_id
-                WHERE gd.id = document_components.document_id 
+                WHERE gd.id = documentComponents.document_id 
                 AND p.author_id = auth.uid()
             )
             OR

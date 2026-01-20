@@ -3,16 +3,16 @@
 
 -- Check which key tables exist
 SELECT 
-  'global_settings' as table_name,
+  'globalSettings' as table_name,
   CASE WHEN EXISTS (
     SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'public' AND table_name = 'global_settings'
+    WHERE table_schema = 'public' AND table_name = 'globalSettings'
   ) THEN '✅ EXISTS' ELSE '❌ MISSING' END as status
 UNION ALL
-SELECT 'cms_pages',
+SELECT 'cmsPages',
   CASE WHEN EXISTS (
     SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'public' AND table_name = 'cms_pages'
+    WHERE table_schema = 'public' AND table_name = 'cmsPages'
   ) THEN '✅ EXISTS' ELSE '❌ MISSING' END
 UNION ALL
 SELECT 'ai_agent_conversations',
@@ -33,10 +33,10 @@ SELECT 'chatMessages',
     WHERE table_schema = 'public' AND table_name = 'chatMessages'
   ) THEN '✅ EXISTS' ELSE '❌ MISSING' END
 UNION ALL
-SELECT 'chat_messages',
+SELECT 'chatMessages',
   CASE WHEN EXISTS (
     SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'public' AND table_name = 'chat_messages'
+    WHERE table_schema = 'public' AND table_name = 'chatMessages'
   ) THEN '✅ EXISTS' ELSE '❌ MISSING' END
 ORDER BY table_name;
 
@@ -45,6 +45,6 @@ SELECT
   category,
   COUNT(*) as count,
   string_agg(key, ', ' ORDER BY key) as keys
-FROM global_settings
+FROM globalSettings
 GROUP BY category
 ORDER BY category;

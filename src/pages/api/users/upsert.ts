@@ -321,7 +321,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // Get email templates from database
       const { data: userTemplate } = await supabaseAdmin
-        .from("globalOptions")
+        .from("globalSettings")
         .select("value")
         .eq(
           "key",

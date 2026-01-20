@@ -41,7 +41,7 @@ export const navigation = async (
     if (supabaseAdmin) {
       const clientId = process.env.RAILWAY_PROJECT_NAME || null;
       let query = supabaseAdmin
-        .from("cms_pages")
+        .from("cmsPages")
         .select(
           "slug, title, include_in_navigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
         )
@@ -64,7 +64,7 @@ export const navigation = async (
       if (error && error.code === "42703") {
         // Column doesn't exist, use title ordering instead
         let fallbackQuery = supabaseAdmin
-          .from("cms_pages")
+          .from("cmsPages")
           .select(
             "slug, title, include_in_navigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
           )

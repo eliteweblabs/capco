@@ -48,7 +48,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     // Fetch global files
     if (!source || source === "global") {
       const { data, error } = await supabaseAdmin
-        .from("files_global")
+        .from("filesGlobal")
         .select("*")
         .order("uploadedAt", { ascending: false })
         .limit(200);
@@ -135,9 +135,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .from("project-media")
       .getPublicUrl(filePath);
 
-    // Save to files_global table
+    // Save to filesGlobal table
     const { data: fileRecord, error: dbError } = await supabaseAdmin
-      .from("files_global")
+      .from("filesGlobal")
       .insert({
         name: fileName,
         fileName: fileName,
@@ -225,7 +225,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     
     if (source === "global") {
       const { data: file, error: fetchError } = await supabaseAdmin
-        .from("files_global")
+        .from("filesGlobal")
         .select("filePath")
         .eq("id", fileIdInt)
         .single();
@@ -242,12 +242,12 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
       // Delete from database
       const { error: deleteError } = await supabaseAdmin
-        .from("files_global")
+        .from("filesGlobal")
         .delete()
         .eq("id", fileIdInt);
       
       if (deleteError) {
-        console.error("❌ [ADMIN-MEDIA] Error deleting from files_global:", deleteError);
+        console.error("❌ [ADMIN-MEDIA] Error deleting from filesGlobal:", deleteError);
         return new Response(
           JSON.stringify({ success: false, error: "Failed to delete from database" }),
           { status: 500, headers: { "Content-Type": "application/json" } }

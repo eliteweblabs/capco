@@ -81,7 +81,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const { data, content } = matter(fileContent);
 
         const { data: dbPage, error } = await supabaseAdmin
-          .from("cms_pages")
+          .from("cmsPages")
           .upsert(
             {
               slug,

@@ -11,7 +11,7 @@
 -- WARNING: This will DELETE ALL DATA in these tables!
 
 -- Drop tables with foreign key dependencies first (children before parents)
-DROP TABLE IF EXISTS document_components CASCADE;
+DROP TABLE IF EXISTS documentComponents CASCADE;
 DROP TABLE IF EXISTS template_component_mapping CASCADE;
 DROP TABLE IF EXISTS generated_documents CASCADE;
 DROP TABLE IF EXISTS pdf_components CASCADE;
@@ -25,8 +25,8 @@ DROP TABLE IF EXISTS punchlist CASCADE;
 DROP TABLE IF EXISTS discussion CASCADE;
 DROP TABLE IF EXISTS files CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS direct_messages CASCADE;
-DROP TABLE IF EXISTS chat_messages CASCADE;
+DROP TABLE IF EXISTS directMessages CASCADE;
+DROP TABLE IF EXISTS chatMessages CASCADE;
 DROP TABLE IF EXISTS feedback CASCADE;
 DROP TABLE IF EXISTS demo_bookings CASCADE;
 DROP TABLE IF EXISTS project_statuses CASCADE;
@@ -191,8 +191,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   "createdAt" timestamp with time zone DEFAULT now()
 );
 
--- direct_messages table
-CREATE TABLE IF NOT EXISTS direct_messages (
+-- directMessages table
+CREATE TABLE IF NOT EXISTS directMessages (
   id serial PRIMARY KEY,
   "fromUser" uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   "toUser" uuid REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -204,8 +204,8 @@ CREATE TABLE IF NOT EXISTS direct_messages (
   "createdAt" timestamp with time zone DEFAULT now()
 );
 
--- chat_messages table
-CREATE TABLE IF NOT EXISTS chat_messages (
+-- chatMessages table
+CREATE TABLE IF NOT EXISTS chatMessages (
   id serial PRIMARY KEY,
   "userId" uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   "userName" text,
@@ -409,8 +409,8 @@ CREATE TABLE IF NOT EXISTS template_component_mapping (
   "createdAt" timestamp with time zone DEFAULT now()
 );
 
--- document_components table
-CREATE TABLE IF NOT EXISTS document_components (
+-- documentComponents table
+CREATE TABLE IF NOT EXISTS documentComponents (
   id serial PRIMARY KEY,
   "documentId" integer,
   "componentId" integer REFERENCES pdf_components(id) ON DELETE CASCADE,
@@ -492,8 +492,8 @@ CREATE INDEX IF NOT EXISTS idx_files_author_id ON files("authorId");
 CREATE INDEX IF NOT EXISTS idx_discussion_project_id ON discussion("projectId");
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications("userId");
 CREATE INDEX IF NOT EXISTS idx_notifications_viewed ON notifications(viewed);
-CREATE INDEX IF NOT EXISTS idx_direct_messages_from_user ON direct_messages("fromUser");
-CREATE INDEX IF NOT EXISTS idx_direct_messages_to_user ON direct_messages("toUser");
+CREATE INDEX IF NOT EXISTS idx_directMessages_from_user ON directMessages("fromUser");
+CREATE INDEX IF NOT EXISTS idx_directMessages_to_user ON directMessages("toUser");
 
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS)
@@ -506,8 +506,8 @@ ALTER TABLE files ENABLE ROW LEVEL SECURITY;
 ALTER TABLE discussion ENABLE ROW LEVEL SECURITY;
 ALTER TABLE punchlist ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE direct_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE directMessages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chatMessages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE demo_bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
@@ -635,12 +635,12 @@ CREATE POLICY "Users can update own notifications"
 
 -- Direct Messages RLS Policies
 CREATE POLICY "Users can view own messages"
-  ON direct_messages FOR SELECT
+  ON directMessages FOR SELECT
   TO authenticated
   USING ("fromUser" = auth.uid() OR "toUser" = auth.uid());
 
 CREATE POLICY "Users can send messages"
-  ON direct_messages FOR INSERT
+  ON directMessages FOR INSERT
   TO authenticated
   WITH CHECK ("fromUser" = auth.uid());
 

@@ -84,7 +84,7 @@ ALTER TABLE "demoBookings" DROP CONSTRAINT IF EXISTS demo_bookings_assigned_to_f
 ALTER TABLE "demoBookings" ADD CONSTRAINT demoBookings_assignedTo_fkey FOREIGN KEY ("assignedTo") REFERENCES auth.users(id);
 
 -- 14. Fix chatMessages table foreign key constraints
-ALTER TABLE "chatMessages" DROP CONSTRAINT IF EXISTS chat_messages_user_id_fkey;
+ALTER TABLE "chatMessages" DROP CONSTRAINT IF EXISTS chatMessages_user_id_fkey;
 ALTER TABLE "chatMessages" ADD CONSTRAINT chatMessages_userId_fkey FOREIGN KEY ("userId") REFERENCES auth.users(id);
 
 -- Success message

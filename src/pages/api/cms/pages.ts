@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (slug) {
       // Get specific page
       let query = supabaseAdmin
-        .from("cms_pages")
+        .from("cmsPages")
         .select("*")
         .eq("slug", slug);
       
@@ -52,7 +52,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     } else {
       // Get all pages
       let query = supabaseAdmin
-        .from("cms_pages")
+        .from("cmsPages")
         .select("*");
       
       // Filter by client_id: show global (null) or matching client_id
@@ -68,7 +68,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       // If ordering by display_order fails (column doesn't exist), fall back to slug ordering
       if (error && error.code === "42703") {
         // Column doesn't exist, use slug ordering instead
-        let fallbackQuery = supabaseAdmin.from("cms_pages").select("*");
+        let fallbackQuery = supabaseAdmin.from("cmsPages").select("*");
         if (clientId) {
           fallbackQuery = fallbackQuery.or(`client_id.is.null,client_id.eq.${clientId}`);
         }
@@ -145,13 +145,13 @@ export const POST: APIRoute = async ({ request }) => {
     const clientId = process.env.RAILWAY_PROJECT_NAME || null;
 
     // First, verify the table exists by attempting a simple query
-    const { error: tableCheckError } = await supabaseAdmin.from("cms_pages").select("id").limit(1);
+    const { error: tableCheckError } = await supabaseAdmin.from("cmsPages").select("id").limit(1);
 
     if (tableCheckError) {
       // Check if it's a "relation does not exist" error
       if (tableCheckError.code === "42P01" || tableCheckError.message?.includes("does not exist")) {
         throw new Error(
-          "The cms_pages table does not exist. Please run the SQL migration: sql-queriers/create-cms-pages-table.sql"
+          "The cmsPages table does not exist. Please run the SQL migration: sql-queriers/create-cms-pages-table.sql"
         );
       }
       console.error("❌ [CMS-PAGES] Error checking table:", tableCheckError);
@@ -159,7 +159,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Check if page already exists
-    let query = supabaseAdmin.from("cms_pages").select("*").eq("slug", slug);
+    let query = supabaseAdmin.from("cmsPages").select("*").eq("slug", slug);
 
     if (clientId) {
       query = query.eq("client_id", clientId);
@@ -195,7 +195,7 @@ export const POST: APIRoute = async ({ request }) => {
       };
 
       const result = await supabaseAdmin
-        .from("cms_pages")
+        .from("cmsPages")
         .update(updateData)
         .eq("id", existingPage.id)
         .select()
@@ -228,7 +228,7 @@ export const POST: APIRoute = async ({ request }) => {
       // For now, we'll let it default to NULL if column doesn't exist
       // The migration will set initial values
 
-      const result = await supabaseAdmin.from("cms_pages").insert(insertData).select().single();
+      const result = await supabaseAdmin.from("cmsPages").insert(insertData).select().single();
 
       data = result.data;
       error = result.error;
@@ -283,7 +283,7 @@ export const DELETE: APIRoute = async ({ request, url }) => {
 
     const clientId = process.env.RAILWAY_PROJECT_NAME || null;
 
-    let deleteQuery = supabaseAdmin.from("cms_pages").delete().eq("slug", slug);
+    let deleteQuery = supabaseAdmin.from("cmsPages").delete().eq("slug", slug);
 
     if (clientId) {
       deleteQuery = deleteQuery.eq("client_id", clientId);
@@ -333,7 +333,7 @@ export const PUT: APIRoute = async ({ request }) => {
     // Update display_order for each page
     const updatePromises = orders.map((item: { id: string; display_order: number }) =>
       supabaseAdmin
-        .from("cms_pages")
+        .from("cmsPages")
         .update({ display_order: item.display_order })
         .eq("id", item.id)
     );

@@ -37,8 +37,8 @@ Or go to Supabase Dashboard → SQL Editor → Paste and run the SQL.
 
 ### 2. Verify Table Created
 
-Check that `cms_pages` table exists:
-- Supabase Dashboard → Table Editor → `cms_pages`
+Check that `cmsPages` table exists:
+- Supabase Dashboard → Table Editor → `cmsPages`
 
 ### 3. Test the API
 
@@ -101,7 +101,7 @@ curl -X POST https://client-b.railway.app/api/cms/pages \
 
 ### Example 3: Use Supabase Dashboard
 
-1. Go to Supabase Dashboard → Table Editor → `cms_pages`
+1. Go to Supabase Dashboard → Table Editor → `cmsPages`
 2. Click "Insert row"
 3. Fill in:
    - `slug`: "home"
@@ -115,7 +115,7 @@ curl -X POST https://client-b.railway.app/api/cms/pages \
 
 The `getPageContent()` function in `src/lib/content.ts` now:
 
-1. **Checks database first** - Looks for `cms_pages` row matching slug + client_id
+1. **Checks database first** - Looks for `cmsPages` row matching slug + client_id
 2. **Falls back to files** - Reads from `content/pages/*.md` if no database entry
 3. **Uses defaults** - Hardcoded defaults if neither exists
 
@@ -145,7 +145,7 @@ const response = await fetch('/api/cms/pages', {
 ### Option 2: Via Supabase Dashboard
 
 1. Navigate to Table Editor
-2. Select `cms_pages` table
+2. Select `cmsPages` table
 3. Insert/Edit rows directly
 4. Changes are live immediately (no redeploy needed)
 

@@ -7,7 +7,7 @@ Capco website is missing sidebar items even though both sites run from the same 
 
 The sidebar navigation is built from:
 1. **`site-config.json`** - Defines features and navigation items
-2. **`global_settings` table** - Stores company data and settings
+2. **`globalSettings` table** - Stores company data and settings
 3. **Database tables** - Features depend on specific tables existing
 
 ## Quick Comparison Steps
@@ -28,8 +28,8 @@ ORDER BY table_name;
 ```
 
 **Key tables that affect navigation:**
-- `global_settings` - Company settings and feature flags
-- `cms_pages` - CMS pages
+- `globalSettings` - Company settings and feature flags
+- `cmsPages` - CMS pages
 - `profiles` - User profiles
 - `projects` - Projects
 - `files` - Files
@@ -39,19 +39,19 @@ ORDER BY table_name;
 - `ai_agent_conversations` - AI Agent
 - `ai_agent_knowledge` - AI Knowledge
 - `chatMessages` - Chat
-- `chat_messages` - Chat (alternative)
+- `chatMessages` - Chat (alternative)
 - `notifications` - Notifications
 - `bannerAlerts` - Banner alerts
 
-### Step 2: Compare global_settings
+### Step 2: Compare globalSettings
 
-The `global_settings` table stores configuration that affects navigation:
+The `globalSettings` table stores configuration that affects navigation:
 
 ```sql
 -- Run on both projects
 SELECT key, category, value_type, 
        CASE WHEN value IS NULL THEN 'NULL' ELSE 'HAS_VALUE' END as has_value
-FROM global_settings
+FROM globalSettings
 ORDER BY category, key;
 ```
 
@@ -88,7 +88,7 @@ Row Level Security policies might block access:
 SELECT tablename, policyname, roles, cmd
 FROM pg_policies
 WHERE schemaname = 'public'
-  AND tablename IN ('global_settings', 'cms_pages', 'profiles', 'projects')
+  AND tablename IN ('globalSettings', 'cmsPages', 'profiles', 'projects')
 ORDER BY tablename, policyname;
 ```
 
@@ -123,16 +123,16 @@ Get your anon keys from:
 ./scripts/import-schema-pgdump.sh schema-export-*.sql qudlxlryegnainztkrtk
 ```
 
-### Issue 2: Missing global_settings Entries
+### Issue 2: Missing globalSettings Entries
 
 **Solution:** Copy settings from Rothco to Capco:
 
 ```sql
 -- On Rothco: Export settings
-SELECT * FROM global_settings;
+SELECT * FROM globalSettings;
 
 -- On Capco: Insert missing settings
-INSERT INTO global_settings (key, value, category, value_type, description)
+INSERT INTO globalSettings (key, value, category, value_type, description)
 VALUES (...);
 ```
 
