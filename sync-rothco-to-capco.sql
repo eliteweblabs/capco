@@ -49,7 +49,7 @@ ALTER TABLE "projects" ADD COLUMN "contractData" jsonb;
 
 -- DROP TABLE IF EXISTS "bannerAlerts";
 -- DROP TABLE IF EXISTS "chat_messages";
--- DROP TABLE IF EXISTS "cms_pages";
+-- DROP TABLE IF EXISTS "cmsPages";
 -- DROP TABLE IF EXISTS "direct_messages";
 -- DROP TABLE IF EXISTS "document_components";
 -- DROP TABLE IF EXISTS "document_templates";
