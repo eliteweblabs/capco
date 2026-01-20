@@ -5,6 +5,7 @@ import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../../lib/url-utils";
+import { applyProjectTemplates } from "../../../lib/apply-project-templates";
 
 interface ProjectData {
   id?: number;
@@ -307,6 +308,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error("Error logging project creation:", logError);
     }
 
+    // Apply project templates (punchlist and discussion items)
+    try {
+      console.log(`📝 [CREATE-PROJECT] Applying templates to project ${project.id}`);
+      const templateResult = await applyProjectTemplates(project.id, project);
+      
+      if (templateResult.success) {
+        console.log(`✅ [CREATE-PROJECT] Applied ${templateResult.punchlistCount} punchlist and ${templateResult.discussionCount} discussion templates`);
+      }
+      
+      if (templateResult.errors.length > 0) {
+        console.warn(`⚠️ [CREATE-PROJECT] Template errors:`, templateResult.errors);
+      }
+    } catch (templateError) {
+      console.error("❌ [CREATE-PROJECT] Error applying templates:", templateError);
+      // Don't fail project creation if templates fail
+    }
+
     // Enrich the project data
     let enrichedProject = { ...project };
 
@@ -338,7 +356,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       }
 
-      // Initialize empty arrays for consistency
+      // Initialize empty arrays for consistency (will be populated by templates)
       enrichedProject.projectFiles = [];
       enrichedProject.generatedDocuments = [];
       enrichedProject.commentCount = 0;
