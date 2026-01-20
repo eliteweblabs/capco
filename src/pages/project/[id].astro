@@ -140,67 +140,57 @@ let currentStatusTab: string | null = null;
 let currentStatusColor = "gray";
 let currentStatusProjectAction: string | null = null;
 
-// Initialize data arrays (same as dashboard)
-// Fetch project statuses using the unified API (GET with projectId for better performance)
+// Fetch all project statuses using the unified API (same pattern as dashboard.astro)
+// This gets ALL statuses data - we'll extract the current one and pass the full statusData to components
+const statusApiUrl = new URL("/api/status/get", Astro.url.origin);
+const statusResponse = await fetch(statusApiUrl.toString(), {
+  method: "GET",
+  headers: {
+    Cookie: Astro.request.headers.get("Cookie") || "",
+  },
+});
+
 let statusData: Record<number, any> = {};
 let statusOptions: Array<{ value: string; label: string }> = [];
 
-try {
-  const statusController = new AbortController();
-  const statusTimeoutId = setTimeout(() => statusController.abort(), 8000); // 8 second timeout
-
-  const statusResponse = await fetch(
-    `${Astro.url.origin}/api/status/get?projectId=${project?.id || ""}`,
-    {
-      method: "GET",
-      headers: {
-        Cookie: Astro.request.headers.get("Cookie") || "",
-      },
-      signal: statusController.signal,
-    }
+if (statusResponse.ok) {
+  const statusResponseData = await statusResponse.json();
+  
+  // API returns: { success: true, statuses: Record<number, {...}>, selectOptions: [...] }
+  // statuses is a Record where keys are status codes (numbers) and values contain admin/client/current objects
+  statusData = statusResponseData.statuses || {};
+  statusOptions = statusResponseData.selectOptions || [];
+  
+  // Log for debugging if statuses are empty
+  if (Object.keys(statusData).length === 0) {
+    console.error("❌ [PROJECT-PAGE] Status API returned empty statuses!");
+    console.error("❌ [PROJECT-PAGE] Full API response:", JSON.stringify(statusResponseData, null, 2));
+    console.error("❌ [PROJECT-PAGE] This likely means the database has no statuses or the query failed");
+  }
+} else {
+  const errorText = await statusResponse.text();
+  console.error(
+    "❌ [PROJECT-PAGE] Status API failed:",
+    statusResponse.status,
+    statusResponse.statusText,
+    "Response:",
+    errorText
   );
-
-  clearTimeout(statusTimeoutId);
-
-  if (statusResponse.ok) {
-    const statusResponseData = await statusResponse.json();
-    statusData = statusResponseData.statuses || {};
-    statusOptions = statusResponseData.selectOptions || [];
-  } else {
-    console.warn(
-      "⚠️ [PROJECT-PAGE] Status API failed:",
-      statusResponse.status,
-      statusResponse.statusText,
-      "- continuing with empty status data"
-    );
-    // Don't throw - allow page to load without status data
-  }
-} catch (error: any) {
-  if (error.name === "AbortError") {
-    console.warn("⚠️ [PROJECT-PAGE] Status API timeout - continuing without status data");
-  } else {
-    console.warn(
-      "⚠️ [PROJECT-PAGE] Status API error:",
-      error?.message || error,
-      "- continuing without status data"
-    );
-  }
-  // Don't throw - allow page to load without status data
+  // Continue with empty status data - page can still load
 }
 
-// Get current status data by keying into the project status code (API already handles role-based filtering)
+// Extract current status info from statusData for use in this page
+// The full statusData object is kept intact to pass to child components
 if (currentStatusInt && statusData[currentStatusInt]) {
   const currentStatusObj = statusData[currentStatusInt];
-  // Use the role-based values directly from the API (no additional filtering needed)
-  currentStatusName = currentStatusObj.current.statusName;
-  currentStatusTab = currentStatusObj.current.statusTab;
-  currentStatusProjectAction = currentStatusObj.current.statusAction;
-  currentStatusColor = currentStatusObj.current.statusColor || "gray";
-  // search currentStatusProjectAction for "status=" + statusParam
-  const statusParamIndex = currentStatusProjectAction?.indexOf("status=" + statusParam) || 0;
-  if (statusParamIndex !== -1 && currentStatusProjectAction) {
-    // remove HTML tags from currentStatusProjectAction
-    // currentStatusProjectAction = currentStatusProjectAction.replace(/<[^>]*>?/g, "");
+  // API already handles role-based filtering, so use the 'current' property directly
+  currentStatusName = currentStatusObj.current?.statusName;
+  currentStatusTab = currentStatusObj.current?.statusTab;
+  currentStatusProjectAction = currentStatusObj.current?.statusAction;
+  currentStatusColor = currentStatusObj.current?.statusColor || "gray";
+  
+  // Handle status param in URL - if it matches currentStatusProjectAction, clear it
+  if (statusParam && currentStatusProjectAction?.includes("status=" + statusParam)) {
     currentStatusProjectAction = null;
   }
 }
@@ -240,7 +230,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     currentStatusInt={currentStatusInt.toString()}
     currentStatusName={currentStatusName || undefined}
     {project}
-    statusesOptions={statusOptions}
+    statusesOptions={statusData}
     currentStatusTab={currentStatusTab || undefined}
     {secondaryTextClasses}
     {primaryTextClasses}

@@ -7,7 +7,7 @@ SELECT
   category, 
   value_type,
   CASE WHEN value IS NULL THEN 'NULL' ELSE 'HAS_VALUE' END as has_value
-FROM global_settings
+FROM globalSettings
 ORDER BY category, key;
 
 -- Expected settings from Rothco (18 total):
@@ -22,6 +22,6 @@ SELECT
   category,
   COUNT(*) as count,
   string_agg(key, ', ' ORDER BY key) as keys
-FROM global_settings
+FROM globalSettings
 GROUP BY category
 ORDER BY category;

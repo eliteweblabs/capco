@@ -118,10 +118,10 @@ socket.on("dm_user_typing", (data) => {
 
 ## Database Schema
 
-### **direct_messages Table**
+### **directMessages Table**
 
 ```sql
-CREATE TABLE direct_messages (
+CREATE TABLE directMessages (
   id SERIAL PRIMARY KEY,
   from_user UUID REFERENCES auth.users(id),
   from_name TEXT NOT NULL,

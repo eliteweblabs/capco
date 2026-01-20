@@ -4,8 +4,8 @@
 
 ### ✅ Tables Present in Rothco
 All key navigation-related tables exist:
-- ✅ `global_settings` (18 entries)
-- ✅ `cms_pages`
+- ✅ `globalSettings` (18 entries)
+- ✅ `cmsPages`
 - ✅ `profiles`
 - ✅ `projects`
 - ✅ `files`
@@ -15,11 +15,11 @@ All key navigation-related tables exist:
 - ✅ `ai_agent_conversations`
 - ✅ `ai_agent_knowledge`
 - ✅ `chatMessages`
-- ✅ `chat_messages`
+- ✅ `chatMessages`
 - ✅ `notifications`
 - ✅ `bannerAlerts`
 
-### 📊 global_settings Breakdown (Rothco)
+### 📊 globalSettings Breakdown (Rothco)
 - **colors**: 2 keys (primary_color, secondary_color)
 - **company**: 6 keys (address, company_name, email, phone, slogan, website)
 - **general**: 8 keys (font_family, og_image, plausible_*, secondary_font_family, social_networks)
@@ -55,11 +55,11 @@ https://supabase.com/dashboard/project/qudlxlryegnainztkrtk/sql
 -- 1. Check if key tables exist
 SELECT 
   CASE 
-    WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'global_settings') 
-    THEN 'EXISTS' ELSE 'MISSING' END as global_settings,
+    WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'globalSettings') 
+    THEN 'EXISTS' ELSE 'MISSING' END as globalSettings,
   CASE 
-    WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'cms_pages') 
-    THEN 'EXISTS' ELSE 'MISSING' END as cms_pages,
+    WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'cmsPages') 
+    THEN 'EXISTS' ELSE 'MISSING' END as cmsPages,
   CASE 
     WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'ai_agent_conversations') 
     THEN 'EXISTS' ELSE 'MISSING' END as ai_agent_conversations,
@@ -67,8 +67,8 @@ SELECT
     WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'chatMessages') 
     THEN 'EXISTS' ELSE 'MISSING' END as chatMessages;
 
--- 2. Count global_settings entries
-SELECT COUNT(*) as setting_count FROM global_settings;
+-- 2. Count globalSettings entries
+SELECT COUNT(*) as setting_count FROM globalSettings;
 
 -- 3. List all tables
 SELECT table_name 
@@ -109,7 +109,7 @@ Based on the symptoms (missing sidebar items), the most likely causes are:
 1. **Missing Tables** - Capco database doesn't have all required tables
    - Solution: Run schema migration/clone
 
-2. **Missing global_settings Entries** - Capco has fewer settings than Rothco
+2. **Missing globalSettings Entries** - Capco has fewer settings than Rothco
    - Solution: Copy settings from Rothco
 
 3. **Different site-config.json** - Capco deployment has different config file
@@ -121,7 +121,7 @@ Based on the symptoms (missing sidebar items), the most likely causes are:
 ## Quick Fix Checklist
 
 - [ ] Run SQL queries on Capco to check table existence
-- [ ] Compare `global_settings` count (should be ~18)
+- [ ] Compare `globalSettings` count (should be ~18)
 - [ ] Verify `site-config.json` is identical in both deployments
 - [ ] Check RLS policies on key tables
 - [ ] If differences found, clone schema from Rothco to Capco

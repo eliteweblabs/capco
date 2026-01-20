@@ -69,7 +69,7 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
 
         const clientId = process.env.RAILWAY_PROJECT_NAME || null;
         const { data: dbPage, error } = await supabaseAdmin
-          .from("cms_pages")
+          .from("cmsPages")
           .upsert(
             {
               slug: finalSlug,
@@ -118,7 +118,7 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
 
     // Upsert into database
     const { data: dbPage, error } = await supabaseAdmin
-      .from("cms_pages")
+      .from("cmsPages")
       .upsert(
         {
           slug,

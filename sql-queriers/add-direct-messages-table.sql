@@ -1,8 +1,8 @@
 -- Direct Messages Table for Socket.io Direct Messaging
 -- Stores 1-on-1 messages between users
 
--- Create direct_messages table
-CREATE TABLE IF NOT EXISTS direct_messages (
+-- Create directMessages table
+CREATE TABLE IF NOT EXISTS directMessages (
   id SERIAL PRIMARY KEY,
   from_user UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   from_name TEXT NOT NULL,
@@ -15,38 +15,38 @@ CREATE TABLE IF NOT EXISTS direct_messages (
 );
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_direct_messages_from_user ON direct_messages(from_user);
-CREATE INDEX IF NOT EXISTS idx_direct_messages_to_user ON direct_messages(to_user);
-CREATE INDEX IF NOT EXISTS idx_direct_messages_timestamp ON direct_messages(message_timestamp);
-CREATE INDEX IF NOT EXISTS idx_direct_messages_conversation ON direct_messages(from_user, to_user);
+CREATE INDEX IF NOT EXISTS idx_directMessages_from_user ON directMessages(from_user);
+CREATE INDEX IF NOT EXISTS idx_directMessages_to_user ON directMessages(to_user);
+CREATE INDEX IF NOT EXISTS idx_directMessages_timestamp ON directMessages(message_timestamp);
+CREATE INDEX IF NOT EXISTS idx_directMessages_conversation ON directMessages(from_user, to_user);
 
 -- Create composite index for conversation queries
-CREATE INDEX IF NOT EXISTS idx_direct_messages_conversation_timestamp 
-ON direct_messages(from_user, to_user, message_timestamp);
+CREATE INDEX IF NOT EXISTS idx_directMessages_conversation_timestamp 
+ON directMessages(from_user, to_user, message_timestamp);
 
--- RLS Policies for direct_messages
-ALTER TABLE direct_messages ENABLE ROW LEVEL SECURITY;
+-- RLS Policies for directMessages
+ALTER TABLE directMessages ENABLE ROW LEVEL SECURITY;
 
 -- Users can see messages they sent or received
-CREATE POLICY "Users can view their direct messages" ON direct_messages
+CREATE POLICY "Users can view their direct messages" ON directMessages
   FOR SELECT USING (
     from_user = auth.uid() OR to_user = auth.uid()
   );
 
 -- Users can insert messages they send
-CREATE POLICY "Users can send direct messages" ON direct_messages
+CREATE POLICY "Users can send direct messages" ON directMessages
   FOR INSERT WITH CHECK (
     from_user = auth.uid()
   );
 
 -- Users can update their own messages (for read status, etc.)
-CREATE POLICY "Users can update their direct messages" ON direct_messages
+CREATE POLICY "Users can update their direct messages" ON directMessages
   FOR UPDATE USING (
     from_user = auth.uid() OR to_user = auth.uid()
   );
 
 -- Users can delete their own messages
-CREATE POLICY "Users can delete their direct messages" ON direct_messages
+CREATE POLICY "Users can delete their direct messages" ON directMessages
   FOR DELETE USING (
     from_user = auth.uid()
   );
@@ -74,7 +74,7 @@ BEGIN
     dm.message_timestamp,
     dm.created_at,
     dm.read_at
-  FROM direct_messages dm
+  FROM directMessages dm
   WHERE 
     dm.is_deleted = FALSE
     AND (
@@ -92,7 +92,7 @@ RETURNS INTEGER AS $$
 DECLARE
   updated_count INTEGER;
 BEGIN
-  UPDATE direct_messages 
+  UPDATE directMessages 
   SET read_at = NOW()
   WHERE 
     from_user = conversation_user_id 
@@ -113,7 +113,7 @@ DECLARE
 BEGIN
   SELECT COUNT(*)
   INTO unread_count
-  FROM direct_messages
+  FROM directMessages
   WHERE 
     to_user = user_id
     AND read_at IS NULL
@@ -151,7 +151,7 @@ BEGIN
         WHEN dm.to_user = user_id AND dm.read_at IS NULL THEN 1
         ELSE 0
       END as is_unread
-    FROM direct_messages dm
+    FROM directMessages dm
     WHERE 
       dm.is_deleted = FALSE
       AND (dm.from_user = user_id OR dm.to_user = user_id)
@@ -185,6 +185,6 @@ GRANT EXECUTE ON FUNCTION get_unread_message_count(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_recent_conversations(UUID, INTEGER) TO authenticated;
 
 -- Insert some sample data (optional - remove in production)
--- INSERT INTO direct_messages (from_user, from_name, to_user, message) VALUES
+-- INSERT INTO directMessages (from_user, from_name, to_user, message) VALUES
 -- ('user1-uuid', 'User One', 'user2-uuid', 'Hello! How are you?'),
 -- ('user2-uuid', 'User Two', 'user1-uuid', 'Hi! I am doing well, thanks!');

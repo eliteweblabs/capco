@@ -1,7 +1,7 @@
 # Fix Capco Missing Sidebar Items
 
 ## Current Status
-- ✅ Capco has `global_settings` table (16 entries vs Rothco's 18)
+- ✅ Capco has `globalSettings` table (16 entries vs Rothco's 18)
 - ❓ Need to check if key tables exist
 
 ## The Real Issue
@@ -16,10 +16,10 @@ https://supabase.com/dashboard/project/qudlxlryegnainztkrtk/sql
 ```sql
 -- Check which key tables exist
 SELECT 
-  'global_settings' as table_name,
+  'globalSettings' as table_name,
   CASE WHEN EXISTS (
     SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'public' AND table_name = 'global_settings'
+    WHERE table_schema = 'public' AND table_name = 'globalSettings'
   ) THEN '✅ EXISTS' ELSE '❌ MISSING' END as status
 UNION ALL
 SELECT 'ai_agent_conversations',
@@ -51,7 +51,7 @@ These features should appear if their tables exist:
 4. **PDF Certify** - requires `pdfTemplates` table
 5. **Analytics** - requires `projects`, `files` tables
 6. **Finance** - requires `invoices`, `payments` tables
-7. **Voice Assistant** - requires `chatMessages` or `chat_messages` table
+7. **Voice Assistant** - requires `chatMessages` or `chatMessages` table
 8. **AI Agent** - requires `ai_agent_conversations`, `ai_agent_knowledge` tables
 9. **Global Activity** - requires `projects`, `files`, `discussion` tables
 10. **Users** - requires `profiles` table
@@ -88,7 +88,7 @@ Capco has 16 settings vs Rothco's 18. To find which 2 are missing, run:
 ```sql
 -- On Capco
 SELECT category, COUNT(*) as count, string_agg(key, ', ') as keys
-FROM global_settings
+FROM globalSettings
 GROUP BY category
 ORDER BY category;
 ```

@@ -225,11 +225,13 @@ function getMarker(isChecklist: boolean = false): string {
                     type === 'ordered' && 'list-decimal pl-6',
                   ]}
                 >
-                  {item.children.map((child) => (
-                    <li class:list={[itemClasses[variant], 'text-gray-600 dark:text-gray-400']}>
+                  {item.children.map((child) => {
+                    const childClasses = `${itemClasses[variant]} text-gray-600 dark:text-gray-400`.trim();
+                    return (
+                    <li class={childClasses}>
                       <div class="flex items-start gap-3">
                         {type !== 'ordered' && (
-                          <span class:list={['mt-1.5 flex-shrink-0 opacity-70', iconColor]}>
+                          <span class={`mt-1.5 flex-shrink-0 opacity-70 ${iconColor}`}>
                             <i class={getMarker()} aria-hidden="true" />
                           </span>
                         )}
@@ -245,24 +247,28 @@ function getMarker(isChecklist: boolean = false): string {
                                 type === 'ordered' && 'list-decimal pl-6',
                               ]}
                             >
-                              {child.children.map((grandchild) => (
-                                <li class:list={[itemClasses[variant], 'text-gray-500 dark:text-gray-500']}>
+                              {child.children.map((grandchild) => {
+                                const grandchildClasses = `${itemClasses[variant]} text-gray-500 dark:text-gray-500`.trim();
+                                return (
+                                <li class={grandchildClasses}>
                                   <div class="flex items-start gap-3">
                                     {type !== 'ordered' && (
-                                      <span class:list={['mt-1.5 flex-shrink-0 opacity-50', iconColor]}>
+                                      <span class={`mt-1.5 flex-shrink-0 opacity-50 ${iconColor}`}>
                                         <i class={getMarker()} aria-hidden="true" />
                                       </span>
                                     )}
                                     <span class="flex-1" set:html={grandchild.text} />
                                   </div>
                                 </li>
-                              ))}
+                                );
+                              })}
                             </ListTag>
                           )}
                         </div>
                       </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ListTag>
               )}
             </div>

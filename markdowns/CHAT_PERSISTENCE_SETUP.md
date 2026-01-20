@@ -6,7 +6,7 @@ The chat system now supports persistent message storage using Supabase, so chat 
 
 ### 1. Create the Chat Messages Table
 
-You need to create the `chat_messages` table in your Supabase database. You have two options:
+You need to create the `chatMessages` table in your Supabase database. You have two options:
 
 #### Option A: Manual Setup (Recommended)
 
@@ -77,7 +77,7 @@ node chat-server.mjs
 ## Database Schema
 
 ```sql
-chat_messages:
+chatMessages:
 - id: SERIAL PRIMARY KEY
 - user_id: UUID (references auth.users)
 - user_name: TEXT
@@ -93,7 +93,7 @@ chat_messages:
 
 - Check environment variables are set correctly
 - Ensure Supabase service role key has proper permissions
-- Verify the `chat_messages` table exists
+- Verify the `chatMessages` table exists
 
 ### Messages Not Saving
 

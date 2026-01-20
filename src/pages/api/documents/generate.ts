@@ -103,7 +103,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Get or create document template record
     let documentTemplateId: string | null = null;
     const { data: existingTemplate } = await supabaseAdmin
-      .from("document_templates")
+      .from("documentTemplates")
       .select("id")
       .eq("id", templateId)
       .single();

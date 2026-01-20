@@ -12,7 +12,7 @@ The PDF generation system requires several database tables that haven't been cre
 - `pdf_components` - stores reusable HTML components
 - `template_component_mapping` - links templates to components
 - `generated_documents` - tracks generated PDFs
-- `document_components` - tracks components used in each document
+- `documentComponents` - tracks components used in each document
 
 ## Solution
 
@@ -50,7 +50,7 @@ The PDF generation system requires several database tables that haven't been cre
 - ✅ **pdf_components** - Reusable HTML components
 - ✅ **template_component_mapping** - Links templates to components
 - ✅ **generated_documents** - Tracks generated PDFs
-- ✅ **document_components** - Tracks components used in documents
+- ✅ **documentComponents** - Tracks components used in documents
 
 ### Default Data
 

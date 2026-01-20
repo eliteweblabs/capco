@@ -20,7 +20,7 @@ The PDF generator system provides:
 2. **`pdf_components`** - Stores reusable HTML snippets/components
 3. **`template_component_mapping`** - Maps components to templates
 4. **`generated_documents`** - Tracks generated PDFs
-5. **`document_components`** - Tracks components used in each document
+5. **`documentComponents`** - Tracks components used in each document
 
 ### Setup
 

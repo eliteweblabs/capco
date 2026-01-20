@@ -1,8 +1,8 @@
--- Add welcome email templates to globalOptions table
+-- Add welcome email templates to globalSettings table
 -- These templates are used when creating new users
 
 -- Insert welcome email template for clients
-INSERT INTO globalOptions (key, value, description) VALUES 
+INSERT INTO globalSettings (key, value, description) VALUES 
 ('welcomeClientEmailContent', 
 '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="text-align: center; margin-bottom: 30px;">
@@ -52,7 +52,7 @@ ON CONFLICT (key) DO UPDATE SET
   updated_at = NOW();
 
 -- Insert welcome email template for staff
-INSERT INTO globalOptions (key, value, description) VALUES 
+INSERT INTO globalSettings (key, value, description) VALUES 
 ('welcomeStaffEmailContent', 
 '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="text-align: center; margin-bottom: 30px;">
@@ -105,6 +105,6 @@ ON CONFLICT (key) DO UPDATE SET
   updated_at = NOW();
 
 -- Verify the templates were added
-SELECT key, description, created_at FROM globalOptions 
+SELECT key, description, created_at FROM globalSettings 
 WHERE key IN ('welcomeClientEmailContent', 'welcomeStaffEmailContent')
 ORDER BY key;

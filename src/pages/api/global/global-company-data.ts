@@ -22,7 +22,7 @@ async function getAllSettings(): Promise<Record<string, string>> {
   }
 
   try {
-    const { data, error } = await supabaseAdmin.from("global_settings").select("key, value");
+    const { data, error } = await supabaseAdmin.from("globalSettings").select("key, value");
 
     if (!error && data) {
       settingsCache = data.reduce(

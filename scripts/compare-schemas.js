@@ -106,8 +106,8 @@ async function compareSchemas() {
   // We'll use a simpler approach: try to access key tables that affect navigation
   
   const keyTables = [
-    'global_settings',
-    'cms_pages',
+    'globalSettings',
+    'cmsPages',
     'profiles',
     'projects',
     'files',
@@ -117,7 +117,7 @@ async function compareSchemas() {
     'ai_agent_conversations',
     'ai_agent_knowledge',
     'chatMessages',
-    'chat_messages',
+    'chatMessages',
     'notifications',
     'bannerAlerts'
   ];
@@ -204,30 +204,30 @@ async function compareSchemas() {
     results.rothco.missing.forEach(t => log(`   - ${t}`, 'red'));
   }
 
-  // Check global_settings specifically (affects navigation)
-  log('\n🔍 Checking global_settings table (affects navigation)...', 'cyan');
+  // Check globalSettings specifically (affects navigation)
+  log('\n🔍 Checking globalSettings table (affects navigation)...', 'cyan');
   
   try {
     const { data: capcoSettings, error: capcoError } = await capcoClient
-      .from('global_settings')
+      .from('globalSettings')
       .select('key, category')
       .order('category, key');
     
     const { data: rothcoSettings, error: rothcoError } = await rothcoClient
-      .from('global_settings')
+      .from('globalSettings')
       .select('key, category')
       .order('category, key');
 
     if (capcoError) {
-      log(`  ❌ Capco global_settings: ${capcoError.message}`, 'red');
+      log(`  ❌ Capco globalSettings: ${capcoError.message}`, 'red');
     } else {
-      log(`  ✅ Capco global_settings: ${capcoSettings?.length || 0} entries`, 'green');
+      log(`  ✅ Capco globalSettings: ${capcoSettings?.length || 0} entries`, 'green');
     }
 
     if (rothcoError) {
-      log(`  ❌ Rothco global_settings: ${rothcoError.message}`, 'red');
+      log(`  ❌ Rothco globalSettings: ${rothcoError.message}`, 'red');
     } else {
-      log(`  ✅ Rothco global_settings: ${rothcoSettings?.length || 0} entries`, 'green');
+      log(`  ✅ Rothco globalSettings: ${rothcoSettings?.length || 0} entries`, 'green');
     }
 
     if (capcoSettings && rothcoSettings) {
@@ -238,23 +238,23 @@ async function compareSchemas() {
       const missingInRothco = [...capcoKeys].filter(k => !rothcoKeys.has(k));
 
       if (missingInCapco.length > 0) {
-        log(`\n  ⚠️  Missing keys in Capco global_settings:`, 'yellow');
+        log(`\n  ⚠️  Missing keys in Capco globalSettings:`, 'yellow');
         missingInCapco.forEach(k => log(`     - ${k}`, 'yellow'));
       }
 
       if (missingInRothco.length > 0) {
-        log(`\n  ⚠️  Missing keys in Rothco global_settings:`, 'yellow');
+        log(`\n  ⚠️  Missing keys in Rothco globalSettings:`, 'yellow');
         missingInRothco.forEach(k => log(`     - ${k}`, 'yellow'));
       }
     }
   } catch (error) {
-    log(`  ⚠️  Error checking global_settings: ${error.message}`, 'yellow');
+    log(`  ⚠️  Error checking globalSettings: ${error.message}`, 'yellow');
   }
 
   log('\n✅ Comparison complete!', 'green');
   log('\n💡 Next steps:', 'cyan');
   log('   1. If tables are missing in Capco, run schema migration', 'blue');
-  log('   2. If global_settings differ, sync the settings', 'blue');
+  log('   2. If globalSettings differ, sync the settings', 'blue');
   log('   3. Check site-config.json is the same in both deployments', 'blue');
 }
 

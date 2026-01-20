@@ -1,5 +1,5 @@
--- Create chat_messages table for persistent chat storage
-CREATE TABLE IF NOT EXISTS chat_messages (
+-- Create chatMessages table for persistent chat storage
+CREATE TABLE IF NOT EXISTS chatMessages (
   id SERIAL PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   user_name TEXT NOT NULL,
@@ -10,15 +10,15 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 
 -- Create index for faster queries
-CREATE INDEX IF NOT EXISTS idx_chat_messages_timestamp ON chat_messages(timestamp DESC);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_user_id ON chat_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_chatMessages_timestamp ON chatMessages(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_chatMessages_user_id ON chatMessages(user_id);
 
 -- Enable RLS
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chatMessages ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 -- Admins can see all messages
-CREATE POLICY "Admins can view all chat messages" ON chat_messages
+CREATE POLICY "Admins can view all chat messages" ON chatMessages
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM profiles 
@@ -28,15 +28,15 @@ CREATE POLICY "Admins can view all chat messages" ON chat_messages
   );
 
 -- Users can see all messages (for chat history)
-CREATE POLICY "Users can view all chat messages" ON chat_messages
+CREATE POLICY "Users can view all chat messages" ON chatMessages
   FOR SELECT USING (true);
 
 -- Users can insert their own messages
-CREATE POLICY "Users can insert their own messages" ON chat_messages
+CREATE POLICY "Users can insert their own messages" ON chatMessages
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Admins can delete any message
-CREATE POLICY "Admins can delete any chat message" ON chat_messages
+CREATE POLICY "Admins can delete any chat message" ON chatMessages
   FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM profiles 
@@ -46,5 +46,5 @@ CREATE POLICY "Admins can delete any chat message" ON chat_messages
   );
 
 -- Grant permissions
-GRANT ALL ON chat_messages TO authenticated;
-GRANT USAGE ON SEQUENCE chat_messages_id_seq TO authenticated;
+GRANT ALL ON chatMessages TO authenticated;
+GRANT USAGE ON SEQUENCE chatMessages_id_seq TO authenticated;

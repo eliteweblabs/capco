@@ -30,8 +30,8 @@ SELECT
 FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name IN (
-    'global_settings',
-    'cms_pages',
+    'globalSettings',
+    'cmsPages',
     'profiles',
     'projects',
     'files',
@@ -41,7 +41,7 @@ WHERE table_schema = 'public'
     'ai_agent_conversations',
     'ai_agent_knowledge',
     'chatMessages',
-    'chat_messages',
+    'chatMessages',
     'notifications',
     'bannerAlerts'
   )
@@ -52,11 +52,11 @@ ORDER BY table_name, ordinal_position;
 -- =====================================================
 SELECT 
   'ROW_COUNT' as object_type,
-  'global_settings' as table_name,
+  'globalSettings' as table_name,
   COUNT(*) as count
-FROM global_settings
+FROM globalSettings
 UNION ALL
-SELECT 'ROW_COUNT', 'cms_pages', COUNT(*) FROM cms_pages
+SELECT 'ROW_COUNT', 'cmsPages', COUNT(*) FROM cmsPages
 UNION ALL
 SELECT 'ROW_COUNT', 'profiles', COUNT(*) FROM profiles
 UNION ALL
@@ -76,14 +76,14 @@ SELECT 'ROW_COUNT', 'ai_agent_knowledge', COUNT(*) FROM ai_agent_knowledge
 UNION ALL
 SELECT 'ROW_COUNT', 'chatMessages', COUNT(*) FROM chatMessages
 UNION ALL
-SELECT 'ROW_COUNT', 'chat_messages', COUNT(*) FROM chat_messages
+SELECT 'ROW_COUNT', 'chatMessages', COUNT(*) FROM chatMessages
 UNION ALL
 SELECT 'ROW_COUNT', 'notifications', COUNT(*) FROM notifications
 UNION ALL
 SELECT 'ROW_COUNT', 'bannerAlerts', COUNT(*) FROM bannerAlerts;
 
 -- =====================================================
--- 4. CHECK GLOBAL_SETTINGS KEYS (affects navigation)
+-- 4. CHECK globalSettings KEYS (affects navigation)
 -- =====================================================
 SELECT 
   'SETTING' as object_type,
@@ -91,7 +91,7 @@ SELECT
   category,
   value_type,
   CASE WHEN value IS NULL THEN 'NULL' ELSE 'HAS_VALUE' END as has_value
-FROM global_settings
+FROM globalSettings
 ORDER BY category, key;
 
 -- =====================================================
@@ -109,8 +109,8 @@ SELECT
 FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename IN (
-    'global_settings',
-    'cms_pages',
+    'globalSettings',
+    'cmsPages',
     'profiles',
     'projects',
     'files',

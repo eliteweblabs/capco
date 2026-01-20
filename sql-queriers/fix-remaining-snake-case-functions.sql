@@ -203,7 +203,7 @@ BEGIN
     dm."messageTimestamp",
     dm."createdAt",
     dm."readAt"
-  FROM direct_messages dm
+  FROM directMessages dm
   WHERE 
     dm."isDeleted" = FALSE
     AND (
