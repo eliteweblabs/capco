@@ -142,7 +142,9 @@ let currentStatusProjectAction: string | null = null;
 
 // Fetch all project statuses using the unified API (same pattern as dashboard.astro)
 // This gets ALL statuses data - we'll extract the current one and pass the full statusData to components
+// Pass the project ID so placeholders can be replaced with actual project data
 const statusApiUrl = new URL("/api/status/get", Astro.url.origin);
+statusApiUrl.searchParams.set("projectId", project.id.toString());
 const statusResponse = await fetch(statusApiUrl.toString(), {
   method: "GET",
   headers: {

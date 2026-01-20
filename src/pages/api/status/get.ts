@@ -71,7 +71,14 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         });
         if (projectResponse.ok) {
           const projectData = await projectResponse.json();
-          project = projectData.project || projectData;
+          // projects/get returns { data: {...} } for single project
+          project = projectData.data || projectData.project || projectData;
+          console.log("🔍 [PROJECT-STATUSES-API] Fetched project data:", {
+            hasProject: !!project,
+            hasAuthorProfile: !!project?.authorProfile,
+            address: project?.address,
+            clientName: project?.authorProfile?.companyName
+          });
         } else {
           console.error(
             "🔍 [PROJECT-STATUSES-API] Failed to fetch project data:",
@@ -370,7 +377,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         );
         if (projectResponse.ok) {
           const responseData = await projectResponse.json();
-          projectData = responseData.project || responseData;
+          // projects/get returns { data: {...} } for single project
+          projectData = responseData.data || responseData.project || responseData;
         } else {
           console.error(
             "🔍 [PROJECT-STATUSES-API] Failed to fetch project data:",

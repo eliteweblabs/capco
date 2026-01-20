@@ -1,0 +1,489 @@
+---
+/**
+ * Project Settings Page
+ * Manage default punchlist and discussion templates for new projects
+ * Only accessible to Admin users
+ */
+import { checkAuth } from "../../lib/auth";
+import App from "../../components/ui/App.astro";
+import Button from "../../components/common/Button.astro";
+import { globalCompanyData } from "../api/global/global-company-data";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+// Redirect to login if not authenticated
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+
+// Check if user is admin
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const companyData = await globalCompanyData();
+const { globalInputClasses } = globalClasses();
+---
+
+<App
+  title="Project Settings"
+  description="Manage default project templates"
+  {currentUser}
+  {session}
+  globalCompanyName={companyData.globalCompanyName}
+  globalCompanySlogan={companyData.globalCompanySlogan}
+  globalCompanyLogo={companyData.globalCompanyLogo}
+>
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold mb-2">Project Settings</h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        Manage default punchlist and discussion templates that are created when new projects are deployed.
+        These templates support placeholders like {`{{PROJECT_TITLE}}`}, {`{{CLIENT_NAME}}`}, etc.
+      </p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+      <nav class="-mb-px flex space-x-8">
+        <button
+          id="tab-punchlist"
+          class="tab-button border-b-2 border-primary-500 py-4 px-1 text-sm font-medium text-primary-600 dark:text-primary-400"
+          data-tab="punchlist"
+        >
+          Punchlist Templates
+        </button>
+        <button
+          id="tab-discussion"
+          class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+          data-tab="discussion"
+        >
+          Discussion Templates
+        </button>
+      </nav>
+    </div>
+
+    <!-- Punchlist Templates Section -->
+    <div id="section-punchlist" class="template-section">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Punchlist Templates</h2>
+        <Button
+          id="add-punchlist-btn"
+          type="button"
+          variant="primary"
+        >
+          <i class="bx bx-plus mr-2"></i>
+          Add Punchlist Item
+        </Button>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div id="punchlist-templates-container" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- Templates will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Discussion Templates Section -->
+    <div id="section-discussion" class="template-section hidden">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Discussion Templates</h2>
+        <Button
+          id="add-discussion-btn"
+          type="button"
+          variant="primary"
+        >
+          <i class="bx bx-plus mr-2"></i>
+          Add Discussion Item
+        </Button>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div id="discussion-templates-container" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- Templates will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div
+      id="toast-notification"
+      class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg hidden"
+    >
+      <span id="toast-message"></span>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="modal-title" class="text-xl font-semibold">Edit Template</h3>
+          <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <i class="bx bx-x text-2xl"></i>
+          </button>
+        </div>
+
+        <form id="template-form">
+          <input type="hidden" id="template-id" name="id">
+          <input type="hidden" id="template-type" name="type">
+
+          <div class="space-y-4">
+            <div>
+              <label for="template-title" class="block text-sm font-medium mb-1">Title</label>
+              <input
+                type="text"
+                id="template-title"
+                name="title"
+                required
+                class={globalInputClasses}
+                placeholder="Enter a descriptive title"
+              />
+            </div>
+
+            <div>
+              <label for="template-message" class="block text-sm font-medium mb-1">Message</label>
+              <textarea
+                id="template-message"
+                name="message"
+                required
+                rows="6"
+                class={globalInputClasses}
+                placeholder="Enter the template message. You can use placeholders like PROJECT_TITLE, CLIENT_NAME, PROJECT_ADDRESS (wrapped in double curly braces)."
+              ></textarea>
+              <p class="text-xs text-gray-500 mt-1">
+                Supports HTML and placeholders: {`{{PROJECT_TITLE}}`}, {`{{CLIENT_NAME}}`}, {`{{PROJECT_ADDRESS}}`}, {`{{RAILWAY_PUBLIC_DOMAIN}}`}, {`{{PROJECT_ID}}`}
+              </p>
+            </div>
+
+            <div>
+              <label for="template-order" class="block text-sm font-medium mb-1">Order</label>
+              <input
+                type="number"
+                id="template-order"
+                name="orderIndex"
+                required
+                min="0"
+                class={globalInputClasses}
+                placeholder="0"
+              />
+            </div>
+
+            <div class="flex items-center space-x-6">
+              <label class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="template-internal"
+                  name="internal"
+                  class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span class="ml-2 text-sm">Internal Only (for discussions)</span>
+              </label>
+
+              <label class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="template-completed"
+                  name="markCompleted"
+                  class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span class="ml-2 text-sm">Mark as Completed</span>
+              </label>
+
+              <label class="flex items-center">
+                <input
+                  type="checkbox"
+                  id="template-enabled"
+                  name="enabled"
+                  checked
+                  class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span class="ml-2 text-sm">Enabled</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-3 mt-6">
+            <button
+              type="button"
+              id="cancel-btn"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg"
+            >
+              Save Template
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let currentTab = 'punchlist';
+    let templates: any = { punchlist: [], discussion: [] };
+
+    // DOM Elements
+    const modal = document.getElementById('edit-modal') as HTMLElement;
+    const templateForm = document.getElementById('template-form') as HTMLFormElement;
+    const toast = document.getElementById('toast-notification') as HTMLElement;
+    const toastMessage = document.getElementById('toast-message') as HTMLElement;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadTemplates();
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      // Tab switching
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const target = e.currentTarget as HTMLElement;
+          const tab = target.dataset.tab || 'punchlist';
+          switchTab(tab);
+        });
+      });
+
+      // Add buttons
+      document.getElementById('add-punchlist-btn')?.addEventListener('click', () => openModal('punchlist'));
+      document.getElementById('add-discussion-btn')?.addEventListener('click', () => openModal('discussion'));
+
+      // Modal controls
+      document.getElementById('close-modal')?.addEventListener('click', closeModal);
+      document.getElementById('cancel-btn')?.addEventListener('click', closeModal);
+      templateForm?.addEventListener('submit', handleFormSubmit);
+
+      // Close modal on backdrop click
+      modal?.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+    }
+
+    function switchTab(tab: string) {
+      currentTab = tab;
+
+      // Update tab buttons
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        const btnTab = (btn as HTMLElement).dataset.tab;
+        if (btnTab === tab) {
+          btn.classList.remove('border-transparent', 'text-gray-500');
+          btn.classList.add('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+        } else {
+          btn.classList.add('border-transparent', 'text-gray-500');
+          btn.classList.remove('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+        }
+      });
+
+      // Update sections
+      document.querySelectorAll('.template-section').forEach(section => {
+        const sectionId = section.id.replace('section-', '');
+        if (sectionId === tab) {
+          section.classList.remove('hidden');
+        } else {
+          section.classList.add('hidden');
+        }
+      });
+    }
+
+    async function loadTemplates() {
+      try {
+        const response = await fetch('/api/project-templates/get?includeDisabled=true');
+        if (!response.ok) throw new Error('Failed to load templates');
+
+        const data = await response.json();
+        templates.punchlist = data.templates.filter((t: any) => t.type === 'punchlist');
+        templates.discussion = data.templates.filter((t: any) => t.type === 'discussion');
+
+        renderTemplates();
+      } catch (error) {
+        console.error('Error loading templates:', error);
+        showToast('Failed to load templates', 'error');
+      }
+    }
+
+    function renderTemplates() {
+      renderTemplateList('punchlist', templates.punchlist);
+      renderTemplateList('discussion', templates.discussion);
+    }
+
+    function renderTemplateList(type: string, items: any[]) {
+      const container = document.getElementById(`${type}-templates-container`);
+      if (!container) return;
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center text-gray-500">
+            <i class="bx bx-info-circle text-4xl mb-2"></i>
+            <p>No ${type} templates yet. Click "Add ${type === 'punchlist' ? 'Punchlist' : 'Discussion'} Item" to create one.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = items
+        .sort((a, b) => a.orderIndex - b.orderIndex)
+        .map(
+          (item) => `
+          <div class="p-4 ${!item.enabled ? 'opacity-50' : ''}">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <h4 class="font-medium">${item.title}</h4>
+                  ${!item.enabled ? '<span class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">Disabled</span>' : ''}
+                  ${item.internal ? '<span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">Internal</span>' : ''}
+                  ${item.markCompleted ? '<span class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Auto-complete</span>' : ''}
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">${item.message}</p>
+                <p class="text-xs text-gray-400 mt-1">Order: ${item.orderIndex}</p>
+              </div>
+              <div class="flex items-center gap-2 ml-4">
+                <button
+                  onclick="window.editTemplate(${item.id})"
+                  class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                  title="Edit"
+                >
+                  <i class="bx bx-edit"></i>
+                </button>
+                <button
+                  onclick="window.deleteTemplate(${item.id}, '${type}')"
+                  class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                  title="Delete"
+                >
+                  <i class="bx bx-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `
+        )
+        .join('');
+    }
+
+    function openModal(type: string, template?: any) {
+      const modalTitle = document.getElementById('modal-title');
+      const form = templateForm;
+
+      if (!form || !modalTitle) return;
+
+      // Set title
+      modalTitle.textContent = template ? 'Edit Template' : `Add ${type === 'punchlist' ? 'Punchlist' : 'Discussion'} Item`;
+
+      // Reset form
+      form.reset();
+      (document.getElementById('template-type') as HTMLInputElement).value = type;
+
+      // Populate form if editing
+      if (template) {
+        (document.getElementById('template-id') as HTMLInputElement).value = template.id;
+        (document.getElementById('template-title') as HTMLInputElement).value = template.title;
+        (document.getElementById('template-message') as HTMLTextAreaElement).value = template.message;
+        (document.getElementById('template-order') as HTMLInputElement).value = template.orderIndex;
+        (document.getElementById('template-internal') as HTMLInputElement).checked = template.internal;
+        (document.getElementById('template-completed') as HTMLInputElement).checked = template.markCompleted;
+        (document.getElementById('template-enabled') as HTMLInputElement).checked = template.enabled;
+      }
+
+      // Show modal
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function handleFormSubmit(e: Event) {
+      e.preventDefault();
+
+      const formData = new FormData(templateForm);
+      const data = {
+        id: formData.get('id') || null,
+        type: formData.get('type'),
+        title: formData.get('title'),
+        message: formData.get('message'),
+        orderIndex: parseInt(formData.get('orderIndex') as string) || 0,
+        internal: formData.get('internal') === 'on',
+        markCompleted: formData.get('markCompleted') === 'on',
+        enabled: formData.get('enabled') === 'on',
+      };
+
+      try {
+        const response = await fetch('/api/project-templates/upsert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) throw new Error('Failed to save template');
+
+        showToast(data.id ? 'Template updated successfully' : 'Template created successfully', 'success');
+        closeModal();
+        await loadTemplates();
+      } catch (error) {
+        console.error('Error saving template:', error);
+        showToast('Failed to save template', 'error');
+      }
+    }
+
+    async function deleteTemplate(id: number, type: string) {
+      if (!confirm('Are you sure you want to delete this template?')) return;
+
+      try {
+        const response = await fetch('/api/project-templates/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+
+        if (!response.ok) throw new Error('Failed to delete template');
+
+        showToast('Template deleted successfully', 'success');
+        await loadTemplates();
+      } catch (error) {
+        console.error('Error deleting template:', error);
+        showToast('Failed to delete template', 'error');
+      }
+    }
+
+    function editTemplate(id: number) {
+      const allTemplates = [...templates.punchlist, ...templates.discussion];
+      const template = allTemplates.find((t) => t.id === id);
+      if (template) {
+        openModal(template.type, template);
+      }
+    }
+
+    function showToast(message: string, type: 'success' | 'error') {
+      toastMessage.textContent = message;
+      toast.classList.remove('hidden', 'bg-green-500', 'bg-red-500');
+      toast.classList.add(type === 'success' ? 'bg-green-500' : 'bg-red-500');
+
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3000);
+    }
+
+    // Expose functions to window for onclick handlers
+    (window as any).editTemplate = editTemplate;
+    (window as any).deleteTemplate = deleteTemplate;
+  </script>
+
+  <style>
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+</App>

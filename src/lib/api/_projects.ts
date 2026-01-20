@@ -93,11 +93,37 @@ export async function fetchProjects(
     const projectIds = (allProjects || []).map((p) => p.id);
     const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
 
-    // Add featuredImageData and punchlist data for projects
+    // Get unique author and assigned-to IDs
+    const authorIds = [...new Set((allProjects || []).map((p) => p.authorId).filter(Boolean))];
+    const assignedToIds = [
+      ...new Set((allProjects || []).map((p) => p.assignedToId).filter(Boolean)),
+    ];
+    const allProfileIds = [...new Set([...authorIds, ...assignedToIds])];
+
+    // Fetch all relevant profiles in one query
+    let profilesMap: Record<string, any> = {};
+    if (allProfileIds.length > 0) {
+      const { data: profiles } = await supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .in("id", allProfileIds);
+
+      profilesMap = (profiles || []).reduce(
+        (acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        },
+        {} as Record<string, any>
+      );
+    }
+
+    // Add featuredImageData, punchlist data, and profile data for projects
     const projects = (allProjects || []).map((project) => {
       const projectWithData = {
         ...project,
         punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+        authorProfile: project.authorId ? profilesMap[project.authorId] : null,
+        assignedToProfile: project.assignedToId ? profilesMap[project.assignedToId] : null,
       };
 
       if (project.featuredImageData) {
@@ -139,11 +165,37 @@ export async function getProjectsByAuthor(
     const projectIds = (projects || []).map((p) => p.id);
     const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
 
-    // Add featuredImageData and punchlist data for projects
+    // Get unique author and assigned-to IDs
+    const authorIds = [...new Set((projects || []).map((p) => p.authorId).filter(Boolean))];
+    const assignedToIds = [
+      ...new Set((projects || []).map((p) => p.assignedToId).filter(Boolean)),
+    ];
+    const allProfileIds = [...new Set([...authorIds, ...assignedToIds])];
+
+    // Fetch all relevant profiles in one query
+    let profilesMap: Record<string, any> = {};
+    if (allProfileIds.length > 0) {
+      const { data: profilesData } = await supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .in("id", allProfileIds);
+
+      profilesMap = (profilesData || []).reduce(
+        (acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        },
+        {} as Record<string, any>
+      );
+    }
+
+    // Add featuredImageData, punchlist data, and profile data for projects
     const projectsWithData = (projects || []).map((project) => {
       const projectWithData = {
         ...project,
         punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+        authorProfile: project.authorId ? profilesMap[project.authorId] : null,
+        assignedToProfile: project.assignedToId ? profilesMap[project.assignedToId] : null,
       };
 
       if (project.featuredImageData) {
@@ -188,11 +240,37 @@ export async function getProjectsByAssignedToId(
     const projectIds = (projects || []).map((p) => p.id);
     const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
 
-    // Add featuredImageData and punchlist data for projects
+    // Get unique author and assigned-to IDs
+    const authorIds = [...new Set((projects || []).map((p) => p.authorId).filter(Boolean))];
+    const assignedToIds = [
+      ...new Set((projects || []).map((p) => p.assignedToId).filter(Boolean)),
+    ];
+    const allProfileIds = [...new Set([...authorIds, ...assignedToIds])];
+
+    // Fetch all relevant profiles in one query
+    let profilesMap: Record<string, any> = {};
+    if (allProfileIds.length > 0) {
+      const { data: profilesData } = await supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .in("id", allProfileIds);
+
+      profilesMap = (profilesData || []).reduce(
+        (acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        },
+        {} as Record<string, any>
+      );
+    }
+
+    // Add featuredImageData, punchlist data, and profile data for projects
     const projectsWithData = (projects || []).map((project) => {
       const projectWithData = {
         ...project,
         punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+        authorProfile: project.authorId ? profilesMap[project.authorId] : null,
+        assignedToProfile: project.assignedToId ? profilesMap[project.assignedToId] : null,
       };
 
       if (project.featuredImageUrl) {
@@ -279,7 +357,33 @@ export async function fetchProjectById(
       return null;
     }
 
-    return project;
+    if (!project) return null;
+
+    // Fetch author and assignedTo profiles if they exist
+    const profileIds = [project.authorId, project.assignedToId].filter(Boolean);
+
+    let profilesMap: Record<string, any> = {};
+    if (profileIds.length > 0) {
+      const { data: profilesData } = await supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .in("id", profileIds);
+
+      profilesMap = (profilesData || []).reduce(
+        (acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        },
+        {} as Record<string, any>
+      );
+    }
+
+    // Add profile data to project
+    return {
+      ...project,
+      authorProfile: project.authorId ? profilesMap[project.authorId] : null,
+      assignedToProfile: project.assignedToId ? profilesMap[project.assignedToId] : null,
+    };
   } catch (error) {
     console.error("Failed to fetch project by ID:", error);
     return null;

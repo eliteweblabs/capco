@@ -28,26 +28,36 @@ const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalC
 import App from "../../components/ui/App.astro";
 import DashboardContent from "../../components/project/Dashboard.astro";
 import "../../lib/refresh-manager.ts";
-import type { Project } from "../../lib/api/_projects";
+import type { Project } from "../../lib/api/.ts";
 // Get auth data directly since App component handles auth requirements
 
 // console.log("🚀 [DASHBOARD] Current user:", currentUser);
 // Initialize data arrays
 let projects: Project[] = [];
 
-// Fetch projects directly from Supabase to avoid SSL issues with self-fetching
+// Fetch projects from the API endpoint
 if (currentUser?.id) {
   try {
-    const { supabaseAdmin } = await import("../../lib/supabase-admin");
-    const { getProjectsByAuthor, fetchProjects } = await import("../../lib/api/_projects");
+    const apiUrl = new URL("/api/projects/get", Astro.url.origin);
+    
+    // For clients, filter by authorId
+    if (currentRole === "Client") {
+      apiUrl.searchParams.set("authorId", currentUser.id);
+    }
+    
+    const response = await fetch(apiUrl.toString(), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    });
 
-    if (!supabaseAdmin) {
-      console.error("🏗️ [PROJECT/DASHBOARD] Supabase admin client not available");
-    } else if (currentRole === "Client") {
-      projects = await getProjectsByAuthor(supabaseAdmin, currentUser.id);
+    if (response.ok) {
+      const data = await response.json();
+      projects = data.projects || [];
     } else {
-      // Admin/Staff can see all projects
-      projects = await fetchProjects(supabaseAdmin);
+      console.error("🏗️ [PROJECT/DASHBOARD] API error:", response.status);
     }
   } catch (error) {
     console.error("🏗️ [PROJECT/DASHBOARD] Error fetching projects:", error);
