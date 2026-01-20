@@ -233,7 +233,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     // Execute query
-    console.log("📁 [FILES-GET] Executing query...");
+    // console.log("📁 [FILES-GET] Executing query...");
     const { data: files, error } = await query;
 
     if (error) {
@@ -249,9 +249,9 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       );
     }
 
-    console.log(`✅ [FILES-GET] Retrieved ${files?.length || 0} files`);
+    // console.log(`✅ [FILES-GET] Retrieved ${files?.length || 0} files`);
     if (files && files.length > 0) {
-      console.log("📁 [FILES-GET] Sample file data:", files[0]);
+      // console.log("📁 [FILES-GET] Sample file data:", files[0]);
     } else {
       console.log("📁 [FILES-GET] No files found with current filters");
     }
@@ -264,10 +264,10 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         }
 
         try {
-          console.log(`🔗 [FILES-GET] Generating signed URL for file ${file.id}:`, {
-            bucketName: file.bucketName,
-            filePath: file.filePath,
-          });
+          // console.log(`🔗 [FILES-GET] Generating signed URL for file ${file.id}:`, {
+          //   bucketName: file.bucketName,
+          //   filePath: file.filePath,
+          // });
 
           const { data: urlData, error: urlError } = await supabaseAdmin!.storage
             .from(file.bucketName)
@@ -278,10 +278,10 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             return { ...file, publicUrl: null };
           }
 
-          console.log(
-            `✅ [FILES-GET] Generated signed URL for file ${file.id}:`,
-            urlData?.signedUrl
-          );
+          // console.log(
+          //   `✅ [FILES-GET] Generated signed URL for file ${file.id}:`,
+          //   urlData?.signedUrl
+          // );
 
           return {
             ...file,
@@ -424,7 +424,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let query = supabase!.from("files").select("*");
 
     // Log the table structure to help debug
-    console.log("📁 [FILES-GET] Checking table structure...");
+    // console.log("📁 [FILES-GET] Checking table structure...");
     const { data: tableInfo, error: tableError } = await supabase!
       .from("files")
       .select("*")
@@ -433,10 +433,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (tableError) {
       console.error("❌ [FILES-GET] Error checking table:", tableError);
     } else {
-      console.log(
-        "📁 [FILES-GET] Table columns:",
-        tableInfo ? Object.keys(tableInfo[0]) : "No data"
-      );
+      // console.log(
+      //   "📁 [FILES-GET] Table columns:",
+      //   tableInfo ? Object.keys(tableInfo[0]) : "No data"
+      // );
     }
 
     // Apply basic filters
@@ -564,11 +564,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Execute query
-    console.log("📁 [FILES-GET] Executing query with filters:", {
-      filters,
-      projectId: filters.projectId,
-      authorId: filters.authorId,
-    });
+    // console.log("📁 [FILES-GET] Executing query with filters:", {
+    //   filters,
+    //   projectId: filters.projectId,
+    //   authorId: filters.authorId,
+    // });
 
     const { data: files, error } = await query;
 
@@ -592,11 +592,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log("📁 [FILES-GET] Files fetched:", {
-      count: files?.length || 0,
-      firstFile: files?.[0],
-      filters,
-    });
+    // console.log("📁 [FILES-GET] Files fetched:", {
+    //   count: files?.length || 0,
+    //   firstFile: files?.[0],
+    //   filters,
+    // });
 
     // Generate signed URLs for each file
     const filesWithUrls = await Promise.all(
@@ -606,10 +606,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         try {
-          console.log(`🔗 [FILES-GET] Generating signed URL for file ${file.id}:`, {
-            bucketName: file.bucketName,
-            filePath: file.filePath,
-          });
+          // console.log(`🔗 [FILES-GET] Generating signed URL for file ${file.id}:`, {
+          //   bucketName: file.bucketName,
+          //   filePath: file.filePath,
+          // });
 
           const { data: urlData, error: urlError } = await supabaseAdmin!.storage
             .from(file.bucketName)
@@ -620,10 +620,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             return { ...file, publicUrl: null };
           }
 
-          console.log(
-            `✅ [FILES-GET] Generated signed URL for file ${file.id}:`,
-            urlData?.signedUrl
-          );
+          // console.log(
+          //   `✅ [FILES-GET] Generated signed URL for file ${file.id}:`,
+          //   urlData?.signedUrl
+          // );
 
           // Extract nested data from the join results
           const projectData = file.projects || {};

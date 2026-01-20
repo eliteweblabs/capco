@@ -21,8 +21,17 @@ if (currentRole !== "Admin") {
   return Astro.redirect("/dashboard");
 }
 
-const companyData = await globalCompanyData();
+const companyDataRaw = await globalCompanyData();
 const { globalInputClasses } = globalClasses();
+
+// Extract company values with safe fallbacks
+const companyName = (companyDataRaw && companyDataRaw.globalCompanyName) ? companyDataRaw.globalCompanyName : "Your Company";
+const companySlogan = (companyDataRaw && companyDataRaw.globalCompanySlogan) ? companyDataRaw.globalCompanySlogan : "Your Slogan";
+const companyPhone = (companyDataRaw && companyDataRaw.globalCompanyPhone) ? companyDataRaw.globalCompanyPhone : "(555) 123-4567";
+const companyEmail = (companyDataRaw && companyDataRaw.globalCompanyEmail) ? companyDataRaw.globalCompanyEmail : "info@company.com";
+const companyWebsite = (companyDataRaw && companyDataRaw.globalCompanyWebsite) ? companyDataRaw.globalCompanyWebsite : "https://company.com";
+const companyAddress = (companyDataRaw && companyDataRaw.globalCompanyAddress) ? companyDataRaw.globalCompanyAddress : "123 Business St";
+const companyLogo = (companyDataRaw && companyDataRaw.globalCompanyLogo) ? companyDataRaw.globalCompanyLogo : "";
 
 // Organize placeholders by category
 const placeholderCategories = [
@@ -60,17 +69,17 @@ const placeholderCategories = [
     name: "Global Company Information",
     description: "Placeholders for your company's global settings",
     placeholders: [
-      { placeholder: "{{GLOBAL_COMPANY_NAME}}", description: "Your company name", example: companyData.globalCompanyName || "Your Company" },
-      { placeholder: "{{RAILWAY_PROJECT_NAME}}", description: "Alias for company name", example: companyData.globalCompanyName || "Your Company" },
-      { placeholder: "{{GLOBAL_COMPANY_SLOGAN}}", description: "Company slogan/tagline", example: companyData.globalCompanySlogan || "Your Slogan" },
-      { placeholder: "{{GLOBAL_COMPANY_PHONE}}", description: "Company phone number", example: companyData.globalCompanyPhone || "(555) 123-4567" },
-      { placeholder: "{{GLOBAL_COMPANY_EMAIL}}", description: "Company email address", example: companyData.globalCompanyEmail || "info@company.com" },
-      { placeholder: "{{GLOBAL_COMPANY_WEBSITE}}", description: "Company website URL", example: companyData.globalCompanyWebsite || "https://company.com" },
-      { placeholder: "{{GLOBAL_COMPANY_ADDRESS}}", description: "Company address", example: companyData.globalCompanyAddress || "123 Business St" },
-      { placeholder: "{{COMPANY_ADDRESS}}", description: "Alias for company address", example: companyData.globalCompanyAddress || "123 Business St" },
-      { placeholder: "{{COMPANY_PHONE}}", description: "Alias for company phone", example: companyData.globalCompanyPhone || "(555) 123-4567" },
-      { placeholder: "{{COMPANY_EMAIL}}", description: "Alias for company email", example: companyData.globalCompanyEmail || "info@company.com" },
-      { placeholder: "{{COMPANY_WEBSITE}}", description: "Alias for company website", example: companyData.globalCompanyWebsite || "https://company.com" },
+      { placeholder: "{{GLOBAL_COMPANY_NAME}}", description: "Your company name", example: companyName },
+      { placeholder: "{{RAILWAY_PROJECT_NAME}}", description: "Alias for company name", example: companyName },
+      { placeholder: "{{GLOBAL_COMPANY_SLOGAN}}", description: "Company slogan/tagline", example: companySlogan },
+      { placeholder: "{{GLOBAL_COMPANY_PHONE}}", description: "Company phone number", example: companyPhone },
+      { placeholder: "{{GLOBAL_COMPANY_EMAIL}}", description: "Company email address", example: companyEmail },
+      { placeholder: "{{GLOBAL_COMPANY_WEBSITE}}", description: "Company website URL", example: companyWebsite },
+      { placeholder: "{{GLOBAL_COMPANY_ADDRESS}}", description: "Company address", example: companyAddress },
+      { placeholder: "{{COMPANY_ADDRESS}}", description: "Alias for company address", example: companyAddress },
+      { placeholder: "{{COMPANY_PHONE}}", description: "Alias for company phone", example: companyPhone },
+      { placeholder: "{{COMPANY_EMAIL}}", description: "Alias for company email", example: companyEmail },
+      { placeholder: "{{COMPANY_WEBSITE}}", description: "Alias for company website", example: companyWebsite },
       { placeholder: "{{COMPANY_LOGO_URL}}", description: "Company logo SVG markup", example: "&lt;svg&gt;...&lt;/svg&gt;" },
       { placeholder: "{{GLOBAL_COMPANY_LOGO_SVG}}", description: "Company logo SVG markup", example: "&lt;svg&gt;...&lt;/svg&gt;" },
       { placeholder: "{{COMPANY_ICON}}", description: "Company icon SVG markup", example: "&lt;svg&gt;...&lt;/svg&gt;" },
@@ -154,7 +163,7 @@ const placeholderCategories = [
       { placeholder: "{{DOCUMENT_VERSION}}", description: "Document version number", example: "1.0" },
       { placeholder: "{{REGISTRATION_NUMBER}}", description: "Professional registration number", example: "48388" },
       { placeholder: "{{REGISTRATION_EXPIRATION_DATE}}", description: "Registration expiration date", example: "06/30/2026" },
-      { placeholder: "{{PROFESSIONAL_NAME}}", description: "Professional/company name", example: companyData.globalCompanyName || "Your Company" },
+      { placeholder: "{{PROFESSIONAL_NAME}}", description: "Professional/company name", example: companyName },
       { placeholder: "{{ASCII_CHECKBOX}}", description: "ASCII checkbox character", example: "☐" },
       { placeholder: "{{BLANK}}", description: "Empty string (removes placeholder)", example: "" },
     ],
@@ -167,7 +176,7 @@ const placeholderCategories = [
       { placeholder: "{{project.authorProfile.firstName}}", description: "Access nested author profile data", example: "John" },
       { placeholder: "{{project.assignedToProfile.email}}", description: "Access nested assigned staff data", example: "jane@company.com" },
       { placeholder: "{{project.contractData.signedDate}}", description: "Access nested contract data", example: "01/18/2025" },
-      { placeholder: "{{global.globalCompanyName}}", description: "Access global company data", example: companyData.globalCompanyName || "Your Company" },
+      { placeholder: "{{global.globalCompanyName}}", description: "Access global company data", example: companyName },
       { placeholder: "{{statusData.statuses.2.admin.message}}", description: "Access status-specific messages", example: "Status message" },
     ],
   },
@@ -179,9 +188,9 @@ const placeholderCategories = [
   description="Complete list of available placeholders for templates and content"
   {currentUser}
   {session}
-  globalCompanyName={companyData.globalCompanyName}
-  globalCompanySlogan={companyData.globalCompanySlogan}
-  globalCompanyLogo={companyData.globalCompanyLogo}
+  globalCompanyName={companyName}
+  globalCompanySlogan={companySlogan}
+  globalCompanyLogo={companyLogo}
 >
   <div class="max-w-7xl mx-auto px-4 py-8">
     <div class="mb-8">
@@ -196,10 +205,10 @@ const placeholderCategories = [
     <div class="mb-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
       <h2 class="text-lg font-semibold mb-2 text-blue-900 dark:text-blue-100">How to Use Placeholders</h2>
       <p class="text-sm text-blue-800 dark:text-blue-200 mb-3">
-        Wrap placeholder names in double curly braces: <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{{PROJECT_TITLE}}</code>
+        Wrap placeholder names in double curly braces: <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{'{{'}PROJECT_TITLE{'}}'}</code>
       </p>
       <p class="text-sm text-blue-800 dark:text-blue-200">
-        Example: <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">Welcome to {{PROJECT_TITLE}} at {{PROJECT_ADDRESS}}</code>
+        Example: <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">Welcome to {'{{'}PROJECT_TITLE{'}}'} at {'{{'}PROJECT_ADDRESS{'}}'}</code>
         will render as: <em>"Welcome to Fire Protection System Design at 123 Main St, City, State"</em>
       </p>
     </div>
@@ -257,23 +266,23 @@ const placeholderCategories = [
       <h2 class="text-lg font-semibold mb-2 text-yellow-900 dark:text-yellow-100">Important Notes</h2>
       <ul class="list-disc list-inside space-y-2 text-sm text-yellow-800 dark:text-yellow-200">
         <li>Placeholders are case-sensitive. Use uppercase letters as shown.</li>
-        <li>Spaces around placeholder names are optional: <code>{{PROJECT_TITLE}}</code> and <code>{{ PROJECT_TITLE }}</code> both work.</li>
+        <li>Spaces around placeholder names are optional: <code>{'{{'}PROJECT_TITLE{'}}'}</code> and <code>{'{{'} PROJECT_TITLE {'}}'}</code> both work.</li>
         <li>Some placeholders may return "N/A" or "Missing" if the data is not available.</li>
-        <li>Dynamic placeholders using dot notation (e.g., <code>{{project.title}}</code>) can access any nested data structure.</li>
-        <li>Link placeholders like <code>{{PROJECT_LINK?status=documents}}</code> generate clickable buttons automatically.</li>
+        <li>Dynamic placeholders using dot notation (e.g., <code>{'{{'}project.title{'}}'}</code>) can access any nested data structure.</li>
+        <li>Link placeholders like <code>{'{{'}PROJECT_LINK?status=documents{'}}'}</code> generate clickable buttons automatically.</li>
         <li>HTML is supported in template messages, so you can combine placeholders with HTML tags.</li>
       </ul>
     </div>
   </div>
 
-  <script>
+  <script is:inline>
     // Copy placeholder to clipboard functionality
     document.addEventListener('click', async (e) => {
-      const target = e.target as HTMLElement;
-      const copyBtn = target.closest('.copy-placeholder-btn');
+      const target = e.target;
+      const copyBtn = target?.closest('.copy-placeholder-btn');
       
       if (copyBtn) {
-        const placeholder = (copyBtn as HTMLElement).dataset.placeholder;
+        const placeholder = copyBtn.dataset.placeholder;
         if (placeholder) {
           try {
             await navigator.clipboard.writeText(placeholder);
