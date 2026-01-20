@@ -107,13 +107,6 @@ const { globalInputClasses } = globalClasses();
       </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div
-      id="toast-notification"
-      class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg hidden"
-    >
-      <span id="toast-message"></span>
-    </div>
   </div>
 
   <!-- Edit Modal -->
@@ -234,8 +227,6 @@ const { globalInputClasses } = globalClasses();
     // DOM Elements
     const modal = document.getElementById('edit-modal') as HTMLElement;
     const templateForm = document.getElementById('template-form') as HTMLFormElement;
-    const toast = document.getElementById('toast-notification') as HTMLElement;
-    const toastMessage = document.getElementById('toast-message') as HTMLElement;
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
@@ -306,7 +297,9 @@ const { globalInputClasses } = globalClasses();
         renderTemplates();
       } catch (error) {
         console.error('Error loading templates:', error);
-        showToast('Failed to load templates', 'error');
+        if (window.showError) {
+          window.showError('Failed to Load Templates', 'Unable to load templates. Please try again.', 0);
+        }
       }
     }
 
@@ -406,16 +399,40 @@ const { globalInputClasses } = globalClasses();
       e.preventDefault();
 
       const formData = new FormData(templateForm);
-      const data = {
-        id: formData.get('id') || null,
-        type: formData.get('type'),
-        title: formData.get('title'),
-        message: formData.get('message'),
+      
+      // Get and validate required fields
+      const idValue = formData.get('id');
+      const type = formData.get('type') as string;
+      const title = formData.get('title') as string;
+      const message = formData.get('message') as string;
+      
+      // Validate required fields
+      if (!type || !title || !message) {
+        if (window.showError) {
+          window.showError('Validation Error', 'Please fill in all required fields (type, title, message)', 0);
+        }
+        return;
+      }
+      
+      // Parse ID - convert to number if present, otherwise null
+      const id = idValue && idValue.toString().trim() 
+        ? (parseInt(idValue.toString()) || null)
+        : null;
+      
+      const data: any = {
+        type: type.trim(),
+        title: title.trim(),
+        message: message.trim(),
         orderIndex: parseInt(formData.get('orderIndex') as string) || 0,
         internal: formData.get('internal') === 'on',
         markCompleted: formData.get('markCompleted') === 'on',
         enabled: formData.get('enabled') === 'on',
       };
+      
+      // Only include id if it's a valid number (for updates)
+      if (id !== null && !isNaN(id)) {
+        data.id = id;
+      }
 
       try {
         const response = await fetch('/api/project-templates/upsert', {
@@ -424,14 +441,33 @@ const { globalInputClasses } = globalClasses();
           body: JSON.stringify(data),
         });
 
-        if (!response.ok) throw new Error('Failed to save template');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Failed to save template' }));
+          const errorMessage = errorData.error || `Failed to save template (${response.status})`;
+          const errorDetails = errorData.details ? `: ${errorData.details}` : '';
+          throw new Error(`${errorMessage}${errorDetails}`);
+        }
 
-        showToast(data.id ? 'Template updated successfully' : 'Template created successfully', 'success');
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to save template');
+        }
+
+        if (window.showSuccess) {
+          window.showSuccess(
+            data.id ? 'Template Updated' : 'Template Created',
+            data.id ? 'Template updated successfully' : 'Template created successfully',
+            4000
+          );
+        }
         closeModal();
         await loadTemplates();
       } catch (error) {
         console.error('Error saving template:', error);
-        showToast('Failed to save template', 'error');
+        const errorMessage = error instanceof Error ? error.message : 'Failed to save template';
+        if (window.showError) {
+          window.showError('Save Failed', errorMessage, 0);
+        }
       }
     }
 
@@ -447,11 +483,15 @@ const { globalInputClasses } = globalClasses();
 
         if (!response.ok) throw new Error('Failed to delete template');
 
-        showToast('Template deleted successfully', 'success');
+        if (window.showSuccess) {
+          window.showSuccess('Template Deleted', 'Template deleted successfully', 4000);
+        }
         await loadTemplates();
       } catch (error) {
         console.error('Error deleting template:', error);
-        showToast('Failed to delete template', 'error');
+        if (window.showError) {
+          window.showError('Delete Failed', 'Failed to delete template', 0);
+        }
       }
     }
 
@@ -461,16 +501,6 @@ const { globalInputClasses } = globalClasses();
       if (template) {
         openModal(template.type, template);
       }
-    }
-
-    function showToast(message: string, type: 'success' | 'error') {
-      toastMessage.textContent = message;
-      toast.classList.remove('hidden', 'bg-green-500', 'bg-red-500');
-      toast.classList.add(type === 'success' ? 'bg-green-500' : 'bg-red-500');
-
-      setTimeout(() => {
-        toast.classList.add('hidden');
-      }, 3000);
     }
 
     // Expose functions to window for onclick handlers

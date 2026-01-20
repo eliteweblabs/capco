@@ -1,0 +1,305 @@
+---
+/**
+ * Placeholders Reference Page
+ * Lists all available placeholders that can be used in templates, messages, and content
+ */
+import { checkAuth } from "../../../lib/auth";
+import App from "../../../components/ui/App.astro";
+import { globalCompanyData } from "../../api/global/global-company-data";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+// Redirect to login if not authenticated
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+
+// Check if user is admin
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const companyData = await globalCompanyData();
+const { globalInputClasses } = globalClasses();
+
+// Organize placeholders by category
+const placeholderCategories = [
+  {
+    name: "Project Information",
+    description: "Placeholders related to project details",
+    placeholders: [
+      { placeholder: "{{PROJECT_ID}}", description: "Project ID number", example: "123" },
+      { placeholder: "{{PROJECT_TITLE}}", description: "Project title/name", example: "Fire Protection System Design" },
+      { placeholder: "{{PROJECT_ADDRESS}}", description: "Project address", example: "123 Main St, City, State" },
+      { placeholder: "{{PROJECT_DESCRIPTION}}", description: "Project description", example: "Complete fire sprinkler system..." },
+      { placeholder: "{{PROJECT_SQ_FT}}", description: "Square footage", example: "5000" },
+      { placeholder: "{{PROJECT_NEW_CONSTRUCTION}}", description: "New construction status", example: "☑ New Construction" },
+      { placeholder: "{{PROJECT_CREATED_DATE}}", description: "Project creation date", example: "01/15/2025" },
+      { placeholder: "{{PROJECT_EST_TIME}}", description: "Estimated completion time", example: "2 weeks" },
+      { placeholder: "{{PROJECT_BUILDING_TYPE}}", description: "Building type information", example: "Commercial" },
+      { placeholder: "{{PROJECT_COMPANY_NAME}}", description: "Client company name (from project)", example: "ABC Corp" },
+    ],
+  },
+  {
+    name: "Client Information",
+    description: "Placeholders related to the client/author",
+    placeholders: [
+      { placeholder: "{{CLIENT_NAME}}", description: "Client's full name or company name", example: "John Doe" },
+      { placeholder: "{{CLIENT_EMAIL}}", description: "Client's email address", example: "john@example.com" },
+      { placeholder: "{{CLIENT_FIRST_NAME}}", description: "Client's first name", example: "John" },
+      { placeholder: "{{CLIENT_LAST_NAME}}", description: "Client's last name", example: "Doe" },
+      { placeholder: "{{COMPANY_NAME}}", description: "Client company name (can also refer to global company)", example: "ABC Corp" },
+      { placeholder: "{{FIRST_NAME}}", description: "Alias for client first name", example: "John" },
+      { placeholder: "{{LAST_NAME}}", description: "Alias for client last name", example: "Doe" },
+      { placeholder: "{{PHONE}}", description: "Client phone number", example: "(555) 123-4567" },
+    ],
+  },
+  {
+    name: "Global Company Information",
+    description: "Placeholders for your company's global settings",
+    placeholders: [
+      { placeholder: "{{GLOBAL_COMPANY_NAME}}", description: "Your company name", example: companyData.globalCompanyName || "Your Company" },
+      { placeholder: "{{RAILWAY_PROJECT_NAME}}", description: "Alias for company name", example: companyData.globalCompanyName || "Your Company" },
+      { placeholder: "{{GLOBAL_COMPANY_SLOGAN}}", description: "Company slogan/tagline", example: companyData.globalCompanySlogan || "Your Slogan" },
+      { placeholder: "{{GLOBAL_COMPANY_PHONE}}", description: "Company phone number", example: companyData.globalCompanyPhone || "(555) 123-4567" },
+      { placeholder: "{{GLOBAL_COMPANY_EMAIL}}", description: "Company email address", example: companyData.globalCompanyEmail || "info@company.com" },
+      { placeholder: "{{GLOBAL_COMPANY_WEBSITE}}", description: "Company website URL", example: companyData.globalCompanyWebsite || "https://company.com" },
+      { placeholder: "{{GLOBAL_COMPANY_ADDRESS}}", description: "Company address", example: companyData.globalCompanyAddress || "123 Business St" },
+      { placeholder: "{{COMPANY_ADDRESS}}", description: "Alias for company address", example: companyData.globalCompanyAddress || "123 Business St" },
+      { placeholder: "{{COMPANY_PHONE}}", description: "Alias for company phone", example: companyData.globalCompanyPhone || "(555) 123-4567" },
+      { placeholder: "{{COMPANY_EMAIL}}", description: "Alias for company email", example: companyData.globalCompanyEmail || "info@company.com" },
+      { placeholder: "{{COMPANY_WEBSITE}}", description: "Alias for company website", example: companyData.globalCompanyWebsite || "https://company.com" },
+      { placeholder: "{{COMPANY_LOGO_URL}}", description: "Company logo SVG markup", example: "&lt;svg&gt;...&lt;/svg&gt;" },
+      { placeholder: "{{GLOBAL_COMPANY_LOGO_SVG}}", description: "Company logo SVG markup", example: "&lt;svg&gt;...&lt;/svg&gt;" },
+      { placeholder: "{{COMPANY_ICON}}", description: "Company icon SVG markup", example: "&lt;svg&gt;...&lt;/svg&gt;" },
+      { placeholder: "{{GLOBAL_COMPANY_ICON}}", description: "Company icon SVG markup", example: "&lt;svg&gt;...&lt;/svg&gt;" },
+      { placeholder: "{{GLOBAL_COMPANY_ICON_SVG}}", description: "Company icon SVG markup", example: "&lt;svg&gt;...&lt;/svg&gt;" },
+      { placeholder: "{{GLOBAL_COLOR_PRIMARY}}", description: "Primary brand color (hex)", example: "#825BDD" },
+      { placeholder: "{{GLOBAL_COLOR_SECONDARY}}", description: "Secondary brand color (hex)", example: "#0ea5e9" },
+    ],
+  },
+  {
+    name: "Staff/Assignment Information",
+    description: "Placeholders related to assigned staff members",
+    placeholders: [
+      { placeholder: "{{ASSIGNED_STAFF_NAME}}", description: "Assigned staff member's name", example: "Jane Smith" },
+      { placeholder: "{{ASSIGNED_STAFF_EMAIL}}", description: "Assigned staff's email", example: "jane@company.com" },
+      { placeholder: "{{ASSIGNED_STAFF_FIRST_NAME}}", description: "Assigned staff's first name", example: "Jane" },
+      { placeholder: "{{ASSIGNED_STAFF_LAST_NAME}}", description: "Assigned staff's last name", example: "Smith" },
+    ],
+  },
+  {
+    name: "Status Information",
+    description: "Placeholders related to project status",
+    placeholders: [
+      { placeholder: "{{STATUS_NAME}}", description: "Current project status name", example: "In Review" },
+      { placeholder: "{{PROJECT_STATUS_CODE}}", description: "Status code number", example: "2" },
+      { placeholder: "{{EST_TIME}}", description: "Estimated completion time", example: "2 weeks" },
+    ],
+  },
+  {
+    name: "Links & URLs",
+    description: "Placeholders for generating links",
+    placeholders: [
+      { placeholder: "{{BASE_URL}}", description: "Application base URL", example: "https://yourapp.com" },
+      { placeholder: "{{RAILWAY_PUBLIC_DOMAIN}}", description: "Application base URL", example: "https://yourapp.com" },
+      { placeholder: "{{PROJECT_LINK}}", description: "Link to project page", example: "https://yourapp.com/project/123" },
+      { placeholder: "{{PROJECT_LINK?status=documents}}", description: "Link to project page with tab parameter", example: "Button link to Documents tab" },
+      { placeholder: "{{CONTRACT_URL}}", description: "Link to project contract", example: "https://yourapp.com/project/123/contract" },
+      { placeholder: "{{BUTTON_LINK}}", description: "Button link URL", example: "https://yourapp.com/project/123" },
+      { placeholder: "{{BUTTON_TEXT}}", description: "Button text", example: "View Project" },
+    ],
+  },
+  {
+    name: "Date & Time",
+    description: "Placeholders for dates and times",
+    placeholders: [
+      { placeholder: "{{CURRENT_DATE}}", description: "Current date", example: "01/20/2025" },
+      { placeholder: "{{CURRENT_DATETIME}}", description: "Current date and time", example: "01/20/2025 10:30 AM" },
+      { placeholder: "{{PROJECT_CREATED_DATE}}", description: "Project creation date", example: "01/15/2025" },
+      { placeholder: "{{YEAR}}", description: "Current year", example: "2025" },
+    ],
+  },
+  {
+    name: "Signature Information",
+    description: "Placeholders related to contract signatures",
+    placeholders: [
+      { placeholder: "{{PROJECT_SIGNATURE_DATE}}", description: "Date when contract was signed", example: "01/18/2025" },
+      { placeholder: "{{PROJECT_SIGNATURE_TIME}}", description: "Time when contract was signed", example: "2:30 PM" },
+      { placeholder: "{{PROJECT_SIGNATURE_IP}}", description: "IP address of signer", example: "192.168.1.1" },
+      { placeholder: "{{PROJECT_SIGNATURE_IMAGE}}", description: "Signature image data", example: "base64 image data" },
+    ],
+  },
+  {
+    name: "Project Field Details",
+    description: "Placeholders for specific project form fields",
+    placeholders: [
+      { placeholder: "{{NFPA_VERSION}}", description: "NFPA version", example: "NFPA 13" },
+      { placeholder: "{{HAZARDOUS_MATERIAL}}", description: "Hazardous material information", example: "None" },
+      { placeholder: "{{SITE_ACCESS}}", description: "Site access details", example: "24/7 Access" },
+      { placeholder: "{{EXTERIOR_BEACON}}", description: "Exterior beacon information", example: "Required" },
+      { placeholder: "{{FIRE_SPRINKLER_INSTALLATION}}", description: "Fire sprinkler installation type", example: "Wet System" },
+      { placeholder: "{{COMMENCEMENT_OF_CONSTRUCTION}}", description: "Construction start date", example: "02/01/2025" },
+      { placeholder: "{{SUPPRESSION_DETECTION_SYSTEMS}}", description: "Suppression/detection systems", example: "Sprinkler + Alarm" },
+      { placeholder: "{{HPS_COMMODITIES}}", description: "HPS commodities information", example: "Standard" },
+    ],
+  },
+  {
+    name: "Document & System",
+    description: "Placeholders for documents and system information",
+    placeholders: [
+      { placeholder: "{{DOCUMENT_ID}}", description: "Unique document ID", example: "DOC-1705789200000" },
+      { placeholder: "{{DOCUMENT_VERSION}}", description: "Document version number", example: "1.0" },
+      { placeholder: "{{REGISTRATION_NUMBER}}", description: "Professional registration number", example: "48388" },
+      { placeholder: "{{REGISTRATION_EXPIRATION_DATE}}", description: "Registration expiration date", example: "06/30/2026" },
+      { placeholder: "{{PROFESSIONAL_NAME}}", description: "Professional/company name", example: companyData.globalCompanyName || "Your Company" },
+      { placeholder: "{{ASCII_CHECKBOX}}", description: "ASCII checkbox character", example: "☐" },
+      { placeholder: "{{BLANK}}", description: "Empty string (removes placeholder)", example: "" },
+    ],
+  },
+  {
+    name: "Dynamic Placeholders",
+    description: "Advanced placeholders using dot notation for nested data",
+    placeholders: [
+      { placeholder: "{{project.title}}", description: "Access any project field using dot notation", example: "Fire Protection System" },
+      { placeholder: "{{project.authorProfile.firstName}}", description: "Access nested author profile data", example: "John" },
+      { placeholder: "{{project.assignedToProfile.email}}", description: "Access nested assigned staff data", example: "jane@company.com" },
+      { placeholder: "{{project.contractData.signedDate}}", description: "Access nested contract data", example: "01/18/2025" },
+      { placeholder: "{{global.globalCompanyName}}", description: "Access global company data", example: companyData.globalCompanyName || "Your Company" },
+      { placeholder: "{{statusData.statuses.2.admin.message}}", description: "Access status-specific messages", example: "Status message" },
+    ],
+  },
+];
+---
+
+<App
+  title="Placeholders Reference"
+  description="Complete list of available placeholders for templates and content"
+  {currentUser}
+  {session}
+  globalCompanyName={companyData.globalCompanyName}
+  globalCompanySlogan={companyData.globalCompanySlogan}
+  globalCompanyLogo={companyData.globalCompanyLogo}
+>
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">Placeholders Reference</h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        Complete list of all available placeholders that can be used in templates, messages, discussions, and content.
+        Placeholders are replaced with actual values when content is rendered.
+      </p>
+    </div>
+
+    <!-- Usage Instructions -->
+    <div class="mb-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+      <h2 class="text-lg font-semibold mb-2 text-blue-900 dark:text-blue-100">How to Use Placeholders</h2>
+      <p class="text-sm text-blue-800 dark:text-blue-200 mb-3">
+        Wrap placeholder names in double curly braces: <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{{PROJECT_TITLE}}</code>
+      </p>
+      <p class="text-sm text-blue-800 dark:text-blue-200">
+        Example: <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">Welcome to {{PROJECT_TITLE}} at {{PROJECT_ADDRESS}}</code>
+        will render as: <em>"Welcome to Fire Protection System Design at 123 Main St, City, State"</em>
+      </p>
+    </div>
+
+    <!-- Placeholder Categories -->
+    {placeholderCategories.map((category) => (
+      <div class="mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h2 class="text-2xl font-bold mb-2 text-primary-600 dark:text-primary-400">{category.name}</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{category.description}</p>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-4 py-3 font-medium">Placeholder</th>
+                <th class="px-4 py-3 font-medium">Description</th>
+                <th class="px-4 py-3 font-medium">Example Value</th>
+                <th class="px-4 py-3 font-medium w-24">Copy</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              {category.placeholders.map((item) => (
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td class="px-4 py-3">
+                    <code class="text-primary-600 dark:text-primary-400 font-mono text-sm bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
+                      {item.placeholder}
+                    </code>
+                  </td>
+                  <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                    {item.description}
+                  </td>
+                  <td class="px-4 py-3 text-gray-600 dark:text-gray-400 italic">
+                    {item.example}
+                  </td>
+                  <td class="px-4 py-3">
+                    <button
+                      type="button"
+                      class="copy-placeholder-btn text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                      data-placeholder={item.placeholder}
+                      title="Copy placeholder"
+                    >
+                      <i class="bx bx-copy text-lg"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ))}
+
+    <!-- Notes Section -->
+    <div class="mt-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+      <h2 class="text-lg font-semibold mb-2 text-yellow-900 dark:text-yellow-100">Important Notes</h2>
+      <ul class="list-disc list-inside space-y-2 text-sm text-yellow-800 dark:text-yellow-200">
+        <li>Placeholders are case-sensitive. Use uppercase letters as shown.</li>
+        <li>Spaces around placeholder names are optional: <code>{{PROJECT_TITLE}}</code> and <code>{{ PROJECT_TITLE }}</code> both work.</li>
+        <li>Some placeholders may return "N/A" or "Missing" if the data is not available.</li>
+        <li>Dynamic placeholders using dot notation (e.g., <code>{{project.title}}</code>) can access any nested data structure.</li>
+        <li>Link placeholders like <code>{{PROJECT_LINK?status=documents}}</code> generate clickable buttons automatically.</li>
+        <li>HTML is supported in template messages, so you can combine placeholders with HTML tags.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Copy placeholder to clipboard functionality
+    document.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      const copyBtn = target.closest('.copy-placeholder-btn');
+      
+      if (copyBtn) {
+        const placeholder = (copyBtn as HTMLElement).dataset.placeholder;
+        if (placeholder) {
+          try {
+            await navigator.clipboard.writeText(placeholder);
+            
+            // Visual feedback
+            const icon = copyBtn.querySelector('i');
+            if (icon) {
+              const originalClass = icon.className;
+              icon.className = 'bx bx-check text-lg text-green-600';
+              
+              setTimeout(() => {
+                icon.className = originalClass;
+              }, 2000);
+            }
+            
+            if (window.showSuccess) {
+              window.showSuccess('Copied!', `Copied ${placeholder} to clipboard`, 2000);
+            }
+          } catch (err) {
+            console.error('Failed to copy:', err);
+            if (window.showError) {
+              window.showError('Copy Failed', 'Failed to copy placeholder to clipboard', 0);
+            }
+          }
+        }
+      }
+    });
+  </script>
+</App>

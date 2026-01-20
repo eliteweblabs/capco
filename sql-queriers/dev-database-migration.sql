@@ -12,7 +12,7 @@
 
 -- Drop tables with foreign key dependencies first (children before parents)
 DROP TABLE IF EXISTS documentComponents CASCADE;
-DROP TABLE IF EXISTS template_component_mapping CASCADE;
+DROP TABLE IF EXISTS templateComponentMapping CASCADE;
 DROP TABLE IF EXISTS generated_documents CASCADE;
 DROP TABLE IF EXISTS pdf_components CASCADE;
 DROP TABLE IF EXISTS pdf_templates CASCADE;
@@ -398,8 +398,8 @@ CREATE TABLE IF NOT EXISTS pdf_components (
   "updatedAt" timestamp with time zone DEFAULT now()
 );
 
--- template_component_mapping table
-CREATE TABLE IF NOT EXISTS template_component_mapping (
+-- templateComponentMapping table
+CREATE TABLE IF NOT EXISTS templateComponentMapping (
   id serial PRIMARY KEY,
   "templateId" integer REFERENCES pdf_templates(id) ON DELETE CASCADE,
   "componentId" integer REFERENCES pdf_components(id) ON DELETE CASCADE,

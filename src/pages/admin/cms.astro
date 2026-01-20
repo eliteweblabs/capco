@@ -1148,8 +1148,7 @@ You can embed components:
       const createBtn = document.getElementById("create-page-btn");
       const cancelBtn = document.getElementById("cancel-btn");
       const closeBtn = document.getElementById("close-modal-btn");
-      const errorDiv = document.getElementById("form-error");
-      const successDiv = document.getElementById("form-success");
+      // Error and success divs removed - using global toast system instead
       const modalTitle = document.getElementById("modal-title");
       const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
       const navPropertiesSection = document.getElementById("navigation-properties");
@@ -1183,8 +1182,6 @@ You can embed components:
         }
         if (modalTitle) modalTitle.textContent = "Create New Page";
         modal.classList.remove("hidden");
-        if (errorDiv) errorDiv.classList.add("hidden");
-        if (successDiv) successDiv.classList.add("hidden");
       });
 
       // Open modal for editing existing page
@@ -1248,11 +1245,11 @@ You can embed components:
             }
 
             modal.classList.remove("hidden");
-            if (errorDiv) errorDiv.classList.add("hidden");
-            if (successDiv) successDiv.classList.add("hidden");
           } catch (error) {
             console.error("Error loading page:", error);
-            alert("Failed to load page data");
+            if (window.showError) {
+              window.showError("Load Failed", "Failed to load page data", 0);
+            }
           }
         });
       });
@@ -1273,14 +1270,21 @@ You can embed components:
             });
 
             if (response.ok) {
-              location.reload();
+              if (window.showSuccess) {
+                window.showSuccess("Page Deleted", "Page deleted successfully", 2000);
+              }
+              setTimeout(() => location.reload(), 500);
             } else {
               const data = await response.json();
-              alert(data.error || "Failed to delete page");
+              if (window.showError) {
+                window.showError("Delete Failed", data.error || "Failed to delete page", 0);
+              }
             }
           } catch (error) {
             console.error("Error deleting page:", error);
-            alert("Failed to delete page");
+            if (window.showError) {
+              window.showError("Delete Failed", "Failed to delete page", 0);
+            }
           }
         });
       });
@@ -1389,8 +1393,10 @@ You can embed components:
                 });
               } catch (error) {
                 console.error("Error updating page order:", error);
-                alert("Failed to save new order. Reloading page...");
-                location.reload();
+                if (window.showError) {
+                  window.showError("Save Failed", "Failed to save new order. Reloading page...", 3000);
+                }
+                setTimeout(() => location.reload(), 1000);
               }
             }
           });
@@ -1410,10 +1416,15 @@ You can embed components:
             throw new Error(result.error || "Failed to import markdown file");
           }
 
-          alert(`Successfully imported "${slug}" from markdown!`);
-          location.reload();
+          if (window.showSuccess) {
+            window.showSuccess("Import Successful", `Successfully imported "${slug}" from markdown!`, 3000);
+          }
+          setTimeout(() => location.reload(), 500);
         } catch (error) {
-          alert(`Error importing: ${error.message || error}`);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          if (window.showError) {
+            window.showError("Import Failed", `Error importing: ${errorMsg}`, 0);
+          }
         }
       }
 
@@ -1448,17 +1459,26 @@ You can embed components:
 
             if (result.errors && result.errors.length > 0) {
               const errorList = result.errors.map((e) => `- ${e.slug}: ${e.error}`).join("\n");
-              alert(
-                `Imported ${result.imported} files, but ${result.errors.length} failed:\n\n${errorList}`
-              );
+              if (window.showWarning) {
+                window.showWarning(
+                  "Partial Import",
+                  `Imported ${result.imported} files, but ${result.errors.length} failed:\n\n${errorList}`,
+                  0
+                );
+              }
             } else {
-              alert(`Successfully imported ${result.imported} markdown files!`);
+              if (window.showSuccess) {
+                window.showSuccess("Import Successful", `Successfully imported ${result.imported} markdown files!`, 4000);
+              }
             }
 
             // Reload page to show imported pages
-            location.reload();
+            setTimeout(() => location.reload(), 500);
           } catch (error) {
-            alert(`Error importing files: ${error.message || error}`);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            if (window.showError) {
+              window.showError("Import Failed", `Error importing files: ${errorMsg}`, 0);
+            }
             importAllBtn.textContent = "Import All Markdown";
             importAllBtn.disabled = false;
           }
@@ -1478,8 +1498,7 @@ You can embed components:
       // Handle form submission
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        if (errorDiv) errorDiv.classList.add("hidden");
-        if (successDiv) successDiv.classList.add("hidden");
+        // Clear any previous notifications
 
         // Get form values directly from inputs (more reliable than FormData)
         const slugInput = document.getElementById("page-slug");
@@ -1526,17 +1545,15 @@ You can embed components:
 
         // Validate required fields
         if (!slug) {
-          if (errorDiv) {
-            errorDiv.textContent = "Slug is required";
-            errorDiv.classList.remove("hidden");
+          if (window.showError) {
+            window.showError("Validation Error", "Slug is required", 0);
           }
           return;
         }
 
         if (!content) {
-          if (errorDiv) {
-            errorDiv.textContent = "Content is required";
-            errorDiv.classList.remove("hidden");
+          if (window.showError) {
+            window.showError("Validation Error", "Content is required", 0);
           }
           return;
         }
@@ -1579,24 +1596,22 @@ You can embed components:
             throw new Error(result.error || result.message || "Failed to save page");
           }
 
-          if (successDiv) {
-            successDiv.textContent = "Page saved successfully! Reloading...";
-            successDiv.classList.remove("hidden");
+          if (window.showSuccess) {
+            window.showSuccess("Page Saved", "Page saved successfully! Reloading...", 4000);
           }
 
           setTimeout(() => {
             location.reload();
           }, 1000);
         } catch (error) {
-          if (errorDiv) {
-            const errorMessage =
-              error instanceof Error
-                ? error.message
-                : typeof error === "string"
-                  ? error
-                  : "An error occurred while saving the page";
-            errorDiv.textContent = errorMessage;
-            errorDiv.classList.remove("hidden");
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : typeof error === "string"
+                ? error
+                : "An error occurred while saving the page";
+          if (window.showError) {
+            window.showError("Save Failed", errorMessage, 0);
           }
           console.error("CMS page save error:", error);
         }

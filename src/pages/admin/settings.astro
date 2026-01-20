@@ -970,8 +970,6 @@ const settings = {
 
 <script>
   const form = document.getElementById("settings-form") as HTMLFormElement;
-  const successMessage = document.getElementById("success-message");
-  const errorMessage = document.getElementById("error-message");
   const saveBtn = document.getElementById("save-settings-btn") as HTMLButtonElement;
 
   // Sync color pickers with text inputs
@@ -1285,9 +1283,7 @@ const settings = {
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // Hide previous messages
-    successMessage?.classList.add("hidden");
-    errorMessage?.classList.add("hidden");
+    // Clear any previous notifications
 
     // Disable submit button
     if (saveBtn) {
@@ -1371,12 +1367,9 @@ const settings = {
 
     // Show validation errors
     if (validationErrors.length > 0) {
-      if (errorMessage) {
-        const messageText = errorMessage.querySelector("p");
-        if (messageText) {
-          messageText.textContent = "Validation errors:\n" + validationErrors.join("\n");
-        }
-        errorMessage.classList.remove("hidden");
+      const errorText = "Validation errors:\n" + validationErrors.join("\n");
+      if (window.showError) {
+        window.showError("Validation Error", errorText, 0);
       }
 
       if (saveBtn) {
@@ -1404,12 +1397,8 @@ const settings = {
       }
 
       // Show success message
-      if (successMessage) {
-        const messageText = successMessage.querySelector("p");
-        if (messageText) {
-          messageText.textContent = "Settings saved successfully! Regenerating colors...";
-        }
-        successMessage.classList.remove("hidden");
+      if (window.showSuccess) {
+        window.showSuccess("Settings Saved", "Settings saved successfully! Regenerating colors...", 4000);
       }
 
       // Inject dynamic colors and fonts if they were updated
@@ -1455,14 +1444,11 @@ const settings = {
             console.log("[settings] Secondary font family updated:", newSecondaryFontFamily);
           }
 
-          if (successMessage) {
-            const messageText = successMessage.querySelector("p");
-            if (messageText) {
-              const updates = [];
-              if (settings.primary_color || settings.secondary_color) updates.push("colors");
-              if (settings.font_family || settings.secondary_font_family) updates.push("fonts");
-              messageText.textContent = `Settings saved successfully! ${updates.join(" and ")} updated. Reloading page...`;
-            }
+          const updates = [];
+          if (settings.primary_color || settings.secondary_color) updates.push("colors");
+          if (settings.font_family || settings.secondary_font_family) updates.push("fonts");
+          if (updates.length > 0 && window.showSuccess) {
+            window.showSuccess("Settings Updated", `Settings saved successfully! ${updates.join(" and ")} updated. Reloading page...`, 4000);
           }
         } catch (error) {
           console.error("[settings] Failed to inject dynamic colors/fonts:", error);
@@ -1475,12 +1461,9 @@ const settings = {
       }, 1500);
     } catch (error: any) {
       // Show error message
-      if (errorMessage) {
-        const messageText = errorMessage.querySelector("p");
-        if (messageText) {
-          messageText.textContent = error.message || "An error occurred while saving settings.";
-        }
-        errorMessage.classList.remove("hidden");
+      const errorMsg = error.message || "An error occurred while saving settings.";
+      if (window.showError) {
+        window.showError("Save Failed", errorMsg, 0);
       }
 
       // Re-enable submit button

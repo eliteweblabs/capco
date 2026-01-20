@@ -53,12 +53,12 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
       id="sidebar-menu"
     >
 
-    {currentUser && currentUser.id && currentRole !== "Client"  && (
+    <!-- {currentUser && currentUser.id && currentRole !== "Client"  && (
 
 <li class="pt-4 pb-2 text-xs text-gray-500 dark:text-gray-400 uppercase">Pages</li>
 
        
-  )}
+  )} -->
 
     <!-- front end navigation (mobile only) -->
     <Fragment set:html={mobileNavigationHTML} />
@@ -93,12 +93,36 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
       </li>
 
       <li>
-        <a href="/admin/design" type="button" class={`${anchorClasses}`}>
-          <SimpleIcon name="settings" class={svgClasses} />
+        <a
+          type="button"
+          class={`${anchorClasses}`}
+          aria-controls="dropdown-design"
+          data-collapse-toggle="dropdown-design"
+          data-sidebar-collapse-item=""
+          href="/admin/design"
+        >
+          <SimpleIcon name="palette" class={svgClasses} />
           <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
             Design
           </span>
+          <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
         </a>
+        <ul id="dropdown-design" class="hidden space-y-2 py-2">
+          <li>
+            <a
+              href="/admin/design"
+              class={`${anchorClasses}`}
+              data-sidebar-collapse-subitem="">Components</a
+            >
+          </li>
+          <li>
+            <a
+              href="/admin/design/placeholders"
+              class={`${anchorClasses}`}
+              data-sidebar-collapse-subitem="">Placeholders</a
+            >
+          </li>
+        </ul>
       </li>
 
       <li>
@@ -130,6 +154,52 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
         </a>
       </li>
       )}
+
+{currentUser && (
+  <li>
+    <a
+      type="button"
+      class={`${anchorClasses}`}
+      aria-controls="dropdown-projects"
+      data-collapse-toggle="dropdown-projects"
+      data-sidebar-collapse-item=""
+      href="/project/dashboard/"
+    >
+      <SimpleIcon
+        name="folder"
+        class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
+      />
+
+      <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide=""
+        >Projects</span
+      >
+      <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
+    </a>
+
+    <ul id="dropdown-projects" class="hidden space-y-2 py-2">
+      <li>
+        <a
+          href="/project/dashboard/"
+          class={`${anchorClasses}`}
+          data-sidebar-collapse-subitem="">Dashboard</a
+        >
+      </li>
+      <li>
+        <a href="/project/new" class={`${anchorClasses}`} data-sidebar-collapse-subitem=""
+          >New</a
+        >
+      </li>
+      {currentUser && currentRole === "Admin" && (
+      <li>
+        <a href="/project/proposals" class={`${anchorClasses}`} data-sidebar-collapse-subitem=""
+          >Proposals</a
+        >
+      </li>
+      )}
+    </ul>
+  </li>
+  )}
+
       <!-- Dynamic Admin Features (from site-config.json) -->
       {
         currentUser && currentRole === "Admin" && adminNavItems.map((item) => (
@@ -201,70 +271,31 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
 
       <!-- Dynamic Tools Features -->
       {
-               currentUser && currentRole === "Admin" && toolsNavItems.length > 0 && (
-          <>
-            <li class="pt-4 pb-2 text-xs text-gray-500 dark:text-gray-400 uppercase">Tools</li>
-            {toolsNavItems.map((item) => (
-              <li>
-                <a href={item.href} class={`${anchorClasses}`} data-sidebar-collapse-item="">
-                  {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
-                  <span
-                    data-sidebar-collapse-hide=""
-                    class="ml-3 flex-1 whitespace-nowrap text-left"
-                  >
-                    {item.label}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </>
+        currentUser && currentRole === "Admin" && toolsNavItems.length > 0 && (
+          <li class="pt-4 pb-2">
+            <span class="text-xs text-gray-500 dark:text-gray-400 uppercase">Tools</span>
+          </li>
         )
       }
-
-      {currentUser && (
-      <li>
-        <a
-          type="button"
-          class={`${anchorClasses}`}
-          aria-controls="dropdown-projects"
-          data-collapse-toggle="dropdown-projects"
-          data-sidebar-collapse-item=""
-          href="/project/dashboard/"
-        >
-          <SimpleIcon
-            name="folder"
-            class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
-          />
-
-          <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide=""
-            >Projects</span
-          >
-          <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
-        </a>
-
-        <ul id="dropdown-projects" class="hidden space-y-2 py-2">
+      {
+        currentUser && currentRole === "Admin" && toolsNavItems.map((item) => (
           <li>
-            <a
-              href="/project/dashboard/"
-              class={`${anchorClasses}`}
-              data-sidebar-collapse-subitem="">Dashboard</a
-            >
+            <a href={item.href} class={`${anchorClasses}`} data-sidebar-collapse-item="">
+              {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
+              <span
+                data-sidebar-collapse-hide=""
+                class="ml-3 flex-1 whitespace-nowrap text-left"
+              >
+                {item.label}
+              </span>
+            </a>
           </li>
-          <li>
-            <a href="/project/new" class={`${anchorClasses}`} data-sidebar-collapse-subitem=""
-              >New</a
-            >
-          </li>
-          {currentUser && currentRole === "Admin" && (
-          <li>
-            <a href="/project/proposals" class={`${anchorClasses}`} data-sidebar-collapse-subitem=""
-              >Proposals</a
-            >
-          </li>
-          )}
-        </ul>
-      </li>
-      )}
+        ))
+      }
+
+    
+
+
 
 
 {currentUser && currentRole === "Admin" && (
@@ -321,12 +352,16 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           </li>
         </ul>
       </li>
-      <li data-sidebar-collapse-hide="" id="online-count">0 online</li>
     )}
     </ul>
+
+
     <div data-sidebar-collapse-hide="">
+      <span data-sidebar-collapse-hide="" id="online-count">0 online</span>
       {chatEnabled && <HttpChatWidget {currentUser} {currentRole} {globalInputClasses} />}
     </div>
+
+    
   </div>
   
   <!-- Fixed footer with social icons -->

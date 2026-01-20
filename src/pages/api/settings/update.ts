@@ -93,14 +93,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const settingData: any = {
           key,
           value: value as string,
+          valueType,
           category,
-          value_type: valueType,
-          updated_at: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
 
-        // Only include updated_by if currentUser.id exists and is valid UUID
+        // Only include updatedBy if currentUser.id exists and is valid UUID
         if (currentUser?.id) {
-          settingData.updated_by = currentUser.id;
+          settingData.updatedBy = currentUser.id;
         }
 
         console.log(`[settings/update] Setting data for ${key}:`, {

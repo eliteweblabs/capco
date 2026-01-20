@@ -350,14 +350,24 @@ const canDeleteFiles =
   }
 
   // Helper function to create accordion HTML using Accordion partial structure
-  function createAccordionHTML(id, title, description, content, open = false) {
+  function createAccordionHTML(id, title, description, content, open = false, backgroundImageUrl = null, badge = null) {
+    // Determine if we have a background image
+    const hasBackgroundImage = backgroundImageUrl && backgroundImageUrl !== "" && !backgroundImageUrl.includes("undefined");
+    const headerBgStyle = hasBackgroundImage 
+      ? `background-image: url('${backgroundImageUrl}'); background-repeat: no-repeat;`
+      : "";
+    const headerBgClass = hasBackgroundImage 
+      ? "accordion-header-with-bg" 
+      : "transition-colors hover:bg-gray-50 dark:hover:bg-gray-700";
+    
     return `
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg relative">
         <!-- Accordion Header -->
-        <div class="flex items-center justify-between  cursor-pointer rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
+        <div class="flex items-center justify-between cursor-pointer rounded-lg ${headerBgClass} relative" style="${headerBgStyle}">
+          ${badge || ""}
           <!-- Clickable header area -->
           <div 
-            class="flex-1"
+            class="flex-1 ${hasBackgroundImage ? 'bg-black bg-opacity-40 dark:bg-opacity-60' : ''}"
             data-accordion-target="#accordion-${id}"
             aria-expanded="${open}"
             aria-controls="accordion-${id}"
@@ -366,10 +376,10 @@ const canDeleteFiles =
             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
           >
             <div class="p-4">
-              <h3 class="text-lg font-medium ${primaryTextClasses} truncate">
+              <h3 class="text-lg font-medium ${primaryTextClasses} truncate ${hasBackgroundImage ? 'text-white drop-shadow-lg' : ''}">
                 ${title}
               </h3>
-              ${description ? `<p class="mt-1 ${secondaryTextClasses} truncate">${description}</p>` : ""}
+              ${description ? `<p class="mt-1 ${secondaryTextClasses} truncate ${hasBackgroundImage ? 'text-white drop-shadow-lg' : ''}">${description}</p>` : ""}
             </div>
           </div>
 
@@ -451,7 +461,7 @@ const canDeleteFiles =
           <label for="file-comments-${file.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
           <textarea 
             id="file-comments-${file.id}"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            class="${globalInputClasses}"
             rows="3"
             placeholder="Enter file description..."
           >${file.comments || ""}</textarea>
@@ -505,7 +515,7 @@ const canDeleteFiles =
             </span>
             
           </div>
-          <p class="text-sm truncate ${secondaryTextClasses}">
+          <p class="text-xs truncate md:whitespace-normal ${secondaryTextClasses}">
             ${formatFileSize(file.fileSize)} • Uploaded ${new Date(file.uploadedAt).toLocaleDateString()} at ${new Date(file.uploadedAt).toLocaleTimeString()}${file.uploaded_by_name ? ` • by ${file.uploaded_by_name}` : ""}
           </p>
         </div>
@@ -589,13 +599,29 @@ const canDeleteFiles =
       </div>
     `;
 
+    // Check if file is an image type for background image
+    const isImageFile = file.fileType && (
+      file.fileType.includes("image") ||
+      file.fileType.includes("png") ||
+      file.fileType.includes("jpg") ||
+      file.fileType.includes("jpeg") ||
+      file.fileType.includes("gif") ||
+      file.fileType.includes("webp")
+    );
+    const backgroundImageUrl = isImageFile && file.publicUrl ? file.publicUrl : null;
+
+    // Get version badge
+    const versionBadge = getVersionBadge(file);
+
     // Create accordion using the Accordion partial structure
     const fileCard = createAccordionHTML(
       `file-${file.id}`,
       fileTitle,
       null, // No description since it's in the title
       accordionContent,
-      false
+      false,
+      backgroundImageUrl,
+      versionBadge
     );
 
     // Add action buttons to the accordion header
@@ -921,20 +947,25 @@ const canDeleteFiles =
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   }
 
-  function getDisplayFileName(file) {
-    // Version badge CSS classes
+  function getVersionBadge(file) {
+    // Version badge CSS classes - positioned top-right, unaffected by padding
     const versionBadgeClass =
-      "absolute top-0 left-0 inline-flex items-center px-2.5 py-0.5 rounded-br-lg text-xs font-medium";
+      "absolute top-0 left-0 inline-flex items-center px-2.5 py-0.5 rounded-tl-lg rounded-br-lg text-xs font-medium z-10 text-white";
 
     // If no version number or version 1, show original filename
     if (!file.versionNumber || file.versionNumber === 1) {
-      return `<span class="${versionBadgeClass} bg-green-500">SRC</span> ${window.truncateString ? window.truncateString(file.fileName, 40) : file.fileName}`;
+      return `<span class="${versionBadgeClass} bg-green-500">SRC</span>`;
     }
     if (file.versionNumber === 999) {
-      return `<span class="${versionBadgeClass} bg-red-500">FNL</span> ${file.fileName ? window.truncateString(file.fileName, 40) : file.fileName}`;
+      return `<span class="${versionBadgeClass} bg-red-500">FNL</span>`;
     }
     // For version 2+, show "filename | v2", "filename | v3", etc.
-    return `<span class="${versionBadgeClass} bg-primary-500">V${file.versionNumber}</span> ${file.fileName ? window.truncateString(file.fileName, 40) : file.fileName}`;
+    return `<span class="${versionBadgeClass} bg-primary-500">V${file.versionNumber}</span>`;
+  }
+
+  function getDisplayFileName(file) {
+    // Return just the filename without the badge
+    return window.truncateString ? window.truncateString(file.fileName, 40) : file.fileName;
   }
 
   function getFileIcon(fileType) {
@@ -1640,3 +1671,32 @@ const canDeleteFiles =
     initializeUpload();
   });
 </script>
+
+<style>
+  /* Accordion header with background image - desaturated, low opacity by default, saturated and panned on hover */
+  #files-container .accordion-header-with-bg {
+    filter: grayscale(100%) !important;
+    opacity: 0.5 !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    transition: filter 0.3s ease, opacity 0.3s ease, background-size 0.5s ease, background-position 0.5s ease !important;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  #files-container .accordion-header-with-bg:hover {
+    filter: grayscale(0%) !important;
+    opacity: 1 !important;
+    background-size: 115% !important;
+    background-position: 40% 60% !important;
+  }
+  
+  /* Pan effect variations - alternate between different positions for variety */
+  #files-container .accordion-header-with-bg:nth-child(odd):hover {
+    background-position: 60% 40% !important;
+  }
+  
+  #files-container .accordion-header-with-bg:nth-child(even):hover {
+    background-position: 40% 60% !important;
+  }
+</style>

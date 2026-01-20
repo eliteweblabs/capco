@@ -111,7 +111,7 @@
     "table_name": "subjects"
   },
   {
-    "table_name": "template_component_mapping"
+    "table_name": "templateComponentMapping"
   },
   {
     "table_name": "tutorialConfigs"
