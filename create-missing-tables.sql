@@ -74,9 +74,9 @@ CREATE TABLE IF NOT EXISTS "globalSettings" (
     "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
     "key" text NOT NULL,
     "value" text,
+    "valueType" text NOT NULL DEFAULT 'text'::text,
     "category" text NOT NULL DEFAULT 'general'::text,
-    "value_type" text NOT NULL DEFAULT 'text'::text,
-    "updated_by" uuid,
-    "updated_at" timestamptz DEFAULT now(),
-    "created_at" timestamptz DEFAULT now()
+    "description" text,
+    "updatedAt" timestamptz DEFAULT now(),
+    "updatedBy" uuid
 );

@@ -6,6 +6,7 @@
 import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import { checkAuth } from "../../lib/auth";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export interface Props {
   currentUser: any;
@@ -22,85 +23,289 @@ let storageFiles: any[] = [];
 let error: string | null = null;
 
 try {
-  if (supabase) {
-    // Fetch project files
-    const { data: files, error: filesError } = await supabase
+  // Use supabaseAdmin for database queries (has proper permissions)
+  if (supabaseAdmin) {
+    // Fetch project files - use select("*") to get all columns regardless of naming convention
+    const { data: files, error: filesError } = await supabaseAdmin
       .from("files")
-      .select(`
-        id,
-        "fileName",
-        "filePath",
-        "fileType",
-        "fileSize",
-        "uploadedAt",
-        "projectId",
-        "targetLocation",
-        "bucketName",
-        title,
-        comments,
-        status
-      `)
-      .order("uploadedAt", { ascending: false })
-      .limit(100);
+      .select("*")
+      .limit(200); // Get more files, we'll sort and limit in JS
 
     if (filesError) {
-      console.error("Error fetching project files:", filesError);
+      console.error("❌ [ADMIN-MEDIA] Error fetching project files:", filesError);
     } else {
-      projectFiles = files || [];
+      console.log(`✅ [ADMIN-MEDIA] Fetched ${files?.length || 0} project files`);
+      if (files && files.length > 0) {
+        console.log("📁 [ADMIN-MEDIA] Sample project file:", {
+          id: files[0].id,
+          fileName: files[0].fileName || files[0].file_name,
+          filePath: files[0].filePath || files[0].file_path,
+          bucketName: files[0].bucketName || files[0].bucket_name,
+          keys: Object.keys(files[0]),
+        });
+      }
+      // Sort by uploadedAt (handle both naming conventions) and limit
+      projectFiles = (files || [])
+        .sort((a: any, b: any) => {
+          const aDate = a.uploadedAt || a.uploaded_at;
+          const bDate = b.uploadedAt || b.uploaded_at;
+          if (!aDate) return 1;
+          if (!bDate) return -1;
+          return new Date(bDate).getTime() - new Date(aDate).getTime();
+        })
+        .slice(0, 100);
     }
 
-    // Fetch global files
-    const { data: gFiles, error: gFilesError } = await supabase
+    // Fetch global files - try both table name variations
+    let gFiles: any[] = [];
+    let gFilesError: any = null;
+    
+    // Try filesGlobal first (camelCase)
+    const result1 = await supabaseAdmin
       .from("filesGlobal")
       .select("*")
-      .order("uploadedAt", { ascending: false })
-      .limit(100);
-
-    if (gFilesError) {
-      console.error("Error fetching global files:", gFilesError);
+      .limit(200);
+    
+    if (result1.error) {
+      console.warn("⚠️ [ADMIN-MEDIA] filesGlobal table not found, trying files_global:", result1.error);
+      // Try snake_case version
+      const result2 = await supabaseAdmin
+        .from("files_global")
+        .select("*")
+        .limit(200);
+      
+      if (result2.error) {
+        gFilesError = result2.error;
+        console.error("❌ [ADMIN-MEDIA] Error fetching global files (both table names failed):", result2.error);
+      } else {
+        gFiles = result2.data || [];
+      }
     } else {
-      globalFiles = gFiles || [];
+      gFiles = result1.data || [];
     }
 
-    // Get list of files from storage bucket
-    const { data: storageList, error: storageError } = await supabase.storage
+    if (!gFilesError) {
+      console.log(`✅ [ADMIN-MEDIA] Fetched ${gFiles?.length || 0} global files`);
+      if (gFiles && gFiles.length > 0) {
+        console.log("📁 [ADMIN-MEDIA] Sample global file:", {
+          id: gFiles[0].id,
+          fileName: gFiles[0].fileName || gFiles[0].file_name || gFiles[0].name,
+          filePath: gFiles[0].filePath || gFiles[0].file_path,
+          keys: Object.keys(gFiles[0]),
+        });
+      }
+      // Sort by uploadedAt (handle both naming conventions) and limit
+      globalFiles = gFiles
+        .sort((a: any, b: any) => {
+          const aDate = a.uploadedAt || a.uploaded_at;
+          const bDate = b.uploadedAt || b.uploaded_at;
+          if (!aDate) return 1;
+          if (!bDate) return -1;
+          return new Date(bDate).getTime() - new Date(aDate).getTime();
+        })
+        .slice(0, 100);
+    }
+
+    // Get list of files from storage bucket directly (to see what actually exists)
+    console.log("🔍 [ADMIN-MEDIA] Querying storage bucket for files...");
+    
+    // List root level files
+    const { data: rootFiles, error: rootError } = await supabaseAdmin.storage
+      .from("project-media")
+      .list("", { limit: 100, sortBy: { column: "created_at", order: "desc" } });
+    
+    if (rootError) {
+      console.error("❌ [ADMIN-MEDIA] Error listing root files:", rootError);
+    } else {
+      console.log(`📦 [ADMIN-MEDIA] Found ${rootFiles?.length || 0} items in storage root`);
+    }
+
+    // List global folder files
+    const { data: globalStorageFiles, error: globalStorageError } = await supabaseAdmin.storage
       .from("project-media")
       .list("global", { limit: 100, sortBy: { column: "created_at", order: "desc" } });
 
-    if (!storageError && storageList) {
-      storageFiles = storageList.filter((f: any) => f.name !== ".emptyFolderPlaceholder");
+    if (globalStorageError) {
+      console.error("❌ [ADMIN-MEDIA] Error listing global storage files:", globalStorageError);
+    } else {
+      console.log(`📦 [ADMIN-MEDIA] Found ${globalStorageFiles?.length || 0} files in storage/global folder`);
+      if (globalStorageFiles && globalStorageFiles.length > 0) {
+        console.log("📦 [ADMIN-MEDIA] Sample storage file:", globalStorageFiles[0]);
+      }
+      storageFiles = (globalStorageFiles || []).filter((f: any) => f.name !== ".emptyFolderPlaceholder");
     }
+  } else {
+    console.error("❌ [ADMIN-MEDIA] supabaseAdmin not available");
+    error = "Database connection not available";
   }
 } catch (fetchError) {
-  console.error("Error fetching media:", fetchError);
+  console.error("❌ [ADMIN-MEDIA] Error fetching media:", fetchError);
   error = "Failed to fetch media files";
 }
 
-// Get storage URL base
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const storageBaseUrl = supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/project-media` : "";
+// Helper function to get filePath regardless of naming convention (camelCase or snake_case)
+function getFilePath(file: any): string | null {
+  return file.filePath || file.file_path || null;
+}
 
-// Combine and format all files
-const allFiles = [
-  ...projectFiles.map((f: any) => ({
-    ...f,
-    source: "project",
-    publicUrl: f.filePath ? `${storageBaseUrl}/${f.filePath}` : null,
-  })),
-  ...globalFiles.map((f: any) => ({
-    ...f,
-    source: "global",
-    publicUrl: f.filePath ? `${storageBaseUrl}/${f.filePath}` : null,
-  })),
-];
+// Helper function to get bucketName regardless of naming convention
+function getBucketName(file: any): string {
+  return file.bucketName || file.bucket_name || "project-media";
+}
+
+// Helper function to get fileName regardless of naming convention
+function getFileName(file: any): string | null {
+  return file.fileName || file.file_name || file.name || null;
+}
+
+// Helper function to get fileType regardless of naming convention
+function getFileType(file: any): string | null {
+  return file.fileType || file.file_type || null;
+}
+
+// Helper function to get fileSize regardless of naming convention
+function getFileSize(file: any): number | null {
+  return file.fileSize || file.file_size || null;
+}
+
+// Helper function to get uploadedAt regardless of naming convention
+function getUploadedAt(file: any): string | null {
+  return file.uploadedAt || file.uploaded_at || null;
+}
+
+// Helper function to get projectId regardless of naming convention
+function getProjectId(file: any): number | null {
+  return file.projectId || file.project_id || null;
+}
+
+// Generate signed URLs for all files
+async function generateSignedUrls(files: any[], source: string) {
+  if (!supabaseAdmin) {
+    console.error("❌ [ADMIN-MEDIA] supabaseAdmin not available");
+    return files.map((f: any) => ({
+      ...f,
+      source: source,
+      fileName: getFileName(f),
+      filePath: getFilePath(f),
+      fileType: getFileType(f),
+      fileSize: getFileSize(f),
+      uploadedAt: getUploadedAt(f),
+      projectId: getProjectId(f),
+      bucketName: getBucketName(f),
+      publicUrl: null,
+    }));
+  }
+  
+  console.log(`🔧 [ADMIN-MEDIA] Generating signed URLs for ${files.length} files from ${source}`);
+  
+  return await Promise.all(
+    files.map(async (f: any) => {
+      const filePath = getFilePath(f);
+      const bucketName = getBucketName(f);
+      let publicUrl: string | null = null;
+
+      if (!filePath) {
+        console.warn(`⚠️ [ADMIN-MEDIA] File ${f.id} has no filePath:`, f);
+        return {
+          ...f,
+          source: source,
+          fileName: getFileName(f),
+          filePath: null,
+          fileType: getFileType(f),
+          fileSize: getFileSize(f),
+          uploadedAt: getUploadedAt(f),
+          projectId: getProjectId(f),
+          bucketName: bucketName,
+          publicUrl: null,
+        };
+      }
+
+      try {
+        console.log(`🔧 [ADMIN-MEDIA] Generating signed URL for: bucket=${bucketName}, path=${filePath}`);
+        const { data: urlData, error: urlError } = await supabaseAdmin.storage
+          .from(bucketName)
+          .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+        if (!urlError && urlData?.signedUrl) {
+          publicUrl = urlData.signedUrl;
+          console.log(`✅ [ADMIN-MEDIA] Generated signed URL for ${filePath}`);
+        } else {
+          console.warn(`❌ [ADMIN-MEDIA] Failed to generate signed URL for ${filePath}:`, urlError);
+        }
+      } catch (error) {
+        console.error(`❌ [ADMIN-MEDIA] Error generating signed URL for ${filePath}:`, error);
+      }
+
+      return {
+        ...f,
+        source: source,
+        fileName: getFileName(f),
+        filePath: filePath,
+        fileType: getFileType(f),
+        fileSize: getFileSize(f),
+        uploadedAt: getUploadedAt(f),
+        projectId: getProjectId(f),
+        bucketName: bucketName,
+        publicUrl: publicUrl,
+      };
+    })
+  );
+}
+
+// Generate signed URLs for all files
+const projectFilesWithUrls = await generateSignedUrls(projectFiles, "project");
+const globalFilesWithUrls = await generateSignedUrls(globalFiles, "global");
+
+// Also process storage files that might not be in database
+const storageFilesWithUrls = await Promise.all(
+  storageFiles.map(async (storageFile: any) => {
+    const filePath = `global/${storageFile.name}`;
+    let publicUrl: string | null = null;
+
+    if (supabaseAdmin) {
+      try {
+        const { data: urlData, error: urlError } = await supabaseAdmin.storage
+          .from("project-media")
+          .createSignedUrl(filePath, 3600);
+
+        if (!urlError && urlData?.signedUrl) {
+          publicUrl = urlData.signedUrl;
+        }
+      } catch (error) {
+        console.error(`Error generating URL for storage file ${filePath}:`, error);
+      }
+    }
+
+    return {
+      id: `storage-${storageFile.name}`,
+      fileName: storageFile.name,
+      filePath: filePath,
+      fileType: storageFile.metadata?.mimetype || null,
+      fileSize: storageFile.metadata?.size || null,
+      uploadedAt: storageFile.created_at || null,
+      source: "storage",
+      bucketName: "project-media",
+      publicUrl: publicUrl,
+    };
+  })
+);
+
+// Combine all files (database files + storage-only files)
+const allFiles = [...projectFilesWithUrls, ...globalFilesWithUrls, ...storageFilesWithUrls];
 
 // Stats
 const stats = {
   total: allFiles.length,
   project: projectFiles.length,
   global: globalFiles.length,
-  images: allFiles.filter((f: any) => f.fileType?.startsWith("image/")).length,
-  documents: allFiles.filter((f: any) => f.fileType?.includes("pdf") || f.fileType?.includes("document")).length,
+  images: allFiles.filter((f: any) => {
+    const fileType = f.fileType || f.file_type;
+    return fileType?.startsWith("image/");
+  }).length,
+  documents: allFiles.filter((f: any) => {
+    const fileType = f.fileType || f.file_type;
+    return fileType?.includes("pdf") || fileType?.includes("document");
+  }).length,
 };
 
 // Helper to format file size

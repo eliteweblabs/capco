@@ -299,7 +299,9 @@ if (supabaseAdmin) {
         const recipients = Array.from(recipientsSelect?.selectedOptions || []);
 
         if (recipients.length === 0) {
-          alert("Please select at least one recipient");
+          if (window.showError) {
+            window.showError("Validation Error", "Please select at least one recipient", 0);
+          }
           return;
         }
 
@@ -382,10 +384,13 @@ if (supabaseAdmin) {
         const failed = notifications.length - successful;
 
         if (successful > 0) {
-          window.showModal(
-            "success",
-            `✅ Successfully sent ${successful} notification(s)${failed > 0 ? `, ${failed} failed` : ""}`
-          );
+          if (window.showSuccess) {
+            window.showSuccess(
+              "Notifications Sent",
+              `Successfully sent ${successful} notification(s)${failed > 0 ? `, ${failed} failed` : ""}`,
+              4000
+            );
+          }
 
           // Log to system project (0) for notification sending
           await SimpleProjectLogger.addLogEntry(
@@ -404,11 +409,15 @@ if (supabaseAdmin) {
           }
           this.loadRecentNotifications();
         } else {
-          alert("❌ Failed to send notifications");
+          if (window.showError) {
+            window.showError("Send Failed", "Failed to send notifications", 0);
+          }
         }
       } catch (error) {
         console.error("Error sending notifications:", error);
-        alert("❌ Error sending notifications");
+        if (window.showError) {
+          window.showError("Error", "Error sending notifications", 0);
+        }
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;

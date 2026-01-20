@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS pdf_components (
 );
 
 -- Template-Component mapping table - defines which components can be used with which templates
-CREATE TABLE IF NOT EXISTS template_component_mapping (
+CREATE TABLE IF NOT EXISTS templateComponentMapping (
     id SERIAL PRIMARY KEY,
     template_id INTEGER REFERENCES pdf_templates(id) ON DELETE CASCADE,
     component_id INTEGER REFERENCES pdf_components(id) ON DELETE CASCADE,
@@ -76,7 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_documentComponents_document ON documentComponents
 -- Enable RLS on all tables
 ALTER TABLE pdf_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pdf_components ENABLE ROW LEVEL SECURITY;
-ALTER TABLE template_component_mapping ENABLE ROW LEVEL SECURITY;
+ALTER TABLE templateComponentMapping ENABLE ROW LEVEL SECURITY;
 ALTER TABLE generated_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documentComponents ENABLE ROW LEVEL SECURITY;
 
@@ -170,8 +170,8 @@ CREATE POLICY "pdf_components_delete_admin" ON pdf_components
         )
     );
 
--- RLS Policies for template_component_mapping
-CREATE POLICY "template_component_mapping_select_all" ON template_component_mapping
+-- RLS Policies for templateComponentMapping
+CREATE POLICY "templateComponentMapping_select_all" ON templateComponentMapping
     FOR SELECT USING (
         auth.uid() IS NOT NULL AND (
             EXISTS (
@@ -182,7 +182,7 @@ CREATE POLICY "template_component_mapping_select_all" ON template_component_mapp
         )
     );
 
-CREATE POLICY "template_component_mapping_insert_admin" ON template_component_mapping
+CREATE POLICY "templateComponentMapping_insert_admin" ON templateComponentMapping
     FOR INSERT WITH CHECK (
         auth.uid() IS NOT NULL AND (
             EXISTS (
@@ -193,7 +193,7 @@ CREATE POLICY "template_component_mapping_insert_admin" ON template_component_ma
         )
     );
 
-CREATE POLICY "template_component_mapping_update_admin" ON template_component_mapping
+CREATE POLICY "templateComponentMapping_update_admin" ON templateComponentMapping
     FOR UPDATE USING (
         auth.uid() IS NOT NULL AND (
             EXISTS (
@@ -204,7 +204,7 @@ CREATE POLICY "template_component_mapping_update_admin" ON template_component_ma
         )
     );
 
-CREATE POLICY "template_component_mapping_delete_admin" ON template_component_mapping
+CREATE POLICY "templateComponentMapping_delete_admin" ON templateComponentMapping
     FOR DELETE USING (
         auth.uid() IS NOT NULL AND (
             EXISTS (
@@ -686,7 +686,7 @@ INSERT INTO pdf_components (name, description, html_content, component_type, cre
 ) ON CONFLICT DO NOTHING;
 
 -- Create mapping between default template and components
-INSERT INTO template_component_mapping (template_id, component_id, insertion_point, display_order, is_required) 
+INSERT INTO templateComponentMapping (template_id, component_id, insertion_point, display_order, is_required) 
 SELECT 
     t.id as template_id,
     c.id as component_id,

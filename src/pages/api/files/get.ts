@@ -60,9 +60,9 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       });
     }
 
-    console.log("📁 [FILES-GET] Processing GET request");
-    console.log("📁 [FILES-GET] URL:", url.toString());
-    console.log("📁 [FILES-GET] Search params:", Object.fromEntries(url.searchParams.entries()));
+    // console.log("📁 [FILES-GET] Processing GET request");
+    // console.log("📁 [FILES-GET] URL:", url.toString());
+    // console.log("📁 [FILES-GET] Search params:", Object.fromEntries(url.searchParams.entries()));
 
     if (!supabase) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -97,7 +97,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       includeTotal: url.searchParams.get("includeTotal") === "true",
     };
 
-    console.log("📁 [FILES-GET] Parsed filters:", filters);
+    // console.log("📁 [FILES-GET] Parsed filters:", filters);
 
     // Validate projectId if provided
     if (filters.projectId) {
@@ -117,48 +117,48 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // Build query for multiple files
     let query = supabase!.from("files").select("*");
-    console.log("📁 [FILES-GET] Starting with base query");
+    // console.log("📁 [FILES-GET] Starting with base query");
 
     // Apply filters
     if (filters.projectId) {
       const projectIdNum = parseInt(filters.projectId);
       query = query.eq("projectId", projectIdNum);
-      console.log("📁 [FILES-GET] Added projectId filter:", projectIdNum);
+      // console.log("📁 [FILES-GET] Added projectId filter:", projectIdNum);
     }
 
     if (filters.fileName) {
       query = query.ilike("fileName", `%${filters.fileName}%`);
-      console.log("📁 [FILES-GET] Added fileName filter:", filters.fileName);
+      // console.log("📁 [FILES-GET] Added fileName filter:", filters.fileName);
     }
 
     if (filters.fileType) {
       query = query.ilike("fileName", `%.${filters.fileType}`);
-      console.log("📁 [FILES-GET] Added fileType filter:", filters.fileType);
+      // console.log("📁 [FILES-GET] Added fileType filter:", filters.fileType);
     }
 
     if (filters.isPrivate !== undefined) {
       query = query.eq("isPrivate", filters.isPrivate);
-      console.log("📁 [FILES-GET] Added isPrivate filter:", filters.isPrivate);
+      // console.log("📁 [FILES-GET] Added isPrivate filter:", filters.isPrivate);
     }
 
     if (filters.authorId) {
       query = query.eq("authorId", filters.authorId);
-      console.log("📁 [FILES-GET] Added authorId filter:", filters.authorId);
+      // console.log("📁 [FILES-GET] Added authorId filter:", filters.authorId);
     }
 
     if (filters.targetLocation) {
       query = query.eq("targetLocation", filters.targetLocation);
-      console.log("📁 [FILES-GET] Added targetLocation filter:", filters.targetLocation);
+        // console.log("📁 [FILES-GET] Added targetLocation filter:", filters.targetLocation);
     }
 
     if (filters.bucketName) {
       query = query.eq("bucketName", filters.bucketName);
-      console.log("📁 [FILES-GET] Added bucketName filter:", filters.bucketName);
+      // console.log("📁 [FILES-GET] Added bucketName filter:", filters.bucketName);
     }
 
     if (filters.status) {
       query = query.eq("status", filters.status);
-      console.log("📁 [FILES-GET] Added status filter:", filters.status);
+        // console.log("📁 [FILES-GET] Added status filter:", filters.status);
     }
 
     // Apply compound filters if provided

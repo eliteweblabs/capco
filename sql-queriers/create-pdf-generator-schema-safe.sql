@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS pdf_components (
 );
 
 -- Template-Component mapping table - defines which components can be used with which templates
-CREATE TABLE IF NOT EXISTS template_component_mapping (
+CREATE TABLE IF NOT EXISTS templateComponentMapping (
     id SERIAL PRIMARY KEY,
     template_id INTEGER REFERENCES pdf_templates(id) ON DELETE CASCADE,
     component_id INTEGER REFERENCES pdf_components(id) ON DELETE CASCADE,
@@ -101,10 +101,10 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM pg_class 
-        WHERE relname = 'template_component_mapping' 
+        WHERE relname = 'templateComponentMapping' 
         AND relrowsecurity = true
     ) THEN
-        ALTER TABLE template_component_mapping ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE templateComponentMapping ENABLE ROW LEVEL SECURITY;
     END IF;
 END $$;
 
@@ -232,14 +232,14 @@ CREATE POLICY "pdf_components_delete_admin" ON pdf_components
         )
     );
 
--- Drop and recreate template_component_mapping policies
-DROP POLICY IF EXISTS "template_component_mapping_select_all" ON template_component_mapping;
-DROP POLICY IF EXISTS "template_component_mapping_insert_admin" ON template_component_mapping;
-DROP POLICY IF EXISTS "template_component_mapping_update_admin" ON template_component_mapping;
-DROP POLICY IF EXISTS "template_component_mapping_delete_admin" ON template_component_mapping;
+-- Drop and recreate templateComponentMapping policies
+DROP POLICY IF EXISTS "templateComponentMapping_select_all" ON templateComponentMapping;
+DROP POLICY IF EXISTS "templateComponentMapping_insert_admin" ON templateComponentMapping;
+DROP POLICY IF EXISTS "templateComponentMapping_update_admin" ON templateComponentMapping;
+DROP POLICY IF EXISTS "templateComponentMapping_delete_admin" ON templateComponentMapping;
 
--- RLS Policies for template_component_mapping
-CREATE POLICY "template_component_mapping_select_all" ON template_component_mapping
+-- RLS Policies for templateComponentMapping
+CREATE POLICY "templateComponentMapping_select_all" ON templateComponentMapping
     FOR SELECT USING (
         auth.uid() IS NOT NULL AND (
             EXISTS (
@@ -250,7 +250,7 @@ CREATE POLICY "template_component_mapping_select_all" ON template_component_mapp
         )
     );
 
-CREATE POLICY "template_component_mapping_insert_admin" ON template_component_mapping
+CREATE POLICY "templateComponentMapping_insert_admin" ON templateComponentMapping
     FOR INSERT WITH CHECK (
         auth.uid() IS NOT NULL AND (
             EXISTS (
@@ -261,7 +261,7 @@ CREATE POLICY "template_component_mapping_insert_admin" ON template_component_ma
         )
     );
 
-CREATE POLICY "template_component_mapping_update_admin" ON template_component_mapping
+CREATE POLICY "templateComponentMapping_update_admin" ON templateComponentMapping
     FOR UPDATE USING (
         auth.uid() IS NOT NULL AND (
             EXISTS (
@@ -272,7 +272,7 @@ CREATE POLICY "template_component_mapping_update_admin" ON template_component_ma
         )
     );
 
-CREATE POLICY "template_component_mapping_delete_admin" ON template_component_mapping
+CREATE POLICY "templateComponentMapping_delete_admin" ON templateComponentMapping
     FOR DELETE USING (
         auth.uid() IS NOT NULL AND (
             EXISTS (
@@ -774,7 +774,7 @@ WHERE NOT EXISTS (
 );
 
 -- Create mapping between default template and components - only if mapping doesn't exist
-INSERT INTO template_component_mapping (template_id, component_id, insertion_point, display_order, is_required) 
+INSERT INTO templateComponentMapping (template_id, component_id, insertion_point, display_order, is_required) 
 SELECT 
     t.id as template_id,
     c.id as component_id,
@@ -797,6 +797,6 @@ SELECT
 FROM pdf_templates t, pdf_components c
 WHERE t.name = 'CAPCo Default Plan'
 AND NOT EXISTS (
-    SELECT 1 FROM template_component_mapping tcm 
+    SELECT 1 FROM templateComponentMapping tcm 
     WHERE tcm.template_id = t.id AND tcm.component_id = c.id
 );

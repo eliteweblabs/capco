@@ -48,7 +48,7 @@ DROP TABLE IF EXISTS file_checkout_history CASCADE;
 DROP TABLE IF EXISTS file_versions CASCADE;
 DROP TABLE IF EXISTS generated_documents CASCADE;
 DROP TABLE IF EXISTS documentComponents CASCADE;
-DROP TABLE IF EXISTS template_component_mapping CASCADE;
+DROP TABLE IF EXISTS templateComponentMapping CASCADE;
 DROP TABLE IF EXISTS pdf_components CASCADE;
 DROP TABLE IF EXISTS pdf_templates CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;

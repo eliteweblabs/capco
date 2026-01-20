@@ -632,6 +632,35 @@ const debugData = {
     <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
     <DebugPanel {currentUser} {debugData} />
 
+    <!-- Prevent Flowbite from initializing modals that don't exist -->
+    <script is:inline>
+      // Check if notificationsModal exists before Flowbite initializes
+      // This prevents errors when the modal is conditionally rendered (e.g., for Client users)
+      // Run immediately (script is at end of body, so DOM should be ready)
+      (function() {
+        function checkAndRemoveModalAttributes() {
+          const notificationsModal = document.getElementById('notificationsModal');
+          if (!notificationsModal) {
+            // Remove data-modal-target and data-modal-toggle attributes from buttons
+            // that reference the non-existent modal to prevent Flowbite initialization errors
+            const buttons = document.querySelectorAll('[data-modal-target="notificationsModal"], [data-modal-toggle="notificationsModal"]');
+            buttons.forEach(function(button) {
+              button.removeAttribute('data-modal-target');
+              button.removeAttribute('data-modal-toggle');
+            });
+          }
+        }
+        
+        // Check immediately (DOM should be ready since script is at end of body)
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', checkAndRemoveModalAttributes);
+        } else {
+          // DOM is already ready
+          checkAndRemoveModalAttributes();
+        }
+      })();
+    </script>
+
     <!-- Flowbite JavaScript -->
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
 
