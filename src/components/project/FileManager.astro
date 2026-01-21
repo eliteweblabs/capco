@@ -1012,8 +1012,14 @@ const canDeleteFiles =
 
     try {
       // Auto-checkout the file when downloading (if project status allows)
+      // Gracefully handle if checkout system is not set up yet
       if (canCheckoutFiles && currentUser?.id) {
-        await handleFileCheckout(fileId, "checkout");
+        try {
+          await handleFileCheckout(fileId, "checkout");
+        } catch (checkoutError) {
+          console.warn("⚠️ [FILE-MANAGER] Checkout system not available, proceeding with download:", checkoutError);
+          // Continue with download even if checkout fails
+        }
       }
 
       // Create a form to submit to the download endpoint
@@ -1228,12 +1234,21 @@ const canDeleteFiles =
           updateManagementPanel();
         }
       } else {
-        console.error("❌ [FILE-MANAGER] Checkout failed:", data.error);
-        showError(data.error || `Failed to ${action} file`);
+        // Check if error is due to missing table
+        if (data.details && data.details.includes('does not exist')) {
+          console.warn("⚠️ [FILE-MANAGER] Checkout table not set up yet. Run sql-queriers/create-file-checkouts-table.sql");
+          // Don't show error to user, just log it
+        } else {
+          console.error("❌ [FILE-MANAGER] Checkout failed:", data.error);
+          showError(data.error || `Failed to ${action} file`);
+        }
       }
     } catch (error) {
       console.error("❌ [FILE-MANAGER] File checkout error:", error);
-      showError(`Error ${action}ing file: ${error.message}`);
+      // Don't show error to user if it's a table issue
+      if (!error.message.includes('does not exist')) {
+        showError(`Error ${action}ing file: ${error.message}`);
+      }
     }
   };
 

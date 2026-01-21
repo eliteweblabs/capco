@@ -71,57 +71,52 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           });
         }
 
-        // Check if file is already checked out
-        const { data: existingCheckout, error: checkoutError } = await supabaseAdmin
-          .from("fileCheckouts")
-          .select("*")
-          .eq("fileId", checkoutData.fileId)
-          .eq("status", "checked_out")
+        // Check if file is already checked out (from files table columns)
+        const { data: existingFile, error: fileCheckError } = await supabaseAdmin
+          .from("files")
+          .select("id, checkedOutBy, checkedOutAt")
+          .eq("id", checkoutData.fileId)
           .single();
 
-        if (checkoutError && checkoutError.code !== "PGRST116") {
-          console.error("❌ [FILES-CHECKOUT] Error checking existing checkout:", checkoutError);
+        if (fileCheckError) {
+          console.error("❌ [FILES-CHECKOUT] Error checking file status:", fileCheckError);
           return new Response(
             JSON.stringify({
               error: "Failed to check file status",
-              details: checkoutError.message,
+              details: fileCheckError.message,
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
 
-        if (existingCheckout) {
+        if (existingFile.checkedOutBy) {
           return new Response(
             JSON.stringify({
               error: "File is already checked out",
-              details: `File is currently checked out by ${existingCheckout.checkedOutBy}`,
+              details: `File is currently checked out`,
             }),
             { status: 409, headers: { "Content-Type": "application/json" } }
           );
         }
 
-        // Create checkout record
-        const { data: newCheckout, error: createError } = await supabaseAdmin
-          .from("fileCheckouts")
-          .insert([
-            {
-              fileId: checkoutData.fileId,
-              checkedOutBy: checkoutData.userId,
-              assignedTo: checkoutData.assignedTo || checkoutData.userId,
-              notes: checkoutData.notes || null,
-              status: "checked_out",
-              checkedOutAt: new Date().toISOString(),
-            },
-          ])
+        // Update file record with checkout info
+        const { data: checkedOutFile, error: checkoutError } = await supabaseAdmin
+          .from("files")
+          .update({
+            checkedOutBy: checkoutData.userId,
+            checkedOutAt: new Date().toISOString(),
+            checkoutNotes: checkoutData.notes || null,
+          })
+          .eq("id", checkoutData.fileId)
           .select()
           .single();
 
-        if (createError) {
-          console.error("❌ [FILES-CHECKOUT] Error creating checkout:", createError);
+        if (checkoutError) {
+          console.error("❌ [FILES-CHECKOUT] Error checking out file:", checkoutError);
           return new Response(
             JSON.stringify({
               error: "Failed to checkout file",
-              details: createError.message,
+              details: checkoutError.message,
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
@@ -130,21 +125,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         result = {
           success: true,
           message: "File checked out successfully",
-          checkout: newCheckout,
+          file: checkedOutFile,
         };
         break;
 
       case "checkin":
-        // Update checkout status to checked in
-        const { data: checkinResult, error: checkinError } = await supabaseAdmin
-          .from("fileCheckouts")
+        // Update file to clear checkout status
+        const { data: checkinFile, error: checkinError } = await supabaseAdmin
+          .from("files")
           .update({
-            status: "checked_in",
-            checkedInAt: new Date().toISOString(),
-            notes: checkoutData.notes || null,
+            checkedOutBy: null,
+            checkedOutAt: null,
+            checkoutNotes: null,
           })
-          .eq("fileId", checkoutData.fileId)
-          .eq("status", "checked_out")
+          .eq("id", checkoutData.fileId)
           .select()
           .single();
 
@@ -159,33 +153,32 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           );
         }
 
-        if (!checkinResult) {
+        if (!checkinFile) {
           return new Response(
             JSON.stringify({
-              error: "File is not currently checked out",
+              error: "File not found",
             }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
+            { status: 404, headers: { "Content-Type": "application/json" } }
           );
         }
 
         result = {
           success: true,
           message: "File checked in successfully",
-          checkout: checkinResult,
+          file: checkinFile,
         };
         break;
 
       case "cancel":
-        // Cancel checkout
-        const { data: cancelResult, error: cancelError } = await supabaseAdmin
-          .from("fileCheckouts")
+        // Same as checkin - clear checkout status
+        const { data: cancelFile, error: cancelError } = await supabaseAdmin
+          .from("files")
           .update({
-            status: "cancelled",
-            cancelledAt: new Date().toISOString(),
-            notes: checkoutData.notes || null,
+            checkedOutBy: null,
+            checkedOutAt: null,
+            checkoutNotes: null,
           })
-          .eq("fileId", checkoutData.fileId)
-          .eq("status", "checked_out")
+          .eq("id", checkoutData.fileId)
           .select()
           .single();
 
@@ -200,19 +193,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           );
         }
 
-        if (!cancelResult) {
+        if (!cancelFile) {
           return new Response(
             JSON.stringify({
-              error: "File is not currently checked out",
+              error: "File not found",
             }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
+            { status: 404, headers: { "Content-Type": "application/json" } }
           );
         }
 
         result = {
           success: true,
           message: "File checkout cancelled successfully",
-          checkout: cancelResult,
+          file: cancelFile,
         };
         break;
 
