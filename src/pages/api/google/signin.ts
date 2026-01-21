@@ -41,7 +41,7 @@ function getOrigin(url: URL, request: Request): string {
 
 export const GET: APIRoute = async ({ url, redirect, cookies, request }) => {
   // Google OAuth credentials from environment variables
-  const clientId = import.meta.env.GOOGLE_PEOPLE_CLIENT_ID;
+  const clientId = import.meta.env.GOOGLE_PEOPLE_clientId;
   const clientSecret = import.meta.env.GOOGLE_PEOPLE_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
@@ -78,7 +78,7 @@ export const GET: APIRoute = async ({ url, redirect, cookies, request }) => {
 
   // Build Google OAuth URL
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-  googleAuthUrl.searchParams.set("client_id", clientId);
+  googleAuthUrl.searchParams.set("clientId", clientId);
   googleAuthUrl.searchParams.set("redirect_uri", redirectUrl);
   googleAuthUrl.searchParams.set("response_type", "code");
   googleAuthUrl.searchParams.set("scope", "openid email profile");

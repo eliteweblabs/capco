@@ -43,14 +43,14 @@ export const navigation = async (
       let query = supabaseAdmin
         .from("cmsPages")
         .select(
-          "slug, title, include_in_navigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
+          "slug, title, includeInNavigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
         )
-        .eq("is_active", true)
-        .eq("include_in_navigation", true);
+        .eq("isActive", true)
+        .eq("includeInNavigation", true);
 
-      // Filter by client_id: show global (null) or matching client_id
+      // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
       }
       // If no clientId set, show all pages (no filter)
 
@@ -66,12 +66,12 @@ export const navigation = async (
         let fallbackQuery = supabaseAdmin
           .from("cmsPages")
           .select(
-            "slug, title, include_in_navigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
+            "slug, title, includeInNavigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
           )
-          .eq("is_active", true)
-          .eq("include_in_navigation", true);
+          .eq("isActive", true)
+          .eq("includeInNavigation", true);
         if (clientId) {
-          fallbackQuery = fallbackQuery.or(`client_id.is.null,client_id.eq.${clientId}`);
+          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${clientId}`);
         }
         const fallbackResult = await fallbackQuery.order("title");
         cmsPages = fallbackResult.data;
