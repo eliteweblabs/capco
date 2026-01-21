@@ -25,7 +25,7 @@ CREATE TABLE cmsPages (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   include_in_navigation BOOLEAN DEFAULT false,
-  display_order INTEGER DEFAULT 0,
+  displayOrder INTEGER DEFAULT 0,
   nav_roles TEXT[] DEFAULT ARRAY['any'::TEXT],
   nav_page_type TEXT DEFAULT 'frontend',
   nav_button_style TEXT,
@@ -41,7 +41,7 @@ CREATE TABLE cmsPages (
 CREATE INDEX idx_cmsPages_slug ON cmsPages(slug);
 CREATE INDEX idx_cmsPages_client_id ON cmsPages(client_id);
 CREATE INDEX idx_cmsPages_active ON cmsPages(is_active) WHERE is_active = true;
-CREATE INDEX idx_cmsPages_display_order ON cmsPages(display_order);
+CREATE INDEX idx_cmsPages_displayOrder ON cmsPages(displayOrder);
 CREATE INDEX idx_cmsPages_navigation ON cmsPages(include_in_navigation) WHERE include_in_navigation = true;
 
 -- STEP 4: Enable Row Level Security
@@ -79,7 +79,7 @@ COMMENT ON COLUMN cmsPages.slug IS 'URL slug for the page (e.g., "about" for /ab
 COMMENT ON COLUMN cmsPages.client_id IS 'Optional client identifier (e.g., RAILWAY_PROJECT_NAME) for multi-client deployments';
 COMMENT ON COLUMN cmsPages.frontmatter IS 'Frontmatter fields stored as JSON (title, description, hero, etc.)';
 COMMENT ON COLUMN cmsPages.include_in_navigation IS 'If true, this page will appear in the primary navigation menu';
-COMMENT ON COLUMN cmsPages.display_order IS 'Display order for navigation (lower numbers appear first)';
+COMMENT ON COLUMN cmsPages.displayOrder IS 'Display order for navigation (lower numbers appear first)';
 COMMENT ON COLUMN cmsPages.nav_roles IS 'Array of user roles that can see this page in navigation: any, Client, Admin, Staff';
 COMMENT ON COLUMN cmsPages.nav_page_type IS 'Page type: frontend or backend';
 
