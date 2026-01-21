@@ -436,15 +436,12 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
               {/* Guided field filling interface (shown after PDF upload) */}
               <div id="project-form-pdf-guided-interface" class="hidden mb-4">
                 <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <span id="project-form-pdf-current-field-label">Select Address</span>
-                  </label>
                   <div class="flex gap-2 items-center">
                     <input
                       type="text"
                       id="project-form-pdf-current-field-input"
                       class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="Select text from PDF..."
+                      placeholder="Select Address"
                     />
                     <button
                       id="project-form-pdf-set-field-btn"
@@ -849,7 +846,6 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
         const currentFieldInput = document.getElementById(
           "project-form-pdf-current-field-input"
         ) as HTMLInputElement;
-        const currentFieldLabel = document.getElementById("project-form-pdf-current-field-label");
         const setFieldBtn = document.getElementById("project-form-pdf-set-field-btn");
 
         if (
@@ -863,7 +859,6 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
           !pdfHeader ||
           !guidedInterface ||
           !currentFieldInput ||
-          !currentFieldLabel ||
           !setFieldBtn
         )
           return;
@@ -1107,7 +1102,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
         }
 
         function initializeCurrentField() {
-          if (!currentFieldLabel || !currentFieldInput || !setFieldBtn) return;
+          if (!currentFieldInput || !setFieldBtn) return;
 
           if (currentFieldIndex >= fieldsToFill.length) {
             // All fields filled, could show completion message
@@ -1115,9 +1110,8 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
           }
 
           const currentField = fieldsToFill[currentFieldIndex];
-          currentFieldLabel.textContent = currentField.label;
+          currentFieldInput.placeholder = currentField.label;
           currentFieldInput.value = "";
-          currentFieldInput.placeholder = "Select text from PDF...";
           setFieldBtn.classList.add("hidden");
           currentOCRResult = null;
 
@@ -1134,7 +1128,6 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
           if (
             !currentOCRResult ||
             !formForPDF ||
-            !currentFieldLabel ||
             !currentFieldInput ||
             !setFieldBtn
           )
@@ -1246,7 +1239,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
             }, 100);
           } else {
             // All fields filled
-            currentFieldLabel.textContent = "All fields completed!";
+            currentFieldInput.placeholder = "All fields completed!";
             currentFieldInput.value = "";
             setFieldBtn.classList.add("hidden");
 

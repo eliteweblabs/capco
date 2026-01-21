@@ -30,12 +30,12 @@ export const GET: APIRoute = async ({ request }): Promise<Response> => {
     if (!showAll && activeOnly) {
       const now = new Date().toISOString();
       query = query
-        .eq("isActive", true)
-        .or(`startDate.is.null,startDate.lte.${now}`)
-        .or(`endDate.is.null,endDate.gte.${now}`);
+        .eq("isactive", true)
+        .or(`startdate.is.null,startdate.lte.${now}`)
+        .or(`enddate.is.null,enddate.gte.${now}`);
     }
 
-    query = query.order("createdAt", { ascending: false });
+    query = query.order("createdat", { ascending: false });
 
     const { data, error } = await query;
 
