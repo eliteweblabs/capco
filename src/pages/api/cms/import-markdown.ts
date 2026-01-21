@@ -80,7 +80,7 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
               template: data.template || "default",
               clientId: clientId,
               isActive: true,
-              updatedAt: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             },
             {
               onConflict: "slug,clientId",
@@ -129,7 +129,7 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
           template: data.template || "default",
           clientId: clientId,
           isActive: true,
-          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
         {
           onConflict: "slug,clientId",

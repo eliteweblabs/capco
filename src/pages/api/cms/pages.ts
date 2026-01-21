@@ -115,11 +115,11 @@ export const POST: APIRoute = async ({ request }) => {
       frontmatter,
       template,
       includeInNavigation,
-      navRoles,
-      navPageType,
-      navButtonStyle,
-      navDesktopOnly,
-      navHideWhenAuth,
+      nav_roles,
+      nav_page_type,
+      nav_button_style,
+      nav_desktop_only,
+      nav_hide_when_auth,
     } = body;
     console.log("📥 [CMS-PAGES] Extracted values:", {
       slug,
@@ -128,11 +128,11 @@ export const POST: APIRoute = async ({ request }) => {
       content: content?.substring(0, 50) + "...",
       template,
       includeInNavigation,
-      navRoles,
-      navPageType,
-      navButtonStyle,
-      navDesktopOnly,
-      navHideWhenAuth,
+      nav_roles,
+      nav_page_type,
+      nav_button_style,
+      nav_desktop_only,
+      nav_hide_when_auth,
     });
 
     if (!slug || !content) {
@@ -185,11 +185,11 @@ export const POST: APIRoute = async ({ request }) => {
         frontmatter: frontmatter || {},
         template: template || "default",
         includeInNavigation: includeInNavigation === true,
-        navRoles: navRoles && Array.isArray(navRoles) ? navRoles : ["any"],
-        navPageType: navPageType || "frontend",
-        navButtonStyle: navButtonStyle || null,
-        navDesktopOnly: navDesktopOnly === true,
-        navHideWhenAuth: navHideWhenAuth === true,
+        navRoles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
+        navPageType: nav_page_type || "frontend",
+        navButtonStyle: nav_button_style || null,
+        navDesktopOnly: nav_desktop_only === true,
+        navHideWhenAuth: nav_hide_when_auth === true,
         isActive: true,
         updatedAt: new Date().toISOString(),
       };
@@ -213,18 +213,18 @@ export const POST: APIRoute = async ({ request }) => {
         frontmatter: frontmatter || {},
         template: template || "default",
         includeInNavigation: includeInNavigation === true,
-        navRoles: navRoles && Array.isArray(navRoles) ? navRoles : ["any"],
-        navPageType: navPageType || "frontend",
-        navButtonStyle: navButtonStyle || null,
-        navDesktopOnly: navDesktopOnly === true,
-        navHideWhenAuth: navHideWhenAuth === true,
+        navRoles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
+        navPageType: nav_page_type || "frontend",
+        navButtonStyle: nav_button_style || null,
+        navDesktopOnly: nav_desktop_only === true,
+        navHideWhenAuth: nav_hide_when_auth === true,
         clientId: clientId,
         isActive: true,
         // displayOrder will be set if column exists, otherwise ignored
         updatedAt: new Date().toISOString(),
       };
       
-      // Only set displayOrder if column exists (check by trying to get max value)
+      // Only set display_order if column exists (check by trying to get max value)
       // For now, we'll let it default to NULL if column doesn't exist
       // The migration will set initial values
 
@@ -330,41 +330,22 @@ export const PUT: APIRoute = async ({ request }) => {
       });
     }
 
-    // Update displayOrder for each page
-    const updatePromises = orders.map((item: { id: string; displayOrder: number }) =>
-      supabaseAdmin
+    // Update displayOrder for each page (accept both snake_case and camelCase from request)
+    const updatePromises = orders.map((item: { id: string; display_order?: number; displayOrder?: number }) => {
+      const displayOrder = item.displayOrder ?? item.display_order ?? 0;
+      return supabaseAdmin
         .from("cmsPages")
-        .update({ 
-          displayOrder: item.displayOrder,
-          updatedAt: new Date().toISOString()
-        })
-        .eq("id", item.id)
-    );
+        .update({ displayOrder })
+        .eq("id", item.id);
+    });
 
     const results = await Promise.all(updatePromises);
     const errors = results.filter((r) => r.error);
 
     if (errors.length > 0) {
       console.error("❌ [CMS-PAGES] Errors updating order:", errors);
-      
-      // Check if error is due to missing column
-      const firstError = errors[0].error;
-      if (firstError?.code === "42703" || firstError?.message?.includes("displayOrder")) {
-        return new Response(
-          JSON.stringify({ 
-            error: "Column 'displayOrder' does not exist", 
-            details: "Please run the migration: sql-queriers/add-cms-pages-display-order.sql",
-            hint: "This column is required for drag-and-drop page ordering"
-          }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
-        );
-      }
-      
       return new Response(
-        JSON.stringify({ 
-          error: "Some pages failed to update", 
-          details: errors.map(e => e.error?.message || "Unknown error")
-        }),
+        JSON.stringify({ error: "Some pages failed to update", details: errors }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }

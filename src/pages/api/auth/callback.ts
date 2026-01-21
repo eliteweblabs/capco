@@ -13,9 +13,9 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
   const error = url.searchParams.get("error");
 
   // Check if this is a Google People API OAuth callback
-  // We can detect this by checking if GOOGLE_PEOPLE_CLIENT_ID is configured
+  // We can detect this by checking if GOOGLE_PEOPLE_clientId is configured
   // and if the state contains our encoded redirect data
-  const googlePeopleClientId = import.meta.env.GOOGLE_PEOPLE_CLIENT_ID;
+  const googlePeopleClientId = import.meta.env.GOOGLE_PEOPLE_clientId;
   const googlePeopleClientSecret = import.meta.env.GOOGLE_PEOPLE_CLIENT_SECRET;
 
   if (googlePeopleClientId && googlePeopleClientSecret && code) {

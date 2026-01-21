@@ -92,7 +92,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               template: data.template || "default",
               clientId: clientId,
               isActive: true,
-              updatedAt: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             },
             {
               onConflict: "slug,clientId",
