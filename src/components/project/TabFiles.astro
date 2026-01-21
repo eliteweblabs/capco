@@ -27,7 +27,7 @@ const projectId = project?.id;
 ---
 
 <div
-  id="content-documents"
+  id="content-files"
   class="tab-content p-4 color-background relative min-h-[calc(100dvh-24rem)]"
 >
   <div class="mx-auto max-w-7xl">
@@ -43,18 +43,18 @@ const projectId = project?.id;
       {statusData}
     />
 
-    <!-- All Documents Uploaded Button (Clients Only) -->
+    <!-- All Files Uploaded Button (Clients Only) -->
     {
       projectStatus === 10 && (
         <StickyActions columns="1">
           <Button
-            id="all-documents-uploaded-btn"
+            id="all-files-uploaded-btn"
             variant="success"
             size="lg"
             icon="check"
             iconPosition="right"
           >
-            Documents Uploaded / Request Review
+            Files Uploaded / Request Review
           </Button>
         </StickyActions>
       )
@@ -74,12 +74,12 @@ const projectId = project?.id;
   }}
   is:inline
 >
-  console.log("🔍 [TAB-DOCUMENTS] statusData:", statusData);
+  console.log("🔍 [TAB-Files] statusData:", statusData);
   // Only initialize if the button exists (projectStatus === 10)
   if (projectStatus === 10) {
     class PDFUpload {
       constructor() {
-        this.allDocumentsUploadedBtn = document.getElementById("all-documents-uploaded-btn");
+        this.allFilesUploadedBtn = document.getElementById("all-files-uploaded-btn");
         this.project = project;
         this.projectId = projectId;
         this.projectStatus = projectStatus;
@@ -105,9 +105,9 @@ const projectId = project?.id;
       }
 
       setupEventListeners() {
-        if (this.allDocumentsUploadedBtn) {
-          this.allDocumentsUploadedBtn.addEventListener("click", () => {
-            this.markAllDocumentsUploaded();
+        if (this.allFilesUploadedBtn) {
+          this.allFilesUploadedBtn.addEventListener("click", () => {
+            this.markAllFilesUploaded();
           });
         }
       }
@@ -116,20 +116,20 @@ const projectId = project?.id;
         // Load existing files if needed
       }
 
-      async markAllDocumentsUploaded() {
+      async markAllFilesUploaded() {
         try {
           // Disable button and show loading state
-          this.allDocumentsUploadedBtn.disabled = true;
-          this.allDocumentsUploadedBtn.innerHTML = `
+          this.allFilesUploadedBtn.disabled = true;
+          this.allFilesUploadedBtn.innerHTML = `
             <svg class="animate-spin mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             Updating Status...
           `;
-          this.allDocumentsUploadedBtn.classList.remove("bg-green-600", "hover:bg-green-700");
-          this.allDocumentsUploadedBtn.classList.add("bg-gray-600", "cursor-not-allowed");
-          this.allDocumentsUploadedBtn.disabled = true;
+            this.allFilesUploadedBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+          this.allFilesUploadedBtn.classList.add("bg-gray-600", "cursor-not-allowed");
+          this.allFilesUploadedBtn.disabled = true;
 
           const nextStatus = 20;
 
@@ -137,11 +137,11 @@ const projectId = project?.id;
             .updateStatus(this.project, nextStatus, this.statusData[nextStatus])
             .then((data) => {
               if (data.success) {
-                this.allDocumentsUploadedBtn.innerHTML = `
+                this.allFilesUploadedBtn.innerHTML = `
               <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
               </svg>
-              Documents Submitted ✓
+              Files Submitted ✓
             `;
                 if (window.handleNewStatusModalAndEmail && typeof window.handleNewStatusModalAndEmail === "function") {
                   window.handleNewStatusModalAndEmail(data, "PROPOSAL-VIEW");
@@ -161,12 +161,12 @@ const projectId = project?.id;
           );
 
           // Reset button to original state
-          this.allDocumentsUploadedBtn.disabled = false;
-          this.allDocumentsUploadedBtn.innerHTML = `
+          this.allFilesUploadedBtn.disabled = false;
+          this.allFilesUploadedBtn.innerHTML = `
             <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
             </svg>
-            All Documents Uploaded
+            All Files Uploaded
           `;
         }
       }
@@ -182,13 +182,13 @@ const projectId = project?.id;
       console.log("📁 [PDF-UPLOAD] DOMContentLoaded event fired");
 
       // Check if already initialized
-      if (window.pdfUploadDocuments && window.pdfUploadDocuments.initialized) {
+      if (window.pdfUploadFiles && window.pdfUploadFiles.initialized) {
         console.log("📁 [PDF-UPLOAD] PDFUpload already initialized, skipping");
         return;
       }
 
-      console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component for Documents");
-      window.pdfUploadDocuments = new PDFUpload();
+      console.log("📁 [PDF-UPLOAD] Initializing PDFUpload component for Files");
+      window.pdfUploadFiles = new PDFUpload();
     });
   }
 </script>

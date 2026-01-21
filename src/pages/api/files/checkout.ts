@@ -73,7 +73,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Check if file is already checked out
         const { data: existingCheckout, error: checkoutError } = await supabaseAdmin
-          .from("file_checkouts")
+          .from("fileCheckouts")
           .select("*")
           .eq("fileId", checkoutData.fileId)
           .eq("status", "checked_out")
@@ -102,7 +102,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Create checkout record
         const { data: newCheckout, error: createError } = await supabaseAdmin
-          .from("file_checkouts")
+          .from("fileCheckouts")
           .insert([
             {
               fileId: checkoutData.fileId,
@@ -137,7 +137,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       case "checkin":
         // Update checkout status to checked in
         const { data: checkinResult, error: checkinError } = await supabaseAdmin
-          .from("file_checkouts")
+          .from("fileCheckouts")
           .update({
             status: "checked_in",
             checkedInAt: new Date().toISOString(),
@@ -178,7 +178,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       case "cancel":
         // Cancel checkout
         const { data: cancelResult, error: cancelError } = await supabaseAdmin
-          .from("file_checkouts")
+          .from("fileCheckouts")
           .update({
             status: "cancelled",
             cancelledAt: new Date().toISOString(),
