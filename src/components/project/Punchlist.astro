@@ -27,7 +27,7 @@ const projectId = project.id;
       <div class="relative">
         <button
           type="button"
-          data-dropdown-toggle="checklist-dropdown"
+          id="checklist-drawer-toggle"
           class="inline-flex items-center rounded-lg p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
         >
           <span class="sr-only">View Checklist</span>
@@ -36,23 +36,42 @@ const projectId = project.id;
         </button>
       </div>
 
+      {/* Backdrop overlay */}
       <div
-        class="z-50 my-4 hidden max-w-96 list-none bg-gray-100 text-base leading-6 shadow-sm dark:bg-gray-700"
-        id="checklist-dropdown"
-        data-popper-placement="bottom left"
+        id="checklist-drawer-backdrop"
+        class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 z-40 hidden transition-opacity duration-300"
       >
-        <div class="align-center flex justify-between border-b border-gray-200 bg-gray-100 px-4 py-2 text-center font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-          <h3>Project Checklist</h3>
-        </div>
+      </div>
 
-        <div class="grid max-h-[calc(100dvh-12rem)] gap-4 overflow-y-scroll p-4 color-background lg:grid-cols-1">
-          <div id="content-punchlist">
-            <div>
-              <div id="punchlist-container" data-project-id={projectId}>
-                <div class="mb-6 flex items-center justify-between overflow-y-scroll">
-                  {/* <!-- Punchlist Items List --> */}
-                  <div id="punchlist-items-list" class="space-y-4">
-                    {/* <!-- Punchlist items will be dynamically loaded here --> */}
+      {/* Drawer */}
+      <div
+        id="checklist-drawer"
+        class="fixed top-0 right-0 z-50 h-screen w-96 max-w-full transform translate-x-full transition-transform duration-300 ease-in-out bg-white dark:bg-gray-800 shadow-xl"
+      >
+        <div class="flex flex-col h-full">
+          {/* Header */}
+          <div class="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-600 dark:bg-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Project Checklist</h3>
+            <button
+              type="button"
+              id="checklist-drawer-close"
+              class="inline-flex items-center justify-center rounded-lg p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
+            >
+              <span class="sr-only">Close drawer</span>
+              <SimpleIcon name="x" class="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div class="flex-1 overflow-y-auto p-4 color-background">
+            <div id="content-punchlist">
+              <div>
+                <div id="punchlist-container" data-project-id={projectId}>
+                  <div class="mb-6">
+                    {/* <!-- Punchlist Items List --> */}
+                    <div id="punchlist-items-list" class="space-y-4">
+                      {/* <!-- Punchlist items will be dynamically loaded here --> */}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -121,13 +140,40 @@ const projectId = project.id;
     }
   }
 
+  // Drawer functions
+  function openDrawer() {
+    const drawer = document.getElementById("checklist-drawer");
+    const backdrop = document.getElementById("checklist-drawer-backdrop");
+    
+    if (drawer && backdrop) {
+      backdrop.classList.remove("hidden");
+      setTimeout(() => {
+        backdrop.classList.add("opacity-100");
+        drawer.classList.remove("translate-x-full");
+      }, 10);
+    }
+  }
+
+  function closeDrawer() {
+    const drawer = document.getElementById("checklist-drawer");
+    const backdrop = document.getElementById("checklist-drawer-backdrop");
+    
+    if (drawer && backdrop) {
+      drawer.classList.add("translate-x-full");
+      backdrop.classList.remove("opacity-100");
+      setTimeout(() => {
+        backdrop.classList.add("hidden");
+      }, 300);
+    }
+  }
+
   // Update incomplete punchlist items count in the punchlist tab
   async function updateIncompletePunchlistItemsCount() {
     const incompleteCount = punchlistItems.filter((item) => !item.markCompleted).length;
 
     // Update count directly
     const countElement = document.querySelector(".incomplete-punchlist-items-count");
-    const tabButton = document.querySelector('[data-dropdown-toggle="checklist-dropdown"]');
+    const tabButton = document.getElementById("checklist-drawer-toggle");
 
     if (tabButton) {
       // Update count bubble on tab button
@@ -374,6 +420,31 @@ const projectId = project.id;
   document.addEventListener("DOMContentLoaded", function () {
     console.log("🔔 [PUNCHLIST] Punchlist component loaded, initializing...");
     setTimeout(initializePunchlist, 100);
+
+    // Setup drawer toggle button
+    const drawerToggle = document.getElementById("checklist-drawer-toggle");
+    if (drawerToggle) {
+      drawerToggle.addEventListener("click", openDrawer);
+    }
+
+    // Setup drawer close button
+    const drawerClose = document.getElementById("checklist-drawer-close");
+    if (drawerClose) {
+      drawerClose.addEventListener("click", closeDrawer);
+    }
+
+    // Setup backdrop click to close
+    const backdrop = document.getElementById("checklist-drawer-backdrop");
+    if (backdrop) {
+      backdrop.addEventListener("click", closeDrawer);
+    }
+
+    // Close drawer on Escape key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeDrawer();
+      }
+    });
   });
 
   // Make initializePunchlist globally available for tab switching

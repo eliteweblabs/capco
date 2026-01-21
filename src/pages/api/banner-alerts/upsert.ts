@@ -105,12 +105,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       description,
       type,
       position,
-      expireMs,
+      expirems: expireMs,
       dismissible,
-      isActive,
-      startDate,
-      endDate,
-      ...(id ? {} : { createdBy: currentUser.id }),
+      isactive: isActive,
+      startdate: startDate,
+      enddate: endDate,
+      ...(id ? {} : { createdby: currentUser.id }),
     };
 
     let data, error;

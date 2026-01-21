@@ -3,6 +3,7 @@ import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import App from "../../components/ui/App.astro";
 import Alert from "../../components/partials/Alert.astro";
+import Hero from "../../components/common/Hero.astro";
 
 import { globalCompanyData } from "../api/global/global-company-data";
 const {
@@ -42,7 +43,7 @@ if (supabaseAdmin) {
   const { data, error } = await supabaseAdmin
     .from("bannerAlerts")
     .select("*")
-    .order("createdAt", { ascending: false });
+    .order("createdat", { ascending: false });
 
   if (error) {
     console.error("Error fetching banner alerts:", error);
@@ -96,12 +97,12 @@ const expireOptions = [
   {globalCompanyLogo}
 >
   <!-- Header -->
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Banner Alerts</h1>
-    <p class="mt-2 text-gray-600 dark:text-gray-400">
-      Manage site-wide banner alerts that appear at the top or bottom of the page
-    </p>
-  </div>
+  <Hero
+    title="Banner Alerts"
+    description="Manage site-wide banner alerts that appear at the top or bottom of the page"
+    primaryTextClasses={primaryTextClasses}
+    secondaryTextClasses={secondaryTextClasses}
+  />
 
   <!-- Create/Edit Form -->
   <div class="mb-8 rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700">
@@ -311,7 +312,7 @@ const expireOptions = [
           <div class="space-y-4">
             {bannerAlerts.map((banner) => (
               <div
-                class={`rounded-lg border p-4 ${banner.isActive ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20" : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/50"}`}
+                class={`rounded-lg border p-4 ${banner.isactive ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20" : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/50"}`}
                 data-banner-item={banner.id}
               >
                 <div class="flex items-start justify-between">
@@ -339,12 +340,12 @@ const expireOptions = [
                       >
                         {banner.position}
                       </span>
-                      {banner.expireMs && (
+                      {banner.expirems && (
                         <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                          {banner.expireMs / 1000}s expire
+                          {banner.expirems / 1000}s expire
                         </span>
                       )}
-                      {!banner.isActive && (
+                      {!banner.isactive && (
                         <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                           Inactive
                         </span>
@@ -357,7 +358,7 @@ const expireOptions = [
                       {banner.description}
                     </p>
                     <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                      Created: {new Date(banner.createdAt).toLocaleString()}
+                      Created: {new Date(banner.createdat).toLocaleString()}
                     </p>
                   </div>
                   <div class="flex flex-shrink-0 gap-2">
@@ -369,11 +370,11 @@ const expireOptions = [
                       data-description={banner.description || ""}
                       data-type={banner.type || "info"}
                       data-position={banner.position || "top"}
-                      data-expire-ms={banner.expireMs || ""}
+                      data-expire-ms={banner.expirems || ""}
                       data-dismissible={banner.dismissible !== false}
-                      data-is-active={banner.isActive !== false}
-                      data-start-date={banner.startDate || ""}
-                      data-end-date={banner.endDate || ""}
+                      data-is-active={banner.isactive !== false}
+                      data-start-date={banner.startdate || ""}
+                      data-end-date={banner.enddate || ""}
                     >
                       <i class="bx bx-edit" />
                       Edit
@@ -382,10 +383,10 @@ const expireOptions = [
                       type="button"
                       class="toggle-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                       data-id={banner.id}
-                      data-active={banner.isActive}
+                      data-active={banner.isactive}
                     >
-                      <i class={`bx ${banner.isActive ? "bx-hide" : "bx-show"}`} />
-                      {banner.isActive ? "Hide" : "Show"}
+                      <i class={`bx ${banner.isactive ? "bx-hide" : "bx-show"}`} />
+                      {banner.isactive ? "Hide" : "Show"}
                     </button>
                     <button
                       type="button"
@@ -554,18 +555,18 @@ const expireOptions = [
       document.getElementById("description").value = banner.description || "";
       document.getElementById("type").value = banner.type || "info";
       document.getElementById("position").value = banner.position || "top";
-      document.getElementById("expireMs").value = banner.expireMs ? banner.expireMs.toString() : "";
+      document.getElementById("expireMs").value = banner.expirems ? banner.expirems.toString() : "";
       document.getElementById("dismissible").checked = banner.dismissible !== false;
-      document.getElementById("isActive").checked = banner.isActive !== false;
+      document.getElementById("isActive").checked = banner.isactive !== false;
       
       // Handle dates
-      if (banner.startDate) {
-        document.getElementById("startDate").value = new Date(banner.startDate).toISOString().slice(0, 16);
+      if (banner.startdate) {
+        document.getElementById("startDate").value = new Date(banner.startdate).toISOString().slice(0, 16);
       } else {
         document.getElementById("startDate").value = "";
       }
-      if (banner.endDate) {
-        document.getElementById("endDate").value = new Date(banner.endDate).toISOString().slice(0, 16);
+      if (banner.enddate) {
+        document.getElementById("endDate").value = new Date(banner.enddate).toISOString().slice(0, 16);
       } else {
         document.getElementById("endDate").value = "";
       }
