@@ -256,11 +256,48 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       console.log("📁 [FILES-GET] No files found with current filters");
     }
 
-    // Generate signed URLs for each file
+    // Get checkout status from files table (it already has checkedOutBy columns)
+    // Enrich with user names for checked out files
+    const fileIds = (files || []).map(f => f.id);
+    let checkoutMap = new Map();
+    
+    if (fileIds.length > 0 && files && files.some(f => f.checkedOutBy)) {
+      try {
+        // Get unique user IDs who have files checked out
+        const checkedOutByIds = [...new Set((files || [])
+          .filter(f => f.checkedOutBy)
+          .map(f => f.checkedOutBy))];
+
+        if (checkedOutByIds.length > 0) {
+          const { data: profiles } = await supabaseAdmin!
+            .from("profiles")
+            .select("id, firstName, lastName, companyName, email")
+            .in("id", checkedOutByIds);
+
+          if (profiles) {
+            profiles.forEach(profile => {
+              const displayName = profile.companyName || 
+                `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 
+                profile.email;
+              checkoutMap.set(profile.id, displayName);
+            });
+          }
+        }
+      } catch (profileError) {
+        console.warn("⚠️ [FILES-GET] Could not fetch user profiles:", profileError);
+        // Continue without profile names
+      }
+    }
+
+    // Generate signed URLs for each file and add checkout name
     const filesWithUrls = await Promise.all(
       (files || []).map(async (file) => {
+        const checked_out_by_name = file.checkedOutBy 
+          ? (checkoutMap.get(file.checkedOutBy) || 'Unknown')
+          : null;
+
         if (!file.bucketName || !file.filePath) {
-          return { ...file, publicUrl: null };
+          return { ...file, checked_out_by_name, publicUrl: null };
         }
 
         try {
@@ -275,7 +312,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
           if (urlError) {
             console.error(`❌ [FILES-GET] Signed URL error for file ${file.id}:`, urlError);
-            return { ...file, publicUrl: null };
+            return { ...file, checked_out_by_name, publicUrl: null };
           }
 
           // console.log(
@@ -285,6 +322,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
           return {
             ...file,
+            checked_out_by_name,
             publicUrl: urlData?.signedUrl || null,
           };
         } catch (urlError) {
@@ -292,7 +330,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             `❌ [FILES-GET] Failed to generate signed URL for file ${file.id}:`,
             urlError
           );
-          return { ...file, publicUrl: null };
+          return { ...file, checked_out_by_name, publicUrl: null };
         }
       })
     );
