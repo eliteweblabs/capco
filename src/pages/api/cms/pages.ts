@@ -27,17 +27,17 @@ export const GET: APIRoute = async ({ request, url }) => {
         .select("*")
         .eq("slug", slug);
       
-      // Filter by client_id: show global (null) or matching client_id
+      // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
       } else {
-        // If no clientId set, show all pages (both null and non-null client_id)
+        // If no clientId set, show all pages (both null and non-null clientId)
         // This ensures pages aren't hidden if RAILWAY_PROJECT_NAME is not set
         query = query;
       }
       
       const { data, error } = await query
-        .order("client_id", { ascending: false })
+        .order("clientId", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -55,22 +55,22 @@ export const GET: APIRoute = async ({ request, url }) => {
         .from("cmsPages")
         .select("*");
       
-      // Filter by client_id: show global (null) or matching client_id
+      // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
       }
       // If no clientId set, show all pages (no filter)
       
-      // Try to order by display_order if column exists, otherwise order by slug
-      // Note: If display_order column doesn't exist yet, this will fall back gracefully
-      let { data, error } = await query.order("display_order", { ascending: true, nullsFirst: false });
+      // Try to order by displayOrder if column exists, otherwise order by slug
+      // Note: If displayOrder column doesn't exist yet, this will fall back gracefully
+      let { data, error } = await query.order("displayOrder", { ascending: true, nullsFirst: false });
       
-      // If ordering by display_order fails (column doesn't exist), fall back to slug ordering
+      // If ordering by displayOrder fails (column doesn't exist), fall back to slug ordering
       if (error && error.code === "42703") {
         // Column doesn't exist, use slug ordering instead
         let fallbackQuery = supabaseAdmin.from("cmsPages").select("*");
         if (clientId) {
-          fallbackQuery = fallbackQuery.or(`client_id.is.null,client_id.eq.${clientId}`);
+          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${clientId}`);
         }
         const fallbackResult = await fallbackQuery.order("slug");
         data = fallbackResult.data;
@@ -114,12 +114,12 @@ export const POST: APIRoute = async ({ request }) => {
       content,
       frontmatter,
       template,
-      include_in_navigation,
-      nav_roles,
-      nav_page_type,
-      nav_button_style,
-      nav_desktop_only,
-      nav_hide_when_auth,
+      includeInNavigation,
+      navRoles,
+      navPageType,
+      navButtonStyle,
+      navDesktopOnly,
+      navHideWhenAuth,
     } = body;
     console.log("📥 [CMS-PAGES] Extracted values:", {
       slug,
@@ -127,12 +127,12 @@ export const POST: APIRoute = async ({ request }) => {
       description,
       content: content?.substring(0, 50) + "...",
       template,
-      include_in_navigation,
-      nav_roles,
-      nav_page_type,
-      nav_button_style,
-      nav_desktop_only,
-      nav_hide_when_auth,
+      includeInNavigation,
+      navRoles,
+      navPageType,
+      navButtonStyle,
+      navDesktopOnly,
+      navHideWhenAuth,
     });
 
     if (!slug || !content) {
@@ -162,9 +162,9 @@ export const POST: APIRoute = async ({ request }) => {
     let query = supabaseAdmin.from("cmsPages").select("*").eq("slug", slug);
 
     if (clientId) {
-      query = query.eq("client_id", clientId);
+      query = query.eq("clientId", clientId);
     } else {
-      query = query.is("client_id", null);
+      query = query.is("clientId", null);
     }
 
     const { data: existingPage, error: queryError } = await query.maybeSingle();
@@ -184,14 +184,14 @@ export const POST: APIRoute = async ({ request }) => {
         content,
         frontmatter: frontmatter || {},
         template: template || "default",
-        include_in_navigation: include_in_navigation === true,
-        nav_roles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
-        nav_page_type: nav_page_type || "frontend",
-        nav_button_style: nav_button_style || null,
-        nav_desktop_only: nav_desktop_only === true,
-        nav_hide_when_auth: nav_hide_when_auth === true,
-        is_active: true,
-        updated_at: new Date().toISOString(),
+        includeInNavigation: includeInNavigation === true,
+        navRoles: navRoles && Array.isArray(navRoles) ? navRoles : ["any"],
+        navPageType: navPageType || "frontend",
+        navButtonStyle: navButtonStyle || null,
+        navDesktopOnly: navDesktopOnly === true,
+        navHideWhenAuth: navHideWhenAuth === true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
       };
 
       const result = await supabaseAdmin
@@ -212,19 +212,19 @@ export const POST: APIRoute = async ({ request }) => {
         content,
         frontmatter: frontmatter || {},
         template: template || "default",
-        include_in_navigation: include_in_navigation === true,
-        nav_roles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
-        nav_page_type: nav_page_type || "frontend",
-        nav_button_style: nav_button_style || null,
-        nav_desktop_only: nav_desktop_only === true,
-        nav_hide_when_auth: nav_hide_when_auth === true,
-        client_id: clientId,
-        is_active: true,
-        // display_order will be set if column exists, otherwise ignored
-        updated_at: new Date().toISOString(),
+        includeInNavigation: includeInNavigation === true,
+        navRoles: navRoles && Array.isArray(navRoles) ? navRoles : ["any"],
+        navPageType: navPageType || "frontend",
+        navButtonStyle: navButtonStyle || null,
+        navDesktopOnly: navDesktopOnly === true,
+        navHideWhenAuth: navHideWhenAuth === true,
+        clientId: clientId,
+        isActive: true,
+        // displayOrder will be set if column exists, otherwise ignored
+        updatedAt: new Date().toISOString(),
       };
       
-      // Only set display_order if column exists (check by trying to get max value)
+      // Only set displayOrder if column exists (check by trying to get max value)
       // For now, we'll let it default to NULL if column doesn't exist
       // The migration will set initial values
 
@@ -286,9 +286,9 @@ export const DELETE: APIRoute = async ({ request, url }) => {
     let deleteQuery = supabaseAdmin.from("cmsPages").delete().eq("slug", slug);
 
     if (clientId) {
-      deleteQuery = deleteQuery.eq("client_id", clientId);
+      deleteQuery = deleteQuery.eq("clientId", clientId);
     } else {
-      deleteQuery = deleteQuery.is("client_id", null);
+      deleteQuery = deleteQuery.is("clientId", null);
     }
 
     const { error } = await deleteQuery;
@@ -330,11 +330,11 @@ export const PUT: APIRoute = async ({ request }) => {
       });
     }
 
-    // Update display_order for each page
-    const updatePromises = orders.map((item: { id: string; display_order: number }) =>
+    // Update displayOrder for each page
+    const updatePromises = orders.map((item: { id: string; displayOrder: number }) =>
       supabaseAdmin
         .from("cmsPages")
-        .update({ display_order: item.display_order })
+        .update({ displayOrder: item.displayOrder })
         .eq("id", item.id)
     );
 
@@ -343,8 +343,25 @@ export const PUT: APIRoute = async ({ request }) => {
 
     if (errors.length > 0) {
       console.error("❌ [CMS-PAGES] Errors updating order:", errors);
+      
+      // Check if error is due to missing column
+      const firstError = errors[0].error;
+      if (firstError?.code === "42703" || firstError?.message?.includes("displayOrder")) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Column 'displayOrder' does not exist", 
+            details: "Please run the migration: sql-queriers/add-cms-pages-display-order.sql",
+            hint: "This column is required for drag-and-drop page ordering"
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ error: "Some pages failed to update", details: errors }),
+        JSON.stringify({ 
+          error: "Some pages failed to update", 
+          details: errors.map(e => e.error?.message || "Unknown error")
+        }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }

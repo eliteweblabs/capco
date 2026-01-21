@@ -138,6 +138,20 @@ const { globalInputClasses } = Astro.props;
 
     console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
 
+    // CRITICAL: Clear any stale auth state before starting new OAuth flow
+    // This prevents "Invalid Refresh Token" errors from interfering with code verifier storage
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+    if (supabaseUrl) {
+      const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+      const staleKeys = Object.keys(localStorage).filter(
+        (k) => k.includes(`sb-${supabaseProjectRef}`) && !k.includes("code-verifier")
+      );
+      if (staleKeys.length > 0) {
+        console.log("[GOOGLE-SIGNIN] Clearing stale auth state before OAuth:", staleKeys);
+        staleKeys.forEach((k) => localStorage.removeItem(k));
+      }
+    }
+
     // Get singleton Supabase client (prevents multiple GoTrueClient instances)
     const supabase = getSupabaseClient();
 
@@ -201,11 +215,6 @@ const { globalInputClasses } = Astro.props;
     }
 
     if (data?.url) {
-      // With Supabase PKCE flow, the code verifier is stored internally by Supabase
-      // We don't need to manually check for it - Supabase will retrieve it automatically
-      // during the callback exchange. However, we should ensure the client is fully
-      // initialized and give it a moment to store the verifier internally.
-
       const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
       if (!supabaseUrl) {
         console.error("[GOOGLE-SIGNIN] PUBLIC_SUPABASE_URL not configured");
@@ -215,29 +224,48 @@ const { globalInputClasses } = Astro.props;
         return;
       }
 
-      // Give Supabase a moment to store the code verifier internally
-      // Supabase stores it in its internal state, not necessarily in localStorage
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Debug: Check all localStorage keys that might contain the code verifier
+      // CRITICAL: Wait for code verifier to be stored before redirecting
+      // This is essential for first-time auth - without it, the callback won't have the verifier
       const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-      const possibleKeys = [
-        `sb-${supabaseProjectRef}-auth-token-code-verifier`,
-        `sb-${supabaseProjectRef}-code-verifier`,
-        `supabase.auth.token.code_verifier`,
-      ];
+      const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
+      
+      console.log("[GOOGLE-SIGNIN] Waiting for code verifier to be stored in localStorage...");
+      
+      // Wait for code verifier with retry logic (like MultiStepRegisterForm)
+      let codeVerifier = localStorage.getItem(codeVerifierKey);
+      let attempts = 0;
+      const maxAttempts = 20; // Increased from 10 to give more time
+      const retryDelay = 100; // Check every 100ms
 
-      console.log("[GOOGLE-SIGNIN] Checking for code verifier in localStorage...");
-      const foundKeys = possibleKeys.filter((key) => localStorage.getItem(key));
-      if (foundKeys.length > 0) {
-        console.log("[GOOGLE-SIGNIN] ✅ Code verifier found in localStorage:", foundKeys);
+      while (!codeVerifier && attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        codeVerifier = localStorage.getItem(codeVerifierKey);
+        attempts++;
+        
+        if (attempts % 5 === 0) {
+          console.log(`[GOOGLE-SIGNIN] Still waiting for code verifier... (attempt ${attempts}/${maxAttempts})`);
+        }
+      }
+
+      if (codeVerifier) {
+        console.log("[GOOGLE-SIGNIN] ✅ Code verifier confirmed in localStorage, redirecting...");
+        console.log(`[GOOGLE-SIGNIN] Code verifier length: ${codeVerifier.length} characters`);
       } else {
-        console.log(
-          "[GOOGLE-SIGNIN] ⚠️ Code verifier not found in localStorage, but Supabase may store it internally"
+        console.error("[GOOGLE-SIGNIN] ❌ Code verifier NOT found after waiting!");
+        console.error("[GOOGLE-SIGNIN] This will cause authentication to fail on callback");
+        console.error("[GOOGLE-SIGNIN] Available localStorage keys:", 
+          Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('sb-') || k.includes('auth'))
         );
-        console.log(
-          "[GOOGLE-SIGNIN] Supabase will retrieve it automatically during exchangeCodeForSession"
-        );
+        
+        // Don't proceed if code verifier is missing - this will cause the callback to fail
+        if (window.showModal) {
+          window.showModal(
+            "error",
+            "Authentication Error",
+            "Failed to initialize authentication. Please try again."
+          );
+        }
+        return;
       }
 
       console.log("[GOOGLE-SIGNIN] Redirecting to OAuth provider...");
