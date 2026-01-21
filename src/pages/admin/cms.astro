@@ -308,14 +308,14 @@ try {
   const response = await fetch(`${baseUrl}/api/cms/pages`);
   if (response.ok) {
     const data = await response.json();
-    // Sort pages - use displayOrder if available, otherwise sort by createdAt
+    // Sort pages - use display_order if available, otherwise sort by created_at
     cmsPages = (data.pages || []).sort((a: any, b: any) => {
-      // If displayOrder exists and is not null, use it
-      if (a.displayOrder != null && b.displayOrder != null) {
-        return a.displayOrder - b.displayOrder;
+      // If display_order exists and is not null, use it
+      if (a.display_order != null && b.display_order != null) {
+        return a.display_order - b.display_order;
       }
-      // Fallback to createdAt
-      return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      // Fallback to created_at
+      return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
     });
   }
 } catch (error) {
@@ -552,7 +552,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                     draggable="true"
                     data-page-id={page.id}
                     data-page-slug={page.slug}
-                    data-display-order={page.displayOrder ?? index}
+                    data-display-order={page.display_order ?? index}
                   >
                     <td class="px-2 py-4 text-center text-gray-400 dark:text-gray-500 cursor-grab active:cursor-grabbing">
                       <svg
@@ -743,7 +743,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                 <label class="flex items-center">
                   <input
                     type="checkbox"
-                    name="navRoles"
+                    name="nav_roles"
                     value="any"
                     checked
                     class="w-4 h-4 text-primary-600 rounded"
@@ -753,7 +753,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                 <label class="flex items-center">
                   <input
                     type="checkbox"
-                    name="navRoles"
+                    name="nav_roles"
                     value="Client"
                     class="w-4 h-4 text-primary-600 rounded"
                   />
@@ -762,7 +762,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                 <label class="flex items-center">
                   <input
                     type="checkbox"
-                    name="navRoles"
+                    name="nav_roles"
                     value="Admin"
                     class="w-4 h-4 text-primary-600 rounded"
                   />
@@ -771,7 +771,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                 <label class="flex items-center">
                   <input
                     type="checkbox"
-                    name="navRoles"
+                    name="nav_roles"
                     value="Staff"
                     class="w-4 h-4 text-primary-600 rounded"
                   />
@@ -784,7 +784,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               <label for="page-nav-page-type" class="block text-sm font-medium mb-2">
                 Page Type
               </label>
-              <select id="page-nav-page-type" name="navPageType" class={globalInputClasses}>
+              <select id="page-nav-page-type" name="nav_page_type" class={globalInputClasses}>
                 <option value="frontend">Frontend</option>
                 <option value="backend">Backend</option>
               </select>
@@ -794,7 +794,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               <label for="page-nav-button-style" class="block text-sm font-medium mb-2">
                 Button Style (Optional)
               </label>
-              <select id="page-nav-button-style" name="navButtonStyle" class={globalInputClasses}>
+              <select id="page-nav-button-style" name="nav_button_style" class={globalInputClasses}>
                 <option value="">None (Regular Link)</option>
                 <option value="primary">Primary</option>
                 <option value="secondary">Secondary</option>
@@ -807,7 +807,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               <input
                 type="checkbox"
                 id="page-nav-desktop-only"
-                name="navDesktopOnly"
+                name="nav_desktop_only"
                 class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
               />
               <label
@@ -822,7 +822,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               <input
                 type="checkbox"
                 id="page-nav-hide-when-auth"
-                name="navHideWhenAuth"
+                name="nav_hide_when_auth"
                 class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
               />
               <label
@@ -1221,23 +1221,23 @@ You can embed components:
                 includeInNavCheckbox.dispatchEvent(new Event("change"));
               }
 
-              // Set navigation properties
+              // Set navigation properties (read camelCase from database)
               if (navPageTypeSelect && navPageTypeSelect instanceof HTMLSelectElement) {
-                navPageTypeSelect.value = page.navPageType || "frontend";
+                navPageTypeSelect.value = page.navPageType || page.nav_page_type || "frontend";
               }
               if (navButtonStyleSelect && navButtonStyleSelect instanceof HTMLSelectElement) {
-                navButtonStyleSelect.value = page.navButtonStyle || "";
+                navButtonStyleSelect.value = page.navButtonStyle || page.nav_button_style || "";
               }
               if (navDesktopOnlyCheckbox && navDesktopOnlyCheckbox instanceof HTMLInputElement) {
-                navDesktopOnlyCheckbox.checked = page.navDesktopOnly || false;
+                navDesktopOnlyCheckbox.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
               }
               if (navHideWhenAuthCheckbox && navHideWhenAuthCheckbox instanceof HTMLInputElement) {
-                navHideWhenAuthCheckbox.checked = page.navHideWhenAuth || false;
+                navHideWhenAuthCheckbox.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
               }
 
-              // Set nav roles checkboxes
-              const navRoles = page.navRoles || ["any"];
-              document.querySelectorAll('input[name="navRoles"]').forEach((cb) => {
+              // Set nav roles checkboxes (read camelCase from database)
+              const navRoles = page.navRoles || page.nav_roles || ["any"];
+              document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
                 if (cb instanceof HTMLInputElement) {
                   cb.checked = navRoles.includes(cb.value);
                 }
@@ -1360,7 +1360,7 @@ You can embed components:
                 tbody.insertBefore(draggedElement, row);
               }
 
-              // Update displayOrder in database
+              // Update display_order in database
               const newRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
               const orderUpdates = [];
 
@@ -1369,7 +1369,7 @@ You can embed components:
                 if (pageId) {
                   orderUpdates.push({
                     id: pageId,
-                    displayOrder: idx,
+                    display_order: idx,
                   });
                 }
               });
@@ -1384,15 +1384,7 @@ You can embed components:
 
                 if (!response.ok) {
                   const error = await response.json();
-                  // Provide more detailed error info
-                  let errorMessage = error.error || "Failed to update order";
-                  if (error.details) {
-                    errorMessage += ": " + (typeof error.details === "string" ? error.details : JSON.stringify(error.details));
-                  }
-                  if (error.hint) {
-                    errorMessage += " (" + error.hint + ")";
-                  }
-                  throw new Error(errorMessage);
+                  throw new Error(error.error || "Failed to update order");
                 }
 
                 // Update data attributes
@@ -1401,14 +1393,10 @@ You can embed components:
                 });
               } catch (error) {
                 console.error("Error updating page order:", error);
-                const errorMsg = error instanceof Error ? error.message : String(error);
                 if (window.showError) {
-                  window.showError("Save Failed", errorMsg, 5000);
+                  window.showError("Save Failed", "Failed to save new order. Reloading page...", 3000);
                 }
-                // Don't reload if it's a migration issue - user needs to run migration first
-                if (!errorMsg.includes("displayOrder") && !errorMsg.includes("migration")) {
-                  setTimeout(() => location.reload(), 1000);
-                }
+                setTimeout(() => location.reload(), 1000);
               }
             }
           });
@@ -1532,7 +1520,7 @@ You can embed components:
           false;
 
         // Get navigation properties
-        const navRolesCheckboxes = document.querySelectorAll('input[name="navRoles"]:checked');
+        const navRolesCheckboxes = document.querySelectorAll('input[name="nav_roles"]:checked');
         const navRoles = Array.from(navRolesCheckboxes)
           .map((cb) => {
             if (cb instanceof HTMLInputElement) return cb.value;
@@ -1577,11 +1565,11 @@ You can embed components:
           content,
           template,
           includeInNavigation: includeInNavigation,
-          navRoles: navRoles.length > 0 ? navRoles : ["any"],
-          navPageType: navPageType,
-          navButtonStyle: navButtonStyle,
-          navDesktopOnly: navDesktopOnly,
-          navHideWhenAuth: navHideWhenAuth,
+          nav_roles: navRoles.length > 0 ? navRoles : ["any"],
+          nav_page_type: navPageType,
+          nav_button_style: navButtonStyle,
+          nav_desktop_only: navDesktopOnly,
+          nav_hide_when_auth: navHideWhenAuth,
         };
 
         // Debug logging

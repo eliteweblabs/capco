@@ -105,7 +105,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        client_id: import.meta.env.GOOGLE_PEOPLE_CLIENT_ID,
+        clientId: import.meta.env.GOOGLE_PEOPLE_clientId,
         client_secret: import.meta.env.GOOGLE_PEOPLE_CLIENT_SECRET,
         code: code,
         grant_type: "authorization_code",
