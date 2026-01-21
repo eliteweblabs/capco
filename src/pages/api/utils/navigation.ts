@@ -43,35 +43,35 @@ export const navigation = async (
       let query = supabaseAdmin
         .from("cmsPages")
         .select(
-          "slug, title, include_in_navigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
+          "slug, title, includeInNavigation, navRoles, navPageType, navButtonStyle, navDesktopOnly, navHideWhenAuth"
         )
-        .eq("is_active", true)
-        .eq("include_in_navigation", true);
+        .eq("isActive", true)
+        .eq("includeInNavigation", true);
 
-      // Filter by client_id: show global (null) or matching client_id
+      // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
       }
       // If no clientId set, show all pages (no filter)
 
-      // Try to order by display_order if column exists, otherwise order by title
-      let { data: cmsPages, error } = await query.order("display_order", {
+      // Try to order by displayOrder if column exists, otherwise order by title
+      let { data: cmsPages, error } = await query.order("displayOrder", {
         ascending: true,
         nullsFirst: false,
       });
 
-      // If ordering by display_order fails (column doesn't exist), fall back to title ordering
+      // If ordering by displayOrder fails (column doesn't exist), fall back to title ordering
       if (error && error.code === "42703") {
         // Column doesn't exist, use title ordering instead
         let fallbackQuery = supabaseAdmin
           .from("cmsPages")
           .select(
-            "slug, title, include_in_navigation, nav_roles, nav_page_type, nav_button_style, nav_desktop_only, nav_hide_when_auth"
+            "slug, title, includeInNavigation, navRoles, navPageType, navButtonStyle, navDesktopOnly, navHideWhenAuth"
           )
-          .eq("is_active", true)
-          .eq("include_in_navigation", true);
+          .eq("isActive", true)
+          .eq("includeInNavigation", true);
         if (clientId) {
-          fallbackQuery = fallbackQuery.or(`client_id.is.null,client_id.eq.${clientId}`);
+          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${clientId}`);
         }
         const fallbackResult = await fallbackQuery.order("title");
         cmsPages = fallbackResult.data;
@@ -82,14 +82,14 @@ export const navigation = async (
           label: page.title || page.slug,
           href: `/${page.slug}`,
           roles:
-            page.nav_roles && Array.isArray(page.nav_roles) && page.nav_roles.length > 0
-              ? (page.nav_roles as UserRole[])
+            page.navRoles && Array.isArray(page.navRoles) && page.navRoles.length > 0
+              ? (page.navRoles as UserRole[])
               : ["any"],
-          pageType: (page.nav_page_type === "backend" ? "backend" : "frontend") as NavType,
+          pageType: (page.navPageType === "backend" ? "backend" : "frontend") as NavType,
           isPrimary: currentUrl === `/${page.slug}` || currentUrl.startsWith(`/${page.slug}/`),
-          buttonStyle: page.nav_button_style || undefined,
-          desktopOnly: page.nav_desktop_only === true,
-          hideWhenAuth: page.nav_hide_when_auth === true,
+          buttonStyle: page.navButtonStyle || undefined,
+          desktopOnly: page.navDesktopOnly === true,
+          hideWhenAuth: page.navHideWhenAuth === true,
         }));
       }
     }

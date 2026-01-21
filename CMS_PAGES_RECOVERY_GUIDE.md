@@ -56,7 +56,7 @@ CREATE TABLE cmsPages (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   include_in_navigation BOOLEAN DEFAULT false,
-  display_order INTEGER DEFAULT 0,
+  displayOrder INTEGER DEFAULT 0,
   nav_roles TEXT[] DEFAULT ARRAY['any'::TEXT],
   nav_page_type TEXT DEFAULT 'frontend',
   nav_button_style TEXT,
@@ -70,7 +70,7 @@ CREATE TABLE cmsPages (
 CREATE INDEX idx_cmsPages_slug ON cmsPages(slug);
 CREATE INDEX idx_cmsPages_client_id ON cmsPages(client_id);
 CREATE INDEX idx_cmsPages_active ON cmsPages(is_active) WHERE is_active = true;
-CREATE INDEX idx_cmsPages_display_order ON cmsPages(display_order);
+CREATE INDEX idx_cmsPages_displayOrder ON cmsPages(displayOrder);
 
 -- Enable RLS
 ALTER TABLE cmsPages ENABLE ROW LEVEL SECURITY;

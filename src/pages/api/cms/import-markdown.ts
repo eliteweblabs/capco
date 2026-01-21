@@ -78,12 +78,12 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
               content,
               frontmatter: data || {},
               template: data.template || "default",
-              client_id: clientId,
-              is_active: true,
-              updated_at: new Date().toISOString(),
+              clientId: clientId,
+              isActive: true,
+              updatedAt: new Date().toISOString(),
             },
             {
-              onConflict: "slug,client_id",
+              onConflict: "slug,clientId",
             }
           )
           .select()
@@ -127,12 +127,12 @@ export const GET: APIRoute = async ({ request, url, cookies }) => {
           content,
           frontmatter: data || {},
           template: data.template || "default",
-          client_id: clientId,
-          is_active: true,
-          updated_at: new Date().toISOString(),
+          clientId: clientId,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
         },
         {
-          onConflict: "slug,client_id",
+          onConflict: "slug,clientId",
         }
       )
       .select()
