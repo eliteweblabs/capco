@@ -45,6 +45,12 @@ if (supabaseAdmin) {
 const topBanners = banners.filter((b) => b.position === "top");
 const bottomBanners = banners.filter((b) => b.position === "bottom");
 
+// Debug logging
+console.log("[BannerAlertsLoader] Total banners:", banners.length);
+console.log("[BannerAlertsLoader] Top banners:", topBanners.length);
+console.log("[BannerAlertsLoader] Bottom banners:", bottomBanners.length);
+console.log("[BannerAlertsLoader] Position filter:", position);
+
 // Get all banner IDs for early dismiss check
 const allBannerIds = banners.map((b) => String(b.id));
 ---
@@ -167,7 +173,7 @@ const allBannerIds = banners.map((b) => String(b.id));
 
 {
   bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
-    <div class="banner-alerts-bottom">
+    <div class="banner-alerts-bottom fixed bottom-0 left-0 right-0 z-[60]" id="bottom-banner-container">
       {bottomBanners.map((banner) => (
         <BannerAlert
           id={banner.id}
@@ -180,5 +186,92 @@ const allBannerIds = banners.map((b) => String(b.id));
         />
       ))}
     </div>
+  )
+}
+
+{
+  bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
+    <script is:inline>
+      // Debug: Check if bottom banner container exists
+      (function() {
+        console.log("[BannerAlertsLoader] Bottom banner script loaded");
+        
+        function checkBottomBanner() {
+          const container = document.getElementById("bottom-banner-container");
+          console.log("[BannerAlertsLoader] Bottom container found:", !!container);
+          if (container) {
+            console.log("[BannerAlertsLoader] Container offsetHeight:", container.offsetHeight);
+            console.log("[BannerAlertsLoader] Container computed style:", window.getComputedStyle(container).position);
+            console.log("[BannerAlertsLoader] Container z-index:", window.getComputedStyle(container).zIndex);
+            console.log("[BannerAlertsLoader] Container display:", window.getComputedStyle(container).display);
+            console.log("[BannerAlertsLoader] Container visibility:", window.getComputedStyle(container).visibility);
+          }
+        }
+        
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", checkBottomBanner);
+        } else {
+          setTimeout(checkBottomBanner, 10);
+        }
+      })();
+      
+      // Adjust footer/bottom content for bottom banners
+      (function() {
+        function adjustFooterForBanners() {
+          const bottomBannerContainer = document.getElementById("bottom-banner-container");
+          const footer = document.querySelector("footer");
+
+          if (bottomBannerContainer) {
+            const updateContentPadding = function() {
+              const bannerHeight = bottomBannerContainer.offsetHeight;
+
+              if (bannerHeight > 0) {
+                // Add padding to body to push footer up
+                document.body.style.paddingBottom = bannerHeight + "px";
+                
+                // Adjust footer if it exists
+                if (footer) {
+                  footer.style.marginBottom = bannerHeight + "px";
+                }
+              } else {
+                document.body.style.paddingBottom = "";
+                if (footer) {
+                  footer.style.marginBottom = "";
+                }
+              }
+            };
+
+            // Initial adjustment
+            updateContentPadding();
+
+            // Update on resize for responsive changes
+            window.addEventListener("resize", updateContentPadding);
+
+            // Watch for banner dismissals
+            const observer = new MutationObserver(function() {
+              setTimeout(updateContentPadding, 350); // After animation
+            });
+
+            observer.observe(bottomBannerContainer, {
+              childList: true,
+              subtree: true,
+              attributes: true,
+              attributeFilter: ["style"]
+            });
+          }
+        }
+
+        // Run immediately if DOM is ready, otherwise wait
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", adjustFooterForBanners);
+        } else {
+          // Small delay to ensure banner is rendered
+          setTimeout(adjustFooterForBanners, 10);
+        }
+        
+        // Also run on Astro page transitions
+        document.addEventListener("astro:page-load", adjustFooterForBanners);
+      })();
+    </script>
   )
 }

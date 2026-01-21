@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS templateComponentMapping (
     template_id INTEGER REFERENCES pdf_templates(id) ON DELETE CASCADE,
     component_id INTEGER REFERENCES pdf_components(id) ON DELETE CASCADE,
     insertion_point VARCHAR(100) NOT NULL, -- 'header', 'footer', 'content', 'sidebar', etc.
-    display_order INTEGER DEFAULT 0,
+    displayOrder INTEGER DEFAULT 0,
     is_required BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(template_id, component_id, insertion_point)
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS documentComponents (
     document_id INTEGER REFERENCES generated_documents(id) ON DELETE CASCADE,
     component_id INTEGER REFERENCES pdf_components(id),
     insertion_point VARCHAR(100) NOT NULL,
-    display_order INTEGER DEFAULT 0,
+    displayOrder INTEGER DEFAULT 0,
     component_data JSONB, -- stores any component-specific data/configuration
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -686,7 +686,7 @@ INSERT INTO pdf_components (name, description, html_content, component_type, cre
 ) ON CONFLICT DO NOTHING;
 
 -- Create mapping between default template and components
-INSERT INTO templateComponentMapping (template_id, component_id, insertion_point, display_order, is_required) 
+INSERT INTO templateComponentMapping (template_id, component_id, insertion_point, displayOrder, is_required) 
 SELECT 
     t.id as template_id,
     c.id as component_id,
@@ -700,7 +700,7 @@ SELECT
         WHEN c.component_type = 'section' THEN 2
         WHEN c.component_type = 'footer' THEN 3
         ELSE 0
-    END as display_order,
+    END as displayOrder,
     CASE 
         WHEN c.component_type = 'header' THEN true
         WHEN c.component_type = 'footer' THEN true
