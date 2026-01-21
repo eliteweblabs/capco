@@ -334,7 +334,10 @@ export const PUT: APIRoute = async ({ request }) => {
     const updatePromises = orders.map((item: { id: string; displayOrder: number }) =>
       supabaseAdmin
         .from("cmsPages")
-        .update({ displayOrder: item.displayOrder })
+        .update({ 
+          displayOrder: item.displayOrder,
+          updatedAt: new Date().toISOString()
+        })
         .eq("id", item.id)
     );
 

@@ -60,6 +60,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
     transition: all 0.2s;
     box-sizing: border-box;
     box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+    pointer-events: auto;
   }
 
   :global(.node-card:hover) {
@@ -275,15 +276,15 @@ const { currentUser } = await checkAuth(Astro.cookies);
   }
 </style>
 
-<div class="fixed inset-0 node-editor-canvas overflow-hidden" id="node-canvas">
+<div class="fixed inset-0 w-full h-full node-editor-canvas overflow-hidden -z-10 pointer-events-none" id="node-canvas">
   <!-- Connection overlay for drawing arrows -->
-  <svg class="absolute inset-0 w-full h-full" id="connections-svg"> </svg>
+  <svg class="absolute inset-0 w-full h-full pointer-events-none" id="connections-svg"> </svg>
 </div>
 
 <!-- Pause button for debugging -->
 {
   currentUser?.profile?.role === "Admin" && (
-    <button id="pause-scroll-btn" class="pause-button">
+    <button id="pause-scroll-btn" class="pause-button" style="position: fixed; top: 80px; right: 20px; z-index: 9;">
       ⏸ Pause Scroll
     </button>
   )
@@ -335,6 +336,18 @@ const { currentUser } = await checkAuth(Astro.cookies);
     constructor() {
       this.canvas = document.getElementById("node-canvas");
       this.svg = document.getElementById("connections-svg");
+      
+      if (!this.canvas) {
+        console.error("❌ [NodesCapco] Canvas element #node-canvas not found!");
+        return;
+      }
+      if (!this.svg) {
+        console.error("❌ [NodesCapco] SVG element #connections-svg not found!");
+        return;
+      }
+      
+      console.log("✅ [NodesCapco] Canvas and SVG elements found, initializing...");
+      
       this.nodes = new Map();
       this.connections = [];
       this.draggedNode = null;
@@ -1439,8 +1452,22 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
   }
 
-  // Initialize when DOM is loaded
-  document.addEventListener("DOMContentLoaded", async () => {
+  // Initialize when DOM is loaded OR immediately if already loaded
+  async function initNodeEditor() {
+    console.log("🔧 [NodesCapco] Initializing NodesCapco component...");
+    console.log("🔧 [NodesCapco] Document ready state:", document.readyState);
+    
+    // Check if elements exist
+    const canvas = document.getElementById("node-canvas");
+    const svg = document.getElementById("connections-svg");
+    console.log("🔧 [NodesCapco] Canvas exists:", !!canvas);
+    console.log("🔧 [NodesCapco] SVG exists:", !!svg);
+    
+    if (!canvas || !svg) {
+      console.error("❌ [NodesCapco] Required elements not found in DOM!");
+      return;
+    }
+    
     // Dynamically import the custom icon system
     try {
       console.log("🔧 [ICON] Loading custom icon system...");
@@ -1458,9 +1485,20 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
 
     const nodeEditor = new NodeEditor();
+    console.log("🔧 [NodesCapco] NodeEditor instance created:", !!nodeEditor);
 
     // Optional: Start continuous node addition to demonstrate center maintenance
     // Uncomment the line below to see the center maintenance in action
     // nodeEditor.startContinuousNodeAddition(3000);
-  });
+  }
+
+  // Initialize immediately if DOM is already loaded (e.g., from CMS content)
+  if (document.readyState === "loading") {
+    console.log("🔧 [NodesCapco] DOM still loading, waiting for DOMContentLoaded...");
+    document.addEventListener("DOMContentLoaded", initNodeEditor);
+  } else {
+    // DOM already loaded - initialize immediately
+    console.log("🔧 [NodesCapco] DOM already loaded, initializing immediately...");
+    initNodeEditor();
+  }
 </script>
