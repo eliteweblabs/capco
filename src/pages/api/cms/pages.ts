@@ -61,11 +61,11 @@ export const GET: APIRoute = async ({ request, url }) => {
       }
       // If no clientId set, show all pages (no filter)
       
-      // Try to order by display_order if column exists, otherwise order by slug
-      // Note: If display_order column doesn't exist yet, this will fall back gracefully
-      let { data, error } = await query.order("display_order", { ascending: true, nullsFirst: false });
+      // Try to order by displayOrder if column exists, otherwise order by slug
+      // Note: If displayOrder column doesn't exist yet, this will fall back gracefully
+      let { data, error } = await query.order("displayOrder", { ascending: true, nullsFirst: false });
       
-      // If ordering by display_order fails (column doesn't exist), fall back to slug ordering
+      // If ordering by displayOrder fails (column doesn't exist), fall back to slug ordering
       if (error && error.code === "42703") {
         // Column doesn't exist, use slug ordering instead
         let fallbackQuery = supabaseAdmin.from("cmsPages").select("*");
@@ -185,13 +185,13 @@ export const POST: APIRoute = async ({ request }) => {
         frontmatter: frontmatter || {},
         template: template || "default",
         includeInNavigation: includeInNavigation === true,
-        nav_roles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
-        nav_page_type: nav_page_type || "frontend",
-        nav_button_style: nav_button_style || null,
-        nav_desktop_only: nav_desktop_only === true,
-        nav_hide_when_auth: nav_hide_when_auth === true,
+        navRoles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
+        navPageType: nav_page_type || "frontend",
+        navButtonStyle: nav_button_style || null,
+        navDesktopOnly: nav_desktop_only === true,
+        navHideWhenAuth: nav_hide_when_auth === true,
         isActive: true,
-        updated_at: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       const result = await supabaseAdmin
@@ -213,15 +213,15 @@ export const POST: APIRoute = async ({ request }) => {
         frontmatter: frontmatter || {},
         template: template || "default",
         includeInNavigation: includeInNavigation === true,
-        nav_roles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
-        nav_page_type: nav_page_type || "frontend",
-        nav_button_style: nav_button_style || null,
-        nav_desktop_only: nav_desktop_only === true,
-        nav_hide_when_auth: nav_hide_when_auth === true,
+        navRoles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
+        navPageType: nav_page_type || "frontend",
+        navButtonStyle: nav_button_style || null,
+        navDesktopOnly: nav_desktop_only === true,
+        navHideWhenAuth: nav_hide_when_auth === true,
         clientId: clientId,
         isActive: true,
-        // display_order will be set if column exists, otherwise ignored
-        updated_at: new Date().toISOString(),
+        // displayOrder will be set if column exists, otherwise ignored
+        updatedAt: new Date().toISOString(),
       };
       
       // Only set display_order if column exists (check by trying to get max value)
@@ -330,13 +330,14 @@ export const PUT: APIRoute = async ({ request }) => {
       });
     }
 
-    // Update display_order for each page
-    const updatePromises = orders.map((item: { id: string; display_order: number }) =>
-      supabaseAdmin
+    // Update displayOrder for each page (accept both snake_case and camelCase from request)
+    const updatePromises = orders.map((item: { id: string; display_order?: number; displayOrder?: number }) => {
+      const displayOrder = item.displayOrder ?? item.display_order ?? 0;
+      return supabaseAdmin
         .from("cmsPages")
-        .update({ display_order: item.display_order })
-        .eq("id", item.id)
-    );
+        .update({ displayOrder })
+        .eq("id", item.id);
+    });
 
     const results = await Promise.all(updatePromises);
     const errors = results.filter((r) => r.error);
