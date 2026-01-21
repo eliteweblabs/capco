@@ -27,17 +27,17 @@ export const GET: APIRoute = async ({ request, url }) => {
         .select("*")
         .eq("slug", slug);
       
-      // Filter by client_id: show global (null) or matching client_id
+      // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
       } else {
-        // If no clientId set, show all pages (both null and non-null client_id)
+        // If no clientId set, show all pages (both null and non-null clientId)
         // This ensures pages aren't hidden if RAILWAY_PROJECT_NAME is not set
         query = query;
       }
       
       const { data, error } = await query
-        .order("client_id", { ascending: false })
+        .order("clientId", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -55,9 +55,9 @@ export const GET: APIRoute = async ({ request, url }) => {
         .from("cmsPages")
         .select("*");
       
-      // Filter by client_id: show global (null) or matching client_id
+      // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
       }
       // If no clientId set, show all pages (no filter)
       
@@ -70,7 +70,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         // Column doesn't exist, use slug ordering instead
         let fallbackQuery = supabaseAdmin.from("cmsPages").select("*");
         if (clientId) {
-          fallbackQuery = fallbackQuery.or(`client_id.is.null,client_id.eq.${clientId}`);
+          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${clientId}`);
         }
         const fallbackResult = await fallbackQuery.order("slug");
         data = fallbackResult.data;
@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
       content,
       frontmatter,
       template,
-      include_in_navigation,
+      includeInNavigation,
       nav_roles,
       nav_page_type,
       nav_button_style,
@@ -127,7 +127,7 @@ export const POST: APIRoute = async ({ request }) => {
       description,
       content: content?.substring(0, 50) + "...",
       template,
-      include_in_navigation,
+      includeInNavigation,
       nav_roles,
       nav_page_type,
       nav_button_style,
@@ -162,9 +162,9 @@ export const POST: APIRoute = async ({ request }) => {
     let query = supabaseAdmin.from("cmsPages").select("*").eq("slug", slug);
 
     if (clientId) {
-      query = query.eq("client_id", clientId);
+      query = query.eq("clientId", clientId);
     } else {
-      query = query.is("client_id", null);
+      query = query.is("clientId", null);
     }
 
     const { data: existingPage, error: queryError } = await query.maybeSingle();
@@ -184,13 +184,13 @@ export const POST: APIRoute = async ({ request }) => {
         content,
         frontmatter: frontmatter || {},
         template: template || "default",
-        include_in_navigation: include_in_navigation === true,
+        includeInNavigation: includeInNavigation === true,
         nav_roles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
         nav_page_type: nav_page_type || "frontend",
         nav_button_style: nav_button_style || null,
         nav_desktop_only: nav_desktop_only === true,
         nav_hide_when_auth: nav_hide_when_auth === true,
-        is_active: true,
+        isActive: true,
         updated_at: new Date().toISOString(),
       };
 
@@ -212,14 +212,14 @@ export const POST: APIRoute = async ({ request }) => {
         content,
         frontmatter: frontmatter || {},
         template: template || "default",
-        include_in_navigation: include_in_navigation === true,
+        includeInNavigation: includeInNavigation === true,
         nav_roles: nav_roles && Array.isArray(nav_roles) ? nav_roles : ["any"],
         nav_page_type: nav_page_type || "frontend",
         nav_button_style: nav_button_style || null,
         nav_desktop_only: nav_desktop_only === true,
         nav_hide_when_auth: nav_hide_when_auth === true,
-        client_id: clientId,
-        is_active: true,
+        clientId: clientId,
+        isActive: true,
         // display_order will be set if column exists, otherwise ignored
         updated_at: new Date().toISOString(),
       };
@@ -286,9 +286,9 @@ export const DELETE: APIRoute = async ({ request, url }) => {
     let deleteQuery = supabaseAdmin.from("cmsPages").delete().eq("slug", slug);
 
     if (clientId) {
-      deleteQuery = deleteQuery.eq("client_id", clientId);
+      deleteQuery = deleteQuery.eq("clientId", clientId);
     } else {
-      deleteQuery = deleteQuery.is("client_id", null);
+      deleteQuery = deleteQuery.is("clientId", null);
     }
 
     const { error } = await deleteQuery;

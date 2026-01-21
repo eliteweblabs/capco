@@ -321,16 +321,16 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         .from("cmsPages")
         .select("*")
         .in("slug", normalizedSlug)
-        .eq("is_active", true);
+        .eq("isActive", true);
       
-      // Filter by client_id: show global (null) or matching client_id
+      // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`client_id.is.null,client_id.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
       }
       // If no clientId set, show all pages (no filter)
       
       const { data: dbPage, error } = await query
-        .order("client_id", { ascending: false }) // Client-specific takes priority
+        .order("clientId", { ascending: false }) // Client-specific takes priority
         .limit(1)
         .maybeSingle();
 
