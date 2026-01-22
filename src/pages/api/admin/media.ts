@@ -153,7 +153,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (dbError) {
       console.error("❌ [ADMIN-MEDIA] DB insert error:", dbError);
-      // File uploaded but DB entry failed - still return success with warning
+      // Try to cleanup the uploaded file if DB insert fails
+      await supabaseAdmin.storage
+        .from("project-media")
+        .remove([filePath]);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Failed to save file record to database",
+          details: dbError.message 
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     console.log("✅ [ADMIN-MEDIA] File uploaded:", filePath);

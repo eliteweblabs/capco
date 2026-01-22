@@ -1,0 +1,233 @@
+---
+/**
+ * DeleteConfirmButton Component
+ * Reusable delete button with 2-step confirmation (no alerts)
+ * Uses Button.astro styling patterns for consistency
+ * 
+ * Usage:
+ * <DeleteConfirmButton
+ *   id="delete-item-123"
+ *   onConfirm={() => deleteItem(123)}
+ * />
+ * 
+ * Behavior:
+ * 1. First click: Shows ? icon for 3 seconds
+ * 2. Second click within 3 seconds: Executes delete
+ * 3. Auto-reverts to trash icon if not confirmed
+ */
+
+import SimpleIcon from "./SimpleIcon.astro";
+import { getIcon } from "../../lib/simple-icons";
+
+export interface Props {
+  id: string;
+  class?: string;
+  timeout?: number; // milliseconds, default 3000
+  size?: "xs" | "sm" | "md" | "lg" | "xl"; // default "sm"
+  variant?: "icon" | "button"; // default "icon"
+  label?: string; // for button variant
+}
+
+const { 
+  id, 
+  class: className = "",
+  timeout = 3000,
+  size = "sm",
+  variant = "icon",
+  label = "Delete"
+} = Astro.props;
+
+// Size mappings to match Button.astro
+const sizeClasses = {
+  xs: "p-1",
+  sm: "p-1.5",
+  md: "p-2",
+  lg: "p-2.5",
+  xl: "p-3"
+};
+
+const textSizeClasses = {
+  xs: "text-xs",
+  sm: "text-sm",
+  md: "text-base",
+  lg: "text-lg",
+  xl: "text-xl"
+};
+
+const iconSizes = {
+  xs: 12,
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32
+};
+
+// Base classes matching Button.astro danger variant
+const baseIconClasses = `${sizeClasses[size]} bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all inline-flex items-center justify-center`;
+
+const baseButtonClasses = `${sizeClasses[size]} px-4 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all inline-flex items-center justify-center gap-2 ${textSizeClasses[size]} font-medium`;
+
+// Get trash icon SVG
+const trashIconSize = iconSizes[size];
+const trashIconSvg = getIcon("trash", { size: trashIconSize, className: "" });
+---
+
+{variant === "icon" ? (
+  <button
+    id={id}
+    type="button"
+    class={`delete-confirm-btn ${baseIconClasses} ${className}`}
+    title="Delete"
+    data-state="trash"
+    data-timeout={timeout}
+    data-icon-size={trashIconSize}
+  >
+    <Fragment set:html={trashIconSvg} />
+  </button>
+) : (
+  <button
+    id={id}
+    type="button"
+    class={`delete-confirm-btn ${baseButtonClasses} ${className}`}
+    title="Delete"
+    data-state="trash"
+    data-timeout={timeout}
+    data-icon-size={trashIconSize}
+  >
+    <Fragment set:html={trashIconSvg} />
+    <span class="button-text">{label}</span>
+  </button>
+)}
+
+<style>
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+  .pulse {
+    animation: pulse 0.8s ease-in-out infinite;
+  }
+
+  .delete-confirm-btn {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .delete-confirm-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+</style>
+
+<script>
+  import { getIcon } from "../../lib/simple-icons";
+
+  /**
+   * Initialize delete confirm buttons
+   * This script sets up the 2-step delete confirmation behavior
+   */
+  function initDeleteConfirmButtons() {
+    // Track active timeouts to prevent memory leaks
+    const activeTimeouts = new Map<string, number>();
+
+    document.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      const button = target.closest(".delete-confirm-btn") as HTMLElement;
+      
+      if (!button) return;
+
+      const buttonId = button.id;
+      const timeout = parseInt(button.dataset.timeout || "3000", 10);
+      const iconSize = parseInt(button.dataset.iconSize || "16", 10);
+      const currentState = button.getAttribute("data-state") || "trash";
+
+      // Get trash icon SVG
+      const trashSvg = getIcon("trash", { size: iconSize, className: "" });
+      
+      // Confirm icon (?)
+      const confirmIcon = `<span class="text-lg font-bold">?</span>`;
+
+      if (currentState === "trash") {
+        // First click: Show confirmation
+        e.stopPropagation(); // Prevent event bubbling
+        
+        button.innerHTML = confirmIcon;
+        button.setAttribute("data-state", "confirm");
+        button.title = "Click again to confirm deletion";
+        
+        // Update classes for confirm state
+        const currentClasses = button.className;
+        const newClasses = currentClasses
+          .replace("bg-red-500", "bg-white")
+          .replace("text-white", "text-red-600")
+          .replace("hover:bg-red-600", "hover:bg-red-600 hover:text-white");
+        button.className = newClasses + " pulse";
+
+        // Clear any existing timeout for this button
+        if (activeTimeouts.has(buttonId)) {
+          clearTimeout(activeTimeouts.get(buttonId)!);
+        }
+
+        // Auto-revert after timeout
+        const timeoutId = window.setTimeout(() => {
+          if (button.getAttribute("data-state") === "confirm") {
+            button.innerHTML = trashSvg;
+            button.setAttribute("data-state", "trash");
+            button.title = "Delete";
+            
+            // Restore original classes
+            button.className = currentClasses;
+            activeTimeouts.delete(buttonId);
+          }
+        }, timeout);
+
+        activeTimeouts.set(buttonId, timeoutId);
+      } else if (currentState === "confirm") {
+        // Second click: Execute deletion
+        e.stopPropagation(); // Prevent event bubbling
+        
+        // Clear timeout
+        if (activeTimeouts.has(buttonId)) {
+          clearTimeout(activeTimeouts.get(buttonId)!);
+          activeTimeouts.delete(buttonId);
+        }
+
+        // Reset button state
+        const currentClasses = button.className;
+        const originalClasses = currentClasses
+          .replace("bg-white", "bg-red-500")
+          .replace("text-red-600", "text-white")
+          .replace("hover:bg-red-600 hover:text-white", "hover:bg-red-600")
+          .replace(" pulse", "");
+        
+        button.innerHTML = trashSvg;
+        button.setAttribute("data-state", "trash");
+        button.title = "Delete";
+        button.className = originalClasses;
+
+        // Dispatch custom event for parent to handle
+        const deleteEvent = new CustomEvent("deleteConfirmed", {
+          detail: { buttonId },
+          bubbles: true,
+          cancelable: true
+        });
+        button.dispatchEvent(deleteEvent);
+      }
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDeleteConfirmButtons);
+  } else {
+    initDeleteConfirmButtons();
+  }
+
+  // Also initialize on Astro page transitions
+  document.addEventListener("astro:page-load", initDeleteConfirmButtons);
+</script>

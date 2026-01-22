@@ -298,6 +298,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   is:inline
 >
   // Define confirmDelete utility inline to avoid race conditions
+  // Matches DeleteConfirmButton component behavior
   window.confirmDelete = function (buttonId, onConfirm, options = {}) {
     const {
       timeout = 3000,
@@ -318,7 +319,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       button.setAttribute("data-state", "confirm");
       button.title = "Click again to confirm deletion";
       button.className =
-        "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn pulse";
+        "p-1 bg-white text-red-600 hover:bg-red-600 hover:text-white rounded transition-all delete-btn pulse";
 
       // Auto-revert after timeout
       const timeoutId = setTimeout(() => {
@@ -327,7 +328,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           button.setAttribute("data-state", "trash");
           button.title = "Delete";
           button.className =
-            "p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn";
+            "p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn";
           button.removeAttribute("data-timeout-id");
         }
       }, timeout);
@@ -339,6 +340,14 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       if (timeoutId) {
         clearTimeout(Number(timeoutId));
       }
+      // Reset button state before executing
+      button.innerHTML = trashIcon;
+      button.setAttribute("data-state", "trash");
+      button.title = "Delete";
+      button.className =
+        "p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors delete-btn";
+      button.removeAttribute("data-timeout-id");
+      
       onConfirm();
     }
   };
@@ -2752,4 +2761,19 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   // Initialize the ProposalHelper class
   window.proposalHelper = new ProposalHelper();
 </script>
+
+<style>
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+  .pulse {
+    animation: pulse 0.8s ease-in-out infinite;
+  }
+</style>
         )}

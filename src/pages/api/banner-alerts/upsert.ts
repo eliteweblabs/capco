@@ -6,7 +6,7 @@ import { ensureTable, bannerAlertsSchema } from "../../../lib/db-schemas";
 interface BannerAlertRequest {
   id?: number;
   title?: string;
-  description?: string;
+  content?: string;
   type?: "info" | "success" | "warning" | "error";
   position?: "top" | "bottom";
   expireMs?: number | null;
@@ -23,8 +23,8 @@ interface BannerAlertRequest {
  *
  * Body:
  * - id?: number (if provided, updates existing banner)
- * - title?: string
- * - description?: string
+ * - title?: string (optional, for admin reference only)
+ * - content?: string (required, the actual banner message displayed to users)
  * - type?: "info" | "success" | "warning" | "error" (default: "info")
  * - position?: "top" | "bottom" (default: "top")
  * - expireMs?: number | null (milliseconds, null = never expires)
@@ -90,7 +90,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const {
       id,
       title,
-      description = "",
+      content = "",
       type = "info",
       position = "top",
       expireMs = null,
@@ -102,15 +102,15 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     const bannerData = {
       title,
-      description,
+      content,
       type,
       position,
-      expirems: expireMs,
+      expireMs: expireMs,
       dismissible,
-      isactive: isActive,
-      startdate: startDate,
-      enddate: endDate,
-      ...(id ? {} : { createdby: currentUser.id }),
+      isActive: isActive,
+      startDate: startDate,
+      endDate: endDate,
+      ...(id ? {} : { createdBy: currentUser.id }),
     };
 
     let data, error;

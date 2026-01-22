@@ -28,6 +28,9 @@ export default defineConfig({
     mode: "standalone",
   }),
   integrations: [tailwind(), react()], // studiocms() disabled - not in use
+  devToolbar: {
+    enabled: false,
+  },
   i18n: {
     defaultLocale: "en",
     locales: ["en", "es"],

@@ -4,6 +4,7 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 import App from "../../components/ui/App.astro";
 import Alert from "../../components/partials/Alert.astro";
 import Hero from "../../components/common/Hero.astro";
+import DeleteConfirmButton from "../../components/common/DeleteConfirmButton.astro";
 
 import { globalCompanyData } from "../api/global/global-company-data";
 const {
@@ -43,7 +44,7 @@ if (supabaseAdmin) {
   const { data, error } = await supabaseAdmin
     .from("bannerAlerts")
     .select("*")
-    .order("createdat", { ascending: false });
+    .order("createdAt", { ascending: false });
 
   if (error) {
     console.error("Error fetching banner alerts:", error);
@@ -118,13 +119,13 @@ const expireOptions = [
       <!-- Preview -->
       <div id="banner-preview" class="mb-6">
         <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >Preview</label
+          >Preview (what users will see)</label
         >
         <div id="preview-container">
           <Alert
             type="info"
-            title="Banner Title"
-            description="Banner description will appear here..."
+            title=""
+            description="Banner content will appear here..."
           />
         </div>
       </div>
@@ -132,31 +133,32 @@ const expireOptions = [
       <!-- Title -->
       <div>
         <label for="title" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Title (optional)
+          Title (optional - for admin reference only)
         </label>
         <input
           type="text"
           id="title"
           name="title"
           class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          placeholder="Optional title for the banner"
+          placeholder="Internal reference name (not shown to users)"
         />
       </div>
 
-      <!-- Description -->
+      <!-- Content -->
       <div>
         <label
-          for="description"
+          for="content"
           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Description
+          Content *
         </label>
         <textarea
-          id="description"
-          name="description"
+          id="content"
+          name="content"
           rows="3"
+          required
           class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          placeholder="Banner message content"></textarea>
+          placeholder="Banner message content (shown to users)"></textarea>
       </div>
 
       <!-- Type, Position, Expire -->
@@ -312,7 +314,7 @@ const expireOptions = [
           <div class="space-y-4">
             {bannerAlerts.map((banner) => (
               <div
-                class={`rounded-lg border p-4 ${banner.isactive ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20" : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/50"}`}
+                class={`rounded-lg border p-4 ${banner.isActive ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20" : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/50"}`}
                 data-banner-item={banner.id}
               >
                 <div class="flex items-start justify-between">
@@ -340,25 +342,27 @@ const expireOptions = [
                       >
                         {banner.position}
                       </span>
-                      {banner.expirems && (
+                      {banner.expireMs && (
                         <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                          {banner.expirems / 1000}s expire
+                          {banner.expireMs / 1000}s expire
                         </span>
                       )}
-                      {!banner.isactive && (
+                      {!banner.isActive && (
                         <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                           Inactive
                         </span>
                       )}
                     </div>
                     {banner.title && (
-                      <h3 class="mt-2 font-medium text-gray-900 dark:text-white">{banner.title}</h3>
+                      <h3 class="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Admin Reference: {banner.title}
+                      </h3>
                     )}
                     <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                      {banner.description}
+                      {banner.content}
                     </p>
                     <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                      Created: {new Date(banner.createdat).toLocaleString()}
+                      Created: {new Date(banner.createdAt).toLocaleString()}
                     </p>
                   </div>
                   <div class="flex flex-shrink-0 gap-2">
@@ -367,14 +371,14 @@ const expireOptions = [
                       class="edit-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                       data-id={banner.id}
                       data-title={banner.title || ""}
-                      data-description={banner.description || ""}
+                      data-content={banner.content || ""}
                       data-type={banner.type || "info"}
                       data-position={banner.position || "top"}
-                      data-expire-ms={banner.expirems || ""}
+                      data-expire-ms={banner.expireMs || ""}
                       data-dismissible={banner.dismissible !== false}
-                      data-is-active={banner.isactive !== false}
-                      data-start-date={banner.startdate || ""}
-                      data-end-date={banner.enddate || ""}
+                      data-is-active={banner.isActive !== false}
+                      data-start-date={banner.startDate || ""}
+                      data-end-date={banner.endDate || ""}
                     >
                       <i class="bx bx-edit" />
                       Edit
@@ -383,19 +387,18 @@ const expireOptions = [
                       type="button"
                       class="toggle-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                       data-id={banner.id}
-                      data-active={banner.isactive}
+                      data-active={banner.isActive}
                     >
-                      <i class={`bx ${banner.isactive ? "bx-hide" : "bx-show"}`} />
-                      {banner.isactive ? "Hide" : "Show"}
+                      <i class={`bx ${banner.isActive ? "bx-hide" : "bx-show"}`} />
+                      {banner.isActive ? "Hide" : "Show"}
                     </button>
-                    <button
-                      type="button"
-                      class="delete-banner-btn flex items-center gap-1 rounded bg-red-100 px-3 py-1.5 text-sm text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900"
-                      data-id={banner.id}
-                    >
-                      <i class="bx bx-trash" />
-                      Delete
-                    </button>
+                    <DeleteConfirmButton
+                      id={`delete-banner-${banner.id}`}
+                      variant="button"
+                      size="sm"
+                      label="Delete"
+                      class="delete-banner-btn"
+                    />
                   </div>
                 </div>
               </div>
@@ -428,7 +431,7 @@ const expireOptions = [
       form.addEventListener("submit", handleSubmit);
       
       // Live preview updates
-      ["title", "description", "type"].forEach(function(id) {
+      ["title", "content", "type"].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) {
           el.addEventListener("input", updatePreview);
@@ -457,7 +460,7 @@ const expireOptions = [
             const banner = {
               id: parseInt(editBtn.dataset.id || "0"),
               title: editBtn.dataset.title || "",
-              description: editBtn.dataset.description || "",
+              content: editBtn.dataset.content || "",
               type: editBtn.dataset.type || "info",
               position: editBtn.dataset.position || "top",
               expireMs: editBtn.dataset.expireMs ? parseInt(editBtn.dataset.expireMs) : null,
@@ -475,10 +478,20 @@ const expireOptions = [
             const isActive = toggleBtn.dataset.active === "true";
             toggleBanner(id, !isActive);
           }
-          
+        });
+
+        // Listen for delete confirmation events from DeleteConfirmButton component
+        bannersList.addEventListener("deleteConfirmed", function(e) {
+          const deleteBtn = e.target.closest(".delete-banner-btn");
           if (deleteBtn) {
-            const id = parseInt(deleteBtn.dataset.id || "0");
-            deleteBanner(id);
+            // Extract banner ID from button id (format: delete-banner-123)
+            const buttonId = deleteBtn.id;
+            const match = buttonId.match(/delete-banner-(\d+)/);
+            if (match) {
+              const id = parseInt(match[1], 10);
+              console.log("🔧 [BANNER-ADMIN] Delete confirmed for banner:", id);
+              deleteBanner(id);
+            }
           }
         });
       }
@@ -498,7 +511,7 @@ const expireOptions = [
     
     function updatePreview() {
       const title = document.getElementById("title")?.value || "";
-      const description = document.getElementById("description")?.value || "Banner description...";
+      const content = document.getElementById("content")?.value || "Banner content...";
       const type = document.getElementById("type")?.value || "info";
       
       const typeConfig = {
@@ -537,8 +550,7 @@ const expireOptions = [
             '<div class="flex items-start">' +
               '<i class="bx ' + config.icon + ' mr-2 mt-0.5 text-lg ' + config.text + '"></i>' +
               '<div class="flex-1">' +
-                (title ? '<div class="text-base ' + config.text + '">' + title + '</div>' : '') +
-                '<div class="mt-1 text-sm ' + config.text + '">' + description + '</div>' +
+                '<div class="mt-1 text-sm ' + config.text + '">' + content + '</div>' +
               '</div>' +
             '</div>' +
           '</div>';
@@ -552,21 +564,21 @@ const expireOptions = [
       // Update form values
       document.getElementById("banner-id").value = banner.id;
       document.getElementById("title").value = banner.title || "";
-      document.getElementById("description").value = banner.description || "";
+      document.getElementById("content").value = banner.content || "";
       document.getElementById("type").value = banner.type || "info";
       document.getElementById("position").value = banner.position || "top";
-      document.getElementById("expireMs").value = banner.expirems ? banner.expirems.toString() : "";
+      document.getElementById("expireMs").value = banner.expireMs ? banner.expireMs.toString() : "";
       document.getElementById("dismissible").checked = banner.dismissible !== false;
-      document.getElementById("isActive").checked = banner.isactive !== false;
+      document.getElementById("isActive").checked = banner.isActive !== false;
       
       // Handle dates
-      if (banner.startdate) {
-        document.getElementById("startDate").value = new Date(banner.startdate).toISOString().slice(0, 16);
+      if (banner.startDate) {
+        document.getElementById("startDate").value = new Date(banner.startDate).toISOString().slice(0, 16);
       } else {
         document.getElementById("startDate").value = "";
       }
-      if (banner.enddate) {
-        document.getElementById("endDate").value = new Date(banner.enddate).toISOString().slice(0, 16);
+      if (banner.endDate) {
+        document.getElementById("endDate").value = new Date(banner.endDate).toISOString().slice(0, 16);
       } else {
         document.getElementById("endDate").value = "";
       }
@@ -620,7 +632,7 @@ const expireOptions = [
         const data = {
           id: editingId || undefined,
           title: formData.get("title") || null,
-          description: formData.get("description"),
+          content: formData.get("content"),
           type: formData.get("type"),
           position: formData.get("position"),
           expireMs: expireMsValue ? parseInt(expireMsValue) : null,
@@ -680,8 +692,6 @@ const expireOptions = [
     }
     
     async function deleteBanner(id) {
-      if (!confirm("Are you sure you want to delete this banner?")) return;
-      
       try {
         const response = await fetch("/api/banner-alerts/delete", {
           method: "POST",

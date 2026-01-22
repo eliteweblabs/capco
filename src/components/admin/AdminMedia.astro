@@ -468,10 +468,14 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
                 </a>
               )}
               <button 
-                class="delete-btn p-2 bg-red-500 rounded-full hover:bg-red-600 text-white"
+                id={`delete-btn-${file.id}`}
+                class="delete-file-btn p-2 bg-red-500 rounded-full hover:bg-red-600 text-white"
                 title="Delete"
+                data-state="trash"
               >
-                <SimpleIcon name="trash" class="w-4 h-4" />
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
               </button>
             </div>
           </div>
@@ -513,6 +517,21 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
   </div>
 </div>
 
+<style>
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+  .pulse {
+    animation: pulse 0.8s ease-in-out infinite;
+  }
+</style>
+
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const uploadBtn = document.getElementById("upload-btn");
@@ -525,6 +544,61 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
     const uploadProgress = document.getElementById("upload-progress");
     const progressBar = document.getElementById("progress-bar");
     const progressText = document.getElementById("progress-text");
+
+    // Confirm delete utility (same as ProposalManager)
+    function confirmDelete(buttonId: string, onConfirm: () => void, options: any = {}) {
+      const {
+        timeout = 3000,
+        confirmIcon = '<span class="text-lg font-bold">?</span>',
+        trashIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>`,
+      } = options;
+
+      const button = document.getElementById(buttonId);
+      if (!button) return;
+
+      const currentState = button.getAttribute("data-state") || "trash";
+
+      if (currentState === "trash") {
+        // First click: Show confirmation icon
+        button.innerHTML = confirmIcon;
+        button.setAttribute("data-state", "confirm");
+        button.title = "Click again to confirm deletion";
+        button.className =
+          "delete-file-btn p-2 bg-white text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all pulse";
+
+        // Auto-revert after timeout
+        const timeoutId = setTimeout(() => {
+          if (button.getAttribute("data-state") === "confirm") {
+            button.innerHTML = trashIcon;
+            button.setAttribute("data-state", "trash");
+            button.title = "Delete";
+            button.className =
+              "delete-file-btn p-2 bg-red-500 rounded-full hover:bg-red-600 text-white";
+            button.removeAttribute("data-timeout-id");
+          }
+        }, timeout);
+
+        button.setAttribute("data-timeout-id", timeoutId.toString());
+      } else if (currentState === "confirm") {
+        // Second click: Execute deletion
+        const timeoutId = button.getAttribute("data-timeout-id");
+        if (timeoutId) {
+          clearTimeout(parseInt(timeoutId, 10));
+        }
+        
+        // Reset button state
+        button.innerHTML = trashIcon;
+        button.setAttribute("data-state", "trash");
+        button.title = "Delete";
+        button.className =
+          "delete-file-btn p-2 bg-red-500 rounded-full hover:bg-red-600 text-white";
+        
+        // Execute callback
+        onConfirm();
+      }
+    }
 
     // Format file size helper
     function formatFileSize(bytes: number | null): string {
@@ -544,6 +618,8 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
       if (!files || files.length === 0) return;
 
       uploadProgress?.classList.remove("hidden");
+      let successCount = 0;
+      let failCount = 0;
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -573,18 +649,46 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
             const result = await response.json();
             throw new Error(result.error || "Upload failed");
           }
+          
+          successCount++;
 
           if (progressBar) progressBar.style.width = `${progress}%`;
           if (progressText) progressText.textContent = `${Math.round(progress)}%`;
         } catch (error) {
           console.error("Upload error:", error);
-          alert(`Failed to upload ${file.name}: ${error}`);
+          failCount++;
+          if ((window as any).showModal) {
+            (window as any).showModal("error", "Upload Failed", `Failed to upload ${file.name}`, 3000);
+          }
         }
       }
 
+      // Hide progress indicator
       setTimeout(() => {
-        location.reload();
+        uploadProgress?.classList.add("hidden");
+        if (progressBar) progressBar.style.width = "0%";
+        if (progressText) progressText.textContent = "0%";
       }, 500);
+
+      // Show summary and reload only if files were uploaded
+      if (successCount > 0) {
+        if ((window as any).showModal) {
+          (window as any).showModal(
+            "success", 
+            "Upload Complete", 
+            `${successCount} file${successCount > 1 ? 's' : ''} uploaded successfully${failCount > 0 ? ` (${failCount} failed)` : ''}`, 
+            2000
+          );
+        }
+        
+        // Reload to show new files (needed because server-side rendering)
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+      }
+      
+      // Reset file input
+      fileInput.value = "";
     });
 
     // Search and filter
@@ -644,15 +748,21 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
         return;
       }
 
-      if (target.closest(".delete-btn")) {
-        if (confirm("Are you sure you want to delete this file?")) {
-          deleteFile(card.dataset.fileId, card.dataset.fileSource);
-        }
+      if (target.closest(".delete-file-btn")) {
+        const deleteBtn = target.closest(".delete-file-btn") as HTMLElement;
+        const buttonId = deleteBtn.id;
+        
+        confirmDelete(buttonId, () => {
+          deleteFile(card);
+        });
         return;
       }
     });
 
-    async function deleteFile(fileId: string | undefined, source: string | undefined) {
+    async function deleteFile(card: HTMLElement) {
+      const fileId = card.dataset.fileId;
+      const source = card.dataset.fileSource;
+      
       if (!fileId) return;
 
       try {
@@ -663,10 +773,30 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
         });
 
         if (response.ok) {
+          // Remove the card with a fade-out animation
+          card.style.transition = "opacity 0.3s, transform 0.3s";
+          card.style.opacity = "0";
+          card.style.transform = "scale(0.9)";
+          
+          setTimeout(() => {
+            card.remove();
+            
+            // Update stats after deletion
+            updateStats();
+            
+            // Check if we need to show the empty state
+            const remainingCards = filesGrid?.querySelectorAll(".file-card:not([style*='display: none'])");
+            if (remainingCards && remainingCards.length === 0) {
+              const noResultsElement = document.getElementById("no-results");
+              if (noResultsElement) {
+                noResultsElement.classList.remove("hidden");
+              }
+            }
+          }, 300);
+          
           if ((window as any).showModal) {
             (window as any).showModal("success", "Success", "File deleted successfully", 2000);
           }
-          location.reload();
         } else {
           const result = await response.json();
           throw new Error(result.error || "Delete failed");
@@ -675,6 +805,44 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
         console.error("Delete error:", error);
         alert(`Failed to delete file: ${error}`);
       }
+    }
+
+    // Update stats dynamically
+    function updateStats() {
+      const cards = filesGrid?.querySelectorAll(".file-card") as NodeListOf<HTMLElement>;
+      
+      let totalCount = 0;
+      let projectCount = 0;
+      let globalCount = 0;
+      let imageCount = 0;
+      let documentCount = 0;
+      
+      cards?.forEach((card) => {
+        totalCount++;
+        const source = card.dataset.fileSource;
+        const fileType = card.dataset.fileType?.toLowerCase() || "";
+        
+        if (source === "project") projectCount++;
+        if (source === "global") globalCount++;
+        if (fileType.startsWith("image/")) imageCount++;
+        if (fileType.includes("pdf") || fileType.includes("document")) documentCount++;
+      });
+      
+      // Update stat displays
+      const stats = [
+        { selector: ".bg-white.dark\\:bg-gray-800:nth-child(1) .text-2xl", value: totalCount },
+        { selector: ".bg-white.dark\\:bg-gray-800:nth-child(2) .text-2xl", value: projectCount },
+        { selector: ".bg-white.dark\\:bg-gray-800:nth-child(3) .text-2xl", value: globalCount },
+        { selector: ".bg-white.dark\\:bg-gray-800:nth-child(4) .text-2xl", value: imageCount },
+        { selector: ".bg-white.dark\\:bg-gray-800:nth-child(5) .text-2xl", value: documentCount },
+      ];
+      
+      stats.forEach(({ selector, value }) => {
+        const element = document.querySelector(selector);
+        if (element) {
+          element.textContent = value.toString();
+        }
+      });
     }
   });
 </script>
