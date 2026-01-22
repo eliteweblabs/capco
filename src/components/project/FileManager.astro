@@ -507,6 +507,28 @@ const canDeleteFiles =
             </div>
           </label>
         </div>
+
+        <!-- Featured Toggle using SlideToggle partial structure -->
+        <div class="flex items-center justify-between">
+          <div>
+            <label for="file-featured-${file.id}" class="text-sm font-medium text-gray-700 dark:text-gray-300">Featured</label>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Display this file as the project featured image</p>
+          </div>
+          <label class="toggle-wrapper flex cursor-pointer items-center gap-3">
+            <div class="relative">
+              <input
+                type="checkbox"
+                id="file-featured-${file.id}"
+                class="toggle-input peer sr-only"
+                ${file.isFeatured ? "checked" : ""}
+                data-file-id="${file.id}"
+                ${isCheckedOut && !isCheckedOutByMe ? "disabled" : ""}
+              />
+              <div class="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-gray-100 after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-primary-800 ${isCheckedOut && !isCheckedOutByMe ? 'opacity-50 cursor-not-allowed' : ''}">
+              </div>
+            </div>
+          </label>
+        </div>
         `
             : ""
         } 
@@ -1183,6 +1205,7 @@ const canDeleteFiles =
     const title = document.getElementById(`file-title-${fileId}`)?.value || "";
     const comments = document.getElementById(`file-comments-${fileId}`)?.value || "";
     const isPrivate = document.getElementById(`file-private-${fileId}`)?.checked || false;
+    const isFeatured = document.getElementById(`file-featured-${fileId}`)?.checked || false;
 
     // Find the file data to get required fields
     const fileData = files.find((f) => f.id === parseInt(fileId));
@@ -1192,6 +1215,7 @@ const canDeleteFiles =
     }
 
     try {
+      // Save the file metadata (title, comments, isPrivate)
       const response = await fetch("/api/files/upsert", {
         method: "POST",
         headers: {
@@ -1212,9 +1236,7 @@ const canDeleteFiles =
 
       const data = await response.json();
 
-      if (data.success && window.showModal) {
-        window.showModal("success", "File details saved successfully", "", 2000);
-      } else {
+      if (!data.success) {
         console.error("❌ [FILE-MANAGER] Failed to save file details:", data.error);
         window.showModal(
           "error",
@@ -1222,6 +1244,45 @@ const canDeleteFiles =
           "Please leave feedback via the feedback form button on the bottom right of the screen",
           2000
         );
+        return;
+      }
+
+      // Update the project's featuredImageId if featured toggle changed
+      if (isFeatured !== fileData.isFeatured) {
+        const projectResponse = await fetch("/api/projects/upsert", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: currentProjectId,
+            featuredImageId: isFeatured ? fileId.toString() : null,
+          }),
+        });
+
+        const projectData = await projectResponse.json();
+
+        if (!projectData.success) {
+          console.error("❌ [FILE-MANAGER] Failed to update featured image:", projectData.error);
+          window.showModal(
+            "error",
+            "Failed to update featured image",
+            projectData.error || "Please try again",
+            3000
+          );
+          return;
+        }
+      }
+
+      if (window.showModal) {
+        window.showModal("success", "File details saved successfully", "", 2000);
+      }
+
+      // Refresh the file list to show updated featured state
+      await loadProjectFiles();
+      renderFiles(currentRole);
+      if (canCheckoutFiles) {
+        updateManagementPanel();
       }
     } catch (error) {
       console.error("❌ [FILE-MANAGER] Error saving file details:", error);
