@@ -3,7 +3,7 @@
  * Run this before build or when primary color changes
  */
 
-import { generateColorPalette } from "../color-generator.js";
+import { generateColorPalette } from "./color-generator.js";
 import { writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
