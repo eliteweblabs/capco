@@ -5,6 +5,7 @@
  */
 import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
+import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
 import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
@@ -431,10 +432,11 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
           <div class="aspect-square bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
             {(file.fileType?.startsWith("image/") || file.fileName?.match(/\.(webp|avif|svg|png|jpg|jpeg|gif)$/i)) && file.publicUrl ? (
               <img 
-                src={file.publicUrl} 
+                data-src={file.publicUrl}
                 alt={file.fileName}
-                class="w-full h-full object-cover"
-                loading="lazy"
+                class="lazyload w-full h-full object-cover blur-sm"
+                width="300"
+                height="300"
               />
             ) : (
               <SimpleIcon name={getFileIcon(file.fileType, file.fileName)} class="w-12 h-12 text-gray-400" />
@@ -467,16 +469,11 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
                   <SimpleIcon name="link-external" class="w-4 h-4" />
                 </a>
               )}
-              <button 
+              <DeleteConfirmButton 
                 id={`delete-btn-${file.id}`}
-                class="delete-file-btn p-2 bg-red-500 rounded-full hover:bg-red-600 text-white"
-                title="Delete"
-                data-state="trash"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-              </button>
+                variant="icon"
+                size="sm"
+              />
             </div>
           </div>
           
@@ -518,22 +515,64 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
 </div>
 
 <style>
-  @keyframes pulse {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.1);
-    }
+  /* Lazy loading styles */
+  .lazyload,
+  .lazyloading {
+    opacity: 0;
+    transition: opacity 0.3s;
   }
-
-  .pulse {
-    animation: pulse 0.8s ease-in-out infinite;
+  
+  .lazyloaded {
+    opacity: 1;
+    filter: none !important;
+  }
+  
+  /* Optional: blur placeholder */
+  .lazyload.blur-sm {
+    filter: blur(5px);
   }
 </style>
 
 <script>
+  // Simple Intersection Observer lazy loading (Astro-native, no dependencies)
   document.addEventListener("DOMContentLoaded", () => {
+    const lazyImages = document.querySelectorAll('img.lazyload');
+    
+    if ('IntersectionObserver' in window) {
+      const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target as HTMLImageElement;
+            const src = img.getAttribute('data-src');
+            
+            if (src) {
+              img.src = src;
+              img.classList.add('lazyloading');
+              
+              img.onload = () => {
+                img.classList.remove('lazyload', 'lazyloading', 'blur-sm');
+                img.classList.add('lazyloaded');
+              };
+            }
+            
+            observer.unobserve(img);
+          }
+        });
+      }, {
+        rootMargin: '50px 0px', // Start loading 50px before visible
+        threshold: 0.01
+      });
+      
+      lazyImages.forEach(img => imageObserver.observe(img));
+    } else {
+      // Fallback for older browsers
+      lazyImages.forEach(img => {
+        const src = (img as HTMLImageElement).getAttribute('data-src');
+        if (src) (img as HTMLImageElement).src = src;
+      });
+    }
+    
+    // Upload and file management
     const uploadBtn = document.getElementById("upload-btn");
     const fileInput = document.getElementById("file-input") as HTMLInputElement;
     const searchInput = document.getElementById("search-input") as HTMLInputElement;
@@ -544,61 +583,6 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
     const uploadProgress = document.getElementById("upload-progress");
     const progressBar = document.getElementById("progress-bar");
     const progressText = document.getElementById("progress-text");
-
-    // Confirm delete utility (same as ProposalManager)
-    function confirmDelete(buttonId: string, onConfirm: () => void, options: any = {}) {
-      const {
-        timeout = 3000,
-        confirmIcon = '<span class="text-lg font-bold">?</span>',
-        trashIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-        </svg>`,
-      } = options;
-
-      const button = document.getElementById(buttonId);
-      if (!button) return;
-
-      const currentState = button.getAttribute("data-state") || "trash";
-
-      if (currentState === "trash") {
-        // First click: Show confirmation icon
-        button.innerHTML = confirmIcon;
-        button.setAttribute("data-state", "confirm");
-        button.title = "Click again to confirm deletion";
-        button.className =
-          "delete-file-btn p-2 bg-white text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all pulse";
-
-        // Auto-revert after timeout
-        const timeoutId = setTimeout(() => {
-          if (button.getAttribute("data-state") === "confirm") {
-            button.innerHTML = trashIcon;
-            button.setAttribute("data-state", "trash");
-            button.title = "Delete";
-            button.className =
-              "delete-file-btn p-2 bg-red-500 rounded-full hover:bg-red-600 text-white";
-            button.removeAttribute("data-timeout-id");
-          }
-        }, timeout);
-
-        button.setAttribute("data-timeout-id", timeoutId.toString());
-      } else if (currentState === "confirm") {
-        // Second click: Execute deletion
-        const timeoutId = button.getAttribute("data-timeout-id");
-        if (timeoutId) {
-          clearTimeout(parseInt(timeoutId, 10));
-        }
-        
-        // Reset button state
-        button.innerHTML = trashIcon;
-        button.setAttribute("data-state", "trash");
-        button.title = "Delete";
-        button.className =
-          "delete-file-btn p-2 bg-red-500 rounded-full hover:bg-red-600 text-white";
-        
-        // Execute callback
-        onConfirm();
-      }
-    }
 
     // Format file size helper
     function formatFileSize(bytes: number | null): string {
@@ -747,15 +731,32 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
         }
         return;
       }
+    });
 
-      if (target.closest(".delete-file-btn")) {
-        const deleteBtn = target.closest(".delete-file-btn") as HTMLElement;
-        const buttonId = deleteBtn.id;
-        
-        confirmDelete(buttonId, () => {
-          deleteFile(card);
-        });
-        return;
+    // Listen for delete confirmation events from DeleteConfirmButton
+    document.addEventListener("deleteConfirmed", (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const buttonId = customEvent.detail.buttonId;
+      
+      console.log("✅ [MEDIA-DELETE] Delete confirmed event received:", { 
+        buttonId,
+        eventDetail: customEvent.detail 
+      });
+      
+      // Find the file card that contains this button
+      const button = document.getElementById(buttonId);
+      console.log("🔍 [MEDIA-DELETE] Button element:", button);
+      
+      const card = button?.closest(".file-card") as HTMLElement;
+      console.log("🔍 [MEDIA-DELETE] Card element:", { 
+        card, 
+        cardDataset: card?.dataset 
+      });
+      
+      if (card) {
+        deleteFile(card);
+      } else {
+        console.error("❌ [MEDIA-DELETE] Could not find file card for button:", buttonId);
       }
     });
 
@@ -763,14 +764,34 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
       const fileId = card.dataset.fileId;
       const source = card.dataset.fileSource;
       
-      if (!fileId) return;
+      console.log("🗑️ [MEDIA-DELETE] Delete initiated:", { 
+        fileId, 
+        fileIdType: typeof fileId,
+        source,
+        cardDataset: card.dataset 
+      });
+      
+      if (!fileId) {
+        console.error("❌ [MEDIA-DELETE] No file ID found in card dataset");
+        return;
+      }
 
       try {
+        console.log("📤 [MEDIA-DELETE] Sending DELETE request to /api/admin/media");
         const response = await fetch("/api/admin/media", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileId, source }),
         });
+
+        console.log("📥 [MEDIA-DELETE] Response received:", { 
+          ok: response.ok, 
+          status: response.status,
+          statusText: response.statusText 
+        });
+
+        const result = await response.json();
+        console.log("📦 [MEDIA-DELETE] Response data:", result);
 
         if (response.ok) {
           // Remove the card with a fade-out animation
@@ -798,11 +819,11 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
             (window as any).showModal("success", "Success", "File deleted successfully", 2000);
           }
         } else {
-          const result = await response.json();
+          console.error("❌ [MEDIA-DELETE] Delete failed:", result);
           throw new Error(result.error || "Delete failed");
         }
       } catch (error) {
-        console.error("Delete error:", error);
+        console.error("❌ [MEDIA-DELETE] Delete error:", error);
         alert(`Failed to delete file: ${error}`);
       }
     }

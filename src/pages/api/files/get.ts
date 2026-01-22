@@ -116,7 +116,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     // Build query for multiple files
-    let query = supabase!.from("files").select("*");
+    let query = supabase!.from("files").select("*").not("id", "is", null);
     // console.log("📁 [FILES-GET] Starting with base query");
 
     // Apply filters
@@ -256,6 +256,23 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       console.log("📁 [FILES-GET] No files found with current filters");
     }
 
+    // Get featured image ID from project to mark which file is featured
+    let featuredImageId = null;
+    if (filters.projectId && files && files.length > 0) {
+      try {
+        const { data: projectData } = await supabaseAdmin!
+          .from("projects")
+          .select("featuredImageId")
+          .eq("id", parseInt(filters.projectId))
+          .single();
+        
+        featuredImageId = projectData?.featuredImageId;
+        // console.log(`📁 [FILES-GET] Project ${filters.projectId} featuredImageId:`, featuredImageId);
+      } catch (projectError) {
+        console.warn("⚠️ [FILES-GET] Could not fetch project featured image:", projectError);
+      }
+    }
+
     // Get checkout status from files table (it already has checkedOutBy columns)
     // Enrich with user names for checked out files
     const fileIds = (files || []).map(f => f.id);
@@ -289,15 +306,25 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       }
     }
 
-    // Generate signed URLs for each file and add checkout name
+    // Filter out any files with invalid IDs (safety check)
+    const validFiles = (files || []).filter(file => file.id && Number.isInteger(file.id) && file.id > 0);
+
+    if (validFiles.length < (files || []).length) {
+      console.warn(`⚠️ [FILES-GET] Filtered out ${(files || []).length - validFiles.length} files with invalid IDs`);
+    }
+
+    // Generate signed URLs for each file and add checkout name + featured status
     const filesWithUrls = await Promise.all(
-      (files || []).map(async (file) => {
+      validFiles.map(async (file) => {
         const checked_out_by_name = file.checkedOutBy 
           ? (checkoutMap.get(file.checkedOutBy) || 'Unknown')
           : null;
+        
+        // Check if this file is the featured image
+        const isFeatured = featuredImageId && file.id === parseInt(featuredImageId);
 
         if (!file.bucketName || !file.filePath) {
-          return { ...file, checked_out_by_name, publicUrl: null };
+          return { ...file, checked_out_by_name, isFeatured, publicUrl: null };
         }
 
         try {
@@ -312,7 +339,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
           if (urlError) {
             console.error(`❌ [FILES-GET] Signed URL error for file ${file.id}:`, urlError);
-            return { ...file, checked_out_by_name, publicUrl: null };
+            return { ...file, checked_out_by_name, isFeatured, publicUrl: null };
           }
 
           // console.log(
@@ -323,6 +350,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           return {
             ...file,
             checked_out_by_name,
+            isFeatured,
             publicUrl: urlData?.signedUrl || null,
           };
         } catch (urlError) {
@@ -330,7 +358,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             `❌ [FILES-GET] Failed to generate signed URL for file ${file.id}:`,
             urlError
           );
-          return { ...file, checked_out_by_name, publicUrl: null };
+          return { ...file, checked_out_by_name, isFeatured, publicUrl: null };
         }
       })
     );
@@ -459,7 +487,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Build query for multiple files
     // Build query with all needed fields
     // Start with a simple query first
-    let query = supabase!.from("files").select("*");
+    let query = supabase!.from("files").select("*").not("id", "is", null);
 
     // Log the table structure to help debug
     // console.log("📁 [FILES-GET] Checking table structure...");
@@ -636,9 +664,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     //   filters,
     // });
 
+    // Filter out any files with invalid IDs (safety check)
+    const validFiles = (files || []).filter(file => file.id && Number.isInteger(file.id) && file.id > 0);
+
+    if (validFiles.length < (files || []).length) {
+      console.warn(`⚠️ [FILES-GET] Filtered out ${(files || []).length - validFiles.length} files with invalid IDs`);
+    }
+
     // Generate signed URLs for each file
     const filesWithUrls = await Promise.all(
-      (files || []).map(async (file) => {
+      validFiles.map(async (file) => {
         if (!file.bucketName || !file.filePath) {
           return { ...file, publicUrl: null };
         }

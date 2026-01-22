@@ -88,7 +88,7 @@ const allBannerIds = banners.map((b) => String(b.id));
 
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
-    <div class="banner-alerts-top fixed top-0 left-0 right-0 z-[9999] flex flex-col" id="top-banner-container">
+    <div class="banner-alerts-top w-full flex flex-col" id="top-banner-container">
       {topBanners.map((banner) => (
         <BannerAlert
           id={banner.id}
@@ -101,81 +101,6 @@ const allBannerIds = banners.map((b) => String(b.id));
         />
       ))}
     </div>
-  )
-}
-
-{
-  topBanners.length > 0 && (position === "all" || position === "top") && (
-    <script is:inline>
-      {/* // Adjust navbar position based on top banner height */}
-      (function() {
-        function adjustNavbarForBanners() {
-          const topBannerContainer = document.getElementById("top-banner-container");
-          // Try multiple selectors to find the navbar
-          const navbar = document.querySelector("nav.fixed") || document.querySelector("nav[class*='fixed']") || document.querySelector("nav");
-
-          if (topBannerContainer && navbar) {
-            const updateNavbarPosition = function() {
-              // Force reflow to ensure flexbox layout is calculated
-              topBannerContainer.offsetHeight;
-              
-              const bannerHeight = topBannerContainer.offsetHeight;
-              // Get actual navbar height dynamically
-              const navbarHeight = navbar.offsetHeight || 64;
-
-              if (bannerHeight > 0) {
-                navbar.style.top = bannerHeight + "px";
-                // Also adjust main content padding
-                const mainContent = document.getElementById("main-content");
-                if (mainContent) {
-                  mainContent.style.paddingTop = (bannerHeight + navbarHeight) + "px";
-                }
-              } else {
-                navbar.style.top = "0";
-                const mainContent = document.getElementById("main-content");
-                if (mainContent) {
-                  mainContent.style.paddingTop = navbarHeight + "px";
-                }
-              }
-            };
-
-            // Initial adjustment with multiple attempts to ensure layout is ready
-            updateNavbarPosition();
-            setTimeout(updateNavbarPosition, 50);
-            setTimeout(updateNavbarPosition, 150);
-
-            // Update on resize for responsive changes
-            let resizeTimeout;
-            window.addEventListener("resize", function() {
-              clearTimeout(resizeTimeout);
-              resizeTimeout = setTimeout(updateNavbarPosition, 100);
-            });
-
-            // Watch for banner dismissals
-            const observer = new MutationObserver(function() {
-              setTimeout(updateNavbarPosition, 350); // After animation
-            });
-
-            observer.observe(topBannerContainer, {
-              childList: true,
-              subtree: true,
-              attributes: true,
-              attributeFilter: ["style"]
-            });
-          }
-        }
-
-        // Run immediately if DOM is ready, otherwise wait
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", adjustNavbarForBanners);
-        } else {
-          adjustNavbarForBanners();
-        }
-        
-        // Also run on Astro page transitions
-        document.addEventListener("astro:page-load", adjustNavbarForBanners);
-      })();
-    </script>
   )
 }
 

@@ -24,6 +24,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const authorId = url.searchParams.get("authorId");
     const assignedToId = url.searchParams.get("assignedToId");
     const status = url.searchParams.get("status");
+    const featured = url.searchParams.get("featured");
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 100);
     const offset = parseInt(url.searchParams.get("offset") || "0");
     const sortBy = url.searchParams.get("sortBy") || "createdAt";
@@ -119,6 +120,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       // Get punchlist stats for single project
       const punchlistStats = await fetchPunchlistStats(supabaseAdmin, [project.id]);
 
+      // Note: featuredImageData is populated by database trigger with publicUrl already included
       // Add profile data, file data, and punchlist data to project
       const projectWithProfiles = {
         ...project,
@@ -155,6 +157,9 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
     if (status) {
       query = query.eq("status", status);
+    }
+    if (featured === "true") {
+      query = query.eq("featured", true);
     }
 
     // Apply role-based filtering (temporarily disabled for testing)
@@ -231,6 +236,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           console.warn("Could not fetch files for project:", project.id, fileError);
         }
 
+        // Note: featuredImageData is populated by database trigger with publicUrl already included
         return {
           ...project,
           author: authorProfile,

@@ -2,22 +2,20 @@
 /**
  * DeleteConfirmButton Component
  * Reusable delete button with 2-step confirmation (no alerts)
- * Uses Button.astro styling patterns for consistency
+ * Uses Button.astro and SimpleIcon for consistency
  * 
  * Usage:
  * <DeleteConfirmButton
  *   id="delete-item-123"
- *   onConfirm={() => deleteItem(123)}
  * />
  * 
  * Behavior:
- * 1. First click: Shows ? icon for 3 seconds
+ * 1. First click: Shows timer icon for 3 seconds
  * 2. Second click within 3 seconds: Executes delete
  * 3. Auto-reverts to trash icon if not confirmed
  */
 
-import SimpleIcon from "./SimpleIcon.astro";
-import { getIcon } from "../../lib/simple-icons";
+import Button from "./Button.astro";
 
 export interface Props {
   id: string;
@@ -37,80 +35,55 @@ const {
   label = "Delete"
 } = Astro.props;
 
-// Size mappings to match Button.astro
-const sizeClasses = {
-  xs: "p-1",
-  sm: "p-1.5",
-  md: "p-2",
-  lg: "p-2.5",
-  xl: "p-3"
-};
-
-const textSizeClasses = {
-  xs: "text-xs",
-  sm: "text-sm",
-  md: "text-base",
-  lg: "text-lg",
-  xl: "text-xl"
-};
-
-const iconSizes = {
-  xs: 12,
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32
-};
-
-// Base classes matching Button.astro danger variant
-const baseIconClasses = `${sizeClasses[size]} bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all inline-flex items-center justify-center`;
-
-const baseButtonClasses = `${sizeClasses[size]} px-4 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all inline-flex items-center justify-center gap-2 ${textSizeClasses[size]} font-medium`;
-
-// Get trash icon SVG
-const trashIconSize = iconSizes[size];
-const trashIconSvg = getIcon("trash", { size: trashIconSize, className: "" });
+// Build button variant based on whether it's icon-only or with label
+const buttonVariant = "danger";
 ---
 
 {variant === "icon" ? (
-  <button
+  <Button
     id={id}
     type="button"
-    class={`delete-confirm-btn ${baseIconClasses} ${className}`}
+    variant={buttonVariant}
+    size={size}
+    icon="trash"
+    iconClasses="delete-confirm-icon"
+    class={`delete-confirm-btn rounded-full ${className}`}
     title="Delete"
-    data-state="trash"
-    data-timeout={timeout}
-    data-icon-size={trashIconSize}
-  >
-    <Fragment set:html={trashIconSvg} />
-  </button>
+    dataAttributes={{
+      "data-state": "trash",
+      "data-timeout": timeout.toString(),
+    }}
+  />
 ) : (
-  <button
+  <Button
     id={id}
     type="button"
-    class={`delete-confirm-btn ${baseButtonClasses} ${className}`}
+    variant={buttonVariant}
+    size={size}
+    icon="trash"
+    class={`delete-confirm-btn ${className}`}
     title="Delete"
-    data-state="trash"
-    data-timeout={timeout}
-    data-icon-size={trashIconSize}
+    dataAttributes={{
+      "data-state": "trash",
+      "data-timeout": timeout.toString(),
+    }}
   >
-    <Fragment set:html={trashIconSvg} />
-    <span class="button-text">{label}</span>
-  </button>
+    {label}
+  </Button>
 )}
 
 <style>
-  @keyframes pulse {
-    0%, 100% {
-      transform: scale(1);
+  @keyframes spin-timer {
+    from {
+      stroke-dashoffset: 62.83;
     }
-    50% {
-      transform: scale(1.1);
+    to {
+      stroke-dashoffset: 0;
     }
   }
 
-  .pulse {
-    animation: pulse 0.8s ease-in-out infinite;
+  .timer-icon {
+    animation: spin-timer var(--timer-duration, 3000ms) linear infinite;
   }
 
   .delete-confirm-btn {
@@ -121,6 +94,10 @@ const trashIconSvg = getIcon("trash", { size: trashIconSize, className: "" });
   .delete-confirm-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+  
+  .timer-question {
+    mix-blend-mode: difference;
   }
 </style>
 
@@ -135,6 +112,46 @@ const trashIconSvg = getIcon("trash", { size: trashIconSize, className: "" });
     // Track active timeouts to prevent memory leaks
     const activeTimeouts = new Map<string, number>();
 
+    // Icon size mapping to match Button.astro
+    const iconSizeMap = {
+      xs: 12,
+      sm: 16,
+      md: 20,
+      lg: 24,
+      xl: 32
+    };
+
+    // Get timer SVG
+    function getTimerSvg(size: number, timeout: number): string {
+      return `
+        <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="inline-block">
+          <circle 
+            cx="12" 
+            cy="12" 
+            r="10" 
+            fill="transparent" 
+            stroke="white" 
+            stroke-width="2.5"
+            stroke-dasharray="62.83"
+            stroke-dashoffset="62.83"
+            stroke-linecap="round"
+            transform="rotate(-90 12 12)"
+            class="timer-icon"
+            style="--timer-duration: ${timeout}ms"
+          />
+          <text 
+            x="12" 
+            y="18" 
+            text-anchor="middle" 
+            font-size="22" 
+            font-weight="bold" 
+            fill="currentColor"
+            class="timer-question"
+          >?</text>
+        </svg>
+      `;
+    }
+
     document.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
       const button = target.closest(".delete-confirm-btn") as HTMLElement;
@@ -143,30 +160,35 @@ const trashIconSvg = getIcon("trash", { size: trashIconSize, className: "" });
 
       const buttonId = button.id;
       const timeout = parseInt(button.dataset.timeout || "3000", 10);
-      const iconSize = parseInt(button.dataset.iconSize || "16", 10);
       const currentState = button.getAttribute("data-state") || "trash";
 
-      // Get trash icon SVG
-      const trashSvg = getIcon("trash", { size: iconSize, className: "" });
+      // Find the icon container (SimpleIcon or direct SVG)
+      const iconContainer = button.querySelector(".delete-confirm-icon")?.parentElement || button.querySelector("svg")?.parentElement || button;
       
-      // Confirm icon (?)
-      const confirmIcon = `<span class="text-lg font-bold">?</span>`;
+      // Determine icon size from button size classes
+      let iconSize = 16; // default sm
+      if (button.classList.contains("text-xs")) iconSize = iconSizeMap.xs;
+      else if (button.classList.contains("text-sm")) iconSize = iconSizeMap.sm;
+      else if (button.classList.contains("text-base")) iconSize = iconSizeMap.md;
+      else if (button.classList.contains("text-lg")) iconSize = iconSizeMap.lg;
+      else if (button.classList.contains("text-xl")) iconSize = iconSizeMap.xl;
 
       if (currentState === "trash") {
-        // First click: Show confirmation
-        e.stopPropagation(); // Prevent event bubbling
+        // First click: Show confirmation timer
+        e.stopPropagation();
         
-        button.innerHTML = confirmIcon;
+        // Replace icon with timer
+        const timerSvg = getTimerSvg(iconSize, timeout);
+        if (iconContainer) {
+          iconContainer.innerHTML = timerSvg;
+        }
+        
         button.setAttribute("data-state", "confirm");
         button.title = "Click again to confirm deletion";
         
-        // Update classes for confirm state
-        const currentClasses = button.className;
-        const newClasses = currentClasses
-          .replace("bg-red-500", "bg-white")
-          .replace("text-white", "text-red-600")
-          .replace("hover:bg-red-600", "hover:bg-red-600 hover:text-white");
-        button.className = newClasses + " pulse";
+        // Update classes for confirm state (white background, red text)
+        button.classList.remove("bg-red-500", "text-white", "hover:bg-red-600");
+        button.classList.add("bg-white", "text-red-600", "hover:bg-red-600", "hover:text-white");
 
         // Clear any existing timeout for this button
         if (activeTimeouts.has(buttonId)) {
@@ -176,12 +198,18 @@ const trashIconSvg = getIcon("trash", { size: trashIconSize, className: "" });
         // Auto-revert after timeout
         const timeoutId = window.setTimeout(() => {
           if (button.getAttribute("data-state") === "confirm") {
-            button.innerHTML = trashSvg;
+            // Restore trash icon
+            const trashSvg = getIcon("trash", { size: iconSize, className: "delete-confirm-icon" });
+            if (iconContainer) {
+              iconContainer.innerHTML = trashSvg;
+            }
+            
             button.setAttribute("data-state", "trash");
             button.title = "Delete";
             
             // Restore original classes
-            button.className = currentClasses;
+            button.classList.remove("bg-white", "text-red-600", "hover:text-white");
+            button.classList.add("bg-red-500", "text-white", "hover:bg-red-600");
             activeTimeouts.delete(buttonId);
           }
         }, timeout);
@@ -189,7 +217,7 @@ const trashIconSvg = getIcon("trash", { size: trashIconSize, className: "" });
         activeTimeouts.set(buttonId, timeoutId);
       } else if (currentState === "confirm") {
         // Second click: Execute deletion
-        e.stopPropagation(); // Prevent event bubbling
+        e.stopPropagation();
         
         // Clear timeout
         if (activeTimeouts.has(buttonId)) {
@@ -197,18 +225,18 @@ const trashIconSvg = getIcon("trash", { size: trashIconSize, className: "" });
           activeTimeouts.delete(buttonId);
         }
 
-        // Reset button state
-        const currentClasses = button.className;
-        const originalClasses = currentClasses
-          .replace("bg-white", "bg-red-500")
-          .replace("text-red-600", "text-white")
-          .replace("hover:bg-red-600 hover:text-white", "hover:bg-red-600")
-          .replace(" pulse", "");
+        // Restore trash icon
+        const trashSvg = getIcon("trash", { size: iconSize, className: "delete-confirm-icon" });
+        if (iconContainer) {
+          iconContainer.innerHTML = trashSvg;
+        }
         
-        button.innerHTML = trashSvg;
         button.setAttribute("data-state", "trash");
         button.title = "Delete";
-        button.className = originalClasses;
+        
+        // Restore original classes
+        button.classList.remove("bg-white", "text-red-600", "hover:text-white");
+        button.classList.add("bg-red-500", "text-white", "hover:bg-red-600");
 
         // Dispatch custom event for parent to handle
         const deleteEvent = new CustomEvent("deleteConfirmed", {

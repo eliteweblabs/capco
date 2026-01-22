@@ -4,24 +4,25 @@
  * Minimal layout with no app chrome (no header, footer, sidebar)
  */
 interface Props {
-  children: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  children: any;  
   title: string;
   description: string;
   lastUpdated?: string;
+  currentUser?: any;
+  session?: any;
+  supabase?: any;
 }
 
-const { children, title, description, lastUpdated } = Astro.props;
+const { title, description, lastUpdated, currentUser, session, supabase } = Astro.props;
+
+import App from "../ui/App.astro";
+import { getSiteConfig } from "../../lib/content";
+
+const siteConfig = await getSiteConfig();
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-  </head>
-  <body class="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+<App title={`${title} - ${siteConfig.site.name}`} {description} {currentUser} {session} {supabase}>
+
     <div class="container mx-auto max-w-4xl px-4 py-8">
       <div class="prose prose-lg dark:prose-invert max-w-none">
         {
@@ -37,5 +38,4 @@ const { children, title, description, lastUpdated } = Astro.props;
         <slot />
       </div>
     </div>
-  </body>
-</html>
+</App>

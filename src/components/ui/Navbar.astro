@@ -11,6 +11,7 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 import SearchForm from "../common/SearchForm.astro";
 import NotificationDropdown from "../common/NotificationDropdown.astro";
 import ThemeToggle from "./ThemeToggle.astro";
+import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 
 interface Props {
   currentUser?: any;
@@ -41,51 +42,62 @@ const currentRole = currentUser?.profile?.role;
 ---
 
 <nav
-  class=`flex w-full gap-2 px-2 py-4 items-center justify-between z-50 fixed top-0 left-0 right-0 border-b color-border color-background h-16`
+  class=`flex flex-col w-full z-50 fixed top-0 left-0 right-0 color-border color-background`
 >
-  <ToggleSidebar {currentUser} />
-  <div
-    class=`flex w-full items-center justify-between ${!currentUser ? "max-w-screen-xl mx-auto" : ""}`
-  >
-    <div class="flex-start flex items-center">
-      <Logo link="/" file="svg" className="mr-4 flex" />
-    </div>
+  <!-- Top Banner Alerts (if any) -->
+  <BannerAlertsLoader position="top" />
 
-    {
-      !isBackend && (
-        <div class="hidden w-full md:block md:w-auto" id="navbar-default">
-          <ul
-            class="mt-4 flex flex-col font-medium md:mt-0 md:flex-row md:space-x-8 md:border-0 md:p-0 rtl:space-x-reverse"
-            set:html={desktopNavigationHTML}
-          />
-        </div>
-      )
-    }
-    <!-- Search -->
-    {
-      currentUrl === "/project/dashboard" && currentRole !== "Client" && (
-        <ProjectSearch projects={projects} />
-      )
-    }
+  
+  <!-- Main Navbar Content -->
+  <div class="flex w-full gap-2 px-2 py-4 items-center justify-between border-b h-16">
+    <ToggleSidebar {currentUser} />
+    <div
+      class=`flex w-full items-center justify-between ${!currentUser ? "max-w-screen-xl mx-auto" : ""}`
+    >
+      <div class="flex-start flex items-center">
+        <Logo link="/" file="svg" className="mr-4 flex" />
+      </div>
 
-    <div class="flex items-center gap-2">
       {
-        project && (
-          <Punchlist currentUser={currentUser} supabaseUrl={supabaseUrl} project={project} />
+        !isBackend && (
+          <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+            <ul
+              class="mt-4 flex flex-col font-medium md:mt-0 md:flex-row md:space-x-8 md:border-0 md:p-0 rtl:space-x-reverse"
+              set:html={desktopNavigationHTML}
+            />
+          </div>
+        )
+      }
+      <!-- Search -->
+      {
+        currentUrl === "/project/dashboard" && currentRole !== "Client" && (
+          <ProjectSearch projects={projects} />
         )
       }
 
-      <ThemeToggle />
+      <div class="flex items-center gap-2">
+        {
+          project && (
+            <Punchlist currentUser={currentUser} supabaseUrl={supabaseUrl} project={project} />
+          )
+        }
 
-      <!-- Hidden data attribute for notifications -->
-      {isAuth && <div data-user-id={currentUser?.id} style="display: none;" />}
+        <ThemeToggle />
 
-      <AuthIcon {currentUser} {session} {isBackend} />
+        <!-- Hidden data attribute for notifications -->
+        {isAuth && <div data-user-id={currentUser?.id} style="display: none;" />}
+
+        <AuthIcon {currentUser} {session} {isBackend} />
+
+
+
+      </div>
+
+
     </div>
   </div>
-  <nav class="hidden border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
+  <!-- <nav class="hidden border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
     <div class="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between p-4">
-      <!-- Logo with back button support -->
       <div class="flex items-center space-x-3 rtl:space-x-reverse">
         {
           id && (
@@ -102,53 +114,54 @@ const currentRole = currentUser?.profile?.role;
         }
       </div>
     </div>
-  </nav>
+  </nav> -->
 
-  <script>
-    const logoutBtn = document.getElementById("logout-btn") as HTMLButtonElement;
-
-    // Logout functionality (only if logout button exists - when authenticated)
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", async () => {
-        // console.log("📋 [HEADER] Logout button clicked");
-        try {
-          // console.log("📋 [HEADER] Sending logout request...");
-          const response = await fetch("/api/auth/signout", {
-            method: "POST",
-          });
-          // console.log("📋 [HEADER] Logout response status:", response.status);
-
-          if (response.ok) {
-            // console.log("📋 [HEADER] Logout successful, redirecting...");
-
-            // Simple redirect to home page with success message
-            const url = new URL(window.location.origin);
-            url.searchParams.set("message", "logout_success");
-            window.location.href = url.toString();
-          } else {
-            // console.error("📋 [HEADER] Logout failed with status:", response.status);
-
-            // Show error modal if logout fails
-            if (typeof window.showModal === "function") {
-              window.showModal(
-                "error",
-                "Logout Failed",
-                "There was an error logging out. Please try again.",
-                0 // No auto-hide for errors
-              );
-            } else {
-              // Fallback if showModal is not available
-              alert("There was an error logging out. Please try again.");
-            }
-          }
-        } catch (error) {
-          console.error("📋 [HEADER] Logout error:", error);
-        }
-      });
-    }
-  </script>
+  
 </nav>
 
+<script>
+  const logoutBtn = document.getElementById("logout-btn") as HTMLButtonElement;
+
+  // Logout functionality (only if logout button exists - when authenticated)
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      // console.log("📋 [HEADER] Logout button clicked");
+      try {
+        // console.log("📋 [HEADER] Sending logout request...");
+        const response = await fetch("/api/auth/signout", {
+          method: "POST",
+        });
+        // console.log("📋 [HEADER] Logout response status:", response.status);
+
+        if (response.ok) {
+          // console.log("📋 [HEADER] Logout successful, redirecting...");
+
+          // Simple redirect to home page with success message
+          const url = new URL(window.location.origin);
+          url.searchParams.set("message", "logout_success");
+          window.location.href = url.toString();
+        } else {
+          // console.error("📋 [HEADER] Logout failed with status:", response.status);
+
+          // Show error modal if logout fails
+          if (typeof window.showModal === "function") {
+            window.showModal(
+              "error",
+              "Logout Failed",
+              "There was an error logging out. Please try again.",
+              0 // No auto-hide for errors
+            );
+          } else {
+            // Fallback if showModal is not available
+            alert("There was an error logging out. Please try again.");
+          }
+        }
+      } catch (error) {
+        console.error("📋 [HEADER] Logout error:", error);
+      }
+    });
+  }
+</script>
 <style>
   :global(#navbar-default a svg) {
     display: none;
