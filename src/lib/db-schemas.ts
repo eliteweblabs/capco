@@ -47,8 +47,8 @@ export const bannerAlertsSchema: TableSchema = {
 -- Create bannerAlerts table
 CREATE TABLE IF NOT EXISTS "bannerAlerts" (
   id SERIAL PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT,
+  title TEXT,
+  content TEXT NOT NULL,
   type TEXT DEFAULT 'info' CHECK (type IN ('info', 'success', 'warning', 'error')),
   position TEXT DEFAULT 'top' CHECK (position IN ('top', 'bottom')),
   "expireMs" INTEGER,

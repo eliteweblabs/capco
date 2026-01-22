@@ -2,7 +2,7 @@
 import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import App from "../../components/ui/App.astro";
-import Footer from "../../components/ui/Footer.astro";
+import Hero from "../../components/common/Hero.astro";
 
 import { globalCompanyData } from "../api/global/global-company-data";
 const {
@@ -94,29 +94,31 @@ if (supabaseAdmin) {
   {globalCompanyWebsite}
   {globalCompanyLogo}
 >
-  <!-- Header -->
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900">Send Notifications</h1>
-    <p class="mt-2 text-gray-600">Send custom notifications to users</p>
-  </div>
+  <Hero
+    title="Send Notifications"
+    description="Send custom notifications to users"
+    {primaryTextClasses}
+    {secondaryTextClasses}
+    {globalInputClasses}
+  />
 
   <!-- Notification Form -->
   <div class="rounded-lg bg-gray-100 shadow-md color-background dark:shadow-gray-700">
     <div class="border-b border-gray-200 px-6 py-4">
-      <h2 class="text-lg font-medium text-gray-900">Create Notification</h2>
+      <h2 class={`text-lg font-medium ${primaryTextClasses}`}>Create Notification</h2>
     </div>
 
     <form id="notification-form" class="space-y-6 p-6">
       <!-- Recipients -->
       <div>
-        <label for="recipients" class="mb-2 block text-sm font-medium text-gray-700">
+        <label for="recipients" class={`mb-2 block text-sm font-medium ${secondaryTextClasses}`}>
           Recipients
         </label>
         <select
           id="recipients"
           name="recipients"
           multiple
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class={globalInputClasses}
           required
         >
           <option value="all">All Users</option>
@@ -128,17 +130,17 @@ if (supabaseAdmin) {
             ))
           }
         </select>
-        <p class="mt-1 text-sm text-gray-500">Hold Ctrl/Cmd to select multiple users</p>
+        <p class={`mt-1 text-sm ${secondaryTextClasses} opacity-70`}>Hold Ctrl/Cmd to select multiple users</p>
       </div>
 
       <!-- Notification Type -->
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label for="type" class="mb-2 block text-sm font-medium text-gray-700"> Type </label>
+          <label for="type" class={`mb-2 block text-sm font-medium ${secondaryTextClasses}`}> Type </label>
           <select
             id="type"
             name="type"
-            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class={globalInputClasses}
           >
             <option value="info">Info</option>
             <option value="success">Success</option>
@@ -148,13 +150,13 @@ if (supabaseAdmin) {
         </div>
 
         <div>
-          <label for="priority" class="mb-2 block text-sm font-medium text-gray-700">
+          <label for="priority" class={`mb-2 block text-sm font-medium ${secondaryTextClasses}`}>
             Priority
           </label>
           <select
             id="priority"
             name="priority"
-            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class={globalInputClasses}
           >
             <option value="low">Low</option>
             <option value="normal" selected>Normal</option>
@@ -166,20 +168,20 @@ if (supabaseAdmin) {
 
       <!-- Title -->
       <div>
-        <label for="title" class="mb-2 block text-sm font-medium text-gray-700"> Title * </label>
+        <label for="title" class={`mb-2 block text-sm font-medium ${secondaryTextClasses}`}> Title * </label>
         <input
           type="text"
           id="title"
           name="title"
           required
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class={globalInputClasses}
           placeholder="Notification title"
         />
       </div>
 
       <!-- Message -->
       <div>
-        <label for="message" class="mb-2 block text-sm font-medium text-gray-700">
+        <label for="message" class={`mb-2 block text-sm font-medium ${secondaryTextClasses}`}>
           Message *
         </label>
         <textarea
@@ -187,34 +189,34 @@ if (supabaseAdmin) {
           name="message"
           rows="4"
           required
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class={globalInputClasses}
           placeholder="Notification message"></textarea>
       </div>
 
       <!-- Action URL (Optional) -->
       <div>
-        <label for="actionUrl" class="mb-2 block text-sm font-medium text-gray-700">
+        <label for="actionUrl" class={`mb-2 block text-sm font-medium ${secondaryTextClasses}`}>
           Action URL (Optional)
         </label>
         <input
           type="url"
           id="actionUrl"
           name="actionUrl"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class={globalInputClasses}
           placeholder="https://example.com/action"
         />
       </div>
 
       <!-- Action Text (Optional) -->
       <div>
-        <label for="actionText" class="mb-2 block text-sm font-medium text-gray-700">
+        <label for="actionText" class={`mb-2 block text-sm font-medium ${secondaryTextClasses}`}>
           Action Button Text (Optional)
         </label>
         <input
           type="text"
           id="actionText"
           name="actionText"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class={globalInputClasses}
           placeholder="View Details"
         />
       </div>
@@ -233,22 +235,22 @@ if (supabaseAdmin) {
   </div>
 
   <!-- Recent Notifications -->
-  <div class="mt-8 rounded-lg bg-gray-100 shadow-md dark:shadow-gray-700">
+  <div class="mt-8 rounded-lg bg-gray-100 shadow-md color-background dark:shadow-gray-700">
     <div class="border-b border-gray-200 px-6 py-4">
-      <h2 class="text-lg font-medium text-gray-900">Recent Notifications</h2>
+      <h2 class={`text-lg font-medium ${primaryTextClasses}`}>Recent Notifications</h2>
     </div>
     <div id="recent-notifications" class="p-6">
       {
         recentNotifications.length > 0 ? (
           <div class="space-y-4">
             {recentNotifications.map((notification) => (
-              <div class="border-l-4 border-primary-500 bg-primary-50 p-4">
+              <div class="border-l-4 border-primary-500 bg-primary-50 p-4 dark:bg-primary-900/20">
                 <div class="flex justify-between">
                   <div>
-                    <h3 class="font-medium text-primary-900">{notification.title}</h3>
-                    <p class="text-primary-700">{notification.message}</p>
+                    <h3 class={`font-medium ${primaryTextClasses}`}>{notification.title}</h3>
+                    <p class={secondaryTextClasses}>{notification.message}</p>
                   </div>
-                  <div class="text-sm text-primary-600">
+                  <div class={`text-sm ${secondaryTextClasses} opacity-70`}>
                     {new Date(notification.createdAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -256,7 +258,7 @@ if (supabaseAdmin) {
             ))}
           </div>
         ) : (
-          <p class="text-gray-500">No notifications sent yet</p>
+          <p class={`${secondaryTextClasses} opacity-70`}>No notifications sent yet</p>
         )
       }
     </div>
@@ -265,6 +267,15 @@ if (supabaseAdmin) {
 
 <script>
   import { SimpleProjectLogger } from "../../lib/simple-logging";
+  
+  // Type declarations for global window functions
+  declare global {
+    interface Window {
+      showError: (title: string, message: string, duration: number) => void;
+      showSuccess: (title: string, message: string, duration: number) => void;
+    }
+  }
+
   class NotificationManager {
     constructor() {
       this.init();

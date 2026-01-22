@@ -23,10 +23,10 @@ if (supabaseAdmin) {
   let query = supabaseAdmin
     .from("bannerAlerts")
     .select("*")
-    .eq("isactive", true)
-    .or(`startdate.is.null,startdate.lte.${now}`)
-    .or(`enddate.is.null,enddate.gte.${now}`)
-    .order("createdat", { ascending: false });
+    .eq("isActive", true)
+    .or(`startDate.is.null,startDate.lte.${now}`)
+    .or(`endDate.is.null,endDate.gte.${now}`)
+    .order("createdAt", { ascending: false });
 
   if (position !== "all") {
     query = query.eq("position", position);
@@ -46,10 +46,10 @@ const topBanners = banners.filter((b) => b.position === "top");
 const bottomBanners = banners.filter((b) => b.position === "bottom");
 
 // Debug logging
-console.log("[BannerAlertsLoader] Total banners:", banners.length);
-console.log("[BannerAlertsLoader] Top banners:", topBanners.length);
-console.log("[BannerAlertsLoader] Bottom banners:", bottomBanners.length);
-console.log("[BannerAlertsLoader] Position filter:", position);
+// console.log("[BannerAlertsLoader] Total banners:", banners.length);
+// console.log("[BannerAlertsLoader] Top banners:", topBanners.length);
+// console.log("[BannerAlertsLoader] Bottom banners:", bottomBanners.length);
+// console.log("[BannerAlertsLoader] Position filter:", position);
 
 // Get all banner IDs for early dismiss check
 const allBannerIds = banners.map((b) => String(b.id));
@@ -88,15 +88,15 @@ const allBannerIds = banners.map((b) => String(b.id));
 
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
-    <div class="banner-alerts-top fixed top-0 left-0 right-0 z-[9999]" id="top-banner-container">
+    <div class="banner-alerts-top fixed top-0 left-0 right-0 z-[9999] flex flex-col" id="top-banner-container">
       {topBanners.map((banner) => (
         <BannerAlert
           id={banner.id}
           type={banner.type}
-          title={banner.title}
-          description={banner.description}
+          title=""
+          description={banner.content}
           position="top"
-          expireMs={banner.expirems}
+          expireMs={banner.expireMs}
           dismissible={banner.dismissible}
         />
       ))}
@@ -107,15 +107,18 @@ const allBannerIds = banners.map((b) => String(b.id));
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
     <script is:inline>
-      // Adjust navbar position based on top banner height
+      {/* // Adjust navbar position based on top banner height */}
       (function() {
         function adjustNavbarForBanners() {
           const topBannerContainer = document.getElementById("top-banner-container");
           // Try multiple selectors to find the navbar
-          const navbar = document.querySelector("nav.fixed") || document.querySelector("nav[class*='fixed']");
+          const navbar = document.querySelector("nav.fixed") || document.querySelector("nav[class*='fixed']") || document.querySelector("nav");
 
           if (topBannerContainer && navbar) {
             const updateNavbarPosition = function() {
+              // Force reflow to ensure flexbox layout is calculated
+              topBannerContainer.offsetHeight;
+              
               const bannerHeight = topBannerContainer.offsetHeight;
               // Get actual navbar height dynamically
               const navbarHeight = navbar.offsetHeight || 64;
@@ -136,11 +139,17 @@ const allBannerIds = banners.map((b) => String(b.id));
               }
             };
 
-            // Initial adjustment
+            // Initial adjustment with multiple attempts to ensure layout is ready
             updateNavbarPosition();
+            setTimeout(updateNavbarPosition, 50);
+            setTimeout(updateNavbarPosition, 150);
 
             // Update on resize for responsive changes
-            window.addEventListener("resize", updateNavbarPosition);
+            let resizeTimeout;
+            window.addEventListener("resize", function() {
+              clearTimeout(resizeTimeout);
+              resizeTimeout = setTimeout(updateNavbarPosition, 100);
+            });
 
             // Watch for banner dismissals
             const observer = new MutationObserver(function() {
@@ -160,8 +169,7 @@ const allBannerIds = banners.map((b) => String(b.id));
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", adjustNavbarForBanners);
         } else {
-          // Small delay to ensure banner is rendered
-          setTimeout(adjustNavbarForBanners, 10);
+          adjustNavbarForBanners();
         }
         
         // Also run on Astro page transitions
@@ -173,15 +181,15 @@ const allBannerIds = banners.map((b) => String(b.id));
 
 {
   bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
-    <div class="banner-alerts-bottom fixed bottom-0 left-0 right-0 z-[60]" id="bottom-banner-container">
+    <div class="banner-alerts-bottom fixed bottom-0 left-0 right-0 z-[60] flex flex-col" id="bottom-banner-container">
       {bottomBanners.map((banner) => (
         <BannerAlert
           id={banner.id}
           type={banner.type}
-          title={banner.title}
-          description={banner.description}
+          title=""
+          description={banner.content}
           position="bottom"
-          expireMs={banner.expirems}
+          expireMs={banner.expireMs}
           dismissible={banner.dismissible}
         />
       ))}
@@ -192,7 +200,7 @@ const allBannerIds = banners.map((b) => String(b.id));
 {
   bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
     <script is:inline>
-      // Debug: Check if bottom banner container exists
+      {/* // Debug: Check if bottom banner container exists */}
       (function() {
         console.log("[BannerAlertsLoader] Bottom banner script loaded");
         
@@ -215,7 +223,7 @@ const allBannerIds = banners.map((b) => String(b.id));
         }
       })();
       
-      // Adjust footer/bottom content for bottom banners
+      {/* // Adjust footer/bottom content for bottom banners */}
       (function() {
         function adjustFooterForBanners() {
           const bottomBannerContainer = document.getElementById("bottom-banner-container");
