@@ -248,6 +248,15 @@ const canDeleteFiles =
       if (data.success) {
         files = data.data || [];
 
+        // Filter out any files with invalid IDs immediately
+        files = files.filter(file => {
+          const hasValidId = file.id && Number.isInteger(file.id) && file.id > 0;
+          if (!hasValidId) {
+            console.warn("⚠️ [FILE-MANAGER] Skipping file with invalid ID:", file);
+          }
+          return hasValidId;
+        });
+
         // Debug: Check for any files with invalid URLs
         files.forEach((file, index) => {
           if ((file.publicUrl && file.publicUrl.includes("undefined")) || file.publicUrl === "") {
@@ -302,7 +311,16 @@ const canDeleteFiles =
       return;
     }
 
-    if (files.length === 0) {
+    // Filter out files with invalid IDs before rendering
+    const validFiles = files.filter(file => {
+      const hasValidId = file.id && Number.isInteger(file.id) && file.id > 0;
+      if (!hasValidId) {
+        console.warn("⚠️ [FILE-MANAGER] Filtering out file with invalid ID:", file);
+      }
+      return hasValidId;
+    });
+
+    if (validFiles.length === 0) {
       container.innerHTML = `
         <div class="py-8 text-center text-gray-500 dark:text-gray-400">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,7 +332,7 @@ const canDeleteFiles =
       return;
     }
 
-    const fileCards = files.map((file, index) => {
+    const fileCards = validFiles.map((file, index) => {
       return createFileCard(file, currentRole);
     });
 
@@ -327,24 +345,40 @@ const canDeleteFiles =
     loadButtonPartials();
   }
 
-  // Create save buttons directly in the client
-  function loadButtonPartials() {
-    for (const file of files) {
+  // Load save buttons from Button partial
+  async function loadButtonPartials() {
+    // Only load buttons for files with valid IDs
+    const validFiles = files.filter(file => file.id && Number.isInteger(file.id) && file.id > 0);
+    
+    for (const file of validFiles) {
       try {
         const buttonContainer = document.getElementById(`save-button-${file.id}`);
         if (buttonContainer) {
-          buttonContainer.innerHTML = `
-            <button
-              type="button"
-              onclick="saveFileDetails(${file.id})"
-              class="inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-700 dark:hover:bg-primary-800 dark:focus:ring-primary-800"
-            >
-              Save Changes
-            </button>
-          `;
+          const response = await fetch("/partials/button", {
+            headers: {
+              "x-button-type": "button",
+              "x-button-variant": "primary",
+              "x-button-size": "md",
+              "x-button-children": "Save Changes",
+              "x-button-id": `save-button-file-${file.id}`,
+            },
+          });
+          
+          if (response.ok) {
+            const buttonHtml = await response.text();
+            buttonContainer.innerHTML = buttonHtml;
+            
+            // Add onclick handler after button is rendered
+            const button = buttonContainer.querySelector("button");
+            if (button) {
+              button.onclick = () => saveFileDetails(file.id);
+            }
+          } else {
+            console.error(`❌ [FILE-MANAGER] Failed to load button for file ${file.id}`);
+          }
         }
       } catch (error) {
-        console.error(`❌ [FILE-MANAGER] Error creating button for file ${file.id}:`, error);
+        console.error(`❌ [FILE-MANAGER] Error loading button for file ${file.id}:`, error);
       }
     }
   }
@@ -420,6 +454,12 @@ const canDeleteFiles =
 
   // Create file card with accordion structure using Accordion partial
   function createFileCard(file, role) {
+    // Safety check: validate file ID
+    if (!file.id || !Number.isInteger(file.id) || file.id <= 0) {
+      console.error("❌ [FILE-CARD] Cannot create card for file with invalid ID:", file);
+      return ""; // Return empty string to skip rendering this file
+    }
+
     // Enable checkout system - SQL migration should be run
     const hasCheckoutColumns = true; // Enable checkout system
     const isCheckedOut = file.checkedOutBy !== null;
@@ -1344,9 +1384,9 @@ const canDeleteFiles =
       return;
     }
 
-    // Validate file ID
-    if (!fileId || fileId <= 0) {
-      console.error("Invalid file ID for deletion:", fileId);
+    // Validate file ID - must be a positive integer
+    if (!fileId || !Number.isInteger(fileId) || fileId <= 0) {
+      console.error("❌ [FILE-MANAGER] Invalid file ID for deletion:", fileId, typeof fileId);
       if (window.showModal) {
         window.showModal(
           "error",
@@ -1771,7 +1811,7 @@ const canDeleteFiles =
   });
 </script>
 
-<style>
+<style is:global>
   /* Accordion header with background image - desaturated, low opacity by default, saturated and panned on hover */
   #files-container .accordion-header-with-bg {
     filter: grayscale(100%) !important;

@@ -24,7 +24,7 @@ let error: string | null = null;
 
 try {
   const baseUrl = Astro.url.origin;
-  const apiUrl = `${baseUrl}/api/get-project`;
+  const apiUrl = `${baseUrl}/api/projects/get?featured=true`;
   const response = await fetch(apiUrl, {
     headers: {
       Cookie: Astro.request.headers.get("cookie") || "",
@@ -35,17 +35,18 @@ try {
     const data = await response.json();
     const projects = data.projects || [];
 
+    console.log("🐛 [FEATURED-PROJECTS] Projects:", projects);
     featuredProjects = (projects || [])
-      .filter((project: any) => project.featuredImageData?.publicUrl)
-      .filter((project: any) => project.featured === "yes")
+      // Filter for featured projects only
+      .filter((project: any) => project.featured === true || project.featured === "yes")
       .map((project: any) => ({
         id: project.id,
         title: project.title,
         address: project.address,
         description: project.description,
-        squareFootage: project.sqFt,
+        squareFootage: project.sqFt, // Database field is sqFt
         isNewConstruction: project.newConstruction,
-        completedAt: project.updatedAt,
+        completedAt: project.completedAt || project.updatedAt, // Use completedAt if available
         featured: project.featured,
         featuredImageUrl: project.featuredImageUrl,
         featuredImageData: project.featuredImageData,
@@ -74,6 +75,7 @@ function formatDate(dateString: string | null | undefined): string {
   });
 }
 ---
+
 
 <div class="mx-auto max-w-7xl">
   {
@@ -129,10 +131,11 @@ function formatDate(dateString: string | null | undefined): string {
                 {project.featuredImageData?.publicUrl ? (
                   <div class="relative mb-3 overflow-hidden rounded-lg">
                     <img
-                      src={project.featuredImageData.publicUrl}
+                      data-src={project.featuredImageData.publicUrl}
                       alt={`Featured image for ${project.address}`}
-                      class="h-32 w-full object-cover transition-transform duration-200 hover:scale-105"
-                      loading="lazy"
+                      class="lazyload blur-sm h-32 w-full object-cover transition-transform duration-200 hover:scale-105"
+                      width="400"
+                      height="128"
                       referrerpolicy="strict-origin-when-cross-origin"
                       crossorigin="anonymous"
                       onerror="console.warn('Featured image failed to load:', this.src); this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex';"

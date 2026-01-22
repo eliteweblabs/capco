@@ -109,10 +109,11 @@ const dueDateOptions = createDueDateOptions();
     project.featuredImageData?.publicUrl && (
       <div id="featured-image-background" class="absolute inset-0 -z-10">
         <img
-          src={project.featuredImageData.publicUrl}
+          data-src={project.featuredImageData.publicUrl}
           alt={`Featured image for ${project.address}`}
-          class="h-32 w-full rounded-lg rounded-b-none object-cover transition-transform duration-200 hover:scale-105"
-          loading="lazy"
+          class="lazyload blur-sm h-32 w-full rounded-lg rounded-b-none object-cover transition-transform duration-200 hover:scale-105"
+          width="1200"
+          height="128"
           referrerpolicy="strict-origin-when-cross-origin"
           crossorigin="anonymous"
           onerror="console.warn('Featured image failed to load:', this.src, 'Project ID:', this.closest('[data-project-id]')?.dataset.projectId); this.style.display='none'; const fallback = this.parentElement.querySelector('.featured-image-fallback'); if (fallback) fallback.style.display='flex';"
@@ -168,8 +169,8 @@ const dueDateOptions = createDueDateOptions();
           title="Update Status"
           options={statusesOptions.selectOptions}
           selectedValue={currentStatusName}
-          placeholder="Select a status"
-          buttonText="Update Status"
+          placeholder={"Select a status"}
+          buttonText={currentStatusName ? currentStatusName : "Select a status"}
           buttonClass="mr-2"
           buttonVariant="primary"
           saveApiEndpoint="api/project/statuses"
