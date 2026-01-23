@@ -146,10 +146,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Generate unique file path
+    // Generate unique file path with URL-safe filename
     const fileExtension = file.name.split(".").pop() || "";
     const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${fileName}`;
+    // Sanitize filename: replace spaces with hyphens, remove/replace special characters
+    // This prevents issues with URLs and ensures consistency across all storage paths
+    const safeFileName = fileName
+      .replace(/\s+/g, '-')           // Replace spaces with hyphens
+      .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace special chars with underscores
+      .replace(/_{2,}/g, '_')          // Replace multiple underscores with single
+      .replace(/-{2,}/g, '-')          // Replace multiple hyphens with single
+      .replace(/^[-_]+|[-_]+$/g, '');  // Remove leading/trailing hyphens and underscores
+    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${safeFileName}`;
     // Handle versioning
     let versionNumber = 1;
     let previousVersionId = null;
