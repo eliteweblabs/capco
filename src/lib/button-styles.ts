@@ -76,7 +76,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
       "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
     anchor:
       "text-gray-800 dark:text-gray-200 hover:text-primary dark:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 hover:shadow-none opacity-100 transition-all duration-200",
-    tab: "translate-y-1 tab-button pill-nav-item border color-border bg-gray-50 dark:bg-gray-800",
+    tab: "tab-button pill-nav-item",
   };
 
   // Build the complete class string

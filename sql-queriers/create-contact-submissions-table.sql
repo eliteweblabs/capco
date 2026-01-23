@@ -1,72 +1,51 @@
--- Create contact_submissions table for storing contact form data
+-- Contact Submissions Table
+-- Stores submissions from the contact form feature
+
 CREATE TABLE IF NOT EXISTS contact_submissions (
   id SERIAL PRIMARY KEY,
-  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  phone VARCHAR(20),
-  company VARCHAR(255),
-  project_type VARCHAR(50),
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  company TEXT,
+  address TEXT,
   message TEXT NOT NULL,
   submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create index for faster queries
-CREATE INDEX IF NOT EXISTS idx_contact_submissions_project_id ON contact_submissions(project_id);
+-- Add indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_contact_submissions_email ON contact_submissions(email);
-CREATE INDEX IF NOT EXISTS idx_contact_submissions_submitted_at ON contact_submissions(submitted_at);
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_submitted_at ON contact_submissions(submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_company ON contact_submissions(company);
 
--- Add RLS policies
+-- Enable Row Level Security
 ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;
 
--- Policy for admins to view all contact submissions
-CREATE POLICY "Admins can view all contact submissions" ON contact_submissions
-  FOR SELECT USING (
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Admins can view all contact submissions" ON contact_submissions;
+DROP POLICY IF EXISTS "Admins can insert contact submissions" ON contact_submissions;
+DROP POLICY IF EXISTS "Anyone can insert contact submissions" ON contact_submissions;
+
+-- Policy: Admins can view all contact submissions
+CREATE POLICY "Admins can view all contact submissions"
+  ON contact_submissions FOR SELECT
+  USING (
     EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.role IN ('Admin', 'Staff')
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'Admin'
     )
   );
 
--- Policy for admins to insert contact submissions
-CREATE POLICY "Admins can insert contact submissions" ON contact_submissions
-  FOR INSERT WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.role IN ('Admin', 'Staff')
-    )
-  );
+-- Policy: Anyone can submit contact forms (unauthenticated users)
+-- Note: In production, you may want to add rate limiting or CAPTCHA
+CREATE POLICY "Anyone can insert contact submissions"
+  ON contact_submissions FOR INSERT
+  WITH CHECK (true);
 
--- Policy for admins to update contact submissions
-CREATE POLICY "Admins can update contact submissions" ON contact_submissions
-  FOR UPDATE USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.role IN ('Admin', 'Staff')
-    )
-  );
-
--- Policy for admins to delete contact submissions
-CREATE POLICY "Admins can delete contact submissions" ON contact_submissions
-  FOR DELETE USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.role IN ('Admin', 'Staff')
-    )
-  );
-
--- Allow anonymous users to insert contact submissions (for the contact form)
-CREATE POLICY "Anonymous users can insert contact submissions" ON contact_submissions
-  FOR INSERT WITH CHECK (true);
-
--- Add trigger for updated_at
+-- Add trigger to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_contact_submissions_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -75,7 +54,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_update_contact_submissions_updated_at
+DROP TRIGGER IF EXISTS update_contact_submissions_updated_at_trigger ON contact_submissions;
+
+CREATE TRIGGER update_contact_submissions_updated_at_trigger
   BEFORE UPDATE ON contact_submissions
   FOR EACH ROW
   EXECUTE FUNCTION update_contact_submissions_updated_at();
+
+-- Add comments for documentation
+COMMENT ON TABLE contact_submissions IS 'Stores contact form submissions from the website';
+COMMENT ON COLUMN contact_submissions.first_name IS 'First name of the person submitting the form';
+COMMENT ON COLUMN contact_submissions.last_name IS 'Last name of the person submitting the form';
+COMMENT ON COLUMN contact_submissions.email IS 'Email address for follow-up';
+COMMENT ON COLUMN contact_submissions.phone IS 'Optional phone number';
+COMMENT ON COLUMN contact_submissions.company IS 'Optional company/organization name';
+COMMENT ON COLUMN contact_submissions.address IS 'Optional address from Google Places autocomplete';
+COMMENT ON COLUMN contact_submissions.message IS 'The main message/inquiry from the user';
+COMMENT ON COLUMN contact_submissions.submitted_at IS 'When the form was submitted';
