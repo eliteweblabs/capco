@@ -18,7 +18,7 @@ RUN npm install --legacy-peer-deps
 COPY . .
 
 # Ensure the production startup script has execute permissions and verify it exists
-RUN ls -la start-production.sh && chmod +x start-production.sh && ls -la start-production.sh
+RUN ls -la scripts/start-production.sh && chmod +x scripts/start-production.sh && ls -la scripts/start-production.sh
 
 # Make content init script executable
 RUN chmod +x scripts/init-persistent-content.sh 2>/dev/null || true
@@ -148,4 +148,4 @@ ENV HOST=0.0.0.0
 # Note: PORT is provided by Railway at runtime, do not set it here
 
 # Start both the Astro application and Socket.io server
-CMD ["/bin/sh", "./start-production.sh"] 
+CMD ["/bin/sh", "./scripts/start-production.sh"] 
