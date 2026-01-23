@@ -17,7 +17,7 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
 
 <!-- Toggle button - visible on mobile always, on desktop only when logged in -->
 <button
-  id="sidebarToggleButton"
+  id="sidebar-toggle-button"
   type="button"
   aria-controls="sidebar"
   data-is-auth={currentUser ? "true" : "false"}
@@ -25,27 +25,42 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
 >
   <span class="sr-only">Open sidebar</span>
   <svg
-    class="w-6 h-6"
+    class="w-7 h-7"
+    data-sidebar-toggle-collapse-icon=""
     aria-hidden="true"
-    fill="currentColor"
-    viewBox="0 0 20 20"
     xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    fill="none"
+    viewBox="0 0 24 24"
   >
-    <path
-      clip-rule="evenodd"
-      fill-rule="evenodd"
-      d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"
+    <path stroke="currentColor" stroke-linecap="round" stroke-width="1" d="M5 7h14M5 12h14M5 17h10"
+    ></path>
+  </svg>
+  <svg
+    class="hidden w-7 h-7"
+    data-sidebar-toggle-expand-icon=""
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <path stroke="currentColor" stroke-linecap="round" stroke-width="1" d="M5 7h14M5 12h14M5 17h14"
     ></path>
   </svg>
 </button>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const toggleButton = document.getElementById("sidebarToggleButton");
+    const toggleButton = document.getElementById("sidebar-toggle-button");
     const sidebar = document.getElementById("sidebar");
     const mainContent = document.getElementById("main-content");
     const collapseHideElements = document.querySelectorAll("[data-sidebar-collapse-hide]");
     const collapseShowElements = document.querySelectorAll("[data-sidebar-collapse-show]");
+    const collapseIcon = document.querySelector("[data-sidebar-toggle-collapse-icon]");
+    const expandIcon = document.querySelector("[data-sidebar-toggle-expand-icon]");
 
     if (!toggleButton || !sidebar) return;
 
@@ -57,6 +72,19 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
 
     // Track if sidebar is expanded (for desktop hover behavior)
     let isHovering = false;
+
+    // Toggle icons based on state
+    const updateIcons = (isExpanded) => {
+      if (collapseIcon && expandIcon) {
+        if (isExpanded) {
+          collapseIcon.classList.remove("hidden");
+          expandIcon.classList.add("hidden");
+        } else {
+          collapseIcon.classList.add("hidden");
+          expandIcon.classList.remove("hidden");
+        }
+      }
+    };
 
     // Lock body scroll (mobile only)
     const lockBodyScroll = () => {
@@ -96,6 +124,7 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
         mainContent.classList.add("overflow-hidden", "blur-sm", "pointer-events-none");
       }
       toggleButton.setAttribute("aria-expanded", "true");
+      updateIcons(true);
     };
 
     // MOBILE: Hide sidebar (slide out)
@@ -107,6 +136,7 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
         mainContent.classList.remove("overflow-hidden", "blur-sm", "pointer-events-none");
       }
       toggleButton.setAttribute("aria-expanded", "false");
+      updateIcons(false);
     };
 
     // DESKTOP: Expand sidebar (show text labels)
@@ -119,6 +149,7 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
         mainContent.classList.add("sm:ml-64");
       }
       toggleButton.setAttribute("aria-expanded", "true");
+      updateIcons(true);
     };
 
     // DESKTOP: Collapse sidebar (icons only)
@@ -131,6 +162,7 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
         mainContent.classList.add("sm:ml-16");
       }
       toggleButton.setAttribute("aria-expanded", "false");
+      updateIcons(false);
     };
 
     // Toggle handler

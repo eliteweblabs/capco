@@ -105,6 +105,72 @@ const allBannerIds = banners.map((b) => String(b.id));
 }
 
 {
+  topBanners.length > 0 && (position === "all" || position === "top") && (
+    <script is:inline>
+      {/* // Adjust main-content padding based on number of visible top banners */}
+      (function() {
+        function adjustMainContentForTopBanners() {
+          const topBannerContainer = document.getElementById("top-banner-container");
+          const mainContent = document.getElementById("main-content");
+
+          if (topBannerContainer && mainContent) {
+            const updateMainContentSpacing = function() {
+              // Count visible banners (not dismissed)
+              const visibleBanners = topBannerContainer.querySelectorAll('.banner-alert:not([style*="display: none"])');
+              const bannerCount = visibleBanners.length;
+
+              console.log("[BannerAlertsLoader] Visible top banners:", bannerCount);
+
+              // Remove existing margin classes
+              mainContent.classList.remove('mt-0', 'mt-4', 'mt-8', 'mt-12', 'mt-16', 'mt-20', 'mt-24', 'mt-28', 'mt-32');
+
+              // Standard is pt-16 (already on the element)
+              // Add mt-4 for each banner to create space
+              if (bannerCount > 0) {
+                const marginClass = `mt-${bannerCount * 10}`;
+                mainContent.classList.add(marginClass);
+                console.log("[BannerAlertsLoader] Applied margin class:", marginClass);
+              } else {
+                mainContent.classList.add('mt-0');
+              }
+            };
+
+            // Initial adjustment
+            updateMainContentSpacing();
+
+            // Update on resize for responsive changes
+            window.addEventListener("resize", updateMainContentSpacing);
+
+            // Watch for banner dismissals
+            const observer = new MutationObserver(function() {
+              setTimeout(updateMainContentSpacing, 350); // After animation
+            });
+
+            observer.observe(topBannerContainer, {
+              childList: true,
+              subtree: true,
+              attributes: true,
+              attributeFilter: ["style"]
+            });
+          }
+        }
+
+        // Run immediately if DOM is ready, otherwise wait
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", adjustMainContentForTopBanners);
+        } else {
+          // Small delay to ensure banner is rendered
+          setTimeout(adjustMainContentForTopBanners, 10);
+        }
+        
+        // Also run on Astro page transitions
+        document.addEventListener("astro:page-load", adjustMainContentForTopBanners);
+      })();
+    </script>
+  )
+}
+
+{
   bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
     <div class="banner-alerts-bottom fixed bottom-0 left-0 right-0 z-[60] flex flex-col" id="bottom-banner-container">
       {bottomBanners.map((banner) => (

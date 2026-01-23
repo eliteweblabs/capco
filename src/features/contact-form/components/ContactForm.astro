@@ -1,0 +1,694 @@
+---
+// Multi-step contact form component with AOS animations
+import Button from "../../../components/common/Button.astro";
+import PhoneAndSMS from "../../../components/form/PhoneAndSMS.astro";
+import SimpleIcon from "../../../components/common/SimpleIcon.astro";
+import SlotMachineModal from "../../../components/form/SlotMachineModal.astro";
+
+import { globalClasses } from "../../../pages/api/global/global-classes";
+const { globalInputClasses } = globalClasses();
+---
+
+<!-- Progress Bar -->
+<div class="mb-6 sm:mb-12" data-aos="fade-up">
+  <div class="relative">
+    <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+      <div
+        id="contact-progress-bar"
+        class="h-full rounded-full bg-primary-500 transition-all duration-500 ease-out"
+        style="width: 0%"
+      >
+      </div>
+    </div>
+    <div class="mt-3 text-center">
+      <span id="contact-progress-text" class="text-sm font-medium text-gray-600 dark:text-gray-400">
+        1 / 6
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Multi-step Form -->
+<form id="multi-step-contact-form" action="/api/contact/submit" method="post">
+  <!-- Step 1: Name -->
+  <div class="step-content active" data-step="1">
+    <div class="space-y-8">
+      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+        <h2 class="text-5xl font-bold text-gray-900 dark:text-white">your name?</h2>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2" data-aos="fade-up" data-aos-delay="300">
+        <div class="input-wrapper">
+          <input
+            type="text"
+            name="firstName"
+            id="contact-first-name"
+            placeholder="John"
+            required
+            autocomplete="given-name"
+            class={`${globalInputClasses} text-xl py-5 text-center`}
+            data-error="Please enter your first name"
+          />
+        </div>
+
+        <div class="input-wrapper">
+          <input
+            type="text"
+            name="lastName"
+            id="contact-last-name"
+            placeholder="Doe"
+            required
+            autocomplete="family-name"
+            class={`${globalInputClasses} text-xl py-5 text-center`}
+            data-error="Please enter your last name"
+          />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3" data-aos="fade-up" data-aos-delay="450">
+        <Button
+          type="button"
+          variant="primary"
+          size="xl"
+          class="next-step"
+          icon="arrow-right"
+          iconPosition="right"
+          iconClasses="m-0 md:mr-2"
+          dataAttributes={{ "data-next": "2" }}
+        >
+          next
+        </Button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Email -->
+  <div class="step-content" data-step="2">
+    <div class="space-y-8">
+      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+        <h2 class="text-5xl font-bold text-gray-900 dark:text-white">your email?</h2>
+      </div>
+
+      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+        <input
+          type="email"
+          name="email"
+          id="contact-email"
+          placeholder="your.email@example.com"
+          required
+          autocomplete="email"
+          class={`${globalInputClasses} text-xl py-5 text-center`}
+          data-error="Please enter a valid email address"
+        />
+      </div>
+
+      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+        <Button
+          type="button"
+          variant="outline"
+          size="xl"
+          class="prev-step"
+          dataAttributes={{ "data-prev": "1" }}
+          icon="arrow-left"
+          iconClasses="m-0 md:ml-2"
+          iconPosition="left"
+        />
+        <Button
+          type="button"
+          variant="primary"
+          size="xl"
+          class="next-step"
+          icon="arrow-right"
+          iconPosition="right"
+          iconClasses="m-0 md:mr-2"
+          dataAttributes={{ "data-next": "3" }}
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Phone -->
+  <div class="step-content" data-step="3">
+    <div class="space-y-8">
+      <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your phone?</h2>
+      </div>
+
+      <div data-aos="fade-up" data-aos-delay="200">
+        <PhoneAndSMS
+          id="contact-phone"
+          name="phone"
+          placeholder="(555) 123-4567"
+          showSMS={false}
+          class="text-xl py-5 text-center"
+          {globalInputClasses}
+        />
+      </div>
+
+      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          class="prev-step px-12 text-lg"
+          dataAttributes={{ "data-prev": "2" }}
+          icon="arrow-left"
+          iconPosition="left"
+          iconClasses="m-0 md:ml-2"
+        />
+        <Button
+          type="button"
+          variant="primary"
+          size="lg"
+          class="next-step"
+          icon="arrow-right"
+          iconPosition="right"
+          dataAttributes={{ "data-next": "4" }}
+          iconClasses="m-0 md:mr-2"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: Company -->
+  <div class="step-content" data-step="4">
+    <div class="space-y-8">
+      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your company?</h2>
+      </div>
+
+      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+        <input
+          type="text"
+          name="company"
+          id="contact-company"
+          placeholder="Acme Corporation"
+          required
+          autocomplete="organization"
+          class={`${globalInputClasses} text-xl py-5 text-center`}
+          data-error="Please enter your company name"
+        />
+      </div>
+
+      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+        <Button
+          type="button"
+          variant="outline"
+          size="xl"
+          class="prev-step"
+          icon="arrow-left"
+          iconClasses="m-0 md:ml-2"
+          iconPosition="left"
+          dataAttributes={{ "data-prev": "3" }}
+        />
+        <Button
+          type="button"
+          variant="primary"
+          size="xl"
+          class="next-step"
+          icon="arrow-right"
+          iconClasses="m-0 md:mr-2"
+          iconPosition="right"
+          dataAttributes={{ "data-next": "5" }}
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5: Address -->
+  <div class="step-content" data-step="5">
+    <div class="space-y-8">
+      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your address?</h2>
+      </div>
+
+      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+        <SlotMachineModal
+          id="contact-address"
+          icon="map-pin"
+          title="Select Address"
+          options={[]}
+          selectedValue=""
+          placeholder="Search for an address..."
+          showCloseButton={true}
+          showCancelButton={true}
+          buttonText="Select Address *"
+          buttonClass="w-full"
+          buttonVariant="primary"
+          searchText="Search Address"
+          searchPlaceholder="Type to search addresses..."
+          fetchApiEndpoint="/api/google/places-autocomplete"
+          apiParams={{
+            types: "address",
+            components: "country:us",
+            locationBias: "circle:100@42.3601,-71.0589",
+          }}
+          valueField="description"
+          noResultsText="Type to search addresses..."
+          globalInputClasses={globalInputClasses}
+        />
+      </div>
+
+      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+        <Button
+          type="button"
+          variant="outline"
+          size="xl"
+          class="prev-step"
+          icon="arrow-left"
+          iconClasses="m-0 md:ml-2"
+          iconPosition="left"
+          dataAttributes={{ "data-prev": "4" }}
+        />
+        <Button
+          type="button"
+          variant="primary"
+          size="xl"
+          class="next-step"
+          icon="arrow-right"
+          iconClasses="m-0 md:mr-2"
+          iconPosition="right"
+          dataAttributes={{ "data-next": "6" }}
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 6: Message -->
+  <div class="step-content" data-step="6">
+    <div class="space-y-8">
+      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your message?</h2>
+      </div>
+
+      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+        <textarea
+          name="message"
+          id="contact-message"
+          placeholder="Tell us how we can help you..."
+          required
+          rows="6"
+          class={`${globalInputClasses} text-xl py-5`}
+          data-error="Please enter your message"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+        <Button
+          type="button"
+          variant="outline"
+          size="xl"
+          class="prev-step"
+          icon="arrow-left"
+          iconClasses="m-0 md:ml-2"
+          iconPosition="left"
+          dataAttributes={{ "data-prev": "5" }}
+        />
+        <Button
+          type="button"
+          variant="primary"
+          size="xl"
+          class="submit-contact"
+          icon="send"
+          iconClasses="m-0 md:mr-2"
+          iconPosition="right"
+        >
+          send message
+        </Button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<style>
+  .step-content {
+    display: none;
+  }
+
+  .step-content.active {
+    display: block;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("multi-step-contact-form") as HTMLFormElement;
+    if (!form) return;
+
+    const progressBar = document.getElementById("contact-progress-bar") as HTMLElement;
+    const progressText = document.getElementById("contact-progress-text") as HTMLElement;
+    let currentStep = 1;
+    const totalSteps = 6;
+
+    // Update progress bar
+    function updateProgress() {
+      const progress = (currentStep / totalSteps) * 100;
+      if (progressBar) progressBar.style.width = `${progress}%`;
+      if (progressText) progressText.textContent = `${currentStep} / ${totalSteps}`;
+    }
+
+    // Show specific step with AOS refresh
+    function showStep(stepNumber: number) {
+      const steps = document.querySelectorAll(".step-content");
+
+      steps.forEach((step) => {
+        step.classList.remove("active");
+      });
+
+      const targetStep = document.querySelector(`.step-content[data-step="${stepNumber}"]`);
+      if (targetStep) {
+        targetStep.classList.add("active");
+        currentStep = stepNumber;
+        updateProgress();
+
+        // Refresh AOS animations for the new step
+        setTimeout(() => {
+          // @ts-ignore - AOS loaded from CDN
+          if (typeof AOS !== "undefined") AOS.refresh();
+
+          // Delay auto-focus to allow AOS animations to trigger first
+          setTimeout(() => {
+            const firstInput = targetStep.querySelector("input:not([type=hidden]), textarea") as HTMLElement;
+            if (firstInput) firstInput.focus();
+          }, 400);
+        }, 100);
+      }
+    }
+
+    // Validate current step
+    function validateStep(stepNumber: number): boolean {
+      const stepEl = document.querySelector(`.step-content[data-step="${stepNumber}"]`);
+      if (!stepEl) return false;
+
+      const inputs = stepEl.querySelectorAll("input[required], textarea[required]");
+      let isValid = true;
+
+      for (const input of inputs) {
+        const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
+        if (!inputEl.checkValidity()) {
+          isValid = false;
+          inputEl.classList.add("touched");
+
+          // Show error using modal if available
+          if (window.showModal) {
+            const errorMsg =
+              inputEl.getAttribute("data-error") || "Please fill in this field correctly";
+            window.showModal("error", "Validation Error", errorMsg, 3000);
+          }
+          return false;
+        }
+      }
+
+      // Special validation for address field (Step 5)
+      if (stepNumber === 5) {
+        const addressInput = document.getElementById("contact-address-value") as HTMLInputElement;
+        if (addressInput && !addressInput.value) {
+          if (window.showModal) {
+            window.showModal("error", "Validation Error", "Please select an address", 3000);
+          }
+          return false;
+        }
+      }
+
+      return isValid;
+    }
+
+    // Handle next step buttons
+    form.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      const nextBtn = target.closest(".next-step");
+      const prevBtn = target.closest(".prev-step");
+
+      if (nextBtn) {
+        e.preventDefault();
+        const nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
+
+        // Check if this is the submit button (step 6)
+        if (nextBtn.classList.contains("submit-contact")) {
+          // Validate before submitting
+          if (validateStep(currentStep)) {
+            form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+          }
+          return;
+        }
+
+        // Validate current step before moving forward
+        if (validateStep(currentStep)) {
+          showStep(nextStep);
+        }
+      }
+
+      if (prevBtn) {
+        // Check if this is a link - if so, allow normal navigation
+        const isLink =
+          prevBtn.tagName === "A" || prevBtn.hasAttribute("href") || prevBtn.closest("a");
+        if (isLink) {
+          return;
+        }
+        e.preventDefault();
+        const prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
+        showStep(prevStep);
+      }
+    });
+
+    // Add touched class to inputs after user interaction
+    const inputs = form.querySelectorAll("input[required], textarea[required]");
+    inputs.forEach((input) => {
+      input.addEventListener("blur", () => {
+        input.classList.add("touched");
+      });
+      input.addEventListener("input", () => {
+        input.classList.add("touched");
+      });
+    });
+
+    // Handle submit button click
+    const submitBtn = form.querySelector(".submit-contact");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Validate before submitting
+        if (validateStep(currentStep)) {
+          form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+        }
+      });
+    }
+
+    // Handle form submission
+    let isSubmitting = false;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // Prevent double submission
+      if (isSubmitting) {
+        console.log("[CONTACT] Already submitting, ignoring duplicate submission");
+        return;
+      }
+
+      // Validate final step before submission
+      const isValid = validateStep(currentStep);
+      if (!isValid) {
+        console.error("[CONTACT] Final step validation failed");
+        return;
+      }
+
+      isSubmitting = true;
+      const submitButton = form.querySelector('button.submit-contact') as HTMLButtonElement;
+      const originalButtonText = submitButton?.textContent || "Send Message";
+
+      // Disable submit button and show loading state
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      const formData = new FormData(form);
+
+      // Show loading notification
+      if (window.showModal) {
+        window.showModal(
+          "info",
+          "Sending Message...",
+          "Please wait while we process your request.",
+          10000
+        );
+      }
+
+      try {
+        console.log("[CONTACT] Submitting contact form...");
+        const response = await fetch("/api/contact/submit", {
+          method: "POST",
+          body: formData,
+        });
+
+        console.log("[CONTACT] Response status:", response.status, response.statusText);
+
+        // Check if response is OK before parsing
+        if (!response.ok) {
+          const contentType = response.headers.get("content-type");
+          let errorData: any = { error: "Submission failed" };
+
+          if (contentType && contentType.includes("application/json")) {
+            try {
+              errorData = await response.json();
+            } catch (parseError) {
+              console.error("[CONTACT] Failed to parse error response:", parseError);
+            }
+          } else {
+            const text = await response.text();
+            console.error("[CONTACT] Non-JSON error response:", text);
+            errorData = { error: `Server error: ${response.status} ${response.statusText}` };
+          }
+
+          if (window.showModal) {
+            window.showModal(
+              "error",
+              "Submission Failed",
+              errorData.error || `Server error (${response.status}). Please try again.`,
+              8000
+            );
+          }
+
+          isSubmitting = false;
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+          return;
+        }
+
+        // Parse successful response
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Server returned non-JSON response. Please try again.");
+        }
+
+        const result = await response.json();
+        console.log("[CONTACT] Contact result:", result);
+
+        // Check for success
+        if (result.success === false || result.error) {
+          // Check if this is a setup required error
+          if (result.setupRequired) {
+            if (window.showModal) {
+              window.showModal(
+                "warning",
+                "Database Setup Required",
+                `The contact form database table needs to be set up. <br><br>
+                <strong>Quick Setup:</strong><br>
+                1. Go to Supabase SQL Editor<br>
+                2. Run the SQL from: <code>sql-queriers/create-contact-submissions-table.sql</code><br>
+                3. Try submitting again<br><br>
+                Check server logs for the SQL commands.`,
+                15000
+              );
+            }
+          } else {
+            if (window.showModal) {
+              window.showModal(
+                "error",
+                "Submission Failed",
+                result.error || result.details || "Failed to send message. Please try again.",
+                8000
+              );
+            }
+          }
+          isSubmitting = false;
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+          return;
+        }
+
+        // Success!
+        if (result.success !== false && !result.error) {
+          if (window.showModal) {
+            window.showModal(
+              "success",
+              "Message Sent!",
+              "Thank you for contacting us. We'll get back to you soon!",
+              5000
+            );
+          }
+
+          // Reset form after success
+          form.reset();
+          
+          // Go back to first step
+          showStep(1);
+          
+          // Clear address value
+          const addressInput = document.getElementById("contact-address-value") as HTMLInputElement;
+          if (addressInput) {
+            addressInput.value = "";
+          }
+          
+          // Reset address button text
+          const addressButton = document.getElementById("contact-address");
+          if (addressButton) {
+            const buttonTextSpan = addressButton.querySelector(".button-text") as HTMLElement;
+            if (buttonTextSpan) {
+              buttonTextSpan.textContent = "Select Address *";
+            }
+          }
+        }
+      } catch (error) {
+        console.error("[CONTACT] Submission error:", error);
+
+        let errorMessage = "An unexpected error occurred. Please try again.";
+
+        if (error instanceof Error) {
+          console.error("[CONTACT] Error details:", error.message, error.stack);
+          if (error.message.includes("non-JSON response")) {
+            errorMessage = "Server error occurred. Please try again in a moment.";
+          } else if (error.message.includes("Failed to fetch") || error.name === "TypeError") {
+            errorMessage = "Network error. Please check your connection and try again.";
+          } else {
+            errorMessage = error.message || errorMessage;
+          }
+        }
+
+        if (window.showModal) {
+          window.showModal("error", "Submission Failed", errorMessage, 8000);
+        }
+      } finally {
+        isSubmitting = false;
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+      }
+    });
+
+    // Handle Enter key to move to next step
+    form.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+        e.preventDefault();
+
+        // Find next button in current step
+        const currentStepEl = document.querySelector(`.step-content[data-step="${currentStep}"]`);
+        const nextBtn = currentStepEl?.querySelector(".next-step") as HTMLElement;
+
+        if (nextBtn && currentStep < totalSteps) {
+          nextBtn.click();
+        } else if (currentStep === totalSteps) {
+          // Submit form on last step
+          const submitBtn = form.querySelector(".submit-contact") as HTMLElement;
+          if (submitBtn) {
+            submitBtn.click();
+          }
+        }
+      }
+    });
+
+    // Initialize
+    updateProgress();
+
+    // Initial AOS refresh
+    setTimeout(() => {
+      // @ts-ignore - AOS loaded from CDN
+      if (typeof AOS !== "undefined") AOS.refresh();
+    }, 100);
+  });
+</script>
