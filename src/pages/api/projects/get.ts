@@ -11,15 +11,6 @@ import { fetchPunchlistStats } from "../../../lib/api/_projects";
  */
 export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
-    // Check authentication
-    const { isAuth, currentUser } = await checkAuth(cookies);
-    if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
     const projectId = url.searchParams.get("id");
     const authorId = url.searchParams.get("authorId");
     const assignedToId = url.searchParams.get("assignedToId");
@@ -30,6 +21,28 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const sortBy = url.searchParams.get("sortBy") || "createdAt";
     const sortOrder = url.searchParams.get("sortOrder") === "asc" ? true : false;
     const includeTotal = url.searchParams.get("includeTotal") === "true";
+
+    // Allow public access for featured projects ONLY
+    const isFeaturedRequest = featured === "true";
+    
+    console.log("🏗️ [PROJECTS-GET] Featured request:", isFeaturedRequest, "featured param:", featured);
+    
+    // Check authentication (skip for featured projects)
+    const { isAuth, currentUser } = await checkAuth(cookies);
+    
+    console.log("🏗️ [PROJECTS-GET] Auth status:", isAuth, "Current user:", currentUser?.id);
+    
+    if (!isFeaturedRequest && (!isAuth || !currentUser)) {
+      console.log("🏗️ [PROJECTS-GET] Rejecting non-featured request without auth");
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    
+    if (isFeaturedRequest && !isAuth) {
+      console.log("🏗️ [PROJECTS-GET] Allowing public access to featured projects");
+    }
 
     console.log("🏗️ [PROJECTS-GET] Project ID:", projectId);
     if (!supabase || !supabaseAdmin) {
@@ -162,16 +175,15 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       query = query.eq("featured", true);
     }
 
-    // Apply role-based filtering (temporarily disabled for testing)
-    // const userRole = currentUser.profile?.role;
-    // if (userRole === "Client") {
-    //   // Clients can only see their own projects
-    //   query = query.eq("authorId", currentUser.id);
-    // } else if (userRole === "Staff") {
-    //   // Staff can see projects assigned to them or all projects (depending on permissions)
-    //   // For now, show all projects to staff
-    // }
-    // Admin can see all projects (no additional filtering)
+    // Apply role-based filtering (skip for featured projects)
+    if (!isFeaturedRequest && currentUser) {
+      const userRole = currentUser.profile?.role;
+      if (userRole === "Client") {
+        // Clients can only see their own projects
+        query = query.eq("authorId", currentUser.id);
+      }
+      // Staff and Admin can see all projects (no additional filtering)
+    }
 
     // Apply sorting and pagination
     query = query.order(sortBy, { ascending: sortOrder });

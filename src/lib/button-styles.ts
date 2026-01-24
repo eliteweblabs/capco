@@ -20,6 +20,7 @@ export interface ButtonStyleConfig {
   fullWidth?: boolean;
   className?: string;
   icon?: boolean;
+  focus?: boolean;
 }
 
 export function getButtonClasses(config: ButtonStyleConfig = {}): string {
@@ -29,6 +30,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     fullWidth = false,
     className = "",
     icon = false,
+    focus = false,
   } = config;
 
   // Base classes for all buttons
@@ -79,12 +81,18 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     tab: "tab-button pill-nav-item",
   };
 
+  // Focus classes with dashed outline
+  const focusClasses = focus
+    ? "!outline !outline-2 !outline-dashed !outline-primary-500 !outline-offset-2 dark:!outline-primary-400"
+    : "";
+
   // Build the complete class string
   const buttonClasses = [
     baseClasses,
     sizeClasses[size] || sizeClasses.md,
     variantClasses[variant] || variantClasses.primary,
     fullWidth ? "w-full" : "",
+    focusClasses,
     className,
   ]
     .filter(Boolean)

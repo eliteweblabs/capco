@@ -13,7 +13,7 @@ if (currentUser) {
 
 <div
   id="cookie-banner"
-  class="hidden fixed bottom-0 left-0 right-0 z-50 translate-y-full transform bg-gray-50 antialiased transition-transform duration-300 ease-in-out dark:bg-gray-900"
+  class="hidden color-background fixed bottom-0 left-0 right-0 z-50 translate-y-full transform antialiased transition-transform duration-300 ease-in-out shadow-lg"
 >
   <div class="fixed -top-1 -right-1 z-50">
     <Button
@@ -46,16 +46,41 @@ if (currentUser) {
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:gap-2">
+      <div class="flex flex-col items-center justify-center gap-3">
         <!-- Manage Preferences Button -->
-        <Button id="manage-preferences-btn" variant="secondary" size="sm" class="hidden md:block">
-          Manage Preferences
-        </Button>
-
-        <!-- Reject All Button -->
 
         <!-- Accept All Button -->
-        <Button id="accept-all-btn" variant="primary" size="sm"> Accept All </Button>
+        <Button
+          id="accept-all-btn"
+          variant="outline"
+          size="sm"
+          icon="check"
+          iconPosition="right"
+          fullWidth={true}
+        >
+          Accept
+        </Button>
+
+        <!-- Decline All Button -->
+        <Button
+          id="decline-all-btn"
+          variant="primary"
+          size="sm"
+          icon="close"
+          iconPosition="right"
+          fullWidth={true}
+        >
+          Decline
+        </Button>
+        <Button
+          id="manage-preferences-btn"
+          variant="secondary"
+          size="sm"
+          class="hidden md:block"
+          fullWidth={true}
+        >
+          Preferences
+        </Button>
       </div>
     </div>
   </div>
@@ -163,7 +188,15 @@ if (currentUser) {
       class="flex items-center justify-between border-t border-gray-200 p-6 dark:border-gray-700"
     >
       <Button id="save-preferences-btn" variant="primary" size="sm"> Save Preferences </Button>
-      <Button id="accept-all-preferences-btn" variant="secondary" size="sm"> Accept All </Button>
+      <Button
+        id="accept-all-preferences-btn"
+        variant="secondary"
+        size="sm"
+        icon="check"
+        iconPosition="right"
+      >
+        Accept
+      </Button>
     </div>
   </div>
 </div>
@@ -175,6 +208,7 @@ if (currentUser) {
     const preferencesModal = document.getElementById("cookie-preferences-modal");
     const acceptAllBtn = document.getElementById("accept-all-btn");
     const rejectAllBtn = document.getElementById("reject-all-btn");
+    const declineAllBtn = document.getElementById("decline-all-btn");
     const managePreferencesBtn = document.getElementById("manage-preferences-btn");
     const closePreferencesModal = document.getElementById("close-preferences-modal");
     const savePreferencesBtn = document.getElementById("save-preferences-btn");
@@ -341,6 +375,8 @@ if (currentUser) {
     // Event Listeners
     acceptAllBtn?.addEventListener("click", acceptAllCookies);
     rejectAllBtn?.addEventListener("click", rejectAllCookies);
+    declineAllBtn?.addEventListener("click", rejectAllCookies);
+
     managePreferencesBtn?.addEventListener("click", () => {
       loadPreferencesIntoModal();
       showPreferencesModal();
@@ -348,7 +384,6 @@ if (currentUser) {
     closePreferencesModal?.addEventListener("click", hidePreferencesModal);
     savePreferencesBtn?.addEventListener("click", saveCustomPreferences);
     acceptAllPreferencesBtn?.addEventListener("click", acceptAllCookies);
-
     // Close modal when clicking outside
     preferencesModal?.addEventListener("click", (e: any | HTMLElement) => {
       if (e.target === preferencesModal) {

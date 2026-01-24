@@ -118,43 +118,50 @@ export const onRequest = defineMiddleware(
 
           // Check if admin client is available
           if (!supabaseAdmin) {
-            console.error("🔐 [MIDDLEWARE] supabaseAdmin is null - cannot create profile. Check SUPABASE_SECRET env var.");
+            console.error(
+              "🔐 [MIDDLEWARE] supabaseAdmin is null - cannot create profile. Check SUPABASE_SECRET env var."
+            );
             profile = { role: "Client" };
           } else {
             const metadata = data.user.user_metadata || {};
             console.log("🔐 [MIDDLEWARE] User metadata:", JSON.stringify(metadata, null, 2));
-            
+
             // Extract firstName (handle Google OAuth: given_name)
-            const firstName = 
-              metadata.firstName || 
-              metadata.first_name || 
-              metadata.given_name ||  // Google OAuth
+            const firstName =
+              metadata.firstName ||
+              metadata.first_name ||
+              metadata.given_name || // Google OAuth
               "";
-            
+
             // Extract lastName (handle Google OAuth: family_name)
-            const lastName = 
-              metadata.lastName || 
-              metadata.last_name || 
-              metadata.family_name ||  // Google OAuth
+            const lastName =
+              metadata.lastName ||
+              metadata.last_name ||
+              metadata.family_name || // Google OAuth
               "";
-            
+
             // Extract companyName (handle Google OAuth: name = full name)
             const companyName =
               metadata.companyName ||
               metadata.company_name ||
-              metadata.name ||  // Google OAuth full name
+              metadata.name || // Google OAuth full name
               metadata.full_name ||
               data.user.email?.split("@")[0] ||
               "Unknown Company";
-            
+
             // Extract avatarUrl (handle Google OAuth: picture)
             const avatarUrl =
               metadata.avatarUrl ||
               metadata.avatar_url ||
-              metadata.picture ||  // Google OAuth
+              metadata.picture || // Google OAuth
               null;
 
-            console.log("🔐 [MIDDLEWARE] Creating profile with:", { firstName, lastName, companyName, avatarUrl: !!avatarUrl });
+            console.log("🔐 [MIDDLEWARE] Creating profile with:", {
+              firstName,
+              lastName,
+              companyName,
+              avatarUrl: !!avatarUrl,
+            });
 
             // Use admin client to bypass RLS policies
             const { data: newProfile, error: createProfileError } = await supabaseAdmin
@@ -178,7 +185,11 @@ export const onRequest = defineMiddleware(
               // Continue with default role if profile creation fails
               profile = { role: "Client" };
             } else {
-              console.log("🔐 [MIDDLEWARE] ✅ Missing profile created successfully for:", data.user.email, newProfile);
+              console.log(
+                "🔐 [MIDDLEWARE] ✅ Missing profile created successfully for:",
+                data.user.email,
+                newProfile
+              );
               profile = { role: "Client" };
             }
           }
@@ -206,6 +217,12 @@ export const onRequest = defineMiddleware(
     }
 
     if (micromatch.isMatch(url.pathname, protectedAPIRoutes)) {
+      // Allow public access to featured projects endpoint
+      if (url.pathname === "/api/projects/get" && url.searchParams.get("featured") === "true") {
+        // Skip auth check for featured projects - handled in API route
+        return next();
+      }
+
       const accessToken = cookies.get("sb-access-token");
       const refreshToken = cookies.get("sb-refresh-token");
 
