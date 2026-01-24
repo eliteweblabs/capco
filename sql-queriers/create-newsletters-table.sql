@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS newsletters (
   -- Status & scheduling
   isActive BOOLEAN DEFAULT true,
   isDraft BOOLEAN DEFAULT true, -- True = draft, False = can be sent
+  scheduledFor TIMESTAMP WITH TIME ZONE, -- When to send (NULL = send immediately)
+  isScheduled BOOLEAN DEFAULT false, -- True if scheduled for future send
   
   -- Delivery options
   deliverViaEmail BOOLEAN DEFAULT true,
@@ -26,9 +28,10 @@ CREATE TABLE IF NOT EXISTS newsletters (
   sentCount INTEGER DEFAULT 0
 );
 
--- Create index for faster queries
+-- Create indexes for faster queries
 CREATE INDEX IF NOT EXISTS idx_newsletters_active ON newsletters(isActive);
 CREATE INDEX IF NOT EXISTS idx_newsletters_recipient_type ON newsletters(recipientType);
+CREATE INDEX IF NOT EXISTS idx_newsletters_scheduled ON newsletters(isScheduled, scheduledFor) WHERE isScheduled = true;
 
 -- Enable RLS
 ALTER TABLE newsletters ENABLE ROW LEVEL SECURITY;

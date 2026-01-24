@@ -146,7 +146,7 @@ export async function applyProjectTemplates(
 
         const { error: insertError } = await supabaseAdmin.from("punchlist").insert({
           projectId: projectId,
-          authorId: "bdaaa7d3-469d-4b1b-90d1-978e1be47a17", // System/admin user
+          authorId: "ca78589d-a9b6-4b98-a137-a1facaeb7a2c", // Admin user
           message: processedMessage,
           internal: template.internal || false,
           markCompleted: template.markCompleted || false,
@@ -173,7 +173,7 @@ export async function applyProjectTemplates(
 
         const { error: insertError } = await supabaseAdmin.from("discussion").insert({
           projectId: projectId,
-          authorId: "bdaaa7d3-469d-4b1b-90d1-978e1be47a17", // System/admin user
+          authorId: "ca78589d-a9b6-4b98-a137-a1facaeb7a2c", // Admin user
           message: processedMessage,
           internal: template.internal || false,
           markCompleted: template.markCompleted || false,

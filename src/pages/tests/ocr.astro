@@ -1,7 +1,10 @@
 ---
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 import Button from "../../components/common/Button.astro";
-// import { supabase } from "../lib/supabaseClient";
+
+// Get environment variables for client-side use
+const PUBLIC_SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 ---
 
 <!-- <div class="rounded-lg bg-white p-8 shadow-lg color-background"> --><!-- <h2 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">
@@ -120,14 +123,19 @@ import Button from "../../components/common/Button.astro";
 <script src="../public/js/pdf.worker.min.js" defer is:inline></script>
 <script src="../public/js/pdf.min.js" defer is:inline></script>
 
-<script type="module" is:inline>
+<script type="module" is:inline define:vars={{ PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY }}>
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
   class PDFMetaExtractor {
     constructor() {
-      this.supabaseUrl = "https://qudlxlryegnainztkrtk.supabase.co";
-      this.supabaseAnonKey =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1ZGx4bHJ5ZWduYWluenRrcnRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2MzUwMTMsImV4cCI6MjA2ODIxMTAxM30.pAWMWGUCK48Lujssi3Ip4GUm11TZDmaNCINqX3q2m5o";
+      // Use environment variables passed from Astro
+      this.supabaseUrl = PUBLIC_SUPABASE_URL;
+      this.supabaseAnonKey = PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!this.supabaseUrl || !this.supabaseAnonKey) {
+        console.error('❌ Missing Supabase configuration');
+        return;
+      }
 
       this.supabase = createClient(this.supabaseUrl, this.supabaseAnonKey);
       this.pdfjsLib = window.pdfjsLib;

@@ -10,17 +10,20 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { currentUser } = await checkAuth(cookies);
+    const { id, isScheduled } = await request.json();
 
-    // Check if user is admin
-    if (!currentUser || currentUser.profile?.role !== "Admin") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+    // If called from scheduler, skip auth check
+    if (!isScheduled) {
+      const { currentUser } = await checkAuth(cookies);
+
+      // Check if user is admin
+      if (!currentUser || currentUser.profile?.role !== "Admin") {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
     }
-
-    const { id } = await request.json();
 
     if (!id) {
       return new Response(JSON.stringify({ error: "Newsletter ID is required" }), {
@@ -80,16 +83,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     } else if (newsletter.recipientType === "all") {
       // All users
-      const { data: users, error: usersError } = await supabaseAdmin
-        .from("profiles")
-        .select("*");
+      const { data: users, error: usersError } = await supabaseAdmin.from("profiles").select("*");
 
       if (!usersError && users) {
         recipients = users;
       }
     } else {
       // Filter by role (staff, client, admin)
-      const role = newsletter.recipientType.charAt(0).toUpperCase() + newsletter.recipientType.slice(1);
+      const role =
+        newsletter.recipientType.charAt(0).toUpperCase() + newsletter.recipientType.slice(1);
       const { data: users, error: usersError } = await supabaseAdmin
         .from("profiles")
         .select("*")
@@ -146,7 +148,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           if (!response.ok) {
             const errorText = await response.text();
-            console.error(`📧 [NEWSLETTER-SEND] Failed to send email to ${recipient.email}:`, errorText);
+            console.error(
+              `📧 [NEWSLETTER-SEND] Failed to send email to ${recipient.email}:`,
+              errorText
+            );
             failureCount++;
             errors.push({ recipient: recipient.email, error: errorText });
           } else {
@@ -194,14 +199,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Update newsletter stats
-    await supabaseAdmin
-      .from("newsletters")
-      .update({
-        lastSentAt: new Date().toISOString(),
-        sentCount: (newsletter.sentCount || 0) + successCount,
-      })
-      .eq("id", id);
+    // Update newsletter stats and clear scheduling if it was scheduled
+    const updateData: any = {
+      lastSentAt: new Date().toISOString(),
+      sentCount: (newsletter.sentCount || 0) + successCount,
+    };
+
+    // If this was a scheduled send, mark as no longer scheduled
+    if (newsletter.isScheduled) {
+      updateData.isScheduled = false;
+    }
+
+    await supabaseAdmin.from("newsletters").update(updateData).eq("id", id);
 
     return new Response(
       JSON.stringify({
