@@ -19,7 +19,7 @@ if (!currentUser || currentRole === "Client") {
 <div
   id="notificationsModal"
   tabindex="-1"
-  class="backdrop-blur-lg animate-fade-in fixed inset-0 z-50 hidden transform items-center justify-center transition-all duration-300 ease-in-out"
+  class="backdrop-blur-lg animate-fade-in fixed inset-0 z-50 hidden flex transform items-center justify-center transition-all duration-300 ease-in-out"
   aria-hidden="true"
 >
   <div
@@ -38,7 +38,7 @@ if (!currentUser || currentRole === "Client") {
         />
       </div>
       <!-- Modal Content -->
-      <div class="p-3 md:p-4 lg:p-6">
+      <div class="p-3 md:p-4 lg:p-6 pb-16">
         <!-- Modal body -->
         <div
           class="align-center flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -165,22 +165,33 @@ if (!currentUser || currentRole === "Client") {
 
     openDropdown() {
       const modal = document.getElementById("notificationsModal");
+      console.log("🔍🔍🔍 [NOTIFICATIONS DEBUG] openDropdown called");
+      console.log("🔍 [NOTIFICATIONS DEBUG] Modal element:", modal);
+      console.log("🔍 [NOTIFICATIONS DEBUG] Modal classes before:", modal?.className);
+      
       if (modal) {
-        console.log("🔍 [NOTIFICATIONS] Opening modal");
+        console.log("✅ [NOTIFICATIONS] Modal found, opening...");
         modal.classList.remove("hidden");
         this.isOpen = true;
         this.loadNotifications(); // Refresh notifications when opening
+        console.log("✅ [NOTIFICATIONS] Modal opened successfully");
+        console.log("🔍 [NOTIFICATIONS DEBUG] Modal classes after:", modal.className);
         console.log("🔍 [NOTIFICATIONS] Modal opened, isOpen:", this.isOpen);
+      } else {
+        console.error("❌ [NOTIFICATIONS DEBUG] Modal element not found!");
       }
     }
 
     closeDropdown() {
       const modal = document.getElementById("notificationsModal");
+      console.log("🔍 [NOTIFICATIONS DEBUG] closeDropdown called");
+      
       if (modal) {
         console.log("🔍 [NOTIFICATIONS] Closing modal");
         modal.classList.add("hidden");
         this.isOpen = false;
         this.markViewedNotificationsAsRead();
+        console.log("✅ [NOTIFICATIONS] Modal closed");
       }
     }
 
@@ -682,6 +693,61 @@ if (!currentUser || currentRole === "Client") {
     );
     notificationManager.confirmDeleteNotification(notificationId);
   };
+
+  // Manual click handler for notification bell button
+  // This ensures the button works even if Flowbite modal initialization fails
+  console.log('🔔 [NOTIFICATIONS DEBUG] Setting up notification bell click handler');
+  
+  function setupNotificationBell() {
+    console.log('🔔 [NOTIFICATIONS DEBUG] setupNotificationBell called');
+    const notificationBell = document.getElementById('notification-bell');
+    const modal = document.getElementById('notificationsModal');
+    
+    console.log('🔔 [NOTIFICATIONS DEBUG] Bell element:', notificationBell);
+    console.log('🔔 [NOTIFICATIONS DEBUG] Modal element:', modal);
+    
+    if (notificationBell) {
+      console.log('✅ [NOTIFICATIONS DEBUG] Bell button found, adding click listener');
+      
+      // Remove any existing click listeners by cloning the element
+      const newBell = notificationBell.cloneNode(true) as HTMLElement;
+      notificationBell.parentNode?.replaceChild(newBell, notificationBell);
+      
+      newBell.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🔔🔔🔔 [NOTIFICATIONS] Bell clicked!');
+        console.log('🔔 [NOTIFICATIONS DEBUG] Event:', e);
+        console.log('🔔 [NOTIFICATIONS DEBUG] Opening modal...');
+        notificationManager.openDropdown();
+      });
+      
+      console.log('✅ [NOTIFICATIONS DEBUG] Click listener added successfully');
+    } else {
+      console.error('❌ [NOTIFICATIONS DEBUG] Bell button NOT found!');
+      console.log('🔔 [NOTIFICATIONS DEBUG] All elements with id containing "notification":', 
+        Array.from(document.querySelectorAll('[id*="notification"]')).map(el => ({
+          id: el.id,
+          tag: el.tagName
+        }))
+      );
+    }
+  }
+  
+  // Try multiple times to ensure DOM is ready
+  if (document.readyState === 'loading') {
+    console.log('🔔 [NOTIFICATIONS DEBUG] DOM still loading, waiting for DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', setupNotificationBell);
+  } else {
+    console.log('🔔 [NOTIFICATIONS DEBUG] DOM already loaded, setting up immediately');
+    setupNotificationBell();
+  }
+  
+  // Also try after a short delay in case elements are added dynamically
+  setTimeout(() => {
+    console.log('🔔 [NOTIFICATIONS DEBUG] Delayed setup attempt');
+    setupNotificationBell();
+  }, 1000);
 </script>
 
 <style>

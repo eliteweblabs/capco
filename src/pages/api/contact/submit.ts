@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@supabase/supabase-js";
 import { globalCompanyData } from "../global/global-company-data";
+import { SMS_UTILS } from "../../../lib/sms-utils";
 
 /**
  * Contact Form Submission Handler
@@ -20,10 +21,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const lastName = formData.get("lastName") as string;
     const email = formData.get("email") as string;
     const phone = formData.get("phone") as string;
-    const smsConsent = formData.get("smsConsent") === "true";
+    const smsAlerts = formData.get("smsAlerts") === "true";
+    const mobileCarrierRaw = formData.get("mobileCarrier") as string;
     const company = formData.get("company") as string;
-    const address = formData.get("contact-address") as string;
+    const address = formData.get("address") as string;
     const message = formData.get("message") as string;
+
+    // Convert mobile carrier ID to gateway domain (same as RegisterForm)
+    let mobileCarrier: string | null = null;
+    if (smsAlerts && mobileCarrierRaw) {
+      const carrierInfo = SMS_UTILS.getCarrierInfo(mobileCarrierRaw);
+      if (carrierInfo) {
+        mobileCarrier = `@${carrierInfo.gateway}`;
+      } else if (mobileCarrierRaw.startsWith("@")) {
+        // Already a gateway domain
+        mobileCarrier = mobileCarrierRaw;
+      }
+    }
 
     // Validate required fields
     if (!firstName || !lastName || !email || !message) {
@@ -63,7 +77,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let userId: string | null = null;
     const { data: existingProfile } = await supabase
       .from("profiles")
-      .select("id, name, phone, companyName, smsConsent")
+      .select("id, name, phone, companyName, smsAlerts, mobileCarrier")
       .eq("email", email)
       .single();
 
@@ -81,8 +95,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (company && company !== existingProfile.companyName) {
         updates.companyName = company;
       }
-      if (smsConsent !== existingProfile.smsConsent) {
-        updates.smsConsent = smsConsent;
+      if (smsAlerts !== existingProfile.smsAlerts) {
+        updates.smsAlerts = smsAlerts;
+      }
+      if (mobileCarrier && mobileCarrier !== existingProfile.mobileCarrier) {
+        updates.mobileCarrier = mobileCarrier;
       }
 
       if (Object.keys(updates).length > 0) {
@@ -106,7 +123,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           email: email,
           phone: phone || null,
           companyName: company || null,
-          smsConsent: smsConsent,
+          smsAlerts: smsAlerts,
+          mobileCarrier: smsAlerts ? mobileCarrier : null,
           role: "Client",
           createdAt: new Date().toISOString(),
         })
@@ -130,7 +148,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         lastName: lastName,
         email: email,
         phone: phone || null,
-        smsConsent: smsConsent,
+        smsAlerts: smsAlerts,
+        mobileCarrier: smsAlerts ? mobileCarrier : null,
         company: company || null,
         address: address || null,
         message: message,
@@ -154,7 +173,8 @@ CREATE TABLE "contactSubmissions" (
   "lastName" TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,
-  "smsConsent" BOOLEAN DEFAULT false,
+  "smsAlerts" BOOLEAN DEFAULT false,
+  "mobileCarrier" TEXT,
   company TEXT,
   address TEXT,
   message TEXT NOT NULL,
@@ -237,6 +257,16 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
 
         // Email content for admins
         const adminSubject = `🔔 New Contact Form Submission - ${firstName} ${lastName}`;
+        
+        // Get friendly carrier name for display
+        let carrierDisplayName = mobileCarrier;
+        if (mobileCarrier && mobileCarrierRaw) {
+          const carrierInfo = SMS_UTILS.getCarrierInfo(mobileCarrierRaw);
+          if (carrierInfo) {
+            carrierDisplayName = carrierInfo.name;
+          }
+        }
+        
         const adminHtml = `
           <!DOCTYPE html>
           <html>
@@ -267,7 +297,8 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
                   <a href="mailto:${email}">${email}</a>
                 </div>
                 ${phone ? `<div class="field"><div class="label">Phone:</div><a href="tel:${phone}">${phone}</a></div>` : ""}
-                ${smsConsent ? `<div class="field"><div class="label">SMS Consent:</div>✅ Yes (Updates only, no marketing)</div>` : ""}
+                ${smsAlerts ? `<div class="field"><div class="label">SMS Alerts:</div>✅ Yes (Updates only, no marketing)</div>` : ""}
+                ${smsAlerts && carrierDisplayName ? `<div class="field"><div class="label">Mobile Carrier:</div>${carrierDisplayName}</div>` : ""}
                 ${company ? `<div class="field"><div class="label">Company:</div>${company}</div>` : ""}
                 ${address ? `<div class="field"><div class="label">Address:</div>${address}</div>` : ""}
                 <div class="field">

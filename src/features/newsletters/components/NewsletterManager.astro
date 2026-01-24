@@ -1,0 +1,717 @@
+---
+/**
+ * Newsletter Management Component
+ * Admin-only component for creating and sending newsletters via email/SMS
+ * Auto-detects missing table and provides setup instructions
+ */
+import Button from "../../../components/common/Button.astro";
+import DeleteConfirmButton from "../../../components/common/DeleteConfirmButton.astro";
+import SimpleIcon from "../../../components/common/SimpleIcon.astro";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
+
+import { globalClasses } from "../../../pages/api/global/global-classes";
+const { globalInputClasses } = globalClasses();
+
+// Get all newsletters with error handling
+let newsletters: any[] = [];
+let tableExists = true;
+
+if (supabaseAdmin) {
+  const { data, error } = await supabaseAdmin
+    .from("newsletters")
+    .select("*")
+    .order("createdAt", { ascending: false });
+
+  if (error) {
+    if (error.code === "42P01") {
+      console.error("[NEWSLETTER] ❌ Table 'newsletters' does not exist!");
+      console.error("[NEWSLETTER] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:");
+      console.error(`
+CREATE TABLE newsletters (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  content TEXT NOT NULL,
+  "recipientType" TEXT NOT NULL DEFAULT 'all',
+  "customRecipients" TEXT[],
+  "isActive" BOOLEAN DEFAULT true,
+  "isDraft" BOOLEAN DEFAULT true,
+  "deliverViaEmail" BOOLEAN DEFAULT true,
+  "deliverViaSms" BOOLEAN DEFAULT false,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "lastSentAt" TIMESTAMP WITH TIME ZONE,
+  "sentCount" INTEGER DEFAULT 0
+);
+
+-- Enable RLS
+ALTER TABLE newsletters ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Only admins can manage newsletters
+CREATE POLICY "Admins can manage newsletters"
+  ON newsletters
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'Admin'
+    )
+  );
+
+-- Add indexes for better performance
+CREATE INDEX idx_newsletters_active ON newsletters("isActive");
+CREATE INDEX idx_newsletters_recipient_type ON newsletters("recipientType");
+CREATE INDEX idx_newsletters_created_at ON newsletters("createdAt" DESC);
+      `);
+      tableExists = false;
+    } else {
+      console.error("[NEWSLETTER] Error fetching newsletters:", error);
+    }
+  } else {
+    newsletters = data || [];
+  }
+}
+
+// Recipient type options
+const recipientTypeOptions = [
+  { value: "all", label: "All Users", icon: "group" },
+  { value: "staff", label: "Staff Only", icon: "briefcase" },
+  { value: "client", label: "Clients Only", icon: "user" },
+  { value: "admin", label: "Admins Only", icon: "shield" },
+  { value: "custom", label: "Custom Selection", icon: "user-check" },
+];
+---
+
+{
+  !tableExists && (
+    <div class="mb-8 rounded-lg border-2 border-red-300 bg-red-50 p-6 dark:border-red-700 dark:bg-red-900/20">
+      <div class="flex items-start gap-4">
+        <SimpleIcon name="error" class="mt-1 text-3xl text-red-600 dark:text-red-400" />
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-red-800 dark:text-red-300">
+            Database Setup Required
+          </h3>
+          <p class="mt-2 text-sm text-red-700 dark:text-red-400">
+            The newsletters table doesn't exist yet. Please run the SQL setup script to create it.
+          </p>
+          <div class="mt-4 rounded bg-red-100 p-4 dark:bg-red-900/40">
+            <p class="mb-2 text-xs font-medium text-red-800 dark:text-red-300">
+              Option 1: Run SQL file (recommended)
+            </p>
+            <code class="block text-xs text-red-700 dark:text-red-400">
+              psql -d your_database &lt; sql-queriers/create-newsletters-table.sql
+            </code>
+            <p class="mb-2 mt-4 text-xs font-medium text-red-800 dark:text-red-300">
+              Option 2: Check server logs
+            </p>
+            <p class="text-xs text-red-700 dark:text-red-400">
+              Full SQL commands are logged in the server console for copy/paste into Supabase SQL Editor.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+<!-- Create/Edit Form -->
+<div class="mb-8 rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700">
+  <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+    <h2 id="form-title" class="text-lg font-medium text-gray-900 dark:text-white">
+      Create New Newsletter
+    </h2>
+  </div>
+
+  <form id="newsletter-form" class="space-y-6 p-6">
+    <input type="hidden" id="newsletter-id" name="id" />
+
+    <!-- Title (Admin Reference) -->
+    <div>
+      <label for="title" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Title (Admin Reference) *
+      </label>
+      <input
+        type="text"
+        id="title"
+        name="title"
+        required
+        class={globalInputClasses}
+        placeholder="e.g., Monthly Update - January 2026"
+      />
+    </div>
+
+    <!-- Subject Line -->
+    <div>
+      <label for="subject" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Email Subject Line *
+      </label>
+      <input
+        type="text"
+        id="subject"
+        name="subject"
+        required
+        class={globalInputClasses}
+        placeholder="What users will see in their inbox"
+      />
+    </div>
+
+    <!-- Content -->
+    <div>
+      <label for="content" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Content * (HTML supported)
+      </label>
+      <textarea
+        id="content"
+        name="content"
+        rows="8"
+        required
+        class={`${globalInputClasses} font-mono text-sm`}
+        placeholder="Newsletter content... HTML is supported for emails, will be converted to plain text for SMS"
+      ></textarea>
+    </div>
+
+    <!-- Recipient Type -->
+    <div>
+      <label
+        for="recipientType"
+        class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        Send To
+      </label>
+      <select id="recipientType" name="recipientType" class={globalInputClasses}>
+        {
+          recipientTypeOptions.map((opt) => (
+            <option value={opt.value}>
+              {opt.label}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    <!-- Custom Recipients (shown when recipientType = custom) -->
+    <div id="custom-recipients-section" class="hidden">
+      <label
+        for="custom-recipients-search"
+        class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        Select Recipients
+      </label>
+      <div class="mb-2">
+        <input
+          type="text"
+          id="custom-recipients-search"
+          placeholder="Search users by name, email, or company..."
+          class={globalInputClasses}
+        />
+      </div>
+      <div
+        id="custom-recipients-list"
+        class="max-h-60 space-y-2 overflow-y-auto rounded-md border border-gray-300 bg-white p-3 dark:border-gray-600 dark:bg-gray-700"
+      >
+        <p class="text-sm text-gray-500 dark:text-gray-400">Loading users...</p>
+      </div>
+      <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+        <span id="selected-count">0</span> recipient(s) selected
+      </p>
+    </div>
+
+    <!-- Delivery Options -->
+    <div class="flex flex-wrap gap-6">
+      <label class="inline-flex cursor-pointer items-center">
+        <input type="checkbox" id="deliverViaEmail" name="deliverViaEmail" checked class="peer sr-only" />
+        <div
+          class="peer relative h-6 w-11 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full"
+        >
+        </div>
+        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Send via Email</span>
+      </label>
+
+      <label class="inline-flex cursor-pointer items-center">
+        <input type="checkbox" id="deliverViaSms" name="deliverViaSms" class="peer sr-only" />
+        <div
+          class="peer relative h-6 w-11 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full"
+        >
+        </div>
+        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300"
+          >Send via SMS (if available)</span
+        >
+      </label>
+    </div>
+
+    <!-- Status Toggles -->
+    <div class="flex flex-wrap gap-6">
+      <label class="inline-flex cursor-pointer items-center">
+        <input type="checkbox" id="isDraft" name="isDraft" checked class="peer sr-only" />
+        <div
+          class="peer relative h-6 w-11 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-orange-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-orange-800 rtl:peer-checked:after:-translate-x-full"
+        >
+        </div>
+        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300"
+          >Draft Mode (must be OFF to send)</span
+        >
+      </label>
+
+      <label class="inline-flex cursor-pointer items-center">
+        <input type="checkbox" id="isActive" name="isActive" checked class="peer sr-only" />
+        <div
+          class="peer relative h-6 w-11 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-green-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-green-800 rtl:peer-checked:after:-translate-x-full"
+        >
+        </div>
+        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Active</span>
+      </label>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-3">
+      <Button
+        id="cancel-btn"
+        type="button"
+        variant="outline"
+        size="md"
+        class="hidden"
+      >
+        Cancel
+      </Button>
+      <Button
+        id="submit-btn"
+        type="submit"
+        variant="primary"
+        size="md"
+        icon="save"
+        iconPosition="right"
+      >
+        Create Newsletter
+      </Button>
+    </div>
+  </form>
+</div>
+
+<!-- Existing Newsletters -->
+<div class="rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700">
+  <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+    <h2 class="text-lg font-medium text-gray-900 dark:text-white">Existing Newsletters</h2>
+  </div>
+  <div id="newsletters-list" class="p-6">
+    {
+      newsletters.length > 0 ? (
+        <div class="space-y-4">
+          {newsletters.map((newsletter) => (
+            <div
+              class={`rounded-lg border p-4 ${newsletter.isDraft ? "border-orange-300 bg-orange-50 dark:border-orange-700 dark:bg-orange-900/20" : newsletter.isActive ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20" : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/50"}`}
+              data-newsletter-item={newsletter.id}
+            >
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-base font-medium text-gray-900 dark:text-white">
+                      {newsletter.title}
+                    </h3>
+                    {newsletter.isDraft && (
+                      <span class="inline-flex items-center rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
+                        Draft
+                      </span>
+                    )}
+                    {!newsletter.isActive && (
+                      <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  <p class="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Subject: {newsletter.subject}
+                  </p>
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Recipients: {newsletter.recipientType}
+                    {newsletter.customRecipients?.length > 0 && (
+                      <span> ({newsletter.customRecipients.length} selected)</span>
+                    )}
+                  </p>
+                  <div class="mt-2 flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+                    <span>Created: {new Date(newsletter.createdAt).toLocaleDateString()}</span>
+                    {newsletter.lastSentAt && (
+                      <span>Last Sent: {new Date(newsletter.lastSentAt).toLocaleDateString()}</span>
+                    )}
+                    <span>Sent: {newsletter.sentCount || 0}x</span>
+                  </div>
+                </div>
+                <div class="flex flex-shrink-0 gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    icon="edit"
+                    class="edit-newsletter-btn"
+                    data-newsletter={JSON.stringify(newsletter)}
+                  >
+                    Edit
+                  </Button>
+                  {!newsletter.isDraft && newsletter.isActive && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      icon="send"
+                      class="send-newsletter-btn"
+                      data-id={newsletter.id}
+                      data-title={newsletter.title}
+                    >
+                      Send
+                    </Button>
+                  )}
+                  <DeleteConfirmButton
+                    id={`delete-newsletter-${newsletter.id}`}
+                    variant="button"
+                    size="sm"
+                    label="Delete"
+                    class="delete-newsletter-btn"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p class="text-gray-500 dark:text-gray-400">
+          {tableExists
+            ? "No newsletters created yet. Create your first newsletter above!"
+            : "Please complete database setup to start creating newsletters."}
+        </p>
+      )
+    }
+  </div>
+</div>
+
+<script>
+  // Newsletter Management Client-Side Logic
+  (function () {
+    let editingId: number | null = null;
+    let allUsers: any[] = [];
+    let selectedUserIds = new Set<string>();
+
+    function init() {
+      console.log("📧 [NEWSLETTER] Initializing...");
+      bindFormEvents();
+      bindListEvents();
+      loadAllUsers();
+    }
+
+    function bindFormEvents() {
+      const form = document.getElementById("newsletter-form");
+      if (!form) return;
+
+      form.addEventListener("submit", handleSubmit);
+
+      // Recipient type change
+      const recipientTypeSelect = document.getElementById("recipientType");
+      if (recipientTypeSelect) {
+        recipientTypeSelect.addEventListener("change", handleRecipientTypeChange);
+      }
+
+      // Custom recipients search
+      const searchInput = document.getElementById("custom-recipients-search");
+      if (searchInput) {
+        searchInput.addEventListener("input", handleRecipientSearch as EventListener);
+      }
+
+      // Cancel button
+      const cancelBtn = document.getElementById("cancel-btn");
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", resetForm);
+      }
+    }
+
+    function bindListEvents() {
+      const newslettersList = document.getElementById("newsletters-list");
+      if (newslettersList) {
+        newslettersList.addEventListener("click", function (e) {
+          const target = e.target as HTMLElement;
+          const editBtn = target.closest(".edit-newsletter-btn");
+          const sendBtn = target.closest(".send-newsletter-btn");
+
+          if (editBtn) {
+            const newsletter = JSON.parse((editBtn as HTMLElement).dataset.newsletter || "{}");
+            editNewsletter(newsletter);
+          }
+
+          if (sendBtn) {
+            const id = parseInt((sendBtn as HTMLElement).dataset.id || "0");
+            const title = (sendBtn as HTMLElement).dataset.title || "";
+            sendNewsletter(id, title);
+          }
+        });
+
+        // Listen for delete confirmation events
+        newslettersList.addEventListener("deleteConfirmed", function (e) {
+          const deleteBtn = (e.target as HTMLElement).closest(".delete-newsletter-btn");
+          if (deleteBtn) {
+            const buttonId = (deleteBtn as HTMLElement).id;
+            const match = buttonId.match(/delete-newsletter-(\d+)/);
+            if (match) {
+              const id = parseInt(match[1], 10);
+              deleteNewsletter(id);
+            }
+          }
+        });
+      }
+    }
+
+    function handleRecipientTypeChange() {
+      const recipientType = (document.getElementById("recipientType") as HTMLSelectElement).value;
+      const customSection = document.getElementById("custom-recipients-section");
+
+      if (recipientType === "custom") {
+        customSection?.classList.remove("hidden");
+        renderUserList(allUsers);
+      } else {
+        customSection?.classList.add("hidden");
+      }
+    }
+
+    async function loadAllUsers() {
+      try {
+        const response = await fetch("/api/users/get?role=Admin,Staff,Client&limit=100");
+        const result = await response.json();
+
+        if (result.data) {
+          allUsers = result.data;
+          console.log("📧 [NEWSLETTER] Loaded users:", allUsers.length);
+        }
+      } catch (error) {
+        console.error("❌ [NEWSLETTER] Error loading users:", error);
+      }
+    }
+
+    function handleRecipientSearch(e: Event) {
+      const query = (e.target as HTMLInputElement).value.toLowerCase();
+      const filtered = allUsers.filter(function (user: any) {
+        const name = `${user.firstName || ""} ${user.lastName || ""}`.toLowerCase();
+        const email = (user.email || "").toLowerCase();
+        const company = (user.companyName || "").toLowerCase();
+        return name.includes(query) || email.includes(query) || company.includes(query);
+      });
+      renderUserList(filtered);
+    }
+
+    function renderUserList(users: any[]) {
+      const listContainer = document.getElementById("custom-recipients-list");
+      if (!listContainer) return;
+
+      if (users.length === 0) {
+        listContainer.innerHTML =
+          '<p class="text-sm text-gray-500 dark:text-gray-400">No users found</p>';
+        return;
+      }
+
+      listContainer.innerHTML = users
+        .map(function (user) {
+          const isSelected = selectedUserIds.has(user.id);
+          const name = `${user.firstName || ""} ${user.lastName || ""}`;
+          const company = user.companyName || "";
+          const email = user.email || "";
+
+          return `<label class="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+            <input type="checkbox" class="user-checkbox rounded" data-user-id="${user.id}" ${isSelected ? "checked" : ""} />
+            <div class="flex-1 text-sm">
+              <div class="font-medium text-gray-900 dark:text-white">
+                ${name}${company ? ` <span class="text-gray-500">(${company})</span>` : ""}
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">${email}</div>
+            </div>
+          </label>`;
+        })
+        .join("");
+
+      // Bind checkbox events
+      const checkboxes = listContainer.querySelectorAll(".user-checkbox");
+      checkboxes.forEach(function (checkbox) {
+        checkbox.addEventListener("change", function (e) {
+          const userId = (e.target as HTMLInputElement).dataset.userId!;
+          if ((e.target as HTMLInputElement).checked) {
+            selectedUserIds.add(userId);
+          } else {
+            selectedUserIds.delete(userId);
+          }
+          updateSelectedCount();
+        });
+      });
+    }
+
+    function updateSelectedCount() {
+      const countEl = document.getElementById("selected-count");
+      if (countEl) {
+        countEl.textContent = selectedUserIds.size.toString();
+      }
+    }
+
+    function editNewsletter(newsletter: any) {
+      editingId = newsletter.id;
+
+      // Update form values
+      (document.getElementById("newsletter-id") as HTMLInputElement).value = newsletter.id;
+      (document.getElementById("title") as HTMLInputElement).value = newsletter.title || "";
+      (document.getElementById("subject") as HTMLInputElement).value = newsletter.subject || "";
+      (document.getElementById("content") as HTMLTextAreaElement).value = newsletter.content || "";
+      (document.getElementById("recipientType") as HTMLSelectElement).value =
+        newsletter.recipientType || "all";
+      (document.getElementById("deliverViaEmail") as HTMLInputElement).checked =
+        newsletter.deliverViaEmail !== false;
+      (document.getElementById("deliverViaSms") as HTMLInputElement).checked =
+        newsletter.deliverViaSms === true;
+      (document.getElementById("isDraft") as HTMLInputElement).checked =
+        newsletter.isDraft !== false;
+      (document.getElementById("isActive") as HTMLInputElement).checked =
+        newsletter.isActive !== false;
+
+      // Handle custom recipients
+      if (newsletter.recipientType === "custom" && newsletter.customRecipients) {
+        selectedUserIds = new Set(newsletter.customRecipients);
+        handleRecipientTypeChange();
+      }
+
+      // Update UI
+      document.getElementById("form-title")!.textContent = "Edit Newsletter";
+      document.getElementById("submit-btn")!.textContent = "Update Newsletter";
+      document.getElementById("cancel-btn")!.classList.remove("hidden");
+
+      // Scroll to form
+      document.getElementById("newsletter-form")!.scrollIntoView({ behavior: "smooth" });
+    }
+
+    function resetForm() {
+      editingId = null;
+      selectedUserIds.clear();
+      (document.getElementById("newsletter-form") as HTMLFormElement).reset();
+      (document.getElementById("newsletter-id") as HTMLInputElement).value = "";
+      document.getElementById("form-title")!.textContent = "Create New Newsletter";
+      document.getElementById("submit-btn")!.textContent = "Create Newsletter";
+      document.getElementById("cancel-btn")!.classList.add("hidden");
+      document.getElementById("custom-recipients-section")!.classList.add("hidden");
+      updateSelectedCount();
+    }
+
+    async function handleSubmit(e: Event) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById("submit-btn");
+      const originalText = submitBtn?.textContent;
+
+      try {
+        if (submitBtn) {
+          (submitBtn as HTMLButtonElement).disabled = true;
+          submitBtn.textContent = "Saving...";
+        }
+
+        const form = document.getElementById("newsletter-form") as HTMLFormElement;
+        const formData = new FormData(form);
+
+        const data = {
+          id: editingId || undefined,
+          title: formData.get("title"),
+          subject: formData.get("subject"),
+          content: formData.get("content"),
+          recipientType: formData.get("recipientType"),
+          customRecipients: Array.from(selectedUserIds),
+          deliverViaEmail: (document.getElementById("deliverViaEmail") as HTMLInputElement).checked,
+          deliverViaSms: (document.getElementById("deliverViaSms") as HTMLInputElement).checked,
+          isDraft: (document.getElementById("isDraft") as HTMLInputElement).checked,
+          isActive: (document.getElementById("isActive") as HTMLInputElement).checked,
+        };
+
+        const response = await fetch("/api/newsletters/upsert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          if ((window as any).showModal) (window as any).showModal("success", result.message);
+          setTimeout(function () {
+            window.location.reload();
+          }, 1000);
+        } else {
+          if ((window as any).showModal)
+            (window as any).showModal("error", result.error || "Failed to save newsletter");
+        }
+      } catch (error) {
+        console.error("Error saving newsletter:", error);
+        if ((window as any).showModal) (window as any).showModal("error", "Error saving newsletter");
+      } finally {
+        if (submitBtn) {
+          (submitBtn as HTMLButtonElement).disabled = false;
+          submitBtn.textContent = originalText || "Save";
+        }
+      }
+    }
+
+    async function sendNewsletter(id: number, title: string) {
+      if (!confirm(`Are you sure you want to send "${title}" now? This cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/newsletters/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id: id }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          if ((window as any).showModal)
+            (window as any).showModal(
+              "success",
+              result.message + (result.failureCount > 0 ? ` (${result.failureCount} failed)` : "")
+            );
+          setTimeout(function () {
+            window.location.reload();
+          }, 2000);
+        } else {
+          if ((window as any).showModal)
+            (window as any).showModal("error", result.error || "Failed to send newsletter");
+        }
+      } catch (error) {
+        console.error("Error sending newsletter:", error);
+        if ((window as any).showModal) (window as any).showModal("error", "Error sending newsletter");
+      }
+    }
+
+    async function deleteNewsletter(id: number) {
+      try {
+        const response = await fetch("/api/newsletters/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id: id }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          if ((window as any).showModal) (window as any).showModal("success", "Newsletter deleted");
+          const item = document.querySelector(`[data-newsletter-item="${id}"]`);
+          if (item) item.remove();
+        } else {
+          if ((window as any).showModal)
+            (window as any).showModal("error", result.error || "Failed to delete newsletter");
+        }
+      } catch (error) {
+        console.error("Error deleting newsletter:", error);
+        if ((window as any).showModal) (window as any).showModal("error", "Error deleting newsletter");
+      }
+    }
+
+    // Initialize
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
+  })();
+</script>
