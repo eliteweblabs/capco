@@ -51,7 +51,7 @@ if (!self.__WB_pmw) {
     UI = new UIClass(),
     Commerce = new ECommerce({
       domain: "configurable.myshopify.com",
-      storefrontAccessToken: "7495fe58aa6bd9c326c906198462fa9c",
+      storefrontAccessToken: "REPLACE_WITH_YOUR_SHOPIFY_STOREFRONT_TOKEN",
       collection: "Z2lkOi8vc2hvcGlmeS9Db2xsZWN0aW9uLzU0MTA5NDcwNzYz",
     }),
     Assets = new AssetsClass(function (e) {

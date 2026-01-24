@@ -25,11 +25,12 @@ echo -e "${BLUE}Target:${NC} $TARGET_PROJECT_REF"
 echo ""
 
 # Check for access token (from MCP config or env)
-ACCESS_TOKEN="${SUPABASE_ACCESS_TOKEN:-sbp_a65bdf5279f0debe7e32d8bdd140a22b70556a8e}"
+ACCESS_TOKEN="${SUPABASE_ACCESS_TOKEN}"
 
 if [ -z "$ACCESS_TOKEN" ]; then
     echo -e "${RED}❌ SUPABASE_ACCESS_TOKEN not found${NC}"
     echo "Set it: export SUPABASE_ACCESS_TOKEN='your-token'"
+    echo "Get your token from: https://supabase.com/dashboard/account/tokens"
     exit 1
 fi
 
