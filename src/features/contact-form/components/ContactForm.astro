@@ -4,7 +4,7 @@ import Button from "../../../components/common/Button.astro";
 import PhoneAndSMS from "../../../components/form/PhoneAndSMS.astro";
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 import InlineAddressSearch from "../../../components/form/InlineAddressSearch.astro";
-import SlotMachineModal from "../../../components/form/SlotMachineModal.astro";
+import SlotMachineModalStaff from "../../../components/form/SlotMachineModalStaff.astro";
 import { SMS_UTILS } from "../../../lib/sms-utils";
 
 import { globalClasses } from "../../../pages/api/global/global-classes";
@@ -210,20 +210,33 @@ const submitButtonProps = {
       </div>
 
       <div class="input-wrapper">
-        <SlotMachineModal
+        <SlotMachineModalStaff
+          title="Select your carrier"
           id="contact-carrier"
-          title="Select Your Carrier"
-          icon="phone"
+          name="mobileCarrier"
           options={mobileCarrierOptions}
           selectedValue=""
-          placeholder="Select your carrier..."
-          buttonText="Select Carrier *"
           buttonClass="w-full"
-          buttonVariant="primary"
-          showCloseButton={true}
-          showCancelButton={true}
+          placeholder="Select your carrier..."
+          icon="wifi"
+          buttonVariant="outline"
           {globalInputClasses}
         />
+
+        <!-- <SlotMachineModal
+            id="contact-carrier"
+            title="Select Your Carrier"
+            icon="phone"
+            options={mobileCarrierOptions}
+            selectedValue=""
+            placeholder="Select your carrier..."
+            buttonText="Select Carrier *"
+            buttonClass="w-full"
+            buttonVariant="primary"
+            showCloseButton={true}
+            showCancelButton={true}
+            {globalInputClasses}
+          /> -->
       </div>
 
       <div class="flex justify-between gap-3">
@@ -464,12 +477,17 @@ const submitButtonProps = {
       if (stepNumber === 5) {
         const smsAlertsInput = document.getElementById("contact-sms-alerts") as HTMLInputElement;
         const smsEnabled = smsAlertsInput && smsAlertsInput.value === "true";
-        
+
         if (smsEnabled) {
           const carrierInput = document.getElementById("contact-carrier-value") as HTMLInputElement;
           if (carrierInput && !carrierInput.value) {
             if (window.showModal) {
-              window.showModal("error", "Validation Error", "Please select your mobile carrier", 3000);
+              window.showModal(
+                "error",
+                "Validation Error",
+                "Please select your mobile carrier",
+                3000
+              );
             }
             return false;
           }
@@ -698,34 +716,16 @@ const submitButtonProps = {
 
         // Success!
         if (result.success !== false && !result.error) {
-          if (window.showModal) {
-            window.showModal(
-              "success",
-              "Message Sent!",
-              "Thank you for contacting us. We'll get back to you soon!",
-              5000
-            );
-          }
+          // Store success message in sessionStorage to show after redirect
+          sessionStorage.setItem('contactFormSuccess', JSON.stringify({
+            type: 'success',
+            title: 'Message Sent!',
+            message: "Thank you for contacting us. We'll get back to you soon!",
+            duration: 5000
+          }));
 
-          // Reset form after success
-          form.reset();
-
-          // Go back to first step
-          showStep(1);
-
-          // Clear address value
-          const addressInput = document.getElementById("contact-address-value") as HTMLInputElement;
-          if (addressInput) {
-            addressInput.value = "";
-          }
-
-          // Reset address search input
-          const addressSearchInput = document.getElementById(
-            "contact-address-search-input"
-          ) as HTMLInputElement;
-          if (addressSearchInput) {
-            addressSearchInput.value = "";
-          }
+          // Redirect to homepage
+          window.location.href = '/';
         }
       } catch (error) {
         console.error("[CONTACT] Submission error:", error);

@@ -615,12 +615,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         `🔍 [SLOT-MACHINE] Initialized originalOptions with ${originalOptions.length} static options`
       );
       console.log(`🔍 [SLOT-MACHINE] Sample option structure:`, originalOptions[0]);
-
-      const modal = document.getElementById(`${id}-slot-machine-modal`);
-      const emptyState = modal?.querySelector(".slot-empty-state");
-      if (emptyState) {
-        emptyState.classList.add("hidden");
-      }
     }
 
     // Helper function to create LI elements consistently
@@ -1181,9 +1175,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       selectedIndex = 0;
     }
 
-    if (finalOptions.length > 0) {
-      const modal = document.getElementById(`${id}-slot-machine-modal`);
-      const emptyState = modal?.querySelector(".slot-empty-state");
+    // Hide empty state if we have options - do this AFTER appending modal to DOM
+    if (finalOptions.length > 0 || optionsList.querySelectorAll("li").length > 0) {
+      const emptyState = modal.querySelector(".slot-empty-state");
       if (emptyState) {
         emptyState.classList.add("hidden");
       }
