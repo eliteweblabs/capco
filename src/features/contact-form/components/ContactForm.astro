@@ -3,7 +3,7 @@
 import Button from "../../../components/common/Button.astro";
 import PhoneAndSMS from "../../../components/form/PhoneAndSMS.astro";
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
-import SlotMachineModal from "../../../components/form/SlotMachineModal.astro";
+import InlineAddressSearch from "../../../components/form/InlineAddressSearch.astro";
 
 import { globalClasses } from "../../../pages/api/global/global-classes";
 const { globalInputClasses } = globalClasses();
@@ -41,34 +41,34 @@ const submitButtonProps = {
 ---
 
 <!-- Progress Bar -->
-<div class="mb-6 sm:mb-12" data-aos="fade-up">
+<div class="mb-6 sm:mb-12 px-4">
   <div class="relative">
     <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
       <div
         id="contact-progress-bar"
-        class="h-full rounded-full bg-primary-500 transition-all duration-500 ease-out"
+        class="h-full rounded-full bg-primary-500"
         style="width: 0%"
       >
       </div>
     </div>
     <div class="mt-3 text-center">
       <span id="contact-progress-text" class="text-sm font-medium text-gray-600 dark:text-gray-400">
-        1 / 6
+        1 / 7
       </span>
     </div>
   </div>
 </div>
 
 <!-- Multi-step Form -->
-<form id="multi-step-contact-form" action="/api/contact/submit" method="post">
+<form id="multi-step-contact-form" action="/api/contact/submit" method="post" class="px-4">
   <!-- Step 1: Name -->
   <div class="step-content active" data-step="1">
     <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+      <div class="text-center">
         <h2 class="text-5xl font-bold text-gray-900 dark:text-white">your name?</h2>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2" data-aos="fade-up" data-aos-delay="300">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div class="input-wrapper">
           <input
             type="text"
@@ -79,6 +79,7 @@ const submitButtonProps = {
             autocomplete="given-name"
             class={`${globalInputClasses} text-xl py-5 text-center`}
             data-error="Please enter your first name"
+            autofocus={true}
           />
         </div>
 
@@ -96,10 +97,8 @@ const submitButtonProps = {
         </div>
       </div>
 
-      <div class="flex justify-end gap-3" data-aos="fade-up" data-aos-delay="450">
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "2" }}>
-          next
-        </Button>
+      <div class="flex justify-end gap-3">
+        <Button {...nextButtonProps} dataAttributes={{ "data-next": "2" }}> next </Button>
       </div>
     </div>
   </div>
@@ -107,11 +106,11 @@ const submitButtonProps = {
   <!-- Step 2: Email -->
   <div class="step-content" data-step="2">
     <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+      <div class="text-center">
         <h2 class="text-5xl font-bold text-gray-900 dark:text-white">your email?</h2>
       </div>
 
-      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+      <div class="input-wrapper">
         <input
           type="email"
           name="email"
@@ -124,13 +123,9 @@ const submitButtonProps = {
         />
       </div>
 
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "1" }}>
-          back
-        </Button>
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "3" }}>
-          next
-        </Button>
+      <div class="flex justify-between gap-3">
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "1" }}> back </Button>
+        <Button {...nextButtonProps} dataAttributes={{ "data-next": "3" }}> next </Button>
       </div>
     </div>
   </div>
@@ -138,11 +133,11 @@ const submitButtonProps = {
   <!-- Step 3: Phone -->
   <div class="step-content" data-step="3">
     <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
-        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your phone?</h2>
+      <div class="text-center">
+        <h2 class="text-5xl font-bold text-gray-900 dark:text-white">your phone?</h2>
       </div>
 
-      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+      <div class="input-wrapper">
         <PhoneAndSMS
           id="contact-phone"
           name="phone"
@@ -154,25 +149,60 @@ const submitButtonProps = {
         />
       </div>
 
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }}>
-          back
-        </Button>
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }}>
-          next
-        </Button>
+      <div class="flex justify-between gap-3">
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }}> back </Button>
+        <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }}> next </Button>
       </div>
     </div>
   </div>
 
-  <!-- Step 4: Company -->
+  <!-- Step 4: SMS Consent -->
   <div class="step-content" data-step="4">
     <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+      <div class="text-center">
+        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">contact via SMS?</h2>
+        <p class="text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+          Not for marketing. Communication and project updates only.
+        </p>
+      </div>
+
+      <!-- Hidden input to store SMS consent value -->
+      <input type="hidden" name="smsConsent" id="contact-sms-consent" value="" />
+
+      <div class="flex justify-between gap-3">
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "3" }}> back </Button>
+        <div class="flex gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            size="xl"
+            class="sms-choice"
+            dataAttributes={{ "data-next": "5", "data-sms-value": "false" }}
+          >
+            no
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            size="xl"
+            class="sms-choice"
+            dataAttributes={{ "data-next": "5", "data-sms-value": "true" }}
+          >
+            yes
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5: Company -->
+  <div class="step-content" data-step="5">
+    <div class="space-y-8">
+      <div class="text-center">
         <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your company?</h2>
       </div>
 
-      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+      <div class="input-wrapper">
         <input
           type="text"
           name="company"
@@ -185,39 +215,25 @@ const submitButtonProps = {
         />
       </div>
 
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "3" }}>
-          back
-        </Button>
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "5" }}>
-          next
-        </Button>
+      <div class="flex justify-between gap-3">
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "4" }}> back </Button>
+        <Button {...nextButtonProps} dataAttributes={{ "data-next": "6" }}> next </Button>
       </div>
     </div>
   </div>
 
-  <!-- Step 5: Address -->
-  <div class="step-content" data-step="5">
+  <!-- Step 6: Address -->
+  <div class="step-content" data-step="6">
     <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+      <div class="text-center">
         <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your address?</h2>
       </div>
 
-      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
-        <SlotMachineModal
+      <div class="input-wrapper">
+        <InlineAddressSearch
           id="contact-address"
-          icon="map-pin"
-          title="Select Address"
-          options={[]}
-          selectedValue=""
-          placeholder="Search for an address..."
-          showCloseButton={true}
-          showCancelButton={true}
-          buttonText="Select Address *"
-          buttonClass="w-full"
-          buttonVariant="primary"
-          searchText="Search Address"
-          searchPlaceholder="Type to search addresses..."
+          name="address"
+          placeholder="Start typing your address..."
           fetchApiEndpoint="/api/google/places-autocomplete"
           apiParams={{
             types: "address",
@@ -225,30 +241,27 @@ const submitButtonProps = {
             locationBias: "circle:100@42.3601,-71.0589",
           }}
           valueField="description"
+          labelField="description"
           noResultsText="Type to search addresses..."
-          globalInputClasses={globalInputClasses}
+          {globalInputClasses}
         />
       </div>
 
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "4" }}>
-          back
-        </Button>
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "6" }}>
-          next
-        </Button>
+      <div class="flex justify-between gap-3">
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "5" }}> back </Button>
+        <Button {...nextButtonProps} dataAttributes={{ "data-next": "7" }}> next </Button>
       </div>
     </div>
   </div>
 
-  <!-- Step 6: Message -->
-  <div class="step-content" data-step="6">
+  <!-- Step 7: Message -->
+  <div class="step-content" data-step="7">
     <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+      <div class="text-center">
         <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your message?</h2>
       </div>
 
-      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+      <div class="input-wrapper">
         <textarea
           name="message"
           id="contact-message"
@@ -256,17 +269,12 @@ const submitButtonProps = {
           required
           rows="6"
           class={`${globalInputClasses} text-xl py-5`}
-          data-error="Please enter your message"
-        ></textarea>
+          data-error="Please enter your message"></textarea>
       </div>
 
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "5" }}>
-          back
-        </Button>
-        <Button {...submitButtonProps}>
-          send message
-        </Button>
+      <div class="flex justify-between gap-3">
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "6" }}> back </Button>
+        <Button {...submitButtonProps}> send message </Button>
       </div>
     </div>
   </div>
@@ -275,71 +283,22 @@ const submitButtonProps = {
 <style>
   .step-content {
     display: none;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  #multi-step-contact-form {
+    width: 100dvw;
+    max-width: 680px;
   }
 
   .step-content.active {
     display: block;
   }
 
-  /* Slide animations */
-  @keyframes slideOutLeft {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(-50px);
-      opacity: 0;
-    }
-  }
-
-  @keyframes slideOutRight {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(50px);
-      opacity: 0;
-    }
-  }
-
-  @keyframes slideInLeft {
-    from {
-      transform: translateX(-50px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideInRight {
-    from {
-      transform: translateX(50px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  .slide-out-left {
-    animation: slideOutLeft 300ms ease-out forwards;
-  }
-
-  .slide-out-right {
-    animation: slideOutRight 300ms ease-out forwards;
-  }
-
-  .slide-in-left {
-    animation: slideInLeft 300ms ease-out forwards;
-  }
-
-  .slide-in-right {
-    animation: slideInRight 300ms ease-out forwards;
+  :global(#sidebar-toggle-button) {
+    display: none;
   }
 </style>
 
@@ -351,7 +310,7 @@ const submitButtonProps = {
     const progressBar = document.getElementById("contact-progress-bar") as HTMLElement;
     const progressText = document.getElementById("contact-progress-text") as HTMLElement;
     let currentStep = 1;
-    const totalSteps = 6;
+    const totalSteps = 7;
 
     // Update progress bar
     function updateProgress() {
@@ -360,47 +319,83 @@ const submitButtonProps = {
       if (progressText) progressText.textContent = `${currentStep} / ${totalSteps}`;
     }
 
-    // Show specific step with slide animation
-    function showStep(stepNumber: number, direction: 'next' | 'prev' = 'next') {
+    // Show specific step (simple show/hide, no animations)
+    function showStep(stepNumber: number) {
       const steps = document.querySelectorAll(".step-content");
-      const currentStepEl = document.querySelector(`.step-content[data-step="${currentStep}"]`) as HTMLElement;
-      const targetStep = document.querySelector(`.step-content[data-step="${stepNumber}"]`) as HTMLElement;
 
-      if (!targetStep) return;
+      // Hide all steps and remove focus classes from buttons
+      steps.forEach((step) => {
+        step.classList.remove("active");
+        // Remove focus classes from any buttons in the step
+        const buttons = step.querySelectorAll("button");
+        buttons.forEach((btn) => {
+          btn.classList.remove(
+            "!outline",
+            "!outline-2",
+            "!outline-dashed",
+            "!outline-primary-500",
+            "!outline-offset-2",
+            "dark:!outline-primary-400"
+          );
+        });
+      });
 
-      // Add transition class for slide effect
-      const slideOutClass = direction === 'next' ? 'slide-out-left' : 'slide-out-right';
-      const slideInClass = direction === 'next' ? 'slide-in-right' : 'slide-in-left';
+      // Show target step
+      const targetStep = document.querySelector(
+        `.step-content[data-step="${stepNumber}"]`
+      ) as HTMLElement;
+      if (targetStep) {
+        targetStep.classList.add("active");
+        currentStep = stepNumber;
+        updateProgress();
 
-      // Slide out current step
-      if (currentStepEl) {
-        currentStepEl.classList.add(slideOutClass);
-        
-        setTimeout(() => {
-          currentStepEl.classList.remove("active", slideOutClass);
-        }, 300);
+        // Special handling for step 4 (SMS consent) - focus the "yes" button
+        if (stepNumber === 4) {
+          setTimeout(() => {
+            // Find the "yes" button (has data-sms-value="true")
+            const yesButton = targetStep.querySelector(
+              'button[data-sms-value="true"]'
+            ) as HTMLElement;
+            if (yesButton) {
+              // Add focus outline classes
+              yesButton.classList.add(
+                "!outline",
+                "!outline-2",
+                "!outline-dashed",
+                "!outline-primary-500",
+                "!outline-offset-2",
+                "dark:!outline-primary-400"
+              );
+              // Also focus for accessibility
+              yesButton.focus();
+            }
+          }, 100);
+        } else {
+          // Auto-focus first input for other steps
+          setTimeout(() => {
+            // Try multiple selectors to find the first focusable input
+            let firstInput = targetStep.querySelector(
+              "input:not([type=hidden]):not([readonly])"
+            ) as HTMLElement;
+
+            // If no regular input, try textarea
+            if (!firstInput) {
+              firstInput = targetStep.querySelector("textarea") as HTMLElement;
+            }
+
+            // If still no input, try the address search input specifically (step 6)
+            if (!firstInput && stepNumber === 6) {
+              firstInput = document.getElementById("contact-address-search-input") as HTMLElement;
+            }
+
+            if (firstInput) {
+              firstInput.focus();
+              // Scroll into view if needed
+              firstInput.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+          }, 150);
+        }
       }
-
-      // Slide in target step
-      targetStep.classList.add(slideInClass);
-      targetStep.classList.add("active");
-      
-      currentStep = stepNumber;
-      updateProgress();
-
-      // Remove slide-in class after animation
-      setTimeout(() => {
-        targetStep.classList.remove(slideInClass);
-        
-        // Refresh AOS for child elements
-        if (typeof AOS !== "undefined") AOS.refresh();
-
-        // Auto-focus first input
-        setTimeout(() => {
-          const firstInput = targetStep.querySelector("input:not([type=hidden]), textarea") as HTMLElement;
-          if (firstInput) firstInput.focus();
-        }, 100);
-      }, 300);
     }
 
     // Validate current step
@@ -427,8 +422,8 @@ const submitButtonProps = {
         }
       }
 
-      // Special validation for address field (Step 5)
-      if (stepNumber === 5) {
+      // Special validation for address field (Step 6)
+      if (stepNumber === 6) {
         const addressInput = document.getElementById("contact-address-value") as HTMLInputElement;
         if (addressInput && !addressInput.value) {
           if (window.showModal) {
@@ -446,6 +441,23 @@ const submitButtonProps = {
       const target = e.target as HTMLElement;
       const nextBtn = target.closest(".next-step");
       const prevBtn = target.closest(".prev-step");
+      const smsChoiceBtn = target.closest(".sms-choice");
+
+      // Handle SMS consent choice buttons
+      if (smsChoiceBtn) {
+        e.preventDefault();
+        const smsValue = smsChoiceBtn.getAttribute("data-sms-value");
+        const nextStep = parseInt(smsChoiceBtn.getAttribute("data-next") || "5");
+
+        // Store SMS consent value
+        const smsConsentInput = document.getElementById("contact-sms-consent") as HTMLInputElement;
+        if (smsConsentInput) {
+          smsConsentInput.value = smsValue || "false";
+        }
+
+        showStep(nextStep);
+        return;
+      }
 
       if (nextBtn) {
         e.preventDefault();
@@ -462,7 +474,7 @@ const submitButtonProps = {
 
         // Validate current step before moving forward
         if (validateStep(currentStep)) {
-          showStep(nextStep, 'next');
+          showStep(nextStep);
         }
       }
 
@@ -475,7 +487,7 @@ const submitButtonProps = {
         }
         e.preventDefault();
         const prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
-        showStep(prevStep, 'prev');
+        showStep(prevStep);
       }
     });
 
@@ -496,7 +508,7 @@ const submitButtonProps = {
       submitBtn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         // Validate before submitting
         if (validateStep(currentStep)) {
           form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
@@ -525,7 +537,7 @@ const submitButtonProps = {
       }
 
       isSubmitting = true;
-      const submitButton = form.querySelector('button.submit-contact') as HTMLButtonElement;
+      const submitButton = form.querySelector("button.submit-contact") as HTMLButtonElement;
       const originalButtonText = submitButton?.textContent || "Send Message";
 
       // Disable submit button and show loading state
@@ -643,23 +655,22 @@ const submitButtonProps = {
 
           // Reset form after success
           form.reset();
-          
+
           // Go back to first step
           showStep(1);
-          
+
           // Clear address value
           const addressInput = document.getElementById("contact-address-value") as HTMLInputElement;
           if (addressInput) {
             addressInput.value = "";
           }
-          
-          // Reset address button text
-          const addressButton = document.getElementById("contact-address");
-          if (addressButton) {
-            const buttonTextSpan = addressButton.querySelector(".button-text") as HTMLElement;
-            if (buttonTextSpan) {
-              buttonTextSpan.textContent = "Select Address *";
-            }
+
+          // Reset address search input
+          const addressSearchInput = document.getElementById(
+            "contact-address-search-input"
+          ) as HTMLInputElement;
+          if (addressSearchInput) {
+            addressSearchInput.value = "";
           }
         }
       } catch (error) {
@@ -713,10 +724,17 @@ const submitButtonProps = {
     // Initialize
     updateProgress();
 
-    // Initial AOS refresh
+    // Focus first input on initial load
     setTimeout(() => {
-      // @ts-ignore - AOS loaded from CDN
-      if (typeof AOS !== "undefined") AOS.refresh();
-    }, 100);
+      const firstStep = document.querySelector('.step-content[data-step="1"]') as HTMLElement;
+      if (firstStep) {
+        const firstInput = firstStep.querySelector(
+          "input:not([type=hidden]):not([readonly])"
+        ) as HTMLElement;
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }
+    }, 150);
   });
 </script>

@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@supabase/supabase-js";
+import { globalCompanyData } from "../global/global-company-data";
 
 /**
  * Contact Form Submission Handler
@@ -7,6 +8,7 @@ import { createClient } from "@supabase/supabase-js";
  * 
  * Handles contact form submissions from the multi-step contact form.
  * Auto-detects missing table and provides setup instructions.
+ * Sends email notifications to admins and confirmation to submitter.
  */
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -18,6 +20,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const lastName = formData.get("lastName") as string;
     const email = formData.get("email") as string;
     const phone = formData.get("phone") as string;
+    const smsConsent = formData.get("smsConsent") === "true";
     const company = formData.get("company") as string;
     const address = formData.get("contact-address") as string;
     const message = formData.get("message") as string;
@@ -38,7 +41,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Initialize Supabase client
     const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-    const supabaseKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey = import.meta.env.SUPABASE_SECRET;
 
     if (!supabaseUrl || !supabaseKey) {
       console.error("[CONTACT] Supabase credentials not configured");
@@ -56,18 +59,83 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Check if user already exists by email
+    let userId: string | null = null;
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id, name, phone, companyName, smsConsent")
+      .eq("email", email)
+      .single();
+
+    if (existingProfile) {
+      // User exists - update their info if needed
+      userId = existingProfile.id;
+      
+      const updates: any = {};
+      if (firstName && lastName && `${firstName} ${lastName}` !== existingProfile.name) {
+        updates.name = `${firstName} ${lastName}`;
+      }
+      if (phone && phone !== existingProfile.phone) {
+        updates.phone = phone;
+      }
+      if (company && company !== existingProfile.companyName) {
+        updates.companyName = company;
+      }
+      if (smsConsent !== existingProfile.smsConsent) {
+        updates.smsConsent = smsConsent;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await supabase
+          .from("profiles")
+          .update(updates)
+          .eq("id", userId);
+        
+        console.log("[CONTACT] Updated existing profile:", userId);
+      }
+    } else {
+      // Create new profile for this contact (they'll need to sign up later)
+      // Using a special UUID format for non-authenticated users
+      const tempUserId = `contact-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      
+      const { data: newProfile, error: profileError } = await supabase
+        .from("profiles")
+        .insert({
+          id: tempUserId,
+          name: `${firstName} ${lastName}`,
+          email: email,
+          phone: phone || null,
+          companyName: company || null,
+          smsConsent: smsConsent,
+          role: "Client",
+          createdAt: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error("[CONTACT] Error creating profile:", profileError);
+        // Continue anyway - profile creation is optional
+      } else {
+        userId = newProfile.id;
+        console.log("[CONTACT] Created new profile:", userId);
+      }
+    }
+
     // Try to save to database
     const { data, error } = await supabase
-      .from("contact_submissions")
+      .from("contactSubmissions")
       .insert({
-        first_name: firstName,
-        last_name: lastName,
+        firstName: firstName,
+        lastName: lastName,
         email: email,
         phone: phone || null,
+        smsConsent: smsConsent,
         company: company || null,
         address: address || null,
         message: message,
-        submitted_at: new Date().toISOString(),
+        userId: userId,
+        submittedAt: new Date().toISOString(),
       })
       .select()
       .single();
@@ -77,34 +145,36 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       
       // If table doesn't exist, provide setup instructions
       if (error.code === "42P01") {
-        console.error("[CONTACT] ❌ Table 'contact_submissions' does not exist!");
+        console.error("[CONTACT] ❌ Table 'contactSubmissions' does not exist!");
         console.error("[CONTACT] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:");
         console.error(`
-CREATE TABLE contact_submissions (
+CREATE TABLE "contactSubmissions" (
   id SERIAL PRIMARY KEY,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
+  "firstName" TEXT NOT NULL,
+  "lastName" TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,
+  "smsConsent" BOOLEAN DEFAULT false,
   company TEXT,
   address TEXT,
   message TEXT NOT NULL,
-  submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  "userId" TEXT,
+  "submittedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Enable RLS
-ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "contactSubmissions" ENABLE ROW LEVEL SECURITY;
 
 -- Allow anyone to insert
 CREATE POLICY "Anyone can insert contact submissions"
-  ON contact_submissions FOR INSERT
+  ON "contactSubmissions" FOR INSERT
   WITH CHECK (true);
 
 -- Allow admins to view
 CREATE POLICY "Admins can view all contact submissions"
-  ON contact_submissions FOR SELECT
+  ON "contactSubmissions" FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM profiles
@@ -114,15 +184,16 @@ CREATE POLICY "Admins can view all contact submissions"
   );
 
 -- Add indexes
-CREATE INDEX idx_contact_submissions_email ON contact_submissions(email);
-CREATE INDEX idx_contact_submissions_submitted_at ON contact_submissions(submitted_at DESC);
+CREATE INDEX "idx_contactSubmissions_email" ON "contactSubmissions"(email);
+CREATE INDEX "idx_contactSubmissions_userId" ON "contactSubmissions"("userId");
+CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submittedAt" DESC);
         `);
         
         return new Response(
           JSON.stringify({
             success: false,
             error: "Database table not set up. Please run the SQL setup script.",
-            details: "Check server logs for SQL commands or see sql-queriers/create-contact-submissions-table.sql",
+            details: "Check server logs for SQL commands or see sql-queriers/create-contactSubmissions-table.sql",
             setupRequired: true,
           }),
           {
@@ -147,8 +218,145 @@ CREATE INDEX idx_contact_submissions_submitted_at ON contact_submissions(submitt
 
     console.log("[CONTACT] Submission saved:", data);
 
-    // TODO: Optional - Send email notification to admin/staff
-    // You can integrate with your email service here
+    // Send email notifications
+    const emailApiKey = import.meta.env.EMAIL_API_KEY;
+    const fromEmail = import.meta.env.FROM_EMAIL;
+    const fromName = import.meta.env.FROM_NAME;
+    const companyData = await globalCompanyData();
+    const baseUrl = new URL(request.url).origin;
+
+    if (emailApiKey && fromEmail) {
+      try {
+        // Get admin emails from profiles table
+        const { data: admins } = await supabase
+          .from("profiles")
+          .select("email, name")
+          .eq("role", "Admin");
+
+        const adminEmails = admins?.map((admin) => admin.email).filter(Boolean) || [];
+
+        // Email content for admins
+        const adminSubject = `🔔 New Contact Form Submission - ${firstName} ${lastName}`;
+        const adminHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+              .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
+              .field { margin: 15px 0; padding: 10px; background: white; border-radius: 4px; }
+              .label { font-weight: bold; color: #2563eb; }
+              .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>New Contact Form Submission</h1>
+              </div>
+              <div class="content">
+                <div class="field">
+                  <div class="label">Name:</div>
+                  ${firstName} ${lastName}
+                </div>
+                <div class="field">
+                  <div class="label">Email:</div>
+                  <a href="mailto:${email}">${email}</a>
+                </div>
+                ${phone ? `<div class="field"><div class="label">Phone:</div><a href="tel:${phone}">${phone}</a></div>` : ""}
+                ${smsConsent ? `<div class="field"><div class="label">SMS Consent:</div>✅ Yes (Updates only, no marketing)</div>` : ""}
+                ${company ? `<div class="field"><div class="label">Company:</div>${company}</div>` : ""}
+                ${address ? `<div class="field"><div class="label">Address:</div>${address}</div>` : ""}
+                <div class="field">
+                  <div class="label">Message:</div>
+                  ${message}
+                </div>
+                <a href="mailto:${email}" class="button">Reply to ${firstName}</a>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
+        // Send email to each admin
+        for (const adminEmail of adminEmails) {
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${emailApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: `${fromName} <${fromEmail}>`,
+              to: adminEmail,
+              subject: adminSubject,
+              html: adminHtml,
+            }),
+          });
+        }
+
+        console.log(`[CONTACT] ✅ Admin notification emails sent to ${adminEmails.length} admin(s)`);
+
+        // Email confirmation to submitter
+        const submitterSubject = `Thank you for contacting ${companyData.globalCompanyName}`;
+        const submitterHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+              .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
+              .message-box { background: white; padding: 20px; border-radius: 4px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Thank You for Contacting Us!</h1>
+              </div>
+              <div class="content">
+                <p>Hi ${firstName},</p>
+                <p>We received your message and will get back to you as soon as possible.</p>
+                <div class="message-box">
+                  <strong>Your Message:</strong><br>
+                  ${message}
+                </div>
+                <p>If you need immediate assistance, please feel free to call us or visit our website.</p>
+                <p>Best regards,<br>${companyData.globalCompanyName}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${emailApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: `${fromName} <${fromEmail}>`,
+            to: email,
+            subject: submitterSubject,
+            html: submitterHtml,
+          }),
+        });
+
+        console.log(`[CONTACT] ✅ Confirmation email sent to ${email}`);
+      } catch (emailError) {
+        console.error("[CONTACT] ⚠️ Email sending failed:", emailError);
+        // Don't fail the whole request if email fails
+      }
+    } else {
+      console.warn("[CONTACT] ⚠️ Email not configured, skipping notifications");
+    }
 
     return new Response(
       JSON.stringify({

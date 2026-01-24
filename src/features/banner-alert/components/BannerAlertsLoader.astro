@@ -115,9 +115,27 @@ const allBannerIds = banners.map((b) => String(b.id));
 
           if (topBannerContainer && mainContent) {
             const updateMainContentSpacing = function() {
+              // Get dismissed banners from localStorage
+              let dismissedSet = new Set();
+              try {
+                const stored = localStorage.getItem("dismissedBanners");
+                if (stored) {
+                  const dismissed = JSON.parse(stored);
+                  dismissedSet = new Set(dismissed.map(function(id) { return String(id); }));
+                }
+              } catch (e) {
+                // Ignore localStorage errors
+              }
+
               // Count visible banners (not dismissed)
-              const visibleBanners = topBannerContainer.querySelectorAll('.banner-alert:not([style*="display: none"])');
-              const bannerCount = visibleBanners.length;
+              const allBanners = topBannerContainer.querySelectorAll('.banner-alert');
+              let bannerCount = 0;
+              allBanners.forEach(function(banner) {
+                const bannerId = banner.getAttribute('data-banner-id');
+                if (!bannerId || !dismissedSet.has(String(bannerId))) {
+                  bannerCount++;
+                }
+              });
 
               console.log("[BannerAlertsLoader] Visible top banners:", bannerCount);
 
@@ -222,7 +240,30 @@ const allBannerIds = banners.map((b) => String(b.id));
 
           if (bottomBannerContainer) {
             const updateContentPadding = function() {
-              const bannerHeight = bottomBannerContainer.offsetHeight;
+              // Get dismissed banners from localStorage
+              let dismissedSet = new Set();
+              try {
+                const stored = localStorage.getItem("dismissedBanners");
+                if (stored) {
+                  const dismissed = JSON.parse(stored);
+                  dismissedSet = new Set(dismissed.map(function(id) { return String(id); }));
+                }
+              } catch (e) {
+                // Ignore localStorage errors
+              }
+
+              // Count visible banners (not dismissed)
+              const allBanners = bottomBannerContainer.querySelectorAll('.banner-alert');
+              let visibleCount = 0;
+              allBanners.forEach(function(banner) {
+                const bannerId = banner.getAttribute('data-banner-id');
+                if (!bannerId || !dismissedSet.has(String(bannerId))) {
+                  visibleCount++;
+                }
+              });
+
+              // Calculate height only if there are visible banners
+              const bannerHeight = visibleCount > 0 ? bottomBannerContainer.offsetHeight : 0;
 
               if (bannerHeight > 0) {
                 // Add padding to body to push footer up

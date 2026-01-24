@@ -25,16 +25,22 @@ let error: string | null = null;
 try {
   const baseUrl = Astro.url.origin;
   const apiUrl = `${baseUrl}/api/projects/get?featured=true`;
+  console.log("🐛 [FEATURED-PROJECTS] Fetching from:", apiUrl);
+  console.log("🐛 [FEATURED-PROJECTS] Has cookies:", !!Astro.request.headers.get("cookie"));
+
   const response = await fetch(apiUrl, {
     headers: {
       Cookie: Astro.request.headers.get("cookie") || "",
     },
   });
 
+  console.log("🐛 [FEATURED-PROJECTS] Response status:", response.status, response.statusText);
+
   if (response.ok) {
     const data = await response.json();
     const projects = data.projects || [];
 
+    console.log("🐛 [FEATURED-PROJECTS] Projects count:", projects.length);
     console.log("🐛 [FEATURED-PROJECTS] Projects:", projects);
     featuredProjects = (projects || [])
       // Filter for featured projects only
@@ -52,13 +58,20 @@ try {
         featuredImageData: project.featuredImageData,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
-        
       }));
   } else {
-    console.error("Error fetching projects:", response.status, response.statusText);
+    const errorText = await response.text();
+    console.error(
+      "🐛 [FEATURED-PROJECTS] Error fetching projects:",
+      response.status,
+      response.statusText
+    );
+    console.error("🐛 [FEATURED-PROJECTS] Error body:", errorText);
+    error = `Failed to load featured projects (${response.status})`;
   }
 } catch (err) {
-  console.error("Error fetching projects:", err);
+  console.error("🐛 [FEATURED-PROJECTS] Exception:", err);
+  error = "Unable to load featured projects";
 }
 
 // Helper functions
@@ -76,7 +89,6 @@ function formatDate(dateString: string | null | undefined): string {
   });
 }
 ---
-
 
 <div class="mx-auto max-w-7xl">
   {
