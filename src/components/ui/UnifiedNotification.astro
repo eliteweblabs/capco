@@ -448,7 +448,7 @@
 
       element.className = `
           color-background rounded-lg shadow-lg border border-gray-200 dark:border-gray-700
-          toast-element p-4 mb-2
+          toast-element p-4 mb-2 relative
           text-base
           sm:text-lg
           m-0
@@ -878,6 +878,28 @@
   }
 
   console.log("🔔 [TOAST] Toast notification system initialized successfully");
+
+  // Check for success message from contact form redirect
+  const contactFormSuccess = sessionStorage.getItem('contactFormSuccess');
+  if (contactFormSuccess) {
+    try {
+      const successData = JSON.parse(contactFormSuccess);
+      sessionStorage.removeItem('contactFormSuccess');
+      
+      // Show the success notification
+      if (window.showModal) {
+        window.showModal(
+          successData.type,
+          successData.title,
+          successData.message,
+          successData.duration
+        );
+      }
+    } catch (error) {
+      console.error('🔔 [TOAST] Failed to parse contactFormSuccess:', error);
+      sessionStorage.removeItem('contactFormSuccess');
+    }
+  }
 </script>
 
 <style>

@@ -6,7 +6,7 @@ import { SMS_UTILS } from "../../../lib/sms-utils";
 /**
  * Contact Form Submission Handler
  * POST /api/contact/submit
- * 
+ *
  * Handles contact form submissions from the multi-step contact form.
  * Auto-detects missing table and provides setup instructions.
  * Sends email notifications to admins and confirmation to submitter.
@@ -73,73 +73,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check if user already exists by email
-    let userId: string | null = null;
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id, name, phone, companyName, smsAlerts, mobileCarrier")
-      .eq("email", email)
-      .single();
-
-    if (existingProfile) {
-      // User exists - update their info if needed
-      userId = existingProfile.id;
-      
-      const updates: any = {};
-      if (firstName && lastName && `${firstName} ${lastName}` !== existingProfile.name) {
-        updates.name = `${firstName} ${lastName}`;
-      }
-      if (phone && phone !== existingProfile.phone) {
-        updates.phone = phone;
-      }
-      if (company && company !== existingProfile.companyName) {
-        updates.companyName = company;
-      }
-      if (smsAlerts !== existingProfile.smsAlerts) {
-        updates.smsAlerts = smsAlerts;
-      }
-      if (mobileCarrier && mobileCarrier !== existingProfile.mobileCarrier) {
-        updates.mobileCarrier = mobileCarrier;
-      }
-
-      if (Object.keys(updates).length > 0) {
-        await supabase
-          .from("profiles")
-          .update(updates)
-          .eq("id", userId);
-        
-        console.log("[CONTACT] Updated existing profile:", userId);
-      }
-    } else {
-      // Create new profile for this contact (they'll need to sign up later)
-      // Using a special UUID format for non-authenticated users
-      const tempUserId = `contact-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      
-      const { data: newProfile, error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          id: tempUserId,
-          name: `${firstName} ${lastName}`,
-          email: email,
-          phone: phone || null,
-          companyName: company || null,
-          smsAlerts: smsAlerts,
-          mobileCarrier: smsAlerts ? mobileCarrier : null,
-          role: "Client",
-          createdAt: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (profileError) {
-        console.error("[CONTACT] Error creating profile:", profileError);
-        // Continue anyway - profile creation is optional
-      } else {
-        userId = newProfile.id;
-        console.log("[CONTACT] Created new profile:", userId);
-      }
-    }
-
     // Try to save to database
     const { data, error } = await supabase
       .from("contactSubmissions")
@@ -153,7 +86,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         company: company || null,
         address: address || null,
         message: message,
-        userId: userId,
         submittedAt: new Date().toISOString(),
       })
       .select()
@@ -161,7 +93,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (error) {
       console.error("[CONTACT] Database error:", error);
-      
+
       // If table doesn't exist, provide setup instructions
       if (error.code === "42P01") {
         console.error("[CONTACT] ❌ Table 'contactSubmissions' does not exist!");
@@ -178,7 +110,6 @@ CREATE TABLE "contactSubmissions" (
   company TEXT,
   address TEXT,
   message TEXT NOT NULL,
-  "userId" TEXT,
   "submittedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -205,15 +136,15 @@ CREATE POLICY "Admins can view all contact submissions"
 
 -- Add indexes
 CREATE INDEX "idx_contactSubmissions_email" ON "contactSubmissions"(email);
-CREATE INDEX "idx_contactSubmissions_userId" ON "contactSubmissions"("userId");
 CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submittedAt" DESC);
         `);
-        
+
         return new Response(
           JSON.stringify({
             success: false,
             error: "Database table not set up. Please run the SQL setup script.",
-            details: "Check server logs for SQL commands or see sql-queriers/create-contactSubmissions-table.sql",
+            details:
+              "Check server logs for SQL commands or see sql-queriers/create-contactSubmissions-table.sql",
             setupRequired: true,
           }),
           {
@@ -222,7 +153,7 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
           }
         );
       }
-      
+
       return new Response(
         JSON.stringify({
           success: false,
@@ -257,7 +188,7 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
 
         // Email content for admins
         const adminSubject = `🔔 New Contact Form Submission - ${firstName} ${lastName}`;
-        
+
         // Get friendly carrier name for display
         let carrierDisplayName = mobileCarrier;
         if (mobileCarrier && mobileCarrierRaw) {
@@ -266,7 +197,7 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
             carrierDisplayName = carrierInfo.name;
           }
         }
-        
+
         const adminHtml = `
           <!DOCTYPE html>
           <html>
@@ -329,54 +260,40 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
           });
         }
 
-        console.log(`[CONTACT] ✅ Admin notification emails sent to ${adminEmails.length} admin(s)`);
+        console.log(
+          `[CONTACT] ✅ Admin notification emails sent to ${adminEmails.length} admin(s)`
+        );
 
-        // Email confirmation to submitter
+        // Email confirmation to submitter using the existing template system
         const submitterSubject = `Thank you for contacting ${companyData.globalCompanyName}`;
-        const submitterHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-              .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
-              .message-box { background: white; padding: 20px; border-radius: 4px; margin: 20px 0; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>Thank You for Contacting Us!</h1>
-              </div>
-              <div class="content">
-                <p>Hi ${firstName},</p>
-                <p>We received your message and will get back to you as soon as possible.</p>
-                <div class="message-box">
-                  <strong>Your Message:</strong><br>
-                  ${message}
-                </div>
-                <p>If you need immediate assistance, please feel free to call us or visit our website.</p>
-                <p>Best regards,<br>${companyData.globalCompanyName}</p>
-              </div>
-            </div>
-          </body>
-          </html>
+        const submitterContent = `
+          <p>Hi ${firstName},</p>
+          <p>We received your message and will get back to you as soon as possible.</p>
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 4px; margin: 20px 0;">
+            <strong>Your Message:</strong><br>
+            ${message}
+          </div>
+          <p>If you need immediate assistance, please feel free to call us or visit our website.</p>
+          <p>Best regards,<br>${companyData.globalCompanyName}</p>
         `;
 
-        await fetch("https://api.resend.com/emails", {
+        // Use the delivery system with the email template
+        const { getBaseUrl } = await import("../../../lib/url-utils");
+        const baseUrl = getBaseUrl(request);
+        
+        await fetch(`${baseUrl}/api/delivery/update-delivery`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${emailApiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: `${fromName} <${fromEmail}>`,
-            to: email,
-            subject: submitterSubject,
-            html: submitterHtml,
+            usersToNotify: [email],
+            method: "email",
+            emailSubject: submitterSubject,
+            emailContent: submitterContent,
+            buttonLink: `${baseUrl}/contact`,
+            buttonText: "Visit Our Website",
+            trackLinks: false,
           }),
         });
 
