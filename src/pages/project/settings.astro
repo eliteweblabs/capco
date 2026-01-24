@@ -40,8 +40,12 @@ const { globalInputClasses } = globalClasses();
     <div class="mb-6">
       <h1 class="text-3xl font-bold mb-2">Project Settings</h1>
       <p class="text-gray-600 dark:text-gray-400">
-        Manage default punchlist and discussion templates that are created when new projects are deployed.
-        These templates support placeholders like {`{{PROJECT_TITLE}}`}, {`{{CLIENT_NAME}}`}, etc.
+        Manage default punchlist and discussion templates that are created when new projects are
+        deployed. These templates support placeholders like {`{{PROJECT_TITLE}}`}, {
+          `{{CLIENT_NAME}}`
+        }, etc.
+        <br />To manually apply templates to a project, run the following command:
+        <code> node scripts/apply-templates-to-project.js [projectId] </code>
       </p>
     </div>
 
@@ -69,18 +73,17 @@ const { globalInputClasses } = globalClasses();
     <div id="section-punchlist" class="template-section">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Punchlist Templates</h2>
-        <Button
-          id="add-punchlist-btn"
-          type="button"
-          variant="primary"
-        >
+        <Button id="add-punchlist-btn" type="button" variant="primary">
           <i class="bx bx-plus mr-2"></i>
           Add Punchlist Item
         </Button>
       </div>
 
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div id="punchlist-templates-container" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <div
+          id="punchlist-templates-container"
+          class="divide-y divide-gray-200 dark:divide-gray-700"
+        >
           <!-- Templates will be loaded here -->
         </div>
       </div>
@@ -90,39 +93,45 @@ const { globalInputClasses } = globalClasses();
     <div id="section-discussion" class="template-section hidden">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Discussion Templates</h2>
-        <Button
-          id="add-discussion-btn"
-          type="button"
-          variant="primary"
-        >
+        <Button id="add-discussion-btn" type="button" variant="primary">
           <i class="bx bx-plus mr-2"></i>
           Add Discussion Item
         </Button>
       </div>
 
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div id="discussion-templates-container" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <div
+          id="discussion-templates-container"
+          class="divide-y divide-gray-200 dark:divide-gray-700"
+        >
           <!-- Templates will be loaded here -->
         </div>
       </div>
     </div>
-
   </div>
 
   <!-- Edit Modal -->
-  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+  <div
+    id="edit-modal"
+    class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50"
+  >
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+    >
       <div class="p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 id="modal-title" class="text-xl font-semibold">Edit Template</h3>
-          <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <button
+            id="close-modal"
+            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
             <i class="bx bx-x text-2xl"></i>
           </button>
         </div>
 
         <form id="template-form">
-          <input type="hidden" id="template-id" name="id">
-          <input type="hidden" id="template-type" name="type">
+          <input type="hidden" id="template-id" name="id" />
+          <input type="hidden" id="template-type" name="type" />
 
           <div class="space-y-4">
             <div>
@@ -148,7 +157,9 @@ const { globalInputClasses } = globalClasses();
                 placeholder="Enter the template message. You can use placeholders like PROJECT_TITLE, CLIENT_NAME, PROJECT_ADDRESS (wrapped in double curly braces)."
               ></textarea>
               <p class="text-xs text-gray-500 mt-1">
-                Supports HTML and placeholders: {`{{PROJECT_TITLE}}`}, {`{{CLIENT_NAME}}`}, {`{{PROJECT_ADDRESS}}`}, {`{{RAILWAY_PUBLIC_DOMAIN}}`}, {`{{PROJECT_ID}}`}
+                Supports HTML and placeholders: {`{{PROJECT_TITLE}}`}, {`{{CLIENT_NAME}}`}, {
+                  `{{PROJECT_ADDRESS}}`
+                }, {`{{RAILWAY_PUBLIC_DOMAIN}}`}, {`{{PROJECT_ID}}`}
               </p>
             </div>
 
@@ -221,40 +232,44 @@ const { globalInputClasses } = globalClasses();
 
   <script>
     // State
-    let currentTab = 'punchlist';
+    let currentTab = "punchlist";
     let templates: any = { punchlist: [], discussion: [] };
 
     // DOM Elements
-    const modal = document.getElementById('edit-modal') as HTMLElement;
-    const templateForm = document.getElementById('template-form') as HTMLFormElement;
+    const modal = document.getElementById("edit-modal") as HTMLElement;
+    const templateForm = document.getElementById("template-form") as HTMLFormElement;
 
     // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener("DOMContentLoaded", () => {
       loadTemplates();
       setupEventListeners();
     });
 
     function setupEventListeners() {
       // Tab switching
-      document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+      document.querySelectorAll(".tab-button").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
           const target = e.currentTarget as HTMLElement;
-          const tab = target.dataset.tab || 'punchlist';
+          const tab = target.dataset.tab || "punchlist";
           switchTab(tab);
         });
       });
 
       // Add buttons
-      document.getElementById('add-punchlist-btn')?.addEventListener('click', () => openModal('punchlist'));
-      document.getElementById('add-discussion-btn')?.addEventListener('click', () => openModal('discussion'));
+      document
+        .getElementById("add-punchlist-btn")
+        ?.addEventListener("click", () => openModal("punchlist"));
+      document
+        .getElementById("add-discussion-btn")
+        ?.addEventListener("click", () => openModal("discussion"));
 
       // Modal controls
-      document.getElementById('close-modal')?.addEventListener('click', closeModal);
-      document.getElementById('cancel-btn')?.addEventListener('click', closeModal);
-      templateForm?.addEventListener('submit', handleFormSubmit);
+      document.getElementById("close-modal")?.addEventListener("click", closeModal);
+      document.getElementById("cancel-btn")?.addEventListener("click", closeModal);
+      templateForm?.addEventListener("submit", handleFormSubmit);
 
       // Close modal on backdrop click
-      modal?.addEventListener('click', (e) => {
+      modal?.addEventListener("click", (e) => {
         if (e.target === modal) closeModal();
       });
     }
@@ -263,49 +278,53 @@ const { globalInputClasses } = globalClasses();
       currentTab = tab;
 
       // Update tab buttons
-      document.querySelectorAll('.tab-button').forEach(btn => {
+      document.querySelectorAll(".tab-button").forEach((btn) => {
         const btnTab = (btn as HTMLElement).dataset.tab;
         if (btnTab === tab) {
-          btn.classList.remove('border-transparent', 'text-gray-500');
-          btn.classList.add('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+          btn.classList.remove("border-transparent", "text-gray-500");
+          btn.classList.add("border-primary-500", "text-primary-600", "dark:text-primary-400");
         } else {
-          btn.classList.add('border-transparent', 'text-gray-500');
-          btn.classList.remove('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+          btn.classList.add("border-transparent", "text-gray-500");
+          btn.classList.remove("border-primary-500", "text-primary-600", "dark:text-primary-400");
         }
       });
 
       // Update sections
-      document.querySelectorAll('.template-section').forEach(section => {
-        const sectionId = section.id.replace('section-', '');
+      document.querySelectorAll(".template-section").forEach((section) => {
+        const sectionId = section.id.replace("section-", "");
         if (sectionId === tab) {
-          section.classList.remove('hidden');
+          section.classList.remove("hidden");
         } else {
-          section.classList.add('hidden');
+          section.classList.add("hidden");
         }
       });
     }
 
     async function loadTemplates() {
       try {
-        const response = await fetch('/api/project-templates/get?includeDisabled=true');
-        if (!response.ok) throw new Error('Failed to load templates');
+        const response = await fetch("/api/project-templates/get?includeDisabled=true");
+        if (!response.ok) throw new Error("Failed to load templates");
 
         const data = await response.json();
-        templates.punchlist = data.templates.filter((t: any) => t.type === 'punchlist');
-        templates.discussion = data.templates.filter((t: any) => t.type === 'discussion');
+        templates.punchlist = data.templates.filter((t: any) => t.type === "punchlist");
+        templates.discussion = data.templates.filter((t: any) => t.type === "discussion");
 
         renderTemplates();
       } catch (error) {
-        console.error('Error loading templates:', error);
+        console.error("Error loading templates:", error);
         if (window.showError) {
-          window.showError('Failed to Load Templates', 'Unable to load templates. Please try again.', 0);
+          window.showError(
+            "Failed to Load Templates",
+            "Unable to load templates. Please try again.",
+            0
+          );
         }
       }
     }
 
     function renderTemplates() {
-      renderTemplateList('punchlist', templates.punchlist);
-      renderTemplateList('discussion', templates.discussion);
+      renderTemplateList("punchlist", templates.punchlist);
+      renderTemplateList("discussion", templates.discussion);
     }
 
     function renderTemplateList(type: string, items: any[]) {
@@ -316,7 +335,7 @@ const { globalInputClasses } = globalClasses();
         container.innerHTML = `
           <div class="p-8 text-center text-gray-500">
             <i class="bx bx-info-circle text-4xl mb-2"></i>
-            <p>No ${type} templates yet. Click "Add ${type === 'punchlist' ? 'Punchlist' : 'Discussion'} Item" to create one.</p>
+            <p>No ${type} templates yet. Click "Add ${type === "punchlist" ? "Punchlist" : "Discussion"} Item" to create one.</p>
           </div>
         `;
         return;
@@ -326,14 +345,14 @@ const { globalInputClasses } = globalClasses();
         .sort((a, b) => a.orderIndex - b.orderIndex)
         .map(
           (item) => `
-          <div class="p-4 ${!item.enabled ? 'opacity-50' : ''}">
+          <div class="p-4 ${!item.enabled ? "opacity-50" : ""}">
             <div class="flex items-start justify-between">
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-1">
                   <h4 class="font-medium">${item.title}</h4>
-                  ${!item.enabled ? '<span class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">Disabled</span>' : ''}
-                  ${item.internal ? '<span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">Internal</span>' : ''}
-                  ${item.markCompleted ? '<span class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Auto-complete</span>' : ''}
+                  ${!item.enabled ? '<span class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">Disabled</span>' : ""}
+                  ${item.internal ? '<span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">Internal</span>' : ""}
+                  ${item.markCompleted ? '<span class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Auto-complete</span>' : ""}
                 </div>
                 <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">${item.message}</p>
                 <p class="text-xs text-gray-400 mt-1">Order: ${item.orderIndex}</p>
@@ -358,139 +377,149 @@ const { globalInputClasses } = globalClasses();
           </div>
         `
         )
-        .join('');
+        .join("");
     }
 
     function openModal(type: string, template?: any) {
-      const modalTitle = document.getElementById('modal-title');
+      const modalTitle = document.getElementById("modal-title");
       const form = templateForm;
 
       if (!form || !modalTitle) return;
 
       // Set title
-      modalTitle.textContent = template ? 'Edit Template' : `Add ${type === 'punchlist' ? 'Punchlist' : 'Discussion'} Item`;
+      modalTitle.textContent = template
+        ? "Edit Template"
+        : `Add ${type === "punchlist" ? "Punchlist" : "Discussion"} Item`;
 
       // Reset form
       form.reset();
-      (document.getElementById('template-type') as HTMLInputElement).value = type;
+      (document.getElementById("template-type") as HTMLInputElement).value = type;
 
       // Populate form if editing
       if (template) {
-        (document.getElementById('template-id') as HTMLInputElement).value = template.id;
-        (document.getElementById('template-title') as HTMLInputElement).value = template.title;
-        (document.getElementById('template-message') as HTMLTextAreaElement).value = template.message;
-        (document.getElementById('template-order') as HTMLInputElement).value = template.orderIndex;
-        (document.getElementById('template-internal') as HTMLInputElement).checked = template.internal;
-        (document.getElementById('template-completed') as HTMLInputElement).checked = template.markCompleted;
-        (document.getElementById('template-enabled') as HTMLInputElement).checked = template.enabled;
+        (document.getElementById("template-id") as HTMLInputElement).value = template.id;
+        (document.getElementById("template-title") as HTMLInputElement).value = template.title;
+        (document.getElementById("template-message") as HTMLTextAreaElement).value =
+          template.message;
+        (document.getElementById("template-order") as HTMLInputElement).value = template.orderIndex;
+        (document.getElementById("template-internal") as HTMLInputElement).checked =
+          template.internal;
+        (document.getElementById("template-completed") as HTMLInputElement).checked =
+          template.markCompleted;
+        (document.getElementById("template-enabled") as HTMLInputElement).checked =
+          template.enabled;
       }
 
       // Show modal
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
     }
 
     function closeModal() {
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
     }
 
     async function handleFormSubmit(e: Event) {
       e.preventDefault();
 
       const formData = new FormData(templateForm);
-      
+
       // Get and validate required fields
-      const idValue = formData.get('id');
-      const type = formData.get('type') as string;
-      const title = formData.get('title') as string;
-      const message = formData.get('message') as string;
-      
+      const idValue = formData.get("id");
+      const type = formData.get("type") as string;
+      const title = formData.get("title") as string;
+      const message = formData.get("message") as string;
+
       // Validate required fields
       if (!type || !title || !message) {
         if (window.showError) {
-          window.showError('Validation Error', 'Please fill in all required fields (type, title, message)', 0);
+          window.showError(
+            "Validation Error",
+            "Please fill in all required fields (type, title, message)",
+            0
+          );
         }
         return;
       }
-      
+
       // Parse ID - convert to number if present, otherwise null
-      const id = idValue && idValue.toString().trim() 
-        ? (parseInt(idValue.toString()) || null)
-        : null;
-      
+      const id = idValue && idValue.toString().trim() ? parseInt(idValue.toString()) || null : null;
+
       const data: any = {
         type: type.trim(),
         title: title.trim(),
         message: message.trim(),
-        orderIndex: parseInt(formData.get('orderIndex') as string) || 0,
-        internal: formData.get('internal') === 'on',
-        markCompleted: formData.get('markCompleted') === 'on',
-        enabled: formData.get('enabled') === 'on',
+        orderIndex: parseInt(formData.get("orderIndex") as string) || 0,
+        internal: formData.get("internal") === "on",
+        markCompleted: formData.get("markCompleted") === "on",
+        enabled: formData.get("enabled") === "on",
       };
-      
+
       // Only include id if it's a valid number (for updates)
       if (id !== null && !isNaN(id)) {
         data.id = id;
       }
 
       try {
-        const response = await fetch('/api/project-templates/upsert', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/project-templates/upsert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Failed to save template' }));
+          const errorData = await response
+            .json()
+            .catch(() => ({ error: "Failed to save template" }));
           const errorMessage = errorData.error || `Failed to save template (${response.status})`;
-          const errorDetails = errorData.details ? `: ${errorData.details}` : '';
+          const errorDetails = errorData.details ? `: ${errorData.details}` : "";
           throw new Error(`${errorMessage}${errorDetails}`);
         }
 
         const result = await response.json();
         if (!result.success) {
-          throw new Error(result.error || 'Failed to save template');
+          throw new Error(result.error || "Failed to save template");
         }
 
         if (window.showSuccess) {
           window.showSuccess(
-            data.id ? 'Template Updated' : 'Template Created',
-            data.id ? 'Template updated successfully' : 'Template created successfully',
+            data.id ? "Template Updated" : "Template Created",
+            data.id ? "Template updated successfully" : "Template created successfully",
             4000
           );
         }
         closeModal();
         await loadTemplates();
       } catch (error) {
-        console.error('Error saving template:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to save template';
+        console.error("Error saving template:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to save template";
         if (window.showError) {
-          window.showError('Save Failed', errorMessage, 0);
+          window.showError("Save Failed", errorMessage, 0);
         }
       }
     }
 
     async function deleteTemplate(id: number, type: string) {
-      if (!confirm('Are you sure you want to delete this template?')) return;
+      if (!confirm("Are you sure you want to delete this template?")) return;
 
       try {
-        const response = await fetch('/api/project-templates/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/project-templates/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id }),
         });
 
-        if (!response.ok) throw new Error('Failed to delete template');
+        if (!response.ok) throw new Error("Failed to delete template");
 
         if (window.showSuccess) {
-          window.showSuccess('Template Deleted', 'Template deleted successfully', 4000);
+          window.showSuccess("Template Deleted", "Template deleted successfully", 4000);
         }
         await loadTemplates();
       } catch (error) {
-        console.error('Error deleting template:', error);
+        console.error("Error deleting template:", error);
         if (window.showError) {
-          window.showError('Delete Failed', 'Failed to delete template', 0);
+          window.showError("Delete Failed", "Failed to delete template", 0);
         }
       }
     }
@@ -512,7 +541,7 @@ const { globalInputClasses } = globalClasses();
     .tab-button {
       box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     .line-clamp-2 {
       display: -webkit-box;
       -webkit-line-clamp: 2;

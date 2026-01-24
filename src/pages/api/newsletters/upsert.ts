@@ -32,6 +32,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       isDraft,
       deliverViaEmail,
       deliverViaSms,
+      scheduledFor,
+      isScheduled,
     } = data;
 
     if (!supabaseAdmin) {
@@ -43,13 +45,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Validate required fields
     if (!title || !subject || !content) {
-      return new Response(
-        JSON.stringify({ error: "Title, subject, and content are required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Title, subject, and content are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (id) {
@@ -66,6 +65,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           isDraft: isDraft !== undefined ? isDraft : true,
           deliverViaEmail: deliverViaEmail !== undefined ? deliverViaEmail : true,
           deliverViaSms: deliverViaSms !== undefined ? deliverViaSms : false,
+          scheduledFor: scheduledFor || null,
+          isScheduled: isScheduled !== undefined ? isScheduled : false,
           updatedAt: new Date().toISOString(),
         })
         .eq("id", id)
@@ -76,7 +77,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Handle missing table error
         if (error.code === "42P01") {
           console.error("[NEWSLETTER-UPSERT] ❌ Table 'newsletters' does not exist!");
-          console.error("[NEWSLETTER-UPSERT] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:");
+          console.error(
+            "[NEWSLETTER-UPSERT] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:"
+          );
           console.error(`
 CREATE TABLE newsletters (
   id SERIAL PRIMARY KEY,
@@ -120,7 +123,8 @@ CREATE INDEX idx_newsletters_created_at ON newsletters("createdAt" DESC);
             JSON.stringify({
               success: false,
               error: "Database table not set up. Please run the SQL setup script.",
-              details: "Check server logs for SQL commands or see sql-queriers/create-newsletters-table.sql",
+              details:
+                "Check server logs for SQL commands or see sql-queriers/create-newsletters-table.sql",
               setupRequired: true,
             }),
             {
@@ -165,6 +169,8 @@ CREATE INDEX idx_newsletters_created_at ON newsletters("createdAt" DESC);
           isDraft: isDraft !== undefined ? isDraft : true,
           deliverViaEmail: deliverViaEmail !== undefined ? deliverViaEmail : true,
           deliverViaSms: deliverViaSms !== undefined ? deliverViaSms : false,
+          scheduledFor: scheduledFor || null,
+          isScheduled: isScheduled !== undefined ? isScheduled : false,
         })
         .select()
         .single();
@@ -173,7 +179,9 @@ CREATE INDEX idx_newsletters_created_at ON newsletters("createdAt" DESC);
         // Handle missing table error
         if (error.code === "42P01") {
           console.error("[NEWSLETTER-UPSERT] ❌ Table 'newsletters' does not exist!");
-          console.error("[NEWSLETTER-UPSERT] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:");
+          console.error(
+            "[NEWSLETTER-UPSERT] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:"
+          );
           console.error(`
 CREATE TABLE newsletters (
   id SERIAL PRIMARY KEY,
@@ -217,7 +225,8 @@ CREATE INDEX idx_newsletters_created_at ON newsletters("createdAt" DESC);
             JSON.stringify({
               success: false,
               error: "Database table not set up. Please run the SQL setup script.",
-              details: "Check server logs for SQL commands or see sql-queriers/create-newsletters-table.sql",
+              details:
+                "Check server logs for SQL commands or see sql-queriers/create-newsletters-table.sql",
               setupRequired: true,
             }),
             {

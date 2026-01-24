@@ -106,7 +106,8 @@ const recipientTypeOptions = [
               Option 2: Check server logs
             </p>
             <p class="text-xs text-red-700 dark:text-red-400">
-              Full SQL commands are logged in the server console for copy/paste into Supabase SQL Editor.
+              Full SQL commands are logged in the server console for copy/paste into Supabase SQL
+              Editor.
             </p>
           </div>
         </div>
@@ -180,13 +181,7 @@ const recipientTypeOptions = [
         Send To
       </label>
       <select id="recipientType" name="recipientType" class={globalInputClasses}>
-        {
-          recipientTypeOptions.map((opt) => (
-            <option value={opt.value}>
-              {opt.label}
-            </option>
-          ))
-        }
+        {recipientTypeOptions.map((opt) => <option value={opt.value}>{opt.label}</option>)}
       </select>
     </div>
 
@@ -220,12 +215,19 @@ const recipientTypeOptions = [
     <!-- Delivery Options -->
     <div class="flex flex-wrap gap-6">
       <label class="inline-flex cursor-pointer items-center">
-        <input type="checkbox" id="deliverViaEmail" name="deliverViaEmail" checked class="peer sr-only" />
+        <input
+          type="checkbox"
+          id="deliverViaEmail"
+          name="deliverViaEmail"
+          checked
+          class="peer sr-only"
+        />
         <div
           class="peer relative h-6 w-11 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full"
         >
         </div>
-        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Send via Email</span>
+        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Send via Email</span
+        >
       </label>
 
       <label class="inline-flex cursor-pointer items-center">
@@ -238,6 +240,25 @@ const recipientTypeOptions = [
           >Send via SMS (if available)</span
         >
       </label>
+    </div>
+
+    <!-- Scheduling -->
+    <div>
+      <label class="mb-2 flex items-center gap-2">
+        <input type="checkbox" id="enableScheduling" class="rounded" />
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Schedule for later</span>
+      </label>
+      <div id="scheduling-section" class="mt-2 hidden">
+        <input
+          type="datetime-local"
+          id="scheduledFor"
+          name="scheduledFor"
+          class={globalInputClasses}
+        />
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Newsletter will be automatically sent at the scheduled time
+        </p>
+      </div>
     </div>
 
     <!-- Status Toggles -->
@@ -265,13 +286,7 @@ const recipientTypeOptions = [
 
     <!-- Actions -->
     <div class="flex justify-end gap-3">
-      <Button
-        id="cancel-btn"
-        type="button"
-        variant="outline"
-        size="md"
-        class="hidden"
-      >
+      <Button id="cancel-btn" type="button" variant="outline" size="md" class="hidden">
         Cancel
       </Button>
       <Button
@@ -313,6 +328,11 @@ const recipientTypeOptions = [
                         Draft
                       </span>
                     )}
+                    {newsletter.isScheduled && (
+                      <span class="inline-flex items-center rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                        ⏰ Scheduled
+                      </span>
+                    )}
                     {!newsletter.isActive && (
                       <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                         Inactive
@@ -322,6 +342,11 @@ const recipientTypeOptions = [
                   <p class="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">
                     Subject: {newsletter.subject}
                   </p>
+                  {newsletter.isScheduled && newsletter.scheduledFor && (
+                    <p class="mt-1 text-xs text-blue-600 dark:text-blue-400">
+                      📅 Scheduled for: {new Date(newsletter.scheduledFor).toLocaleString()}
+                    </p>
+                  )}
                   <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     Recipients: {newsletter.recipientType}
                     {newsletter.customRecipients?.length > 0 && (
@@ -347,18 +372,31 @@ const recipientTypeOptions = [
                   >
                     Edit
                   </Button>
-                  {!newsletter.isDraft && newsletter.isActive && (
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      icon="send"
-                      class="send-newsletter-btn"
-                      data-id={newsletter.id}
-                      data-title={newsletter.title}
-                    >
-                      Send
-                    </Button>
+                  {!newsletter.isDraft && newsletter.isActive && !newsletter.isScheduled && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        icon="send"
+                        class="send-newsletter-btn"
+                        data-id={newsletter.id}
+                        data-title={newsletter.title}
+                      >
+                        Send
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        icon="time"
+                        class="schedule-newsletter-btn"
+                        data-id={newsletter.id}
+                        data-title={newsletter.title}
+                      >
+                        Schedule
+                      </Button>
+                    </>
                   )}
                   <DeleteConfirmButton
                     id={`delete-newsletter-${newsletter.id}`}
@@ -415,10 +453,34 @@ const recipientTypeOptions = [
         searchInput.addEventListener("input", handleRecipientSearch as EventListener);
       }
 
+      // Scheduling toggle
+      const enableScheduling = document.getElementById("enableScheduling");
+      if (enableScheduling) {
+        enableScheduling.addEventListener("change", handleSchedulingToggle as EventListener);
+      }
+
       // Cancel button
       const cancelBtn = document.getElementById("cancel-btn");
       if (cancelBtn) {
         cancelBtn.addEventListener("click", resetForm);
+      }
+    }
+
+    function handleSchedulingToggle(e: Event) {
+      const checkbox = e.target as HTMLInputElement;
+      const schedulingSection = document.getElementById("scheduling-section");
+
+      if (checkbox.checked) {
+        schedulingSection?.classList.remove("hidden");
+        // Set min datetime to now
+        const scheduledForInput = document.getElementById("scheduledFor") as HTMLInputElement;
+        if (scheduledForInput) {
+          const now = new Date();
+          now.setMinutes(now.getMinutes() + 5); // At least 5 minutes in the future
+          scheduledForInput.min = now.toISOString().slice(0, 16);
+        }
+      } else {
+        schedulingSection?.classList.add("hidden");
       }
     }
 
@@ -429,6 +491,7 @@ const recipientTypeOptions = [
           const target = e.target as HTMLElement;
           const editBtn = target.closest(".edit-newsletter-btn");
           const sendBtn = target.closest(".send-newsletter-btn");
+          const scheduleBtn = target.closest(".schedule-newsletter-btn");
 
           if (editBtn) {
             const newsletter = JSON.parse((editBtn as HTMLElement).dataset.newsletter || "{}");
@@ -439,6 +502,12 @@ const recipientTypeOptions = [
             const id = parseInt((sendBtn as HTMLElement).dataset.id || "0");
             const title = (sendBtn as HTMLElement).dataset.title || "";
             sendNewsletter(id, title);
+          }
+
+          if (scheduleBtn) {
+            const id = parseInt((scheduleBtn as HTMLElement).dataset.id || "0");
+            const title = (scheduleBtn as HTMLElement).dataset.title || "";
+            promptScheduleNewsletter(id, title);
           }
         });
 
@@ -639,7 +708,8 @@ const recipientTypeOptions = [
         }
       } catch (error) {
         console.error("Error saving newsletter:", error);
-        if ((window as any).showModal) (window as any).showModal("error", "Error saving newsletter");
+        if ((window as any).showModal)
+          (window as any).showModal("error", "Error saving newsletter");
       } finally {
         if (submitBtn) {
           (submitBtn as HTMLButtonElement).disabled = false;
@@ -678,7 +748,8 @@ const recipientTypeOptions = [
         }
       } catch (error) {
         console.error("Error sending newsletter:", error);
-        if ((window as any).showModal) (window as any).showModal("error", "Error sending newsletter");
+        if ((window as any).showModal)
+          (window as any).showModal("error", "Error sending newsletter");
       }
     }
 
@@ -703,7 +774,53 @@ const recipientTypeOptions = [
         }
       } catch (error) {
         console.error("Error deleting newsletter:", error);
-        if ((window as any).showModal) (window as any).showModal("error", "Error deleting newsletter");
+        if ((window as any).showModal)
+          (window as any).showModal("error", "Error deleting newsletter");
+      }
+    }
+
+    async function promptScheduleNewsletter(id: number, title: string) {
+      // Create a modal/prompt for scheduling
+      const datetime = prompt(
+        `Schedule "${title}" for:\n\nEnter date and time (e.g., 2026-01-25 14:30):`
+      );
+
+      if (!datetime) return;
+
+      const scheduledFor = new Date(datetime);
+
+      if (isNaN(scheduledFor.getTime())) {
+        if ((window as any).showModal) (window as any).showModal("error", "Invalid date format");
+        return;
+      }
+
+      if (scheduledFor <= new Date()) {
+        if ((window as any).showModal)
+          (window as any).showModal("error", "Scheduled time must be in the future");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/newsletters/schedule", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id, scheduledFor: scheduledFor.toISOString() }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          if ((window as any).showModal) (window as any).showModal("success", result.message);
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          if ((window as any).showModal)
+            (window as any).showModal("error", result.error || "Failed to schedule newsletter");
+        }
+      } catch (error) {
+        console.error("Error scheduling newsletter:", error);
+        if ((window as any).showModal)
+          (window as any).showModal("error", "Error scheduling newsletter");
       }
     }
 

@@ -47,6 +47,14 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
 >
   <div class="flex-1 px-3 py-4 overflow-y-auto overscroll-contain">
     <ul
+      class={`block md:hidden space-y-2 text-xs font-medium uppercase tracking-wider ${primaryTextClasses}`}
+      id="sidebar-menu-1"
+    >
+      <!-- front end navigation (mobile only) -->
+      <Fragment set:html={mobileNavigationHTML} />
+    </ul>
+
+    <ul
       class={`space-y-2 text-xs font-medium uppercase tracking-wider ${primaryTextClasses}`}
       id="sidebar-menu"
     >
@@ -56,9 +64,6 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
 
        
   )} -->
-
-      <!-- front end navigation (mobile only) -->
-      <Fragment set:html={mobileNavigationHTML} />
 
       <!-- Dashboard (Always shown) -->
 
@@ -102,7 +107,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
                 </span>
                 <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
               </a>
-              <ul id="dropdown-design" class="hidden space-y-2 py-2">
+              <ul id="dropdown-design" class="hidden space-y-2 py-2 pl-6">
                 <li>
                   <a
                     href="/admin/design"
@@ -201,6 +206,15 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
                     Proposals
                   </a>
                 </li>
+                 <li>
+                  <a
+                    href="/project/settings"
+                    class={`${anchorClasses}`}
+                    data-sidebar-collapse-subitem=""
+                  >
+                    Settings
+                  </a>
+                </li>
               )}
             </ul>
           </li>
@@ -257,7 +271,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700"
             >
               View notifications
-              <div class="tooltip-arrow" data-popper-arrow></div>
+              <div class="tooltip-arrow" data-popper-arrow />
             </div>
           </li>
         )
@@ -435,40 +449,49 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
     
     -->
 
-<script>
-  // Debug notification bell rendering
-  console.log('🔔 [ASIDE DEBUG] Aside component script loaded');
-  
-  function checkNotificationBell() {
-    const bell = document.getElementById('notification-bell');
-    console.log('🔔 [ASIDE DEBUG] Checking for notification bell...');
-    console.log('🔔 [ASIDE DEBUG] Bell element:', bell);
-    
-    if (bell) {
-      console.log('✅ [ASIDE DEBUG] Notification bell found!');
-      console.log('🔔 [ASIDE DEBUG] Bell classes:', bell.className);
-      console.log('🔔 [ASIDE DEBUG] Bell href:', bell.getAttribute('href'));
-      console.log('🔔 [ASIDE DEBUG] Bell data-modal-target:', bell.getAttribute('data-modal-target'));
-      console.log('🔔 [ASIDE DEBUG] Bell parent:', bell.parentElement);
-      console.log('🔔 [ASIDE DEBUG] Bell visible:', window.getComputedStyle(bell).display !== 'none');
-    } else {
-      console.error('❌ [ASIDE DEBUG] Notification bell NOT found in DOM!');
-      console.log('🔔 [ASIDE DEBUG] All sidebar links:', 
-        Array.from(document.querySelectorAll('#sidebar a')).map(a => ({
-          id: a.id,
-          text: a.textContent?.trim(),
-          href: a.getAttribute('href')
-        }))
-      );
+<script define:vars={{ shouldCheckBell: currentUser?.id && currentRole !== "Client" }}>
+  // Debug notification bell rendering (only runs when bell should be present)
+  if (shouldCheckBell) {
+    console.log("🔔 [ASIDE DEBUG] Aside component script loaded");
+
+    function checkNotificationBell() {
+      const bell = document.getElementById("notification-bell");
+      console.log("🔔 [ASIDE DEBUG] Checking for notification bell...");
+      console.log("🔔 [ASIDE DEBUG] Bell element:", bell);
+
+      if (bell) {
+        console.log("✅ [ASIDE DEBUG] Notification bell found!");
+        console.log("🔔 [ASIDE DEBUG] Bell classes:", bell.className);
+        console.log("🔔 [ASIDE DEBUG] Bell href:", bell.getAttribute("href"));
+        console.log(
+          "🔔 [ASIDE DEBUG] Bell data-modal-target:",
+          bell.getAttribute("data-modal-target")
+        );
+        console.log("🔔 [ASIDE DEBUG] Bell parent:", bell.parentElement);
+        console.log(
+          "🔔 [ASIDE DEBUG] Bell visible:",
+          window.getComputedStyle(bell).display !== "none"
+        );
+      } else {
+        console.error("❌ [ASIDE DEBUG] Notification bell NOT found in DOM!");
+        console.log(
+          "🔔 [ASIDE DEBUG] All sidebar links:",
+          Array.from(document.querySelectorAll("#sidebar a")).map((a) => ({
+            id: a.id,
+            text: a.textContent?.trim(),
+            href: a.getAttribute("href"),
+          }))
+        );
+      }
     }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", checkNotificationBell);
+    } else {
+      checkNotificationBell();
+    }
+
+    // Check again after delay
+    setTimeout(checkNotificationBell, 500);
   }
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', checkNotificationBell);
-  } else {
-    checkNotificationBell();
-  }
-  
-  // Check again after delay
-  setTimeout(checkNotificationBell, 500);
 </script>
