@@ -6,6 +6,7 @@
 import { checkAuth } from "../../lib/auth";
 import App from "../../components/ui/App.astro";
 import Button from "../../components/common/Button.astro";
+import CloseButton from "../../components/ui/CloseButton.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
 import { readFileSync, existsSync } from "fs";
@@ -145,7 +146,9 @@ const componentGroups = discoverComponents();
 const commonComponents = componentGroups["Common Components"] || [];
 const blockComponents = componentGroups["Block Components"] || [];
 const featureGroups = Object.fromEntries(
-  Object.entries(componentGroups).filter(([category]) => category !== "Common Components" && category !== "Block Components")
+  Object.entries(componentGroups).filter(
+    ([category]) => category !== "Common Components" && category !== "Block Components"
+  )
 );
 
 // Component shortcode templates with default demo values
@@ -176,7 +179,7 @@ const componentShortcodes: Record<string, string> = {
   SimpleIcon: `<SimpleIcon name="check" class="h-5 w-5 text-green-500" />`,
   Features: `<Features />`,
   Dropzone: `<Dropzone />`,
-  
+
   // Block Components
   AlertBlock: `<AlertBlock
   variant="info"
@@ -264,7 +267,7 @@ const componentShortcodes: Record<string, string> = {
   NewsletterBlock: `<NewsletterBlock />`,
   TeamBlock: `<TeamBlock />`,
   FeatureGridBlock: `<FeatureGridBlock />`,
-  
+
   // UI Components
   ImageSlider: `<ImageSlider
   title="Our Projects"
@@ -640,26 +643,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
           <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="modal-title">
             Create New Page
           </h3>
-          <button
-            id="close-modal-btn"
-            type="button"
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded p-1"
-            aria-label="Close modal"
-          >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
+          <CloseButton id="close-modal-btn" tooltipText="Close modal" position="top" />
         </div>
         <form id="page-form" class="space-y-4">
           <div>
@@ -895,8 +879,10 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                           {commonComponents.map((comp) => (
                             <div class="bg-white dark:bg-gray-800 rounded p-2 border border-gray-200 dark:border-gray-600">
                               <div class="flex items-center justify-between mb-1">
-                                <span class="font-semibold text-primary-600 dark:text-primary-400">{comp.name}</span>
-                                <button 
+                                <span class="font-semibold text-primary-600 dark:text-primary-400">
+                                  {comp.name}
+                                </span>
+                                <button
                                   type="button"
                                   class="copy-shortcode-btn text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
                                   data-shortcode={getComponentShortcode(comp.name)}
@@ -904,7 +890,9 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                                   Copy
                                 </button>
                               </div>
-                              <pre class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all text-[10px] leading-tight">{getComponentShortcode(comp.name)}</pre>
+                              <pre class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all text-[10px] leading-tight">
+                                {getComponentShortcode(comp.name)}
+                              </pre>
                             </div>
                           ))}
                         </div>
@@ -917,11 +905,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               <!-- Block Components Accordion -->
               {
                 blockComponents.length > 0 && (
-                  <div
-                    id="modal-block-components-accordion"
-                    data-accordion="collapse"
-                    class="mb-2"
-                  >
+                  <div id="modal-block-components-accordion" data-accordion="collapse" class="mb-2">
                     <h2>
                       <button
                         type="button"
@@ -962,8 +946,10 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                           {blockComponents.map((comp) => (
                             <div class="bg-white dark:bg-gray-800 rounded p-2 border border-gray-200 dark:border-gray-600">
                               <div class="flex items-center justify-between mb-1">
-                                <span class="font-semibold text-primary-600 dark:text-primary-400">{comp.name}</span>
-                                <button 
+                                <span class="font-semibold text-primary-600 dark:text-primary-400">
+                                  {comp.name}
+                                </span>
+                                <button
                                   type="button"
                                   class="copy-shortcode-btn text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
                                   data-shortcode={getComponentShortcode(comp.name)}
@@ -971,7 +957,9 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                                   Copy
                                 </button>
                               </div>
-                              <pre class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all text-[10px] leading-tight">{getComponentShortcode(comp.name)}</pre>
+                              <pre class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all text-[10px] leading-tight">
+                                {getComponentShortcode(comp.name)}
+                              </pre>
                             </div>
                           ))}
                         </div>
@@ -1075,8 +1063,10 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                                       {components.map((comp) => (
                                         <div class="bg-gray-50 dark:bg-gray-700 rounded p-2 border border-gray-200 dark:border-gray-600">
                                           <div class="flex items-center justify-between mb-1">
-                                            <span class="font-semibold text-primary-600 dark:text-primary-400">{comp.name}</span>
-                                            <button 
+                                            <span class="font-semibold text-primary-600 dark:text-primary-400">
+                                              {comp.name}
+                                            </span>
+                                            <button
                                               type="button"
                                               class="copy-shortcode-btn text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded text-gray-600 dark:text-gray-300"
                                               data-shortcode={getComponentShortcode(comp.name)}
@@ -1084,7 +1074,9 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                                               Copy
                                             </button>
                                           </div>
-                                          <pre class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all text-[10px] leading-tight">{getComponentShortcode(comp.name)}</pre>
+                                          <pre class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all text-[10px] leading-tight">
+                                            {getComponentShortcode(comp.name)}
+                                          </pre>
                                         </div>
                                       ))}
                                     </div>
@@ -1229,10 +1221,12 @@ You can embed components:
                 navButtonStyleSelect.value = page.navButtonStyle || page.nav_button_style || "";
               }
               if (navDesktopOnlyCheckbox && navDesktopOnlyCheckbox instanceof HTMLInputElement) {
-                navDesktopOnlyCheckbox.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
+                navDesktopOnlyCheckbox.checked =
+                  page.navDesktopOnly ?? page.nav_desktop_only ?? false;
               }
               if (navHideWhenAuthCheckbox && navHideWhenAuthCheckbox instanceof HTMLInputElement) {
-                navHideWhenAuthCheckbox.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
+                navHideWhenAuthCheckbox.checked =
+                  page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
               }
 
               // Set nav roles checkboxes (read camelCase from database)
@@ -1394,7 +1388,11 @@ You can embed components:
               } catch (error) {
                 console.error("Error updating page order:", error);
                 if (window.showError) {
-                  window.showError("Save Failed", "Failed to save new order. Reloading page...", 3000);
+                  window.showError(
+                    "Save Failed",
+                    "Failed to save new order. Reloading page...",
+                    3000
+                  );
                 }
                 setTimeout(() => location.reload(), 1000);
               }
@@ -1417,7 +1415,11 @@ You can embed components:
           }
 
           if (window.showSuccess) {
-            window.showSuccess("Import Successful", `Successfully imported "${slug}" from markdown!`, 3000);
+            window.showSuccess(
+              "Import Successful",
+              `Successfully imported "${slug}" from markdown!`,
+              3000
+            );
           }
           setTimeout(() => location.reload(), 500);
         } catch (error) {
@@ -1468,7 +1470,11 @@ You can embed components:
               }
             } else {
               if (window.showSuccess) {
-                window.showSuccess("Import Successful", `Successfully imported ${result.imported} markdown files!`, 4000);
+                window.showSuccess(
+                  "Import Successful",
+                  `Successfully imported ${result.imported} markdown files!`,
+                  4000
+                );
               }
             }
 
@@ -1635,10 +1641,20 @@ You can embed components:
             await navigator.clipboard.writeText(shortcode);
             const originalText = target.textContent;
             target.textContent = "Copied!";
-            target.classList.add("bg-green-100", "dark:bg-green-800", "text-green-700", "dark:text-green-200");
+            target.classList.add(
+              "bg-green-100",
+              "dark:bg-green-800",
+              "text-green-700",
+              "dark:text-green-200"
+            );
             setTimeout(() => {
               target.textContent = originalText;
-              target.classList.remove("bg-green-100", "dark:bg-green-800", "text-green-700", "dark:text-green-200");
+              target.classList.remove(
+                "bg-green-100",
+                "dark:bg-green-800",
+                "text-green-700",
+                "dark:text-green-200"
+              );
             }, 1500);
           } catch (err) {
             console.error("Failed to copy:", err);

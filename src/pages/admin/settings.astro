@@ -7,6 +7,7 @@
 import { checkAuth } from "../../lib/auth";
 import App from "../../components/ui/App.astro";
 import Button from "../../components/common/Button.astro";
+import DeleteConfirmButton from "../../components/common/DeleteConfirmButton.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
 
@@ -318,13 +319,12 @@ const settings = {
                 <div class="w-10 h-10 flex items-center justify-center text-xl social-icon-preview text-gray-400">
                   <i class="fa-solid fa-link"></i>
                 </div>
-                <button
-                  type="button"
-                  class="remove-social-btn p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  title="Remove"
-                >
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
+                <DeleteConfirmButton 
+                  id={`remove-social-${index}`}
+                  class="remove-social-btn"
+                  size="sm"
+                  variant="icon"
+                />
               </div>
             ))
           ) : (
@@ -1201,11 +1201,18 @@ const settings = {
         <i class="fa-solid fa-link"></i>
       </div>
       <button
+        id="remove-social-${index}"
         type="button"
-        class="remove-social-btn p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-        title="Remove"
+        class="delete-confirm-btn remove-social-btn inline-flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors text-sm px-3 py-3"
+        title="Delete"
+        data-state="trash"
+        data-timeout="3000"
       >
-        <i class="fa-solid fa-trash-can"></i>
+        <svg class="delete-confirm-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+        </svg>
       </button>
     `;
     
@@ -1227,9 +1234,9 @@ const settings = {
     const labelInput = item.querySelector(".social-label-input");
     labelInput?.addEventListener("input", updateSocialNetworksValue);
     
-    // Remove button
+    // Remove button - listen for deleteConfirmed event
     const removeBtn = item.querySelector(".remove-social-btn");
-    removeBtn?.addEventListener("click", () => {
+    removeBtn?.addEventListener("deleteConfirmed", () => {
       item.remove();
       updateSocialNetworksValue();
     });

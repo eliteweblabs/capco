@@ -4,9 +4,17 @@ import Button from "../../../components/common/Button.astro";
 import PhoneAndSMS from "../../../components/form/PhoneAndSMS.astro";
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 import InlineAddressSearch from "../../../components/form/InlineAddressSearch.astro";
+import SlotMachineModal from "../../../components/form/SlotMachineModal.astro";
+import { SMS_UTILS } from "../../../lib/sms-utils";
 
 import { globalClasses } from "../../../pages/api/global/global-classes";
 const { globalInputClasses } = globalClasses();
+
+// Get carrier options for the modal
+const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
+  value: carrier.id,
+  label: carrier.name,
+}));
 
 // Button templates - change these props to customize all buttons at once
 const nextButtonProps = {
@@ -44,16 +52,12 @@ const submitButtonProps = {
 <div class="mb-6 sm:mb-12 px-4">
   <div class="relative">
     <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-      <div
-        id="contact-progress-bar"
-        class="h-full rounded-full bg-primary-500"
-        style="width: 0%"
-      >
+      <div id="contact-progress-bar" class="h-full rounded-full bg-primary-500" style="width: 0%">
       </div>
     </div>
     <div class="mt-3 text-center">
       <span id="contact-progress-text" class="text-sm font-medium text-gray-600 dark:text-gray-400">
-        1 / 7
+        1 / 8
       </span>
     </div>
   </div>
@@ -166,8 +170,8 @@ const submitButtonProps = {
         </p>
       </div>
 
-      <!-- Hidden input to store SMS consent value -->
-      <input type="hidden" name="smsConsent" id="contact-sms-consent" value="" />
+      <!-- Hidden input to store SMS alerts value -->
+      <input type="hidden" name="smsAlerts" id="contact-sms-alerts" value="false" />
 
       <div class="flex justify-between gap-3">
         <Button {...prevButtonProps} dataAttributes={{ "data-prev": "3" }}> back </Button>
@@ -177,7 +181,7 @@ const submitButtonProps = {
             variant="secondary"
             size="xl"
             class="sms-choice"
-            dataAttributes={{ "data-next": "5", "data-sms-value": "false" }}
+            dataAttributes={{ "data-next": "6", "data-sms-value": "false" }}
           >
             no
           </Button>
@@ -195,8 +199,42 @@ const submitButtonProps = {
     </div>
   </div>
 
-  <!-- Step 5: Company -->
+  <!-- Step 5: Mobile Carrier (only shown if SMS alerts = yes) -->
   <div class="step-content" data-step="5">
+    <div class="space-y-8">
+      <div class="text-center">
+        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your mobile carrier?</h2>
+        <p class="text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+          This helps us deliver SMS messages to your phone.
+        </p>
+      </div>
+
+      <div class="input-wrapper">
+        <SlotMachineModal
+          id="contact-carrier"
+          title="Select Your Carrier"
+          icon="phone"
+          options={mobileCarrierOptions}
+          selectedValue=""
+          placeholder="Select your carrier..."
+          buttonText="Select Carrier *"
+          buttonClass="w-full"
+          buttonVariant="primary"
+          showCloseButton={true}
+          showCancelButton={true}
+          {globalInputClasses}
+        />
+      </div>
+
+      <div class="flex justify-between gap-3">
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "4" }}> back </Button>
+        <Button {...nextButtonProps} dataAttributes={{ "data-next": "6" }}> next </Button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 6: Company -->
+  <div class="step-content" data-step="6">
     <div class="space-y-8">
       <div class="text-center">
         <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your company?</h2>
@@ -216,14 +254,14 @@ const submitButtonProps = {
       </div>
 
       <div class="flex justify-between gap-3">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "4" }}> back </Button>
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "6" }}> next </Button>
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "5" }}> back </Button>
+        <Button {...nextButtonProps} dataAttributes={{ "data-next": "7" }}> next </Button>
       </div>
     </div>
   </div>
 
-  <!-- Step 6: Address -->
-  <div class="step-content" data-step="6">
+  <!-- Step 7: Address -->
+  <div class="step-content" data-step="7">
     <div class="space-y-8">
       <div class="text-center">
         <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your address?</h2>
@@ -248,14 +286,14 @@ const submitButtonProps = {
       </div>
 
       <div class="flex justify-between gap-3">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "5" }}> back </Button>
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "7" }}> next </Button>
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "6" }}> back </Button>
+        <Button {...nextButtonProps} dataAttributes={{ "data-next": "8" }}> next </Button>
       </div>
     </div>
   </div>
 
-  <!-- Step 7: Message -->
-  <div class="step-content" data-step="7">
+  <!-- Step 8: Message -->
+  <div class="step-content" data-step="8">
     <div class="space-y-8">
       <div class="text-center">
         <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your message?</h2>
@@ -273,7 +311,7 @@ const submitButtonProps = {
       </div>
 
       <div class="flex justify-between gap-3">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "6" }}> back </Button>
+        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "7" }}> back </Button>
         <Button {...submitButtonProps}> send message </Button>
       </div>
     </div>
@@ -296,10 +334,6 @@ const submitButtonProps = {
   .step-content.active {
     display: block;
   }
-
-  :global(#sidebar-toggle-button) {
-    display: none;
-  }
 </style>
 
 <script>
@@ -307,10 +341,14 @@ const submitButtonProps = {
     const form = document.getElementById("multi-step-contact-form") as HTMLFormElement;
     if (!form) return;
 
+    const sidebarToggleButton = document.getElementById("sidebar-toggle-button") as HTMLElement;
+    if (sidebarToggleButton) {
+      sidebarToggleButton.style.display = "none";
+    }
     const progressBar = document.getElementById("contact-progress-bar") as HTMLElement;
     const progressText = document.getElementById("contact-progress-text") as HTMLElement;
     let currentStep = 1;
-    const totalSteps = 7;
+    const totalSteps = 8;
 
     // Update progress bar
     function updateProgress() {
@@ -422,8 +460,24 @@ const submitButtonProps = {
         }
       }
 
-      // Special validation for address field (Step 6)
-      if (stepNumber === 6) {
+      // Special validation for carrier field (Step 5) - only if SMS alerts is enabled
+      if (stepNumber === 5) {
+        const smsAlertsInput = document.getElementById("contact-sms-alerts") as HTMLInputElement;
+        const smsEnabled = smsAlertsInput && smsAlertsInput.value === "true";
+        
+        if (smsEnabled) {
+          const carrierInput = document.getElementById("contact-carrier-value") as HTMLInputElement;
+          if (carrierInput && !carrierInput.value) {
+            if (window.showModal) {
+              window.showModal("error", "Validation Error", "Please select your mobile carrier", 3000);
+            }
+            return false;
+          }
+        }
+      }
+
+      // Special validation for address field (Step 7)
+      if (stepNumber === 7) {
         const addressInput = document.getElementById("contact-address-value") as HTMLInputElement;
         if (addressInput && !addressInput.value) {
           if (window.showModal) {
@@ -447,12 +501,12 @@ const submitButtonProps = {
       if (smsChoiceBtn) {
         e.preventDefault();
         const smsValue = smsChoiceBtn.getAttribute("data-sms-value");
-        const nextStep = parseInt(smsChoiceBtn.getAttribute("data-next") || "5");
+        const nextStep = parseInt(smsChoiceBtn.getAttribute("data-next") || "6");
 
-        // Store SMS consent value
-        const smsConsentInput = document.getElementById("contact-sms-consent") as HTMLInputElement;
-        if (smsConsentInput) {
-          smsConsentInput.value = smsValue || "false";
+        // Store SMS alerts value
+        const smsAlertsInput = document.getElementById("contact-sms-alerts") as HTMLInputElement;
+        if (smsAlertsInput) {
+          smsAlertsInput.value = smsValue || "false";
         }
 
         showStep(nextStep);

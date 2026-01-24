@@ -58,7 +58,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
   )} -->
 
       <!-- front end navigation (mobile only) -->
-      <!-- <Fragment set:html={mobileNavigationHTML} /> -->
+      <Fragment set:html={mobileNavigationHTML} />
 
       <!-- Dashboard (Always shown) -->
 
@@ -237,15 +237,28 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
             <a
               id="notification-bell"
               href="#"
-              class={`${anchorClasses} hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2`}
+              class={`${anchorClasses}`}
               data-sidebar-collapse-item=""
               data-modal-target="notificationsModal"
               data-modal-toggle="notificationsModal"
               data-user-id={currentUser.id}
+              title="View notifications"
+              data-tooltip-target="tooltip-notifications"
+              data-tooltip-placement="right"
             >
-              <SimpleIcon name="bell" class="mr-2" />
-              <span data-sidebar-collapse-hide="">View notifications</span>
+              <SimpleIcon name="bell" class={svgClasses} />
+              <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
+                View notifications
+              </span>
             </a>
+            <div
+              id="tooltip-notifications"
+              role="tooltip"
+              class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700"
+            >
+              View notifications
+              <div class="tooltip-arrow" data-popper-arrow></div>
+            </div>
           </li>
         )
       }
@@ -366,8 +379,6 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
         )
       }
     </ul>
-
-   
   </div>
 
   <!-- Fixed footer with social icons -->
@@ -423,3 +434,41 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
     </div>
     
     -->
+
+<script>
+  // Debug notification bell rendering
+  console.log('🔔 [ASIDE DEBUG] Aside component script loaded');
+  
+  function checkNotificationBell() {
+    const bell = document.getElementById('notification-bell');
+    console.log('🔔 [ASIDE DEBUG] Checking for notification bell...');
+    console.log('🔔 [ASIDE DEBUG] Bell element:', bell);
+    
+    if (bell) {
+      console.log('✅ [ASIDE DEBUG] Notification bell found!');
+      console.log('🔔 [ASIDE DEBUG] Bell classes:', bell.className);
+      console.log('🔔 [ASIDE DEBUG] Bell href:', bell.getAttribute('href'));
+      console.log('🔔 [ASIDE DEBUG] Bell data-modal-target:', bell.getAttribute('data-modal-target'));
+      console.log('🔔 [ASIDE DEBUG] Bell parent:', bell.parentElement);
+      console.log('🔔 [ASIDE DEBUG] Bell visible:', window.getComputedStyle(bell).display !== 'none');
+    } else {
+      console.error('❌ [ASIDE DEBUG] Notification bell NOT found in DOM!');
+      console.log('🔔 [ASIDE DEBUG] All sidebar links:', 
+        Array.from(document.querySelectorAll('#sidebar a')).map(a => ({
+          id: a.id,
+          text: a.textContent?.trim(),
+          href: a.getAttribute('href')
+        }))
+      );
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkNotificationBell);
+  } else {
+    checkNotificationBell();
+  }
+  
+  // Check again after delay
+  setTimeout(checkNotificationBell, 500);
+</script>
