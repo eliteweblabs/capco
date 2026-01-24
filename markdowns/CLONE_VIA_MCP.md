@@ -6,7 +6,8 @@ You have Supabase MCP configured! However, since Supabase MCP doesn't expose dir
 
 ```bash
 # Make sure your access token is set (from MCP config)
-export SUPABASE_ACCESS_TOKEN="sbp_a65bdf5279f0debe7e32d8bdd140a22b70556a8e"
+# Get your token from: https://supabase.com/dashboard/account/tokens
+export SUPABASE_ACCESS_TOKEN="your-supabase-access-token-here"
 
 # Run the clone script
 ./scripts/clone-schema-mcp.sh qudlxlryegnainztkrtk fhqglhcjlkusrykqnoel
