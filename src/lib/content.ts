@@ -132,14 +132,14 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     companyData = null;
     companyName = process.env.RAILWAY_PROJECT_NAME || "";
   }
-  
+
   // Slugify company name (same as project-form-config.ts)
   const companySlug = slugifyCompanyName(companyName);
-  
+
   // Try client-specific config file: site-config-{company-slug}.json
   // This matches the pattern: project-form-config-{company-slug}.ts
   let configPath = join(process.cwd(), `site-config-${companySlug}.json`);
-  
+
   // If client-specific doesn't exist, try generic fallback
   if (!existsSync(configPath)) {
     configPath = join(process.cwd(), "site-config.json");
@@ -152,12 +152,8 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         companyData?.globalCompanyName ||
         process.env.RAILWAY_PROJECT_NAME ||
         "Fire Protection Services",
-      slogan:
-        companyData?.globalCompanySlogan ||
-        "Professional Services",
-      description:
-        companyData?.globalCompanySlogan ||
-        "Fire protection system review and approval",
+      slogan: companyData?.globalCompanySlogan || "Professional Services",
+      description: companyData?.globalCompanySlogan || "Fire protection system review and approval",
       url: companyData?.globalCompanyWebsite || "http://localhost:4321",
       email:
         companyData?.globalCompanyEmail || process.env.GLOBAL_COMPANY_EMAIL || "admin@example.com",
@@ -228,10 +224,16 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         console.warn("⚠️ [CONTENT] Error parsing SITE_CONFIG_JSON env var:", error);
       }
     } else {
-      console.warn(`⚠️ [CONTENT] No site-config file found (tried: site-config-${companySlug}.json, site-config.json) and SITE_CONFIG_JSON env var not set`);
-      console.warn(`⚠️ [CONTENT] Using minimal defaults. This will result in missing sidebar items.`);
+      console.warn(
+        `⚠️ [CONTENT] No site-config file found (tried: site-config-${companySlug}.json, site-config.json) and SITE_CONFIG_JSON env var not set`
+      );
+      console.warn(
+        `⚠️ [CONTENT] Using minimal defaults. This will result in missing sidebar items.`
+      );
       console.warn(`⚠️ [CONTENT] Company: "${companyName}" → slug: "${companySlug}"`);
-      console.warn(`⚠️ [CONTENT] Fix: Create site-config-${companySlug}.json (matches project-form-config-${companySlug}.ts pattern) or set SITE_CONFIG_JSON env var.`);
+      console.warn(
+        `⚠️ [CONTENT] Fix: Create site-config-${companySlug}.json (matches project-form-config-${companySlug}.ts pattern) or set SITE_CONFIG_JSON env var.`
+      );
     }
   }
 
@@ -260,8 +262,7 @@ async function getDefaultPageContent(slug: string): Promise<PageContent | null> 
         process.env.RAILWAY_PROJECT_NAME ||
         "Fire Protection Services",
       description:
-        companyData?.globalCompanySlogan ||
-        "Professional fire protection plan review and approval",
+        companyData?.globalCompanySlogan || "Professional fire protection plan review and approval",
       template: "fullwidth",
       content: "",
     },
@@ -313,22 +314,22 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
   if (supabaseAdmin) {
     try {
       const clientId = process.env.RAILWAY_PROJECT_NAME || null;
-      
+
       // Normalize slug: "/" and "home" are equivalent for the home page
       const normalizedSlug = slug === "home" || slug === "/" ? ["home", "/"] : [slug];
-      
+
       let query = supabaseAdmin
         .from("cmsPages")
         .select("*")
         .in("slug", normalizedSlug)
         .eq("isActive", true);
-      
+
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
         query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
       }
       // If no clientId set, show all pages (no filter)
-      
+
       const { data: dbPage, error } = await query
         .order("clientId", { ascending: false }) // Client-specific takes priority
         .limit(1)
@@ -340,7 +341,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         if (normalizedTemplate === "full width") {
           normalizedTemplate = "fullwidth";
         }
-        
+
         const pageContent: PageContent = {
           title: dbPage.title || slug,
           description: dbPage.description || "",
@@ -349,8 +350,14 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
           ...(dbPage.frontmatter || {}),
         };
         cache.set(cacheKey, pageContent);
-        console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`);
+        console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`, {
+          contentLength: dbPage.content?.length,
+        });
         return pageContent;
+      } else if (error) {
+        console.error(`❌ [CONTENT] Database error for ${slug}:`, error);
+      } else {
+        console.log(`ℹ️ [CONTENT] No database page found for ${slug}`);
       }
     } catch (error) {
       console.warn(`⚠️ [CONTENT] Error loading ${slug} from database:`, error);

@@ -22,11 +22,8 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     if (slug) {
       // Get specific page
-      let query = supabaseAdmin
-        .from("cmsPages")
-        .select("*")
-        .eq("slug", slug);
-      
+      let query = supabaseAdmin.from("cmsPages").select("*").eq("slug", slug);
+
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
         query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
@@ -35,7 +32,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         // This ensures pages aren't hidden if RAILWAY_PROJECT_NAME is not set
         query = query;
       }
-      
+
       const { data, error } = await query
         .order("clientId", { ascending: false })
         .limit(1)
@@ -51,20 +48,21 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     } else {
       // Get all pages
-      let query = supabaseAdmin
-        .from("cmsPages")
-        .select("*");
-      
+      let query = supabaseAdmin.from("cmsPages").select("*");
+
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
         query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
       }
       // If no clientId set, show all pages (no filter)
-      
+
       // Try to order by displayOrder if column exists, otherwise order by slug
       // Note: If displayOrder column doesn't exist yet, this will fall back gracefully
-      let { data, error } = await query.order("displayOrder", { ascending: true, nullsFirst: false });
-      
+      let { data, error } = await query.order("displayOrder", {
+        ascending: true,
+        nullsFirst: false,
+      });
+
       // If ordering by displayOrder fails (column doesn't exist), fall back to slug ordering
       if (error && error.code === "42703") {
         // Column doesn't exist, use slug ordering instead
@@ -107,7 +105,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const body = await request.json();
     console.log("📥 [CMS-PAGES] Received body:", JSON.stringify(body, null, 2));
-    const {
+    let {
       slug,
       title,
       description,
@@ -121,6 +119,11 @@ export const POST: APIRoute = async ({ request }) => {
       nav_desktop_only,
       nav_hide_when_auth,
     } = body;
+
+    // Sanitize slug: remove leading/trailing slashes and whitespace
+    if (slug) {
+      slug = slug.trim().replace(/^\/+|\/+$/g, "");
+    }
     console.log("📥 [CMS-PAGES] Extracted values:", {
       slug,
       title,
@@ -223,7 +226,7 @@ export const POST: APIRoute = async ({ request }) => {
         // displayOrder will be set if column exists, otherwise ignored
         updatedAt: new Date().toISOString(),
       };
-      
+
       // Only set display_order if column exists (check by trying to get max value)
       // For now, we'll let it default to NULL if column doesn't exist
       // The migration will set initial values
@@ -331,13 +334,12 @@ export const PUT: APIRoute = async ({ request }) => {
     }
 
     // Update displayOrder for each page (accept both snake_case and camelCase from request)
-    const updatePromises = orders.map((item: { id: string; display_order?: number; displayOrder?: number }) => {
-      const displayOrder = item.displayOrder ?? item.display_order ?? 0;
-      return supabaseAdmin
-        .from("cmsPages")
-        .update({ displayOrder })
-        .eq("id", item.id);
-    });
+    const updatePromises = orders.map(
+      (item: { id: string; display_order?: number; displayOrder?: number }) => {
+        const displayOrder = item.displayOrder ?? item.display_order ?? 0;
+        return supabaseAdmin.from("cmsPages").update({ displayOrder }).eq("id", item.id);
+      }
+    );
 
     const results = await Promise.all(updatePromises);
     const errors = results.filter((r) => r.error);

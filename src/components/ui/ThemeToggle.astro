@@ -1,5 +1,5 @@
 ---
-
+import Tooltip from "../common/Tooltip.astro";
 ---
 
 <button
@@ -8,9 +8,11 @@
   type="button"
   class="inline-flex items-center rounded-lg p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
 >
+  <Tooltip text="Toggle dark mode" position="bottom" />
+
   <svg
     id="theme-toggle-dark-icon"
-    class="h-5 w-5"
+    class="hidden h-5 w-5"
     xmlns="http://www.w3.org/2000/svg"
     width="24"
     height="24"
@@ -24,7 +26,7 @@
 
   <svg
     id="theme-toggle-light-icon"
-    class="h-5 w-5"
+    class="hidden h-5 w-5"
     aria-hidden="true"
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -38,6 +40,8 @@
       clip-rule="evenodd"></path>
   </svg>
 </button>
+<span class="sr-only">Toggle dark mode</span>
+
 <div
   id="tooltip-toggle"
   role="tooltip"
@@ -60,8 +64,15 @@
     const isDark = document.documentElement.classList.contains("dark");
 
     isDark ? document.documentElement.classList.add("zD1iTsv7EQco3GO_szee") : "";
-    darkIcon.style.display = isDark ? "none" : "block";
-    lightIcon.style.display = isDark ? "block" : "none";
+
+    // Remove hidden class from the appropriate icon
+    if (isDark) {
+      darkIcon.classList.add("hidden");
+      lightIcon.classList.remove("hidden");
+    } else {
+      darkIcon.classList.remove("hidden");
+      lightIcon.classList.add("hidden");
+    }
 
     themeToggle.addEventListener("click", function () {
       const isDark = document.documentElement.classList.contains("dark");
@@ -71,14 +82,14 @@
         // Switch to light
         document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
         localStorage.setItem("color-theme", "light");
-        darkIcon.style.display = "block";
-        lightIcon.style.display = "none";
+        darkIcon.classList.remove("hidden");
+        lightIcon.classList.add("hidden");
       } else {
         // Switch to dark
         document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
         localStorage.setItem("color-theme", "dark");
-        darkIcon.style.display = "none";
-        lightIcon.style.display = "block";
+        darkIcon.classList.add("hidden");
+        lightIcon.classList.remove("hidden");
       }
 
       // Update cookie

@@ -654,8 +654,11 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               name="slug"
               required
               class={globalInputClasses}
-              placeholder="about"
+              placeholder="about (no leading or trailing slashes)"
             />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              URL path without slashes (e.g., "about" for /about, "privacy" for /privacy)
+            </p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               The URL path for this page (e.g., "about" becomes "/about")
             </p>
@@ -1121,8 +1124,8 @@ You can embed components:
           <div id="form-success" class="hidden text-green-600 dark:text-green-400 text-sm"></div>
 
           <div class="flex justify-end gap-3">
-            <Button type="button" id="cancel-btn" variant="secondary"> Cancel </Button>
-            <Button type="submit" variant="primary"> Save Page </Button>
+            <Button type="button" id="cancel-btn" variant="primary"> Cancel </Button>
+            <Button type="submit" variant="secondary"> Save Page </Button>
           </div>
         </form>
       </div>
@@ -1144,10 +1147,27 @@ You can embed components:
       const modalTitle = document.getElementById("modal-title");
       const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
       const navPropertiesSection = document.getElementById("navigation-properties");
+      const slugInput = document.getElementById("page-slug");
 
       if (!modal || !form || !createBtn) {
         console.error("[CMS] Required elements not found:", { modal, form, createBtn });
         return;
+      }
+
+      // Real-time slug sanitization
+      if (slugInput) {
+        slugInput.addEventListener("input", (e) => {
+          const input = e.target;
+          if (input instanceof HTMLInputElement) {
+            // Remove leading/trailing slashes as user types
+            const sanitized = input.value.replace(/^\/+|\/+$/g, "");
+            if (sanitized !== input.value) {
+              const cursorPos = input.selectionStart || 0;
+              input.value = sanitized;
+              input.setSelectionRange(cursorPos, cursorPos);
+            }
+          }
+        });
       }
 
       // Toggle navigation properties section based on checkbox
@@ -1514,7 +1534,8 @@ You can embed components:
         const contentTextarea = document.getElementById("page-content");
         const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
 
-        const slug = slugInput?.value?.trim() || "";
+        // Sanitize slug: remove leading/trailing slashes and whitespace
+        const slug = slugInput?.value?.trim().replace(/^\/+|\/+$/g, "") || "";
         const title = titleInput?.value?.trim() || null;
         const description = descInput?.value?.trim() || null;
         const content = contentTextarea?.value?.trim() || "";
