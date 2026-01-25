@@ -197,7 +197,7 @@ async function generateSignedUrls(files: any[], source: string) {
     }));
   }
   
-  console.log(`🔧 [ADMIN-MEDIA] Generating signed URLs for ${files.length} files from ${source}`);
+  console.log(`🔧 [ADMIN-MEDIA] Generating public URLs for ${files.length} files from ${source}`);
   
   return await Promise.all(
     files.map(async (f: any) => {
@@ -222,19 +222,19 @@ async function generateSignedUrls(files: any[], source: string) {
       }
 
       try {
-        console.log(`🔧 [ADMIN-MEDIA] Generating signed URL for: bucket=${bucketName}, path=${filePath}`);
-        const { data: urlData, error: urlError } = await supabaseAdmin.storage
+        console.log(`🔧 [ADMIN-MEDIA] Generating public URL for: bucket=${bucketName}, path=${filePath}`);
+        const { data: urlData } = supabaseAdmin.storage
           .from(bucketName)
-          .createSignedUrl(filePath, 3600); // 1 hour expiry
+          .getPublicUrl(filePath);
 
-        if (!urlError && urlData?.signedUrl) {
-          publicUrl = urlData.signedUrl;
-          console.log(`✅ [ADMIN-MEDIA] Generated signed URL for ${filePath}`);
+        if (urlData?.publicUrl) {
+          publicUrl = urlData.publicUrl;
+          console.log(`✅ [ADMIN-MEDIA] Generated public URL for ${filePath}`);
         } else {
-          console.warn(`❌ [ADMIN-MEDIA] Failed to generate signed URL for ${filePath}:`, urlError);
+          console.warn(`❌ [ADMIN-MEDIA] Failed to generate public URL for ${filePath}`);
         }
       } catch (error) {
-        console.error(`❌ [ADMIN-MEDIA] Error generating signed URL for ${filePath}:`, error);
+        console.error(`❌ [ADMIN-MEDIA] Error generating public URL for ${filePath}:`, error);
       }
 
       return {
@@ -253,7 +253,7 @@ async function generateSignedUrls(files: any[], source: string) {
   );
 }
 
-// Generate signed URLs for all files
+// Generate public URLs for all files
 const projectFilesWithUrls = await generateSignedUrls(projectFiles, "project");
 const globalFilesWithUrls = await generateSignedUrls(globalFiles, "global");
 
@@ -265,12 +265,12 @@ const storageFilesWithUrls = await Promise.all(
 
     if (supabaseAdmin) {
       try {
-        const { data: urlData, error: urlError } = await supabaseAdmin.storage
+        const { data: urlData } = supabaseAdmin.storage
           .from("project-media")
-          .createSignedUrl(filePath, 3600);
+          .getPublicUrl(filePath);
 
-        if (!urlError && urlData?.signedUrl) {
-          publicUrl = urlData.signedUrl;
+        if (urlData?.publicUrl) {
+          publicUrl = urlData.publicUrl;
         }
       } catch (error) {
         console.error(`Error generating URL for storage file ${filePath}:`, error);

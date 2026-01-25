@@ -12,6 +12,8 @@ if (requireAuthRedirect && (!session || !currentUser)) {
 
 import { globalClasses } from "../api/global/global-classes.ts";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+import { globalCompanyData } from "../../pages/api/global/global-company-data.ts";
+const { globalCompanyName } = await globalCompanyData();
 
 const currentRole = currentUser?.profile?.role;
 const { id } = Astro.params;
@@ -37,6 +39,7 @@ import TabDeposit from "../../components/project/TabDeposit.astro";
 import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
 import TabActivityLog from "../../components/project/TabActivityLog.astro";
 import TabGeneratePdf from "../../components/project/TabGeneratePdf.astro";
+import TabMarketing from "../../components/project/TabMarketing.astro";
 import "../../lib/refresh-manager.ts";
 
 const validTabs = [
@@ -48,6 +51,7 @@ const validTabs = [
   "deposit",
   "activity-log",
   "generate-pdf",
+  "marketing",
   "deliverables",
   "final-invoice",
 ];
@@ -157,17 +161,22 @@ let statusOptions: Array<{ value: string; label: string }> = [];
 
 if (statusResponse.ok) {
   const statusResponseData = await statusResponse.json();
-  
+
   // API returns: { success: true, statuses: Record<number, {...}>, selectOptions: [...] }
   // statuses is a Record where keys are status codes (numbers) and values contain admin/client/current objects
   statusData = statusResponseData.statuses || {};
   statusOptions = statusResponseData.selectOptions || [];
-  
+
   // Log for debugging if statuses are empty
   if (Object.keys(statusData).length === 0) {
     console.error("❌ [PROJECT-PAGE] Status API returned empty statuses!");
-    console.error("❌ [PROJECT-PAGE] Full API response:", JSON.stringify(statusResponseData, null, 2));
-    console.error("❌ [PROJECT-PAGE] This likely means the database has no statuses or the query failed");
+    console.error(
+      "❌ [PROJECT-PAGE] Full API response:",
+      JSON.stringify(statusResponseData, null, 2)
+    );
+    console.error(
+      "❌ [PROJECT-PAGE] This likely means the database has no statuses or the query failed"
+    );
   }
 } else {
   const errorText = await statusResponse.text();
@@ -190,7 +199,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   currentStatusTab = currentStatusObj.current?.statusTab;
   currentStatusProjectAction = currentStatusObj.current?.statusAction;
   currentStatusColor = currentStatusObj.current?.statusColor || "gray";
-  
+
   // Handle status param in URL - if it matches currentStatusProjectAction, clear it
   if (statusParam && currentStatusProjectAction?.includes("status=" + statusParam)) {
     currentStatusProjectAction = null;
@@ -208,13 +217,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
   isBackend={true}
   {id}
-  globalCompanyName={project?.authorProfile?.companyName}
-  globalCompanySlogan={project?.authorProfile?.slogan}
-  globalCompanyAddress={project?.authorProfile?.address}
-  globalCompanyPhone={project?.authorProfile?.phone}
-  globalCompanyEmail={project?.authorProfile?.email}
-  globalCompanyWebsite={project?.authorProfile?.website}
-  globalCompanyLogo={project?.authorProfile?.logo}
+  {globalCompanyName}
   {globalInputClasses}
   {primaryTextClasses}
   {secondaryTextClasses}
@@ -238,6 +241,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     {secondaryTextClasses}
     {primaryTextClasses}
     {globalInputClasses}
+    {globalCompanyName}
   />
 
   <!-- Tab Navigation -->
@@ -306,15 +310,21 @@ if (currentStatusInt && statusData[currentStatusInt]) {
         onclick: "window.switchTab('generate-pdf')",
         clientHide: true,
       },
+      {
+        id: "status-marketing",
+        label: "Marketing",
+        icon: "palette",
+        variant: "tab",
+        onclick: "window.switchTab('marketing')",
+        clientHide: true,
+      },
     ]}
   />
   <!-- Tab Content -->
   <!-- <div class="grid grid-cols-1 gap-6 lg:grid-cols-1"> -->
   <!-- Project Form Tab -->
 
-  <div
-    class="transition-all duration-200 transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1) px-4"
-  >
+  <div class="transition-all duration-200 transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1) px-4">
     <TabProjectForm
       {project}
       {currentUser}
@@ -405,6 +415,15 @@ if (currentStatusInt && statusData[currentStatusInt]) {
       {project}
       {currentUser}
       {statusData}
+      {globalCompanyName}
+    />
+
+    <TabMarketing
+      {project}
+      {currentUser}
+      {secondaryTextClasses}
+      {primaryTextClasses}
+      {globalInputClasses}
     />
   </div>
 </App>

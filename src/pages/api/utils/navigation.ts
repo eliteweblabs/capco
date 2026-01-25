@@ -300,7 +300,7 @@ export const navigation = async (
                 : "text-black hover:text-primary dark:text-white dark:hover:text-primary"
             }"
         >
-          <svg class="hidden alinline-block w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>${item.label}
+          <svg class="hidden lg:inline align-baseline w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>${item.label}
         </a>
       </li>`;
     });

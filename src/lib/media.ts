@@ -320,14 +320,8 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     throw new Error(`Database error: ${dbError.message}`);
   }
 
-  // Generate signed URL (valid for 1 hour)
-  const { data: urlData, error: urlError } = await supabaseAdmin.storage
-    .from(bucket)
-    .createSignedUrl(fullPath, 3600);
-
-  if (urlError) {
-    console.warn("🔧 [MEDIA-VERSIONING] Failed to generate signed URL:", urlError);
-  }
+  // Generate public URL (permanent)
+  const { data: urlData } = supabaseAdmin.storage.from(bucket).getPublicUrl(fullPath);
 
   console.log("🔧 [MEDIA-VERSIONING] Media saved successfully:", {
     id: dbData.id,
@@ -341,7 +335,7 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
     filePath: fullPath,
     fileType: contentType,
     bucketName: bucket,
-    publicUrl: urlData?.signedUrl || null,
+    publicUrl: urlData?.publicUrl || null,
     targetLocation: params.targetLocation,
     targetId: params.targetId ? parseInt(params.targetId) : undefined,
     fileSize: fileBuffer.byteLength,
@@ -387,22 +381,15 @@ export async function getMedia(params: GetMediaParams): Promise<{
       const featuredData = projectData.featuredImageData;
 
       // Generate signed URL for the cached data
-      const { data: urlData, error: urlError } = await supabaseAdmin.storage
+      const { data: urlData } = supabaseAdmin.storage
         .from(featuredData.bucketName)
-        .createSignedUrl(featuredData.filePath, 3600);
-
-      if (urlError) {
-        console.warn(
-          "🐛 [MEDIA] Failed to generate signed URL for cached featured image:",
-          urlError
-        );
-      }
+        .getPublicUrl(featuredData.filePath);
 
       return {
         success: true,
         media: {
           ...featuredData,
-          publicUrl: urlData?.signedUrl || null,
+          publicUrl: urlData?.publicUrl || null,
         } as MediaFile,
         message: "Featured image retrieved from cache",
       };
@@ -427,13 +414,9 @@ export async function getMedia(params: GetMediaParams): Promise<{
       throw new Error(`File lookup error: ${fileError.message}`);
     }
 
-    const { data: urlData, error: urlError } = await supabaseAdmin.storage
+    const { data: urlData } = supabaseAdmin.storage
       .from(fileData.bucketName)
-      .createSignedUrl(fileData.filePath, 3600);
-
-    if (urlError) {
-      console.warn("🐛 [MEDIA] Failed to generate signed URL for featured image:", urlError);
-    }
+      .getPublicUrl(fileData.filePath);
 
     return {
       success: true,
@@ -448,7 +431,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
         targetId: fileData.targetId,
         targetLocation: fileData.targetLocation,
         bucketName: fileData.bucketName,
-        publicUrl: urlData?.signedUrl || null,
+        publicUrl: urlData?.publicUrl || null,
         title: fileData.title,
         comments: fileData.comments,
       },
@@ -470,13 +453,9 @@ export async function getMedia(params: GetMediaParams): Promise<{
       throw new Error(`File lookup error: ${fileError.message}`);
     }
 
-    const { data: urlData, error: urlError } = await supabaseAdmin.storage
+    const { data: urlData } = supabaseAdmin.storage
       .from(fileData.bucketName)
-      .createSignedUrl(fileData.filePath, 3600);
-
-    if (urlError) {
-      console.warn("🐛 [MEDIA] Failed to generate signed URL for file:", urlError);
-    }
+      .getPublicUrl(fileData.filePath);
 
     return {
       success: true,
@@ -491,7 +470,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
         targetId: fileData.targetId,
         targetLocation: fileData.targetLocation,
         bucketName: fileData.bucketName,
-        publicUrl: urlData?.signedUrl || null,
+        publicUrl: urlData?.publicUrl || null,
         title: fileData.title,
         comments: fileData.comments,
       },
@@ -557,16 +536,9 @@ export async function getMedia(params: GetMediaParams): Promise<{
 
     const mediaFiles = await Promise.all(
       (files || []).map(async (file) => {
-        const { data: urlData, error: urlError } = await supabaseAdmin.storage
+        const { data: urlData } = supabaseAdmin.storage
           .from(file.bucketName)
-          .createSignedUrl(file.filePath, 3600);
-
-        if (urlError) {
-          console.warn(
-            `🐛 [MEDIA] Failed to generate signed URL for file ${file.fileName}:`,
-            urlError
-          );
-        }
+          .getPublicUrl(file.filePath);
 
         // Fetch user names if needed (optional - can be removed if not required)
         let assignedToName = null;
@@ -620,7 +592,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
           uploadedByName: uploadedByName,
           targetLocation: file.targetLocation,
           bucketName: file.bucketName,
-          publicUrl: urlData?.signedUrl || null,
+          publicUrl: urlData?.publicUrl || null,
           title: file.title,
           comments: file.comments,
           isFeatured: featuredImageId && file.id === parseInt(featuredImageId),

@@ -1,7 +1,6 @@
 ---
 // Multi-step contact form component with AOS animations
 import Button from "../../../components/common/Button.astro";
-import PhoneAndSMS from "../../../components/form/PhoneAndSMS.astro";
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 import InlineAddressSearch from "../../../components/form/InlineAddressSearch.astro";
 import SlotMachineModalStaff from "../../../components/form/SlotMachineModalStaff.astro";
@@ -142,20 +141,21 @@ const submitButtonProps = {
       </div>
 
       <div class="input-wrapper">
-        <PhoneAndSMS
+        <input
+          type="tel"
           id="contact-phone"
           name="phone"
           placeholder="(555) 123-4567"
-          showSMS={false}
-          hideLabel={true}
-          class="text-xl py-5 text-center"
-          {globalInputClasses}
+          autocomplete="tel"
+          class={`${globalInputClasses} text-xl py-5 text-center`}
         />
       </div>
 
       <div class="flex justify-between gap-3">
         <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }}> back </Button>
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }}> next </Button>
+        <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }} class="next-step-phone">
+          next
+        </Button>
       </div>
     </div>
   </div>
@@ -267,7 +267,13 @@ const submitButtonProps = {
       </div>
 
       <div class="flex justify-between gap-3">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "5" }}> back </Button>
+        <Button
+          {...prevButtonProps}
+          dataAttributes={{ "data-prev": "5" }}
+          class="prev-step-company"
+        >
+          back
+        </Button>
         <Button {...nextButtonProps} dataAttributes={{ "data-next": "7" }}> next </Button>
       </div>
     </div>
@@ -350,6 +356,8 @@ const submitButtonProps = {
 </style>
 
 <script>
+  import { validatePhone, formatPhoneAsYouType } from "../../../lib/phone-validation";
+
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("multi-step-contact-form") as HTMLFormElement;
     if (!form) return;
@@ -362,6 +370,36 @@ const submitButtonProps = {
     const progressText = document.getElementById("contact-progress-text") as HTMLElement;
     let currentStep = 1;
     const totalSteps = 8;
+
+    // Phone input formatting
+    const phoneInput = document.getElementById("contact-phone") as HTMLInputElement;
+    if (phoneInput) {
+      let lastValue = "";
+
+      phoneInput.addEventListener("input", (e) => {
+        const input = e.target as HTMLInputElement;
+        const cursorPosition = input.selectionStart || 0;
+
+        // Format as user types
+        const formatted = formatPhoneAsYouType(input.value);
+
+        // Detect if user is deleting (value got shorter)
+        const wasDeleting = input.value.length < lastValue.length;
+
+        // Update the value
+        input.value = formatted;
+        lastValue = formatted;
+
+        // Improve cursor position handling
+        if (wasDeleting) {
+          // On delete, keep cursor where it was
+          input.setSelectionRange(cursorPosition, cursorPosition);
+        } else {
+          // On input, move cursor to end
+          input.setSelectionRange(formatted.length, formatted.length);
+        }
+      });
+    }
 
     // Update progress bar
     function updateProgress() {
@@ -473,6 +511,26 @@ const submitButtonProps = {
         }
       }
 
+      // Special validation for phone field (Step 3)
+      if (stepNumber === 3) {
+        const phoneInput = document.getElementById("contact-phone") as HTMLInputElement;
+        const phoneValue = phoneInput?.value?.trim() || "";
+
+        // Only validate if phone is provided (it's optional)
+        if (phoneValue && !validatePhone(phoneValue)) {
+          if (window.showModal) {
+            window.showModal(
+              "error",
+              "Invalid Phone Number",
+              "Please enter a valid US phone number",
+              3000
+            );
+          }
+          phoneInput?.classList.add("touched");
+          return false;
+        }
+      }
+
       // Special validation for carrier field (Step 5) - only if SMS alerts is enabled
       if (stepNumber === 5) {
         const smsAlertsInput = document.getElementById("contact-sms-alerts") as HTMLInputElement;
@@ -515,11 +573,20 @@ const submitButtonProps = {
       const prevBtn = target.closest(".prev-step");
       const smsChoiceBtn = target.closest(".sms-choice");
 
+      console.log("[CONTACT-FORM] Click detected on:", target);
+      console.log("[CONTACT-FORM] Current step:", currentStep);
+      console.log("[CONTACT-FORM] nextBtn:", nextBtn);
+      console.log("[CONTACT-FORM] prevBtn:", prevBtn);
+      console.log("[CONTACT-FORM] smsChoiceBtn:", smsChoiceBtn);
+
       // Handle SMS consent choice buttons
       if (smsChoiceBtn) {
+        console.log("[CONTACT-FORM] SMS choice button clicked");
         e.preventDefault();
         const smsValue = smsChoiceBtn.getAttribute("data-sms-value");
         const nextStep = parseInt(smsChoiceBtn.getAttribute("data-next") || "6");
+
+        console.log("[CONTACT-FORM] SMS value:", smsValue, "Next step:", nextStep);
 
         // Store SMS alerts value
         const smsAlertsInput = document.getElementById("contact-sms-alerts") as HTMLInputElement;
@@ -532,11 +599,21 @@ const submitButtonProps = {
       }
 
       if (nextBtn) {
+        console.log("[CONTACT-FORM] Next button clicked");
+        console.log("[CONTACT-FORM] Next button classes:", nextBtn.className);
+        console.log(
+          "[CONTACT-FORM] Has next-step-phone class:",
+          nextBtn.classList.contains("next-step-phone")
+        );
+
         e.preventDefault();
-        const nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
+        let nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
+
+        console.log("[CONTACT-FORM] Default next step:", nextStep);
 
         // Check if this is the submit button (step 6)
         if (nextBtn.classList.contains("submit-contact")) {
+          console.log("[CONTACT-FORM] Submit button - validating");
           // Validate before submitting
           if (validateStep(currentStep)) {
             form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
@@ -544,21 +621,86 @@ const submitButtonProps = {
           return;
         }
 
+        // Special handling for phone step (step 3)
+        if (currentStep === 3 && nextBtn.classList.contains("next-step-phone")) {
+          console.log("[CONTACT-FORM] Phone step next button clicked");
+          const phoneInput = document.getElementById("contact-phone") as HTMLInputElement;
+          const phoneValue = phoneInput?.value?.trim() || "";
+
+          console.log("[CONTACT-FORM] Phone input found:", !!phoneInput);
+          console.log("[CONTACT-FORM] Phone value:", phoneValue);
+
+          // If no phone number entered, skip to step 6 (company)
+          if (!phoneValue) {
+            console.log("[CONTACT-FORM] No phone entered - skipping to step 6");
+            nextStep = 6;
+            // Clear SMS alerts since no phone was provided
+            const smsAlertsInput = document.getElementById(
+              "contact-sms-alerts"
+            ) as HTMLInputElement;
+            if (smsAlertsInput) {
+              smsAlertsInput.value = "false";
+            }
+            showStep(nextStep);
+            return;
+          }
+
+          console.log("[CONTACT-FORM] Phone entered - validating before proceeding to step 4");
+          // If phone entered, validate it before proceeding
+          if (!validateStep(currentStep)) {
+            console.log("[CONTACT-FORM] Phone validation failed");
+            return; // Stop if validation fails
+          }
+
+          console.log("[CONTACT-FORM] Phone validation passed - proceeding to step 4");
+          // Validation passed, proceed to step 4 (SMS consent)
+          showStep(nextStep);
+          return;
+        }
+
+        console.log("[CONTACT-FORM] Regular next button - validating step", currentStep);
         // Validate current step before moving forward
         if (validateStep(currentStep)) {
+          console.log("[CONTACT-FORM] Validation passed - showing step", nextStep);
           showStep(nextStep);
+        } else {
+          console.log("[CONTACT-FORM] Validation failed for step", currentStep);
         }
       }
 
       if (prevBtn) {
+        console.log("[CONTACT-FORM] Previous button clicked");
         // Check if this is a link - if so, allow normal navigation
         const isLink =
           prevBtn.tagName === "A" || prevBtn.hasAttribute("href") || prevBtn.closest("a");
         if (isLink) {
+          console.log("[CONTACT-FORM] Previous button is a link - allowing default");
           return;
         }
         e.preventDefault();
-        const prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
+        let prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
+
+        console.log("[CONTACT-FORM] Default previous step:", prevStep);
+
+        // Special handling for company step (step 6) going back
+        if (currentStep === 6 && prevBtn.classList.contains("prev-step-company")) {
+          console.log("[CONTACT-FORM] Company step back button clicked");
+          const phoneInput = document.getElementById("contact-phone") as HTMLInputElement;
+          const phoneValue = phoneInput?.value?.trim() || "";
+
+          console.log("[CONTACT-FORM] Phone value for back navigation:", phoneValue);
+
+          // If no phone number, skip back to step 3 (phone)
+          if (!phoneValue) {
+            console.log("[CONTACT-FORM] No phone - going back to step 3");
+            prevStep = 3;
+          } else {
+            console.log("[CONTACT-FORM] Phone exists - going back to step 5");
+          }
+          // If phone exists, go back to step 5 (carrier) as normal
+        }
+
+        console.log("[CONTACT-FORM] Showing previous step:", prevStep);
         showStep(prevStep);
       }
     });
@@ -717,15 +859,18 @@ const submitButtonProps = {
         // Success!
         if (result.success !== false && !result.error) {
           // Store success message in sessionStorage to show after redirect
-          sessionStorage.setItem('contactFormSuccess', JSON.stringify({
-            type: 'success',
-            title: 'Message Sent!',
-            message: "Thank you for contacting us. We'll get back to you soon!",
-            duration: 5000
-          }));
+          sessionStorage.setItem(
+            "contactFormSuccess",
+            JSON.stringify({
+              type: "success",
+              title: "Message Sent!",
+              message: "Thank you for contacting us. We'll get back to you soon!",
+              duration: 5000,
+            })
+          );
 
           // Redirect to homepage
-          window.location.href = '/';
+          window.location.href = "/";
         }
       } catch (error) {
         console.error("[CONTACT] Submission error:", error);

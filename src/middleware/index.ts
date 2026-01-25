@@ -143,7 +143,7 @@ export const onRequest = defineMiddleware(
             // Extract companyName (handle Google OAuth: name = full name)
             const companyName =
               metadata.companyName ||
-              metadata.company_name ||
+              metadata.companyName ||
               metadata.name || // Google OAuth full name
               metadata.full_name ||
               data.user.email?.split("@")[0] ||

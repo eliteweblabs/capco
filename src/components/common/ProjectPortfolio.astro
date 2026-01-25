@@ -1,0 +1,331 @@
+---
+import SimpleIcon from "./SimpleIcon.astro";
+import Button from "./Button.astro";
+
+// Fetch featured projects
+interface Project {
+  id: number;
+  title: string;
+  address: string;
+  description?: string;
+  squareFootage: number | null;
+  isNewConstruction: boolean | null;
+  completedAt: string;
+  featured: boolean;
+  featuredImageUrl: string | null;
+  featuredImageId: number | null;
+  createdAt: string;
+}
+
+let featuredProjects: Project[] = [];
+let error: string | null = null;
+
+try {
+  const baseUrl = Astro.url.origin;
+  const apiUrl = `${baseUrl}/api/projects/get?featured=true`;
+  console.log("🐛 [FEATURED-PROJECTS] Fetching from:", apiUrl);
+  console.log("🐛 [FEATURED-PROJECTS] Has cookies:", !!Astro.request.headers.get("cookie"));
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      Cookie: Astro.request.headers.get("cookie") || "",
+    },
+  });
+
+  console.log("🐛 [FEATURED-PROJECTS] Response status:", response.status, response.statusText);
+
+  if (response.ok) {
+    const data = await response.json();
+    const projects = data.projects || [];
+
+    console.log("🐛 [FEATURED-PROJECTS] Projects count:", projects.length);
+    
+    // For each project with featuredImageId, fetch the actual marketing image
+    featuredProjects = await Promise.all(
+      (projects || [])
+        .filter((project: any) => project.featured === true || project.featured === "yes")
+        .map(async (project: any) => {
+          let featuredImageUrl = null;
+
+          // If project has a featuredImageId, fetch the image from marketing bucket
+          if (project.featuredImageId) {
+            try {
+              const imageResponse = await fetch(
+                `${baseUrl}/api/files/get?projectId=${project.id}&targetLocation=marketing&bucketName=project-marketing`,
+                {
+                  headers: {
+                    Cookie: Astro.request.headers.get("cookie") || "",
+                  },
+                }
+              );
+
+              if (imageResponse.ok) {
+                const imageData = await imageResponse.json();
+                const images = imageData.data || [];
+                
+                // Find the featured image by ID
+                const featuredImage = images.find(
+                  (img: any) => img.id === parseInt(project.featuredImageId)
+                );
+                
+                if (featuredImage && featuredImage.publicUrl) {
+                  featuredImageUrl = featuredImage.publicUrl;
+                  console.log("✅ [FEATURED-PROJECTS] Found featured image for project", project.id, ":", featuredImageUrl);
+                } else {
+                  console.warn("⚠️ [FEATURED-PROJECTS] Featured image not found for project", project.id);
+                }
+              }
+            } catch (imgError) {
+              console.error("❌ [FEATURED-PROJECTS] Error fetching featured image for project", project.id, ":", imgError);
+            }
+          }
+
+          return {
+            id: project.id,
+            title: project.title,
+            address: project.address,
+            description: project.description,
+            squareFootage: project.sqFt,
+            isNewConstruction: project.newConstruction,
+            completedAt: project.completedAt || project.updatedAt,
+            featured: project.featured,
+            featuredImageUrl: featuredImageUrl,
+            featuredImageId: project.featuredImageId,
+            createdAt: project.createdAt,
+          };
+        })
+    );
+
+    console.log("🐛 [FEATURED-PROJECTS] Processed projects:", featuredProjects);
+  } else {
+    const errorText = await response.text();
+    console.error(
+      "🐛 [FEATURED-PROJECTS] Error fetching projects:",
+      response.status,
+      response.statusText
+    );
+    console.error("🐛 [FEATURED-PROJECTS] Error body:", errorText);
+    error = `Failed to load featured projects (${response.status})`;
+  }
+} catch (err) {
+  console.error("🐛 [FEATURED-PROJECTS] Exception:", err);
+  error = "Unable to load featured projects";
+}
+
+// Helper functions
+function formatSquareFootage(sqFt: number | null | undefined): string {
+  if (!sqFt) return "N/A";
+  return new Intl.NumberFormat().format(sqFt) + " sq ft";
+}
+
+function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return "N/A";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+// Get unique categories for filtering
+const categories = ["All Projects", "New Construction", "Renovation"];
+---
+
+<div class="mx-auto max-w-7xl">
+  {
+    error ? (
+      <div class="py-16 text-center">
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+          <SimpleIcon name="alert-circle" class="text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Projects Found</h2>
+        <p class="mb-6 text-gray-800 dark:text-gray-200">{error}</p>
+        <Button
+          onclick="window.location.reload()"
+          variant="danger"
+          icon="refresh"
+          iconPosition="left"
+        >
+          Try Again
+        </Button>
+      </div>
+    ) : featuredProjects.length === 0 ? (
+      <div class="py-16 text-center">
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+          <SimpleIcon name="building" class="h-8 w-8 text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
+          No Featured Projects Yet
+        </h2>
+        <p class="mb-6 text-gray-600 dark:text-gray-300">
+          We're working on exciting fire protection projects. Check back soon to see our latest
+          completed work!
+        </p>
+        <Button href="/" variant="primary" icon="home" iconPosition="left">
+          Back to Home
+        </Button>
+      </div>
+    ) : (
+      <div class="projects-container">
+        <!-- Filter Buttons -->
+        <div class="flex items-center justify-center py-4 md:py-8 flex-wrap">
+          {categories.map((category, index) => (
+            <button
+              type="button"
+              data-filter={category}
+              class={`filter-btn text-base font-medium px-5 py-2.5 text-center me-3 mb-3 rounded-base focus:ring-4 focus:outline-none transition-colors ${
+                index === 0
+                  ? "text-fg-brand border border-brand bg-neutral-primary focus:ring-neutral-tertiary"
+                  : "text-heading border border-buffer hover:border-default bg-neutral-primary focus:ring-neutral-tertiary"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        <!-- Projects Grid -->
+        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {featuredProjects.map((project) => (
+            <div
+              class="project-item group overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl color-background"
+              data-category={project.isNewConstruction ? "New Construction" : "Renovation"}
+            >
+              {project.featuredImageUrl ? (
+                <div class="relative overflow-hidden">
+                  <img
+                    src={project.featuredImageUrl}
+                    alt={`Featured image for ${project.address}`}
+                    class="h-auto max-w-full w-full object-cover transition-transform duration-300 hover:scale-105 rounded-base"
+                    width="400"
+                    height="300"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    crossorigin="anonymous"
+                    onerror="console.warn('Featured image failed to load:', this.src); this.parentElement.innerHTML='<div class=\\'flex h-64 items-center justify-center bg-neutral-100 dark:bg-neutral-700 rounded-base\\'><div class=\\'text-center text-gray-400 dark:text-gray-500\\'><svg class=\\'mx-auto mb-2 h-8 w-8\\' fill=\\'currentColor\\' viewBox=\\'0 0 20 20\\'><path d=\\'M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z\\'/></svg><p class=\\'text-xs\\'>Image unavailable</p></div></div>';"
+                  />
+                  <div class="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-xs font-medium text-white">
+                    <SimpleIcon name="star" class="h-3 w-3" />
+                    Featured
+                  </div>
+                </div>
+              ) : (
+                <div class="flex h-64 items-center justify-center bg-neutral-100 dark:bg-neutral-700 rounded-base">
+                  <div class="text-center text-gray-400 dark:text-gray-500">
+                    <SimpleIcon name="image" class="mx-auto mb-2 h-8 w-8" />
+                    <p class="text-xs">No featured image</p>
+                  </div>
+                </div>
+              )}
+
+              <div class="p-6">
+                <div class="mb-4 flex items-start justify-between">
+                  <div class="flex-1">
+                    <h3 class="mb-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
+                      {project.address}
+                    </h3>
+                  </div>
+                  <div class="ml-4 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-black dark:bg-primary-900/30 dark:text-white">
+                    <SimpleIcon name="building" />
+                  </div>
+                </div>
+
+                {project.description && (
+                  <p class="line-clamp-3 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    {project.description}
+                  </p>
+                )}
+
+                <div class="space-y-3 border-t border-border-light dark:border-border-dark pt-4">
+                  <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center space-x-2">
+                      <SimpleIcon name="expand" class="h-4 w-4 text-gray-400" />
+                      <span class="text-gray-500 dark:text-gray-400">Size:</span>
+                    </div>
+                    <span class="font-medium text-gray-900 dark:text-white">
+                      {formatSquareFootage(project.squareFootage)}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center space-x-2">
+                      <SimpleIcon
+                        name={project.isNewConstruction ? "plus-circle" : "edit"}
+                        class="h-4 w-4 text-gray-400"
+                      />
+                      <span class="text-gray-500 dark:text-gray-400">Type:</span>
+                    </div>
+                    <span class="font-medium text-gray-900 dark:text-white">
+                      {project.isNewConstruction ? "New Construction" : "Renovation"}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center space-x-2">
+                      <SimpleIcon name="calendar-check" class="h-4 w-4 text-green-500" />
+                      <span class="text-gray-500 dark:text-gray-400">Completed:</span>
+                    </div>
+                    <span class="font-medium text-gray-900 dark:text-white">
+                      {formatDate(project.completedAt)}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="mt-4 flex items-center space-x-2">
+                  <div class="h-2 w-2 rounded-full bg-green-500" />
+                  <span class="text-sm font-medium text-green-600 dark:text-green-400">
+                    Project Complete
+                  </span>
+                  <SimpleIcon name="shield-check" class="h-4 w-4 text-green-500 ml-auto" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const filterButtons = document.querySelectorAll(".filter-btn");
+    const projectItems = document.querySelectorAll(".project-item");
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const filterValue = button.getAttribute("data-filter");
+
+        // Update active button styles
+        filterButtons.forEach((btn) => {
+          btn.classList.remove("text-fg-brand", "border-brand");
+          btn.classList.add("text-heading", "border-buffer", "hover:border-default");
+        });
+        button.classList.remove("text-heading", "border-buffer", "hover:border-default");
+        button.classList.add("text-fg-brand", "border-brand");
+
+        // Filter projects
+        projectItems.forEach((item) => {
+          if (filterValue === "All Projects") {
+            item.style.display = "block";
+          } else {
+            const category = item.getAttribute("data-category");
+            if (category === filterValue) {
+              item.style.display = "block";
+            } else {
+              item.style.display = "none";
+            }
+          }
+        });
+      });
+    });
+  });
+</script>
+
+<style>
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
