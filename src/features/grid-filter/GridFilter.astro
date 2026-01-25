@@ -1,0 +1,542 @@
+---
+/**
+ * GridFilter Component (Enhanced with Multi-Select)
+ * Reusable filtering system for grid-based content with masonry layout support
+ *
+ * @prop {string[]} filters - Array of filter values for button-style filters
+ * @prop {Object} dropdownFilters - Object with dropdown filter configurations
+ * @prop {string} itemSelector - CSS selector for items to filter
+ * @prop {boolean} multiSelect - Allow multiple button selections (default: false)
+ * @prop {boolean} showSearch - Whether to show search input (default: false)
+ * @prop {string} searchPlaceholder - Placeholder text for search input
+ * @prop {string} globalInputClasses - Tailwind classes for inputs
+ */
+
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
+
+export interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+export interface DropdownFilterConfig {
+  label: string;
+  options: DropdownOption[];
+  defaultValue?: string;
+  multiSelect?: boolean;
+}
+
+export interface Props {
+  // Button-style filters (like in ProjectPortfolio)
+  filters?: string[];
+  dataAttribute?: string; // e.g., "data-category"
+  multiSelect?: boolean; // Allow multiple button selections
+
+  // Dropdown-style filters (like in MediaManager)
+  dropdownFilters?: Record<string, DropdownFilterConfig>;
+
+  // Common props
+  itemSelector: string; // CSS selector for items to filter
+  showSearch?: boolean;
+  searchPlaceholder?: string;
+  searchDataAttribute?: string; // e.g., "data-file-name"
+  globalInputClasses?: string;
+
+  // Container classes
+  containerClasses?: string;
+
+  // No results element ID
+  noResultsId?: string;
+}
+
+const {
+  filters = [],
+  dataAttribute = "data-category",
+  multiSelect = false,
+  dropdownFilters = {},
+  itemSelector,
+  showSearch = false,
+  searchPlaceholder = "Search...",
+  searchDataAttribute = "data-file-name",
+  globalInputClasses = "rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-gray-900 dark:text-white focus:border-primary-500 focus:ring-primary-500",
+  containerClasses = "flex items-center justify-center py-4 md:py-8 flex-wrap gap-3",
+  noResultsId = "no-results",
+} = Astro.props;
+
+const hasButtonFilters = filters.length > 0;
+const hasDropdownFilters = Object.keys(dropdownFilters).length > 0;
+const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
+---
+
+<div class={`grid-filter-container ${containerClasses}`} data-filter-id={uniqueId}>
+  <!-- Search Input -->
+  {
+    showSearch && (
+      <div class="flex-1 min-w-[200px]">
+        <input
+          type="text"
+          class={`grid-filter-search ${globalInputClasses} w-full`}
+          placeholder={searchPlaceholder}
+          data-search-attribute={searchDataAttribute}
+        />
+      </div>
+    )
+  }
+
+  <!-- Button-style Filters -->
+  {
+    hasButtonFilters && (
+      <div class="flex items-center justify-center flex-wrap gap-3">
+        {filters.map((filter, index) => (
+          <button
+            type="button"
+            data-filter={filter}
+            data-filter-type="button"
+            class={`grid-filter-btn text-base font-medium px-5 py-2.5 text-center rounded-base focus:ring-4 focus:outline-none transition-all ${
+              index === 0
+                ? "text-fg-brand border-2 border-brand bg-gray-primary focus:ring-gray-tertiary"
+                : "text-heading border-2 border-buffer hover:border-default bg-gray-primary focus:ring-gray-tertiary"
+            }`}
+          >
+            {filter}
+            <span class="filter-badge ml-2 hidden text-xs px-2 py-0.5 rounded-full bg-brand text-white">
+              ✓
+            </span>
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  <!-- Dropdown-style Filters -->
+  {
+    hasDropdownFilters && (
+      <>
+        {Object.entries(dropdownFilters).map(([key, config]) =>
+          config.multiSelect ? (
+            <div class="relative inline-block">
+              <button
+                type="button"
+                class={`grid-filter-multi-dropdown ${globalInputClasses} w-auto min-w-[150px] text-left flex items-center justify-between`}
+                data-filter-key={key}
+                data-filter-type="multi-dropdown"
+              >
+                <span class="dropdown-label">{config.label}</span>
+                <SimpleIcon name="chevron-down" class="w-4 h-4 ml-2" />
+              </button>
+              <div class="dropdown-menu hidden absolute z-50 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-2 min-w-[200px]">
+                {config.options.map((option) => (
+                  <label class="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={option.value}
+                      class="filter-checkbox mr-2 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      checked={option.value === (config.defaultValue || "all")}
+                    />
+                    <span class="text-sm text-gray-900 dark:text-white">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <select
+              class={`grid-filter-dropdown ${globalInputClasses} w-auto`}
+              data-filter-key={key}
+              data-filter-type="dropdown"
+            >
+              {config.options.map((option) => (
+                <option
+                  value={option.value}
+                  selected={option.value === (config.defaultValue || "all")}
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          )
+        )}
+      </>
+    )
+  }
+</div>
+
+<script
+  define:vars={{
+    itemSelector,
+    dataAttribute,
+    hasButtonFilters,
+    hasDropdownFilters,
+    uniqueId,
+    noResultsId,
+    multiSelect,
+  }}
+>
+  document.addEventListener("DOMContentLoaded", () => {
+    const container = document.querySelector(`[data-filter-id="${uniqueId}"]`);
+    if (!container) return;
+
+    const searchInput = container.querySelector(".grid-filter-search");
+    const filterButtons = container.querySelectorAll(".grid-filter-btn");
+    const filterDropdowns = container.querySelectorAll(".grid-filter-dropdown");
+    const multiDropdownButtons = container.querySelectorAll(".grid-filter-multi-dropdown");
+    const noResults = document.getElementById(noResultsId);
+
+    // State management
+    const selectedButtonFilters = new Set();
+    const currentDropdownFilters = {};
+    const multiDropdownSelections = {};
+
+    // Initialize first button as selected (if not multi-select)
+    if (hasButtonFilters && !multiSelect && filterButtons.length > 0) {
+      const firstFilter = filterButtons[0].getAttribute("data-filter");
+      if (firstFilter) selectedButtonFilters.add(firstFilter);
+    }
+
+    // Initialize dropdown filter state
+    filterDropdowns.forEach((dropdown) => {
+      const key = dropdown.dataset.filterKey;
+      if (key) {
+        currentDropdownFilters[key] = dropdown.value;
+      }
+    });
+
+    // Initialize multi-dropdown selections
+    multiDropdownButtons.forEach((button) => {
+      const key = button.dataset.filterKey;
+      if (key) {
+        multiDropdownSelections[key] = new Set(["all"]); // Start with "all" selected
+      }
+    });
+
+    // Multi-dropdown toggle functionality
+    multiDropdownButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const menu = button.nextElementSibling;
+
+        // Close other dropdowns
+        document.querySelectorAll(".dropdown-menu").forEach((m) => {
+          if (m !== menu) m.classList.add("hidden");
+        });
+
+        menu.classList.toggle("hidden");
+      });
+
+      // Handle checkbox changes
+      const menu = button.nextElementSibling;
+      const checkboxes = menu.querySelectorAll(".filter-checkbox");
+      const key = button.dataset.filterKey;
+
+      checkboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const value = checkbox.value;
+
+          if (checkbox.checked) {
+            if (value === "all") {
+              // If "all" is selected, clear other selections
+              multiDropdownSelections[key].clear();
+              checkboxes.forEach((cb) => {
+                if (cb.value !== "all") cb.checked = false;
+              });
+            } else {
+              // If specific item selected, uncheck "all"
+              const allCheckbox = Array.from(checkboxes).find((cb) => cb.value === "all");
+              if (allCheckbox) {
+                allCheckbox.checked = false;
+                multiDropdownSelections[key].delete("all");
+              }
+            }
+            multiDropdownSelections[key].add(value);
+          } else {
+            multiDropdownSelections[key].delete(value);
+            // If nothing selected, select "all"
+            if (multiDropdownSelections[key].size === 0) {
+              const allCheckbox = Array.from(checkboxes).find((cb) => cb.value === "all");
+              if (allCheckbox) {
+                allCheckbox.checked = true;
+                multiDropdownSelections[key].add("all");
+              }
+            }
+          }
+
+          // Update label
+          updateDropdownLabel(button, key);
+          applyFilters();
+        });
+      });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".grid-filter-multi-dropdown")) {
+        document.querySelectorAll(".dropdown-menu").forEach((menu) => {
+          menu.classList.add("hidden");
+        });
+      }
+    });
+
+    function updateDropdownLabel(button, key) {
+      const selections = multiDropdownSelections[key];
+      const label = button.querySelector(".dropdown-label");
+      const config = Object.entries(dropdownFilters).find(([k]) => k === key);
+
+      if (!label || !config) return;
+
+      const baseLabel = config[1].label;
+
+      if (selections.has("all") || selections.size === 0) {
+        label.textContent = baseLabel;
+      } else {
+        label.textContent = `${baseLabel} (${selections.size})`;
+      }
+    }
+
+    // Main filter function
+    function applyFilters() {
+      const items = document.querySelectorAll(itemSelector);
+      const searchTerm = searchInput?.value.toLowerCase() || "";
+      let visibleCount = 0;
+
+      items.forEach((item) => {
+        let show = true;
+
+        // Search filter
+        if (searchTerm && searchInput) {
+          const searchAttr = searchInput.dataset.searchAttribute || "data-file-name";
+          const searchValue =
+            item.dataset[
+              searchAttr.replace("data-", "").replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            ]?.toLowerCase() || "";
+
+          if (!searchValue.includes(searchTerm)) {
+            show = false;
+          }
+        }
+
+        // Button filter with multi-select support
+        if (hasButtonFilters && selectedButtonFilters.size > 0) {
+          const itemCategory = item.getAttribute(dataAttribute);
+
+          // Check if "All" is in selections
+          const hasAllFilter = Array.from(selectedButtonFilters).some((f) =>
+            f.toLowerCase().includes("all")
+          );
+
+          if (!hasAllFilter && !selectedButtonFilters.has(itemCategory)) {
+            show = false;
+          }
+        }
+
+        // Dropdown filters
+        if (hasDropdownFilters) {
+          Object.entries(currentDropdownFilters).forEach(([key, value]) => {
+            if (value === "all") return;
+
+            if (key === "source") {
+              const fileSource = item.dataset.fileSource || "";
+              if (value !== "all" && fileSource !== value) {
+                show = false;
+              }
+            } else if (key === "type") {
+              const fileType = item.dataset.fileType?.toLowerCase() || "";
+
+              if (value === "image" && !fileType.startsWith("image/")) {
+                show = false;
+              } else if (value === "pdf" && !fileType.includes("pdf")) {
+                show = false;
+              } else if (
+                value === "document" &&
+                !fileType.includes("word") &&
+                !fileType.includes("document") &&
+                !fileType.includes("excel")
+              ) {
+                show = false;
+              } else if (
+                value === "other" &&
+                (fileType.startsWith("image/") ||
+                  fileType.includes("pdf") ||
+                  fileType.includes("document"))
+              ) {
+                show = false;
+              }
+            }
+          });
+
+          // Multi-dropdown filters
+          Object.entries(multiDropdownSelections).forEach(([key, selections]) => {
+            if (selections.has("all") || selections.size === 0) return;
+
+            if (key === "source") {
+              const fileSource = item.dataset.fileSource || "";
+              if (!selections.has(fileSource)) {
+                show = false;
+              }
+            } else if (key === "type") {
+              const fileType = item.dataset.fileType?.toLowerCase() || "";
+              let typeMatches = false;
+
+              selections.forEach((selectedType) => {
+                if (selectedType === "image" && fileType.startsWith("image/")) typeMatches = true;
+                else if (selectedType === "pdf" && fileType.includes("pdf")) typeMatches = true;
+                else if (
+                  selectedType === "document" &&
+                  (fileType.includes("word") ||
+                    fileType.includes("document") ||
+                    fileType.includes("excel"))
+                )
+                  typeMatches = true;
+                else if (
+                  selectedType === "other" &&
+                  !fileType.startsWith("image/") &&
+                  !fileType.includes("pdf") &&
+                  !fileType.includes("document")
+                )
+                  typeMatches = true;
+              });
+
+              if (!typeMatches) show = false;
+            }
+          });
+        }
+
+        // Apply visibility
+        item.style.display = show ? "" : "none";
+        if (show) visibleCount++;
+      });
+
+      // Show/hide "no results" message
+      if (noResults) {
+        const totalItems = document.querySelectorAll(itemSelector).length;
+        noResults.classList.toggle("hidden", visibleCount > 0 || totalItems === 0);
+      }
+
+      // Retrigger masonry layout after filtering
+      retriggerMasonryLayout();
+    }
+
+    // Function to retrigger masonry layout after filtering
+    function retriggerMasonryLayout() {
+      const grids = document.querySelectorAll(".masonry-grid");
+
+      grids.forEach((grid) => {
+        // Force grid recalculation by temporarily toggling grid-auto-flow
+        const originalAutoFlow = grid.style.gridAutoFlow;
+        grid.style.gridAutoFlow = "row";
+
+        // Force a reflow
+        void grid.offsetHeight;
+
+        // Restore dense packing
+        grid.style.gridAutoFlow = "dense";
+
+        // Add class for smooth transition
+        grid.classList.add("masonry-recalculate");
+
+        // Use requestAnimationFrame for smooth transition
+        requestAnimationFrame(() => {
+          grid.classList.remove("masonry-recalculate");
+        });
+      });
+    }
+
+    // Button filter event listeners
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const filterValue = button.getAttribute("data-filter");
+        const badge = button.querySelector(".filter-badge");
+
+        if (multiSelect) {
+          // Multi-select mode
+          if (selectedButtonFilters.has(filterValue)) {
+            selectedButtonFilters.delete(filterValue);
+            button.classList.remove("text-fg-brand", "border-brand");
+            button.classList.add("text-heading", "border-buffer");
+            if (badge) badge.classList.add("hidden");
+          } else {
+            selectedButtonFilters.add(filterValue);
+            button.classList.remove("text-heading", "border-buffer", "hover:border-default");
+            button.classList.add("text-fg-brand", "border-brand");
+            if (badge) badge.classList.remove("hidden");
+          }
+        } else {
+          // Single-select mode
+          selectedButtonFilters.clear();
+          selectedButtonFilters.add(filterValue);
+
+          filterButtons.forEach((btn) => {
+            const btnBadge = btn.querySelector(".filter-badge");
+            btn.classList.remove("text-fg-brand", "border-brand");
+            btn.classList.add("text-heading", "border-buffer", "hover:border-default");
+            if (btnBadge) btnBadge.classList.add("hidden");
+          });
+          button.classList.remove("text-heading", "border-buffer", "hover:border-default");
+          button.classList.add("text-fg-brand", "border-brand");
+          if (badge) badge.classList.remove("hidden");
+        }
+
+        applyFilters();
+      });
+    });
+
+    // Dropdown filter event listeners
+    filterDropdowns.forEach((dropdown) => {
+      dropdown.addEventListener("change", () => {
+        const key = dropdown.dataset.filterKey;
+        if (key) {
+          currentDropdownFilters[key] = dropdown.value;
+        }
+        applyFilters();
+      });
+    });
+
+    // Search input event listener
+    searchInput?.addEventListener("input", applyFilters);
+  });
+</script>
+
+<style>
+  /* Ensure filters are responsive */
+  .grid-filter-container {
+    width: 100%;
+  }
+
+  @media (max-width: 640px) {
+    .grid-filter-container {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .grid-filter-dropdown,
+    .grid-filter-btn,
+    .grid-filter-multi-dropdown {
+      width: 100%;
+    }
+  }
+
+  .filter-badge {
+    display: inline-block;
+    transition: all 0.2s;
+  }
+
+  .dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .dropdown-menu::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .dropdown-menu::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dropdown-menu::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+  }
+
+  .dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+</style>

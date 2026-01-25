@@ -139,18 +139,16 @@ const allBannerIds = banners.map((b) => String(b.id));
 
               console.log("[BannerAlertsLoader] Visible top banners:", bannerCount);
 
-              // Remove existing margin classes
-              mainContent.classList.remove('mt-0', 'mt-10', 'mt-20', 'mt-30');
-
-              // Standard is pt-16 (already on the element)
-              // Add mt-4 for each banner to create space
-              if (bannerCount > 0) {
-                const marginClass = `mt-${bannerCount * 10}`;
-                mainContent.classList.add(marginClass);
-                console.log("[BannerAlertsLoader] Applied margin class:", marginClass);
-              } else {
-                mainContent.classList.add('mt-0');
+              // Add smooth transition if not already present
+              if (!mainContent.style.transition) {
+                mainContent.style.transition = 'transform 0.3s ease-in-out';
               }
+
+              // Calculate translateY based on banner count (40px per banner)
+              const translateValue = bannerCount * 40;
+              mainContent.style.transform = `translateY(${translateValue}px)`;
+              
+              console.log("[BannerAlertsLoader] Applied translateY:", translateValue + "px");
             };
 
             // Initial adjustment

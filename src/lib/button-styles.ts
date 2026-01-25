@@ -73,7 +73,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     link: "link text-primary-500 hover:underline hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300",
     loading: "bg-primary-500 text-white cursor-not-allowed opacity-75 dark:bg-primary-500",
     disabled:
-      "rounded-full bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-60 dark:bg-neutral-800 dark:text-neutral-500 dark:border-neutral-700 disabled",
+      "rounded-full bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700 disabled",
     selected:
       "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
     anchor:

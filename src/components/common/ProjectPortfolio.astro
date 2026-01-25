@@ -1,6 +1,7 @@
 ---
 import SimpleIcon from "./SimpleIcon.astro";
 import Button from "./Button.astro";
+import GridFilter from "../../features/grid-filter/GridFilter.astro";
 
 // Fetch featured projects
 interface Project {
@@ -167,165 +168,209 @@ const categories = ["All Projects", "New Construction", "Renovation"];
       </div>
     ) : (
       <div class="projects-container">
-        <!-- Filter Buttons -->
-        <div class="flex items-center justify-center py-4 md:py-8 flex-wrap">
-          {categories.map((category, index) => (
-            <button
-              type="button"
-              data-filter={category}
-              class={`filter-btn text-base font-medium px-5 py-2.5 text-center me-3 mb-3 rounded-base focus:ring-4 focus:outline-none transition-colors ${
-                index === 0
-                  ? "text-fg-brand border border-brand bg-neutral-primary focus:ring-neutral-tertiary"
-                  : "text-heading border border-buffer hover:border-default bg-neutral-primary focus:ring-neutral-tertiary"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
+        <!-- Filter Component with Multi-Select -->
+        <GridFilter
+          filters={categories}
+          itemSelector=".project-item"
+          dataAttribute="data-category"
+          multiSelect={true}
+        />
 
-        <!-- Projects Grid -->
-        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featuredProjects.map((project) => (
+        <!-- Projects Masonry Grid (8 columns on large screens) -->
+        <div id="projects-grid" class="masonry-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 auto-rows-[200px]">
+          {featuredProjects.map((project, index) => {
+            // Create varied grid sizes for masonry effect
+            const sizes = [
+              { col: 1, row: 1 }, // 1x1
+              { col: 1, row: 2 }, // 1x2 (tall)
+              { col: 1, row: 4 }, // 1x4 (very tall)
+              { col: 2, row: 1 }, // 2x1 (wide)
+              { col: 3, row: 1 }, // 3x1 (extra wide)
+              { col: 2, row: 2 }, // 2x2 (large square)
+              { col: 2, row: 3 }, // 2x3 (large tall)
+              { col: 4, row: 2 }, // 4x2 (panoramic)
+            ];
+            const sizePattern = sizes[index % sizes.length];
+            const colSpan = `col-span-${sizePattern.col}`;
+            const rowSpan = `row-span-${sizePattern.row}`;
+            
+            return (
             <div
-              class="project-item group overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl color-background"
+              class={`project-item group overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl color-background relative ${colSpan} ${rowSpan}`}
               data-category={project.isNewConstruction ? "New Construction" : "Renovation"}
+              style="min-height: 200px;"
             >
               {project.featuredImageUrl ? (
-                <div class="relative overflow-hidden">
+                <div class="relative overflow-hidden h-full">
                   <img
                     src={project.featuredImageUrl}
                     alt={`Featured image for ${project.address}`}
-                    class="h-auto max-w-full w-full object-cover transition-transform duration-300 hover:scale-105 rounded-base"
-                    width="400"
-                    height="300"
+                    class="h-full w-full object-cover transition-transform duration-500 hover:scale-110 rounded-base"
+                    loading="lazy"
                     referrerpolicy="strict-origin-when-cross-origin"
                     crossorigin="anonymous"
-                    onerror="console.warn('Featured image failed to load:', this.src); this.parentElement.innerHTML='<div class=\\'flex h-64 items-center justify-center bg-neutral-100 dark:bg-neutral-700 rounded-base\\'><div class=\\'text-center text-gray-400 dark:text-gray-500\\'><svg class=\\'mx-auto mb-2 h-8 w-8\\' fill=\\'currentColor\\' viewBox=\\'0 0 20 20\\'><path d=\\'M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z\\'/></svg><p class=\\'text-xs\\'>Image unavailable</p></div></div>';"
                   />
-                  <div class="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-xs font-medium text-white">
+                  <!-- Gradient Overlay for Text Readability -->
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  <!-- Featured Badge -->
+                  <div class="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-yellow-500 px-3 py-1.5 text-xs font-semibold text-white shadow-lg">
                     <SimpleIcon name="star" class="h-3 w-3" />
                     Featured
                   </div>
+                  
+                  <!-- Project Info Overlay (shows on hover) -->
+                  <div class="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                    <div class="flex items-start justify-between mb-3">
+                      <div class="flex-1">
+                        <h3 class="text-lg sm:text-xl font-bold mb-1 drop-shadow-lg">
+                          {project.address}
+                        </h3>
+                        {project.description && (
+                          <p class="text-sm opacity-90 line-clamp-2 drop-shadow">
+                            {project.description}
+                          </p>
+                        )}
+                      </div>
+                      <div class="ml-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                        <SimpleIcon name="building" class="h-5 w-5" />
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                      <div class="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                        <SimpleIcon name="expand" class="h-3 w-3" />
+                        <span>{formatSquareFootage(project.squareFootage)}</span>
+                      </div>
+                      
+                      <div class="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                        <SimpleIcon
+                          name={project.isNewConstruction ? "plus-circle" : "edit"}
+                          class="h-3 w-3"
+                        />
+                        <span>{project.isNewConstruction ? "New" : "Renovation"}</span>
+                      </div>
+                      
+                      <div class="flex items-center gap-1.5 bg-green-500/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                        <SimpleIcon name="calendar-check" class="h-3 w-3" />
+                        <span>{formatDate(project.completedAt)}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div class="flex h-64 items-center justify-center bg-neutral-100 dark:bg-neutral-700 rounded-base">
-                  <div class="text-center text-gray-400 dark:text-gray-500">
-                    <SimpleIcon name="image" class="mx-auto mb-2 h-8 w-8" />
-                    <p class="text-xs">No featured image</p>
+                <div class="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-base">
+                  <div class="text-center text-gray-400 dark:text-gray-500 p-6">
+                    <SimpleIcon name="image" class="mx-auto mb-3 h-12 w-12 opacity-50" />
+                    <p class="text-sm font-medium">No featured image</p>
+                    <p class="text-xs mt-2 font-bold">{project.address}</p>
                   </div>
                 </div>
               )}
-
-              <div class="p-6">
-                <div class="mb-4 flex items-start justify-between">
-                  <div class="flex-1">
-                    <h3 class="mb-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
-                      {project.address}
-                    </h3>
-                  </div>
-                  <div class="ml-4 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-black dark:bg-primary-900/30 dark:text-white">
-                    <SimpleIcon name="building" />
-                  </div>
-                </div>
-
-                {project.description && (
-                  <p class="line-clamp-3 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    {project.description}
-                  </p>
-                )}
-
-                <div class="space-y-3 border-t border-border-light dark:border-border-dark pt-4">
-                  <div class="flex items-center justify-between text-sm">
-                    <div class="flex items-center space-x-2">
-                      <SimpleIcon name="expand" class="h-4 w-4 text-gray-400" />
-                      <span class="text-gray-500 dark:text-gray-400">Size:</span>
-                    </div>
-                    <span class="font-medium text-gray-900 dark:text-white">
-                      {formatSquareFootage(project.squareFootage)}
-                    </span>
-                  </div>
-
-                  <div class="flex items-center justify-between text-sm">
-                    <div class="flex items-center space-x-2">
-                      <SimpleIcon
-                        name={project.isNewConstruction ? "plus-circle" : "edit"}
-                        class="h-4 w-4 text-gray-400"
-                      />
-                      <span class="text-gray-500 dark:text-gray-400">Type:</span>
-                    </div>
-                    <span class="font-medium text-gray-900 dark:text-white">
-                      {project.isNewConstruction ? "New Construction" : "Renovation"}
-                    </span>
-                  </div>
-
-                  <div class="flex items-center justify-between text-sm">
-                    <div class="flex items-center space-x-2">
-                      <SimpleIcon name="calendar-check" class="h-4 w-4 text-green-500" />
-                      <span class="text-gray-500 dark:text-gray-400">Completed:</span>
-                    </div>
-                    <span class="font-medium text-gray-900 dark:text-white">
-                      {formatDate(project.completedAt)}
-                    </span>
-                  </div>
-                </div>
-
-                <div class="mt-4 flex items-center space-x-2">
-                  <div class="h-2 w-2 rounded-full bg-green-500" />
-                  <span class="text-sm font-medium text-green-600 dark:text-green-400">
-                    Project Complete
-                  </span>
-                  <SimpleIcon name="shield-check" class="h-4 w-4 text-green-500 ml-auto" />
-                </div>
-              </div>
             </div>
-          ))}
+          );
+        })}
         </div>
       </div>
     )
   }
 </div>
 
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const filterButtons = document.querySelectorAll(".filter-btn");
-    const projectItems = document.querySelectorAll(".project-item");
-
-    filterButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const filterValue = button.getAttribute("data-filter");
-
-        // Update active button styles
-        filterButtons.forEach((btn) => {
-          btn.classList.remove("text-fg-brand", "border-brand");
-          btn.classList.add("text-heading", "border-buffer", "hover:border-default");
-        });
-        button.classList.remove("text-heading", "border-buffer", "hover:border-default");
-        button.classList.add("text-fg-brand", "border-brand");
-
-        // Filter projects
-        projectItems.forEach((item) => {
-          if (filterValue === "All Projects") {
-            item.style.display = "block";
-          } else {
-            const category = item.getAttribute("data-category");
-            if (category === filterValue) {
-              item.style.display = "block";
-            } else {
-              item.style.display = "none";
-            }
-          }
-        });
-      });
-    });
-  });
-</script>
-
 <style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
   .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* Masonry Grid System - 8 columns on large screens */
+  .masonry-grid {
+    display: grid;
+    grid-auto-flow: dense; /* Fill gaps automatically */
+    transition: all 0.3s ease-out;
+  }
+
+  /* Smooth transition when recalculating layout */
+  .masonry-grid.masonry-recalculate {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Define all possible span combinations */
+  .col-span-1 { grid-column: span 1; }
+  .col-span-2 { grid-column: span 2; }
+  .col-span-3 { grid-column: span 3; }
+  .col-span-4 { grid-column: span 4; }
+  
+  .row-span-1 { grid-row: span 1; }
+  .row-span-2 { grid-row: span 2; }
+  .row-span-3 { grid-row: span 3; }
+  .row-span-4 { grid-row: span 4; }
+
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    .masonry-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .project-item {
+      grid-column: span 1 !important;
+      grid-row: span 1 !important;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 768px) {
+    .masonry-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+    .col-span-4 { grid-column: span 3 !important; }
+  }
+
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .masonry-grid {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
+    .col-span-4 { grid-column: span 4 !important; }
+  }
+
+  @media (min-width: 1025px) and (max-width: 1280px) {
+    .masonry-grid {
+      grid-template-columns: repeat(6, 1fr) !important;
+    }
+    .col-span-4 { grid-column: span 3 !important; }
+  }
+
+  /* Smooth transitions and hover effects */
+  .project-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, box-shadow;
+  }
+
+  /* Smooth fade in/out when filtering */
+  .project-item[style*="display: none"] {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  .project-item:not([style*="display: none"]) {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .project-item:hover {
+    transform: translateY(-4px) scale(1);
+    z-index: 10;
+  }
+
+  /* Image loading optimization */
+  .project-item img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
 </style>

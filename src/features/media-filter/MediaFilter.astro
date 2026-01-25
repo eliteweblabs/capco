@@ -1,0 +1,863 @@
+---
+/**
+ * MediaFilter Component
+ * Reusable media filter with button-style filters and autosuggest search
+ * Can be used standalone or with custom filter terms
+ * 
+ * @prop {string[]} sourceFilters - Source filter options (default: ["All", "Project", "Global"])
+ * @prop {string[]} typeFilters - Type filter options (default: ["All", "Images", "PDFs", "Documents", "Other"])
+ * @prop {string} itemSelector - CSS selector for items to filter (default: ".file-card")
+ * @prop {boolean} showSearch - Show search with autosuggest (default: true)
+ * @prop {number} minSearchChars - Min characters before filtering (default: 2)
+ * @prop {string} searchPlaceholder - Search input placeholder
+ * @prop {string} globalInputClasses - Tailwind classes for inputs
+ * @prop {boolean} includeGrid - Include media grid (true) or just filters (false)
+ */
+
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
+import Button from "../../components/common/Button.astro";
+import DeleteConfirmButton from "../../components/common/DeleteConfirmButton.astro";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+
+export interface Props {
+  sourceFilters?: string[];
+  typeFilters?: string[];
+  itemSelector?: string;
+  showSearch?: boolean;
+  minSearchChars?: number;
+  searchPlaceholder?: string;
+  globalInputClasses?: string;
+  includeGrid?: boolean;
+  currentUser?: any;
+  supabase?: any;
+}
+
+const {
+  sourceFilters = ["All", "Project", "Global"],
+  typeFilters = ["All", "Images", "PDFs", "Documents", "Other"],
+  itemSelector = ".file-card",
+  showSearch = true,
+  minSearchChars = 2,
+  searchPlaceholder = "Search media files...",
+  globalInputClasses = "rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-gray-900 dark:text-white focus:border-primary-500 focus:ring-primary-500",
+  includeGrid = true,
+  currentUser,
+  supabase,
+} = Astro.props;
+
+const uniqueId = `media-filter-${Math.random().toString(36).substring(7)}`;
+
+// Fetch media files if including grid
+let allFiles: any[] = [];
+let projectFiles: any[] = [];
+let globalFiles: any[] = [];
+let error: string | null = null;
+
+if (includeGrid) {
+  try {
+    if (supabaseAdmin) {
+      // Fetch project files
+      const { data: files, error: filesError } = await supabaseAdmin
+        .from("files")
+        .select("*")
+        .limit(200);
+
+      if (!filesError && files) {
+        projectFiles = files
+          .sort((a: any, b: any) => {
+            const aDate = a.uploadedAt || a.uploaded_at;
+            const bDate = b.uploadedAt || b.uploaded_at;
+            if (!aDate) return 1;
+            if (!bDate) return -1;
+            return new Date(bDate).getTime() - new Date(aDate).getTime();
+          })
+          .slice(0, 100);
+      }
+
+      // Fetch global files
+      const result1 = await supabaseAdmin.from("filesGlobal").select("*").limit(200);
+      let gFiles: any[] = [];
+      
+      if (result1.error) {
+        const result2 = await supabaseAdmin.from("files_global").select("*").limit(200);
+        if (!result2.error) gFiles = result2.data || [];
+      } else {
+        gFiles = result1.data || [];
+      }
+
+      globalFiles = gFiles
+        .sort((a: any, b: any) => {
+          const aDate = a.uploadedAt || a.uploaded_at;
+          const bDate = b.uploadedAt || b.uploaded_at;
+          if (!aDate) return 1;
+          if (!bDate) return -1;
+          return new Date(bDate).getTime() - new Date(aDate).getTime();
+        })
+        .slice(0, 100);
+    }
+  } catch (fetchError) {
+    console.error("❌ [MEDIA-FILTER] Error fetching media:", fetchError);
+    error = "Failed to fetch media files";
+  }
+}
+
+// Helper functions
+function getFilePath(file: any): string | null {
+  return file.filePath || file.file_path || null;
+}
+
+function getBucketName(file: any): string {
+  return file.bucketName || file.bucket_name || "project-media";
+}
+
+function getFileName(file: any): string | null {
+  return file.fileName || file.file_name || file.name || null;
+}
+
+function getFileType(file: any): string | null {
+  return file.fileType || file.file_type || null;
+}
+
+function getFileSize(file: any): number | null {
+  return file.fileSize || file.file_size || null;
+}
+
+function getUploadedAt(file: any): string | null {
+  return file.uploadedAt || file.uploaded_at || null;
+}
+
+function getProjectId(file: any): number | null {
+  return file.projectId || file.project_id || null;
+}
+
+// Generate signed URLs
+async function generateSignedUrls(files: any[], source: string) {
+  if (!supabaseAdmin) return files.map((f: any) => ({ ...f, source, publicUrl: null }));
+  
+  return await Promise.all(
+    files.map(async (f: any) => {
+      const filePath = getFilePath(f);
+      const bucketName = getBucketName(f);
+      let publicUrl: string | null = null;
+
+      if (filePath) {
+        try {
+          const { data: urlData } = supabaseAdmin.storage
+            .from(bucketName)
+            .getPublicUrl(filePath);
+          if (urlData?.publicUrl) publicUrl = urlData.publicUrl;
+        } catch (error) {
+          console.error(`Error generating URL for ${filePath}:`, error);
+        }
+      }
+
+      return {
+        ...f,
+        source,
+        fileName: getFileName(f),
+        filePath,
+        fileType: getFileType(f),
+        fileSize: getFileSize(f),
+        uploadedAt: getUploadedAt(f),
+        projectId: getProjectId(f),
+        bucketName,
+        publicUrl,
+      };
+    })
+  );
+}
+
+if (includeGrid) {
+  const projectFilesWithUrls = await generateSignedUrls(projectFiles, "project");
+  const globalFilesWithUrls = await generateSignedUrls(globalFiles, "global");
+  allFiles = [...projectFilesWithUrls, ...globalFilesWithUrls];
+}
+
+function formatFileSize(bytes: number | null): string {
+  if (!bytes) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(fileType: string | null, fileName?: string | null): string {
+  if (!fileType && !fileName) return "file";
+  
+  const type = fileType?.toLowerCase() || "";
+  const name = fileName?.toLowerCase() || "";
+  
+  if (type.startsWith("image/") || name.match(/\.(webp|avif|svg|png|jpg|jpeg|gif|ico|bmp|tiff?)$/)) return "image";
+  if (type.includes("pdf") || name.endsWith(".pdf")) return "file-pdf";
+  if (type.includes("word") || type.includes("document") || name.match(/\.(doc|docx)$/)) return "file-word";
+  if (type.includes("excel") || type.includes("spreadsheet") || name.match(/\.(xls|xlsx|csv)$/)) return "spreadsheet";
+  if (type.includes("video") || name.match(/\.(mp4|webm|mov|avi|mkv)$/)) return "video";
+  if (type.includes("audio") || name.match(/\.(mp3|wav|ogg|m4a|flac)$/)) return "music";
+  if (type.includes("zip") || type.includes("archive") || name.match(/\.(zip|rar|7z|tar|gz)$/)) return "archive";
+  
+  return "file";
+}
+
+const stats = includeGrid ? {
+  total: allFiles.length,
+  project: projectFiles.length,
+  global: globalFiles.length,
+  images: allFiles.filter((f: any) => {
+    const fileType = f.fileType || f.file_type;
+    return fileType?.startsWith("image/");
+  }).length,
+  documents: allFiles.filter((f: any) => {
+    const fileType = f.fileType || f.file_type;
+    return fileType?.includes("pdf") || fileType?.includes("document");
+  }).length,
+} : null;
+---
+
+<div class="media-filter-component" data-filter-id={uniqueId}>
+  {includeGrid && stats && (
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div class="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Files</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.project}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Project Files</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{stats.global}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Global Files</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.images}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Images</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.documents}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Documents</div>
+      </div>
+    </div>
+  )}
+
+  <!-- Filter Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
+    <!-- Search with Autosuggest -->
+    {showSearch && (
+      <div class="relative mb-4">
+        <input
+          type="text"
+          id={`${uniqueId}-search`}
+          placeholder={searchPlaceholder}
+          class={`${globalInputClasses} w-full pr-10`}
+          autocomplete="off"
+          data-searchable
+        />
+        <SimpleIcon
+          name="search"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+        />
+        <SimpleIcon
+          id={`${uniqueId}-clear`}
+          name="x"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300 hidden"
+        />
+        
+        <!-- Auto-suggest dropdown -->
+        <div
+          id={`${uniqueId}-suggestions`}
+          class="absolute left-0 right-0 top-full z-50 hidden max-h-60 overflow-y-auto rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg mt-1"
+        >
+          <!-- Suggestions populated by JavaScript -->
+        </div>
+      </div>
+    )}
+
+    <!-- Source Filters (Button Style) -->
+    <div class="mb-3">
+      <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Source</label>
+      <div class="flex flex-wrap gap-2">
+        {sourceFilters.map((filter, index) => (
+          <button
+            type="button"
+            data-filter-group="source"
+            data-filter-value={filter.toLowerCase()}
+            class={`media-filter-btn px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all focus:ring-4 focus:outline-none ${
+              index === 0
+                ? "text-fg-brand border-brand bg-gray-primary focus:ring-gray-tertiary"
+                : "text-heading border-buffer hover:border-default bg-gray-primary focus:ring-gray-tertiary"
+            }`}
+          >
+            {filter}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <!-- Type Filters (Button Style) -->
+    <div>
+      <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Type</label>
+      <div class="flex flex-wrap gap-2">
+        {typeFilters.map((filter, index) => (
+          <button
+            type="button"
+            data-filter-group="type"
+            data-filter-value={filter.toLowerCase()}
+            class={`media-filter-btn px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all focus:ring-4 focus:outline-none ${
+              index === 0
+                ? "text-fg-brand border-brand bg-gray-primary focus:ring-gray-tertiary"
+                : "text-heading border-buffer hover:border-default bg-gray-primary focus:ring-gray-tertiary"
+            }`}
+          >
+            {filter}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  {includeGrid && (
+    <>
+      <!-- Upload Button -->
+      <div class="flex gap-3 mb-6">
+        <Button id={`${uniqueId}-upload-btn`} variant="primary" icon="upload">
+          Upload File
+        </Button>
+        <input type="file" id={`${uniqueId}-file-input`} class="hidden" multiple accept="image/*,image/webp,image/avif,image/svg+xml,application/pdf,.doc,.docx,.xls,.xlsx" />
+      </div>
+
+      <!-- Error Display -->
+      {error && (
+        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
+          {error}
+        </div>
+      )}
+
+      <!-- Files Masonry Grid -->
+      <div id={`${uniqueId}-files-grid`} class="masonry-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 auto-rows-[150px]">
+        {allFiles.length === 0 ? (
+          <div class="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
+            <SimpleIcon name="folder-open" class="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p class="text-lg font-medium">No files found</p>
+            <p class="text-sm">Upload your first file to get started</p>
+          </div>
+        ) : (
+          allFiles.map((file: any, index: number) => {
+            const sizes = [
+              { col: 1, row: 1 }, { col: 1, row: 2 }, { col: 1, row: 4 }, { col: 2, row: 1 },
+              { col: 3, row: 1 }, { col: 2, row: 2 }, { col: 1, row: 3 }, { col: 2, row: 3 },
+            ];
+            const sizePattern = sizes[index % sizes.length];
+            const colSpan = `col-span-${sizePattern.col}`;
+            const rowSpan = `row-span-${sizePattern.row}`;
+            
+            return (
+            <div 
+              class={`file-card group bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer relative ${colSpan} ${rowSpan}`}
+              data-file-id={file.id}
+              data-file-name={file.fileName}
+              data-file-path={file.filePath}
+              data-file-type={file.fileType}
+              data-file-size={file.fileSize}
+              data-file-url={file.publicUrl}
+              data-file-source={file.source}
+              data-project-id={file.projectId}
+            >
+              <div class="h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+                {(file.fileType?.startsWith("image/") || file.fileName?.match(/\.(webp|avif|svg|png|jpg|jpeg|gif)$/i)) && file.publicUrl ? (
+                  <img 
+                    data-src={file.publicUrl}
+                    alt={file.fileName}
+                    class="lazyload w-full h-full object-cover blur-sm"
+                    loading="lazy"
+                  />
+                ) : (
+                  <SimpleIcon name={getFileIcon(file.fileType, file.fileName)} class="w-12 h-12 text-gray-400" />
+                )}
+                
+                <span class={`absolute top-2 right-2 text-xs px-2 py-1 rounded-full backdrop-blur-sm ${
+                  file.source === "global" 
+                    ? "bg-green-500/90 text-white"
+                    : "bg-blue-500/90 text-white"
+                }`}>
+                  {file.source === "global" ? "Global" : `P#${file.projectId || "?"}`}
+                </span>
+                
+                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-3 p-4">
+                  <div class="flex gap-2">
+                    <button 
+                      class="copy-url-btn p-3 bg-white rounded-full hover:bg-gray-100 text-gray-700 shadow-lg transform hover:scale-110 transition-transform"
+                      title="Copy URL"
+                    >
+                      <SimpleIcon name="copy" class="w-5 h-5" />
+                    </button>
+                    {file.publicUrl && (
+                      <a 
+                        href={file.publicUrl} 
+                        target="_blank"
+                        class="p-3 bg-white rounded-full hover:bg-gray-100 text-gray-700 shadow-lg transform hover:scale-110 transition-transform"
+                        title="Open in new tab"
+                      >
+                        <SimpleIcon name="link-external" class="w-5 h-5" />
+                      </a>
+                    )}
+                    <DeleteConfirmButton 
+                      id={`delete-btn-${file.id}`}
+                      variant="icon"
+                      size="sm"
+                    />
+                  </div>
+                  
+                  <div class="text-white text-center text-xs bg-black/30 backdrop-blur-sm rounded-lg px-3 py-2 max-w-full">
+                    <p class="font-semibold truncate mb-1" title={file.fileName}>
+                      {file.fileName || "Unnamed"}
+                    </p>
+                    <div class="flex items-center justify-center gap-2 text-[10px] opacity-90">
+                      <span>{formatFileSize(file.fileSize)}</span>
+                      <span>•</span>
+                      <span>{file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : "—"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })
+      )}
+      </div>
+
+      <!-- No Results Message -->
+      <div id={`${uniqueId}-no-results`} class="hidden text-center py-12 text-gray-500 dark:text-gray-400">
+        <SimpleIcon name="search" class="w-16 h-16 mx-auto mb-4 opacity-50" />
+        <p class="text-lg font-medium">No matching files</p>
+        <p class="text-sm">Try adjusting your search or filters</p>
+      </div>
+
+      <!-- Upload Progress -->
+      <div id={`${uniqueId}-upload-progress`} class="hidden fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 min-w-[300px]">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="animate-spin">
+            <SimpleIcon name="loader-2" class="w-5 h-5 text-primary-500" />
+          </div>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">Uploading...</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div id={`${uniqueId}-progress-bar`} class="bg-primary-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+        </div>
+        <div id={`${uniqueId}-progress-text`} class="text-xs text-gray-500 dark:text-gray-400 mt-1">0%</div>
+      </div>
+    </>
+  )}
+</div>
+
+<script define:vars={{ uniqueId, itemSelector, showSearch, minSearchChars, includeGrid }}>
+  document.addEventListener("DOMContentLoaded", () => {
+    const container = document.querySelector(`[data-filter-id="${uniqueId}"]`);
+    if (!container) return;
+
+    const searchInput = document.getElementById(`${uniqueId}-search`);
+    const clearBtn = document.getElementById(`${uniqueId}-clear`);
+    const suggestionsDiv = document.getElementById(`${uniqueId}-suggestions`);
+    const filterButtons = container.querySelectorAll(".media-filter-btn");
+    const filesGrid = document.getElementById(`${uniqueId}-files-grid`);
+    const noResults = document.getElementById(`${uniqueId}-no-results`);
+
+    // State
+    const selectedFilters = {
+      source: "all",
+      type: "all"
+    };
+    let allSuggestions = [];
+
+    // Build suggestions from file names
+    function buildSuggestionsList() {
+      if (!filesGrid) return;
+      const cards = filesGrid.querySelectorAll(".file-card");
+      const suggestions = new Set();
+
+      cards.forEach((card) => {
+        const fileName = card.dataset.fileName;
+        if (fileName && fileName.length > 2) {
+          suggestions.add(fileName);
+          // Add words from filename
+          const words = fileName.split(/[\s\-_\.]+/).filter(w => w.length > 2);
+          words.forEach(word => suggestions.add(word));
+        }
+      });
+
+      allSuggestions = Array.from(suggestions).sort();
+      console.log(`Built ${allSuggestions.length} suggestions`);
+    }
+
+    function showSuggestions(searchTerm) {
+      if (!suggestionsDiv || !searchTerm || searchTerm.length < minSearchChars) {
+        hideSuggestions();
+        return;
+      }
+
+      const filteredSuggestions = allSuggestions
+        .filter(s => s.toLowerCase().includes(searchTerm.toLowerCase()) && s.toLowerCase() !== searchTerm.toLowerCase())
+        .slice(0, 8);
+
+      if (filteredSuggestions.length === 0) {
+        hideSuggestions();
+        return;
+      }
+
+      suggestionsDiv.innerHTML = filteredSuggestions
+        .map(s => `
+          <div class="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 suggestion-item" 
+               data-suggestion="${s}">
+            ${highlightMatch(s, searchTerm)}
+          </div>
+        `)
+        .join("");
+
+      suggestionsDiv.classList.remove("hidden");
+
+      suggestionsDiv.querySelectorAll(".suggestion-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          const suggestion = item.getAttribute("data-suggestion");
+          if (searchInput) {
+            searchInput.value = suggestion;
+            applyFilters();
+            hideSuggestions();
+          }
+        });
+      });
+    }
+
+    function hideSuggestions() {
+      if (suggestionsDiv) suggestionsDiv.classList.add("hidden");
+    }
+
+    function highlightMatch(text, searchTerm) {
+      if (!searchTerm) return text;
+      const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+      return text.replace(regex, '<strong class="font-semibold">$1</strong>');
+    }
+
+    function applyFilters() {
+      if (!filesGrid) return;
+      
+      const searchTerm = searchInput?.value.toLowerCase() || "";
+      const cards = filesGrid.querySelectorAll(".file-card");
+      let visibleCount = 0;
+
+      cards.forEach((card) => {
+        let show = true;
+
+        // Search filter (after min chars)
+        if (searchTerm.length >= minSearchChars) {
+          const fileName = card.dataset.fileName?.toLowerCase() || "";
+          if (!fileName.includes(searchTerm)) show = false;
+        }
+
+        // Source filter
+        if (selectedFilters.source !== "all") {
+          const fileSource = card.dataset.fileSource || "";
+          if (fileSource !== selectedFilters.source) show = false;
+        }
+
+        // Type filter
+        if (selectedFilters.type !== "all") {
+          const fileType = card.dataset.fileType?.toLowerCase() || "";
+          
+          if (selectedFilters.type === "images" && !fileType.startsWith("image/")) show = false;
+          else if (selectedFilters.type === "pdfs" && !fileType.includes("pdf")) show = false;
+          else if (selectedFilters.type === "documents" && !fileType.includes("word") && !fileType.includes("document") && !fileType.includes("excel")) show = false;
+          else if (selectedFilters.type === "other" && (fileType.startsWith("image/") || fileType.includes("pdf") || fileType.includes("document"))) show = false;
+        }
+
+        card.style.display = show ? "" : "none";
+        if (show) visibleCount++;
+      });
+
+      if (noResults) {
+        const totalCards = cards.length;
+        noResults.classList.toggle("hidden", visibleCount > 0 || totalCards === 0);
+      }
+
+      // Show/hide clear button
+      if (clearBtn && searchInput) {
+        if (searchInput.value.length > 0) {
+          clearBtn.classList.remove("hidden");
+        } else {
+          clearBtn.classList.add("hidden");
+        }
+      }
+
+      // Retrigger masonry layout
+      retriggerMasonryLayout();
+    }
+
+    // Function to retrigger masonry layout after filtering
+    function retriggerMasonryLayout() {
+      if (!filesGrid) return;
+      
+      // Force grid recalculation by temporarily toggling grid-auto-flow
+      const originalAutoFlow = filesGrid.style.gridAutoFlow;
+      filesGrid.style.gridAutoFlow = 'row';
+      
+      // Force a reflow
+      void filesGrid.offsetHeight;
+      
+      // Restore dense packing
+      filesGrid.style.gridAutoFlow = 'dense';
+      
+      // Alternative: Add a class that triggers recalculation
+      filesGrid.classList.add('masonry-recalculate');
+      
+      // Use requestAnimationFrame for smooth transition
+      requestAnimationFrame(() => {
+        filesGrid.classList.remove('masonry-recalculate');
+      });
+    }
+
+    // Filter button handlers
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const group = button.dataset.filterGroup;
+        const value = button.dataset.filterValue;
+        
+        if (group && value) {
+          selectedFilters[group] = value;
+
+          // Update button styles in group
+          const groupButtons = container.querySelectorAll(`[data-filter-group="${group}"]`);
+          groupButtons.forEach((btn) => {
+            btn.classList.remove("text-fg-brand", "border-brand");
+            btn.classList.add("text-heading", "border-buffer");
+          });
+          button.classList.remove("text-heading", "border-buffer");
+          button.classList.add("text-fg-brand", "border-brand");
+
+          applyFilters();
+        }
+      });
+    });
+
+    // Search handlers
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        const searchTerm = searchInput.value;
+        if (searchTerm.length >= minSearchChars) {
+          applyFilters();
+          showSuggestions(searchTerm);
+        } else if (searchTerm.length === 0) {
+          applyFilters();
+          hideSuggestions();
+        }
+      });
+
+      searchInput.addEventListener("blur", () => {
+        setTimeout(() => hideSuggestions(), 150);
+      });
+
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") hideSuggestions();
+      });
+    }
+
+    if (clearBtn && searchInput) {
+      clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        applyFilters();
+        hideSuggestions();
+      });
+    }
+
+    // Build initial suggestions
+    if (includeGrid && showSearch) {
+      setTimeout(() => buildSuggestionsList(), 500);
+    }
+
+    // Upload functionality (if grid included)
+    if (includeGrid) {
+      const uploadBtn = document.getElementById(`${uniqueId}-upload-btn`);
+      const fileInput = document.getElementById(`${uniqueId}-file-input`);
+      const uploadProgress = document.getElementById(`${uniqueId}-upload-progress`);
+      const progressBar = document.getElementById(`${uniqueId}-progress-bar`);
+      const progressText = document.getElementById(`${uniqueId}-progress-text`);
+
+      uploadBtn?.addEventListener("click", () => fileInput?.click());
+
+      fileInput?.addEventListener("change", async () => {
+        const files = fileInput.files;
+        if (!files || files.length === 0) return;
+
+        uploadProgress?.classList.remove("hidden");
+        let successCount = 0;
+        
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const progress = ((i + 1) / files.length) * 100;
+          
+          try {
+            const reader = new FileReader();
+            const base64Promise = new Promise((resolve, reject) => {
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = reject;
+            });
+            reader.readAsDataURL(file);
+            const base64 = await base64Promise;
+
+            const response = await fetch("/api/admin/media", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                mediaData: base64,
+                fileName: file.name,
+                fileType: file.type,
+                targetLocation: "global",
+              }),
+            });
+
+            if (response.ok) successCount++;
+            
+            if (progressBar) progressBar.style.width = `${progress}%`;
+            if (progressText) progressText.textContent = `${Math.round(progress)}%`;
+          } catch (error) {
+            console.error("Upload error:", error);
+          }
+        }
+
+        setTimeout(() => {
+          uploadProgress?.classList.add("hidden");
+          if (progressBar) progressBar.style.width = "0%";
+          if (progressText) progressText.textContent = "0%";
+        }, 500);
+
+        if (successCount > 0) {
+          setTimeout(() => location.reload(), 2000);
+        }
+        
+        fileInput.value = "";
+      });
+
+      // Copy URL and delete handlers
+      filesGrid?.addEventListener("click", (e) => {
+        const target = e.target;
+        const card = target.closest(".file-card");
+        
+        if (!card) return;
+
+        if (target.closest(".copy-url-btn")) {
+          const url = card.dataset.fileUrl;
+          if (url) {
+            navigator.clipboard.writeText(url);
+            if (window.showModal) {
+              window.showModal("success", "Success", "URL copied!", 2000);
+            }
+          }
+        }
+      });
+
+      // Delete confirmation handler
+      document.addEventListener("deleteConfirmed", async (e) => {
+        const customEvent = e;
+        const buttonId = customEvent.detail.buttonId;
+        const button = document.getElementById(buttonId);
+        const card = button?.closest(".file-card");
+        
+        if (card) {
+          const fileId = card.dataset.fileId;
+          const source = card.dataset.fileSource;
+          
+          try {
+            const response = await fetch("/api/admin/media", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fileId, source }),
+            });
+
+            if (response.ok) {
+              card.style.transition = "opacity 0.3s, transform 0.3s";
+              card.style.opacity = "0";
+              card.style.transform = "scale(0.9)";
+              
+              setTimeout(() => {
+                card.remove();
+                applyFilters();
+              }, 300);
+              
+              if (window.showModal) {
+                window.showModal("success", "Success", "File deleted", 2000);
+              }
+            }
+          } catch (error) {
+            console.error("Delete error:", error);
+          }
+        }
+      });
+    }
+  });
+</script>
+
+<style>
+  .lazyload,
+  .lazyloading {
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  .lazyloaded {
+    opacity: 1;
+    filter: none !important;
+  }
+  
+  .lazyload.blur-sm {
+    filter: blur(5px);
+  }
+
+  .masonry-grid {
+    display: grid;
+    grid-auto-flow: dense;
+    transition: all 0.3s ease-out;
+  }
+
+  /* Smooth transition when recalculating layout */
+  .masonry-grid.masonry-recalculate {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .col-span-1 { grid-column: span 1; }
+  .col-span-2 { grid-column: span 2; }
+  .col-span-3 { grid-column: span 3; }
+  
+  .row-span-1 { grid-row: span 1; }
+  .row-span-2 { grid-row: span 2; }
+  .row-span-3 { grid-row: span 3; }
+  .row-span-4 { grid-row: span 4; }
+
+  @media (max-width: 640px) {
+    .masonry-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .file-card {
+      grid-column: span 1 !important;
+      grid-row: span 1 !important;
+    }
+  }
+
+  .file-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, box-shadow;
+    min-height: 150px;
+  }
+
+  /* Smooth fade in/out when filtering */
+  .file-card[style*="display: none"] {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  .file-card:not([style*="display: none"]) {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .file-card:hover {
+    transform: translateY(-4px) scale(1);
+    z-index: 10;
+  }
+</style>
