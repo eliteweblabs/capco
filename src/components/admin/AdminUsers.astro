@@ -16,8 +16,8 @@ export interface Props {
   secondaryTextClasses?: string;
 }
 
-const { 
-  currentUser, 
+const {
+  currentUser,
   supabase,
   globalInputClasses = "",
   primaryTextClasses = "",
@@ -153,20 +153,20 @@ const userCounts = {
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">All Users</h2>
             </div>
 
+            <div class="relative">
+              <SimpleIcon
+                name="search"
+                class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                type="text"
+                id="user-search"
+                placeholder="Search by name or email..."
+                class={`${globalInputClasses} pl-10 pr-4`}
+              />
+            </div>
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
               <!-- Search -->
-              <div class="relative">
-                <SimpleIcon
-                  name="search"
-                  class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  type="text"
-                  id="user-search"
-                  placeholder="Search by name or email..."
-                  class={`${globalInputClasses} pl-10 pr-4`}
-                />
-              </div>
 
               <!-- Role Filter -->
               <select
@@ -347,18 +347,15 @@ const userCounts = {
 
     <!-- Create User Form (Right Side - 1 column) -->
     <div class="lg:col-span-1">
-      <div
-        class="rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 color-background dark:ring-gray-700"
-      >
-        <!-- Header -->
-        <Alert
-          type="info"
-          title="Account Setup"
-          description="<ol class='list-inside list-decimal space-y-1 text-xs'><li>An invitation email will be sent</li><li>User can set up authentication</li><li>User will appear in the list immediately</li></ol>"
-        />
+      <!-- Header -->
+      <Alert
+        type="info"
+        title="Account Setup"
+        class="mb-4"
+        description="<ol class='list-inside list-decimal space-y-1 text-xs'><li>An invitation email will be sent</li><li>User can set up authentication</li><li>User will appear in the list immediately</li></ol>"
+      />
 
-        <StaffCreationForm {globalInputClasses} {secondaryTextClasses} {primaryTextClasses} />
-      </div>
+      <StaffCreationForm {globalInputClasses} {secondaryTextClasses} {primaryTextClasses} />
     </div>
   </div>
 </div>
@@ -448,15 +445,15 @@ const userCounts = {
 
   function filterUsers() {
     const searchTerm =
-      ((document.getElementById("user-search") as HTMLInputElement)?.value?.toLowerCase() as string) || "";
+      ((
+        document.getElementById("user-search") as HTMLInputElement
+      )?.value?.toLowerCase() as string) || "";
     const roleFilter =
       ((document.getElementById("role-filter") as HTMLSelectElement)?.value as string) || "";
 
     currentUsers.forEach((user) => {
       const matchesSearch =
-        !searchTerm ||
-        user.name.includes(searchTerm) ||
-        user.email.includes(searchTerm);
+        !searchTerm || user.name.includes(searchTerm) || user.email.includes(searchTerm);
       const matchesRole = !roleFilter || user.role === roleFilter;
       const shouldShow = matchesSearch && matchesRole;
 
@@ -553,10 +550,17 @@ const userCounts = {
 
       if (response.ok) {
         if ((window as any).showModal) {
-          (window as any).showModal("success", "User Deleted", "User has been successfully deleted.", 3000);
+          (window as any).showModal(
+            "success",
+            "User Deleted",
+            "User has been successfully deleted.",
+            3000
+          );
         }
 
-        const userRow = document.querySelector(`[data-user-id="${deleteUserId}"]`)?.closest(".user-row");
+        const userRow = document
+          .querySelector(`[data-user-id="${deleteUserId}"]`)
+          ?.closest(".user-row");
         if (userRow) {
           userRow.remove();
         }

@@ -29,13 +29,8 @@ const {
 import { checkAuth } from "@/lib/auth";
 const { currentUser } = await checkAuth(Astro.cookies);
 
-// Get theme from cookie for server-side rendering
-const themeCookie = Astro.cookies.get("theme");
-const theme = (themeCookie?.value as "light" | "dark") || "light";
-
 import Tooltip from "@/components/common/Tooltip.astro";
 import SpeedDial from "./SpeedDial.astro";
-import VapiChatWidget from "@/features/vapi-chat-widget/VapiChatWidget.astro";
 import Socials from "./Socials.astro";
 ---
 
@@ -109,17 +104,5 @@ import Socials from "./Socials.astro";
         class="h-auto w-16 max-w-[20px] object-contain grayscale md:w-20"
       />
     </div>
-  </div>
-  <div class="align-center flex justify-center space-x-3 w-8">
-    <!-- Speed Dial -->
-    <SpeedDial
-      {globalCompanyPhone}
-      currentUser={currentUser || undefined}
-      {isBackend}
-      {primaryTextClasses}
-      {secondaryTextClasses}
-      {globalInputClasses}
-    />
-    {!currentUser && !isBackend && <VapiChatWidget basic={true} theme={theme} />}
   </div>
 </footer>

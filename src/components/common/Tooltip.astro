@@ -5,9 +5,17 @@ interface Props {
   className?: string;
   tooltipClass?: string;
   disabled?: boolean;
+  open?: boolean;
 }
 
-const { text, position = "top", className = "", tooltipClass = "", disabled = false } = Astro.props;
+const {
+  text,
+  position = "top",
+  className = "",
+  tooltipClass = "",
+  disabled = false,
+  open = false,
+} = Astro.props;
 
 // Position classes
 const positionClasses = {
@@ -34,7 +42,7 @@ const arrowClasses = {
 >
   <slot />
   <span
-    class={`absolute ${positionClasses[position]} px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-500 block ${tooltipClass} ${disabled ? "hidden" : ""}`}
+    class={`absolute ${positionClasses[position]} px-3 py-2 bg-gray-900 text-white text-sm rounded-lg ${open ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity duration-200 pointer-events-none whitespace-nowrap z-500 block ${tooltipClass} ${disabled ? "hidden" : ""}`}
   >
     <span class="cursor-pointer">{text}</span>
     <span class={arrowClasses[position]} style="display: block;"></span>
