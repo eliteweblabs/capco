@@ -64,7 +64,7 @@ const { globalInputClasses } = Astro.props;
       required
       autocomplete="email"
       autofocus
-      class={`${globalInputClasses} text-xl py-5 text-center`}
+      class={`${globalInputClasses} py-5 text-center`}
     />
   </div>
   <div data-aos="fade-up" data-aos-delay="450">
@@ -79,14 +79,14 @@ const { globalInputClasses } = Astro.props;
       required
       minlength="6"
       autocomplete="current-password"
-      class={`${globalInputClasses} text-xl py-5 text-center`}
+      class={`${globalInputClasses} py-5 text-center`}
     />
   </div>
 
   <div class="flex justify-between gap-3 aos-init" data-aos="fade-up" data-aos-delay="600">
     <Button
       href="/auth/register"
-      variant="secondary"
+      variant="outline"
       size="lg"
       class="px-0"
       icon="user-plus"
@@ -228,9 +228,9 @@ const { globalInputClasses } = Astro.props;
       // This is essential for first-time auth - without it, the callback won't have the verifier
       const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
       const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
-      
+
       console.log("[GOOGLE-SIGNIN] Waiting for code verifier to be stored in localStorage...");
-      
+
       // Wait for code verifier with retry logic (like MultiStepRegisterForm)
       let codeVerifier = localStorage.getItem(codeVerifierKey);
       let attempts = 0;
@@ -241,9 +241,11 @@ const { globalInputClasses } = Astro.props;
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
         codeVerifier = localStorage.getItem(codeVerifierKey);
         attempts++;
-        
+
         if (attempts % 5 === 0) {
-          console.log(`[GOOGLE-SIGNIN] Still waiting for code verifier... (attempt ${attempts}/${maxAttempts})`);
+          console.log(
+            `[GOOGLE-SIGNIN] Still waiting for code verifier... (attempt ${attempts}/${maxAttempts})`
+          );
         }
       }
 
@@ -253,10 +255,13 @@ const { globalInputClasses } = Astro.props;
       } else {
         console.error("[GOOGLE-SIGNIN] ❌ Code verifier NOT found after waiting!");
         console.error("[GOOGLE-SIGNIN] This will cause authentication to fail on callback");
-        console.error("[GOOGLE-SIGNIN] Available localStorage keys:", 
-          Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('sb-') || k.includes('auth'))
+        console.error(
+          "[GOOGLE-SIGNIN] Available localStorage keys:",
+          Object.keys(localStorage).filter(
+            (k) => k.includes("supabase") || k.includes("sb-") || k.includes("auth")
+          )
         );
-        
+
         // Don't proceed if code verifier is missing - this will cause the callback to fail
         if (window.showModal) {
           window.showModal(

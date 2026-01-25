@@ -20,8 +20,8 @@ Use the custom color names defined in `tailwind.config.mjs`:
 <div class="bg-danger-500 text-white">Danger</div>
 
 <!-- Neutral Colors -->
-<div class="bg-neutral-100 text-neutral-900">Light Neutral</div>
-<div class="bg-neutral-800 text-neutral-100">Dark Neutral</div>
+<div class="bg-gray-100 text-gray-900">Light Neutral</div>
+<div class="bg-gray-800 text-gray-100">Dark Neutral</div>
 
 <!-- Background Colors -->
 <div class="bg-background-light dark:bg-background-dark">Adaptive Background</div>

@@ -18,7 +18,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 // Button templates - change these props to customize all buttons at once
 const nextButtonProps = {
   type: "button" as const,
-  variant: "primary" as const,
+  variant: "secondary" as const,
   size: "xl" as const,
   class: "next-step",
   icon: "arrow-right",
@@ -153,7 +153,11 @@ const submitButtonProps = {
 
       <div class="flex justify-between gap-3">
         <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }}> back </Button>
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }} class="next-step-phone">
+        <Button
+          {...nextButtonProps}
+          dataAttributes={{ "data-next": "4" }}
+          class={`${nextButtonProps.class} next-step-phone`}
+        >
           next
         </Button>
       </div>
@@ -261,7 +265,7 @@ const submitButtonProps = {
           placeholder="Acme Corporation"
           required
           autocomplete="organization"
-          class={`${globalInputClasses} text-xl py-5 text-center`}
+          class={`${globalInputClasses} py-5 text-center`}
           data-error="Please enter your company name"
         />
       </div>
@@ -569,9 +573,10 @@ const submitButtonProps = {
     // Handle next step buttons
     form.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
-      const nextBtn = target.closest(".next-step");
-      const prevBtn = target.closest(".prev-step");
-      const smsChoiceBtn = target.closest(".sms-choice");
+      // Use closest to find button/link from any nested element (span, svg, etc.)
+      const nextBtn = target.closest("button.next-step, a.next-step");
+      const prevBtn = target.closest("button.prev-step, a.prev-step");
+      const smsChoiceBtn = target.closest("button.sms-choice, a.sms-choice");
 
       console.log("[CONTACT-FORM] Click detected on:", target);
       console.log("[CONTACT-FORM] Current step:", currentStep);

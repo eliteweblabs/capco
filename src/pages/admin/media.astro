@@ -1,7 +1,7 @@
 ---
 /**
  * Media Manager Admin Page
- * Uses AdminMedia component for the main content
+ * Uses MediaFilter component for the main content
  */
 const requireAuthRedirect = "/auth/login";
 import { checkAuth } from "../../lib/auth";
@@ -21,7 +21,7 @@ import { globalClasses } from "../api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
 import App from "../../components/ui/App.astro";
-import AdminMedia from "../../components/admin/AdminMedia.astro";
+import MediaFilter from "../../features/media-filter/MediaFilter.astro";
 ---
 
 <App
@@ -39,10 +39,23 @@ import AdminMedia from "../../components/admin/AdminMedia.astro";
   {globalInputClasses}
 >
   <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-    <AdminMedia
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Media Manager</h1>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        Browse, upload, and manage all media files across the system.
+      </p>
+    </div>
+
+    <MediaFilter
       {currentUser}
       {supabase}
+      sourceFilters={["All", "Project", "Global"]}
+      typeFilters={["All", "Images", "PDFs", "Documents", "Other"]}
+      showSearch={true}
+      minSearchChars={2}
+      searchPlaceholder="Search media files..."
       {globalInputClasses}
+      includeGrid={true}
     />
   </div>
 </App>

@@ -72,30 +72,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
                   <div id="subject-dropdown-container">
                     {/* <!-- Subject dropdown will be inserted here --> */}
                   </div>
-                  <div class="flex items-center space-x-2">
-                    <Button
-                      type="button"
-                      id="save-subject-btn"
-                      variant="primary"
-                      size="sm"
-                      icon="check"
-                      iconPosition="left"
-                      title="Save subject"
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      type="button"
-                      id="cancel-subject-btn"
-                      variant="secondary"
-                      size="sm"
-                      icon="x"
-                      iconPosition="left"
-                      title="Cancel"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
                 </div>
               </div>
             )}
@@ -2189,8 +2165,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
     // Subject editing functionality
     initializeSubjectEditing() {
       const editBtn = document.getElementById("edit-subject-btn");
-      const saveBtn = document.getElementById("save-subject-btn");
-      const cancelBtn = document.getElementById("cancel-subject-btn");
       const displayDiv = document.getElementById("proposal-subject-display");
       const editDiv = document.getElementById("proposal-subject-edit");
       const subjectText = document.getElementById("proposal-subject-text");
@@ -2198,8 +2172,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 
       if (
         !editBtn ||
-        !saveBtn ||
-        !cancelBtn ||
         !displayDiv ||
         !editDiv ||
         !subjectText ||
@@ -2209,6 +2181,54 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       }
 
       let subjectDropdown = null;
+
+      // Auto-save function
+      async function autoSaveSubject(newSubject) {
+        if (!newSubject) {
+          return;
+        }
+
+        try {
+          // Save to database
+          const response = await fetch("/api/save-proposal-subject", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              subject: newSubject,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Update UI
+            subjectText.textContent = newSubject;
+            editDiv.classList.add("hidden");
+            displayDiv.classList.remove("hidden");
+
+            // Show success message
+            window.showModal("success", "Success", "Proposal subject updated!", 2000);
+          } else {
+            // Check if it's a migration required error
+            if (data.migration_required) {
+              window.showModal(
+                "error",
+                "Database Error",
+                "Database column 'subject' not found in invoices table"
+              );
+              console.error("Column missing:", data.details);
+            } else {
+              throw new Error(data.error || "Failed to update subject");
+            }
+          }
+        } catch (error) {
+          console.error("Error updating proposal subject:", error);
+          window.showModal("error", "Error", "Failed to update proposal subject");
+        }
+      }
 
       // Create subject dropdown dynamically
       function createSubjectDropdown() {
@@ -2501,7 +2521,7 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         }
 
         // Handle option selection
-        optionsContainer.addEventListener("click", (e) => {
+        optionsContainer.addEventListener("click", async (e) => {
           const option = e.target.closest("button[data-subject-text]");
           if (!option) return;
 
@@ -2509,9 +2529,12 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
           if (subjectText) {
             searchInput.value = subjectText;
             hiddenInput.value = subjectText;
+            toggleClearButton();
+            hideDropdown();
+            
+            // Auto-save the selected subject
+            await autoSaveSubject(subjectText);
           }
-          toggleClearButton();
-          hideDropdown();
         });
 
         // Handle create new subject
@@ -2545,6 +2568,9 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
                     2000
                   );
                   loadSubjects("");
+                  
+                  // Auto-save the new subject to the proposal
+                  await autoSaveSubject(newSubject);
                 } else {
                   console.error("Failed to create subject:", data.error);
                   window.showModal("error", "Error", "Failed to create subject", 2000);
@@ -2582,64 +2608,6 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
       });
 
       editBtn.click();
-
-      // Save button click
-      saveBtn.addEventListener("click", async () => {
-        const hiddenInput = document.getElementById("proposal-subject-dropdown-hidden");
-        const newSubject = hiddenInput ? hiddenInput.value.trim() : "";
-
-        if (!newSubject) {
-          window.showModal("error", "Error", "Please select or enter a subject");
-          return;
-        }
-
-        try {
-          // Save to database
-          const response = await fetch("/api/save-proposal-subject", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              subject: newSubject,
-            }),
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            // Update UI
-            subjectText.textContent = newSubject;
-            editDiv.classList.add("hidden");
-            displayDiv.classList.remove("hidden");
-
-            // Show success message
-            window.showModal("Success", "Proposal subject updated successfully!", "success");
-          } else {
-            // Check if it's a migration required error
-            if (data.migration_required) {
-              window.showModal(
-                "error",
-                "Database Error",
-                "Database column 'subject' not found in invoices table"
-              );
-              console.error("Column missing:", data.details);
-            } else {
-              throw new Error(data.error || "Failed to update subject");
-            }
-          }
-        } catch (error) {
-          console.error("Error updating proposal subject:", error);
-          window.showModal("error", "Error", "Failed to update proposal subject");
-        }
-      });
-
-      // Cancel button click
-      cancelBtn.addEventListener("click", () => {
-        editDiv.classList.add("hidden");
-        displayDiv.classList.remove("hidden");
-      });
     }
 
     // Accept Proposal method
