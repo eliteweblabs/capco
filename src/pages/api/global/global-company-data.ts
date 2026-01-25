@@ -69,14 +69,18 @@ export const globalCompanyData = async () => {
   // Website URL - get from database only, no env fallback
   // If not in database, will be empty and caller should use request URL
   const websiteRaw = get("website");
-  const website = websiteRaw?.startsWith("http") ? websiteRaw : websiteRaw ? `https://${websiteRaw}` : "";
+  const website = websiteRaw?.startsWith("http")
+    ? websiteRaw
+    : websiteRaw
+      ? `https://${websiteRaw}`
+      : "";
 
   // Favicon paths - consistent format with leading slash
   const faviconSvgPath = "/img/favicon.svg";
   const faviconPngPath = "/img/favicon.png";
 
   return {
-    globalCompanyName: get("company_name", "RAILWAY_PROJECT_NAME"),
+    globalCompanyName: get("companyName", "RAILWAY_PROJECT_NAME") || "Company Name Not Set",
     globalCompanySlogan: get("slogan"), // Database only, no env fallback
     globalCompanyAddress: get("address", "GLOBAL_COMPANY_ADDRESS"),
     globalCompanyPhone: get("phone", "VAPI_PHONE_NUMBER"),
@@ -108,7 +112,7 @@ export const globalCompanyData = async () => {
 
     // OG Image for social sharing (URL path like /images/og-image.png)
     ogImage: get("og_image", "OG_IMAGE") || "",
-    
+
     // Social Networks (stored as JSON array of {url: string, label?: string})
     socialNetworks: parseSocialNetworks(get("social_networks")),
   };
@@ -117,12 +121,14 @@ export const globalCompanyData = async () => {
 /**
  * Parse social networks from JSON string
  */
-function parseSocialNetworks(value: string): Array<{url: string; label?: string}> {
+function parseSocialNetworks(value: string): Array<{ url: string; label?: string }> {
   if (!value) return [];
   try {
     const parsed = JSON.parse(value);
     if (Array.isArray(parsed)) {
-      return parsed.filter(item => item && typeof item.url === 'string' && item.url.trim() !== '');
+      return parsed.filter(
+        (item) => item && typeof item.url === "string" && item.url.trim() !== ""
+      );
     }
   } catch (e) {
     console.warn("[global-company-data] Failed to parse social_networks:", e);

@@ -140,7 +140,7 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
     // Ensure user has a profile row (handles Google OAuth users who don't have one)
     if (data.user?.id && supabaseAdmin) {
       console.log("[---AUTH-CALLBACK] Checking if profile exists for user:", data.user.id);
-      
+
       const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
         .from("profiles")
         .select("id")
@@ -150,49 +150,47 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
       if (profileCheckError && profileCheckError.code === "PGRST116") {
         // Profile doesn't exist, create it
         console.log("[---AUTH-CALLBACK] No profile found, creating one for:", data.user.email);
-        
+
         const metadata = data.user.user_metadata || {};
-        
+
         // Extract user info from metadata (handle different OAuth providers)
-        const firstName = 
-          metadata.firstName || 
-          metadata.first_name || 
-          metadata.given_name ||  // Google OAuth
+        const firstName =
+          metadata.firstName ||
+          metadata.first_name ||
+          metadata.given_name || // Google OAuth
           "";
-        
-        const lastName = 
-          metadata.lastName || 
-          metadata.last_name || 
-          metadata.family_name ||  // Google OAuth
+
+        const lastName =
+          metadata.lastName ||
+          metadata.last_name ||
+          metadata.family_name || // Google OAuth
           "";
-        
+
         const companyName =
           metadata.companyName ||
-          metadata.company_name ||
-          metadata.name ||  // Google OAuth full name
+          metadata.companyName ||
+          metadata.name || // Google OAuth full name
           metadata.full_name ||
           data.user.email?.split("@")[0] ||
           "Unknown Company";
-        
+
         const avatarUrl =
           metadata.avatarUrl ||
           metadata.avatar_url ||
-          metadata.picture ||  // Google OAuth
+          metadata.picture || // Google OAuth
           null;
 
-        const { error: createProfileError } = await supabaseAdmin
-          .from("profiles")
-          .insert({
-            id: data.user.id,
-            email: data.user.email,
-            companyName: companyName,
-            role: "Client",
-            firstName: firstName,
-            lastName: lastName,
-            avatarUrl: avatarUrl,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
+        const { error: createProfileError } = await supabaseAdmin.from("profiles").insert({
+          id: data.user.id,
+          email: data.user.email,
+          companyName: companyName,
+          role: "Client",
+          firstName: firstName,
+          lastName: lastName,
+          avatarUrl: avatarUrl,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
 
         if (createProfileError) {
           console.error("[---AUTH-CALLBACK] Error creating profile:", createProfileError);
@@ -205,7 +203,9 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
         console.error("[---AUTH-CALLBACK] Error checking profile:", profileCheckError);
       }
     } else if (!supabaseAdmin) {
-      console.error("[---AUTH-CALLBACK] supabaseAdmin not available - check SUPABASE_SECRET env var");
+      console.error(
+        "[---AUTH-CALLBACK] supabaseAdmin not available - check SUPABASE_SECRET env var"
+      );
     }
 
     // Set auth cookies using the verified session tokens

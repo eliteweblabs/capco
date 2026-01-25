@@ -4,6 +4,7 @@ export const isBackendPage = (pathname: string) => {
     "/auth",
     "/profile",
     "/dashboard",
+    "/contact",
     "/project/", // Matches /project/123, /project/new, etc. but not /projects
   ];
 

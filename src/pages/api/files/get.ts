@@ -328,34 +328,29 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         }
 
         try {
-          // console.log(`🔗 [FILES-GET] Generating signed URL for file ${file.id}:`, {
+          // console.log(`🔗 [FILES-GET] Generating public URL for file ${file.id}:`, {
           //   bucketName: file.bucketName,
           //   filePath: file.filePath,
           // });
 
-          const { data: urlData, error: urlError } = await supabaseAdmin!.storage
+          const { data: urlData } = supabaseAdmin!.storage
             .from(file.bucketName)
-            .createSignedUrl(file.filePath, 3600);
-
-          if (urlError) {
-            console.error(`❌ [FILES-GET] Signed URL error for file ${file.id}:`, urlError);
-            return { ...file, checked_out_by_name, isFeatured, publicUrl: null };
-          }
+            .getPublicUrl(file.filePath);
 
           // console.log(
-          //   `✅ [FILES-GET] Generated signed URL for file ${file.id}:`,
-          //   urlData?.signedUrl
+          //   `✅ [FILES-GET] Generated public URL for file ${file.id}:`,
+          //   urlData?.publicUrl
           // );
 
           return {
             ...file,
             checked_out_by_name,
             isFeatured,
-            publicUrl: urlData?.signedUrl || null,
+            publicUrl: urlData?.publicUrl || null,
           };
         } catch (urlError) {
           console.error(
-            `❌ [FILES-GET] Failed to generate signed URL for file ${file.id}:`,
+            `❌ [FILES-GET] Failed to generate public URL for file ${file.id}:`,
             urlError
           );
           return { ...file, checked_out_by_name, isFeatured, publicUrl: null };
@@ -679,23 +674,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         try {
-          // console.log(`🔗 [FILES-GET] Generating signed URL for file ${file.id}:`, {
+          // console.log(`🔗 [FILES-GET] Generating public URL for file ${file.id}:`, {
           //   bucketName: file.bucketName,
           //   filePath: file.filePath,
           // });
 
-          const { data: urlData, error: urlError } = await supabaseAdmin!.storage
+          const { data: urlData } = supabaseAdmin!.storage
             .from(file.bucketName)
-            .createSignedUrl(file.filePath, 3600);
-
-          if (urlError) {
-            console.error(`❌ [FILES-GET] Signed URL error for file ${file.id}:`, urlError);
-            return { ...file, publicUrl: null };
-          }
+            .getPublicUrl(file.filePath);
 
           // console.log(
-          //   `✅ [FILES-GET] Generated signed URL for file ${file.id}:`,
-          //   urlData?.signedUrl
+          //   `✅ [FILES-GET] Generated public URL for file ${file.id}:`,
+          //   urlData?.publicUrl
           // );
 
           // Extract nested data from the join results
@@ -704,7 +694,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
           return {
             ...file,
-            publicUrl: urlData?.signedUrl || null,
+            publicUrl: urlData?.publicUrl || null,
             uploadedByName: profileData.companyName,
             projectTitle: projectData.title,
             // Remove nested objects to keep response clean
@@ -713,7 +703,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           };
         } catch (urlError) {
           console.error(
-            `❌ [FILES-GET] Failed to generate signed URL for file ${file.id}:`,
+            `❌ [FILES-GET] Failed to generate public URL for file ${file.id}:`,
             urlError
           );
           return { ...file, publicUrl: null };

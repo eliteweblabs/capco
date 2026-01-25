@@ -78,7 +78,7 @@ const settings = {
 
   // Analytics
   plausibleTrackingScript: companyData?.plausibleTrackingScript || "",
-  
+
   // Social Networks (array of {url: string, label?: string})
   socialNetworks: companyData.socialNetworks || [],
 };
@@ -142,10 +142,10 @@ const settings = {
         <h2 class="text-xl font-semibold mb-4">Company Information</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label for="company_name" class="block text-sm font-medium mb-2">
+            <label for="companyName" class="block text-sm font-medium mb-2">
               Company Name
               {
-                isFromDatabase("company_name") && (
+                isFromDatabase("companyName") && (
                   <span
                     class="ml-2 text-xs text-green-600 dark:text-green-400"
                     title="Stored in database"
@@ -157,8 +157,8 @@ const settings = {
             </label>
             <input
               type="text"
-              id="company_name"
-              name="company_name"
+              id="companyName"
+              name="companyName"
               value={settings.companyName}
               class={globalInputClasses}
               placeholder="Your Company Name"
@@ -293,47 +293,52 @@ const settings = {
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
           Add your social media profiles. Icons are automatically detected based on the URL.
         </p>
-        
+
         <div id="social-networks-container" class="space-y-3">
-          {settings.socialNetworks.length > 0 ? (
-            settings.socialNetworks.map((social, index) => (
-              <div class="social-network-item flex items-center gap-3" data-index={index}>
-                <div class="flex-1">
-                  <input
-                    type="url"
-                    name={`social_url_${index}`}
-                    value={social.url}
-                    class={`${globalInputClasses} social-url-input`}
-                    placeholder="https://facebook.com/yourpage"
+          {
+            settings.socialNetworks.length > 0 ? (
+              settings.socialNetworks.map((social, index) => (
+                <div class="social-network-item flex items-center gap-3" data-index={index}>
+                  <div class="flex-1">
+                    <input
+                      type="url"
+                      name={`social_url_${index}`}
+                      value={social.url}
+                      class={`${globalInputClasses} social-url-input`}
+                      placeholder="https://facebook.com/yourpage"
+                    />
+                  </div>
+                  <div class="w-32">
+                    <input
+                      type="text"
+                      name={`social_label_${index}`}
+                      value={social.label || ""}
+                      class={`${globalInputClasses} social-label-input`}
+                      placeholder="Label (optional)"
+                    />
+                  </div>
+                  <div class="w-10 h-10 flex items-center justify-center text-xl social-icon-preview text-gray-400">
+                    <i class="fa-solid fa-link" />
+                  </div>
+                  <DeleteConfirmButton
+                    id={`remove-social-${index}`}
+                    class="remove-social-btn"
+                    size="sm"
+                    variant="icon"
                   />
                 </div>
-                <div class="w-32">
-                  <input
-                    type="text"
-                    name={`social_label_${index}`}
-                    value={social.label || ''}
-                    class={`${globalInputClasses} social-label-input`}
-                    placeholder="Label (optional)"
-                  />
-                </div>
-                <div class="w-10 h-10 flex items-center justify-center text-xl social-icon-preview text-gray-400">
-                  <i class="fa-solid fa-link"></i>
-                </div>
-                <DeleteConfirmButton 
-                  id={`remove-social-${index}`}
-                  class="remove-social-btn"
-                  size="sm"
-                  variant="icon"
-                />
-              </div>
-            ))
-          ) : (
-            <p class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center" id="no-socials-message">
-              No social networks added yet. Click the button below to add one.
-            </p>
-          )}
+              ))
+            ) : (
+              <p
+                class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center"
+                id="no-socials-message"
+              >
+                No social networks added yet. Click the button below to add one.
+              </p>
+            )
+          }
         </div>
-        
+
         <button
           type="button"
           id="add-social-btn"
@@ -342,12 +347,12 @@ const settings = {
           <i class="fa-solid fa-plus"></i>
           Add Social Network
         </button>
-        
+
         <!-- Hidden input to store the JSON value -->
-        <input 
-          type="hidden" 
-          id="social_networks" 
-          name="social_networks" 
+        <input
+          type="hidden"
+          id="social_networks"
+          name="social_networks"
           value={JSON.stringify(settings.socialNetworks)}
         />
       </div>
@@ -379,9 +384,11 @@ const settings = {
               rows="4"
               class={globalInputClasses}
               placeholder='<script defer data-domain="yourdomain.com" src="https://plausible.example.com/js/script.js"></script>'
-            >{settings.plausibleTrackingScript}</textarea>
+              >{settings.plausibleTrackingScript}</textarea
+            >
             <p class="text-xs text-gray-500 mt-1">
-              Paste your complete Plausible tracking script here. Get this from your Plausible dashboard.
+              Paste your complete Plausible tracking script here. Get this from your Plausible
+              dashboard.
             </p>
           </div>
         </div>
@@ -898,7 +905,9 @@ const settings = {
           class="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700"
         >
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            <strong>💡 Tip:</strong> This image appears when your site is shared on social media (Facebook, Twitter, LinkedIn, etc.). Recommended size: 1200x630 pixels. Supported formats: PNG, JPG, GIF, WebP.
+            <strong>💡 Tip:</strong> This image appears when your site is shared on social media (Facebook,
+            Twitter, LinkedIn, etc.). Recommended size: 1200x630 pixels. Supported formats: PNG, JPG,
+            GIF, WebP.
           </p>
         </div>
         <div>
@@ -926,7 +935,8 @@ const settings = {
                 placeholder="/images/og-image.png or https://example.com/og-image.png"
               />
               <p class="text-xs text-gray-500 mt-1">
-                Enter a URL path (e.g., <code>/images/og-image.png</code>) or full URL. Image will be used for social media previews.
+                Enter a URL path (e.g., <code>/images/og-image.png</code>) or full URL. Image will
+                be used for social media previews.
               </p>
             </div>
             <div>
@@ -1083,7 +1093,7 @@ const settings = {
   // =====================
   // Social Networks Repeater
   // =====================
-  
+
   const socialContainer = document.getElementById("social-networks-container");
   const addSocialBtn = document.getElementById("add-social-btn");
   const socialNetworksInput = document.getElementById("social_networks") as HTMLInputElement;
@@ -1095,29 +1105,36 @@ const settings = {
    */
   function detectSocialIcon(url: string): string {
     const urlLower = url.toLowerCase();
-    
-    if (urlLower.includes('facebook.com') || urlLower.includes('fb.com')) return 'fa-brands fa-facebook-f';
-    if (urlLower.includes('twitter.com') || urlLower.includes('x.com')) return 'fa-brands fa-x-twitter';
-    if (urlLower.includes('instagram.com')) return 'fa-brands fa-instagram';
-    if (urlLower.includes('linkedin.com')) return 'fa-brands fa-linkedin-in';
-    if (urlLower.includes('youtube.com') || urlLower.includes('youtu.be')) return 'fa-brands fa-youtube';
-    if (urlLower.includes('tiktok.com')) return 'fa-brands fa-tiktok';
-    if (urlLower.includes('pinterest.com')) return 'fa-brands fa-pinterest-p';
-    if (urlLower.includes('snapchat.com')) return 'fa-brands fa-snapchat';
-    if (urlLower.includes('github.com')) return 'fa-brands fa-github';
-    if (urlLower.includes('discord.com') || urlLower.includes('discord.gg')) return 'fa-brands fa-discord';
-    if (urlLower.includes('whatsapp.com') || urlLower.includes('wa.me')) return 'fa-brands fa-whatsapp';
-    if (urlLower.includes('telegram.org') || urlLower.includes('t.me')) return 'fa-brands fa-telegram';
-    if (urlLower.includes('reddit.com')) return 'fa-brands fa-reddit-alien';
-    if (urlLower.includes('threads.net')) return 'fa-brands fa-threads';
-    if (urlLower.includes('twitch.tv')) return 'fa-brands fa-twitch';
-    if (urlLower.includes('spotify.com')) return 'fa-brands fa-spotify';
-    if (urlLower.includes('yelp.com')) return 'fa-brands fa-yelp';
-    if (urlLower.includes('google.com/maps') || urlLower.includes('business.google')) return 'fa-brands fa-google';
-    if (urlLower.startsWith('mailto:')) return 'fa-solid fa-envelope';
-    if (urlLower.startsWith('tel:')) return 'fa-solid fa-phone';
-    
-    return 'fa-solid fa-link';
+
+    if (urlLower.includes("facebook.com") || urlLower.includes("fb.com"))
+      return "fa-brands fa-facebook-f";
+    if (urlLower.includes("twitter.com") || urlLower.includes("x.com"))
+      return "fa-brands fa-x-twitter";
+    if (urlLower.includes("instagram.com")) return "fa-brands fa-instagram";
+    if (urlLower.includes("linkedin.com")) return "fa-brands fa-linkedin-in";
+    if (urlLower.includes("youtube.com") || urlLower.includes("youtu.be"))
+      return "fa-brands fa-youtube";
+    if (urlLower.includes("tiktok.com")) return "fa-brands fa-tiktok";
+    if (urlLower.includes("pinterest.com")) return "fa-brands fa-pinterest-p";
+    if (urlLower.includes("snapchat.com")) return "fa-brands fa-snapchat";
+    if (urlLower.includes("github.com")) return "fa-brands fa-github";
+    if (urlLower.includes("discord.com") || urlLower.includes("discord.gg"))
+      return "fa-brands fa-discord";
+    if (urlLower.includes("whatsapp.com") || urlLower.includes("wa.me"))
+      return "fa-brands fa-whatsapp";
+    if (urlLower.includes("telegram.org") || urlLower.includes("t.me"))
+      return "fa-brands fa-telegram";
+    if (urlLower.includes("reddit.com")) return "fa-brands fa-reddit-alien";
+    if (urlLower.includes("threads.net")) return "fa-brands fa-threads";
+    if (urlLower.includes("twitch.tv")) return "fa-brands fa-twitch";
+    if (urlLower.includes("spotify.com")) return "fa-brands fa-spotify";
+    if (urlLower.includes("yelp.com")) return "fa-brands fa-yelp";
+    if (urlLower.includes("google.com/maps") || urlLower.includes("business.google"))
+      return "fa-brands fa-google";
+    if (urlLower.startsWith("mailto:")) return "fa-solid fa-envelope";
+    if (urlLower.startsWith("tel:")) return "fa-solid fa-phone";
+
+    return "fa-solid fa-link";
   }
 
   /**
@@ -1125,26 +1142,26 @@ const settings = {
    */
   function updateSocialNetworksValue() {
     const items = document.querySelectorAll(".social-network-item");
-    const socials: Array<{url: string; label?: string}> = [];
-    
+    const socials: Array<{ url: string; label?: string }> = [];
+
     items.forEach((item) => {
       const urlInput = item.querySelector(".social-url-input") as HTMLInputElement;
       const labelInput = item.querySelector(".social-label-input") as HTMLInputElement;
-      
+
       if (urlInput?.value?.trim()) {
-        const social: {url: string; label?: string} = { url: urlInput.value.trim() };
+        const social: { url: string; label?: string } = { url: urlInput.value.trim() };
         if (labelInput?.value?.trim()) {
           social.label = labelInput.value.trim();
         }
         socials.push(social);
       }
     });
-    
+
     socialNetworksInput.value = JSON.stringify(socials);
-    
+
     // Show/hide no socials message
     if (noSocialsMessage) {
-      noSocialsMessage.style.display = items.length === 0 ? 'block' : 'none';
+      noSocialsMessage.style.display = items.length === 0 ? "block" : "none";
     }
   }
 
@@ -1154,18 +1171,18 @@ const settings = {
   function updateIconPreview(item: Element) {
     const urlInput = item.querySelector(".social-url-input") as HTMLInputElement;
     const iconPreview = item.querySelector(".social-icon-preview");
-    
+
     if (urlInput && iconPreview) {
-      const icon = detectSocialIcon(urlInput.value || '');
+      const icon = detectSocialIcon(urlInput.value || "");
       iconPreview.innerHTML = `<i class="${icon}"></i>`;
-      
+
       // Update color based on detection
-      if (urlInput.value && !urlInput.value.includes('link')) {
-        iconPreview.classList.remove('text-gray-400');
-        iconPreview.classList.add('text-primary-600', 'dark:text-primary-400');
+      if (urlInput.value && !urlInput.value.includes("link")) {
+        iconPreview.classList.remove("text-gray-400");
+        iconPreview.classList.add("text-primary-600", "dark:text-primary-400");
       } else {
-        iconPreview.classList.add('text-gray-400');
-        iconPreview.classList.remove('text-primary-600', 'dark:text-primary-400');
+        iconPreview.classList.add("text-gray-400");
+        iconPreview.classList.remove("text-primary-600", "dark:text-primary-400");
       }
     }
   }
@@ -1173,18 +1190,18 @@ const settings = {
   /**
    * Create a new social network item
    */
-  function createSocialItem(index: number, url: string = '', label: string = ''): HTMLElement {
-    const div = document.createElement('div');
-    div.className = 'social-network-item flex items-center gap-3';
+  function createSocialItem(index: number, url: string = "", label: string = ""): HTMLElement {
+    const div = document.createElement("div");
+    div.className = "social-network-item flex items-center gap-3";
     div.dataset.index = String(index);
-    
+
     div.innerHTML = `
       <div class="flex-1">
         <input
           type="url"
           name="social_url_${index}"
           value="${url}"
-          class="${(document.querySelector('[class*="globalInputClasses"]') as HTMLInputElement)?.className || 'block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm'} social-url-input"
+          class="${(document.querySelector('[class*="globalInputClasses"]') as HTMLInputElement)?.className || "block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"} social-url-input"
           placeholder="https://facebook.com/yourpage"
         />
       </div>
@@ -1193,7 +1210,7 @@ const settings = {
           type="text"
           name="social_label_${index}"
           value="${label}"
-          class="${(document.querySelector('[class*="globalInputClasses"]') as HTMLInputElement)?.className || 'block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm'} social-label-input"
+          class="${(document.querySelector('[class*="globalInputClasses"]') as HTMLInputElement)?.className || "block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"} social-label-input"
           placeholder="Label (optional)"
         />
       </div>
@@ -1215,7 +1232,7 @@ const settings = {
         </svg>
       </button>
     `;
-    
+
     return div;
   }
 
@@ -1229,18 +1246,18 @@ const settings = {
       updateIconPreview(item);
       updateSocialNetworksValue();
     });
-    
+
     // Label input change - update value
     const labelInput = item.querySelector(".social-label-input");
     labelInput?.addEventListener("input", updateSocialNetworksValue);
-    
+
     // Remove button - listen for deleteConfirmed event
     const removeBtn = item.querySelector(".remove-social-btn");
     removeBtn?.addEventListener("deleteConfirmed", () => {
       item.remove();
       updateSocialNetworksValue();
     });
-    
+
     // Initial icon preview
     updateIconPreview(item);
   }
@@ -1252,13 +1269,13 @@ const settings = {
   addSocialBtn?.addEventListener("click", () => {
     // Hide no socials message
     if (noSocialsMessage) {
-      noSocialsMessage.style.display = 'none';
+      noSocialsMessage.style.display = "none";
     }
-    
+
     const newItem = createSocialItem(socialIndex++);
     socialContainer?.appendChild(newItem);
     attachSocialItemListeners(newItem);
-    
+
     // Focus the new URL input
     const urlInput = newItem.querySelector(".social-url-input") as HTMLInputElement;
     urlInput?.focus();
@@ -1267,13 +1284,14 @@ const settings = {
   // Live preview for OG image
   const ogImageInput = document.getElementById("og_image") as HTMLInputElement;
   const ogImagePreview = document.getElementById("og-image-preview") as HTMLElement;
-  
+
   ogImageInput?.addEventListener("input", (e) => {
     const value = (e.target as HTMLInputElement).value.trim();
     if (value) {
       ogImagePreview.innerHTML = `<img src="${value}" alt="OG Image Preview" class="max-w-full max-h-32 object-contain rounded" onerror="this.parentElement.innerHTML='<p class=\\'text-xs text-red-400 text-center\\'>Failed to load image</p>'" />`;
     } else {
-      ogImagePreview.innerHTML = '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
+      ogImagePreview.innerHTML =
+        '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
     }
   });
 
@@ -1304,7 +1322,7 @@ const settings = {
 
     // Map form field names to database keys
     const fieldMapping: Record<string, string> = {
-      company_name: "company_name",
+      companyName: "companyName",
       slogan: "slogan",
       address: "address",
       phone: "phone",
@@ -1405,7 +1423,11 @@ const settings = {
 
       // Show success message
       if (window.showSuccess) {
-        window.showSuccess("Settings Saved", "Settings saved successfully! Regenerating colors...", 4000);
+        window.showSuccess(
+          "Settings Saved",
+          "Settings saved successfully! Regenerating colors...",
+          4000
+        );
       }
 
       // Inject dynamic colors and fonts if they were updated
@@ -1455,7 +1477,11 @@ const settings = {
           if (settings.primary_color || settings.secondary_color) updates.push("colors");
           if (settings.font_family || settings.secondary_font_family) updates.push("fonts");
           if (updates.length > 0 && window.showSuccess) {
-            window.showSuccess("Settings Updated", `Settings saved successfully! ${updates.join(" and ")} updated. Reloading page...`, 4000);
+            window.showSuccess(
+              "Settings Updated",
+              `Settings saved successfully! ${updates.join(" and ")} updated. Reloading page...`,
+              4000
+            );
           }
         } catch (error) {
           console.error("[settings] Failed to inject dynamic colors/fonts:", error);
