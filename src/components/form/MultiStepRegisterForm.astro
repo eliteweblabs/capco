@@ -10,7 +10,7 @@ const { globalInputClasses } = globalClasses();
 // Button templates - change these props to customize all buttons at once
 const nextButtonProps = {
   type: "button" as const,
-  variant: "primary" as const,
+  variant: "secondary" as const,
   size: "lg" as const,
   class: "next-step",
   icon: "arrow-right",
@@ -19,7 +19,7 @@ const nextButtonProps = {
 
 const prevButtonProps = {
   type: "button" as const,
-  variant: "outline" as const,
+  variant: "primary" as const,
   size: "xl" as const,
   class: "prev-step",
   icon: "arrow-left",
@@ -37,388 +37,414 @@ const submitButtonProps = {
 };
 ---
 
-<!-- <div class="mx-auto my-4 w-full max-w-3xl"> --><!-- Progress Bar -->
-<div class="mb-6 sm:mb-12" data-aos="fade-up">
-  <div class="relative">
-    <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-      <div
-        id="progress-bar"
-        class="h-full rounded-full bg-primary-500 transition-all duration-500 ease-out"
-        style="width: 0%"
-      >
-      </div>
-    </div>
-    <div class="mt-3 text-center">
-      <span id="progress-text" class="text-sm font-medium text-gray-600 dark:text-gray-400">
-        1 / 6
-      </span>
-    </div>
-  </div>
-</div>
-
-<!-- Multi-step Form -->
-<form id="multi-step-form" action="/api/auth/register" method="post">
-  <!-- Step 1: Email -->
-  <div class="step-content active" data-step="1">
-    <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
-        <h2 class="text-5xl font-bold text-gray-900 dark:text-white">your email?</h2>
-      </div>
-
-      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
-        <input
-          type="email"
-          name="email"
-          id="step-email"
-          placeholder="your.email@example.com"
-          required
-          autocomplete="email"
-          class={`${globalInputClasses} text-xl py-5 text-center`}
-          data-error="Please enter a valid email address"
-        />
-      </div>
-
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-        <Button
-          href="/auth/login"
-          variant="secondary"
-          size="lg"
-          class="prev-step px-0 hide-on-form-focus"
-          icon="arrow-left"
-          iconClasses="m-0 md:ml-2"
-          iconPosition="left"
-        >
-          have an account?
-        </Button>
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "2" }}>
-          Next
-        </Button>
-      </div>
-    </div>
-    <div
-      class="mx-auto w-full max-w-lg my-6 md:my-8 lg:my-12"
-      data-aos="fade-up"
-      data-aos-delay="600"
-    >
-      <Button
-        variant="outline"
-        fullWidth
-        name="provider"
-        value="google"
-        onclick="handleGoogleSignup()"
-        class="hide-on-form-focus"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="xMidYMid"
-          viewBox="0 0 256 262"
-          class="mr-2 inline-flex h-5 w-auto"
-        >
-          <path
-            fill="#4285F4"
-            d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
-          ></path>
-          <path
-            fill="#34A853"
-            d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
-          ></path>
-          <path
-            fill="#FBBC05"
-            d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
-          ></path>
-          <path
-            fill="#EB4335"
-            d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
-          ></path>
-        </svg>
-        Sign up with Google
-      </Button>
-    </div>
-  </div>
-
-  <!-- Step 2: Name -->
-  <div class="step-content" data-step="2">
-    <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
-        <div
-          class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
-        >
-          <SimpleIcon name="user" size="xl" class="text-primary-600 dark:text-primary-400" />
-        </div>
-        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your name?</h2>
-        <p class="hidden text-lg text-gray-600 dark:text-gray-400">
-          Help us get to know you better
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2" data-aos="fade-up" data-aos-delay="300">
-        <div class="input-wrapper">
-          <label
-            for="step-first-name"
-            class="hidden mb-2 block text-center text-sm font-medium text-gray-700 dark:text-gray-300"
+<!-- Full Screen Registration -->
+<div class="relative w-full flex px-4 py-8 max-w-lg">
+  <div class="w-full max-w-3xl">
+    <!-- <div class="mx-auto my-4 w-full max-w-3xl"> --><!-- Progress Bar -->
+    <div class="mb-6 sm:mb-12" data-aos="fade-up">
+      <div class="relative">
+        <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+          <div
+            id="progress-bar"
+            class="h-full rounded-full bg-primary-500 transition-all duration-500 ease-out"
+            style="width: 0%"
           >
-            First Name <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="firstName"
-            id="step-first-name"
-            placeholder="John"
-            required
-            autocomplete="given-name"
-            class={`${globalInputClasses} text-xl py-5 text-center`}
-            data-error="Please enter your first name"
-          />
-        </div>
-
-        <div class="input-wrapper">
-          <label
-            for="step-last-name"
-            class="hidden mb-2 block text-center text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Last Name <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="lastName"
-            id="step-last-name"
-            placeholder="Doe"
-            required
-            autocomplete="family-name"
-            class={`${globalInputClasses} text-xl py-5 text-center`}
-            data-error="Please enter your last name"
-          />
-        </div>
-      </div>
-
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "1" }} />
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "3" }} />
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 3: Company -->
-  <div class="step-content" data-step="3">
-    <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
-        <div
-          class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
-        >
-          <SimpleIcon name="building-2" size="xl" class="text-primary-600 dark:text-primary-400" />
-        </div>
-        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your company?</h2>
-        <p class="hidden text-lg text-gray-600 dark:text-gray-400">
-          Tell us where you work or the company you represent
-        </p>
-      </div>
-
-      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
-        <input
-          type="text"
-          name="companyName"
-          id="step-company-name"
-          placeholder="Acme Corporation"
-          required
-          autocomplete="organization"
-          class={`${globalInputClasses} text-xl py-5 text-center`}
-          data-error="Please enter your company name"
-        />
-      </div>
-
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }} />
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }} />
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 4: Password -->
-  <div class="step-content" data-step="4">
-    <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="150">
-        <div
-          class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
-        >
-          <SimpleIcon name="lock" size="xl" class="text-primary-600 dark:text-primary-400" />
-        </div>
-        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">Create a password</h2>
-        <p class="text-lg text-gray-600 dark:text-gray-400">
-          Choose a secure password to protect your account
-        </p>
-      </div>
-
-      <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
-        <input
-          type="password"
-          name="password"
-          id="step-password"
-          placeholder="Enter your password"
-          required
-          minlength="6"
-          autocomplete="new-password"
-          class={`${globalInputClasses} text-xl py-5 text-center`}
-          data-error="Password must be at least 6 characters"
-        />
-        <p class="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
-          6 characters minimum
-        </p>
-      </div>
-
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
-        <Button {...prevButtonProps} dataAttributes={{ "data-prev": "3" }} />
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "5" }} />
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 5: Phone -->
-  <div class="step-content" data-step="5">
-    <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="100">
-        <div
-          class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
-        >
-          <SimpleIcon name="phone" size="xl" class="text-primary-600 dark:text-primary-400" />
-        </div>
-        <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">Your digits?</h2>
-        <!-- <p class="text-lg text-gray-600 dark:text-gray-400">
-          Optional: Add your phone number for updates and alerts
-        </p> -->
-      </div>
-
-      <div data-aos="fade-up" data-aos-delay="200">
-        <PhoneAndSMS
-          id="step-phone"
-          name="phone"
-          placeholder="(555) 123-4567"
-          showSMS={true}
-          class="text-xl py-5 text-center"
-          {globalInputClasses}
-        />
-      </div>
-
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
-        <Button {...prevButtonProps} size="lg" class="prev-step px-12 text-lg" dataAttributes={{ "data-prev": "4" }} />
-        <Button {...nextButtonProps} dataAttributes={{ "data-next": "6" }} />
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 6: Review & Submit -->
-  <div class="step-content" data-step="6">
-    <div class="space-y-8">
-      <div class="text-center" data-aos="fade-up" data-aos-delay="100">
-        <div
-          class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
-        >
-          <SimpleIcon name="check-circle" size="xl" class="text-green-600 dark:text-green-400" />
-        </div>
-        <h2 class="hidden sm:block mb-3 text-5xl font-bold text-gray-900 dark:text-white">
-          Almost there!
-        </h2>
-        <p class="text-lg text-gray-600 dark:text-gray-400 hidden md:block">
-          Review your information and create your account
-        </p>
-      </div>
-
-      <!-- Review Summary -->
-      <div
-        class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background"
-        data-aos="fade-up"
-        data-aos-delay="200"
-      >
-        <div
-          class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
-        >
-          <div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">Email</p>
-            <p id="review-email" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
           </div>
-          <button
-            type="button"
-            class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-            data-edit="1"
-          >
-            Edit
-          </button>
         </div>
+        <div class="mt-3 text-center">
+          <span id="progress-text" class="text-sm font-medium text-gray-600 dark:text-gray-400">
+            1 / 6
+          </span>
+        </div>
+      </div>
+    </div>
 
-        <div
-          class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
-        >
-          <div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">Name</p>
-            <p id="review-name" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
+    <!-- Multi-step Form -->
+    <form id="multi-step-form" action="/api/auth/register" method="post">
+      <!-- Step 1: Email -->
+      <div class="step-content active" data-step="1">
+        <div class="space-y-8 sm:space-y-12 lg:space-y-16">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+            <h2 class="text-5xl font-bold text-gray-900 dark:text-white">your email?</h2>
           </div>
-          <button
-            type="button"
-            class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-            data-edit="2"
-          >
-            Edit
-          </button>
-        </div>
 
-        <div
-          class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
-        >
-          <div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">Company</p>
-            <p id="review-company" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
+          <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+            <input
+              type="email"
+              name="email"
+              id="step-email"
+              placeholder="your.email@example.com"
+              required
+              autocomplete="email"
+              class={`${globalInputClasses} text-xl py-5 text-center`}
+              data-error="Please enter a valid email address"
+            />
           </div>
-          <button
-            type="button"
-            class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-            data-edit="3"
-          >
-            Edit
-          </button>
-        </div>
 
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+            <Button
+              href="/auth/login"
+              variant="primary"
+              size="lg"
+              class="prev-step px-0 hide-on-form-focus"
+              icon="arrow-left"
+              iconClasses="m-0 md:ml-2"
+              iconPosition="left"
+            >
+              login
+            </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "2" }}> Next </Button>
+          </div>
+        </div>
         <div
-          class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+          class="mx-auto w-full max-w-lg my-6 md:my-8 lg:my-12"
+          data-aos="fade-up"
+          data-aos-delay="600"
         >
-          <div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">Password</p>
-            <p id="review-password" class="text-lg font-medium text-gray-900 dark:text-white">
-              ••••••
+          <Button
+            variant="outline"
+            fullWidth
+            name="provider"
+            value="google"
+            onclick="handleGoogleSignup()"
+            class="hide-on-form-focus"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid"
+              viewBox="0 0 256 262"
+              class="mr-2 inline-flex h-5 w-auto"
+            >
+              <path
+                fill="#4285F4"
+                d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
+              ></path>
+              <path
+                fill="#34A853"
+                d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
+              ></path>
+              <path
+                fill="#FBBC05"
+                d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
+              ></path>
+              <path
+                fill="#EB4335"
+                d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
+              ></path>
+            </svg>
+            Sign up with Google
+          </Button>
+        </div>
+      </div>
+
+      <!-- Step 2: Name -->
+      <div class="step-content" data-step="2">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="user" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your name?</h2>
+            <p class="hidden text-lg text-gray-600 dark:text-gray-400">
+              Help us get to know you better
             </p>
           </div>
-          <button
-            type="button"
-            class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-            data-edit="4"
-          >
-            Edit
-          </button>
-        </div>
 
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">Phone</p>
-            <p id="review-phone" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
+          <div
+            class="grid grid-cols-1 gap-6 md:grid-cols-2"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          >
+            <div class="input-wrapper">
+              <label
+                for="step-first-name"
+                class="hidden mb-2 block text-center text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                First Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="firstName"
+                id="step-first-name"
+                placeholder="John"
+                required
+                autocomplete="given-name"
+                class={`${globalInputClasses} text-xl py-5 text-center`}
+                data-error="Please enter your first name"
+              />
+            </div>
+
+            <div class="input-wrapper">
+              <label
+                for="step-last-name"
+                class="hidden mb-2 block text-center text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Last Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="lastName"
+                id="step-last-name"
+                placeholder="Doe"
+                required
+                autocomplete="family-name"
+                class={`${globalInputClasses} text-xl py-5 text-center`}
+                data-error="Please enter your last name"
+              />
+            </div>
           </div>
-          <button
-            type="button"
-            class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-            data-edit="5"
-          >
-            Edit
-          </button>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "1" }} />
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "3" }} />
+          </div>
         </div>
       </div>
 
-      <input type="hidden" name="role" value="Client" />
+      <!-- Step 3: Company -->
+      <div class="step-content" data-step="3">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon
+                name="building-2"
+                size="xl"
+                class="text-primary-600 dark:text-primary-400"
+              />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your company?</h2>
+            <p class="hidden text-lg text-gray-600 dark:text-gray-400">
+              Tell us where you work or the company you represent
+            </p>
+          </div>
 
-      <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
-        <Button {...prevButtonProps} size="lg" class="prev-step px-12 text-lg" dataAttributes={{ "data-prev": "5" }} />
-        <Button {...submitButtonProps} />
+          <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+            <input
+              type="text"
+              name="companyName"
+              id="step-company-name"
+              placeholder="Acme Corporation"
+              required
+              autocomplete="organization"
+              class={`${globalInputClasses} text-xl py-5 text-center`}
+              data-error="Please enter your company name"
+            />
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }} />
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }} />
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</form>
 
+      <!-- Step 4: Password -->
+      <div class="step-content" data-step="4">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="lock" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">Create a password</h2>
+            <p class="text-lg text-gray-600 dark:text-gray-400">
+              Choose a secure password to protect your account
+            </p>
+          </div>
+
+          <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+            <input
+              type="password"
+              name="password"
+              id="step-password"
+              placeholder="Enter your password"
+              required
+              minlength="6"
+              autocomplete="new-password"
+              class={`${globalInputClasses} text-xl py-5 text-center`}
+              data-error="Password must be at least 6 characters"
+            />
+            <p class="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+              6 characters minimum
+            </p>
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "3" }} />
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "5" }} />
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Phone -->
+      <div class="step-content" data-step="5">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="phone" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">Your digits?</h2>
+            <!-- <p class="text-lg text-gray-600 dark:text-gray-400">
+          Optional: Add your phone number for updates and alerts
+        </p> -->
+          </div>
+
+          <div data-aos="fade-up" data-aos-delay="200">
+            <PhoneAndSMS
+              id="step-phone"
+              name="phone"
+              placeholder="(555) 123-4567"
+              showSMS={true}
+              class="text-xl py-5 text-center"
+              {globalInputClasses}
+            />
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
+            <Button
+              {...prevButtonProps}
+              size="lg"
+              class="prev-step px-12 text-lg"
+              dataAttributes={{ "data-prev": "4" }}
+            />
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "6" }} />
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6: Review & Submit -->
+      <div class="step-content" data-step="6">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
+            >
+              <SimpleIcon
+                name="check-circle"
+                size="xl"
+                class="text-green-600 dark:text-green-400"
+              />
+            </div>
+            <h2 class="hidden sm:block mb-3 text-5xl font-bold text-gray-900 dark:text-white">
+              Almost there!
+            </h2>
+            <p class="text-lg text-gray-600 dark:text-gray-400 hidden md:block">
+              Review your information and create your account
+            </p>
+          </div>
+
+          <!-- Review Summary -->
+          <div
+            class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background"
+            data-aos="fade-up"
+            data-aos-delay="200"
+          >
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Email</p>
+                <p id="review-email" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="1"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Name</p>
+                <p id="review-name" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="2"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Company</p>
+                <p id="review-company" class="text-lg font-medium text-gray-900 dark:text-white">
+                  -
+                </p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="3"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Password</p>
+                <p id="review-password" class="text-lg font-medium text-gray-900 dark:text-white">
+                  ••••••
+                </p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="4"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Phone</p>
+                <p id="review-phone" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="5"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+
+          <input type="hidden" name="role" value="Client" />
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
+            <Button
+              {...prevButtonProps}
+              size="lg"
+              class="prev-step px-12 text-lg"
+              dataAttributes={{ "data-prev": "5" }}
+            />
+            <Button {...submitButtonProps} />
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
 <!-- <div class="mb-4 flex justify-center">
   <Button
     type="button"
@@ -530,18 +556,25 @@ const submitButtonProps = {
             attempts++;
 
             if (attempts % 5 === 0) {
-              console.log(`[GOOGLE-SIGNUP] Still waiting for code verifier... (attempt ${attempts}/${maxAttempts})`);
+              console.log(
+                `[GOOGLE-SIGNUP] Still waiting for code verifier... (attempt ${attempts}/${maxAttempts})`
+              );
             }
           }
 
           if (codeVerifier) {
-            console.log("[GOOGLE-SIGNUP] ✅ Code verifier confirmed in localStorage, redirecting...");
+            console.log(
+              "[GOOGLE-SIGNUP] ✅ Code verifier confirmed in localStorage, redirecting..."
+            );
             console.log(`[GOOGLE-SIGNUP] Code verifier length: ${codeVerifier.length} characters`);
           } else {
             console.error("[GOOGLE-SIGNUP] ❌ Code verifier NOT found after waiting!");
             console.error("[GOOGLE-SIGNUP] This will cause authentication to fail on callback");
-            console.error("[GOOGLE-SIGNUP] Available localStorage keys:",
-              Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('sb-') || k.includes('auth'))
+            console.error(
+              "[GOOGLE-SIGNUP] Available localStorage keys:",
+              Object.keys(localStorage).filter(
+                (k) => k.includes("supabase") || k.includes("sb-") || k.includes("auth")
+              )
             );
 
             // Don't proceed if code verifier is missing - this will cause the callback to fail
@@ -867,7 +900,7 @@ const submitButtonProps = {
 
       isSubmitting = true;
       const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-      const originalButtonText = submitButton?.textContent || "Create Account";
+      const originalButtonText = submitButton?.textContent || "new account";
 
       // Disable submit button and show loading state
       if (submitButton) {

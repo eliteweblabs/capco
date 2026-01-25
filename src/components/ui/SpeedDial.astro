@@ -5,17 +5,22 @@ const { currentUser, session, supabase, refreshToken, accessToken } = await chec
   Astro.cookies
 );
 
-const { globalCompanyPhone } = Astro.props;
+const { globalCompanyPhone, globalCompanyName } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 import Button from "../common/Button.astro";
 const buttonClasses = "shadow-xs h-12 w-12";
 const innerBtnTextClasses =
-  "absolute end-16 top-1/2 mb-px block -translate-y-1/2 text-right text-sm font-medium text-gray-900 dark:text-white color-background rounded-sm px-2 py-1";
+  "absolute end-16 top-1/2 mb-px block -translate-y-1/2 text-right text-sm font-medium text-gray-900 dark:text-white color-background rounded-sm px-2 py-1 whitespace-nowrap";
 // Speed dial component for quick actions
 ---
 
-<div id="speed-dial" data-dial-init class="z-50 hide-on-form-focus group fixed bottom-6 end-6">
+<div
+  id="speed-dial"
+  data-dial-init
+  class="hide-on-form-focus group fixed"
+  style="bottom: 1.5rem; right: 1.5rem; z-index: 10000"
+>
   <div id="speed-dial-menu" class="mb-4 flex hidden flex-col items-center space-y-2">
     {
       currentUser && (
@@ -72,7 +77,8 @@ const innerBtnTextClasses =
           size="sm"
           class={buttonClasses}
           title="Login"
-          href="/auth/login"
+          dataAttributes={{ "aria-label": "Login" }}
+          onclick={`window.location.href='/auth/login'`}
         >
           <span class={innerBtnTextClasses}>Login</span>
         </Button>
@@ -114,7 +120,7 @@ const innerBtnTextClasses =
           dataAttributes={{ "aria-label": "Call Us" }}
           onclick={`window.location.href='tel:${globalCompanyPhone}'`}
         >
-          <span class={innerBtnTextClasses}>Call Us</span>
+          <span class={innerBtnTextClasses}>Call {globalCompanyName}</span>
         </Button>
       )
     }

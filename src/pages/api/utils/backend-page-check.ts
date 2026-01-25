@@ -1,7 +1,6 @@
 export const isBackendPage = (pathname: string) => {
   const backendPaths = [
     "/admin",
-    "/auth",
     "/profile",
     "/dashboard",
     "/contact",
@@ -9,4 +8,19 @@ export const isBackendPage = (pathname: string) => {
   ];
 
   return backendPaths.some((path) => pathname.startsWith(path));
+};
+
+export const isAuthPage = (pathname: string) => {
+  const authPaths = [
+    "/auth/login",
+    "/auth/register",
+    "/auth/forgot-password",
+    "/auth/reset-password",
+    "/auth/verify-email",
+    "/auth/verify-email-otp",
+    "/auth/verify-email-otp-resend",
+    "/auth/verify-email-otp-resend",
+  ];
+
+  return authPaths.some((path) => pathname.startsWith(path));
 };
