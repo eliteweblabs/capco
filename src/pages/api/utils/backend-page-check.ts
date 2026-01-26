@@ -23,3 +23,9 @@ export const isAuthPage = (pathname: string) => {
 
   return authPaths.some((path) => pathname.startsWith(path));
 };
+
+export const isContactPage = (pathname: string) => {
+  const contactPaths = ["/contact"];
+
+  return contactPaths.some((path) => pathname.startsWith(path));
+};

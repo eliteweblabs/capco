@@ -18,7 +18,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 const nextButtonProps = {
   type: "button" as const,
   variant: "secondary" as const,
-  size: "lg" as const,
+  size: "xl" as const,
   class: "next-step",
   icon: "arrow-right",
   iconPosition: "right" as const,
@@ -26,18 +26,17 @@ const nextButtonProps = {
 
 const prevButtonProps = {
   type: "button" as const,
-  variant: "primary" as const,
-  size: "lg" as const,
+  variant: "anchor" as const,
+  size: "xl" as const,
   class: "prev-step",
   icon: "arrow-left",
   iconPosition: "left" as const,
-  iconClasses: "m-0",
+  iconClasses: "",
 };
-
 const submitButtonProps = {
   type: "button" as const,
   variant: "secondary" as const,
-  size: "lg" as const,
+  size: "xl" as const,
   class: "next-step submit-registration",
   icon: "arrow-right",
   iconPosition: "right" as const,
@@ -153,14 +152,14 @@ const submitButtonProps = {
 
       <!-- Step 2: Name -->
       <div class="step-content" data-step="2">
-        <div class="space-y-8">
+        <div class="space-y-8 sm:space-y-12 lg:space-y-16">
           <div class="text-center" data-aos="fade-up" data-aos-delay="150">
             <div
               class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
             >
               <SimpleIcon name="user" size="xl" class="text-primary-600 dark:text-primary-400" />
             </div>
-            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your name?</h2>
+            <h2 class="text-5xl font-bold text-gray-900 dark:text-white">your name?</h2>
             <p class="hidden text-lg text-gray-600 dark:text-gray-400">
               Help us get to know you better
             </p>
@@ -221,7 +220,7 @@ const submitButtonProps = {
 
       <!-- Step 3: Company -->
       <div class="step-content" data-step="3">
-        <div class="space-y-8">
+        <div class="space-y-8 sm:space-y-12 lg:space-y-16">
           <div class="text-center" data-aos="fade-up" data-aos-delay="150">
             <div
               class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
@@ -232,7 +231,7 @@ const submitButtonProps = {
                 class="text-primary-600 dark:text-primary-400"
               />
             </div>
-            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">your company?</h2>
+            <h2 class="text-5xl font-bold text-gray-900 dark:text-white">your company?</h2>
             <p class="hidden text-lg text-gray-600 dark:text-gray-400">
               Tell us where you work or the company you represent
             </p>
@@ -340,7 +339,7 @@ const submitButtonProps = {
               dataAttributes={{ "data-next": "6" }}
               class={`${nextButtonProps.class} next-step-phone`}
             >
-              Next / Skip
+              <span id="next-step-phone-text">Skip</span>
             </Button>
           </div>
         </div>
@@ -437,7 +436,7 @@ const submitButtonProps = {
       <div class="step-content" data-step="8">
         <div class="space-y-8">
           <div class="text-center" data-aos="fade-up" data-aos-delay="100">
-            <div
+            <!-- <div
               class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
             >
               <SimpleIcon
@@ -445,7 +444,7 @@ const submitButtonProps = {
                 size="xl"
                 class="text-green-600 dark:text-green-400"
               />
-            </div>
+            </div> -->
             <h2 class="hidden sm:block mb-3 text-5xl font-bold text-gray-900 dark:text-white">
               Almost there!
             </h2>
@@ -528,7 +527,9 @@ const submitButtonProps = {
               </button>
             </div>
 
-            <div class="flex items-start justify-between">
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+            >
               <div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Phone</p>
                 <p id="review-phone" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
@@ -537,6 +538,40 @@ const submitButtonProps = {
                 type="button"
                 class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
                 data-edit="5"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">SMS Alerts</p>
+                <p id="review-sms-alerts" class="text-lg font-medium text-gray-900 dark:text-white">
+                  -
+                </p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="6"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Mobile Carrier</p>
+                <p id="review-carrier" class="text-lg font-medium text-gray-900 dark:text-white">
+                  -
+                </p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="7"
               >
                 Edit
               </button>
@@ -736,6 +771,8 @@ const submitButtonProps = {
 
     // Phone input formatting
     const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+    const phoneButtonText = document.getElementById("next-step-phone-text") as HTMLElement;
+
     if (phoneInput) {
       let lastValue = "";
 
@@ -760,6 +797,20 @@ const submitButtonProps = {
         } else {
           // On input, move cursor to end
           input.setSelectionRange(formatted.length, formatted.length);
+        }
+
+        // Update button text based on phone validation
+        if (phoneButtonText) {
+          if (!formatted || formatted.trim() === "") {
+            // Empty: show "Skip"
+            phoneButtonText.textContent = "Skip";
+          } else if (validatePhone(formatted)) {
+            // Valid: show "Next"
+            phoneButtonText.textContent = "Next";
+          } else {
+            // Has content but invalid: show "Skip"
+            phoneButtonText.textContent = "Skip";
+          }
         }
       });
     }
@@ -804,14 +855,14 @@ const submitButtonProps = {
               ) as HTMLElement;
               if (yesButton) {
                 // Add focus outline classes
-                yesButton.classList.add(
-                  "!outline",
-                  "!outline-2",
-                  "!outline-dashed",
-                  "!outline-primary-500",
-                  "!outline-offset-2",
-                  "dark:!outline-primary-400"
-                );
+                // yesButton.classList.add(
+                //   "!outline",
+                //   "!outline-2",
+                //   "!outline-dashed",
+                //   "!outline-primary-500",
+                //   "!outline-offset-2",
+                //   "dark:!outline-primary-400"
+                // );
                 // Also focus for accessibility
                 yesButton.focus();
               }
@@ -968,17 +1019,35 @@ const submitButtonProps = {
       const phone =
         (document.getElementById("step-phone") as HTMLInputElement)?.value || "Not provided";
 
+      // Get SMS Alerts value
+      const smsAlertsInput = document.getElementById("step-sms-alerts") as HTMLInputElement;
+      const smsAlertsValue = smsAlertsInput?.value || "false";
+      const smsAlerts = smsAlertsValue === "true" ? "Yes" : "No";
+
+      // Get Mobile Carrier value (from hidden input created by SlotMachineModalStaff)
+      const carrierInput = document.getElementById("step-carrier-value") as HTMLInputElement;
+      const carrierValue = carrierInput?.value || "";
+
+      // Get carrier display text from the button (shows the selected carrier name)
+      const carrierButton = document.getElementById("step-carrier-button") as HTMLElement;
+      const carrierDisplay = carrierButton?.textContent?.trim() || "Not provided";
+      const carrier = carrierValue ? carrierDisplay : "Not provided";
+
       const reviewEmail = document.getElementById("review-email");
       const reviewName = document.getElementById("review-name");
       const reviewCompany = document.getElementById("review-company");
       const reviewPassword = document.getElementById("review-password");
       const reviewPhone = document.getElementById("review-phone");
+      const reviewSmsAlerts = document.getElementById("review-sms-alerts");
+      const reviewCarrier = document.getElementById("review-carrier");
 
       if (reviewEmail) reviewEmail.textContent = email;
       if (reviewName) reviewName.textContent = `${firstName} ${lastName}`.trim() || "Not provided";
       if (reviewCompany) reviewCompany.textContent = company;
       if (reviewPassword) reviewPassword.textContent = password ? "••••••" : "Not provided";
       if (reviewPhone) reviewPhone.textContent = phone;
+      if (reviewSmsAlerts) reviewSmsAlerts.textContent = smsAlerts;
+      if (reviewCarrier) reviewCarrier.textContent = carrier;
     }
 
     // Handle next step buttons

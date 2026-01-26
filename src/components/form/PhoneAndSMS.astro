@@ -83,7 +83,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 <!-- SMS Alerts Section (only show if showSMS is true) -->
 {
   showSMS && (
-    <div id={smsSectionId} style="visibility: hidden;">
+    <div id={smsSectionId} class={value ? "" : "hidden"}>
       {/* <!-- SMS Alerts Toggle --> */}
       <div class="flex items-center gap-3 pt-4">
         <div class="flex-1">
@@ -96,7 +96,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         </div>
       </div>
       {/* <!-- Carrier Selection (shown when SMS alerts is enabled) --> */}
-      <div id={carrierSelectionId}>
+      <div id={carrierSelectionId} class={smsChecked ? "" : "hidden"}>
         <div class="flex items-center gap-3 pt-4">
           <div class="flex-1">
             {/* <!-- Carrier Selection Modal --> */}
@@ -138,11 +138,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   import { isValidPhoneNumber, AsYouType } from "libphonenumber-js";
 
   // Get the component props passed from Astro
-  const phoneId = document.currentScript?.getAttribute('data-phone-id');
-  const smsSectionId = document.currentScript?.getAttribute('data-sms-section-id');
-  const smsAlertsId = document.currentScript?.getAttribute('data-sms-alerts-id');
-  const carrierSelectionId = document.currentScript?.getAttribute('data-carrier-selection-id');
-  const showSMS = document.currentScript?.getAttribute('data-show-sms') === 'true';
+  const phoneId = document.currentScript?.getAttribute("data-phone-id");
+  const smsSectionId = document.currentScript?.getAttribute("data-sms-section-id");
+  const smsAlertsId = document.currentScript?.getAttribute("data-sms-alerts-id");
+  const carrierSelectionId = document.currentScript?.getAttribute("data-carrier-selection-id");
+  const showSMS = document.currentScript?.getAttribute("data-show-sms") === "true";
 
   document.addEventListener("DOMContentLoaded", function () {
     if (!showSMS || !phoneId) return;
@@ -211,21 +211,26 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       const phoneValue = phoneInput.value.trim();
       const isValid = validatePhoneNumber(phoneValue);
 
-      if (isValid) {
-        smsSection.style.visibility = "visible";
-        // Show validation indicator
-        if (phoneIndicator) {
+      if (isValid || phoneValue) {
+        // Show if valid OR if there's any phone value (to allow editing)
+        smsSection.classList.remove("hidden");
+        // Show validation indicator only if actually valid
+        if (phoneIndicator && isValid) {
           phoneIndicator.classList.remove("hidden");
           phoneIndicator.classList.add("flex");
+        } else if (phoneIndicator) {
+          phoneIndicator.classList.add("hidden");
+          phoneIndicator.classList.remove("flex");
         }
       } else {
-        smsSection.style.visibility = "hidden";
+        // Hide only if completely empty
+        smsSection.classList.add("hidden");
         // Hide validation indicator
         if (phoneIndicator) {
           phoneIndicator.classList.add("hidden");
           phoneIndicator.classList.remove("flex");
         }
-        // Also uncheck SMS alerts if phone is invalid
+        // Also uncheck SMS alerts if phone is empty
         smsAlertsCheckbox.checked = false;
         toggleCarrierSelection();
       }
@@ -235,24 +240,32 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     function handlePhoneInput() {
       const cursorPos = phoneInput.selectionStart || 0;
       const previousValue = phoneInput.value;
-      
+
       // Format the phone number
       const formattedValue = formatPhone(phoneInput.value);
-      
+
       // Update the input value
       phoneInput.value = formattedValue;
-      
+
       // Try to maintain cursor position (approximate)
       if (formattedValue.length >= cursorPos) {
         phoneInput.setSelectionRange(cursorPos, cursorPos);
       }
-      
+
       // Toggle SMS section visibility
       toggleSmsSection();
     }
 
-    // Initial state
-    toggleSmsSection();
+    // Format initial phone value if present
+    if (phoneInput.value.trim()) {
+      phoneInput.value = formatPhone(phoneInput.value);
+    }
+
+    // Initial state - show SMS section if phone has value or SMS is checked
+    if (phoneInput.value.trim() || smsAlertsCheckbox.checked) {
+      smsSection.classList.remove("hidden");
+      toggleSmsSection();
+    }
     toggleCarrierSelection();
 
     // Set flag to true after initial setup

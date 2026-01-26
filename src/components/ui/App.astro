@@ -102,9 +102,11 @@ const ogImageSrc = ogImage || "/videos/CACPCO-share-preview.gif";
 
 // Get navigation data
 import { navigation } from "@/pages/api/utils/navigation";
-import { isBackendPage, isAuthPage } from "../../pages/api/utils/backend-page-check";
+import { isBackendPage, isAuthPage, isContactPage } from "../../pages/api/utils/backend-page-check";
+
 const isBackend = isBackendPage(Astro.url.pathname);
 const isAuthPageResult = isAuthPage(Astro.url.pathname);
+const isContactPageResult = isContactPage(Astro.url.pathname);
 const navigationData = await navigation(
   currentUrl,
   isAuth,
@@ -651,25 +653,25 @@ const debugData = {
     </div>
 
     <!-- Speed Dial -->
-    <div class="fixed bottom-4 right-4">
-      <Tooltip text={`${globalCompanyName}`} position="left">
-        {!currentUser && !isBackend && !isAuthPageResult && <VapiChatWidget basic={true} />}
+    {
+      !currentUser && !isBackend && !isAuthPageResult && !isContactPageResult && (
+        <VapiChatWidget basic={true} />
+      )
+    }
 
-        {
-          !isAuthPageResult && (
-            <SpeedDial
-              {globalCompanyPhone}
-              currentUser={currentUser || undefined}
-              {isBackend}
-              {primaryTextClasses}
-              {secondaryTextClasses}
-              {globalInputClasses}
-              {globalCompanyName}
-            />
-          )
-        }
-      </Tooltip>
-    </div>
+    {
+      !isAuthPageResult && !isContactPageResult && (
+        <SpeedDial
+          {globalCompanyPhone}
+          currentUser={currentUser || undefined}
+          {isBackend}
+          {primaryTextClasses}
+          {secondaryTextClasses}
+          {globalInputClasses}
+          {globalCompanyName}
+        />
+      )
+    }
 
     <!-- Prevent Flowbite from initializing modals that don't exist -->
     <script is:inline>
