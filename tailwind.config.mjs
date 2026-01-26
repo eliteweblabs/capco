@@ -243,6 +243,25 @@ export default {
             display: "none",
           },
         },
+        // Custom shadow utilities with primary color using color-mix for opacity
+        ".shadow-primary-sm": {
+          "box-shadow": "0 1px 2px 0 color-mix(in srgb, var(--color-primary-500) 5%, transparent)",
+        },
+        ".shadow-primary": {
+          "box-shadow": "0 1px 3px 0 color-mix(in srgb, var(--color-primary-500) 10%, transparent), 0 1px 2px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent)",
+        },
+        ".shadow-primary-md": {
+          "box-shadow": "0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent), 0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent)",
+        },
+        ".shadow-primary-lg": {
+          "box-shadow": "0 10px 15px -3px color-mix(in srgb, var(--color-primary-500) 10%, transparent), 0 4px 6px -4px color-mix(in srgb, var(--color-primary-500) 10%, transparent)",
+        },
+        ".shadow-primary-xl": {
+          "box-shadow": "0 20px 25px -5px color-mix(in srgb, var(--color-primary-500) 10%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--color-primary-500) 10%, transparent)",
+        },
+        ".shadow-primary-2xl": {
+          "box-shadow": "0 25px 50px -12px color-mix(in srgb, var(--color-primary-500) 25%, transparent)",
+        },
       });
     },
   ],
