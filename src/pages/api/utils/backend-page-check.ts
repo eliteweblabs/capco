@@ -3,7 +3,6 @@ export const isBackendPage = (pathname: string) => {
     "/admin",
     "/profile",
     "/dashboard",
-    "/contact",
     "/project/", // Matches /project/123, /project/new, etc. but not /projects
   ];
 

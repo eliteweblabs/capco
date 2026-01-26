@@ -31,6 +31,7 @@ import SlotMachineModalStaff from "../../components/form/SlotMachineModalStaff.a
 import SlideToggle from "../common/SlideToggle.astro";
 import Alert from "../partials/Alert.astro";
 import { SMS_UTILS } from "../../lib/sms-utils";
+import { validatePhone, formatPhoneAsYouType } from "../../lib/phone-validation";
 
 // Generate unique IDs for SMS components
 const smsSectionId = `sms-section-${id}`;
@@ -128,17 +129,23 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 }
 
 <script
-  define:vars={{
-    phoneId: id,
-    smsSectionId,
-    smsAlertsId,
-    carrierSelectionId,
-    showSMS,
-  }}
-  is:inline
+  data-phone-id={id}
+  data-sms-section-id={smsSectionId}
+  data-sms-alerts-id={smsAlertsId}
+  data-carrier-selection-id={carrierSelectionId}
+  data-show-sms={showSMS.toString()}
 >
+  import { isValidPhoneNumber, AsYouType } from "libphonenumber-js";
+
+  // Get the component props passed from Astro
+  const phoneId = document.currentScript?.getAttribute('data-phone-id');
+  const smsSectionId = document.currentScript?.getAttribute('data-sms-section-id');
+  const smsAlertsId = document.currentScript?.getAttribute('data-sms-alerts-id');
+  const carrierSelectionId = document.currentScript?.getAttribute('data-carrier-selection-id');
+  const showSMS = document.currentScript?.getAttribute('data-show-sms') === 'true';
+
   document.addEventListener("DOMContentLoaded", function () {
-    if (!showSMS) return;
+    if (!showSMS || !phoneId) return;
 
     const phoneInput = document.getElementById(phoneId);
     const smsAlertsCheckbox = document.getElementById(smsAlertsId);
@@ -166,18 +173,43 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       }
     }
 
-    // Validate phone number format
-    function isValidPhoneNumber(phone) {
-      // Remove all non-digit characters
-      const digits = phone.replace(/\D/g, "");
-      // Check if it's a valid US phone number (10 digits)
-      return digits.length === 10;
+    // Validate phone number using libphonenumber-js
+    function validatePhoneNumber(phone) {
+      if (!phone || phone.trim() === "") {
+        return false;
+      }
+
+      try {
+        // Remove all non-digit characters
+        const digitsOnly = phone.replace(/\D/g, "");
+
+        // Must have at least 10 digits for a complete US phone number
+        if (digitsOnly.length < 10) {
+          return false;
+        }
+
+        // Validate complete phone number
+        return isValidPhoneNumber(phone, "US");
+      } catch (error) {
+        console.error("[PHONE-VALIDATION] Error:", error);
+        return false;
+      }
+    }
+
+    // Format phone number as user types
+    function formatPhone(value) {
+      // Remove all non-digit characters to get raw input
+      const digitsOnly = value.replace(/\D/g, "");
+
+      // Format as user types
+      const formatter = new AsYouType("US");
+      return formatter.input(digitsOnly);
     }
 
     // Show/hide SMS section based on valid phone number
     function toggleSmsSection() {
       const phoneValue = phoneInput.value.trim();
-      const isValid = isValidPhoneNumber(phoneValue);
+      const isValid = validatePhoneNumber(phoneValue);
 
       if (isValid) {
         smsSection.style.visibility = "visible";
@@ -199,6 +231,26 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       }
     }
 
+    // Handle phone input with formatting
+    function handlePhoneInput() {
+      const cursorPos = phoneInput.selectionStart || 0;
+      const previousValue = phoneInput.value;
+      
+      // Format the phone number
+      const formattedValue = formatPhone(phoneInput.value);
+      
+      // Update the input value
+      phoneInput.value = formattedValue;
+      
+      // Try to maintain cursor position (approximate)
+      if (formattedValue.length >= cursorPos) {
+        phoneInput.setSelectionRange(cursorPos, cursorPos);
+      }
+      
+      // Toggle SMS section visibility
+      toggleSmsSection();
+    }
+
     // Initial state
     toggleSmsSection();
     toggleCarrierSelection();
@@ -208,6 +260,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
     // Event listeners
     smsAlertsCheckbox.addEventListener("change", toggleCarrierSelection);
-    phoneInput.addEventListener("input", toggleSmsSection);
+    phoneInput.addEventListener("input", handlePhoneInput);
   });
 </script>
