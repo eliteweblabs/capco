@@ -25,10 +25,20 @@ export function getIcon(name: string, config: IconConfig = {}): string {
     className && !className.includes("inline-block") && !className.includes("block");
   const classes = needsInlineBlock ? `${className} inline-block` : className || "inline-block";
 
-  return iconSvg
+  // First replace sizes
+  let result = iconSvg
     .replace(/width="16"/g, `width="${size}"`)
-    .replace(/height="16"/g, `height="${size}"`)
-    .replace(/class=""/g, `class="${classes}"`);
+    .replace(/height="16"/g, `height="${size}"`);
+  
+  // Then add class attribute if it doesn't exist, or replace if it does
+  if (result.includes('class="')) {
+    result = result.replace(/class="[^"]*"/g, `class="${classes}"`);
+  } else {
+    // Add class attribute after the opening <svg tag
+    result = result.replace('<svg', `<svg class="${classes}"`);
+  }
+  
+  return result;
 }
 
 // Auto-initialize for client-side (browser) usage
