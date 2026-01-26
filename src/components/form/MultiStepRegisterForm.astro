@@ -1,11 +1,18 @@
 ---
 // Multi-step registration form component with AOS animations
 import Button from "../common/Button.astro";
-import PhoneAndSMS from "./PhoneAndSMS.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
+import SlotMachineModalStaff from "./SlotMachineModalStaff.astro";
+import { SMS_UTILS } from "../../lib/sms-utils";
 
 import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses } = globalClasses();
+
+// Get carrier options for the modal
+const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
+  value: carrier.id,
+  label: carrier.name,
+}));
 
 // Button templates - change these props to customize all buttons at once
 const nextButtonProps = {
@@ -29,7 +36,7 @@ const prevButtonProps = {
 
 const submitButtonProps = {
   type: "button" as const,
-  variant: "primary" as const,
+  variant: "secondary" as const,
   size: "lg" as const,
   class: "next-step submit-registration",
   icon: "arrow-right",
@@ -53,7 +60,7 @@ const submitButtonProps = {
         </div>
         <div class="mt-3 text-center">
           <span id="progress-text" class="text-sm font-medium text-gray-600 dark:text-gray-400">
-            1 / 6
+            1 / 8
           </span>
         </div>
       </div>
@@ -197,7 +204,9 @@ const submitButtonProps = {
           </div>
 
           <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "1" }} />
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "1" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
             <Button {...nextButtonProps} dataAttributes={{ "data-next": "3" }}> Next </Button>
           </div>
         </div>
@@ -236,7 +245,9 @@ const submitButtonProps = {
           </div>
 
           <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
-            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }} />
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
             <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }}> Next </Button>
           </div>
         </div>
@@ -275,7 +286,9 @@ const submitButtonProps = {
           </div>
 
           <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
-            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "3" }} />
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "3" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
             <Button {...nextButtonProps} dataAttributes={{ "data-next": "5" }}> Next </Button>
           </div>
         </div>
@@ -291,20 +304,19 @@ const submitButtonProps = {
               <SimpleIcon name="phone" size="xl" class="text-primary-600 dark:text-primary-400" />
             </div>
             <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">Your digits?</h2>
-            <!-- <p class="text-lg text-gray-600 dark:text-gray-400">
-          Optional: Add your phone number for updates and alerts
-        </p> -->
           </div>
 
           <div data-aos="fade-up" data-aos-delay="200">
-            <PhoneAndSMS
-              id="step-phone"
-              name="phone"
-              placeholder="(555) 123-4567"
-              showSMS={true}
-              class="text-xl py-5 text-center"
-              {globalInputClasses}
-            />
+            <div class="input-wrapper">
+              <input
+                type="tel"
+                id="step-phone"
+                name="phone"
+                placeholder="(555) 123-4567"
+                autocomplete="tel"
+                class={`${globalInputClasses} text-xl py-5 text-center`}
+              />
+            </div>
           </div>
 
           <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
@@ -313,14 +325,109 @@ const submitButtonProps = {
               size="lg"
               class="prev-step px-12 text-lg"
               dataAttributes={{ "data-prev": "4" }}
-            />
-            <Button {...nextButtonProps} dataAttributes={{ "data-next": "6" }}> Next </Button>
+            >
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <Button
+              {...nextButtonProps}
+              dataAttributes={{ "data-next": "6" }}
+              class={`${nextButtonProps.class} next-step-phone`}
+            >
+              Next / Skip
+            </Button>
           </div>
         </div>
       </div>
 
-      <!-- Step 6: Review & Submit -->
+      <!-- Step 6: SMS Consent -->
       <div class="step-content" data-step="6">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="message" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">contact via SMS?</h2>
+            <p class="text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+              Not for marketing. Communication and project updates only.
+            </p>
+          </div>
+
+          <!-- Hidden input to store SMS alerts value -->
+          <input type="hidden" name="smsAlerts" id="step-sms-alerts" value="false" />
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="200">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "5" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <div class="flex gap-3">
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                class="sms-choice"
+                dataAttributes={{ "data-next": "8", "data-sms-value": "false" }}
+              >
+                no
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                class="sms-choice"
+                dataAttributes={{ "data-next": "7", "data-sms-value": "true" }}
+              >
+                yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 7: Mobile Carrier (only shown if SMS alerts = yes) -->
+      <div class="step-content" data-step="7">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="wifi" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">
+              your mobile carrier?
+            </h2>
+            <p class="text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+              This helps us deliver SMS messages to your phone.
+            </p>
+          </div>
+
+          <div class="input-wrapper" data-aos="fade-up" data-aos-delay="200">
+            <SlotMachineModalStaff
+              title="Select your carrier"
+              id="step-carrier"
+              name="mobileCarrier"
+              options={mobileCarrierOptions}
+              selectedValue=""
+              buttonClass="w-full"
+              placeholder="Select your carrier..."
+              icon="wifi"
+              buttonVariant="outline"
+              {globalInputClasses}
+            />
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "6" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "8" }}> Next </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 8: Review & Submit -->
+      <div class="step-content" data-step="8">
         <div class="space-y-8">
           <div class="text-center" data-aos="fade-up" data-aos-delay="100">
             <div
@@ -435,10 +542,12 @@ const submitButtonProps = {
             <Button
               {...prevButtonProps}
               size="lg"
-              class="prev-step px-12 text-lg"
-              dataAttributes={{ "data-prev": "5" }}
-            />
-            <Button {...submitButtonProps}> Create Account </Button>
+              class="prev-step px-12 text-lg prev-step-review"
+              dataAttributes={{ "data-prev": "7" }}
+            >
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <Button {...submitButtonProps}> create account </Button>
           </div>
         </div>
       </div>
@@ -472,6 +581,7 @@ const submitButtonProps = {
 
 <script>
   import { getSupabaseClient } from "../../lib/supabase-client";
+  import { validatePhone, formatPhoneAsYouType } from "../../lib/phone-validation";
 
   // Handle Google Signup with client-side OAuth (ensures code verifier is stored in localStorage)
   async function handleGoogleSignup() {
@@ -615,7 +725,37 @@ const submitButtonProps = {
     const progressBar = document.getElementById("progress-bar") as HTMLElement;
     const progressText = document.getElementById("progress-text") as HTMLElement;
     let currentStep = 1;
-    const totalSteps = 6;
+    const totalSteps = 8;
+
+    // Phone input formatting
+    const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+    if (phoneInput) {
+      let lastValue = "";
+
+      phoneInput.addEventListener("input", (e) => {
+        const input = e.target as HTMLInputElement;
+        const cursorPosition = input.selectionStart || 0;
+
+        // Format as user types
+        const formatted = formatPhoneAsYouType(input.value);
+
+        // Detect if user is deleting (value got shorter)
+        const wasDeleting = input.value.length < lastValue.length;
+
+        // Update the value
+        input.value = formatted;
+        lastValue = formatted;
+
+        // Improve cursor position handling
+        if (wasDeleting) {
+          // On delete, keep cursor where it was
+          input.setSelectionRange(cursorPosition, cursorPosition);
+        } else {
+          // On input, move cursor to end
+          input.setSelectionRange(formatted.length, formatted.length);
+        }
+      });
+    }
 
     // Update progress bar
     function updateProgress() {
@@ -639,7 +779,7 @@ const submitButtonProps = {
         updateProgress();
 
         // Update review section if on final step
-        if (currentStep === 6) {
+        if (currentStep === 8) {
           updateReviewSection();
         }
 
@@ -648,12 +788,37 @@ const submitButtonProps = {
           // @ts-ignore - AOS loaded from CDN
           if (typeof AOS !== "undefined") AOS.refresh();
 
-          // Delay auto-focus to allow AOS animations to trigger first
-          // This is especially important for elements with hide-on-form-focus class
-          setTimeout(() => {
-            const firstInput = targetStep.querySelector("input:not([type=hidden])") as HTMLElement;
-            if (firstInput) firstInput.focus();
-          }, 400); // Give AOS time to animate elements before hiding them
+          // Special handling for step 6 (SMS consent) - focus the "yes" button
+          if (stepNumber === 6) {
+            setTimeout(() => {
+              // Find the "yes" button (has data-sms-value="true")
+              const yesButton = targetStep.querySelector(
+                'button[data-sms-value="true"]'
+              ) as HTMLElement;
+              if (yesButton) {
+                // Add focus outline classes
+                yesButton.classList.add(
+                  "!outline",
+                  "!outline-2",
+                  "!outline-dashed",
+                  "!outline-primary-500",
+                  "!outline-offset-2",
+                  "dark:!outline-primary-400"
+                );
+                // Also focus for accessibility
+                yesButton.focus();
+              }
+            }, 100);
+          } else {
+            // Delay auto-focus to allow AOS animations to trigger first
+            // This is especially important for elements with hide-on-form-focus class
+            setTimeout(() => {
+              const firstInput = targetStep.querySelector(
+                "input:not([type=hidden])"
+              ) as HTMLElement;
+              if (firstInput) firstInput.focus();
+            }, 400); // Give AOS time to animate elements before hiding them
+          }
         }, 100);
       }
     }
@@ -711,6 +876,47 @@ const submitButtonProps = {
         if (companyInput && companyInput.value) {
           // Add any company-specific validation here if needed
           // For now, just ensure it's not empty (already handled by required)
+        }
+      }
+
+      // Special validation for phone field (Step 5)
+      if (stepNumber === 5) {
+        const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+        const phoneValue = phoneInput?.value?.trim() || "";
+
+        // Only validate if phone is provided (it's optional)
+        if (phoneValue && !validatePhone(phoneValue)) {
+          if (window.showModal) {
+            window.showModal(
+              "error",
+              "Invalid Phone Number",
+              "Please enter a valid US phone number",
+              3000
+            );
+          }
+          phoneInput?.classList.add("touched");
+          return false;
+        }
+      }
+
+      // Special validation for carrier field (Step 7) - only if SMS alerts is enabled
+      if (stepNumber === 7) {
+        const smsAlertsInput = document.getElementById("step-sms-alerts") as HTMLInputElement;
+        const smsEnabled = smsAlertsInput && smsAlertsInput.value === "true";
+
+        if (smsEnabled) {
+          const carrierInput = document.getElementById("step-carrier-value") as HTMLInputElement;
+          if (carrierInput && !carrierInput.value) {
+            if (window.showModal) {
+              window.showModal(
+                "error",
+                "Validation Error",
+                "Please select your mobile carrier",
+                3000
+              );
+            }
+            return false;
+          }
         }
       }
 
@@ -774,15 +980,59 @@ const submitButtonProps = {
       const nextBtn = target.closest(".next-step");
       const prevBtn = target.closest(".prev-step");
       const editBtn = target.closest(".edit-step");
+      const smsChoiceBtn = target.closest(".sms-choice");
+
+      // Handle SMS consent choice buttons
+      if (smsChoiceBtn) {
+        e.preventDefault();
+        const smsValue = smsChoiceBtn.getAttribute("data-sms-value");
+        const nextStep = parseInt(smsChoiceBtn.getAttribute("data-next") || "8");
+
+        // Store SMS alerts value
+        const smsAlertsInput = document.getElementById("step-sms-alerts") as HTMLInputElement;
+        if (smsAlertsInput) {
+          smsAlertsInput.value = smsValue || "false";
+        }
+
+        showStep(nextStep);
+        return;
+      }
 
       if (nextBtn) {
         e.preventDefault();
-        const nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
+        let nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
 
-        // Check if this is the submit button (step 6)
+        // Check if this is the submit button (step 8)
         if (nextBtn.classList.contains("submit-registration")) {
           // Trigger form submission instead of moving to next step
           form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+          return;
+        }
+
+        // Special handling for phone step (step 5)
+        if (currentStep === 5 && nextBtn.classList.contains("next-step-phone")) {
+          const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+          const phoneValue = phoneInput?.value?.trim() || "";
+
+          // If no phone number entered, skip to step 8 (review)
+          if (!phoneValue) {
+            nextStep = 8;
+            // Clear SMS alerts since no phone was provided
+            const smsAlertsInput = document.getElementById("step-sms-alerts") as HTMLInputElement;
+            if (smsAlertsInput) {
+              smsAlertsInput.value = "false";
+            }
+            showStep(nextStep);
+            return;
+          }
+
+          // If phone entered, validate it before proceeding
+          if (!validateStep(currentStep)) {
+            return; // Stop if validation fails
+          }
+
+          // Validation passed, proceed to step 6 (SMS consent)
+          showStep(nextStep);
           return;
         }
 
@@ -823,7 +1073,20 @@ const submitButtonProps = {
           return;
         }
         e.preventDefault();
-        const prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
+        let prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
+
+        // Special handling for review step (step 8) going back
+        if (currentStep === 8 && prevBtn.classList.contains("prev-step-review")) {
+          const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+          const phoneValue = phoneInput?.value?.trim() || "";
+
+          // If no phone number, skip back to step 5 (phone)
+          if (!phoneValue) {
+            prevStep = 5;
+          }
+          // If phone exists, go back to step 7 (carrier) as normal
+        }
+
         showStep(prevStep);
       }
 
