@@ -1,0 +1,761 @@
+---
+/**
+ * JSON-driven Multi-Step Form Component
+ * 
+ * A flexible, configurable multi-step form generator that accepts JSON configuration.
+ * Based on ContactForm.astro and MultiStepRegisterForm.astro patterns.
+ * 
+ * @example
+ * ```astro
+ * import JSONMultiStepForm from '@components/form/JSONMultiStepForm.astro';
+ * import formConfig from '@config/my-form.json';
+ * 
+ * <JSONMultiStepForm config={formConfig} />
+ * ```
+ */
+
+import type { FormConfig } from '../../types/form-config';
+import Button from '../common/Button.astro';
+import SimpleIcon from '../common/SimpleIcon.astro';
+import InlineAddressSearch from './InlineAddressSearch.astro';
+import PhoneAndSMS from './PhoneAndSMS.astro';
+import SlotMachineModalStaff from './SlotMachineModalStaff.astro';
+import { globalClasses } from '../../pages/api/global/global-classes';
+
+const { globalInputClasses } = globalClasses();
+
+interface Props {
+  config: FormConfig;
+}
+
+const { config } = Astro.props;
+
+// Set defaults
+const formId = config.id || 'json-multi-step-form';
+const totalSteps = config.steps.length;
+const showProgressBar = config.progressBar?.show !== false;
+const showStepNumbers = config.progressBar?.showStepNumbers !== false;
+const containerClass = config.containerClass || 'w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8';
+const enableEnterKey = config.enableEnterKey !== false;
+
+// Merge default button configs with step-specific configs
+const getButtonConfig = (stepButtons: any, buttonType: 'next' | 'prev' | 'skip' | 'submit') => {
+  const defaults = config.defaultButtons?.[buttonType] || {};
+  const stepConfig = stepButtons?.[buttonType];
+  
+  if (!stepConfig) return null;
+  
+  return {
+    ...defaults,
+    ...stepConfig,
+  };
+};
+
+// Generate unique IDs for fields
+const getFieldId = (field: any, stepIndex: number) => {
+  return field.id || `${formId}-${field.name}-${stepIndex}`;
+};
+---
+
+<div class={containerClass}>
+  {config.title && (
+    <div class="text-center mb-6">
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white">{config.title}</h1>
+      {config.description && (
+        <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">{config.description}</p>
+      )}
+    </div>
+  )}
+
+  <!-- Progress Bar -->
+  {showProgressBar && (
+    <div class={`mb-6 sm:mb-12 ${config.progressBar?.class || ''}`}>
+      <div class="relative">
+        <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+          <div 
+            id={`${formId}-progress-bar`}
+            class="h-full rounded-full bg-primary-500 transition-all duration-500 ease-out"
+            style="width: 0%"
+          ></div>
+        </div>
+        {showStepNumbers && (
+          <div class="mt-3 text-center">
+            <span
+              id={`${formId}-progress-text`}
+              class="text-sm font-medium text-gray-600 dark:text-gray-400"
+            >
+              1 / {totalSteps}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+
+  <!-- Multi-step Form -->
+  <form 
+    id={formId}
+    action={config.action}
+    method={config.method || 'POST'}
+    class={config.class || ''}
+  >
+    {config.steps.map((step, stepIndex) => {
+      const isFirstStep = stepIndex === 0;
+      const isLastStep = stepIndex === config.steps.length - 1;
+      const stepNumber = step.step || stepIndex + 1;
+      const layout = step.layout || 'single';
+      const gridClass = layout === 'grid-2' ? 'grid grid-cols-1 gap-6 md:grid-cols-2' : 
+                        layout === 'grid-3' ? 'grid grid-cols-1 gap-6 md:grid-cols-3' : '';
+      
+      return (
+        <div 
+          class={`step-content ${isFirstStep ? 'active' : ''} ${step.class || ''}`}
+          data-step={stepNumber}
+          data-conditional={step.conditional ? JSON.stringify(step.conditional) : undefined}
+        >
+          <div class="space-y-8 sm:space-y-12 lg:space-y-16">
+            <!-- Step Header -->
+            <div class="text-center">
+              {step.icon && (
+                <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+                  <SimpleIcon name={step.icon} size="xl" class="text-primary-600 dark:text-primary-400" />
+                </div>
+              )}
+              <h2 class="text-5xl font-bold text-gray-900 dark:text-white">{step.title}</h2>
+              {step.subtitle && (
+                <p class="mt-3 text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                  {step.subtitle}
+                </p>
+              )}
+            </div>
+
+            <!-- Fields -->
+            <div class={gridClass}>
+              {step.fields.map((field) => {
+                const fieldId = getFieldId(field, stepIndex);
+                const fieldClass = `${globalInputClasses} ${field.class || ''} text-xl py-5 text-center`;
+                const colSpanClass = field.colSpan ? `md:col-span-${field.colSpan}` : '';
+                
+                return (
+                  <div 
+                    class={`input-wrapper ${colSpanClass}`}
+                    data-field-name={field.name}
+                    data-conditional={field.conditional ? JSON.stringify(field.conditional) : undefined}
+                  >
+                    {field.label && (
+                      <label
+                        for={fieldId}
+                        class="mb-2 block text-center text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        {field.label}
+                        {field.required && <span class="text-red-500">*</span>}
+                      </label>
+                    )}
+
+                    {/* Text, Email, Tel, Password, Number, URL, Date inputs */}
+                    {['text', 'email', 'tel', 'password', 'number', 'url', 'date'].includes(field.type) && (
+                      <input
+                        type={field.type as any}
+                        name={field.name}
+                        id={fieldId}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                        autocomplete={field.autocomplete}
+                        value={field.defaultValue}
+                        class={fieldClass}
+                        data-error={field.errorMessage}
+                        autofocus={field.autofocus}
+                        minlength={field.minLength}
+                        maxlength={field.maxLength}
+                        min={field.min}
+                        max={field.max}
+                        pattern={field.pattern}
+                      />
+                    )}
+
+                    {/* Textarea */}
+                    {field.type === 'textarea' && (
+                      <textarea
+                        name={field.name}
+                        id={fieldId}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                        rows={field.rows || 6}
+                        class={fieldClass}
+                        data-error={field.errorMessage}
+                        minlength={field.minLength}
+                        maxlength={field.maxLength}
+                        {...(field.dataAttributes || {})}
+                      >{field.defaultValue}</textarea>
+                    )}
+
+                    {/* Select */}
+                    {field.type === 'select' && (
+                      <select
+                        name={field.name}
+                        id={fieldId}
+                        required={field.required}
+                        class={fieldClass}
+                        data-error={field.errorMessage}
+                        {...(field.dataAttributes || {})}
+                      >
+                        {field.placeholder && (
+                          <option value="" disabled selected>{field.placeholder}</option>
+                        )}
+                        {field.options?.map((opt) => (
+                          <option value={opt.value} selected={field.defaultValue === opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* Hidden */}
+                    {field.type === 'hidden' && (
+                      <input
+                        type="hidden"
+                        name={field.name}
+                        id={fieldId}
+                        value={field.defaultValue}
+                        {...(field.dataAttributes || {})}
+                      />
+                    )}
+
+                    {/* Phone & SMS Component */}
+                    {field.type === 'phone-sms' && (
+                      <PhoneAndSMS
+                        id={fieldId}
+                        name={field.name}
+                        placeholder={field.placeholder || '(555) 123-4567'}
+                        showSMS={field.componentProps?.showSMS !== false}
+                        class={fieldClass}
+                        globalInputClasses={globalInputClasses}
+                        {...(field.componentProps || {})}
+                      />
+                    )}
+
+                    {/* Address Search Component */}
+                    {field.type === 'address-search' && (
+                      <InlineAddressSearch
+                        id={fieldId}
+                        name={field.name}
+                        placeholder={field.placeholder || 'Start typing your address...'}
+                        fetchApiEndpoint={field.componentProps?.fetchApiEndpoint || '/api/google/places-autocomplete'}
+                        apiParams={field.componentProps?.apiParams || {}}
+                        valueField={field.componentProps?.valueField || 'description'}
+                        labelField={field.componentProps?.labelField || 'description'}
+                        noResultsText={field.componentProps?.noResultsText || 'Type to search addresses...'}
+                        globalInputClasses={globalInputClasses}
+                        {...(field.componentProps || {})}
+                      />
+                    )}
+
+                    {/* Slot Machine Modal Component */}
+                    {field.type === 'slot-machine' && (
+                      <SlotMachineModalStaff
+                        id={fieldId}
+                        name={field.name}
+                        title={field.componentProps?.title || field.label || 'Select an option'}
+                        options={field.options || []}
+                        selectedValue={field.defaultValue || ''}
+                        buttonClass={field.componentProps?.buttonClass || 'w-full'}
+                        placeholder={field.placeholder || 'Select...'}
+                        icon={field.componentProps?.icon || 'menu'}
+                        buttonVariant={field.componentProps?.buttonVariant || 'outline'}
+                        globalInputClasses={globalInputClasses}
+                        {...(field.componentProps || {})}
+                      />
+                    )}
+
+                    {/* Button Choice (like Yes/No) */}
+                    {field.type === 'button-choice' && (
+                      <Fragment>
+                        <input type="hidden" name={field.name} id={fieldId} value={field.defaultValue || ''} />
+                        <div class="flex gap-3 justify-center">
+                          {field.options?.map((opt) => (
+                            <Button
+                              type="button"
+                              variant={opt.value === field.defaultValue ? 'primary' : 'secondary'}
+                              size="xl"
+                              class={`button-choice-${field.name}`}
+                              dataAttributes={{
+                                'data-choice-field': field.name,
+                                'data-choice-value': opt.value,
+                                ...(field.dataAttributes || {})
+                              }}
+                            >
+                              {opt.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </Fragment>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex justify-between gap-3">
+              {/* Previous Button */}
+              {!isFirstStep && (step.buttons?.prev === undefined || step.buttons?.prev !== null) && (() => {
+                const btnConfig = getButtonConfig(step.buttons, 'prev');
+                if (!btnConfig) {
+                  // Default prev button
+                  return (
+                    <Button
+                      type="button"
+                      variant="anchor"
+                      size="xl"
+                      class="prev-step"
+                      icon="arrow-left"
+                      iconPosition="left"
+                      iconClasses="m-0 md:ml-2"
+                    dataAttributes={{ 'data-prev': String(stepNumber - 1) }}
+                  >
+                    <span class="hidden md:block">back</span>
+                    </Button>
+                  );
+                }
+                
+                return (
+                  <Button
+                    type={btnConfig.type || 'button'}
+                    variant={btnConfig.variant || 'anchor'}
+                    size={btnConfig.size || 'xl'}
+                    class={`prev-step ${btnConfig.class || ''}`}
+                    icon={btnConfig.icon || 'arrow-left'}
+                    iconPosition={btnConfig.iconPosition || 'left'}
+                    iconClasses={btnConfig.iconClasses || 'm-0 md:ml-2'}
+                    dataAttributes={{ 'data-prev': String(stepNumber - 1), ...(btnConfig.dataAttributes || {}) }}
+                    href={btnConfig.href}
+                  >
+                    {btnConfig.text || 'back'}
+                  </Button>
+                );
+              })()}
+
+              {/* Next/Skip/Submit Button */}
+              <div class="flex gap-3">
+                {isLastStep ? (
+                  /* Submit Button */
+                  (() => {
+                    const btnConfig = getButtonConfig(step.buttons, 'submit');
+                    const defaultSubmit = {
+                      text: 'Submit',
+                      type: 'button' as const,
+                      variant: 'primary' as const,
+                      size: 'xl' as const,
+                      icon: 'send',
+                      iconPosition: 'right' as const,
+                    };
+                    const merged = { ...defaultSubmit, ...btnConfig };
+                    
+                    return (
+                      <Button
+                        type={merged.type}
+                        variant={merged.variant}
+                        size={merged.size}
+                        class={`submit-form ${merged.class || ''}`}
+                        icon={merged.icon}
+                        iconPosition={merged.iconPosition}
+                        iconClasses={merged.iconClasses}
+                        dataAttributes={merged.dataAttributes}
+                        onclick={merged.onclick}
+                      >
+                        {merged.text}
+                      </Button>
+                    );
+                  })()
+                ) : (
+                  /* Next Button */
+                  (() => {
+                    const btnConfig = getButtonConfig(step.buttons, 'next');
+                    const defaultNext = {
+                      text: 'Next',
+                      type: 'button' as const,
+                      variant: 'secondary' as const,
+                      size: 'xl' as const,
+                      icon: 'arrow-right',
+                      iconPosition: 'right' as const,
+                    };
+                    const merged = { ...defaultNext, ...btnConfig };
+                    
+                    return (
+                      <Button
+                        type={merged.type}
+                        variant={merged.variant}
+                        size={merged.size}
+                        class={`next-step ${merged.class || ''}`}
+                        icon={merged.icon}
+                        iconPosition={merged.iconPosition}
+                        iconClasses={merged.iconClasses}
+                        dataAttributes={{ 'data-next': String(stepNumber + 1) }}
+                        onclick={merged.onclick}
+                      >
+                        {merged.text}
+                      </Button>
+                    );
+                  })()
+                )}
+
+                {/* Skip Button (if defined) */}
+                {step.buttons?.skip && (() => {
+                  const btnConfig = getButtonConfig(step.buttons, 'skip');
+                  if (!btnConfig) return null;
+                  
+                  return (
+                    <Button
+                      type={btnConfig.type || 'button'}
+                      variant={btnConfig.variant || 'secondary'}
+                      size={btnConfig.size || 'xl'}
+                      class={`next-step ${btnConfig.class || ''}`}
+                      icon={btnConfig.icon}
+                      iconPosition={btnConfig.iconPosition}
+                      iconClasses={btnConfig.iconClasses}
+                      dataAttributes={{ 'data-next': stepNumber + 1, ...(btnConfig.dataAttributes || {}) }}
+                      onclick={btnConfig.onclick}
+                    >
+                      {btnConfig.text || 'Skip'}
+                    </Button>
+                  );
+                })()}
+
+                {/* Custom Buttons */}
+                {step.buttons?.custom?.map((btnConfig) => (
+                  <Button
+                    type={btnConfig.type || 'button'}
+                    variant={btnConfig.variant || 'primary'}
+                    size={btnConfig.size || 'xl'}
+                    class={btnConfig.class}
+                    icon={btnConfig.icon}
+                    iconPosition={btnConfig.iconPosition}
+                    iconClasses={btnConfig.iconClasses}
+                    href={btnConfig.href}
+                    onclick={btnConfig.onclick}
+                  >
+                    {btnConfig.text}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </form>
+</div>
+
+<style>
+  .step-content {
+    display: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .step-content.active {
+    display: block;
+  }
+</style>
+
+<script define:vars={{ config, formId, totalSteps, enableEnterKey }}>
+  import { validatePhone, formatPhoneAsYouType } from '../../lib/phone-validation';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById(formId);
+    if (!form) return;
+
+    // Hide sidebar toggle if configured
+    if (config.hideSidebarToggle) {
+      const sidebarToggleButton = document.getElementById('sidebar-toggle-button');
+      if (sidebarToggleButton) {
+        sidebarToggleButton.style.display = 'none';
+      }
+    }
+
+    const progressBar = document.getElementById(`${formId}-progress-bar`);
+    const progressText = document.getElementById(`${formId}-progress-text`);
+    let currentStep = 1;
+
+    // Phone input formatting for all tel inputs
+    const phoneInputs = form.querySelectorAll('input[type="tel"]');
+    phoneInputs.forEach((phoneInput) => {
+      let lastValue = '';
+      
+      phoneInput.addEventListener('input', (e) => {
+        const input = e.target;
+        const cursorPosition = input.selectionStart || 0;
+        const formatted = formatPhoneAsYouType(input.value);
+        const wasDeleting = input.value.length < lastValue.length;
+        
+        input.value = formatted;
+        lastValue = formatted;
+        
+        if (wasDeleting) {
+          input.setSelectionRange(cursorPosition, cursorPosition);
+        } else {
+          input.setSelectionRange(formatted.length, formatted.length);
+        }
+      });
+    });
+
+    // Update progress bar
+    function updateProgress() {
+      const progress = (currentStep / totalSteps) * 100;
+      if (progressBar) progressBar.style.width = `${progress}%`;
+      if (progressText) progressText.textContent = `${currentStep} / ${totalSteps}`;
+    }
+
+    // Show specific step
+    function showStep(stepNumber) {
+      const steps = document.querySelectorAll('.step-content');
+      
+      steps.forEach((step) => {
+        step.classList.remove('active');
+        // Remove focus classes from buttons
+        const buttons = step.querySelectorAll('button');
+        buttons.forEach((btn) => {
+          btn.classList.remove(
+            '!outline', '!outline-2', '!outline-dashed',
+            '!outline-primary-500', '!outline-offset-2',
+            'dark:!outline-primary-400'
+          );
+        });
+      });
+
+      const targetStep = document.querySelector(`.step-content[data-step="${stepNumber}"]`);
+      if (targetStep) {
+        targetStep.classList.add('active');
+        currentStep = stepNumber;
+        updateProgress();
+
+        // Auto-focus first input
+        setTimeout(() => {
+          let firstInput = targetStep.querySelector('input:not([type=hidden]):not([readonly])');
+          if (!firstInput) {
+            firstInput = targetStep.querySelector('textarea');
+          }
+          if (firstInput) {
+            firstInput.focus();
+            firstInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 150);
+      }
+    }
+
+    // Validate current step
+    function validateStep(stepNumber) {
+      const stepEl = document.querySelector(`.step-content[data-step="${stepNumber}"]`);
+      if (!stepEl) return false;
+
+      const inputs = stepEl.querySelectorAll('input[required], textarea[required], select[required]');
+      let isValid = true;
+
+      for (const input of inputs) {
+        if (!input.checkValidity()) {
+          isValid = false;
+          input.classList.add('touched');
+
+          if (window.showModal) {
+            const errorMsg = input.getAttribute('data-error') || 'Please fill in this field correctly';
+            window.showModal('error', 'Validation Error', errorMsg, 3000);
+          }
+          return false;
+        }
+      }
+
+      // Phone validation for tel inputs
+      const telInputs = stepEl.querySelectorAll('input[type="tel"]');
+      for (const telInput of telInputs) {
+        const phoneValue = telInput.value.trim();
+        if (phoneValue && !validatePhone(phoneValue)) {
+          if (window.showModal) {
+            window.showModal('error', 'Invalid Phone Number', 'Please enter a valid US phone number', 3000);
+          }
+          telInput.classList.add('touched');
+          return false;
+        }
+      }
+
+      return isValid;
+    }
+
+    // Handle button-choice clicks
+    form.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-choice-field]');
+      if (target) {
+        e.preventDefault();
+        const fieldName = target.getAttribute('data-choice-field');
+        const choiceValue = target.getAttribute('data-choice-value');
+        const hiddenInput = document.querySelector(`input[name="${fieldName}"]`);
+        
+        if (hiddenInput) {
+          hiddenInput.value = choiceValue;
+        }
+
+        // Update button styles
+        const allButtons = document.querySelectorAll(`[data-choice-field="${fieldName}"]`);
+        allButtons.forEach((btn) => {
+          btn.classList.remove('variant-primary');
+          btn.classList.add('variant-secondary');
+        });
+        target.classList.remove('variant-secondary');
+        target.classList.add('variant-primary');
+
+        // Auto-advance to next step if configured
+        const nextStep = parseInt(target.getAttribute('data-next'));
+        if (nextStep) {
+          setTimeout(() => showStep(nextStep), 300);
+        }
+      }
+    });
+
+    // Handle next/prev buttons
+    form.addEventListener('click', (e) => {
+      const target = e.target;
+      const nextBtn = target.closest('button.next-step, a.next-step');
+      const prevBtn = target.closest('button.prev-step, a.prev-step');
+      const submitBtn = target.closest('button.submit-form, a.submit-form');
+
+      if (nextBtn) {
+        e.preventDefault();
+        const nextStep = parseInt(nextBtn.getAttribute('data-next') || '1');
+        
+        if (validateStep(currentStep)) {
+          showStep(nextStep);
+        }
+      }
+
+      if (prevBtn) {
+        const isLink = prevBtn.tagName === 'A' || prevBtn.hasAttribute('href');
+        if (isLink) return;
+        
+        e.preventDefault();
+        const prevStep = parseInt(prevBtn.getAttribute('data-prev') || '1');
+        showStep(prevStep);
+      }
+
+      if (submitBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (validateStep(currentStep)) {
+          form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        }
+      }
+    });
+
+    // Add touched class to inputs
+    const inputs = form.querySelectorAll('input[required], textarea[required], select[required]');
+    inputs.forEach((input) => {
+      input.addEventListener('blur', () => input.classList.add('touched'));
+      input.addEventListener('input', () => input.classList.add('touched'));
+    });
+
+    // Handle form submission
+    let isSubmitting = false;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (isSubmitting) return;
+
+      const isValid = validateStep(currentStep);
+      if (!isValid) return;
+
+      isSubmitting = true;
+      const submitButton = form.querySelector('button.submit-form');
+      
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      // Check for custom submit handler
+      if (config.customSubmitHandler && typeof window[config.customSubmitHandler] === 'function') {
+        try {
+          await window[config.customSubmitHandler](form, new FormData(form));
+          return;
+        } catch (error) {
+          console.error('Custom submit handler error:', error);
+          if (window.showModal) {
+            window.showModal('error', 'Submission Failed', error.message || 'An error occurred', 5000);
+          }
+          isSubmitting = false;
+          if (submitButton) submitButton.disabled = false;
+          return;
+        }
+      }
+
+      // Default submission
+      const formData = new FormData(form);
+      
+      if (window.showModal) {
+        window.showModal('info', 'Submitting...', 'Please wait while we process your request.', 10000);
+      }
+
+      try {
+        const response = await fetch(config.action, {
+          method: config.method || 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success === false || result.error) {
+          throw new Error(result.error || 'Submission failed');
+        }
+
+        // Success
+        if (config.successMessage && window.showModal) {
+          window.showModal(
+            'success',
+            config.successMessage.title,
+            config.successMessage.message,
+            config.successMessage.duration || 5000
+          );
+        }
+
+        // Redirect
+        if (config.successRedirect) {
+          setTimeout(() => {
+            window.location.href = config.successRedirect;
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Form submission error:', error);
+        if (window.showModal) {
+          window.showModal('error', 'Submission Failed', error.message || 'An error occurred', 5000);
+        }
+      } finally {
+        isSubmitting = false;
+        if (submitButton) submitButton.disabled = false;
+      }
+    });
+
+    // Handle Enter key
+    if (enableEnterKey) {
+      form.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          
+          const currentStepEl = document.querySelector(`.step-content[data-step="${currentStep}"]`);
+          const nextBtn = currentStepEl?.querySelector('.next-step');
+          
+          if (nextBtn && currentStep < totalSteps) {
+            nextBtn.click();
+          } else if (currentStep === totalSteps) {
+            const submitBtn = form.querySelector('.submit-form');
+            if (submitBtn) submitBtn.click();
+          }
+        }
+      });
+    }
+
+    // Initialize
+    updateProgress();
+  });
+</script>

@@ -25,7 +25,7 @@ export function getIcon(name: string, config: IconConfig = {}): string {
     className && !className.includes("inline-block") && !className.includes("block");
   const classes = needsInlineBlock ? `${className} inline-block` : className || "inline-block";
 
-  // First replace sizes
+  // Replace width and height attributes only (not viewBox)
   let result = iconSvg
     .replace(/width="16"/g, `width="${size}"`)
     .replace(/height="16"/g, `height="${size}"`);

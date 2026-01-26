@@ -5,6 +5,7 @@
  */
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
+import Tooltip from "../../components/common/Tooltip.astro";
 
 interface Props {
   assistantId?: string;
@@ -47,8 +48,44 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
 
 ---
 
+<!-- 
+<vapi-widget
+  id="vapi-widget-basic"
+  public-key={publicKey}
+  assistant-id={assistantId}
+  mode="voice"
+  base-bg-color=""
+  theme={theme}
+  accent-color={primaryColor}
+  cta-button-color={baseBgColor}
+  cta-button-text-color={fgColor}
+  border-radius="large"
+  size="compact"
+  position="bottom-right"
+  title="Live"
+  start-button-text="Start Voice Call"
+  end-button-text="End Call"
+  show-transcript="true"
+  empty-voice-message={`Thank you for your interest in ${globalCompanyName}. Click to start talking with us.`}></vapi-widget> -->
+
+
 {(basic && publicKey && assistantId) && (
 <>
+<!-- Custom Button to trigger Vapi Widget -->
+<button
+  id="custom-vapi-trigger"
+  class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-full bg-primary-600 px-6 py-4 text-white shadow-lg transition-all hover:bg-primary-700 hover:shadow-xl active:scale-95"
+  data-tooltip="Chat with us"
+>
+  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+  </svg>
+  <span>Live Chat</span>
+</button>
+
+<Tooltip target="#custom-vapi-trigger" />
+
+<!-- Hidden Vapi Widget (no default button) -->
 <vapi-widget
   id="vapi-widget-basic"
   public-key={publicKey}
@@ -68,7 +105,7 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
   chat-first-message={`Thank you for your interest in ${globalCompanyName}. How can I help you today?`}
   chat-placeholder="Type your message..."
   voice-show-transcript="true"
-  consent-required="true"
+  consent-required="false"
   consent-title="Terms and conditions"
   consent-content="By clicking Agree, and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as otherwise described in our Terms of Service."
   consent-storage-key="vapi_widget_consent"></vapi-widget>
@@ -87,28 +124,11 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
       }
     }
 
-    // Animate VAPI button SVG with color cycling
-    function animateVapiButton() {
-      console.log('[VAPI-WIDGET] animateVapiButton() called');
+    // Hide the default Vapi button and create custom control
+    function setupCustomButton() {
+      console.log('[VAPI-WIDGET] Setting up custom button control...');
       
-      const colors = [
-        '#FF6B6B', // Red
-        '#4ECDC4', // Teal
-        '#45B7D1', // Blue
-        '#FFA07A', // Light Salmon
-        '#98D8C8', // Mint
-        '#F7DC6F', // Yellow
-        '#BB8FCE', // Purple
-        '#85C1E2', // Sky Blue
-      ];
-
-      let colorIndex = 0;
-      let animationInterval;
-
-      // Wait for widget to load
       const checkWidget = setInterval(() => {
-        console.log('[VAPI-WIDGET] Checking for widget shadow root...');
-        
         if (!widget?.shadowRoot) {
           console.log('[VAPI-WIDGET] Shadow root not ready yet');
           return;
@@ -117,67 +137,31 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
         const shadowRoot = widget.shadowRoot;
         console.log('[VAPI-WIDGET] Shadow root found!');
         
-        const button = shadowRoot.querySelector('button[class*="button"]') || 
-                       shadowRoot.querySelector('button');
+        // Hide the default Vapi button
+        const defaultButton = shadowRoot.querySelector('button[class*="button"]') || 
+                              shadowRoot.querySelector('button');
         
-        if (!button) {
-          console.log('[VAPI-WIDGET] Button not found in shadow root yet');
+        if (!defaultButton) {
+          console.log('[VAPI-WIDGET] Default button not found yet');
           return;
         }
 
         clearInterval(checkWidget);
-        console.log('[VAPI-WIDGET] Found button, starting animation');
-
-        // Function to animate SVG elements
-        function cycleSvgColors() {
-          const svgs = button.querySelectorAll('svg');
-          const paths = button.querySelectorAll('path');
-          const circles = button.querySelectorAll('circle');
-          const allElements = [...svgs, ...paths, ...circles];
-
-          console.log('[VAPI-WIDGET] Animating', allElements.length, 'SVG elements');
-
-          if (allElements.length === 0) return;
-
-          // Get current color
-          const color = colors[colorIndex % colors.length];
-          console.log('[VAPI-WIDGET] Cycling to color:', color);
-          
-          // Animate each element
-          allElements.forEach((el, index) => {
-            // Stagger the animation slightly for each element
-            const delay = index * 50;
-            
-            setTimeout(() => {
-              el.style.transition = 'fill 1s ease-in-out, stroke 1s ease-in-out';
-              
-              // Apply color to both fill and stroke
-              if (el.getAttribute('fill') && el.getAttribute('fill') !== 'none') {
-                el.style.fill = color;
-              }
-              if (el.getAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-                el.style.stroke = color;
-              }
-              
-              // If no fill or stroke specified, try both
-              if (!el.getAttribute('fill') && !el.getAttribute('stroke')) {
-                el.style.fill = color;
-                el.style.stroke = color;
-              }
-            }, delay);
+        console.log('[VAPI-WIDGET] Found default button, hiding it');
+        
+        // Hide the default button
+        defaultButton.style.display = 'none';
+        
+        // Set up custom button to trigger the widget
+        const customButton = document.getElementById('custom-vapi-trigger');
+        if (customButton) {
+          customButton.addEventListener('click', () => {
+            console.log('[VAPI-WIDGET] Custom button clicked, triggering widget');
+            // Click the hidden default button to open the widget
+            defaultButton.click();
           });
-
-          // Move to next color
-          colorIndex++;
+          console.log('[VAPI-WIDGET] Custom button event listener attached');
         }
-
-        // Start the animation cycle
-        animationInterval = setInterval(() => {
-          cycleSvgColors();
-        }, 3000);
-
-        // Initial animation
-        cycleSvgColors();
       }, 500);
 
       // Cleanup after 30 seconds if widget not found
@@ -187,57 +171,21 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
       }, 30000);
     }
 
-    // Start animation
-    animateVapiButton();
+    // Start custom button setup
+    setupCustomButton();
 
-    // Hide SpeedDial when VAPI widget opens (before consent)
-    console.log('[VAPI-WIDGET] Setting up SpeedDial hide listener...');
-    
-    // Poll until button is ready (similar to animation approach)
-    const checkButtonInterval = setInterval(() => {
-      console.log('[VAPI-WIDGET] Polling for VAPI button...');
-      
-      const shadowRoot = widget?.shadowRoot;
-      
-      if (!shadowRoot) {
-        console.log('[VAPI-WIDGET] Shadow root not available yet');
-        return;
-      }
-      
-      console.log('[VAPI-WIDGET] Shadow root available, looking for button...');
-      
-      const vapiButton = shadowRoot.querySelector('button');
-      
-      if (!vapiButton) {
-        console.log('[VAPI-WIDGET] Button not found in shadow root yet');
-        return;
-      }
-      
-      // Button found! Clear interval and attach listener
-      clearInterval(checkButtonInterval);
-      console.log('[VAPI-WIDGET] ✓ VAPI button found! Attaching click listener...');
-      
-      vapiButton.addEventListener('click', () => {
-        console.log('[VAPI-WIDGET] *** VAPI BUTTON CLICKED ***');
-        
+    // Hide SpeedDial when custom button is clicked
+    const customButton = document.getElementById('custom-vapi-trigger');
+    if (customButton) {
+      customButton.addEventListener('click', () => {
+        console.log('[VAPI-WIDGET] Custom button clicked, hiding SpeedDial');
         const speedDial = document.querySelector('#speed-dial');
-        console.log('[VAPI-WIDGET] SpeedDial element found:', !!speedDial);
-        console.log('[VAPI-WIDGET] SpeedDial current display:', speedDial?.style.display);
-        
         if (speedDial) {
           speedDial.style.display = 'none';
-          console.log('[VAPI-WIDGET] ✓ SpeedDial hidden! New display:', speedDial.style.display);
-        } else {
-          console.error('[VAPI-WIDGET] ✗ SpeedDial element not found in DOM!');
+          console.log('[VAPI-WIDGET] SpeedDial hidden');
         }
       });
-    }, 500);
-    
-    // Stop polling after 30 seconds if button never appears
-    setTimeout(() => {
-      clearInterval(checkButtonInterval);
-      console.log('[VAPI-WIDGET] Stopped polling for button (timeout)');
-    }, 30000);
+    }
 
     // Listen for widget close to show SpeedDial again
     if (widget) {

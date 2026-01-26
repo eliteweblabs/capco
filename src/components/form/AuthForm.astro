@@ -65,7 +65,7 @@ const { globalInputClasses } = Astro.props;
         type="email"
         name="email"
         id="email"
-        placeholder="Enter your email address"
+        placeholder="Yuthour email address"
         required
         autocomplete="email"
         autofocus
@@ -103,12 +103,7 @@ const { globalInputClasses } = Astro.props;
       >
         new
       </Button>
-      <Button
-        type="submit"
-        variant="secondary"
-        size="lg"
-        icon="arrow-right"
-        iconPosition="right"
+      <Button type="submit" variant="secondary" size="lg" icon="arrow-right" iconPosition="right"
         >sign in
       </Button>
     </div>
@@ -338,7 +333,7 @@ const { globalInputClasses } = Astro.props;
     if (loginForm) {
       loginForm.addEventListener("submit", async (e) => {
         e.preventDefault(); // Always prevent default to handle with JavaScript
-        
+
         const email = (loginForm.querySelector("#email") as HTMLInputElement)?.value;
         const password = (loginForm.querySelector("#password") as HTMLInputElement)?.value;
 
@@ -378,9 +373,10 @@ const { globalInputClasses } = Astro.props;
             if (redirectUrl.pathname === "/auth/login" && redirectUrl.searchParams.has("error")) {
               const errorType = redirectUrl.searchParams.get("error");
               let errorMessage = "Login failed. Please try again.";
-              
+
               if (errorType === "invalid_credentials") {
-                errorMessage = "Invalid email or password. Please check your credentials and try again.";
+                errorMessage =
+                  "Invalid email or password. Please check your credentials and try again.";
               }
 
               if (window.showModal) {
@@ -390,14 +386,18 @@ const { globalInputClasses } = Astro.props;
               }
               return;
             }
-            
+
             // Success - redirect to dashboard or wherever the API redirects
             window.location.href = response.url;
           } else if (!response.ok) {
             // Handle non-redirect errors
             const errorText = await response.text();
             if (window.showModal) {
-              window.showModal("error", "Authentication Error", errorText || "An error occurred during sign in.");
+              window.showModal(
+                "error",
+                "Authentication Error",
+                errorText || "An error occurred during sign in."
+              );
             } else {
               console.error("🔔 [Authentication Error]", errorText);
             }
@@ -405,7 +405,11 @@ const { globalInputClasses } = Astro.props;
         } catch (error) {
           console.error("[AUTH] Error during sign in:", error);
           if (window.showModal) {
-            window.showModal("error", "Connection Error", "Unable to connect to the server. Please check your internet connection and try again.");
+            window.showModal(
+              "error",
+              "Connection Error",
+              "Unable to connect to the server. Please check your internet connection and try again."
+            );
           } else {
             console.error("🔔 [Connection Error] Unable to connect to the server.");
           }
