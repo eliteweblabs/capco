@@ -68,6 +68,7 @@ const {
 } = await globalCompanyData();
 
 import { globalClasses } from "../../pages/api/global/global-classes";
+import Tooltip from "../common/Tooltip.astro";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
 // Get theme from cookie (set by client-side script)
@@ -651,21 +652,23 @@ const debugData = {
 
     <!-- Speed Dial -->
     <div class="fixed bottom-4 right-4">
-      {!currentUser && !isBackend && !isAuthPageResult && <VapiChatWidget basic={true} />}
+      <Tooltip text={`${globalCompanyName}`} position="left">
+        {!currentUser && !isBackend && !isAuthPageResult && <VapiChatWidget basic={true} />}
 
-      {
-        !isAuthPageResult && (
-          <SpeedDial
-            {globalCompanyPhone}
-            currentUser={currentUser || undefined}
-            {isBackend}
-            {primaryTextClasses}
-            {secondaryTextClasses}
-            {globalInputClasses}
-            {globalCompanyName}
-          />
-        )
-      }
+        {
+          !isAuthPageResult && (
+            <SpeedDial
+              {globalCompanyPhone}
+              currentUser={currentUser || undefined}
+              {isBackend}
+              {primaryTextClasses}
+              {secondaryTextClasses}
+              {globalInputClasses}
+              {globalCompanyName}
+            />
+          )
+        }
+      </Tooltip>
     </div>
 
     <!-- Prevent Flowbite from initializing modals that don't exist -->

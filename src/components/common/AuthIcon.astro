@@ -2,6 +2,7 @@
 import SimpleIcon from "./SimpleIcon.astro";
 import Button from "./Button.astro";
 import { checkAuth } from "../../lib/auth";
+import Tooltip from "./Tooltip.astro";
 
 interface Props {
   currentUser: any;
@@ -30,9 +31,11 @@ const avatarUrl =
           aria-expanded="false"
           data-avatar-url={avatarUrl}
         >
-          <span class="sr-only">Open user menu</span>
-          {/* <!-- Fallback icon (visible initially, hidden if avatar loads) --> */}
-          <SimpleIcon name="user" class="avatar-fallback text-2xl" />
+          <Tooltip text="Open user menu" position="bottom">
+            <span class="sr-only">Open user menu</span>
+            {/* <!-- Fallback icon (visible initially, hidden if avatar loads) --> */}
+            <SimpleIcon name="user" class="avatar-fallback text-2xl" />
+          </Tooltip>
         </button>
       ) : (
         <button
@@ -40,8 +43,10 @@ const avatarUrl =
           data-dropdown-toggle="accountDropdown"
           aria-expanded="false"
         >
-          <span class="sr-only">Open user menu</span>
-          <SimpleIcon name="user" />
+          <Tooltip text="Open user menu" position="bottom">
+            <span class="sr-only">Open user menu</span>
+            <SimpleIcon name="user" />
+          </Tooltip>
         </button>
       )}
 
@@ -89,16 +94,13 @@ const avatarUrl =
       </div>
     </>
   ) : !isBackend ? (
-    <Button
-      href="/auth/login"
-      variant="outline"
-      icon="user"
-      size="xs"
-      iconPosition="left"
-      iconClasses="block sm:hidden mr-0 md:mr-2"
-    >
+    // <Button href="/auth/login" variant="anchor" size="xs">
+      <Tooltip text="Sign in" position="bottom">
+        <SimpleIcon name="user" size="lg" class="rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"/>
+      </Tooltip>
       <span class="hidden sm:block">sign&nbsp;in</span>
-    </Button>
+      
+    // </Button>
   ) : null
 }
 
