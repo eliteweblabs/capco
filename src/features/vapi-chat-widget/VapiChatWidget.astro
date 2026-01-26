@@ -74,15 +74,205 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
   consent-storage-key="vapi_widget_consent"></vapi-widget>
   <script is:inline>
   (function() {
+    console.log('[VAPI-WIDGET] Script initializing...');
     
     const widget = document.getElementById('vapi-widget-basic');
+    console.log('[VAPI-WIDGET] Widget element found:', !!widget);
+    
     if (widget && window.currentTheme) {
       const currentThemeAttr = widget.getAttribute('theme');
       if (currentThemeAttr !== window.currentTheme) {
         widget.setAttribute('theme', window.currentTheme);
-        // console.log('[VAPI-WIDGET] Theme updated from', currentThemeAttr, 'to', window.currentTheme);
+        console.log('[VAPI-WIDGET] Theme updated from', currentThemeAttr, 'to', window.currentTheme);
       }
     }
+
+    // Animate VAPI button SVG with color cycling
+    function animateVapiButton() {
+      console.log('[VAPI-WIDGET] animateVapiButton() called');
+      
+      const colors = [
+        '#FF6B6B', // Red
+        '#4ECDC4', // Teal
+        '#45B7D1', // Blue
+        '#FFA07A', // Light Salmon
+        '#98D8C8', // Mint
+        '#F7DC6F', // Yellow
+        '#BB8FCE', // Purple
+        '#85C1E2', // Sky Blue
+      ];
+
+      let colorIndex = 0;
+      let animationInterval;
+
+      // Wait for widget to load
+      const checkWidget = setInterval(() => {
+        console.log('[VAPI-WIDGET] Checking for widget shadow root...');
+        
+        if (!widget?.shadowRoot) {
+          console.log('[VAPI-WIDGET] Shadow root not ready yet');
+          return;
+        }
+
+        const shadowRoot = widget.shadowRoot;
+        console.log('[VAPI-WIDGET] Shadow root found!');
+        
+        const button = shadowRoot.querySelector('button[class*="button"]') || 
+                       shadowRoot.querySelector('button');
+        
+        if (!button) {
+          console.log('[VAPI-WIDGET] Button not found in shadow root yet');
+          return;
+        }
+
+        clearInterval(checkWidget);
+        console.log('[VAPI-WIDGET] Found button, starting animation');
+
+        // Function to animate SVG elements
+        function cycleSvgColors() {
+          const svgs = button.querySelectorAll('svg');
+          const paths = button.querySelectorAll('path');
+          const circles = button.querySelectorAll('circle');
+          const allElements = [...svgs, ...paths, ...circles];
+
+          console.log('[VAPI-WIDGET] Animating', allElements.length, 'SVG elements');
+
+          if (allElements.length === 0) return;
+
+          // Get current color
+          const color = colors[colorIndex % colors.length];
+          console.log('[VAPI-WIDGET] Cycling to color:', color);
+          
+          // Animate each element
+          allElements.forEach((el, index) => {
+            // Stagger the animation slightly for each element
+            const delay = index * 50;
+            
+            setTimeout(() => {
+              el.style.transition = 'fill 1s ease-in-out, stroke 1s ease-in-out';
+              
+              // Apply color to both fill and stroke
+              if (el.getAttribute('fill') && el.getAttribute('fill') !== 'none') {
+                el.style.fill = color;
+              }
+              if (el.getAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                el.style.stroke = color;
+              }
+              
+              // If no fill or stroke specified, try both
+              if (!el.getAttribute('fill') && !el.getAttribute('stroke')) {
+                el.style.fill = color;
+                el.style.stroke = color;
+              }
+            }, delay);
+          });
+
+          // Move to next color
+          colorIndex++;
+        }
+
+        // Start the animation cycle
+        animationInterval = setInterval(() => {
+          cycleSvgColors();
+        }, 3000);
+
+        // Initial animation
+        cycleSvgColors();
+      }, 500);
+
+      // Cleanup after 30 seconds if widget not found
+      setTimeout(() => {
+        clearInterval(checkWidget);
+        console.log('[VAPI-WIDGET] Stopped checking for widget (timeout)');
+      }, 30000);
+    }
+
+    // Start animation
+    animateVapiButton();
+
+    // Hide SpeedDial when VAPI widget opens (before consent)
+    console.log('[VAPI-WIDGET] Setting up SpeedDial hide listener...');
+    
+    // Poll until button is ready (similar to animation approach)
+    const checkButtonInterval = setInterval(() => {
+      console.log('[VAPI-WIDGET] Polling for VAPI button...');
+      
+      const shadowRoot = widget?.shadowRoot;
+      
+      if (!shadowRoot) {
+        console.log('[VAPI-WIDGET] Shadow root not available yet');
+        return;
+      }
+      
+      console.log('[VAPI-WIDGET] Shadow root available, looking for button...');
+      
+      const vapiButton = shadowRoot.querySelector('button');
+      
+      if (!vapiButton) {
+        console.log('[VAPI-WIDGET] Button not found in shadow root yet');
+        return;
+      }
+      
+      // Button found! Clear interval and attach listener
+      clearInterval(checkButtonInterval);
+      console.log('[VAPI-WIDGET] ✓ VAPI button found! Attaching click listener...');
+      
+      vapiButton.addEventListener('click', () => {
+        console.log('[VAPI-WIDGET] *** VAPI BUTTON CLICKED ***');
+        
+        const speedDial = document.querySelector('#speed-dial');
+        console.log('[VAPI-WIDGET] SpeedDial element found:', !!speedDial);
+        console.log('[VAPI-WIDGET] SpeedDial current display:', speedDial?.style.display);
+        
+        if (speedDial) {
+          speedDial.style.display = 'none';
+          console.log('[VAPI-WIDGET] ✓ SpeedDial hidden! New display:', speedDial.style.display);
+        } else {
+          console.error('[VAPI-WIDGET] ✗ SpeedDial element not found in DOM!');
+        }
+      });
+    }, 500);
+    
+    // Stop polling after 30 seconds if button never appears
+    setTimeout(() => {
+      clearInterval(checkButtonInterval);
+      console.log('[VAPI-WIDGET] Stopped polling for button (timeout)');
+    }, 30000);
+
+    // Listen for widget close to show SpeedDial again
+    if (widget) {
+      console.log('[VAPI-WIDGET] Setting up MutationObserver for widget state...');
+      
+      const observer = new MutationObserver((mutations) => {
+        console.log('[VAPI-WIDGET] Widget mutation detected, checking state...');
+        
+        // Check if widget is closed (consent modal or chat closed)
+        const isOpen = widget.shadowRoot?.querySelector('[data-state="open"]') || 
+                       widget.shadowRoot?.querySelector('.vapi-widget-open');
+        
+        console.log('[VAPI-WIDGET] Widget open state:', !!isOpen);
+        
+        if (!isOpen) {
+          const speedDial = document.querySelector('#speed-dial');
+          console.log('[VAPI-WIDGET] Widget closed, SpeedDial display:', speedDial?.style.display);
+          
+          if (speedDial && speedDial.style.display === 'none') {
+            console.log('[VAPI-WIDGET] Showing SpeedDial again');
+            speedDial.style.display = 'flex';
+          }
+        }
+      });
+      
+      // Observe changes in the widget's shadow DOM if available
+      if (widget.shadowRoot) {
+        observer.observe(widget.shadowRoot, { childList: true, subtree: true });
+        console.log('[VAPI-WIDGET] MutationObserver started');
+      } else {
+        console.warn('[VAPI-WIDGET] Shadow root not available for observation');
+      }
+    }
+    
+    console.log('[VAPI-WIDGET] Script initialization complete');
   })();
 </script>
 
@@ -243,6 +433,7 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
       callBtn.classList.add("bg-red-600", "hover:bg-red-700");
       showStatus("Connected");
       showResponseButtons();
+      hideSpeedDialToggle();
     });
 
     vapi.on("call-end", () => {
@@ -254,6 +445,7 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
       hideStatus();
       hideTimeSlots();
       hideResponseButtons();
+      showSpeedDialToggle();
     });
 
     vapi.on("speech-start", () => {
@@ -301,14 +493,17 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
       if (isCallActive) {
         console.log("[VAPI-WIDGET] Stopping call");
         vapi.stop();
+        showSpeedDialToggle();
       } else {
         console.log("[VAPI-WIDGET] Starting call with assistant:", assistantId);
+        hideSpeedDialToggle(); // Hide immediately when button clicked
         showStatus("Connecting...");
         await vapi.start(assistantId);
       }
     } catch (error) {
       console.error("[VAPI-WIDGET] Call error:", error);
       showStatus("Failed to connect", true);
+      showSpeedDialToggle(); // Show again if failed
       setTimeout(() => hideStatus(), 3000);
     }
   }
@@ -516,6 +711,23 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
     // Hide response buttons
     hideResponseButtons();
     showStatus("Processing your request...");
+  }
+
+  // Hide/show SpeedDial toggle button
+  function hideSpeedDialToggle() {
+    const speedDialToggle = document.querySelector('#speed-dial');
+    if (speedDialToggle) {
+      speedDialToggle.style.display = 'none';
+      console.log("[VAPI-WIDGET] SpeedDial toggle hidden");
+    }
+  }
+
+  function showSpeedDialToggle() {
+    const speedDialToggle = document.querySelector('#speed-dial');
+    if (speedDialToggle) {
+      speedDialToggle.style.display = 'flex';
+      console.log("[VAPI-WIDGET] SpeedDial toggle shown");
+    }
   }
 
   // Make functions available globally for inline onclick handlers
