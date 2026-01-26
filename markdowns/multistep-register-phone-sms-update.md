@@ -41,7 +41,15 @@ Updated the MultiStepRegisterForm to use the same phone/SMS/carrier flow as Cont
 - Validates carrier selection before proceeding
 
 #### Step 8: Review & Submit (formerly Step 6)
-- No changes to content
+- **UPDATED:** Added SMS Alerts and Mobile Carrier fields
+- Shows all registration information including:
+  - Email (editable - goes to Step 1)
+  - Name (editable - goes to Step 2)
+  - Company (editable - goes to Step 3)
+  - Password (shown as ••••••, editable - goes to Step 4)
+  - Phone (editable - goes to Step 5)
+  - SMS Alerts (editable - goes to Step 6)
+  - Mobile Carrier (editable - goes to Step 7)
 - Updated step number and navigation
 
 ### 4. JavaScript Logic Updates
@@ -142,6 +150,10 @@ if (currentStep === 8 && prevBtn.classList.contains("prev-step-review")) {
 - [ ] Carrier selection modal works
 - [ ] Can't proceed from Step 7 without selecting carrier
 - [ ] Back button from Review (Step 8) goes to correct step based on phone presence
+- [ ] **Review page shows all fields including SMS Alerts and Mobile Carrier**
+- [ ] **SMS Alerts shows "Yes" or "No" correctly**
+- [ ] **Mobile Carrier shows selected carrier name or "Not provided"**
+- [ ] **Edit buttons on review page navigate to correct steps (5, 6, 7)**
 - [ ] Form submission still works correctly
 - [ ] All form data is captured properly including phone, smsAlerts, and mobileCarrier
 

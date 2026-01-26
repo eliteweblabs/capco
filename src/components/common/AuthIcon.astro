@@ -3,15 +3,27 @@ import SimpleIcon from "./SimpleIcon.astro";
 import Button from "./Button.astro";
 import { checkAuth } from "../../lib/auth";
 import Tooltip from "./Tooltip.astro";
+import AssignedProjects from "../common/AssignedProjects.astro";
 
 interface Props {
   currentUser: any;
   session: any;
   isBackend?: boolean;
+  projects: any[];
 }
 
 const { currentUser } = await checkAuth(Astro.cookies);
-const { session, isBackend } = Astro.props;
+const currentRole = currentUser?.profile?.role;
+const { session, isBackend, projects } = Astro.props;
+
+// Get current path to determine auth link
+const currentPath = Astro.url.pathname;
+const isLoginPage = currentPath.includes('/auth/login');
+const isRegisterPage = currentPath.includes('/auth/register');
+
+// Determine auth link and tooltip text
+const authLink = isLoginPage ? '/auth/register' : '/auth/login';
+const authTooltipText = isLoginPage ? 'Register' : isRegisterPage ? 'Login' : 'Register / Login';
 
 // Prioritize profile.avatarUrl (Supabase Storage) over user_metadata.avatarUrl (Google CDN)
 const avatarUrl =
@@ -25,8 +37,7 @@ const avatarUrl =
     <>
       {avatarUrl && avatarUrl !== "" ? (
         <button
-          class="dark:hover:text-primary-dark disabled avatar-button relative inline-flex items-center justify-center rounded-full border-none p-1.5 text-sm font-medium text-gray-500 opacity-100 outline-none transition-all duration-200 hover:bg-gray-100 hover:text-primary hover:shadow-none focus:outline-none focus:outline-2 focus:outline-offset-2 focus:outline-transparent focus:ring-2 focus:ring-gray-200 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50  dark:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700"
-          style="min-width: 2rem; min-height: 2rem;"
+          class="inline-flex items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
           data-dropdown-toggle="accountDropdown"
           aria-expanded="false"
           data-avatar-url={avatarUrl}
@@ -39,14 +50,12 @@ const avatarUrl =
         </button>
       ) : (
         <button
-          class="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition-all duration-200 hover:bg-gray-100 hover:text-primary focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-0 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700"
+          class="inline-flex items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
           data-dropdown-toggle="accountDropdown"
           aria-expanded="false"
         >
-          <Tooltip text="Open user menu" position="bottom">
-            <span class="sr-only">Open user menu</span>
-            <SimpleIcon name="user" />
-          </Tooltip>
+          <span class="sr-only">Open user menu</span>
+          <SimpleIcon name="user" />
         </button>
       )}
 
@@ -76,6 +85,11 @@ const avatarUrl =
               Dashboard
             </a>
           </li>
+
+          {/* Assigned Projects */}
+          {currentRole !== "Client" && (
+            <AssignedProjects currentUser={currentUser} projects={projects} />
+          )}
         </ul>
 
         <ul class="Sh_nhSr0Y5lUywmHhhs_ p-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -95,8 +109,11 @@ const avatarUrl =
     </>
   ) : !isBackend ? (
     // <Button href="/auth/login" variant="anchor" size="xs">
-    <a href="/auth/login">
-      <Tooltip text="Register / Login" position="bottom">
+    <a
+      href={authLink}
+      class="inline-flex items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
+    >
+      <Tooltip text={authTooltipText} position="bottom">
         <SimpleIcon
           name="user"
           size="lg"

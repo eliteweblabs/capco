@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vapi Widget Diagnostic</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+    .pending { background: #fff3cd; color: #856404; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #0056b3; }
+    pre {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Vapi Widget Diagnostic Tool</h1>
+  <p>This page will help diagnose why the Vapi widget isn't loading.</p>
+
+  <!-- Test 1: Network Connectivity -->
+  <div class="test">
+    <h2>1. Network Connectivity</h2>
+    <p>Testing if CDNs are accessible...</p>
+    <div id="test1" class="status pending">⏳ Testing...</div>
+  </div>
+
+  <!-- Test 2: jsdelivr CDN -->
+  <div class="test">
+    <h2>2. jsdelivr CDN</h2>
+    <p>Testing primary CDN: <code>cdn.jsdelivr.net</code></p>
+    <div id="test2" class="status pending">⏳ Testing...</div>
+  </div>
+
+  <!-- Test 3: unpkg CDN -->
+  <div class="test">
+    <h2>3. unpkg CDN</h2>
+    <p>Testing fallback CDN: <code>unpkg.com</code></p>
+    <div id="test3" class="status pending">⏳ Testing...</div>
+  </div>
+
+  <!-- Test 4: Script Loading -->
+  <div class="test">
+    <h2>4. Widget Script Loading</h2>
+    <p>Attempting to load the actual widget script...</p>
+    <button onclick="loadWidget()">Load Widget Script</button>
+    <div id="test4" class="status pending">⏳ Click button to test</div>
+  </div>
+
+  <!-- Test 5: Shadow DOM Support -->
+  <div class="test">
+    <h2>5. Browser Compatibility</h2>
+    <p>Checking if your browser supports required features...</p>
+    <div id="test5" class="status pending">⏳ Testing...</div>
+  </div>
+
+  <!-- Results Summary -->
+  <div class="test">
+    <h2>📊 Summary</h2>
+    <div id="summary"></div>
+  </div>
+
+  <script>
+    const results = {};
+
+    // Test 1: Basic network
+    async function test1() {
+      try {
+        const response = await fetch('https://httpbin.org/get');
+        if (response.ok) {
+          results.test1 = true;
+          document.getElementById('test1').className = 'status success';
+          document.getElementById('test1').textContent = '✓ Network is working';
+        } else {
+          throw new Error('Network request failed');
+        }
+      } catch (error) {
+        results.test1 = false;
+        document.getElementById('test1').className = 'status error';
+        document.getElementById('test1').textContent = '✗ Network issue: ' + error.message;
+      }
+    }
+
+    // Test 2: jsdelivr CDN
+    async function test2() {
+      const url = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.js';
+      try {
+        const response = await fetch(url, { method: 'HEAD' });
+        if (response.ok) {
+          results.test2 = true;
+          document.getElementById('test2').className = 'status success';
+          document.getElementById('test2').textContent = '✓ jsdelivr CDN is accessible (Status: ' + response.status + ')';
+        } else {
+          throw new Error('HTTP ' + response.status);
+        }
+      } catch (error) {
+        results.test2 = false;
+        document.getElementById('test2').className = 'status error';
+        document.getElementById('test2').innerHTML = '✗ jsdelivr CDN failed: ' + error.message + '<br><small>This might be blocked by your ad blocker or firewall</small>';
+      }
+    }
+
+    // Test 3: unpkg CDN
+    async function test3() {
+      const url = 'https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js';
+      try {
+        const response = await fetch(url, { method: 'HEAD' });
+        if (response.ok) {
+          results.test3 = true;
+          document.getElementById('test3').className = 'status success';
+          document.getElementById('test3').textContent = '✓ unpkg CDN is accessible (Status: ' + response.status + ')';
+        } else {
+          throw new Error('HTTP ' + response.status);
+        }
+      } catch (error) {
+        results.test3 = false;
+        document.getElementById('test3').className = 'status error';
+        document.getElementById('test3').innerHTML = '✗ unpkg CDN failed: ' + error.message + '<br><small>This might be blocked by your ad blocker or firewall</small>';
+      }
+    }
+
+    // Test 4: Load actual widget
+    window.loadWidget = function() {
+      const test4El = document.getElementById('test4');
+      test4El.className = 'status pending';
+      test4El.textContent = '⏳ Loading widget script...';
+
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.js';
+      
+      script.onload = function() {
+        results.test4 = true;
+        test4El.className = 'status success';
+        test4El.textContent = '✓ Widget script loaded successfully!';
+        updateSummary();
+      };
+      
+      script.onerror = function() {
+        results.test4 = false;
+        test4El.className = 'status error';
+        test4El.innerHTML = '✗ Widget script failed to load<br><small>Check browser console for specific error</small>';
+        updateSummary();
+      };
+      
+      document.body.appendChild(script);
+    };
+
+    // Test 5: Browser compatibility
+    function test5() {
+      const checks = {
+        'Web Components': 'customElements' in window,
+        'Shadow DOM': 'attachShadow' in Element.prototype,
+        'ES6 Modules': 'noModule' in HTMLScriptElement.prototype,
+        'Fetch API': 'fetch' in window,
+        'Promises': 'Promise' in window
+      };
+
+      const allPassed = Object.values(checks).every(v => v);
+      results.test5 = allPassed;
+
+      const test5El = document.getElementById('test5');
+      test5El.className = allPassed ? 'status success' : 'status error';
+      
+      let html = allPassed ? '✓ All features supported<br>' : '✗ Some features not supported<br>';
+      html += '<small><ul style="margin: 5px 0;">';
+      
+      for (const [feature, supported] of Object.entries(checks)) {
+        html += `<li>${supported ? '✓' : '✗'} ${feature}</li>`;
+      }
+      html += '</ul></small>';
+      
+      test5El.innerHTML = html;
+    }
+
+    // Update summary
+    function updateSummary() {
+      const summary = document.getElementById('summary');
+      const passed = Object.values(results).filter(v => v === true).length;
+      const failed = Object.values(results).filter(v => v === false).length;
+      const total = Object.keys(results).length;
+
+      let html = `<p><strong>Tests completed:</strong> ${total}</p>`;
+      html += `<p><strong>Passed:</strong> <span style="color: green">${passed}</span></p>`;
+      html += `<p><strong>Failed:</strong> <span style="color: red">${failed}</span></p>`;
+
+      if (failed === 0 && total >= 4) {
+        html += '<div class="status success">✓ All tests passed! Widget should work.</div>';
+        html += '<p><strong>Recommendation:</strong> Widget should load properly. If still having issues, clear browser cache and hard reload (Ctrl+Shift+R).</p>';
+      } else if (results.test2 === false && results.test3 === false) {
+        html += '<div class="status error">✗ Both CDNs are blocked</div>';
+        html += '<p><strong>Likely causes:</strong></p>';
+        html += '<ul>';
+        html += '<li>Ad blocker is blocking scripts (try disabling)</li>';
+        html += '<li>Corporate firewall blocking CDN access</li>';
+        html += '<li>Privacy extension blocking third-party scripts</li>';
+        html += '<li>Network restrictions</li>';
+        html += '</ul>';
+        html += '<p><strong>Solutions:</strong></p>';
+        html += '<ul>';
+        html += '<li>Disable ad blockers/privacy extensions for this site</li>';
+        html += '<li>Try a different network</li>';
+        html += '<li>Self-host the widget script (see troubleshooting guide)</li>';
+        html += '</ul>';
+      } else if (results.test5 === false) {
+        html += '<div class="status error">✗ Browser compatibility issues</div>';
+        html += '<p><strong>Recommendation:</strong> Update your browser to the latest version or try a modern browser (Chrome, Firefox, Edge).</p>';
+      } else {
+        html += '<div class="status error">✗ Some tests failed</div>';
+        html += '<p>Check the individual test results above for specific issues.</p>';
+      }
+
+      summary.innerHTML = html;
+    }
+
+    // Run tests on load
+    (async function() {
+      await test1();
+      await test2();
+      await test3();
+      test5();
+      updateSummary();
+    })();
+  </script>
+</body>
+</html>

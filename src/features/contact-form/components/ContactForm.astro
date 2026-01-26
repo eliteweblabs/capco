@@ -173,7 +173,7 @@ const submitButtonProps = {
             dataAttributes={{ "data-next": "4" }}
             class={`${nextButtonProps.class} next-step-phone`}
           >
-            next / skip
+            <span id="contact-next-step-phone-text">skip</span>
           </Button>
         </div>
       </div>
@@ -401,6 +401,10 @@ const submitButtonProps = {
 
       // Phone input formatting
       const phoneInput = document.getElementById("contact-phone") as HTMLInputElement;
+      const phoneButtonText = document.getElementById(
+        "contact-next-step-phone-text"
+      ) as HTMLElement;
+
       if (phoneInput) {
         let lastValue = "";
 
@@ -425,6 +429,20 @@ const submitButtonProps = {
           } else {
             // On input, move cursor to end
             input.setSelectionRange(formatted.length, formatted.length);
+          }
+
+          // Update button text based on phone validation
+          if (phoneButtonText) {
+            if (!formatted || formatted.trim() === "") {
+              // Empty: show "skip"
+              phoneButtonText.textContent = "skip";
+            } else if (validatePhone(formatted)) {
+              // Valid: show "next"
+              phoneButtonText.textContent = "next";
+            } else {
+              // Has content but invalid: show "skip"
+              phoneButtonText.textContent = "skip";
+            }
           }
         });
       }

@@ -169,11 +169,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       profilePayload.mobileCarrier = null;
     }
 
-    // Create user profile
-    console.log("🔐 [AUTH-REGISTER] Creating profile with payload:", JSON.stringify(profilePayload, null, 2));
+    // Create or update user profile (using upsert to handle duplicate key scenario)
+    console.log(
+      "🔐 [AUTH-REGISTER] Creating/updating profile with payload:",
+      JSON.stringify(profilePayload, null, 2)
+    );
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .insert([profilePayload])
+      .upsert([profilePayload], {
+        onConflict: "id",
+        ignoreDuplicates: false,
+      })
       .select()
       .single();
 
@@ -184,15 +190,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         hint: profileError.hint,
         code: profileError.code,
       });
-      // Note: User account was created but profile failed - this needs manual cleanup
+
+      // Provide helpful error message based on error code
+      let errorDetails = `User account created but profile setup failed. Error: ${profileError.message}. Please contact support.`;
+
+      if (profileError.code === "23505") {
+        errorDetails = "This account already exists. Please try logging in instead.";
+      }
+
       return new Response(
         JSON.stringify({
           error: "Profile creation failed",
-          details: `User account created but profile setup failed. Error: ${profileError.message}. Please contact support.`,
+          details: errorDetails,
           debugInfo: {
             code: profileError.code,
             hint: profileError.hint,
-          }
+          },
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );

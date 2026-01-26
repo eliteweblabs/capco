@@ -15,10 +15,11 @@ WHERE table_name = 'profiles'
 ORDER BY ordinal_position;
 
 -- Step 2: Drop and recreate service role policies
--- The issue: supabaseAdmin (service_role) needs INSERT/SELECT permissions
--- to create profiles during registration
+-- The issue: supabaseAdmin (service_role) needs INSERT/SELECT/UPDATE permissions
+-- to create/update profiles during registration
 DROP POLICY IF EXISTS "Service role can insert profiles" ON profiles;
 DROP POLICY IF EXISTS "Service role can select profiles" ON profiles;
+DROP POLICY IF EXISTS "Service role can update profiles" ON profiles;
 
 -- Create INSERT policy for service role (used by supabaseAdmin during registration)
 CREATE POLICY "Service role can insert profiles"
@@ -31,6 +32,13 @@ CREATE POLICY "Service role can select profiles"
   ON profiles FOR SELECT
   TO service_role
   USING (true);
+
+-- Create UPDATE policy for service role (needed for UPSERT during registration)
+CREATE POLICY "Service role can update profiles"
+  ON profiles FOR UPDATE
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
 
 -- Step 3: Verify RLS is enabled
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;

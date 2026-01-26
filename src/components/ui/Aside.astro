@@ -7,7 +7,6 @@ import { getSectionNavigation } from "../../lib/feature-navigation";
 import HttpChatWidget from "../../features/chat/components/HttpChatWidget.astro";
 // import CampfireChatWidget from "../../features/chat/components/CampfireChatWidget.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
-import AssignedProjects from "../common/AssignedProjects.astro";
 import Socials from "./Socials.astro";
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
@@ -35,8 +34,19 @@ const socialNetworks = companyData.socialNetworks || [];
 const adminNavItems = await getSectionNavigation("admin", currentRole);
 const toolsNavItems = await getSectionNavigation("tools", currentRole);
 
+// Get current page URL for active state
+const currentPath = Astro.url.pathname;
+
+// Helper function to check if a link is active
+const isActive = (href: string) => {
+  if (!href || href === "#") return false;
+  // Exact match or starts with the path (for subpages)
+  return currentPath === href || (href !== "/" && currentPath.startsWith(href));
+};
+
 const anchorClasses =
-  "hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg p-2 pr-0 whitespace-nowrap";
+  "hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg px-4 py-2 whitespace-nowrap";
+const activeClasses = "bg-gray-300 dark:bg-gray-700 font-bold";
 const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
 ---
 
@@ -70,7 +80,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
       {
         currentUser && currentUser.id && (
           <li>
-            <a href="/dashboard" type="button" class={`${anchorClasses}`}>
+            <a href="/dashboard" type="button" class={`${anchorClasses} ${isActive("/dashboard") ? activeClasses : ""}`}>
               <SimpleIcon name="dashboard" class={svgClasses} />
               <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                 Dashboard
@@ -84,7 +94,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
         currentUser && currentUser.id && currentRole === "Admin" && (
           <>
             <li>
-              <a href="/admin/settings" type="button" class={`${anchorClasses}`}>
+              <a href="/admin/settings" type="button" class={`${anchorClasses} ${isActive("/admin/settings") ? activeClasses : ""}`}>
                 <SimpleIcon name="settings" class={svgClasses} />
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   Settings
@@ -95,7 +105,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
             <li>
               <a
                 type="button"
-                class={`${anchorClasses}`}
+                class={`${anchorClasses} ${isActive("/admin/design") ? activeClasses : ""}`}
                 aria-controls="dropdown-design"
                 data-collapse-toggle="dropdown-design"
                 data-sidebar-collapse-item=""
@@ -111,7 +121,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
                 <li>
                   <a
                     href="/admin/design"
-                    class={`${anchorClasses}`}
+                    class={`${anchorClasses} ${isActive("/admin/design") && currentPath === "/admin/design" ? activeClasses : ""}`}
                     data-sidebar-collapse-subitem=""
                   >
                     Components
@@ -120,7 +130,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
                 <li>
                   <a
                     href="/admin/design/placeholders"
-                    class={`${anchorClasses}`}
+                    class={`${anchorClasses} ${isActive("/admin/design/placeholders") ? activeClasses : ""}`}
                     data-sidebar-collapse-subitem=""
                   >
                     Placeholders
@@ -130,7 +140,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
             </li>
 
             <li>
-              <a href="/admin/cms" type="button" class={`${anchorClasses}`}>
+              <a href="/admin/cms" type="button" class={`${anchorClasses} ${isActive("/admin/cms") ? activeClasses : ""}`}>
                 <SimpleIcon name="dashboard" class={svgClasses} />
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   Content
@@ -139,7 +149,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
             </li>
 
             <li>
-              <a href="/admin/media" type="button" class={`${anchorClasses}`}>
+              <a href="/admin/media" type="button" class={`${anchorClasses} ${isActive("/admin/media") ? activeClasses : ""}`}>
                 <SimpleIcon name="image" class={svgClasses} />
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   Media
@@ -148,7 +158,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
             </li>
 
             <li>
-              <a href="/admin/banner-alerts" type="button" class={`${anchorClasses}`}>
+              <a href="/admin/banner-alerts" type="button" class={`${anchorClasses} ${isActive("/admin/banner-alerts") ? activeClasses : ""}`}>
                 <SimpleIcon name="alert" class={svgClasses} />
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   Alerts
@@ -164,7 +174,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           <li>
             <a
               type="button"
-              class={`${anchorClasses}`}
+              class={`${anchorClasses} ${isActive("/project") ? activeClasses : ""}`}
               aria-controls="dropdown-projects"
               data-collapse-toggle="dropdown-projects"
               data-sidebar-collapse-item=""
@@ -185,14 +195,14 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               <li>
                 <a
                   href="/project/dashboard/"
-                  class={`${anchorClasses}`}
+                  class={`${anchorClasses} ${isActive("/project/dashboard") ? activeClasses : ""}`}
                   data-sidebar-collapse-subitem=""
                 >
                   Dashboard
                 </a>
               </li>
               <li>
-                <a href="/project/new" class={`${anchorClasses}`} data-sidebar-collapse-subitem="">
+                <a href="/project/new" class={`${anchorClasses} ${isActive("/project/new") ? activeClasses : ""}`} data-sidebar-collapse-subitem="">
                   New
                 </a>
               </li>
@@ -200,7 +210,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
                 <li>
                   <a
                     href="/project/proposals"
-                    class={`${anchorClasses}`}
+                    class={`${anchorClasses} ${isActive("/project/proposals") ? activeClasses : ""}`}
                     data-sidebar-collapse-subitem=""
                   >
                     Proposals
@@ -209,7 +219,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
                  <li>
                   <a
                     href="/project/settings"
-                    class={`${anchorClasses}`}
+                    class={`${anchorClasses} ${isActive("/project/settings") ? activeClasses : ""}`}
                     data-sidebar-collapse-subitem=""
                   >
                     Settings
@@ -227,7 +237,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           currentRole === "Admin" &&
           adminNavItems.map((item) => (
             <li>
-              <a href={item.href} class={`${anchorClasses}`} data-sidebar-collapse-item="">
+              <a href={item.href} class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`} data-sidebar-collapse-item="">
                 {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   {item.label}
@@ -235,13 +245,6 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               </a>
             </li>
           ))
-      }
-
-      <!-- Assigned Projects -->
-      {
-        currentRole !== "Client" && (
-          <AssignedProjects currentUser={currentUser} projects={projects} />
-        )
       }
 
       <!-- Notification Bell -->
@@ -281,7 +284,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
       {
         currentRole === "Admin" && (
           <li>
-            <a href="/admin/notifications" class={`${anchorClasses}`} data-sidebar-collapse-item="">
+            <a href="/admin/notifications" class={`${anchorClasses} ${isActive("/admin/notifications") ? activeClasses : ""}`} data-sidebar-collapse-item="">
               <SimpleIcon name="zap" class={svgClasses} />
               <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide="">
                 Send Notifications
@@ -295,7 +298,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
       {
         currentRole === "Admin" && currentUser.email === "tom@tomsens.com" && (
           <li>
-            <a href="/admin/update-test" class={`${anchorClasses}`} data-sidebar-collapse-item="">
+            <a href="/admin/update-test" class={`${anchorClasses} ${isActive("/admin/update-test") ? activeClasses : ""}`} data-sidebar-collapse-item="">
               <SimpleIcon name="alert" class={svgClasses} />
               <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                 Update Msg Test
@@ -318,7 +321,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           currentRole === "Admin" &&
           toolsNavItems.map((item) => (
             <li>
-              <a href={item.href} class={`${anchorClasses}`} data-sidebar-collapse-item="">
+              <a href={item.href} class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`} data-sidebar-collapse-item="">
                 {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   {item.label}
@@ -333,7 +336,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           <li>
             <a
               type="button"
-              class={`${anchorClasses}`}
+              class={`${anchorClasses} ${isActive("/tests") ? activeClasses : ""}`}
               aria-controls="dropdown-tests"
               data-collapse-toggle="dropdown-tests"
               data-sidebar-collapse-item=""
@@ -354,7 +357,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               <li>
                 <a
                   href="/tests/cal-booking/"
-                  class={`${anchorClasses} ml-6`}
+                  class={`${anchorClasses} ${isActive("/tests/cal-booking") ? activeClasses : ""} ml-6`}
                   data-sidebar-collapse-subitem=""
                 >
                   Cal.com Booking
@@ -363,7 +366,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               <li>
                 <a
                   href="/tests/push-notifications/"
-                  class={`${anchorClasses} ml-6`}
+                  class={`${anchorClasses} ${isActive("/tests/push-notifications") ? activeClasses : ""} ml-6`}
                   data-sidebar-collapse-subitem=""
                 >
                   Push Notifications
@@ -372,7 +375,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               <li>
                 <a
                   href="/tests/vapi-booking/"
-                  class={`${anchorClasses} ml-6`}
+                  class={`${anchorClasses} ${isActive("/tests/vapi-booking") ? activeClasses : ""} ml-6`}
                   data-sidebar-collapse-subitem=""
                 >
                   VAPI Booking
@@ -382,7 +385,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               <li>
                 <a
                   href="/tests/google-signin/"
-                  class={`${anchorClasses} ml-6`}
+                  class={`${anchorClasses} ${isActive("/tests/google-signin") ? activeClasses : ""} ml-6`}
                   data-sidebar-collapse-subitem=""
                 >
                   Google Sign-In
