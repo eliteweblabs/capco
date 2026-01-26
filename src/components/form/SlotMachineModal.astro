@@ -708,14 +708,14 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     if (closeButton) {
       closeButton.addEventListener("click", async () => {
         await cleanupModal();
-        modal.remove();
+        setTimeout(() => modal.remove(), 300);
       });
     }
 
     if (cancelButton) {
       cancelButton.addEventListener("click", async () => {
         await cleanupModal();
-        modal.remove();
+        setTimeout(() => modal.remove(), 300);
       });
     }
 
@@ -1058,7 +1058,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
             const label = span.dataset.label;
 
             await cleanupModal();
-            modal.remove();
+            setTimeout(() => modal.remove(), 300);
 
             // Call the generic handleSelect function
             // Try to include full option data if available
@@ -1383,7 +1383,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
                 // Close modal and call handleSelect
                 cleanupModal();
-                modal.remove();
+                setTimeout(() => modal.remove(), 300);
 
                 if (typeof window.handleSelect === "function") {
                   window.handleSelect(value, label, id);
@@ -1397,7 +1397,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           e.preventDefault();
           // Close modal without selecting
           cleanupModal();
-          modal.remove();
+          setTimeout(() => modal.remove(), 300);
           break;
       }
     });
@@ -1406,22 +1406,39 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     centerSelectedItem();
     updateSelection();
 
-    // Cleanup function to restore body scroll
+    // Cleanup function to restore body scroll and animate modal close
     function cleanupModal() {
-      // Unlock body scroll (Safari iOS compatible)
-      if (window.unlockBodyScroll) {
-        window.unlockBodyScroll();
-      } else {
-        // Fallback for older implementations
-        document.body.style.overflow = "";
-      }
+      return new Promise((resolve) => {
+        // Add fade-out animation to modal content
+        const modalContent = modal.querySelector(".slot-machine-modal-content");
+        if (modalContent) {
+          modalContent.classList.remove("modal-content-slide-in");
+          modalContent.classList.add("modal-content-slide-out");
+        }
+
+        // Add fade-out to modal backdrop
+        modal.classList.remove("modal-fade-in");
+        modal.classList.add("modal-fade-out");
+
+        // Wait for animation to complete before cleanup
+        setTimeout(() => {
+          // Unlock body scroll (Safari iOS compatible)
+          if (window.unlockBodyScroll) {
+            window.unlockBodyScroll();
+          } else {
+            // Fallback for older implementations
+            document.body.style.overflow = "";
+          }
+          resolve();
+        }, 300);
+      });
     }
 
     // Close modal when clicking outside
     modal.addEventListener("click", async (e) => {
       if (e.target === modal) {
         await cleanupModal();
-        modal.remove();
+        setTimeout(() => modal.remove(), 300);
       }
     });
   }

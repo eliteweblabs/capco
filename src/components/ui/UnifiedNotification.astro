@@ -220,17 +220,32 @@
         }
 
         if (modalElement) {
-          // Remove modal backdrop and element
-          const backdrop = document.getElementById(`modal-backdrop-${id}`);
-          if (backdrop) backdrop.remove();
-          modalElement.remove();
-
-          // Unlock body scroll if needed
-          if (window.unlockBodyScroll) {
-            window.unlockBodyScroll();
-          } else {
-            document.body.style.overflow = "";
+          // Add fade-out animation to modal content
+          const modalContent = modalElement.querySelector(".modal-animated");
+          if (modalContent) {
+            modalContent.classList.remove("modal-content-slide-in", "modal-fade-in");
+            modalContent.classList.add("modal-content-slide-out");
           }
+
+          // Add fade-out to backdrop
+          const backdrop = document.getElementById(`modal-backdrop-${id}`);
+          if (backdrop) {
+            backdrop.classList.remove("modal-fade-in");
+            backdrop.classList.add("modal-fade-out");
+          }
+
+          // Remove elements after animation completes
+          setTimeout(() => {
+            if (backdrop) backdrop.remove();
+            modalElement.remove();
+
+            // Unlock body scroll if needed
+            if (window.unlockBodyScroll) {
+              window.unlockBodyScroll();
+            } else {
+              document.body.style.overflow = "";
+            }
+          }, 300);
         }
       } else {
         // Hide all notifications
@@ -245,8 +260,21 @@
           }
 
           if (modalElement) {
-            if (backdrop) backdrop.remove();
-            modalElement.remove();
+            const modalContent = modalElement.querySelector(".modal-animated");
+            if (modalContent) {
+              modalContent.classList.remove("modal-content-slide-in", "modal-fade-in");
+              modalContent.classList.add("modal-content-slide-out");
+            }
+
+            if (backdrop) {
+              backdrop.classList.remove("modal-fade-in");
+              backdrop.classList.add("modal-fade-out");
+            }
+
+            setTimeout(() => {
+              if (backdrop) backdrop.remove();
+              modalElement.remove();
+            }, 300);
           }
         });
 
@@ -577,7 +605,7 @@
       // Create backdrop
       const backdrop = document.createElement("div");
       backdrop.id = `modal-backdrop-${notification.id}`;
-      backdrop.className = "fixed inset-0 bg-gray-900/50 dark:bg-gray-900/75 z-40";
+      backdrop.className = "fixed inset-0 bg-gray-900/50 dark:bg-gray-900/75 z-40 modal-animated modal-fade-in";
       backdrop.addEventListener("click", () => {
         // Only close on backdrop click if no actions (user must interact with modal)
         if (!notification.actions || notification.actions.length === 0) {
@@ -595,7 +623,7 @@
       modalElement.setAttribute("aria-labelledby", `modal-title-${notification.id}`);
 
       modalElement.innerHTML = `
-        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 animate-fade-in">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 modal-animated modal-content-slide-in">
           <div class="flex items-start mb-4">
             <div class="flex-shrink-0 mr-3">
               <div class="inline-flex items-center justify-center w-10 h-10 ${config.iconBg} rounded-full">

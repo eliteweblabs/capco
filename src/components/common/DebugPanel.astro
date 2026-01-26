@@ -504,12 +504,18 @@ Object.keys(categorizedData).forEach((category) => {
     const messageTextarea = document.getElementById("feedback-message") as HTMLTextAreaElement;
     const messageCount = document.getElementById("message-count") as HTMLSpanElement;
 
-    // Show modal
-    function showModal() {
+    // Show modal - using global modal animation pattern
+    function showFeedbackModal() {
       feedbackModal.classList.remove("hidden");
-      feedbackModal.classList.add("flex");
+      feedbackModal.classList.add("flex", "modal-animated", "modal-fade-in");
       feedbackModal.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
+
+      // Add animation to modal content
+      const modalContent = feedbackModal.querySelector(".bg-gray-100") as HTMLElement;
+      if (modalContent) {
+        modalContent.classList.add("modal-animated", "modal-content-slide-in");
+      }
 
       // Focus first input
       const firstInput = feedbackForm.querySelector("input, select, textarea") as HTMLElement;
@@ -518,16 +524,34 @@ Object.keys(categorizedData).forEach((category) => {
       }
     }
 
-    // Hide modal
-    function hideModal() {
-      feedbackModal.classList.add("hidden");
-      feedbackModal.classList.remove("flex");
-      feedbackModal.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
+    // Hide modal - using global modal animation pattern
+    function hideFeedbackModal() {
+      const modalContent = feedbackModal.querySelector(".bg-gray-100") as HTMLElement;
+      
+      // Remove entrance animations and add exit animations
+      feedbackModal.classList.remove("modal-fade-in");
+      feedbackModal.classList.add("modal-fade-out");
+      
+      if (modalContent) {
+        modalContent.classList.remove("modal-content-slide-in");
+        modalContent.classList.add("modal-content-slide-out");
+      }
 
-      // Reset form
-      feedbackForm.reset();
-      updateMessageCount();
+      // Wait for animation to complete before hiding
+      setTimeout(() => {
+        feedbackModal.classList.add("hidden");
+        feedbackModal.classList.remove("flex", "modal-animated", "modal-fade-out");
+        feedbackModal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+
+        if (modalContent) {
+          modalContent.classList.remove("modal-animated", "modal-content-slide-out");
+        }
+
+        // Reset form
+        feedbackForm.reset();
+        updateMessageCount();
+      }, 300); // Match animation duration
     }
 
     // Update character count
@@ -545,22 +569,22 @@ Object.keys(categorizedData).forEach((category) => {
     }
 
     // Event listeners
-    feedbackButton?.addEventListener("click", showModal);
-    feedbackClose?.addEventListener("click", hideModal);
-    feedbackCancel?.addEventListener("click", hideModal);
+    feedbackButton?.addEventListener("click", showFeedbackModal);
+    feedbackClose?.addEventListener("click", hideFeedbackModal);
+    feedbackCancel?.addEventListener("click", hideFeedbackModal);
     messageTextarea?.addEventListener("input", updateMessageCount);
 
     // Close modal on backdrop click
     feedbackModal?.addEventListener("click", function (e) {
       if (e.target === feedbackModal) {
-        hideModal();
+        hideFeedbackModal();
       }
     });
 
     // Close modal on Escape key
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && !feedbackModal.classList.contains("hidden")) {
-        hideModal();
+        hideFeedbackModal();
       }
     });
 
@@ -599,9 +623,9 @@ Object.keys(categorizedData).forEach((category) => {
         const result = await response.json();
 
         if (response.ok) {
-          // Show success notification
-          if ((window as any).showNotification) {
-            (window as any).showNotification({
+          // Show success notification using global showModal
+          if ((window as any).showModal) {
+            (window as any).showModal({
               type: "success",
               title: "Feedback Submitted",
               message: "Thank you for your feedback! We appreciate your input.",
@@ -611,16 +635,16 @@ Object.keys(categorizedData).forEach((category) => {
             alert("Feedback submitted successfully! Thank you for your input.");
           }
 
-          hideModal();
+          hideFeedbackModal();
         } else {
           throw new Error(result.error || "Failed to submit feedback");
         }
       } catch (error) {
         console.error("Feedback submission error:", error);
 
-        // Show error notification
-        if ((window as any).showNotification) {
-          (window as any).showNotification({
+        // Show error notification using global showModal
+        if ((window as any).showModal) {
+          (window as any).showModal({
             type: "error",
             title: "Submission Failed",
             message: "Failed to submit feedback. Please try again.",
