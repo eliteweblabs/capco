@@ -287,11 +287,11 @@ export const navigation = async (
         // Map buttonStyle to actual CSS classes (matches button-styles.ts)
         const buttonStyleMap: Record<string, string> = {
           primary:
-            "hover:scale-101 hover:-translate-y-1 hover:shadow-xl rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg",
+            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg",
           secondary:
-            "hover:scale-101 hover:-translate-y-1 hover:shadow-xl rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600 shadow-lg",
+            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600 shadow-lg",
           outline:
-            "hover:scale-101 hover:-translate-y-1 hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-sm",
+            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-sm",
           ghost:
             "rounded-full text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
         };
@@ -308,13 +308,13 @@ export const navigation = async (
       return `<li class="${mobileClass}">
         <a
           href="${item.href}"
-            class="block px-3 py-2 md:p-0 vertical-align-middle ${
+            class="flex items-center px-3 py-2 md:p-0 ${
               item.isPrimary
                 ? "text-primary dark:text-primary-dark"
                 : "text-black hover:text-primary dark:text-white dark:hover:text-primary"
             }"
         >
-          <svg class="hidden lg:inline align-baseline w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>${item.label}
+          <svg class="hidden lg:inline w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>${item.label}
         </a>
       </li>`;
     });
