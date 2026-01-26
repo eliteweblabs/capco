@@ -161,21 +161,26 @@ export const POST: APIRoute = async ({ request }) => {
       throw tableCheckError;
     }
 
-    // Check if page already exists
+    // Check if page already exists (use same logic as GET to avoid duplicates)
     let query = supabaseAdmin.from("cmsPages").select("*").eq("slug", slug);
 
+    // Use same OR logic as GET to find either global or client-specific page
     if (clientId) {
-      query = query.eq("clientId", clientId);
-    } else {
-      query = query.is("clientId", null);
+      query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
     }
+    // If no clientId set, show all pages (no filter)
 
-    const { data: existingPage, error: queryError } = await query.maybeSingle();
+    const { data: existingPages, error: queryError } = await query.order("clientId", {
+      ascending: false,
+    }); // Client-specific takes priority
 
     if (queryError) {
       console.error("❌ [CMS-PAGES] Error checking for existing page:", queryError);
       throw queryError;
     }
+
+    // Get the highest priority page (client-specific over global)
+    const existingPage = existingPages && existingPages.length > 0 ? existingPages[0] : null;
 
     let data, error;
 
@@ -286,13 +291,14 @@ export const DELETE: APIRoute = async ({ request, url }) => {
 
     const clientId = process.env.RAILWAY_PROJECT_NAME || null;
 
+    // Use same OR logic as GET to find pages to delete
     let deleteQuery = supabaseAdmin.from("cmsPages").delete().eq("slug", slug);
 
     if (clientId) {
-      deleteQuery = deleteQuery.eq("clientId", clientId);
-    } else {
-      deleteQuery = deleteQuery.is("clientId", null);
+      // Delete BOTH global and client-specific pages with this slug
+      deleteQuery = deleteQuery.or(`clientId.is.null,clientId.eq.${clientId}`);
     }
+    // If no clientId set, delete all pages with this slug (no filter)
 
     const { error } = await deleteQuery;
 
