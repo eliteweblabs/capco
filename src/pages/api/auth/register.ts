@@ -170,6 +170,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Create user profile
+    console.log("🔐 [AUTH-REGISTER] Creating profile with payload:", JSON.stringify(profilePayload, null, 2));
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from("profiles")
       .insert([profilePayload])
@@ -177,12 +178,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (profileError) {
-      console.error("❌ [AUTH-REGISTER] Profile creation failed:", profileError.message);
+      console.error("❌ [AUTH-REGISTER] Profile creation failed:", {
+        message: profileError.message,
+        details: profileError.details,
+        hint: profileError.hint,
+        code: profileError.code,
+      });
       // Note: User account was created but profile failed - this needs manual cleanup
       return new Response(
         JSON.stringify({
           error: "Profile creation failed",
-          details: "User account created but profile setup failed. Please contact support.",
+          details: `User account created but profile setup failed. Error: ${profileError.message}. Please contact support.`,
+          debugInfo: {
+            code: profileError.code,
+            hint: profileError.hint,
+          }
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
