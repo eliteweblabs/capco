@@ -801,7 +801,22 @@ export function showModal(options: {
 
   // Check if modal already exists
   let modal = document.getElementById(id);
+  let overlay = document.getElementById(`${id}-overlay`);
   const isNewModal = !modal;
+
+  // Create overlay if it doesn't exist
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = `${id}-overlay`;
+    overlay.className = "fixed inset-0 hidden bg-black";
+    overlay.style.cssText = `
+      z-index: 49;
+      background-color: rgba(0, 0, 0, 0.5);
+      height: 100dvh;
+    `;
+    overlay.setAttribute("data-overlay", "");
+    document.body.appendChild(overlay);
+  }
 
   if (!modal) {
     // Create modal if it doesn't exist
@@ -895,13 +910,21 @@ export function showModal(options: {
       });
     });
 
-    // Backdrop click
+    // Backdrop click on modal
     if (closeOnBackdrop) {
       modal.addEventListener("click", (e) => {
         if (e.target === modal) {
           hideModal(id);
           if (onCancel) onCancel();
         }
+      });
+    }
+
+    // Backdrop click on overlay
+    if (closeOnBackdrop && overlay) {
+      overlay.addEventListener("click", () => {
+        hideModal(id);
+        if (onCancel) onCancel();
       });
     }
 
@@ -932,7 +955,12 @@ export function showModal(options: {
     });
   }
 
-  // Show modal
+  // Show modal and overlay
+  if (overlay) {
+    overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
+  }
+  
   modal.classList.remove("hidden");
   modal.classList.add("flex");
   modal.setAttribute("aria-hidden", "false");
@@ -949,11 +977,19 @@ export function showModal(options: {
  */
 export function hideModal(modalId: string): void {
   const modal = document.getElementById(modalId);
+  const overlay = document.getElementById(`${modalId}-overlay`);
+  
   if (!modal) return;
 
   modal.classList.add("hidden");
   modal.classList.remove("flex");
   modal.setAttribute("aria-hidden", "true");
+
+  // Hide overlay
+  if (overlay) {
+    overlay.classList.add("hidden");
+    overlay.classList.remove("flex");
+  }
 
   // Unlock body scroll
   if (typeof unlockBodyScroll === "function") {
@@ -967,8 +1003,13 @@ export function hideModal(modalId: string): void {
  */
 export function removeModal(modalId: string): void {
   const modal = document.getElementById(modalId);
+  const overlay = document.getElementById(`${modalId}-overlay`);
+  
   if (modal) {
     modal.remove();
+  }
+  if (overlay) {
+    overlay.remove();
   }
 }
 

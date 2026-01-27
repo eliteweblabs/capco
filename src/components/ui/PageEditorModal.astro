@@ -1,19 +1,25 @@
 ---
 import CloseButton from "./CloseButton.astro";
+import Overlay from "./Overlay.astro";
 
 interface Props {
   id?: string;
+  zIndex?: number;
 }
 
-const { id = "page-editor-modal" } = Astro.props;
+const { id = "page-editor-modal", zIndex = 50 } = Astro.props;
 ---
+
+<!-- Modal Overlay -->
+<Overlay id={`${id}-overlay`} zIndex={zIndex - 1} blurAmount="none" opacity="50" />
 
 <!-- Page Editor Modal -->
 <div
   id={id}
   tabindex="-1"
   aria-hidden="true"
-  class="fixed left-0 right-0 top-0 z-50 hidden h-[calc(100%-1rem)] max-h-full w-full items-center justify-center overflow-y-auto overflow-x-hidden md:inset-0"
+  class="fixed left-0 right-0 top-0 hidden h-[calc(100%-1rem)] max-h-full w-full items-center justify-center overflow-y-auto overflow-x-hidden md:inset-0"
+  style={`z-index: ${zIndex};`}
 >
   <div class="relative max-h-full w-full max-w-4xl p-4">
     <!-- Modal content -->
@@ -63,6 +69,7 @@ const { id = "page-editor-modal" } = Astro.props;
    */
   function initModal() {
     const modal = document.getElementById(id);
+    const overlay = document.getElementById(`${id}-overlay`);
     const closeButtons = document.querySelectorAll(`[data-modal-hide="${id}"]`);
 
     if (!modal) return;
@@ -74,12 +81,18 @@ const { id = "page-editor-modal" } = Astro.props;
       });
     });
 
-    // Close on backdrop click
+    // Close on backdrop click (modal or overlay)
     modal.addEventListener("click", function (e) {
       if (e.target === modal) {
         hideModal();
       }
     });
+
+    if (overlay) {
+      overlay.addEventListener("click", function () {
+        hideModal();
+      });
+    }
 
     // Close on ESC key
     document.addEventListener("keydown", function (e) {
@@ -92,6 +105,12 @@ const { id = "page-editor-modal" } = Astro.props;
       modal?.classList.add("hidden");
       modal?.classList.remove("flex");
       modal?.setAttribute("aria-hidden", "true");
+      
+      // Hide overlay
+      if (overlay) {
+        overlay.classList.add("hidden");
+        overlay.classList.remove("flex");
+      }
       
       // Unlock body scroll when modal closes
       if (typeof window.unlockBodyScroll === "function") {
