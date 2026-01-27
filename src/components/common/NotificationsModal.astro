@@ -1,45 +1,52 @@
 ---
+/**
+ * NotificationsModal Component
+ * Using the new modal system with Overlay component
+ */
+import CloseButton from "../ui/CloseButton.astro";
+import Overlay from "../ui/Overlay.astro";
+
 export interface Props {
   currentUser?: any;
-  class?: string;
 }
 
 const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 
-import SimpleIcon from "../common/SimpleIcon.astro";
-import CloseButton from "../ui/CloseButton.astro";
-
-// Return null if no user
+// Return null if no user or client
 if (!currentUser || currentRole === "Client") {
   return null;
 }
 ---
 
+<!-- Modal Overlay -->
+<Overlay id="notificationsModal-overlay" zIndex={49} blurAmount="lg" opacity="50" />
+
+<!-- Notifications Modal -->
 <div
   id="notificationsModal"
   tabindex="-1"
-  class="backdrop-blur-lg animate-fade-in fixed inset-0 z-50 hidden flex transform items-center justify-center transition-all duration-300 ease-in-out"
   aria-hidden="true"
+  class="fixed left-0 right-0 top-0 hidden h-[calc(100%-1rem)] max-h-full w-full items-center justify-center overflow-y-auto overflow-x-hidden md:inset-0"
+  style="z-index: 50;"
 >
-  <div
-    class="backdrop-blur-sm mx-4 max-h-[96vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white outer-shadow shadow-xl outer-shadow-white/10 dark:bg-black"
-  >
+  <div class="relative max-h-full w-full max-w-2xl p-4">
     <!-- Modal content -->
-    <div>
+    <div class="relative rounded-lg bg-white shadow outer-shadow outer-shadow-white/10 dark:bg-black">
       <!-- Modal header -->
       <div
         class="flex items-center justify-between border-b border-gray-200 p-3 md:p-4 lg:p-6 dark:border-gray-700"
       >
         <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Notifications</h3>
         <CloseButton
-          data-modal-toggle="notificationsModal"
+          data-modal-hide="notificationsModal"
           tooltipText="Close modal"
         />
       </div>
-      <!-- Modal Content -->
+
+      <!-- Modal body -->
       <div class="p-3 md:p-4 lg:p-6 pb-16">
-        <!-- Modal body -->
+        <!-- Header with Mark all read button -->
         <div
           class="align-center flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
         >
@@ -81,9 +88,6 @@ if (!currentUser || currentRole === "Client") {
           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
             No recent notifications
           </h3>
-          <!-- <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-      No notifications in the last 5 items
-    </p> -->
         </div>
 
         <!-- Notifications List -->
@@ -104,8 +108,9 @@ if (!currentUser || currentRole === "Client") {
     </div>
   </div>
 </div>
+
 <script>
-  // Global count bubble utility is available via window.updateCountBubble and window.COUNT_BUBBLE_PRESETS
+  import { hideModal, lockBodyScroll, unlockBodyScroll } from "../../lib/ux-utils";
 
   class NotificationManager {
     isOpen: boolean = false;
@@ -119,7 +124,6 @@ if (!currentUser || currentRole === "Client") {
     }
 
     async init() {
-      // Get user ID from global variable or data attribute
       this.bindEvents();
       await this.loadNotifications();
       this.startPolling();
@@ -127,26 +131,32 @@ if (!currentUser || currentRole === "Client") {
 
     bindEvents() {
       const modal = document.getElementById("notificationsModal");
+      const overlay = document.getElementById("notificationsModal-overlay");
       const markAllRead = document.getElementById("mark-all-read");
-      const closeButton = modal?.querySelector('[data-modal-toggle="notificationsModal"]');
+      const closeButtons = document.querySelectorAll('[data-modal-hide="notificationsModal"]');
 
-      // Listen for modal show/hide events (Bootstrap modal events)
-      modal?.addEventListener("show.bs.modal", () => {
-        this.openDropdown();
+      // Handle close button clicks
+      closeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          this.closeDropdown();
+        });
       });
 
-      modal?.addEventListener("hide.bs.modal", () => {
-        this.closeDropdown();
-      });
-
-      // Handle close button click
-      closeButton?.addEventListener("click", () => {
-        this.closeDropdown();
-      });
-
-      // Handle backdrop click to close
+      // Handle backdrop click to close (on modal)
       modal?.addEventListener("click", (e) => {
         if (e.target === modal) {
+          this.closeDropdown();
+        }
+      });
+
+      // Handle backdrop click to close (on overlay)
+      overlay?.addEventListener("click", () => {
+        this.closeDropdown();
+      });
+
+      // Handle ESC key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !modal?.classList.contains("hidden")) {
           this.closeDropdown();
         }
       });
@@ -165,63 +175,58 @@ if (!currentUser || currentRole === "Client") {
 
     openDropdown() {
       const modal = document.getElementById("notificationsModal");
-      console.log("🔍🔍🔍 [NOTIFICATIONS DEBUG] openDropdown called");
-      console.log("🔍 [NOTIFICATIONS DEBUG] Modal element:", modal);
-      console.log("🔍 [NOTIFICATIONS DEBUG] Modal classes before:", modal?.className);
+      const overlay = document.getElementById("notificationsModal-overlay");
       
-      if (modal) {
-        console.log("✅ [NOTIFICATIONS] Modal found, opening...");
+      console.log("✅ [NOTIFICATIONS] Opening modal with new system");
+      
+      if (modal && overlay) {
+        // Show overlay
+        overlay.classList.remove("hidden");
+        overlay.classList.add("flex");
+        
+        // Show modal
         modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        modal.setAttribute("aria-hidden", "false");
+        
         this.isOpen = true;
         this.loadNotifications(); // Refresh notifications when opening
+        
+        // Lock body scroll
+        if (typeof lockBodyScroll === "function") {
+          lockBodyScroll();
+        }
+        
         console.log("✅ [NOTIFICATIONS] Modal opened successfully");
-        console.log("🔍 [NOTIFICATIONS DEBUG] Modal classes after:", modal.className);
-        console.log("🔍 [NOTIFICATIONS] Modal opened, isOpen:", this.isOpen);
       } else {
-        console.error("❌ [NOTIFICATIONS DEBUG] Modal element not found!");
+        console.error("❌ [NOTIFICATIONS] Modal or overlay element not found!");
       }
     }
 
     closeDropdown() {
-      const modal = document.getElementById("notificationsModal");
-      console.log("🔍 [NOTIFICATIONS DEBUG] closeDropdown called");
+      console.log("🔍 [NOTIFICATIONS] Closing modal");
       
-      if (modal) {
-        console.log("🔍 [NOTIFICATIONS] Closing modal");
-        modal.classList.add("hidden");
-        this.isOpen = false;
-        this.markViewedNotificationsAsRead();
-        console.log("✅ [NOTIFICATIONS] Modal closed");
-      }
+      hideModal("notificationsModal");
+      this.isOpen = false;
+      this.markViewedNotificationsAsRead();
+      
+      console.log("✅ [NOTIFICATIONS] Modal closed");
     }
 
     async loadNotifications() {
       try {
         this.showLoading();
 
-        // console.log("🔍 [NOTIFICATIONS] Fetching notifications from /api/notifications/get?limit=5");
         const response = await fetch("/api/notifications/get?limit=5", {
           credentials: "include",
         });
-        // console.log("🔍 [NOTIFICATIONS] Response status:", response.status);
 
         const data = await response.json();
-        // console.log("🔍 [NOTIFICATIONS] Response data:", data);
 
         if (data.success) {
           this.notifications = data.notifications || [];
-          // console.log("🔍 [NOTIFICATIONS] Unread count from API:", data.unreadCount);
-          // console.log(
-          //   "🔍 [NOTIFICATIONS] Notifications received:",
-          //   this.notifications.map((n) => ({ id: n.id, title: n.title, viewed: n.viewed }))
-          // );
           this.updateBadge(data.unreadCount || 0);
           this.renderNotifications();
-          // console.log(
-          //   "✅ [NOTIFICATIONS] Successfully loaded",
-          //   this.notifications.length,
-          //   "notifications"
-          // );
         } else if (data.migrationRequired) {
           console.warn("⚠️ [NOTIFICATIONS] Database migration required:", data.error);
           this.showMigrationRequired(data.instructions);
@@ -240,12 +245,6 @@ if (!currentUser || currentRole === "Client") {
       const empty = document.getElementById("notification-empty");
       const loading = document.getElementById("notification-loading");
 
-      // console.log(
-      //   "🔍 [NOTIFICATIONS] renderNotifications called with",
-      //   this.notifications.length,
-      //   "notifications"
-      // );
-
       if (!list) {
         console.error("❌ [NOTIFICATIONS] notification-list element not found");
         return;
@@ -255,7 +254,7 @@ if (!currentUser || currentRole === "Client") {
       loading?.classList.add("hidden");
       empty?.classList.add("hidden");
 
-      // Show the list (remove hidden class)
+      // Show the list
       list?.classList.remove("hidden");
 
       if (this.notifications.length === 0) {
@@ -265,21 +264,16 @@ if (!currentUser || currentRole === "Client") {
 
       list.innerHTML = "";
 
-      this.notifications.forEach((notification: any, index: number) => {
+      this.notifications.forEach((notification: any) => {
         const notificationElement = this.createNotificationElement(notification);
-
         list.appendChild(notificationElement);
       });
-
-      // Test: Add a simple test element to see if the list is working
     }
 
     createNotificationElement(notification: any) {
-      // console.log("🔍 [NOTIFICATIONS] createNotificationElement called with:", notification);
       const div = document.createElement("div");
-      div.className = ` overflow-y-auto scrollbar-hide p-4 border-b border-gray-200 dark:border-gray-700 transition-colors ${!notification.viewed ? " dark:bg-primary-900/20" : ""}`;
+      div.className = `overflow-y-auto scrollbar-hide p-4 border-b border-gray-200 dark:border-gray-700 transition-colors ${!notification.viewed ? "dark:bg-primary-900/20" : ""}`;
       div.dataset.notificationId = notification.id;
-      // console.log("🔍 [NOTIFICATIONS] Created div with className:", div.className);
 
       const timeAgo = this.formatTimeAgo(notification.createdAt);
 
@@ -323,31 +317,22 @@ if (!currentUser || currentRole === "Client") {
                 : ""
             }
           </div>
-          <Button
+          <button
             type="button"
             id="delete-notification-${notification.id}"
             onclick="event.stopPropagation(); window.confirmDeleteNotification(${notification.id})"
-            variant="danger"
-            size="sm"
-            icon="trash"
+            class="flex-shrink-0 p-1 text-gray-400 dark:text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-900/20 rounded transition-colors delete-btn"
+            data-state="trash"
+            data-notification-id="${notification.id}"
             title="Delete notification"
-            dataAttributes={{
-              "data-state": "trash",
-              "data-notification-id": notification.id
-            }}
-            class="delete-btn"
-          />
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </button>
         </div>
       `;
 
-      // Don't automatically mark as viewed when rendered
-      // Only mark as viewed when user actually views them (scrolls or clicks)
-
-      // console.log("🔍 [NOTIFICATIONS] Final notification element:", div);
-      // console.log(
-      //   "🔍 [NOTIFICATIONS] Final notification innerHTML length:",
-      //   div.innerHTML.length
-      // );
       return div;
     }
 
@@ -369,7 +354,6 @@ if (!currentUser || currentRole === "Client") {
 
           if (notification && !notification.viewed) {
             this.viewedNotifications.add(notificationId);
-            // Add visual feedback - mark as read immediately
             this.markNotificationAsRead(notificationId);
           }
         }
@@ -388,7 +372,6 @@ if (!currentUser || currentRole === "Client") {
     }
 
     async markNotificationAsRead(notificationId: number) {
-      // Update local state immediately for visual feedback
       const notification = this.notifications.find((n) => n.id === notificationId);
       if (notification) {
         notification.viewed = true;
@@ -399,11 +382,9 @@ if (!currentUser || currentRole === "Client") {
     updateNotificationDisplay(notificationId: number) {
       const element = document.querySelector(`[data-notification-id="${notificationId}"]`);
       if (element) {
-        // Add visual indication that it's been read
         element.classList.add("opacity-75", "bg-gray-50", "color-background");
         element.classList.remove("bg-white", "dark:bg-gray-900");
 
-        // Add a subtle checkmark or indicator
         const indicator = element.querySelector(".read-indicator");
         if (!indicator) {
           const checkmark = document.createElement("div");
@@ -429,11 +410,10 @@ if (!currentUser || currentRole === "Client") {
         });
 
         if (response.ok) {
-          // Update badge immediately for better UX
           const unreadCount = this.notifications.filter((n: any) => !n.viewed).length;
           this.updateBadge(unreadCount);
           this.viewedNotifications.clear();
-          await this.loadNotifications(); // Refresh to update counts
+          await this.loadNotifications();
         } else {
           const errorData = await response.json().catch(() => ({}));
           console.error(
@@ -448,11 +428,9 @@ if (!currentUser || currentRole === "Client") {
     }
 
     async loadMoreNotifications() {
-      // Prevent multiple simultaneous loads
       if (this.isLoadingMore) return;
       this.isLoadingMore = true;
 
-      // Show loading indicator
       const loadingIndicator = document.getElementById("loading-indicator");
       if (loadingIndicator) {
         loadingIndicator.classList.remove("hidden");
@@ -472,7 +450,6 @@ if (!currentUser || currentRole === "Client") {
         const data = await response.json();
 
         if (data.success && data.notifications) {
-          // Append new notifications to existing ones
           this.notifications = [...this.notifications, ...data.notifications];
           this.renderNotifications();
           this.updateBadge(data.unreadCount || 0);
@@ -483,7 +460,6 @@ if (!currentUser || currentRole === "Client") {
         console.error("❌ [NOTIFICATIONS] Error auto-loading notifications:", error);
       } finally {
         this.isLoadingMore = false;
-        // Hide loading indicator
         if (loadingIndicator) {
           loadingIndicator.classList.add("hidden");
         }
@@ -507,7 +483,6 @@ if (!currentUser || currentRole === "Client") {
         });
 
         if (response.ok) {
-          // Update badge immediately for better UX
           this.updateBadge(0);
           await this.loadNotifications();
         } else {
@@ -524,9 +499,7 @@ if (!currentUser || currentRole === "Client") {
     }
 
     confirmDeleteNotification(notificationId: number) {
-      // console.log("🔍 [NOTIFICATIONS] confirmDeleteNotification called for ID:", notificationId);
       const button = document.getElementById(`delete-notification-${notificationId}`);
-      // console.log("🔍 [NOTIFICATIONS] Button found:", button);
       if (!button) {
         console.error("❌ [NOTIFICATIONS] Delete button not found for ID:", notificationId);
         return;
@@ -541,7 +514,7 @@ if (!currentUser || currentRole === "Client") {
         button.setAttribute("data-state", "confirm");
         button.title = "Click again to confirm deletion";
         button.className =
-          "flex-shrink-0 p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn pulse";
+          "flex-shrink-0 p-1 text-danger-600 hover:text-danger-800 hover:bg-danger-100 dark:hover:bg-danger-900/20 rounded transition-colors delete-btn pulse";
 
         // Auto-revert after 3 seconds
         setTimeout(() => {
@@ -560,18 +533,18 @@ if (!currentUser || currentRole === "Client") {
       if (!button) return;
 
       button.innerHTML = `
-        <svg class="w-4 h-4 flex items-center justify-center" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
         </svg>
       `;
       button.setAttribute("data-state", "trash");
       button.title = "Delete notification";
       button.className =
-        "flex-shrink-0 p-1 text-gray-100 dark:text-gray-800 hover:text-danger-800 hover:bg-danger-100 rounded transition-colors delete-btn pulse";
+        "flex-shrink-0 p-1 text-gray-400 dark:text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-900/20 rounded transition-colors delete-btn";
     }
 
     async deleteNotification(notificationId: number) {
-      console.log("🔍 [NOTIFICATIONS] deleteNotification called for ID:", notificationId);
+      console.log("🔍 [NOTIFICATIONS] Deleting notification ID:", notificationId);
       try {
         const response = await fetch("/api/notifications/get", {
           method: "DELETE",
@@ -595,7 +568,6 @@ if (!currentUser || currentRole === "Client") {
     updateBadge(count: number) {
       console.log("🔍 [NOTIFICATIONS] updateBadge called with count:", count);
 
-      // Use global notification count updater
       if ((window as any).updateNotificationBellCount) {
         (window as any).updateNotificationBellCount(count);
       } else {
@@ -632,7 +604,6 @@ if (!currentUser || currentRole === "Client") {
       empty?.classList.add("hidden");
       list?.classList.add("hidden");
 
-      // Create migration required message
       const emptyDiv = document.getElementById("notification-empty") as HTMLElement;
       if (emptyDiv) {
         emptyDiv.innerHTML = `
@@ -653,7 +624,7 @@ if (!currentUser || currentRole === "Client") {
     }
 
     startPolling() {
-      // Poll for new notifications every 2 minutes (reduced from 30 seconds)
+      // Poll for new notifications every 2 minutes
       this.pollingInterval = setInterval(() => {
         if (!this.isOpen) {
           this.loadNotifications();
@@ -679,73 +650,58 @@ if (!currentUser || currentRole === "Client") {
     }
   }
 
-  // Only initialize if user is authenticated
-
-  console.log("🔍 [NOTIFICATIONS] Initializing notification manager for authenticated user");
+  // Initialize notification manager
+  console.log("🔍 [NOTIFICATIONS] Initializing notification manager");
   const notificationManager = new NotificationManager();
   (window as any).notificationManager = notificationManager;
 
   // Global function for delete confirmation
   (window as any).confirmDeleteNotification = (notificationId: number) => {
-    console.log(
-      "🔍 [NOTIFICATIONS] Global confirmDeleteNotification called for ID:",
-      notificationId
-    );
+    console.log("🔍 [NOTIFICATIONS] Global confirmDeleteNotification called for ID:", notificationId);
     notificationManager.confirmDeleteNotification(notificationId);
   };
 
-  // Manual click handler for notification bell button
-  // This ensures the button works even if Flowbite modal initialization fails
-  console.log('🔔 [NOTIFICATIONS DEBUG] Setting up notification bell click handler');
-  
+  // Setup notification bell click handler
+  console.log("🔔 [NOTIFICATIONS] Setting up notification bell click handler");
+
   function setupNotificationBell() {
-    console.log('🔔 [NOTIFICATIONS DEBUG] setupNotificationBell called');
-    const notificationBell = document.getElementById('notification-bell');
-    const modal = document.getElementById('notificationsModal');
-    
-    console.log('🔔 [NOTIFICATIONS DEBUG] Bell element:', notificationBell);
-    console.log('🔔 [NOTIFICATIONS DEBUG] Modal element:', modal);
-    
+    console.log("🔔 [NOTIFICATIONS] setupNotificationBell called");
+    const notificationBell = document.getElementById("notification-bell");
+
+    console.log("🔔 [NOTIFICATIONS] Bell element:", notificationBell);
+
     if (notificationBell) {
-      console.log('✅ [NOTIFICATIONS DEBUG] Bell button found, adding click listener');
-      
+      console.log("✅ [NOTIFICATIONS] Bell button found, adding click listener");
+
       // Remove any existing click listeners by cloning the element
       const newBell = notificationBell.cloneNode(true) as HTMLElement;
       notificationBell.parentNode?.replaceChild(newBell, notificationBell);
-      
-      newBell.addEventListener('click', (e) => {
+
+      newBell.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🔔🔔🔔 [NOTIFICATIONS] Bell clicked!');
-        console.log('🔔 [NOTIFICATIONS DEBUG] Event:', e);
-        console.log('🔔 [NOTIFICATIONS DEBUG] Opening modal...');
+        console.log("🔔 [NOTIFICATIONS] Bell clicked!");
         notificationManager.openDropdown();
       });
-      
-      console.log('✅ [NOTIFICATIONS DEBUG] Click listener added successfully');
+
+      console.log("✅ [NOTIFICATIONS] Click listener added successfully");
     } else {
-      console.error('❌ [NOTIFICATIONS DEBUG] Bell button NOT found!');
-      console.log('🔔 [NOTIFICATIONS DEBUG] All elements with id containing "notification":', 
-        Array.from(document.querySelectorAll('[id*="notification"]')).map(el => ({
-          id: el.id,
-          tag: el.tagName
-        }))
-      );
+      console.error("❌ [NOTIFICATIONS] Bell button NOT found!");
     }
   }
-  
+
   // Try multiple times to ensure DOM is ready
-  if (document.readyState === 'loading') {
-    console.log('🔔 [NOTIFICATIONS DEBUG] DOM still loading, waiting for DOMContentLoaded');
-    document.addEventListener('DOMContentLoaded', setupNotificationBell);
+  if (document.readyState === "loading") {
+    console.log("🔔 [NOTIFICATIONS] DOM still loading, waiting for DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", setupNotificationBell);
   } else {
-    console.log('🔔 [NOTIFICATIONS DEBUG] DOM already loaded, setting up immediately');
+    console.log("🔔 [NOTIFICATIONS] DOM already loaded, setting up immediately");
     setupNotificationBell();
   }
-  
+
   // Also try after a short delay in case elements are added dynamically
   setTimeout(() => {
-    console.log('🔔 [NOTIFICATIONS DEBUG] Delayed setup attempt');
+    console.log("🔔 [NOTIFICATIONS] Delayed setup attempt");
     setupNotificationBell();
   }, 1000);
 </script>
