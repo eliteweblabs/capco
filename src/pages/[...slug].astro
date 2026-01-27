@@ -16,6 +16,24 @@ const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 const { slug } = Astro.params;
 const pageSlug = slug || "home";
 
+// Exclude technical paths that shouldn't be treated as content pages
+const excludedPaths = [
+  'scripts/',
+  'api/',
+  '_astro/',
+  'assets/',
+  'public/',
+  '.js',
+  '.ts',
+  '.css',
+  '.map'
+];
+
+// Check if this is a technical path that should be skipped
+if (excludedPaths.some(path => pageSlug.includes(path))) {
+  return new Response(null, { status: 404 });
+}
+
 // Try to load content from markdown
 const pageContent = await getPageContent(pageSlug);
 
