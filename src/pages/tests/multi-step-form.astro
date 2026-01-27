@@ -1,0 +1,65 @@
+---
+import BaseLayout from "../../components/layouts/BaseLayout.astro";
+import MultiStepProjectForm from "../../components/project/MultiStepProjectForm.astro";
+import { createServerClient } from "../../lib/supabase-server";
+
+const supabase = createServerClient(Astro);
+
+// Get current user
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) {
+  return Astro.redirect("/auth/signin");
+}
+
+// Get user profile
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("*")
+  .eq("id", user.id)
+  .single();
+
+const currentUser = {
+  ...user,
+  profile,
+};
+
+// Get site config for styling
+const { data: siteConfig } = await supabase
+  .from("siteConfig")
+  .select("*")
+  .eq("id", 1)
+  .single();
+
+const globalInputClasses =
+  siteConfig?.globalInputClasses ||
+  "block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500";
+
+const primaryTextClasses = siteConfig?.primaryTextClasses || "text-gray-900 dark:text-white";
+const secondaryTextClasses = siteConfig?.secondaryTextClasses || "text-gray-500 dark:text-gray-400";
+---
+
+<BaseLayout title="Multi-Step Project Form Test">
+  <div class="container mx-auto px-4 py-8">
+    <div class="mb-8 text-center">
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+        Multi-Step Project Form
+      </h1>
+      <p class="text-lg text-gray-600 dark:text-gray-400">
+        Test the new step-by-step project creation experience
+      </p>
+    </div>
+
+    <MultiStepProjectForm
+      project={{}}
+      currentUser={currentUser}
+      isNewProject={true}
+      projectStatus={null}
+      globalInputClasses={globalInputClasses}
+      secondaryTextClasses={secondaryTextClasses}
+      primaryTextClasses={primaryTextClasses}
+    />
+  </div>
+</BaseLayout>
