@@ -605,7 +605,8 @@
       // Create backdrop
       const backdrop = document.createElement("div");
       backdrop.id = `modal-backdrop-${notification.id}`;
-      backdrop.className = "fixed inset-0 bg-gray-900/50 dark:bg-gray-900/75 z-40 modal-animated modal-fade-in";
+      backdrop.className =
+        "fixed inset-0 bg-gray-900/50 dark:bg-gray-900/75 z-40 modal-animated modal-fade-in";
       backdrop.addEventListener("click", () => {
         // Only close on backdrop click if no actions (user must interact with modal)
         if (!notification.actions || notification.actions.length === 0) {
@@ -838,7 +839,7 @@
   };
 
   // Default behavior is now toast notifications - supports both object and individual parameters
-  (window as any).showModal = async (
+  (window as any).showNotice = async (
     typeOrObject: string | any,
     title?: string,
     message?: string,
@@ -848,7 +849,7 @@
       | { url: string; showCountdown?: boolean },
     persist?: boolean
   ) => {
-    console.log("🔔 [TOAST] showModal called with:", typeOrObject);
+    console.log("🔔 [TOAST] showNotice called with:", typeOrObject);
     let modalData: any;
 
     // Check if first parameter is an object (new format)
@@ -901,15 +902,15 @@
 
     const result = await toastNotificationManager.show(notificationOptions);
 
-    console.log("🔔 [TOAST] showModal returning ID:", result);
+    console.log("🔔 [TOAST] showNotice returning ID:", result);
     return result;
   };
 
-  // Ensure showModal is always available with fallback
-  if (!(window as any).showModal) {
-    console.warn("🔔 [TOAST] showModal not properly initialized, creating fallback");
-    (window as any).showModal = (type: string, title: string, message: string) => {
-      console.error("🔔 [TOAST] Fallback showModal called - notification system not ready");
+  // Ensure showNotice is always available with fallback
+  if (!(window as any).showNotice) {
+    console.warn("🔔 [TOAST] showNotice not properly initialized, creating fallback");
+    (window as any).showNotice = (type: string, title: string, message: string) => {
+      console.error("🔔 [TOAST] Fallback showNotice called - notification system not ready");
       alert(`${title}: ${message}`);
     };
   }
@@ -924,8 +925,8 @@
       sessionStorage.removeItem("contactFormSuccess");
 
       // Show the success notification
-      if (window.showModal) {
-        window.showModal(
+      if (window.showNotice) {
+        window.showNotice(
           successData.type,
           successData.title,
           successData.message,

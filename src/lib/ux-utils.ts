@@ -381,8 +381,8 @@ export function setupViewportHandling(): void {
     console.log("🍎 [UX-UTILS] Safari 18+ detected - Using fallback mode");
 
     // Show user notification about Safari 18+ viewport issues
-    if (typeof (window as any).showModal === "function") {
-      (window as any).showModal(
+    if (typeof (window as any).showNotice === "function") {
+      (window as any).showNotice(
         "info",
         "Safari Viewport Issues Detected",
         "Safari 18+ has known viewport positioning bugs that affect sticky headers and fixed elements. This is a WebKit engine issue. For the best experience, please use Chrome, Firefox, or Safari 17.",
@@ -754,6 +754,222 @@ export function unlockBodyScroll(): void {
 export function validateEmail(email: string): string | null {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email) ? null : "Invalid email format";
+}
+
+/**
+ * Shows a modal dialog with customizable content
+ * Similar to showNotice but for full modal dialogs
+ * 
+ * @param options - Modal configuration options
+ * @returns Promise that resolves with action result (true for confirm, false for cancel)
+ * 
+ * @example
+ * showModal({
+ *   title: "Edit Page",
+ *   body: "<form>...</form>",
+ *   primaryButtonText: "Save",
+ *   onConfirm: () => console.log("Confirmed!"),
+ *   size: "large"
+ * });
+ */
+export function showModal(options: {
+  id?: string;
+  title: string;
+  body: string | HTMLElement;
+  primaryButtonText?: string;
+  secondaryButtonText?: string;
+  onConfirm?: () => void | Promise<void>;
+  onCancel?: () => void;
+  showFooter?: boolean;
+  size?: "small" | "medium" | "large" | "xlarge";
+  closeOnBackdrop?: boolean;
+  closeOnEscape?: boolean;
+}): void {
+  const {
+    id = "dynamic-modal",
+    title,
+    body,
+    primaryButtonText = "Confirm",
+    secondaryButtonText = "Cancel",
+    onConfirm,
+    onCancel,
+    showFooter = true,
+    size = "large",
+    closeOnBackdrop = true,
+    closeOnEscape = true,
+  } = options;
+
+  // Check if modal already exists
+  let modal = document.getElementById(id);
+  const isNewModal = !modal;
+
+  if (!modal) {
+    // Create modal if it doesn't exist
+    modal = document.createElement("div");
+    modal.id = id;
+    modal.setAttribute("tabindex", "-1");
+    modal.setAttribute("aria-hidden", "true");
+    modal.className =
+      "fixed left-0 right-0 top-0 z-50 hidden h-[calc(100%-1rem)] max-h-full w-full items-center justify-center overflow-y-auto overflow-x-hidden md:inset-0";
+
+    // Size mapping
+    const sizeClasses = {
+      small: "max-w-md",
+      medium: "max-w-2xl",
+      large: "max-w-4xl",
+      xlarge: "max-w-7xl",
+    };
+
+    modal.innerHTML = `
+      <div class="relative max-h-full w-full ${sizeClasses[size]} p-4">
+        <div class="relative rounded-lg bg-white shadow dark:bg-gray-800">
+          <!-- Modal header -->
+          <div class="flex items-center justify-between rounded-t border-b p-4 dark:border-gray-600 md:p-5">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id="${id}-title"></h3>
+            <button
+              type="button"
+              class="ms-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
+              data-modal-hide="${id}"
+            >
+              <svg class="h-3 w-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+              </svg>
+              <span class="sr-only">Close modal</span>
+            </button>
+          </div>
+          <!-- Modal body -->
+          <div class="space-y-4 p-4 md:p-5" id="${id}-body"></div>
+          <!-- Modal footer -->
+          <div class="flex items-center justify-end gap-2 rounded-b border-t border-gray-200 p-4 dark:border-gray-600 md:p-5" id="${id}-footer">
+            <button
+              type="button"
+              class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-700"
+              data-modal-hide="${id}"
+              id="${id}-cancel-btn"
+            ></button>
+            <button
+              type="button"
+              class="rounded-lg bg-primary-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+              id="${id}-confirm-btn"
+            ></button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+  }
+
+  // Update modal content
+  const titleEl = document.getElementById(`${id}-title`);
+  const bodyEl = document.getElementById(`${id}-body`);
+  const footerEl = document.getElementById(`${id}-footer`);
+  const confirmBtn = document.getElementById(`${id}-confirm-btn`);
+  const cancelBtn = document.getElementById(`${id}-cancel-btn`);
+
+  if (titleEl) titleEl.textContent = title;
+  if (bodyEl) {
+    if (typeof body === "string") {
+      bodyEl.innerHTML = body;
+    } else {
+      bodyEl.innerHTML = "";
+      bodyEl.appendChild(body);
+    }
+  }
+
+  if (footerEl) {
+    footerEl.style.display = showFooter ? "flex" : "none";
+  }
+
+  if (confirmBtn) confirmBtn.textContent = primaryButtonText;
+  if (cancelBtn) cancelBtn.textContent = secondaryButtonText;
+
+  // Setup event listeners (only once for new modals)
+  if (isNewModal) {
+    // Close button handlers
+    const closeButtons = modal.querySelectorAll(`[data-modal-hide="${id}"]`);
+    closeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        hideModal(id);
+        if (onCancel) onCancel();
+      });
+    });
+
+    // Backdrop click
+    if (closeOnBackdrop) {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          hideModal(id);
+          if (onCancel) onCancel();
+        }
+      });
+    }
+
+    // ESC key
+    if (closeOnEscape) {
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !modal?.classList.contains("hidden")) {
+          hideModal(id);
+          if (onCancel) onCancel();
+        }
+      });
+    }
+  }
+
+  // Confirm button handler (update each time)
+  if (confirmBtn && onConfirm) {
+    // Remove old listeners by cloning
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode?.replaceChild(newConfirmBtn, confirmBtn);
+
+    newConfirmBtn.addEventListener("click", async () => {
+      try {
+        await onConfirm();
+        hideModal(id);
+      } catch (error) {
+        console.error("Modal confirm error:", error);
+      }
+    });
+  }
+
+  // Show modal
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+  modal.setAttribute("aria-hidden", "false");
+
+  // Lock body scroll
+  if (typeof lockBodyScroll === "function") {
+    lockBodyScroll();
+  }
+}
+
+/**
+ * Hides a modal by ID
+ * @param modalId - ID of the modal to hide
+ */
+export function hideModal(modalId: string): void {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+  modal.setAttribute("aria-hidden", "true");
+
+  // Unlock body scroll
+  if (typeof unlockBodyScroll === "function") {
+    unlockBodyScroll();
+  }
+}
+
+/**
+ * Removes a modal from the DOM
+ * @param modalId - ID of the modal to remove
+ */
+export function removeModal(modalId: string): void {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.remove();
+  }
 }
 
 /**

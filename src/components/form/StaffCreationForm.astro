@@ -145,7 +145,7 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      (window as any).showModal(
+      (window as any).showNotice(
         "info",
         "Creating User...",
         "Please wait while we create the user.",
@@ -192,15 +192,15 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
         !userData.email?.trim() ||
         !userData.role
       ) {
-        if ((window as any).showModal) {
-          (window as any).showModal(
+        if ((window as any).showNotice) {
+          (window as any).showNotice(
             "error",
             "Validation Error",
             "Please fill in all required fields.",
             5000
           );
-        } else if (window.showModal) {
-          window.showModal("error", "Validation Error", "Please fill in all required fields.");
+        } else if (window.showNotice) {
+          window.showNotice("error", "Validation Error", "Please fill in all required fields.");
         }
         return;
       }
@@ -210,10 +210,10 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
         ? (window as any).validateEmail(userData.email)
         : null;
       if (emailError) {
-        if ((window as any).showModal) {
-          (window as any).showModal("error", "Validation Error", emailError, 5000);
-        } else if (window.showModal) {
-          window.showModal("error", "Validation Error", emailError);
+        if ((window as any).showNotice) {
+          (window as any).showNotice("error", "Validation Error", emailError, 5000);
+        } else if (window.showNotice) {
+          window.showNotice("error", "Validation Error", emailError);
         }
         return;
       }
@@ -242,8 +242,8 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
           console.log("✅ [CREATE-USER] User created successfully:", result.data);
 
           // Show notification if provided by API
-          if (result.notification && (window as any).showModal) {
-            (window as any).showModal(
+          if (result.notification && (window as any).showNotice) {
+            (window as any).showNotice(
               result.notification.type,
               result.notification.title,
               result.notification.message,
@@ -292,24 +292,24 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
           }
 
           // Show error notification
-          if ((window as any).showModal) {
-            (window as any).showModal(errorTitle, errorMessage, "error", errorDuration);
-          } else if (window.showModal) {
+          if ((window as any).showNotice) {
+            (window as any).showNotice(errorTitle, errorMessage, "error", errorDuration);
+          } else if (window.showNotice) {
             // Fallback to modal
-            window.showModal("error", errorTitle, errorMessage);
+            window.showNotice("error", errorTitle, errorMessage);
           }
         }
       } catch (error) {
         console.error("Create user error:", error);
-        if ((window as any).showModal) {
-          (window as any).showModal(
+        if ((window as any).showNotice) {
+          (window as any).showNotice(
             "Network Error",
             "Network error. Please check your connection and try again.",
             "error",
             5000
           );
-        } else if (window.showModal) {
-          window.showModal(
+        } else if (window.showNotice) {
+          window.showNotice(
             "Network Error",
             "Network error. Please check your connection and try again.",
             "error"

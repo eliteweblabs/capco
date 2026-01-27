@@ -591,7 +591,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
         }
       } catch (error) {
         console.error("Error creating payment intent:", error);
-        showModal("error", "Payment Error", "Failed to initialize payment. Please try again.");
+        showNotice("error", "Payment Error", "Failed to initialize payment. Please try again.");
       }
     }
 
@@ -599,7 +599,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
     async function handlePayment(paymentMethod = null) {
       // Validate we have a valid ID before proceeding
       if (!invoiceId || invoiceId <= 0) {
-        showModal(
+        showNotice(
           "error",
           "Payment Error",
           `Cannot process payment: Invalid project ID (${invoiceId}). Please refresh the page.`
@@ -649,13 +649,13 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
         }
 
         if (result.error) {
-          showModal("error", "Payment Error", result.error.message);
+          showNotice("error", "Payment Error", result.error.message);
         } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
           await confirmPayment();
         }
       } catch (error) {
         console.error("Payment error:", error);
-        showModal("error", "Payment Error", "Payment failed. Please try again.");
+        showNotice("error", "Payment Error", "Payment failed. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -697,17 +697,17 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
             }
           } catch (error) {
             console.error("❌ [PAYMENT-FORM] Error updating project status:", error);
-            showModal(
+            showNotice(
               "error",
               "Payment Error",
               "Payment was successful but failed to update project status. Please contact support."
             );
           }
 
-          showModal("success", "Payment Successful", "Payment has been processed successfully!");
+          showNotice("success", "Payment Successful", "Payment has been processed successfully!");
         } else {
           console.error("❌ [PAYMENT-FORM] Payment confirmation failed:", data.error);
-          showModal(
+          showNotice(
             "error",
             "Payment Error",
             data.error || "Payment confirmation failed. Please try again."
@@ -715,7 +715,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
         }
       } catch (error) {
         console.error("Error confirming payment:", error);
-        showModal("error", "Payment Error", "Failed to confirm payment");
+        showNotice("error", "Payment Error", "Failed to confirm payment");
       }
     }
 
@@ -791,7 +791,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
 
       // If there are empty fields, show modal with specific fields listed
       if (emptyFields.length > 0) {
-        showModal(
+        showNotice(
           "error",
           "Validation Error",
           `Please fill in the following required fields:\n\n• ${emptyFields.join("\n• ")}`,
@@ -805,7 +805,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
       if (emailField && emailField.value) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(emailField.value)) {
-          showModal("error", "Validation Error", "Please enter a valid email address.", 5000);
+          showNotice("error", "Validation Error", "Please enter a valid email address.", 5000);
           return;
         }
       }
@@ -937,7 +937,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
 
             if (error) {
               console.error("❌ [LINK-PAY] Error creating payment method:", error);
-              showModal(
+              showNotice(
                 "error",
                 "Payment Error",
                 "Failed to initialize Link payment. Please try another method."
@@ -949,7 +949,7 @@ console.log("🔍 [PAYMENT-FORM] Computed lastNameValue:", lastNameValue);
             await handlePayment(paymentMethod.id);
           } catch (error) {
             console.error("❌ [LINK-PAY] Link payment error:", error);
-            showModal("error", "Payment Error", "Link payment failed. Please try another method.");
+            showNotice("error", "Payment Error", "Link payment failed. Please try another method.");
           }
         });
       } else {

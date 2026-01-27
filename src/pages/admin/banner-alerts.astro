@@ -101,8 +101,8 @@ const expireOptions = [
   <Hero
     title="Banner Alerts"
     description="Manage site-wide banner alerts that appear at the top or bottom of the page"
-    primaryTextClasses={primaryTextClasses}
-    secondaryTextClasses={secondaryTextClasses}
+    {primaryTextClasses}
+    {secondaryTextClasses}
   />
 
   <!-- Create/Edit Form -->
@@ -122,11 +122,7 @@ const expireOptions = [
           >Preview (what users will see)</label
         >
         <div id="preview-container">
-          <Alert
-            type="info"
-            title=""
-            description="Banner content will appear here..."
-          />
+          <Alert type="info" title="" description="Banner content will appear here..." />
         </div>
       </div>
 
@@ -358,9 +354,7 @@ const expireOptions = [
                         Admin Reference: {banner.title}
                       </h3>
                     )}
-                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                      {banner.content}
-                    </p>
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{banner.content}</p>
                     <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
                       Created: {new Date(banner.createdAt).toLocaleString()}
                     </p>
@@ -414,47 +408,47 @@ const expireOptions = [
 
 <script is:inline>
   // Banner Alerts Admin Manager
-  (function() {
+  (function () {
     let editingId = null;
-    
+
     function init() {
       console.log("🔧 [BANNER-ADMIN] Initializing...");
       bindFormEvents();
       bindListEvents();
       updatePreview();
     }
-    
+
     function bindFormEvents() {
       const form = document.getElementById("banner-form");
       if (!form) return;
-      
+
       form.addEventListener("submit", handleSubmit);
-      
+
       // Live preview updates
-      ["title", "content", "type"].forEach(function(id) {
+      ["title", "content", "type"].forEach(function (id) {
         const el = document.getElementById(id);
         if (el) {
           el.addEventListener("input", updatePreview);
           el.addEventListener("change", updatePreview);
         }
       });
-      
+
       // Cancel button
       const cancelBtn = document.getElementById("cancel-btn");
       if (cancelBtn) {
         cancelBtn.addEventListener("click", resetForm);
       }
     }
-    
+
     function bindListEvents() {
       // Edit buttons - use event delegation on the container
       const bannersList = document.getElementById("banners-list");
       if (bannersList) {
-        bannersList.addEventListener("click", function(e) {
+        bannersList.addEventListener("click", function (e) {
           const editBtn = e.target.closest(".edit-banner-btn");
           const toggleBtn = e.target.closest(".toggle-banner-btn");
           const deleteBtn = e.target.closest(".delete-banner-btn");
-          
+
           if (editBtn) {
             console.log("🔧 [BANNER-ADMIN] Edit button clicked");
             const banner = {
@@ -472,7 +466,7 @@ const expireOptions = [
             console.log("🔧 [BANNER-ADMIN] Banner data:", banner);
             editBanner(banner);
           }
-          
+
           if (toggleBtn) {
             const id = parseInt(toggleBtn.dataset.id || "0");
             const isActive = toggleBtn.dataset.active === "true";
@@ -481,7 +475,7 @@ const expireOptions = [
         });
 
         // Listen for delete confirmation events from DeleteConfirmButton component
-        bannersList.addEventListener("deleteConfirmed", function(e) {
+        bannersList.addEventListener("deleteConfirmed", function (e) {
           const deleteBtn = e.target.closest(".delete-banner-btn");
           if (deleteBtn) {
             // Extract banner ID from button id (format: delete-banner-123)
@@ -495,25 +489,25 @@ const expireOptions = [
           }
         });
       }
-      
+
       // Copy shortcode
       const copyBtn = document.getElementById("copy-shortcode");
       if (copyBtn) {
-        copyBtn.addEventListener("click", function() {
+        copyBtn.addEventListener("click", function () {
           const shortcode = document.getElementById("shortcode-display");
           if (shortcode && shortcode.textContent) {
             navigator.clipboard.writeText(shortcode.textContent);
-            if (window.showModal) window.showModal("success", "Shortcode copied!");
+            if (window.showNotice) window.showNotice("success", "Shortcode copied!");
           }
         });
       }
     }
-    
+
     function updatePreview() {
       const title = document.getElementById("title")?.value || "";
       const content = document.getElementById("content")?.value || "Banner content...";
       const type = document.getElementById("type")?.value || "info";
-      
+
       const typeConfig = {
         info: {
           icon: "bx-info-circle",
@@ -540,27 +534,39 @@ const expireOptions = [
           text: "text-red-800 dark:text-red-400",
         },
       };
-      
+
       const config = typeConfig[type] || typeConfig.info;
       const container = document.getElementById("preview-container");
-      
+
       if (container) {
-        container.innerHTML = 
-          '<div class="rounded-lg border p-4 ' + config.bg + ' ' + config.border + '">' +
-            '<div class="flex items-start">' +
-              '<i class="bx ' + config.icon + ' mr-2 mt-0.5 text-lg ' + config.text + '"></i>' +
-              '<div class="flex-1">' +
-                '<div class="mt-1 text-sm ' + config.text + '">' + content + '</div>' +
-              '</div>' +
-            '</div>' +
-          '</div>';
+        container.innerHTML =
+          '<div class="rounded-lg border p-4 ' +
+          config.bg +
+          " " +
+          config.border +
+          '">' +
+          '<div class="flex items-start">' +
+          '<i class="bx ' +
+          config.icon +
+          " mr-2 mt-0.5 text-lg " +
+          config.text +
+          '"></i>' +
+          '<div class="flex-1">' +
+          '<div class="mt-1 text-sm ' +
+          config.text +
+          '">' +
+          content +
+          "</div>" +
+          "</div>" +
+          "</div>" +
+          "</div>";
       }
     }
-    
+
     function editBanner(banner) {
       console.log("🔧 [BANNER-ADMIN] editBanner called:", banner);
       editingId = banner.id;
-      
+
       // Update form values
       document.getElementById("banner-id").value = banner.id;
       document.getElementById("title").value = banner.title || "";
@@ -570,24 +576,28 @@ const expireOptions = [
       document.getElementById("expireMs").value = banner.expireMs ? banner.expireMs.toString() : "";
       document.getElementById("dismissible").checked = banner.dismissible !== false;
       document.getElementById("isActive").checked = banner.isActive !== false;
-      
+
       // Handle dates
       if (banner.startDate) {
-        document.getElementById("startDate").value = new Date(banner.startDate).toISOString().slice(0, 16);
+        document.getElementById("startDate").value = new Date(banner.startDate)
+          .toISOString()
+          .slice(0, 16);
       } else {
         document.getElementById("startDate").value = "";
       }
       if (banner.endDate) {
-        document.getElementById("endDate").value = new Date(banner.endDate).toISOString().slice(0, 16);
+        document.getElementById("endDate").value = new Date(banner.endDate)
+          .toISOString()
+          .slice(0, 16);
       } else {
         document.getElementById("endDate").value = "";
       }
-      
+
       // Update UI
       document.getElementById("form-title").textContent = "Edit Banner Alert";
       document.getElementById("submit-btn").textContent = "Update Banner";
       document.getElementById("cancel-btn").classList.remove("hidden");
-      
+
       // Show shortcode
       const shortcodeSection = document.getElementById("shortcode-section");
       const shortcodeDisplay = document.getElementById("shortcode-display");
@@ -595,13 +605,13 @@ const expireOptions = [
         shortcodeSection.classList.remove("hidden");
         shortcodeDisplay.textContent = '<BannerAlert id="' + banner.id + '"/>';
       }
-      
+
       updatePreview();
-      
+
       // Scroll to form
       document.getElementById("banner-form").scrollIntoView({ behavior: "smooth" });
     }
-    
+
     function resetForm() {
       editingId = null;
       document.getElementById("banner-form").reset();
@@ -612,23 +622,23 @@ const expireOptions = [
       document.getElementById("shortcode-section").classList.add("hidden");
       updatePreview();
     }
-    
+
     async function handleSubmit(e) {
       e.preventDefault();
-      
+
       const submitBtn = document.getElementById("submit-btn");
       const originalText = submitBtn?.textContent;
-      
+
       try {
         if (submitBtn) {
           submitBtn.disabled = true;
           submitBtn.textContent = "Saving...";
         }
-        
+
         const form = document.getElementById("banner-form");
         const formData = new FormData(form);
         const expireMsValue = formData.get("expireMs");
-        
+
         const data = {
           id: editingId || undefined,
           title: formData.get("title") || null,
@@ -641,25 +651,28 @@ const expireOptions = [
           startDate: formData.get("startDate") || null,
           endDate: formData.get("endDate") || null,
         };
-        
+
         const response = await fetch("/api/banner-alerts/upsert", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(data),
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
-          if (window.showModal) window.showModal("success", result.message);
-          setTimeout(function() { window.location.reload(); }, 1000);
+          if (window.showNotice) window.showNotice("success", result.message);
+          setTimeout(function () {
+            window.location.reload();
+          }, 1000);
         } else {
-          if (window.showModal) window.showModal("error", result.error || "Failed to save banner");
+          if (window.showNotice)
+            window.showNotice("error", result.error || "Failed to save banner");
         }
       } catch (error) {
         console.error("Error saving banner:", error);
-        if (window.showModal) window.showModal("error", "Error saving banner");
+        if (window.showNotice) window.showNotice("error", "Error saving banner");
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -667,7 +680,7 @@ const expireOptions = [
         }
       }
     }
-    
+
     async function toggleBanner(id, isActive) {
       try {
         const response = await fetch("/api/banner-alerts/upsert", {
@@ -676,21 +689,25 @@ const expireOptions = [
           credentials: "include",
           body: JSON.stringify({ id: id, isActive: isActive }),
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
-          if (window.showModal) window.showModal("success", "Banner " + (isActive ? "activated" : "deactivated"));
-          setTimeout(function() { window.location.reload(); }, 1000);
+          if (window.showNotice)
+            window.showNotice("success", "Banner " + (isActive ? "activated" : "deactivated"));
+          setTimeout(function () {
+            window.location.reload();
+          }, 1000);
         } else {
-          if (window.showModal) window.showModal("error", result.error || "Failed to update banner");
+          if (window.showNotice)
+            window.showNotice("error", result.error || "Failed to update banner");
         }
       } catch (error) {
         console.error("Error toggling banner:", error);
-        if (window.showModal) window.showModal("error", "Error updating banner");
+        if (window.showNotice) window.showNotice("error", "Error updating banner");
       }
     }
-    
+
     async function deleteBanner(id) {
       try {
         const response = await fetch("/api/banner-alerts/delete", {
@@ -699,22 +716,23 @@ const expireOptions = [
           credentials: "include",
           body: JSON.stringify({ id: id }),
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
-          if (window.showModal) window.showModal("success", "Banner deleted");
+          if (window.showNotice) window.showNotice("success", "Banner deleted");
           const item = document.querySelector('[data-banner-item="' + id + '"]');
           if (item) item.remove();
         } else {
-          if (window.showModal) window.showModal("error", result.error || "Failed to delete banner");
+          if (window.showNotice)
+            window.showNotice("error", result.error || "Failed to delete banner");
         }
       } catch (error) {
         console.error("Error deleting banner:", error);
-        if (window.showModal) window.showModal("error", "Error deleting banner");
+        if (window.showNotice) window.showNotice("error", "Error deleting banner");
       }
     }
-    
+
     // Initialize
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", init);

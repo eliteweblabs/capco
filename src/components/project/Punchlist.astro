@@ -110,7 +110,7 @@ const projectId = project.id;
 
         // Show specific error message if table doesn't exist
         if (data.migration_needed || data.error?.includes("does not exist")) {
-          showModal(
+          showNotice(
             "error",
             "Punchlist Setup Required",
             `Punchlist feature setup required<br><br>
@@ -120,7 +120,7 @@ const projectId = project.id;
                     in your Supabase SQL Editor to enable punchlist functionality.`
           );
         } else {
-          showModal(
+          showNotice(
             "error",
             "Punchlist Error",
             "Failed to load punchlist items: " + (data.details || data.error)
@@ -378,8 +378,8 @@ const projectId = project.id;
         // Update the incomplete punchlist items count
         updateIncompletePunchlistItemsCount();
         // Show success notification
-        if (window.showModal) {
-          window.showModal(
+        if (window.showNotice) {
+          window.showNotice(
             "success",
             "Punchlist status updated",
             `Marked as ${isCompleted ? "completed" : "incomplete"}`,
@@ -394,8 +394,8 @@ const projectId = project.id;
         // Revert the toggle to previous state
         loadToggleForPunchlistItem(punchlistId, !isCompleted, true);
         // Show error notification
-        if (window.showModal) {
-          window.showModal("error", "Update Failed", "Failed to update punchlist status");
+        if (window.showNotice) {
+          window.showNotice("error", "Update Failed", "Failed to update punchlist status");
         }
       }
     } catch (error) {
@@ -403,8 +403,8 @@ const projectId = project.id;
       // Revert the toggle to previous state
       loadToggleForPunchlistItem(punchlistId, !isCompleted, true);
       // Show error notification
-      if (window.showModal) {
-        window.showModal("error", "Update Failed", "Error updating punchlist status");
+      if (window.showNotice) {
+        window.showNotice("error", "Update Failed", "Error updating punchlist status");
       }
     }
   }

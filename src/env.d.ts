@@ -63,7 +63,7 @@ declare namespace App {
 declare global {
   interface Window {
     // Global functions and utilities
-    showModal?: (
+    showNotice?: (
       type: string,
       title: string,
       message: string,
@@ -171,6 +171,23 @@ declare global {
     // Body scroll utilities
     lockBodyScroll?: () => void;
     unlockBodyScroll?: () => void;
+
+    // Modal utilities
+    showModal?: (options: {
+      id?: string;
+      title: string;
+      body: string | HTMLElement;
+      primaryButtonText?: string;
+      secondaryButtonText?: string;
+      onConfirm?: () => void | Promise<void>;
+      onCancel?: () => void;
+      showFooter?: boolean;
+      size?: "small" | "medium" | "large" | "xlarge";
+      closeOnBackdrop?: boolean;
+      closeOnEscape?: boolean;
+    }) => void;
+    hideModal?: (modalId: string) => void;
+    removeModal?: (modalId: string) => void;
 
     // Partials
     createButtonPartial?: (config: any) => Promise<HTMLElement | null>;

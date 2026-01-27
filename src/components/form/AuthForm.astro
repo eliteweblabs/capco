@@ -144,8 +144,8 @@ const { globalInputClasses } = Astro.props;
 
     if (!supabase) {
       console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
-      if (window.showModal) {
-        window.showModal(
+      if (window.showNotice) {
+        window.showNotice(
           "error",
           "Configuration Error",
           "Supabase is not configured. Please contact support."
@@ -195,8 +195,8 @@ const { globalInputClasses } = Astro.props;
 
     if (error) {
       console.error("[GOOGLE-SIGNIN] OAuth error:", error);
-      if (window.showModal) {
-        window.showModal("error", "Authentication Error", error.message);
+      if (window.showNotice) {
+        window.showNotice("error", "Authentication Error", error.message);
       }
       return;
     }
@@ -205,8 +205,8 @@ const { globalInputClasses } = Astro.props;
       const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
       if (!supabaseUrl) {
         console.error("[GOOGLE-SIGNIN] PUBLIC_SUPABASE_URL not configured");
-        if (window.showModal) {
-          window.showModal("error", "Configuration Error", "Supabase URL not configured");
+        if (window.showNotice) {
+          window.showNotice("error", "Configuration Error", "Supabase URL not configured");
         }
         return;
       }
@@ -250,8 +250,8 @@ const { globalInputClasses } = Astro.props;
         );
 
         // Don't proceed if code verifier is missing - this will cause the callback to fail
-        if (window.showModal) {
-          window.showModal(
+        if (window.showNotice) {
+          window.showNotice(
             "error",
             "Authentication Error",
             "Failed to initialize authentication. Please try again."
@@ -339,8 +339,8 @@ const { globalInputClasses } = Astro.props;
 
         // Basic client-side validation
         if (!email || !password) {
-          if (window.showModal) {
-            window.showModal("error", "Validation Error", "Please fill in all required fields.");
+          if (window.showNotice) {
+            window.showNotice("error", "Validation Error", "Please fill in all required fields.");
           } else {
             console.error("🔔 [Validation Error] Please fill in all required fields.");
           }
@@ -348,8 +348,8 @@ const { globalInputClasses } = Astro.props;
         }
 
         // Show loading notification
-        if (window.showModal) {
-          window.showModal(
+        if (window.showNotice) {
+          window.showNotice(
             "info",
             "Signing In...",
             "Please wait while we authenticate your account.",
@@ -379,8 +379,8 @@ const { globalInputClasses } = Astro.props;
                   "Invalid email or password. Please check your credentials and try again.";
               }
 
-              if (window.showModal) {
-                window.showModal("error", "Authentication Error", errorMessage);
+              if (window.showNotice) {
+                window.showNotice("error", "Authentication Error", errorMessage);
               } else {
                 console.error("🔔 [Authentication Error]", errorMessage);
               }
@@ -392,8 +392,8 @@ const { globalInputClasses } = Astro.props;
           } else if (!response.ok) {
             // Handle non-redirect errors
             const errorText = await response.text();
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "error",
                 "Authentication Error",
                 errorText || "An error occurred during sign in."
@@ -404,8 +404,8 @@ const { globalInputClasses } = Astro.props;
           }
         } catch (error) {
           console.error("[AUTH] Error during sign in:", error);
-          if (window.showModal) {
-            window.showModal(
+          if (window.showNotice) {
+            window.showNotice(
               "error",
               "Connection Error",
               "Unable to connect to the server. Please check your internet connection and try again."

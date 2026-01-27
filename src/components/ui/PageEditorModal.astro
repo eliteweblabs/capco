@@ -1,0 +1,109 @@
+---
+import CloseButton from "./CloseButton.astro";
+
+interface Props {
+  id?: string;
+}
+
+const { id = "page-editor-modal" } = Astro.props;
+---
+
+<!-- Page Editor Modal -->
+<div
+  id={id}
+  tabindex="-1"
+  aria-hidden="true"
+  class="fixed left-0 right-0 top-0 z-50 hidden h-[calc(100%-1rem)] max-h-full w-full items-center justify-center overflow-y-auto overflow-x-hidden md:inset-0"
+>
+  <div class="relative max-h-full w-full max-w-4xl p-4">
+    <!-- Modal content -->
+    <div class="relative rounded-lg bg-white shadow dark:bg-gray-800">
+      <!-- Modal header -->
+      <div
+        class="flex items-center justify-between rounded-t border-b p-4 dark:border-gray-600 md:p-5"
+      >
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id={`${id}-title`}>
+          Modal Title
+        </h3>
+        <CloseButton data-modal-hide={id} tooltipText="Close modal" />
+      </div>
+
+      <!-- Modal body -->
+      <div class="space-y-4 p-4 md:p-5" id={`${id}-body`}>
+        <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+          Modal content will be loaded here...
+        </p>
+      </div>
+
+      <!-- Modal footer -->
+      <div
+        class="flex items-center justify-end gap-2 rounded-b border-t border-gray-200 p-4 dark:border-gray-600 md:p-5"
+        id={`${id}-footer`}
+      >
+        <button
+          data-modal-hide={id}
+          type="button"
+          class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-700"
+          >Cancel</button
+        >
+        <button
+          id={`${id}-primary-action`}
+          type="button"
+          class="rounded-lg bg-primary-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+          >Confirm</button
+        >
+      </div>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ id }}>
+  /**
+   * Initialize modal functionality for this specific instance
+   */
+  function initModal() {
+    const modal = document.getElementById(id);
+    const closeButtons = document.querySelectorAll(`[data-modal-hide="${id}"]`);
+
+    if (!modal) return;
+
+    // Close modal handlers
+    closeButtons.forEach((button) => {
+      button.addEventListener("click", function () {
+        hideModal();
+      });
+    });
+
+    // Close on backdrop click
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) {
+        hideModal();
+      }
+    });
+
+    // Close on ESC key
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        hideModal();
+      }
+    });
+
+    function hideModal() {
+      modal?.classList.add("hidden");
+      modal?.classList.remove("flex");
+      modal?.setAttribute("aria-hidden", "true");
+      
+      // Unlock body scroll when modal closes
+      if (typeof window.unlockBodyScroll === "function") {
+        window.unlockBodyScroll();
+      }
+    }
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initModal);
+  } else {
+    initModal();
+  }
+</script>

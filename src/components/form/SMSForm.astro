@@ -176,13 +176,13 @@ const {
 
         // Check if modal notification function is available
         console.log("📱 [SMS-FORM] Modal notification function available:", {
-          showModal: typeof (window as any).showModal,
+          showNotice: typeof (window as any).showNotice,
         });
 
         // Client-side validation - only check message since phone/carrier are hardcoded
         if (!message || message.trim().length === 0) {
-          if ((window as any).showModal) {
-            (window as any).showModal(
+          if ((window as any).showNotice) {
+            (window as any).showNotice(
               "error",
               "Message Required",
               "Please enter a message to send.",
@@ -221,8 +221,8 @@ const {
             // Check if emails were actually sent successfully
             if (result.totalSent && result.totalSent > 0) {
               // Success - emails were actually sent
-              if ((window as any).showModal) {
-                (window as any).showModal(
+              if ((window as any).showNotice) {
+                (window as any).showNotice(
                   "success",
                   "Message Sent!",
                   "Your message has been sent to CAPCo successfully.",
@@ -237,8 +237,8 @@ const {
             } else {
               // No emails were sent - show error modal
               console.error("🔔 [SMS Error] No emails were sent:", result);
-              if ((window as any).showModal) {
-                (window as any).showModal(
+              if ((window as any).showNotice) {
+                (window as any).showNotice(
                   "error",
                   "Send Failed",
                   "Failed to send message. No emails were delivered.",
@@ -250,8 +250,8 @@ const {
             // Error
             const errorText = await response.text();
             console.error("🔔 [SMS Error] API response:", response.status, errorText);
-            if ((window as any).showModal) {
-              (window as any).showModal(
+            if ((window as any).showNotice) {
+              (window as any).showNotice(
                 "error",
                 "Send Failed",
                 "Failed to send message. Please try again.",
@@ -261,8 +261,8 @@ const {
           }
         } catch (error) {
           console.error("🔔 [SMS Error] Network error:", error);
-          if ((window as any).showModal) {
-            (window as any).showModal(
+          if ((window as any).showNotice) {
+            (window as any).showNotice(
               "error",
               "Network Error",
               "Failed to send message. Please check your connection.",
