@@ -31,7 +31,7 @@ const {
   <input type="hidden" id={`${id}-value`} {name} value="" />
 
   <!-- Search Input -->
-  <div class="relative mb-4">
+  <div class="relative">
     <input
       type="text"
       id={`${id}-search-input`}
@@ -52,293 +52,67 @@ const {
           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
       </svg>
     </button>
-  </div>
 
-  <!-- Results Container -->
-  <div
-    class="inline-address-results-container relative mb-4 min-h-48 overflow-hidden rounded-lg border-2 border-gray-200 dark:border-gray-600 color-background"
-  >
-    <ul
-      id={`${id}-results-list`}
-      class="absolute inset-0 overflow-y-auto transition-all duration-300 ease-out"
-    >
-      <!-- Results will be populated dynamically -->
-    </ul>
-
-    <!-- Empty state when no results -->
+    <!-- Dropdown Results Container -->
     <div
-      id={`${id}-empty-state`}
-      class="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400"
+      id={`${id}-dropdown`}
+      class="inline-address-results-container hidden absolute z-10 mt-2 w-full bg-white divide-y divide-gray-100 rounded-lg shadow-lg dark:bg-gray-700 dark:divide-gray-600"
     >
-      <div class="text-center">
-        <SimpleIcon name="map-pin" class="mx-auto mb-2 h-8 w-8 opacity-50" />
-        <p class="text-sm">{noResultsText}</p>
+      <ul
+        id={`${id}-results-list`}
+        class="max-h-60 overflow-y-auto py-2 text-sm text-gray-700 dark:text-gray-200"
+      >
+        <!-- Results will be populated dynamically -->
+      </ul>
+
+      <!-- Empty state when no results -->
+      <div
+        id={`${id}-empty-state`}
+        class="hidden px-4 py-8 text-center"
+      >
+        <SimpleIcon name="map-pin" class="mx-auto mb-2 h-8 w-8 opacity-50 text-gray-400 dark:text-gray-500" />
+        <p class="text-sm text-gray-500 dark:text-gray-400">{noResultsText}</p>
       </div>
     </div>
   </div>
 </div>
 
+<script>
+  import { initializeAddressSearch } from "../../scripts/inline-address-search";
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const config = {
+      id: document.currentScript?.getAttribute("data-id") || "",
+      fetchApiEndpoint: document.currentScript?.getAttribute("data-endpoint") || "/api/google/places-autocomplete",
+      apiParams: JSON.parse(document.currentScript?.getAttribute("data-params") || "{}"),
+      valueField: document.currentScript?.getAttribute("data-value-field") || "description",
+      labelField: document.currentScript?.getAttribute("data-label-field") || "description",
+    };
+
+    initializeAddressSearch(config);
+  });
+</script>
+
 <script
-  define:vars={{
-    id,
-    fetchApiEndpoint,
-    apiParams,
-    valueField,
-    labelField,
-    noResultsText,
-  }}
+  define:vars={{ id, fetchApiEndpoint, apiParams, valueField, labelField }}
   is:inline
 >
-  document.addEventListener("DOMContentLoaded", function () {
-    const searchInput = document.getElementById(`${id}-search-input`);
-    const resultsList = document.getElementById(`${id}-results-list`);
-    const hiddenInput = document.getElementById(`${id}-value`);
-    const emptyState = document.getElementById(`${id}-empty-state`);
-
-    if (!searchInput || !resultsList || !hiddenInput || !emptyState) {
-      console.error(`[INLINE-ADDRESS] Required elements not found for ${id}`);
-      return;
-    }
-
-    let searchTimeout;
-    let selectedIndex = -1;
-
-    // Helper function to create result element
-    function createResultElement(result, index, isSelected = false) {
-      const li = document.createElement("li");
-      li.className = `inline-address-result-item cursor-pointer transition-all duration-200 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 ${
-        isSelected
-          ? "bg-primary-500 text-white hover:bg-primary-600"
-          : "text-gray-900 dark:text-white"
-      }`;
-      li.dataset.index = index;
-      li.dataset.value = result[valueField] || result.value || result.place_id || result.id;
-      li.dataset.label = result[labelField] || result.label || result.description;
-
-      try {
-        li.dataset.json = JSON.stringify(result);
-      } catch (e) {
-        // ignore non-serializable result
-      }
-
-      const textSpan = document.createElement("span");
-      textSpan.className = "block";
-      textSpan.textContent = result[labelField] || result.label || result.description;
-
-      li.appendChild(textSpan);
-      return li;
-    }
-
-    // Helper function to populate results
-    function populateResults(results) {
-      resultsList.innerHTML = "";
-
-      if (results.length > 0) {
-        emptyState.classList.add("hidden");
-        results.forEach((result, index) => {
-          const li = createResultElement(result, index, index === selectedIndex);
-          resultsList.appendChild(li);
-        });
-      } else {
-        emptyState.classList.remove("hidden");
-      }
-    }
-
-    // Handle search input
-    searchInput.addEventListener("input", (e) => {
-      const query = e.target.value.trim();
-
-      // Clear previous timeout
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-
-      // Clear results if query is empty
-      if (query.length === 0) {
-        resultsList.innerHTML = "";
-        emptyState.classList.remove("hidden");
-        selectedIndex = -1;
-        return;
-      }
-
-      // Perform search after debounce
-      if (query.length >= 2) {
-        searchTimeout = setTimeout(async () => {
-          try {
-            console.log(`[INLINE-ADDRESS] Searching for: ${query}`);
-
-            // Build search URL with API params
-            const searchParams = new URLSearchParams({
-              input: query,
-              ...apiParams,
-            });
-
-            const response = await fetch(`${fetchApiEndpoint}?${searchParams}`, {
-              credentials: "include",
-            });
-
-            if (!response.ok) {
-              throw new Error(`Search failed: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log(`[INLINE-ADDRESS] Search results:`, data);
-
-            // Handle different data formats
-            let resultsArray = [];
-            if (Array.isArray(data)) {
-              resultsArray = data;
-            } else if (data && Array.isArray(data.predictions)) {
-              // Google Places format
-              resultsArray = data.predictions;
-            } else if (data && Array.isArray(data.results)) {
-              resultsArray = data.results;
-            } else if (data && data.data && Array.isArray(data.data)) {
-              resultsArray = data.data;
-            }
-
-            console.log(`[INLINE-ADDRESS] Results array:`, resultsArray);
-            populateResults(resultsArray);
-          } catch (error) {
-            console.error(`[INLINE-ADDRESS] Search error:`, error);
-            resultsList.innerHTML = "";
-            emptyState.classList.remove("hidden");
-          }
-        }, 300); // 300ms debounce
-      }
-    });
-
-    // Handle click on result items
-    resultsList.addEventListener("click", (e) => {
-      const li = e.target.closest("li[data-index]");
-      if (li) {
-        const value = li.dataset.value;
-        const label = li.dataset.label;
-
-        console.log(`[INLINE-ADDRESS] Selected: ${label} (${value})`);
-
-        // Update hidden input
-        hiddenInput.value = value;
-
-        // Update search input to show selected value
-        searchInput.value = label;
-
-        // Update selection styling
-        const allItems = resultsList.querySelectorAll("li");
-        allItems.forEach((item) => {
-          item.classList.remove("bg-primary-500", "text-white");
-          item.classList.add(
-            "text-gray-900",
-            "dark:text-white",
-            "hover:bg-gray-100",
-            "dark:hover:bg-gray-800"
-          );
-        });
-        li.classList.add("bg-primary-500", "text-white");
-        li.classList.remove(
-          "text-gray-900",
-          "dark:text-white",
-          "hover:bg-gray-100",
-          "dark:hover:bg-gray-800"
-        );
-
-        selectedIndex = parseInt(li.dataset.index);
-
-        // Dispatch custom event for other components to listen to
-        window.dispatchEvent(
-          new CustomEvent("inline-address-select", {
-            detail: {
-              componentId: id,
-              value,
-              label,
-              data: li.dataset.json ? JSON.parse(li.dataset.json) : null,
-            },
-          })
-        );
-      }
-    });
-
-    // Handle keyboard navigation
-    searchInput.addEventListener("keydown", (e) => {
-      const items = resultsList.querySelectorAll("li");
-      const maxIndex = items.length - 1;
-
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault();
-          if (maxIndex >= 0) {
-            selectedIndex = Math.min(selectedIndex + 1, maxIndex);
-            updateSelection(items);
-            scrollToSelected(items[selectedIndex]);
-          }
-          break;
-
-        case "ArrowUp":
-          e.preventDefault();
-          if (maxIndex >= 0) {
-            selectedIndex = Math.max(selectedIndex - 1, 0);
-            updateSelection(items);
-            scrollToSelected(items[selectedIndex]);
-          }
-          break;
-
-        case "Enter":
-          e.preventDefault();
-          if (selectedIndex >= 0 && selectedIndex <= maxIndex) {
-            const selectedItem = items[selectedIndex];
-            selectedItem.click();
-          }
-          break;
-      }
-    });
-
-    // Update selection styling
-    function updateSelection(items) {
-      items.forEach((item, index) => {
-        if (index === selectedIndex) {
-          item.classList.add("bg-primary-500", "text-white");
-          item.classList.remove(
-            "text-gray-900",
-            "dark:text-white",
-            "hover:bg-gray-100",
-            "dark:hover:bg-gray-800"
-          );
-        } else {
-          item.classList.remove("bg-primary-500", "text-white");
-          item.classList.add(
-            "text-gray-900",
-            "dark:text-white",
-            "hover:bg-gray-100",
-            "dark:hover:bg-gray-800"
-          );
-        }
-      });
-    }
-
-    // Scroll to selected item
-    function scrollToSelected(item) {
-      if (item) {
-        item.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
-    }
-  });
+  // Set data attributes for the module script to read
+  const scripts = document.querySelectorAll("script");
+  const lastScript = scripts[scripts.length - 1];
+  if (lastScript && lastScript.previousElementSibling) {
+    const moduleScript = lastScript.previousElementSibling;
+    moduleScript.setAttribute("data-id", id);
+    moduleScript.setAttribute("data-endpoint", fetchApiEndpoint);
+    moduleScript.setAttribute("data-params", JSON.stringify(apiParams));
+    moduleScript.setAttribute("data-value-field", valueField);
+    moduleScript.setAttribute("data-label-field", labelField);
+  }
 </script>
 
 <style>
   .inline-address-results-container {
-    position: relative;
-    min-height: 12rem;
-    max-height: 24rem;
-  }
-
-  .inline-address-results-container ul {
-    height: 100%;
-    min-height: 12rem;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    max-width: 100%;
   }
 
   .inline-address-result-item {
@@ -346,15 +120,5 @@ const {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
-  }
-
-  .inline-address-result-item:first-child {
-    border-top-left-radius: 0.375rem;
-    border-top-right-radius: 0.375rem;
-  }
-
-  .inline-address-result-item:last-child {
-    border-bottom-left-radius: 0.375rem;
-    border-bottom-right-radius: 0.375rem;
   }
 </style>

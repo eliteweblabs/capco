@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
-import { fetchPunchlistStats } from "../../../lib/api/_projects";
+import { fetchPunchlistStats, fetchProjectById, fetchProjects } from "../../../lib/api/_projects";
 
 /**
  * Legacy Project GET API - for backward compatibility
@@ -54,101 +54,22 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // Handle single project fetch by ID
     if (projectId) {
-      // First fetch the project
-      const { data: project, error } = await supabaseAdmin
-        .from("projects")
-        .select("*")
-        .eq("id", projectId)
-        .single();
+      const project = await fetchProjectById(supabaseAdmin, parseInt(projectId), {
+        includeFiles: true,
+        includeInvoice: true,
+      });
 
-      if (error || !project) {
-        console.error("🏗️ [PROJECTS-GET] Project fetch error:", error);
+      if (!project) {
+        console.error("🏗️ [PROJECTS-GET] Project not found");
         return new Response(JSON.stringify({ error: "Project not found" }), {
           status: 404,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      // Fetch related invoice separately to avoid foreign key constraint issues
-      let invoiceId = null;
-      try {
-        const { data: invoices } = await supabaseAdmin
-          .from("invoices")
-          .select("id")
-          .eq("projectId", project.id)
-          .limit(1);
-
-        if (invoices && invoices.length > 0) {
-          invoiceId = invoices[0].id;
-        }
-      } catch (invoiceError) {
-        console.warn(
-          "🏗️ [PROJECTS-GET] Could not fetch invoice for project:",
-          project.id,
-          invoiceError
-        );
-      }
-
-      // Add invoice ID to project if found
-      if (invoiceId) {
-        project.invoiceId = invoiceId;
-      }
-
-      // Fetch author profile data
-      let authorProfile = null;
-      if (project.authorId) {
-        const { data: authorData } = await supabaseAdmin
-          .from("profiles")
-          .select("id, firstName, lastName, companyName, email, role")
-          .eq("id", project.authorId)
-          .single();
-        authorProfile = authorData;
-      }
-
-      // Fetch assignedTo profile data
-      let assignedToProfile = null;
-      if (project.assignedToId) {
-        const { data: assignedToData } = await supabaseAdmin
-          .from("profiles")
-          .select("id, firstName, lastName, companyName, email, role")
-          .eq("id", project.assignedToId)
-          .single();
-        assignedToProfile = assignedToData;
-      }
-
-      // Fetch file count for the project
-      let fileCount = 0;
-      let projectFiles: any[] = [];
-      try {
-        const { data: filesData } = await supabaseAdmin
-          .from("files")
-          .select("id, fileName, fileType, fileSize, uploadedAt")
-          .eq("projectId", project.id);
-        fileCount = filesData?.length || 0;
-        projectFiles = filesData || [];
-      } catch (fileError) {
-        console.warn("Could not fetch files for project:", project.id, fileError);
-      }
-
-      // Get punchlist stats for single project
-      const punchlistStats = await fetchPunchlistStats(supabaseAdmin, [project.id]);
-
-      // Note: featuredImageData is populated by database trigger with publicUrl already included
-      // Add profile data, file data, and punchlist data to project
-      const projectWithProfiles = {
-        ...project,
-        author: authorProfile,
-        assignedTo: assignedToProfile,
-        authorProfile: authorProfile,
-        assignedToProfile: assignedToProfile,
-        projectFiles: projectFiles,
-        fileCount: fileCount,
-        punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
-      };
-
       return new Response(
         JSON.stringify({
-          data: projectWithProfiles,
+          data: project,
           pagination: { limit: 1, offset: 0, total: 1, hasMore: false },
         }),
         { status: 200, headers: { "Content-Type": "application/json" } }
@@ -203,64 +124,67 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const projectIds = (projects || []).map((p) => p.id);
     const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
 
-    // Fetch profile data for all projects
-    const projectsWithProfiles = await Promise.all(
-      (projects || []).map(async (project) => {
-        // Fetch author profile data
-        let authorProfile = null;
-        if (!supabaseAdmin) {
-          return new Response(JSON.stringify({ error: "Database connection not available" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        if (project.authorId) {
-          const { data: authorData } = await supabaseAdmin
-            .from("profiles")
-            .select("id, firstName, lastName, companyName, email, role")
-            .eq("id", project.authorId)
-            .single();
-          authorProfile = authorData;
-        }
+    // Get unique author and assigned-to IDs
+    const authorIds = [...new Set((projects || []).map((p) => p.authorId).filter(Boolean))];
+    const assignedToIds = [
+      ...new Set((projects || []).map((p) => p.assignedToId).filter(Boolean)),
+    ];
+    const allProfileIds = [...new Set([...authorIds, ...assignedToIds])];
 
-        // Fetch assignedTo profile data
-        let assignedToProfile = null;
-        if (project.assignedToId) {
-          const { data: assignedToData } = await supabaseAdmin
-            .from("profiles")
-            .select("id, firstName, lastName, companyName, email, role")
-            .eq("id", project.assignedToId)
-            .single();
-          assignedToProfile = assignedToData;
-        }
+    // Fetch all relevant profiles in one query
+    let profilesMap: Record<string, any> = {};
+    if (allProfileIds.length > 0) {
+      const { data: profilesData } = await supabaseAdmin
+        .from("profiles")
+        .select("id, firstName, lastName, companyName, email, role")
+        .in("id", allProfileIds);
 
-        // Fetch file data for the project
-        let fileCount = 0;
-        let projectFiles: any[] = [];
-        try {
-          const { data: filesData } = await supabaseAdmin
-            .from("files")
-            .select("id, fileName, fileType, fileSize, uploadedAt")
-            .eq("projectId", project.id);
-          fileCount = filesData?.length || 0;
-          projectFiles = filesData || [];
-        } catch (fileError) {
-          console.warn("Could not fetch files for project:", project.id, fileError);
-        }
+      profilesMap = (profilesData || []).reduce(
+        (acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        },
+        {} as Record<string, any>
+      );
+    }
 
-        // Note: featuredImageData is populated by database trigger with publicUrl already included
-        return {
-          ...project,
-          author: authorProfile,
-          assignedTo: assignedToProfile,
-          authorProfile: authorProfile,
-          assignedToProfile: assignedToProfile,
-          projectFiles: projectFiles,
-          fileCount: fileCount,
-          punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
-        };
-      })
-    );
+    // Fetch file counts for all projects in one query
+    let filesMap: Record<number, { count: number; files: any[] }> = {};
+    if (projectIds.length > 0) {
+      try {
+        const { data: filesData } = await supabaseAdmin
+          .from("files")
+          .select("id, fileName, fileType, fileSize, uploadedAt, projectId")
+          .in("projectId", projectIds);
+
+        // Group files by projectId
+        (filesData || []).forEach((file) => {
+          if (!filesMap[file.projectId]) {
+            filesMap[file.projectId] = { count: 0, files: [] };
+          }
+          filesMap[file.projectId].count++;
+          filesMap[file.projectId].files.push(file);
+        });
+      } catch (fileError) {
+        console.warn("Could not fetch files for projects:", fileError);
+      }
+    }
+
+    // Add profile data, file data, and punchlist data to projects
+    const projectsWithProfiles = (projects || []).map((project) => {
+      const fileData = filesMap[project.id] || { count: 0, files: [] };
+
+      return {
+        ...project,
+        author: project.authorId ? profilesMap[project.authorId] : null,
+        assignedTo: project.assignedToId ? profilesMap[project.assignedToId] : null,
+        authorProfile: project.authorId ? profilesMap[project.authorId] : null,
+        assignedToProfile: project.assignedToId ? profilesMap[project.assignedToId] : null,
+        projectFiles: fileData.files,
+        fileCount: fileData.count,
+        punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+      };
+    });
 
     return new Response(
       JSON.stringify({
