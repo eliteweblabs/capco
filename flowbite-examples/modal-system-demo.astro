@@ -1,0 +1,484 @@
+---
+import PageEditorModal from "../src/components/ui/PageEditorModal.astro";
+import CloseButton from "../src/components/ui/CloseButton.astro";
+import Button from "../src/components/ui/Button.astro";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Modal System Demo</title>
+    <link
+      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .demo-section {
+        margin-bottom: 3rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+      }
+      .demo-section h2 {
+        margin-top: 0;
+        color: #1f2937;
+      }
+      .button-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      .code-block {
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        margin-top: 1rem;
+      }
+      pre {
+        margin: 0;
+        font-size: 0.875rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🚀 Modal System Demo & Documentation</h1>
+    <p>
+      This page demonstrates the new global modal system, similar to
+      <code>showNotice()</code> but for full modal dialogs.
+    </p>
+
+    <!-- Component Usage Demo -->
+    <div class="demo-section">
+      <h2>📦 1. Component Usage</h2>
+      <p>Use the PageEditorModal.astro component directly in your pages:</p>
+
+      <div class="code-block">
+        <pre>
+&lt;PageEditorModal id="my-modal" /&gt;
+
+&lt;button data-modal-toggle="my-modal"&gt;
+  Open Modal
+&lt;/button&gt;</pre
+        >
+      </div>
+
+      <div class="button-grid">
+        <button
+          data-modal-toggle="component-modal"
+          class="block rounded-lg bg-primary-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-primary-800"
+        >
+          Open Component Modal
+        </button>
+      </div>
+    </div>
+
+    <!-- Global Function Demo -->
+    <div class="demo-section">
+      <h2>🌐 2. Global Function Usage</h2>
+      <p>Use <code>window.showModal()</code> to create dynamic modals:</p>
+
+      <div class="code-block">
+        <pre>
+window.showModal({
+  title: "Edit Page",
+  body: "&lt;p&gt;Modal content here&lt;/p&gt;",
+  primaryButtonText: "Save",
+  onConfirm: () => console.log("Confirmed!"),
+  size: "large"
+});</pre
+        >
+      </div>
+
+      <div class="button-grid">
+        <button
+          id="simple-modal-btn"
+          class="block rounded-lg bg-blue-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700"
+        >
+          Simple Modal
+        </button>
+
+        <button
+          id="form-modal-btn"
+          class="block rounded-lg bg-green-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-green-700"
+        >
+          Form Modal
+        </button>
+
+        <button
+          id="large-content-btn"
+          class="block rounded-lg bg-purple-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-purple-700"
+        >
+          Large Content Modal
+        </button>
+
+        <button
+          id="no-footer-btn"
+          class="block rounded-lg bg-orange-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-orange-700"
+        >
+          No Footer Modal
+        </button>
+
+        <button
+          id="custom-size-btn"
+          class="block rounded-lg bg-pink-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-pink-700"
+        >
+          Small Modal
+        </button>
+
+        <button
+          id="dynamic-content-btn"
+          class="block rounded-lg bg-indigo-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          Dynamic Content
+        </button>
+      </div>
+    </div>
+
+    <!-- API Reference -->
+    <div class="demo-section">
+      <h2>📚 3. API Reference</h2>
+
+      <h3>showModal(options)</h3>
+      <p>Options object properties:</p>
+
+      <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+        <thead>
+          <tr style="background: #f3f4f6;">
+            <th style="padding: 0.5rem; text-align: left; border: 1px solid #e5e7eb;">
+              Property
+            </th>
+            <th style="padding: 0.5rem; text-align: left; border: 1px solid #e5e7eb;">
+              Type
+            </th>
+            <th style="padding: 0.5rem; text-align: left; border: 1px solid #e5e7eb;">
+              Default
+            </th>
+            <th style="padding: 0.5rem; text-align: left; border: 1px solid #e5e7eb;">
+              Description
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>id</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">string</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              "dynamic-modal"
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              Unique identifier for the modal
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>title</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">string</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <em>required</em>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">Modal title</td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>body</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              string | HTMLElement
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <em>required</em>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              Modal body content
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>primaryButtonText</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">string</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">"Confirm"</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              Primary button label
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>secondaryButtonText</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">string</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">"Cancel"</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              Secondary button label
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>onConfirm</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              () => void | Promise
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">undefined</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              Callback when confirm clicked
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>onCancel</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">() => void</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">undefined</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              Callback when cancel clicked
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>showFooter</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">boolean</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">true</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              Show/hide footer
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>size</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              "small" | "medium" | "large" | "xlarge"
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">"large"</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">Modal width</td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>closeOnBackdrop</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">boolean</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">true</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              Close on backdrop click
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              <code>closeOnEscape</code>
+            </td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">boolean</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">true</td>
+            <td style="padding: 0.5rem; border: 1px solid #e5e7eb;">
+              Close on ESC key
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-top: 2rem;">Other Functions</h3>
+      <div class="code-block">
+        <pre>
+// Hide a modal
+window.hideModal("modal-id");
+
+// Remove a modal from DOM
+window.removeModal("modal-id");</pre
+        >
+      </div>
+    </div>
+
+    <!-- Use Cases -->
+    <div class="demo-section">
+      <h2>💡 4. Common Use Cases</h2>
+
+      <h3>Page Editor</h3>
+      <div class="code-block">
+        <pre>
+window.showModal({
+  title: "Edit Page",
+  body: `&lt;form id="page-form"&gt;
+    &lt;input type="text" name="title" placeholder="Page Title" /&gt;
+    &lt;textarea name="content"&gt;&lt;/textarea&gt;
+  &lt;/form&gt;`,
+  primaryButtonText: "Save Changes",
+  onConfirm: async () => {
+    const form = document.getElementById("page-form");
+    const data = new FormData(form);
+    await fetch("/api/pages", { method: "POST", body: data });
+  }
+});</pre
+        >
+      </div>
+
+      <h3>Confirmation Dialog</h3>
+      <div class="code-block">
+        <pre>
+window.showModal({
+  title: "Confirm Deletion",
+  body: "&lt;p&gt;Are you sure you want to delete this item?&lt;/p&gt;",
+  primaryButtonText: "Delete",
+  secondaryButtonText: "Cancel",
+  size: "small",
+  onConfirm: () => deleteItem(id)
+});</pre
+        >
+      </div>
+
+      <h3>Info Display</h3>
+      <div class="code-block">
+        <pre>
+window.showModal({
+  title: "Project Details",
+  body: projectDetailsHTML,
+  showFooter: false,
+  size: "medium"
+});</pre
+        >
+      </div>
+    </div>
+
+    <!-- Include the component modal -->
+    <PageEditorModal id="component-modal" />
+
+    <script>
+      // Import modal functions (in real usage, include modal-global.ts in your layout)
+      import { showModal } from "../src/lib/ux-utils";
+
+      // Make available globally for demo
+      window.showModal = showModal;
+
+      // Simple modal example
+      document.getElementById("simple-modal-btn")?.addEventListener("click", () => {
+        window.showModal({
+          title: "Simple Modal",
+          body: "<p>This is a simple modal with minimal configuration.</p>",
+          primaryButtonText: "OK",
+          onConfirm: () => console.log("Simple modal confirmed!"),
+        });
+      });
+
+      // Form modal example
+      document.getElementById("form-modal-btn")?.addEventListener("click", () => {
+        window.showModal({
+          title: "User Registration",
+          body: `
+            <form id="demo-form" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium mb-2">Name</label>
+                <input type="text" name="name" class="w-full p-2 border rounded" required />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">Email</label>
+                <input type="email" name="email" class="w-full p-2 border rounded" required />
+              </div>
+            </form>
+          `,
+          primaryButtonText: "Register",
+          size: "medium",
+          onConfirm: () => {
+            const form = document.getElementById("demo-form");
+            const data = new FormData(form);
+            console.log("Form data:", Object.fromEntries(data));
+            alert("Check console for form data!");
+          },
+        });
+      });
+
+      // Large content modal
+      document.getElementById("large-content-btn")?.addEventListener("click", () => {
+        const loremText = `
+          <h3 class="text-lg font-semibold mb-2">Lorem Ipsum</h3>
+          <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit...</p>
+          <p class="mb-4">Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...</p>
+          <p class="mb-4">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris...</p>
+          <p class="mb-4">Duis aute irure dolor in reprehenderit in voluptate velit esse...</p>
+          <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia...</p>
+        `;
+        window.showModal({
+          title: "Large Content Modal",
+          body: loremText,
+          size: "xlarge",
+        });
+      });
+
+      // No footer modal
+      document.getElementById("no-footer-btn")?.addEventListener("click", () => {
+        window.showModal({
+          title: "Information",
+          body: "<p>This modal has no footer buttons. Click backdrop or ESC to close.</p>",
+          showFooter: false,
+          size: "medium",
+        });
+      });
+
+      // Small modal
+      document.getElementById("custom-size-btn")?.addEventListener("click", () => {
+        window.showModal({
+          title: "Quick Question",
+          body: "<p>Do you want to continue?</p>",
+          size: "small",
+          primaryButtonText: "Yes",
+          secondaryButtonText: "No",
+          onConfirm: () => console.log("User said yes"),
+          onCancel: () => console.log("User said no"),
+        });
+      });
+
+      // Dynamic content
+      document.getElementById("dynamic-content-btn")?.addEventListener("click", () => {
+        // Create a dynamic element
+        const container = document.createElement("div");
+        container.innerHTML = `
+          <p class="mb-4">This content was created dynamically!</p>
+          <button id="inner-button" class="px-4 py-2 bg-blue-500 text-white rounded">
+            Click Me
+          </button>
+          <p id="click-output" class="mt-4 text-sm text-gray-600"></p>
+        `;
+
+        window.showModal({
+          title: "Dynamic Content",
+          body: container,
+          size: "medium",
+          showFooter: false,
+        });
+
+        // Add event listener to dynamic element
+        setTimeout(() => {
+          document.getElementById("inner-button")?.addEventListener("click", () => {
+            const output = document.getElementById("click-output");
+            if (output) {
+              output.textContent = "Button clicked at: " + new Date().toLocaleTimeString();
+            }
+          });
+        }, 100);
+      });
+
+      // Component modal toggle handler
+      const componentModalToggle = document.querySelector(
+        '[data-modal-toggle="component-modal"]'
+      );
+      const componentModal = document.getElementById("component-modal");
+
+      componentModalToggle?.addEventListener("click", () => {
+        componentModal?.classList.remove("hidden");
+        componentModal?.classList.add("flex");
+      });
+    </script>
+  </body>
+</html>

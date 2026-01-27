@@ -649,8 +649,8 @@ const submitButtonProps = {
 
     if (!supabase) {
       console.error("[GOOGLE-SIGNUP] Supabase configuration missing");
-      if (window.showModal) {
-        window.showModal(
+      if (window.showNotice) {
+        window.showNotice(
           "error",
           "Configuration Error",
           "Supabase is not configured. Please contact support."
@@ -682,8 +682,8 @@ const submitButtonProps = {
 
       if (error) {
         console.error("[GOOGLE-SIGNUP] OAuth error:", error);
-        if (window.showModal) {
-          window.showModal("error", "Authentication Error", error.message);
+        if (window.showNotice) {
+          window.showNotice("error", "Authentication Error", error.message);
         }
         return;
       }
@@ -731,8 +731,8 @@ const submitButtonProps = {
             );
 
             // Don't proceed if code verifier is missing - this will cause the callback to fail
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "error",
                 "Authentication Error",
                 "Failed to initialize authentication. Please try again."
@@ -748,8 +748,8 @@ const submitButtonProps = {
       }
     } catch (err) {
       console.error("[GOOGLE-SIGNUP] Unexpected error:", err);
-      if (window.showModal) {
-        window.showModal(
+      if (window.showNotice) {
+        window.showNotice(
           "error",
           "Authentication Error",
           err instanceof Error ? err.message : "An unexpected error occurred"
@@ -898,10 +898,10 @@ const submitButtonProps = {
           inputEl.classList.add("touched");
 
           // Show error using modal if available
-          if (window.showModal) {
+          if (window.showNotice) {
             const errorMsg =
               inputEl.getAttribute("data-error") || "Please fill in this field correctly";
-            window.showModal("error", "Validation Error", errorMsg, 3000);
+            window.showNotice("error", "Validation Error", errorMsg, 3000);
           }
           return false;
         }
@@ -916,8 +916,8 @@ const submitButtonProps = {
           if (!emailValid) {
             isValid = false;
             emailInput.classList.add("touched");
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "warning",
                 "Email Already Registered",
                 "This email is already registered. <br><br><a href='/auth/login' class='text-primary-600 hover:text-primary-500 underline'>Click here to log in instead</a>",
@@ -945,8 +945,8 @@ const submitButtonProps = {
 
         // Only validate if phone is provided (it's optional)
         if (phoneValue && !validatePhone(phoneValue)) {
-          if (window.showModal) {
-            window.showModal(
+          if (window.showNotice) {
+            window.showNotice(
               "error",
               "Invalid Phone Number",
               "Please enter a valid US phone number",
@@ -966,8 +966,8 @@ const submitButtonProps = {
         if (smsEnabled) {
           const carrierInput = document.getElementById("step-carrier-value") as HTMLInputElement;
           if (carrierInput && !carrierInput.value) {
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "error",
                 "Validation Error",
                 "Please select your mobile carrier",
@@ -1126,8 +1126,8 @@ const submitButtonProps = {
           }
         } catch (error) {
           console.error("Validation error:", error);
-          if (window.showModal) {
-            window.showModal(
+          if (window.showNotice) {
+            window.showNotice(
               "error",
               "Validation Error",
               "An error occurred during validation. Please try again.",
@@ -1185,8 +1185,8 @@ const submitButtonProps = {
           const emailValid = await validateEmailUniqueness(inputEl.value);
           if (!emailValid) {
             inputEl.classList.add("border-red-500");
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "warning",
                 "Email Already Registered",
                 "This email is already registered. <br><br><a href='/auth/login' class='text-primary-600 hover:text-primary-500 underline'>Click here to log in instead</a>",
@@ -1251,8 +1251,8 @@ const submitButtonProps = {
       const formData = new FormData(form);
 
       // Show loading notification
-      if (window.showModal) {
-        window.showModal(
+      if (window.showNotice) {
+        window.showNotice(
           "info",
           "Creating Account...",
           "Please wait while we set up your account.",
@@ -1291,8 +1291,8 @@ const submitButtonProps = {
 
           // Handle specific error types
           if (response.status === 400 && errorData.error) {
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "error",
                 "Registration Failed",
                 errorData.error + (errorData.details ? `: ${errorData.details}` : ""),
@@ -1300,8 +1300,8 @@ const submitButtonProps = {
               );
             }
           } else {
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "error",
                 "Registration Failed",
                 errorData.error || `Server error (${response.status}). Please try again.`,
@@ -1329,8 +1329,8 @@ const submitButtonProps = {
 
         // Check for success
         if (result.success === false || result.error) {
-          if (window.showModal) {
-            window.showModal(
+          if (window.showNotice) {
+            window.showNotice(
               "error",
               "Registration Failed",
               result.error || result.details || "Failed to create account. Please try again.",
@@ -1348,8 +1348,8 @@ const submitButtonProps = {
         // Success!
         if (result.success !== false && !result.error) {
           if (result.session) {
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "success",
                 "Account Created!",
                 "Welcome! You're now signed in and ready to create projects.",
@@ -1357,8 +1357,8 @@ const submitButtonProps = {
               );
             }
           } else {
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "success",
                 "Account Created!",
                 "Your account has been created. Please sign in to continue.",
@@ -1391,8 +1391,8 @@ const submitButtonProps = {
           }
         }
 
-        if (window.showModal) {
-          window.showModal("error", "Registration Failed", errorMessage, 8000);
+        if (window.showNotice) {
+          window.showNotice("error", "Registration Failed", errorMessage, 8000);
         }
 
         isSubmitting = false;

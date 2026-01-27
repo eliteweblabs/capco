@@ -374,13 +374,13 @@ if (!isAdminOrStaff) {
           const progress = (uploadedCount / totalFiles) * 100;
           progressBar.style.width = `${progress}%`;
 
-          if (window.showModal) {
-            window.showModal("success", `Uploaded ${file.name}`, "", 2000);
+          if (window.showNotice) {
+            window.showNotice("success", `Uploaded ${file.name}`, "", 2000);
           }
         } catch (error) {
           console.error(`❌ [MARKETING] Error uploading ${file.name}:`, error);
-          if (window.showModal) {
-            window.showModal("error", `Failed to upload ${file.name}`, "", 3000);
+          if (window.showNotice) {
+            window.showNotice("error", `Failed to upload ${file.name}`, "", 3000);
           }
         }
       }
@@ -406,8 +406,8 @@ if (!isAdminOrStaff) {
         updateFeaturedImagePreview(url);
       }
 
-      if (window.showModal) {
-        window.showModal(
+      if (window.showNotice) {
+        window.showNotice(
           "success",
           "URL copied to clipboard",
           "The featured image field has been updated",
@@ -416,17 +416,17 @@ if (!isAdminOrStaff) {
       }
     } catch (error) {
       console.error("❌ [MARKETING] Error copying URL:", error);
-      if (window.showModal) {
-        window.showModal("error", "Failed to copy URL", "", 2000);
+      if (window.showNotice) {
+        window.showNotice("error", "Failed to copy URL", "", 2000);
       }
     }
   };
 
   window.deleteMarketingImage = async function (imageId, fileName) {
-    if (!window.showModal) {
+    if (!window.showNotice) {
       if (!confirm(`Delete ${fileName}?`)) return;
     } else {
-      window.showModal(
+      window.showNotice(
         "error",
         "Delete Marketing Image",
         `Are you sure you want to delete "${fileName}"? This action cannot be undone.`,
@@ -449,15 +449,15 @@ if (!isAdminOrStaff) {
 
                 if (!response.ok) throw new Error("Delete failed");
 
-                if (window.showModal) {
-                  window.showModal("success", "Image deleted successfully", "", 2000);
+                if (window.showNotice) {
+                  window.showNotice("success", "Image deleted successfully", "", 2000);
                 }
 
                 await loadMarketingImages();
               } catch (error) {
                 console.error("❌ [MARKETING] Error deleting image:", error);
-                if (window.showModal) {
-                  window.showModal("error", "Failed to delete image", "", 3000);
+                if (window.showNotice) {
+                  window.showNotice("error", "Failed to delete image", "", 3000);
                 }
               }
             },
@@ -486,23 +486,23 @@ if (!isAdminOrStaff) {
       const data = await response.json();
 
       if (data.success) {
-        if (window.showModal) {
-          window.showModal("success", "Marketing content saved successfully", "", 2000);
+        if (window.showNotice) {
+          window.showNotice("success", "Marketing content saved successfully", "", 2000);
         }
       } else {
         throw new Error(data.error || "Failed to save");
       }
     } catch (error) {
       console.error("❌ [MARKETING] Error saving:", error);
-      if (window.showModal) {
-        window.showModal("error", "Failed to save marketing content", "", 3000);
+      if (window.showNotice) {
+        window.showNotice("error", "Failed to save marketing content", "", 3000);
       }
     }
   });
 
   function showError(message) {
-    if (window.showModal) {
-      window.showModal("error", message, "", 3000);
+    if (window.showNotice) {
+      window.showNotice("error", message, "", 3000);
     } else {
       alert(message);
     }

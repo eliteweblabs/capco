@@ -209,10 +209,7 @@ const title = project.title || "Untitled Project";
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Security Level
                     </label>
-                    <select
-                      id="encryption-preset"
-                      class=`${globalInputClasses}`
-                    >
+                    <select id="encryption-preset" class=`${globalInputClasses}`>
                       <option value="default">Standard Security</option>
                       <option value="high">High Security</option>
                       <option value="low">Low Security</option>
@@ -730,12 +727,12 @@ const title = project.title || "Untitled Project";
           document.getElementById("saveToDocumentsBtn").classList.remove("hidden");
 
           // Show success message
-          if (window.showModal) {
+          if (window.showNotice) {
             const encryptionStatus = result.encrypted
               ? "Your document has been generated and encrypted with password protection!"
               : "Your document has been generated!";
 
-            window.showModal(
+            window.showNotice(
               "success",
               "PDF Generated",
               `${encryptionStatus} You can now preview, download, or save it to documents.`,
@@ -747,8 +744,8 @@ const title = project.title || "Untitled Project";
         }
       } catch (error) {
         console.error("Error generating PDF:", error);
-        if (window.showModal) {
-          window.showModal("error", "Generation Failed", error.message, 5000);
+        if (window.showNotice) {
+          window.showNotice("error", "Generation Failed", error.message, 5000);
         }
       } finally {
         loadingOverlay.classList.add("hidden");
@@ -811,8 +808,8 @@ const title = project.title || "Untitled Project";
             URL.revokeObjectURL(url);
 
             // Show success message
-            if (window.showModal) {
-              window.showModal(
+            if (window.showNotice) {
+              window.showNotice(
                 "success",
                 "PDF Downloaded",
                 "Your PDF has been downloaded successfully!",
@@ -825,8 +822,8 @@ const title = project.title || "Untitled Project";
           }
         } catch (error) {
           console.error("Error downloading PDF:", error);
-          if (window.showModal) {
-            window.showModal("error", "Download Failed", error.message, 5000);
+          if (window.showNotice) {
+            window.showNotice("error", "Download Failed", error.message, 5000);
           }
         } finally {
           // Reset button state
@@ -846,7 +843,7 @@ const title = project.title || "Untitled Project";
     // Save to Documents handler
     document.getElementById("saveToDocumentsBtn").addEventListener("click", async () => {
       if (!generatedDocument) {
-        window.showModal("error", "No Document", "Please generate a document first", 3000);
+        window.showNotice("error", "No Document", "Please generate a document first", 3000);
         return;
       }
 
@@ -876,7 +873,7 @@ const title = project.title || "Untitled Project";
         const result = await response.json();
 
         if (result.success) {
-          window.showModal("success", "Document Saved", "PDF has been saved to documents", 3000);
+          window.showNotice("success", "Document Saved", "PDF has been saved to documents", 3000);
           // Hide the save button since it's now saved
           saveBtn.classList.add("hidden");
         } else {
@@ -884,7 +881,7 @@ const title = project.title || "Untitled Project";
         }
       } catch (error) {
         console.error("Error saving document:", error);
-        window.showModal("error", "Save Failed", error.message, 5000);
+        window.showNotice("error", "Save Failed", error.message, 5000);
       } finally {
         // Reset button state
         saveBtn.disabled = false;

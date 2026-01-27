@@ -698,18 +698,18 @@ const recipientTypeOptions = [
         const result = await response.json();
 
         if (result.success) {
-          if ((window as any).showModal) (window as any).showModal("success", result.message);
+          if ((window as any).showNotice) (window as any).showNotice("success", result.message);
           setTimeout(function () {
             window.location.reload();
           }, 1000);
         } else {
-          if ((window as any).showModal)
-            (window as any).showModal("error", result.error || "Failed to save newsletter");
+          if ((window as any).showNotice)
+            (window as any).showNotice("error", result.error || "Failed to save newsletter");
         }
       } catch (error) {
         console.error("Error saving newsletter:", error);
-        if ((window as any).showModal)
-          (window as any).showModal("error", "Error saving newsletter");
+        if ((window as any).showNotice)
+          (window as any).showNotice("error", "Error saving newsletter");
       } finally {
         if (submitBtn) {
           (submitBtn as HTMLButtonElement).disabled = false;
@@ -734,8 +734,8 @@ const recipientTypeOptions = [
         const result = await response.json();
 
         if (result.success) {
-          if ((window as any).showModal)
-            (window as any).showModal(
+          if ((window as any).showNotice)
+            (window as any).showNotice(
               "success",
               result.message + (result.failureCount > 0 ? ` (${result.failureCount} failed)` : "")
             );
@@ -743,13 +743,13 @@ const recipientTypeOptions = [
             window.location.reload();
           }, 2000);
         } else {
-          if ((window as any).showModal)
-            (window as any).showModal("error", result.error || "Failed to send newsletter");
+          if ((window as any).showNotice)
+            (window as any).showNotice("error", result.error || "Failed to send newsletter");
         }
       } catch (error) {
         console.error("Error sending newsletter:", error);
-        if ((window as any).showModal)
-          (window as any).showModal("error", "Error sending newsletter");
+        if ((window as any).showNotice)
+          (window as any).showNotice("error", "Error sending newsletter");
       }
     }
 
@@ -765,17 +765,18 @@ const recipientTypeOptions = [
         const result = await response.json();
 
         if (result.success) {
-          if ((window as any).showModal) (window as any).showModal("success", "Newsletter deleted");
+          if ((window as any).showNotice)
+            (window as any).showNotice("success", "Newsletter deleted");
           const item = document.querySelector(`[data-newsletter-item="${id}"]`);
           if (item) item.remove();
         } else {
-          if ((window as any).showModal)
-            (window as any).showModal("error", result.error || "Failed to delete newsletter");
+          if ((window as any).showNotice)
+            (window as any).showNotice("error", result.error || "Failed to delete newsletter");
         }
       } catch (error) {
         console.error("Error deleting newsletter:", error);
-        if ((window as any).showModal)
-          (window as any).showModal("error", "Error deleting newsletter");
+        if ((window as any).showNotice)
+          (window as any).showNotice("error", "Error deleting newsletter");
       }
     }
 
@@ -790,13 +791,13 @@ const recipientTypeOptions = [
       const scheduledFor = new Date(datetime);
 
       if (isNaN(scheduledFor.getTime())) {
-        if ((window as any).showModal) (window as any).showModal("error", "Invalid date format");
+        if ((window as any).showNotice) (window as any).showNotice("error", "Invalid date format");
         return;
       }
 
       if (scheduledFor <= new Date()) {
-        if ((window as any).showModal)
-          (window as any).showModal("error", "Scheduled time must be in the future");
+        if ((window as any).showNotice)
+          (window as any).showNotice("error", "Scheduled time must be in the future");
         return;
       }
 
@@ -811,16 +812,16 @@ const recipientTypeOptions = [
         const result = await response.json();
 
         if (result.success) {
-          if ((window as any).showModal) (window as any).showModal("success", result.message);
+          if ((window as any).showNotice) (window as any).showNotice("success", result.message);
           setTimeout(() => window.location.reload(), 1500);
         } else {
-          if ((window as any).showModal)
-            (window as any).showModal("error", result.error || "Failed to schedule newsletter");
+          if ((window as any).showNotice)
+            (window as any).showNotice("error", result.error || "Failed to schedule newsletter");
         }
       } catch (error) {
         console.error("Error scheduling newsletter:", error);
-        if ((window as any).showModal)
-          (window as any).showModal("error", "Error scheduling newsletter");
+        if ((window as any).showNotice)
+          (window as any).showNotice("error", "Error scheduling newsletter");
       }
     }
 
