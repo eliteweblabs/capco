@@ -1535,7 +1535,11 @@ You can embed components:
         const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
 
         // Sanitize slug: remove leading/trailing slashes and whitespace
-        const slug = slugInput?.value?.trim().replace(/^\/+|\/+$/g, "") || "";
+        // EXCEPT for '/' which is allowed for the home page
+        let slug = slugInput?.value?.trim() || "";
+        if (slug !== "/") {
+          slug = slug.replace(/^\/+|\/+$/g, "");
+        }
         const title = titleInput?.value?.trim() || null;
         const description = descInput?.value?.trim() || null;
         const content = contentTextarea?.value?.trim() || "";
