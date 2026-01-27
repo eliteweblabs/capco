@@ -1,8 +1,6 @@
 ---
 import SimpleIcon from "../common/SimpleIcon.astro";
 import SlotMachineModalStaff from "../form/SlotMachineModalStaff.astro";
-import Tooltip from "../common/Tooltip.astro";
-import UserIcon from "../common/UserIcon.astro";
 interface Props {
   project: {
     punchlistItems?: { completed: number; total: number };
@@ -359,6 +357,7 @@ const statusColor = currentStatusColor || "gray";
               title="Assign Staff Member"
               options={staffOptions}
               selectedValue={project?.assignedToId || ""}
+              buttonType="icon"
               buttonText={(() => {
                 if (!project?.assignedToId) return "Unassigned";
                 const assignedStaff = staffOptions.find(
@@ -366,8 +365,8 @@ const statusColor = currentStatusColor || "gray";
                 );
                 return assignedStaff?.label || "Unknown Staff";
               })()}
-              buttonClass="w-full mb-4"
-              buttonVariant="primary"
+              buttonClass="w-8 h-8 rounded-full border-2 block items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
+              buttonVariant="link"
               placeholder=""
               saveApiEndpoint="utils/assign-staff"
               showCloseButton={true}
@@ -443,6 +442,8 @@ const statusColor = currentStatusColor || "gray";
     </td>
 
     <script>
+      import { generateTooltipHTML } from "../../lib/tooltip-styles";
+
       // Update time display every minute
       function updateTimeDisplay() {
         const timeElements = document.querySelectorAll("[data-time-since-update]");
@@ -589,17 +590,14 @@ const statusColor = currentStatusColor || "gray";
           // Create file icons with tooltips
           projectFiles.forEach((file: any) => {
             const fileIconContainer = document.createElement("div");
-            fileIconContainer.className = "relative group";
-            fileIconContainer.innerHTML = `
-            <div class="cursor-pointer">
-              ${getFileIcon(file.fileType)}
-            </div>
-            <!-- CSS Tooltip -->
-            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-              ${file.title || file.fileName}
-              <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-            </div>
-          `;
+
+            // Use the generateTooltipHTML helper from tooltip-styles.ts
+            const iconHTML = `<div class="cursor-pointer">${getFileIcon(file.fileType)}</div>`;
+            const tooltipHTML = generateTooltipHTML(file.title || file.fileName, iconHTML, {
+              position: "top",
+            });
+
+            fileIconContainer.innerHTML = tooltipHTML;
 
             container.appendChild(fileIconContainer);
           });
