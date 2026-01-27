@@ -2,21 +2,26 @@
  * Manifest.json Build Processor
  *
  * This script processes the manifest.json template with global variables
- * and placeholders at build time, similar to vapi-assistant-config.js
+ * from the CMS database (globalSettings table) at build time.
+ *
+ * DATA SOURCES (in priority order):
+ * 1. CMS Database (globalSettings table via globalCompanyData)
+ * 2. Environment variables (fallback)
+ * 3. Site-config JSON files (for PWA shortcuts)
  *
  * TEMPLATE VARIABLES:
- * - {{RAILWAY_PROJECT_NAME}} - Company name from environment
- * - {{GLOBAL_COMPANY_SLOGAN}} - Company slogan from environment
+ * - {{RAILWAY_PROJECT_NAME}} - Company name from CMS/environment
+ * - {{GLOBAL_COMPANY_SLOGAN}} - Company slogan from CMS/environment
  * - {{YEAR}} - Current year from environment
- * - {{GLOBAL_COLOR_PRIMARY}} - Primary brand color
- * - {{GLOBAL_COLOR_SECONDARY}} - Secondary brand color
+ * - {{GLOBAL_COLOR_PRIMARY}} - Primary brand color from CMS/environment
+ * - {{GLOBAL_COLOR_SECONDARY}} - Secondary brand color from CMS/environment
  * - {{RAILWAY_PUBLIC_DOMAIN}} - Site URL for start_url and scope
  *
  * USAGE:
  * - Run during build process: node scripts/process-manifest.js
  * - Reads from public/manifest.json.template
  * - Outputs to public/manifest.json
- * - Uses environment variables for dynamic content
+ * - Uses CMS database for dynamic content with env fallbacks
  */
 
 import fs from "fs";
@@ -26,84 +31,237 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Get environment variables with fallbacks
-const getEnvVar = (key, fallback = "") => {
-  return process.env[key] || fallback;
-};
+/**
+ * Slugify company name for file lookups
+ */
+function slugifyCompanyName(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
 
-// Load global company data
-const globalCompanyName = getEnvVar("RAILWAY_PROJECT_NAME", "CAPCO Design Group");
-const globalCompanySlogan = getEnvVar(
-  "GLOBAL_COMPANY_SLOGAN",
-  "Professional Fire Protection Plan Review & Approval"
-);
-const year = getEnvVar("YEAR", new Date().getFullYear().toString());
-const globalColorPrimary = getEnvVar("GLOBAL_COLOR_PRIMARY", "#825BDD");
-const globalColorSecondary = getEnvVar("GLOBAL_COLOR_SECONDARY", "#0ea5e9");
-const siteUrl = getEnvVar("RAILWAY_PUBLIC_DOMAIN", "http://localhost:4321");
+/**
+ * Load company data from CMS database
+ */
+async function loadCompanyData() {
+  try {
+    // We can't import .ts files directly in Node.js, so we'll access the database directly
+    // This uses the same logic as globalCompanyData() but without the TypeScript dependency
+    
+    // Check if we have the necessary env vars for Supabase
+    const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("⚠️  Supabase credentials not found, using environment variables only");
+      return null;
+    }
 
-// Template file paths
-const templatePath = path.join(__dirname, "../public/manifest.json.template");
-const outputPath = path.join(__dirname, "../public/manifest.json");
+    // Dynamically import Supabase client
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-console.log("🔧 Processing manifest.json with global variables...");
-console.log(`📁 Template: ${templatePath}`);
-console.log(`📁 Output: ${outputPath}`);
+    // Fetch all global settings
+    const { data, error } = await supabase.from("globalSettings").select("key, value");
 
-try {
-  // Check if template exists
-  if (!fs.existsSync(templatePath)) {
-    console.log("⚠️  Template file not found, creating from current manifest.json...");
+    if (error) {
+      console.warn("⚠️  Failed to fetch from database:", error.message);
+      return null;
+    }
 
-    // Read current manifest.json as template
-    const currentManifest = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+    if (!data || data.length === 0) {
+      console.warn("⚠️  No global settings found in database");
+      return null;
+    }
 
-    // Convert to template by replacing values with placeholders
-    const templateManifest = {
-      ...currentManifest,
-      name: "{{RAILWAY_PROJECT_NAME}}",
-      description: "{{GLOBAL_COMPANY_SLOGAN}}",
-      theme_color: "{{GLOBAL_COLOR_PRIMARY}}",
-      background_color: "#ffffff",
-      shortcuts: [
-        {
-          name: "New Project",
-          short_name: "New",
-          description: "Create a new fire protection project",
-          url: "{{RAILWAY_PUBLIC_DOMAIN}}/dashboard#new-project",
-          icons: [],
-        },
-      ],
+    // Convert array to key-value object
+    const settings = data.reduce((acc, item) => {
+      acc[item.key] = item.value || "";
+      return acc;
+    }, {});
+
+    // Helper to get setting with env fallback
+    const get = (key, envKey) => {
+      const dbValue = settings[key];
+      if (dbValue) return dbValue;
+      if (envKey && process.env[envKey]) return process.env[envKey];
+      return "";
     };
 
-    // Write template file
-    fs.writeFileSync(templatePath, JSON.stringify(templateManifest, null, 2));
-    console.log("✅ Created manifest.json.template");
+    // Return data in same format as globalCompanyData()
+    return {
+      globalCompanyName: get("companyName", "RAILWAY_PROJECT_NAME") || "Company Name Not Set",
+      globalCompanySlogan: get("slogan"),
+      globalCompanyAddress: get("address", "GLOBAL_COMPANY_ADDRESS"),
+      globalCompanyPhone: get("phone", "VAPI_PHONE_NUMBER"),
+      globalCompanyEmail: get("email", "GLOBAL_COMPANY_EMAIL"),
+      globalCompanyWebsite: get("website"),
+      primaryColor: get("primary_color", "GLOBAL_COLOR_PRIMARY"),
+      secondaryColor: get("secondary_color", "GLOBAL_COLOR_SECONDARY"),
+      fontFamily: get("font_family", "FONT_FAMILY") || "Outfit Variable",
+      secondaryFontFamily: get("secondary_font_family", "FONT_FAMILY_FALLBACK") || "sans-serif",
+    };
+  } catch (error) {
+    console.warn("⚠️  Failed to load company data from CMS database:", error.message);
+    return null;
+  }
+}
+
+/**
+ * Load site config for PWA shortcuts (optional)
+ */
+function loadSiteConfig(companyName) {
+  const companySlug = slugifyCompanyName(companyName);
+  let configPath = path.join(process.cwd(), `site-config-${companySlug}.json`);
+
+  // Fallback to generic site-config.json
+  if (!fs.existsSync(configPath)) {
+    configPath = path.join(process.cwd(), "site-config.json");
   }
 
-  // Read template
-  const templateContent = fs.readFileSync(templatePath, "utf8");
+  if (fs.existsSync(configPath)) {
+    try {
+      const content = fs.readFileSync(configPath, "utf-8");
+      return JSON.parse(content);
+    } catch (error) {
+      console.warn("⚠️  Failed to load site-config.json:", error.message);
+    }
+  }
+  return null;
+}
 
-  // Replace placeholders with actual values
-  let processedContent = templateContent
-    .replace(/\{\{RAILWAY_PROJECT_NAME\}\}/g, globalCompanyName)
-    .replace(/\{\{GLOBAL_COMPANY_SLOGAN\}\}/g, globalCompanySlogan)
-    .replace(/\{\{YEAR\}\}/g, year)
-    .replace(/\{\{GLOBAL_COLOR_PRIMARY\}\}/g, globalColorPrimary)
-    .replace(/\{\{GLOBAL_COLOR_SECONDARY\}\}/g, globalColorSecondary);
+/**
+ * Main processing function
+ */
+async function processManifest() {
+  // Load company data from CMS database
+  const companyData = await loadCompanyData();
 
-  // Parse and validate JSON
-  const manifest = JSON.parse(processedContent);
+  // Get environment variables with fallbacks (used when CMS data unavailable)
+  const getEnvVar = (key, fallback = "") => process.env[key] || fallback;
 
-  // Write processed manifest
-  fs.writeFileSync(outputPath, JSON.stringify(manifest, null, 2));
+  // Load global company data from CMS first, then env vars
+  const globalCompanyName =
+    companyData?.globalCompanyName || getEnvVar("RAILWAY_PROJECT_NAME", "CAPCO Design Group");
+  const globalCompanySlogan =
+    companyData?.globalCompanySlogan ||
+    getEnvVar("GLOBAL_COMPANY_SLOGAN", "Professional Fire Protection Plan Review & Approval");
+  const year = getEnvVar("YEAR", new Date().getFullYear().toString());
+  const globalColorPrimary =
+    companyData?.primaryColor || getEnvVar("GLOBAL_COLOR_PRIMARY", "#825BDD");
+  const globalColorSecondary =
+    companyData?.secondaryColor || getEnvVar("GLOBAL_COLOR_SECONDARY", "#0ea5e9");
+  const siteUrl =
+    companyData?.globalCompanyWebsite ||
+    getEnvVar("RAILWAY_PUBLIC_DOMAIN", "http://localhost:4321");
 
-  console.log("✅ Manifest.json processed successfully!");
+  // Load site config for PWA shortcuts (optional)
+  const siteConfig = loadSiteConfig(globalCompanyName);
+
+  // Template file paths
+  const templatePath = path.join(__dirname, "../public/manifest.json.template");
+  const outputPath = path.join(__dirname, "../public/manifest.json");
+
+  console.log("🔧 Processing manifest.json with CMS data...");
   console.log(`📊 Company: ${globalCompanyName}`);
   console.log(`📊 Slogan: ${globalCompanySlogan}`);
   console.log(`📊 Theme Color: ${globalColorPrimary}`);
   console.log(`📊 Site URL: ${siteUrl}`);
-} catch (error) {
-  console.error("❌ Error processing manifest.json:", error.message);
-  process.exit(1);
+
+  try {
+    // Check if template exists, create default if missing
+    if (!fs.existsSync(templatePath)) {
+      console.log("⚠️  Template file not found, creating default...");
+
+      const defaultTemplate = {
+        name: "{{RAILWAY_PROJECT_NAME}}",
+        short_name: "{{RAILWAY_PROJECT_NAME}}",
+        description: "{{GLOBAL_COMPANY_SLOGAN}}",
+        start_url: "/",
+        display: "standalone",
+        background_color: "#ffffff",
+        theme_color: "{{GLOBAL_COLOR_PRIMARY}}",
+        orientation: "portrait-primary",
+        scope: "/",
+        icons: [
+          {
+            src: "/favicon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any maskable",
+          },
+          {
+            src: "/favicon.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/favicon.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+        ],
+        categories: ["business", "productivity"],
+        screenshots: [],
+        shortcuts: [],
+        prefer_related_applications: false,
+        lang: "en",
+        dir: "ltr",
+      };
+
+      fs.writeFileSync(templatePath, JSON.stringify(defaultTemplate, null, 2));
+      console.log("✅ Created manifest.json.template");
+    }
+
+    // Read template
+    const templateContent = fs.readFileSync(templatePath, "utf8");
+
+    // Replace placeholders with actual values
+    let processedContent = templateContent
+      .replace(/\{\{RAILWAY_PROJECT_NAME\}\}/g, globalCompanyName)
+      .replace(/\{\{GLOBAL_COMPANY_SLOGAN\}\}/g, globalCompanySlogan)
+      .replace(/\{\{YEAR\}\}/g, year)
+      .replace(/\{\{GLOBAL_COLOR_PRIMARY\}\}/g, globalColorPrimary)
+      .replace(/\{\{GLOBAL_COLOR_SECONDARY\}\}/g, globalColorSecondary)
+      .replace(/\{\{RAILWAY_PUBLIC_DOMAIN\}\}/g, siteUrl);
+
+    // Parse and validate JSON
+    const manifest = JSON.parse(processedContent);
+
+    // Add PWA shortcuts from site-config if available
+    if (siteConfig?.pwa?.shortcuts && Array.isArray(siteConfig.pwa.shortcuts)) {
+      manifest.shortcuts = siteConfig.pwa.shortcuts;
+      console.log(`✅ Added ${siteConfig.pwa.shortcuts.length} PWA shortcuts from site-config`);
+    } else {
+      // Use default shortcuts if none configured
+      manifest.shortcuts = [
+        {
+          name: "New Project",
+          short_name: "New",
+          description: "Create a new fire protection project",
+          url: "/project/new",
+          icons: [],
+        },
+      ];
+    }
+
+    // Write processed manifest
+    fs.writeFileSync(outputPath, JSON.stringify(manifest, null, 2));
+
+    console.log("✅ Manifest.json processed successfully!");
+  } catch (error) {
+    console.error("❌ Error processing manifest.json:", error.message);
+    process.exit(1);
+  }
 }
+
+// Run the async function
+processManifest().catch((error) => {
+  console.error("❌ Fatal error:", error);
+  process.exit(1);
+});
