@@ -1,0 +1,394 @@
+---
+// Feedback Widget Component
+// Modal feedback form for authenticated users to submit feedback
+
+import CloseButton from "../ui/CloseButton.astro";
+
+interface Props {
+  currentUser?: any;
+}
+
+const { currentUser } = Astro.props;
+
+// Only show for authenticated users
+const isAuth = currentUser && currentUser.id;
+
+if (!isAuth) {
+  // Return empty component for non-authenticated users
+  return;
+}
+---
+
+<div id="feedback-widget" class="fixed bottom-4 right-4 z-50">
+  <!-- Feedback Modal -->
+  <div
+    id="feedback-modal"
+    class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 items-center justify-center p-4"
+    role="dialog"
+    aria-labelledby="feedback-modal-project-title"
+    aria-hidden="true"
+  >
+    <div class="bg-gray-100 color-background rounded-lg shadow-xl max-w-md w-full max-h-[90vh]">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <h3
+          id="feedback-modal-project-title"
+          class="text-lg font-semibold text-gray-900 dark:text-white"
+        >
+          Leave Feedback
+        </h3>
+        <CloseButton id="feedback-close" tooltipText="Close feedback form" />
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 overflow-hidden">
+        <form id="feedback-form" class="space-y-4">
+          <!-- Feedback Type -->
+          <div>
+            <label
+              for="feedback-type"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Type of Feedback
+            </label>
+            <select
+              id="feedback-type"
+              name="type"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="">Select feedback type...</option>
+              <option value="bug">🐛 Bug Report</option>
+              <option value="feature">💡 Feature Request</option>
+              <option value="improvement">⚡ Improvement</option>
+              <option value="design">🎨 Design Feedback</option>
+              <option value="general">💬 General Comment</option>
+            </select>
+          </div>
+
+          <!-- Priority -->
+          <div>
+            <label
+              for="feedback-priority"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Priority
+            </label>
+            <select
+              id="feedback-priority"
+              name="priority"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="low">🟢 Low</option>
+              <option value="medium" selected>
+                🟡 Medium
+              </option>
+              <option value="high">🟠 High</option>
+              <option value="urgent">🔴 Urgent</option>
+            </select>
+          </div>
+
+          <!-- Subject -->
+          <div>
+            <label
+              for="feedback-subject"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Subject
+            </label>
+            <input
+              type="text"
+              id="feedback-subject"
+              name="subject"
+              required
+              maxlength="100"
+              placeholder="Brief description of your feedback..."
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+
+          <!-- Message -->
+          <div>
+            <label
+              for="feedback-message"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Message
+            </label>
+            <textarea
+              id="feedback-message"
+              name="message"
+              required
+              rows="4"
+              maxlength="1000"
+              placeholder="Please provide detailed feedback..."
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white resize-none"
+            ></textarea>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <span id="message-count">0</span>/1000 characters
+            </div>
+          </div>
+
+          <!-- Anonymous Option -->
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="feedback-anonymous"
+              name="anonymous"
+              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+            />
+            <label
+              for="feedback-anonymous"
+              class="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+            >
+              Submit anonymously
+            </label>
+          </div>
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700 color-background">
+        <button
+          type="button"
+          id="feedback-cancel"
+          class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          id="feedback-submit"
+          form="feedback-form"
+          class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <span class="submit-text">Submit Feedback</span>
+          <span class="loading-text hidden">Submitting...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Feedback Widget JavaScript
+  document.addEventListener("DOMContentLoaded", function () {
+    const feedbackButton = document.getElementById("feedback-button") as HTMLButtonElement;
+    const feedbackModal = document.getElementById("feedback-modal") as HTMLDivElement;
+    const feedbackClose = document.getElementById("feedback-close") as HTMLButtonElement;
+    const feedbackCancel = document.getElementById("feedback-cancel") as HTMLButtonElement;
+    const feedbackForm = document.getElementById("feedback-form") as HTMLFormElement;
+    const feedbackSubmit = document.getElementById("feedback-submit") as HTMLButtonElement;
+    const messageTextarea = document.getElementById("feedback-message") as HTMLTextAreaElement;
+    const messageCount = document.getElementById("message-count") as HTMLSpanElement;
+
+    // Show modal - using global modal animation pattern
+    function showFeedbackModal() {
+      feedbackModal.classList.remove("hidden");
+      feedbackModal.classList.add("flex", "modal-animated", "modal-fade-in");
+      feedbackModal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+
+      // Add animation to modal content
+      const modalContent = feedbackModal.querySelector(".bg-gray-100") as HTMLElement;
+      if (modalContent) {
+        modalContent.classList.add("modal-animated", "modal-content-slide-in");
+      }
+
+      // Focus first input
+      const firstInput = feedbackForm.querySelector("input, select, textarea") as HTMLElement;
+      if (firstInput) {
+        setTimeout(() => firstInput.focus(), 100);
+      }
+    }
+
+    // Hide modal - using global modal animation pattern
+    function hideFeedbackModal() {
+      const modalContent = feedbackModal.querySelector(".bg-gray-100") as HTMLElement;
+      
+      // Remove entrance animations and add exit animations
+      feedbackModal.classList.remove("modal-fade-in");
+      feedbackModal.classList.add("modal-fade-out");
+      
+      if (modalContent) {
+        modalContent.classList.remove("modal-content-slide-in");
+        modalContent.classList.add("modal-content-slide-out");
+      }
+
+      // Wait for animation to complete before hiding
+      setTimeout(() => {
+        feedbackModal.classList.add("hidden");
+        feedbackModal.classList.remove("flex", "modal-animated", "modal-fade-out");
+        feedbackModal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+
+        if (modalContent) {
+          modalContent.classList.remove("modal-animated", "modal-content-slide-out");
+        }
+
+        // Reset form
+        feedbackForm.reset();
+        updateMessageCount();
+      }, 300); // Match animation duration
+    }
+
+    // Update character count
+    function updateMessageCount() {
+      if (!messageTextarea || !messageCount) return;
+
+      const count = messageTextarea.value.length;
+      messageCount.textContent = count.toString();
+
+      if (count > 900) {
+        messageCount.classList.add("text-red-500");
+      } else {
+        messageCount.classList.remove("text-red-500");
+      }
+    }
+
+    // Event listeners
+    feedbackButton?.addEventListener("click", showFeedbackModal);
+    feedbackClose?.addEventListener("click", hideFeedbackModal);
+    feedbackCancel?.addEventListener("click", hideFeedbackModal);
+    messageTextarea?.addEventListener("input", updateMessageCount);
+
+    // Close modal on backdrop click
+    feedbackModal?.addEventListener("click", function (e) {
+      if (e.target === feedbackModal) {
+        hideFeedbackModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !feedbackModal.classList.contains("hidden")) {
+        hideFeedbackModal();
+      }
+    });
+
+    // Form submission
+    feedbackForm?.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      if (!feedbackSubmit) return;
+
+      const submitText = feedbackSubmit.querySelector(".submit-text") as HTMLElement;
+      const loadingText = feedbackSubmit.querySelector(".loading-text") as HTMLElement;
+
+      // Show loading state
+      feedbackSubmit.disabled = true;
+      submitText?.classList.add("hidden");
+      loadingText?.classList.remove("hidden");
+
+      try {
+        const formData = new FormData(feedbackForm);
+        const feedbackData = {
+          type: formData.get("type"),
+          priority: formData.get("priority"),
+          subject: formData.get("subject"),
+          message: formData.get("message"),
+          anonymous: formData.get("anonymous") === "on",
+        };
+
+        const response = await fetch("/api/feedback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(feedbackData),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Show success notification using global showModal
+          if ((window as any).showModal) {
+            (window as any).showModal({
+              type: "success",
+              title: "Feedback Submitted",
+              message: "Thank you for your feedback! We appreciate your input.",
+              duration: 3000,
+            });
+          } else {
+            alert("Feedback submitted successfully! Thank you for your input.");
+          }
+
+          hideFeedbackModal();
+        } else {
+          throw new Error(result.error || "Failed to submit feedback");
+        }
+      } catch (error) {
+        console.error("Feedback submission error:", error);
+
+        // Show error notification using global showModal
+        if ((window as any).showModal) {
+          (window as any).showModal({
+            type: "error",
+            title: "Submission Failed",
+            message: "Failed to submit feedback. Please try again.",
+            duration: 5000,
+          });
+        } else {
+          alert("Failed to submit feedback. Please try again.");
+        }
+      } finally {
+        // Reset button state
+        feedbackSubmit.disabled = false;
+        submitText?.classList.remove("hidden");
+        loadingText?.classList.add("hidden");
+      }
+    });
+
+    // Initialize character count
+    updateMessageCount();
+  });
+</script>
+
+<style>
+  /* Custom styles for feedback widget */
+  #feedback-widget {
+    font-family: inherit;
+  }
+
+  #feedback-modal {
+    backdrop-filter: blur(4px);
+  }
+
+  #feedback-modal .bg-gray-100 {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Focus styles for accessibility */
+  #feedback-button:focus,
+  #feedback-close:focus,
+  #feedback-cancel:focus,
+  #feedback-submit:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Form validation styles */
+  #feedback-form input:invalid,
+  #feedback-form select:invalid,
+  #feedback-form textarea:invalid {
+    border-color: #ef4444;
+  }
+
+  #feedback-form input:valid,
+  #feedback-form select:valid,
+  #feedback-form textarea:valid {
+    border-color: #10b981;
+  }
+</style>

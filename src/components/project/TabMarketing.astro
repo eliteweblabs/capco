@@ -12,13 +12,8 @@ import Button from "../common/Button.astro";
 import StickyActions from "./StickyActions.astro";
 import LoadingSpinner from "../ui/LoadingSpinner.astro";
 
-const {
-  project,
-  currentUser,
-  secondaryTextClasses,
-  primaryTextClasses,
-  globalInputClasses,
-} = Astro.props;
+const { project, currentUser, secondaryTextClasses, primaryTextClasses, globalInputClasses } =
+  Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 const isAdminOrStaff = currentRole === "Admin" || currentRole === "Staff";
@@ -31,7 +26,7 @@ if (!isAdminOrStaff) {
 
 <div
   id="content-marketing"
-  class="tab-content shadow-lg p-4 color-background relative min-h-[calc(100dvh-24rem)]"
+  class="tab-content shadow-lg p-4 color-background relative min-h-[calc(100dvh-24rem)] mb-16"
 >
   <div class="space-y-6">
     <!-- Header -->
@@ -41,7 +36,8 @@ if (!isAdminOrStaff) {
         Marketing & Public Content
       </h2>
       <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        Manage public-facing images for this project's portfolio, microsite, and PDF generation. Images uploaded here will be stored in a public bucket.
+        Manage public-facing images for this project's portfolio, microsite, and PDF generation.
+        Images uploaded here will be stored in a public bucket.
       </p>
     </div>
 
@@ -54,10 +50,13 @@ if (!isAdminOrStaff) {
       <p class="text-sm text-gray-600 dark:text-gray-400">
         This image will appear as the main project image in the portfolio grid.
       </p>
-      
+
       <!-- Featured Image URL Input -->
       <div class="space-y-3">
-        <label for="featured-image-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          for="featured-image-url"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           Featured Image URL
         </label>
         <input
@@ -67,13 +66,19 @@ if (!isAdminOrStaff) {
           class={`w-full ${globalInputClasses}`}
         />
         <p class="text-xs text-gray-500 dark:text-gray-400">
-          Enter the URL of the image you want to feature. You can copy URLs from the gallery images below.
+          Enter the URL of the image you want to feature. You can copy URLs from the gallery images
+          below.
         </p>
       </div>
 
       <!-- Preview of Featured Image -->
       <div id="featured-image-preview" class="hidden">
-        <img id="featured-image-preview-img" src="" alt="Featured image preview" class="w-full h-64 object-cover rounded-lg" />
+        <img
+          id="featured-image-preview-img"
+          src=""
+          alt="Featured image preview"
+          class="w-full h-64 object-cover rounded-lg"
+        />
       </div>
     </div>
 
@@ -102,9 +107,7 @@ if (!isAdminOrStaff) {
               Upload high-quality images for public display (max 10MB each)
             </p>
           </div>
-          <Button icon="folder-open" iconPosition="left" variant="outline">
-            Browse Images
-          </Button>
+          <Button icon="folder-open" iconPosition="left" variant="outline"> Browse Images </Button>
         </div>
         <input
           type="file"
@@ -125,24 +128,23 @@ if (!isAdminOrStaff) {
           >
           </div>
         </div>
-        <p id="marketing-upload-status" class="text-sm text-gray-600 dark:text-gray-400">Uploading...</p>
+        <p id="marketing-upload-status" class="text-sm text-gray-600 dark:text-gray-400">
+          Uploading...
+        </p>
       </div>
 
       <!-- Gallery Grid -->
-      <div id="gallery-images-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div
+        id="gallery-images-container"
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+      >
         <LoadingSpinner />
       </div>
     </div>
 
     <!-- Save Changes Button -->
     <StickyActions columns="1">
-      <Button
-        id="save-marketing-btn"
-        variant="primary"
-        size="lg"
-        icon="check"
-        iconPosition="right"
-      >
+      <Button id="save-marketing-btn" variant="primary" size="lg" icon="check" iconPosition="right">
         Save Marketing Content
       </Button>
     </StickyActions>
@@ -191,7 +193,7 @@ if (!isAdminOrStaff) {
 
         // Get current featured image URL from project
         featuredImageUrl = project?.featuredImageUrl;
-        
+
         // Set the input value
         const urlInput = document.getElementById("featured-image-url");
         if (urlInput && featuredImageUrl) {
@@ -212,7 +214,7 @@ if (!isAdminOrStaff) {
 
   function setupFeaturedImageInput() {
     const urlInput = document.getElementById("featured-image-url");
-    
+
     if (urlInput) {
       // Update preview on input change
       urlInput.addEventListener("input", (e) => {
@@ -225,9 +227,9 @@ if (!isAdminOrStaff) {
   function updateFeaturedImagePreview(url) {
     const previewContainer = document.getElementById("featured-image-preview");
     const previewImg = document.getElementById("featured-image-preview-img");
-    
+
     if (!previewContainer || !previewImg) return;
-    
+
     if (url && url.startsWith("http")) {
       previewImg.src = url;
       previewContainer.classList.remove("hidden");
@@ -396,16 +398,21 @@ if (!isAdminOrStaff) {
   window.copyImageUrl = async function (url) {
     try {
       await navigator.clipboard.writeText(url);
-      
+
       // Also set it in the input field
       const urlInput = document.getElementById("featured-image-url");
       if (urlInput) {
         urlInput.value = url;
         updateFeaturedImagePreview(url);
       }
-      
+
       if (window.showModal) {
-        window.showModal("success", "URL copied to clipboard", "The featured image field has been updated", 2000);
+        window.showModal(
+          "success",
+          "URL copied to clipboard",
+          "The featured image field has been updated",
+          2000
+        );
       }
     } catch (error) {
       console.error("❌ [MARKETING] Error copying URL:", error);
