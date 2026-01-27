@@ -23,41 +23,63 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
   data-is-auth={currentUser ? "true" : "false"}
   class={`rounded-full ml-1 inline-flex items-center p-2 text-sm text-gray-500 ${responsiveClass}`}
 >
-  <span class="sr-only">Open sidebar</span>
-  <span class="hidd"
-    ><svg
-      class="w-7 h-7"
-      data-sidebar-toggle-collapse-icon=""
-      aria-hidden="true"
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <path
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-width="1"
-        d="M5 7h14M5 12h14M5 17h10"></path>
-    </svg>
+
+  <div class="flex items-center relative h-6 justify-center overflow-hidden w-6" id="toggle-icon-container">
     <svg
-      class="hidden w-7 h-7"
-      data-sidebar-toggle-expand-icon=""
-      aria-hidden="true"
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
+      class="transition-all duration-300 absolute h-6 lucide transform w-6 lucide-menu opacity-100 rotate-0 scale-100"
       fill="none"
       viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      height="24"
+      width="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      id="menu-icon"
+      ><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg
     >
-      <path
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-width="1"
-        d="M5 7h14M5 12h14M5 17h14"></path>
-    </svg>
-  </span>
+    <svg
+      class="transition-all duration-300 absolute h-6 lucide transform w-6 lucide-x opacity-0 -rotate-90 scale-0"
+      fill="none"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      height="24"
+      width="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      id="close-icon"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+  </div>
+
+  <span class="sr-only">Open sidebar</span>
+  <!-- <svg
+    class="w-7 h-7"
+    data-sidebar-toggle-collapse-icon=""
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <path stroke="currentColor" stroke-linecap="round" stroke-width="1" d="M5 7h14M5 12h14M5 17h10"
+    ></path>
+  </svg>
+  <svg
+    class="hidden w-7 h-7"
+    data-sidebar-toggle-expand-icon=""
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <path stroke="currentColor" stroke-linecap="round" stroke-width="1" d="M5 7h14M5 12h14M5 17h14"
+    ></path>
+  </svg> -->
 </button>
 
 <script>
@@ -70,6 +92,8 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
     const collapseShowElements = document.querySelectorAll("[data-sidebar-collapse-show]");
     const collapseIcon = document.querySelector("[data-sidebar-toggle-collapse-icon]");
     const expandIcon = document.querySelector("[data-sidebar-toggle-expand-icon]");
+    const menuIcon = document.getElementById("menu-icon");
+    const closeIcon = document.getElementById("close-icon");
 
     if (!toggleButton || !sidebar) return;
 
@@ -91,6 +115,23 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
         } else {
           collapseIcon.classList.add("hidden");
           expandIcon.classList.remove("hidden");
+        }
+      }
+      
+      // Toggle between menu and close icons
+      if (menuIcon && closeIcon) {
+        if (isExpanded) {
+          // Show close icon (X)
+          menuIcon.classList.remove("opacity-100", "rotate-0", "scale-100");
+          menuIcon.classList.add("opacity-0", "rotate-90", "scale-0");
+          closeIcon.classList.remove("opacity-0", "-rotate-90", "scale-0");
+          closeIcon.classList.add("opacity-100", "rotate-0", "scale-100");
+        } else {
+          // Show menu icon (hamburger)
+          menuIcon.classList.remove("opacity-0", "rotate-90", "scale-0");
+          menuIcon.classList.add("opacity-100", "rotate-0", "scale-100");
+          closeIcon.classList.remove("opacity-100", "rotate-0", "scale-100");
+          closeIcon.classList.add("opacity-0", "-rotate-90", "scale-0");
         }
       }
     };
@@ -217,6 +258,16 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
+          hideSidebarMobile();
+        }
+      }
+    });
+
+    // Close on click outside (mobile only)
+    document.addEventListener("click", (e) => {
+      if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
+        // Check if click is outside sidebar and toggle button
+        if (!sidebar.contains(e.target) && !toggleButton.contains(e.target)) {
           hideSidebarMobile();
         }
       }

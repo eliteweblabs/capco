@@ -8,7 +8,7 @@ export const GET: APIRoute = async ({ url }) => {
   try {
     const input = url.searchParams.get("input");
     const types = url.searchParams.get("types") || "address";
-    const components = url.searchParams.get("components") || "country:us";
+    const components = url.searchParams.get("components") || "";
     const locationBias = url.searchParams.get("locationBias");
     const maxResults = parseInt(url.searchParams.get("maxResults") || "10");
 

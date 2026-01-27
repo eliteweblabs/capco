@@ -99,7 +99,7 @@ const submitButtonProps = {
             >
               Login
             </Button>
-            <Button {...nextButtonProps} dataAttributes={{ "data-next": "2" }}> Next </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "2" }}> next </Button>
           </div>
         </div>
         <div
@@ -213,7 +213,7 @@ const submitButtonProps = {
             <Button {...prevButtonProps} dataAttributes={{ "data-prev": "1" }}>
               <span class="hidden md:block"> back </span>
             </Button>
-            <Button {...nextButtonProps} dataAttributes={{ "data-next": "3" }}> Next </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "3" }}> next </Button>
           </div>
         </div>
       </div>
@@ -254,7 +254,7 @@ const submitButtonProps = {
             <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }}>
               <span class="hidden md:block"> back </span>
             </Button>
-            <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }}> Next </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }}> next </Button>
           </div>
         </div>
       </div>
@@ -293,7 +293,7 @@ const submitButtonProps = {
             <Button {...prevButtonProps} dataAttributes={{ "data-prev": "3" }}>
               <span class="hidden md:block"> back </span>
             </Button>
-            <Button {...nextButtonProps} dataAttributes={{ "data-next": "5" }}> Next </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "5" }}> next </Button>
           </div>
         </div>
       </div>
@@ -428,14 +428,14 @@ const submitButtonProps = {
             <Button {...prevButtonProps} dataAttributes={{ "data-prev": "6" }}>
               <span class="hidden md:block"> back </span>
             </Button>
-            <Button {...nextButtonProps} dataAttributes={{ "data-next": "8" }}> Next </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "8" }}> next </Button>
           </div>
         </div>
       </div>
 
       <!-- Step 8: Review & Submit -->
       <div class="step-content" data-step="8">
-        <div class="space-y-8">
+        <div class="space-y-4 sm:space-y-8">
           <div class="text-center" data-aos="fade-up" data-aos-delay="100">
             <!-- <div
               class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
@@ -461,7 +461,7 @@ const submitButtonProps = {
             data-aos-delay="200"
           >
             <div
-              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+              class="flex items-start justify-between border-b border-gray-200 dark:border-gray-700"
             >
               <div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Email</p>
@@ -477,7 +477,7 @@ const submitButtonProps = {
             </div>
 
             <div
-              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
             >
               <div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Name</p>
@@ -493,7 +493,7 @@ const submitButtonProps = {
             </div>
 
             <div
-              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
             >
               <div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Company</p>
@@ -511,7 +511,7 @@ const submitButtonProps = {
             </div>
 
             <div
-              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
             >
               <div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Password</p>
@@ -529,7 +529,7 @@ const submitButtonProps = {
             </div>
 
             <div
-              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
             >
               <div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Phone</p>
@@ -545,7 +545,7 @@ const submitButtonProps = {
             </div>
 
             <div
-              class="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700"
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
             >
               <div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">SMS Alerts</p>
@@ -805,12 +805,16 @@ const submitButtonProps = {
           if (!formatted || formatted.trim() === "") {
             // Empty: show "Skip"
             phoneButtonText.textContent = "Skip";
-          } else if (validatePhone(formatted)) {
-            // Valid: show "Next"
-            phoneButtonText.textContent = "Next";
           } else {
-            // Has content but invalid: show "Skip"
-            phoneButtonText.textContent = "Skip";
+            // Check if it's a complete phone number (10+ digits)
+            const digitsOnly = formatted.replace(/\D/g, "");
+            if (digitsOnly.length >= 10 && validatePhone(formatted)) {
+              // Complete and valid: show "next"
+              phoneButtonText.textContent = "next";
+            } else {
+              // Has content but incomplete or invalid: show "Skip"
+              phoneButtonText.textContent = "Skip";
+            }
           }
         }
       });
@@ -840,6 +844,24 @@ const submitButtonProps = {
         // Update review section if on final step
         if (currentStep === 8) {
           updateReviewSection();
+        }
+
+        // Update phone button text if on step 5
+        if (currentStep === 5) {
+          const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+          const phoneButtonText = document.getElementById("next-step-phone-text") as HTMLElement;
+          if (phoneInput && phoneButtonText) {
+            const phoneValue = phoneInput.value || "";
+            const digitsOnly = phoneValue.replace(/\D/g, "");
+
+            if (!phoneValue || phoneValue.trim() === "") {
+              phoneButtonText.textContent = "Skip";
+            } else if (digitsOnly.length >= 10 && validatePhone(phoneValue)) {
+              phoneButtonText.textContent = "next";
+            } else {
+              phoneButtonText.textContent = "Skip";
+            }
+          }
         }
 
         // Refresh AOS animations for the new step
