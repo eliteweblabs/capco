@@ -873,14 +873,20 @@ body::before {
    ============================================ */
 
 /* Disable hover tooltips on devices that support touch (mobile/tablets) */
+/* BUT allow tooltips with open=true (opacity-100 class) to still show */
 @media (hover: none) and (pointer: coarse) {
   .group:hover .group-hover\:opacity-100 {
     opacity: 0 !important;
   }
-
-  /* Specifically target tooltip elements */
-  .tooltip-content {
+  
+  /* Hide tooltip content ONLY if it relies on hover (opacity-0 base state) */
+  .tooltip-content.opacity-0 {
     display: none !important;
+  }
+  
+  /* Tooltips with open=true (opacity-100) will still display */
+  .tooltip-content.opacity-100 {
+    display: block !important;
   }
 }
 
