@@ -125,10 +125,9 @@ const canDeleteFiles =
     currentRole === "Staff" ? (
       <div
         id="upload-dropzone"
-        class="mb-6 cursor-pointer border-gray-300 p-12 text-center transition-colors hover:border-primary-400 dark:border-gray-600 dark:hover:border-primary-500 relative overflow-hidden"
+        class="mb-6 cursor-pointer border-gray-300 p-12 text-center transition-colors hover:border-gray-400 dark:border-gray-600 dark:hover:border-grey-500 relative overflow-hidden"
       >
-        <div  id="browse-files-btn"  class="space-y-4">
-         
+        <div id="browse-files-btn" class="space-y-4">
           <div>
             <p class="hidden font-medium text-gray-600 dark:text-gray-300">
               Drop files here or click to browse
@@ -240,12 +239,19 @@ const canDeleteFiles =
         files = data.data || [];
 
         // Filter out any files with invalid IDs immediately
-        files = files.filter(file => {
+        files = files.filter((file) => {
           const hasValidId = file.id && Number.isInteger(file.id) && file.id > 0;
           if (!hasValidId) {
             console.warn("⚠️ [FILE-MANAGER] Skipping file with invalid ID:", file);
           }
           return hasValidId;
+        });
+
+        // Sort files by upload date - newest first
+        files.sort((a, b) => {
+          const dateA = new Date(a.uploadedAt || 0);
+          const dateB = new Date(b.uploadedAt || 0);
+          return dateB - dateA; // Descending order (newest first)
         });
 
         // Debug: Check for any files with invalid URLs
@@ -303,7 +309,7 @@ const canDeleteFiles =
     }
 
     // Filter out files with invalid IDs before rendering
-    const validFiles = files.filter(file => {
+    const validFiles = files.filter((file) => {
       const hasValidId = file.id && Number.isInteger(file.id) && file.id > 0;
       if (!hasValidId) {
         console.warn("⚠️ [FILE-MANAGER] Filtering out file with invalid ID:", file);
@@ -339,8 +345,8 @@ const canDeleteFiles =
   // Load save buttons from Button partial
   async function loadButtonPartials() {
     // Only load buttons for files with valid IDs
-    const validFiles = files.filter(file => file.id && Number.isInteger(file.id) && file.id > 0);
-    
+    const validFiles = files.filter((file) => file.id && Number.isInteger(file.id) && file.id > 0);
+
     for (const file of validFiles) {
       try {
         const buttonContainer = document.getElementById(`save-button-${file.id}`);
@@ -354,11 +360,11 @@ const canDeleteFiles =
               "x-button-id": `save-button-file-${file.id}`,
             },
           });
-          
+
           if (response.ok) {
             const buttonHtml = await response.text();
             buttonContainer.innerHTML = buttonHtml;
-            
+
             // Add onclick handler after button is rendered
             const button = buttonContainer.querySelector("button");
             if (button) {
@@ -375,16 +381,25 @@ const canDeleteFiles =
   }
 
   // Helper function to create accordion HTML using Accordion partial structure
-  function createAccordionHTML(id, title, description, content, open = false, backgroundImageUrl = null, badge = null) {
+  function createAccordionHTML(
+    id,
+    title,
+    description,
+    content,
+    open = false,
+    backgroundImageUrl = null,
+    badge = null
+  ) {
     // Determine if we have a background image
-    const hasBackgroundImage = backgroundImageUrl && backgroundImageUrl !== "" && !backgroundImageUrl.includes("undefined");
-    const headerBgStyle = hasBackgroundImage 
+    const hasBackgroundImage =
+      backgroundImageUrl && backgroundImageUrl !== "" && !backgroundImageUrl.includes("undefined");
+    const headerBgStyle = hasBackgroundImage
       ? `background-image: url('${backgroundImageUrl}'); background-size: cover; background-position: center center; background-repeat: no-repeat;`
       : "";
-    const headerBgClass = hasBackgroundImage 
-      ? "accordion-header-with-bg" 
+    const headerBgClass = hasBackgroundImage
+      ? "accordion-header-with-bg"
       : "transition-colors hover:bg-gray-50 dark:hover:bg-gray-700";
-    
+
     return `
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg relative">
         <!-- Accordion Header -->
@@ -392,7 +407,7 @@ const canDeleteFiles =
           ${badge || ""}
           <!-- Clickable header area -->
           <div 
-            class="flex-1 ${hasBackgroundImage ? 'bg-black bg-opacity-40 dark:bg-opacity-60' : ''}"
+            class="flex-1 overflow-hidden color-background ${hasBackgroundImage ? " bg-opacity-40 dark:bg-opacity-60" : ""}"
             data-accordion-target="#accordion-${id}"
             aria-expanded="${open}"
             aria-controls="accordion-${id}"
@@ -401,10 +416,10 @@ const canDeleteFiles =
             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
           >
             <div class="p-4">
-              <h3 class="text-lg font-medium ${primaryTextClasses} truncate ${hasBackgroundImage ? 'text-white drop-shadow-lg' : ''}">
+              <h3 class="text-lg font-medium ${primaryTextClasses} truncate ${hasBackgroundImage ? "text-white drop-shadow-lg" : ""}">
                 ${title}
               </h3>
-              ${description ? `<p class="mt-1 ${secondaryTextClasses} truncate ${hasBackgroundImage ? 'text-white drop-shadow-lg' : ''}">${description}</p>` : ""}
+              ${description ? `<p class="mt-1 ${secondaryTextClasses} truncate ${hasBackgroundImage ? "text-white drop-shadow-lg" : ""}">${description}</p>` : ""}
             </div>
           </div>
 
@@ -462,7 +477,7 @@ const canDeleteFiles =
       checkedOutBy: file.checkedOutBy,
       currentUserId: currentUserId,
       isCheckedOut,
-      isCheckedOutByMe
+      isCheckedOutByMe,
     });
 
     let statusBadge = "";
@@ -487,29 +502,29 @@ const canDeleteFiles =
         <!-- File Title -->
         <div>
           <label for="file-title-${file.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Title ${isCheckedOut && !isCheckedOutByMe ? '<span class="text-xs text-red-600 dark:text-red-400">(Read-only - file is checked out)</span>' : ''}
+            Title ${isCheckedOut && !isCheckedOutByMe ? '<span class="text-xs text-red-600 dark:text-red-400">(Read-only - file is checked out)</span>' : ""}
           </label>
           <input 
             type="text" 
             id="file-title-${file.id}"
-            class="${globalInputClasses} ${isCheckedOut && !isCheckedOutByMe ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}"
+            class="${globalInputClasses} ${isCheckedOut && !isCheckedOutByMe ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""}"
             value="${file.title || ""}"
             placeholder="Enter file title..."
-            ${isCheckedOut && !isCheckedOutByMe ? 'readonly' : ''}
+            ${isCheckedOut && !isCheckedOutByMe ? "readonly" : ""}
           />
         </div>
         
         <!-- File Description -->
         <div>
           <label for="file-comments-${file.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Description ${isCheckedOut && !isCheckedOutByMe ? '<span class="text-xs text-red-600 dark:text-red-400">(Read-only - file is checked out)</span>' : ''}
+            Description ${isCheckedOut && !isCheckedOutByMe ? '<span class="text-xs text-red-600 dark:text-red-400">(Read-only - file is checked out)</span>' : ""}
           </label>
           <textarea 
             id="file-comments-${file.id}"
-            class="${globalInputClasses} ${isCheckedOut && !isCheckedOutByMe ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}"
+            class="${globalInputClasses} ${isCheckedOut && !isCheckedOutByMe ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""}"
             rows="3"
             placeholder="Enter file description..."
-            ${isCheckedOut && !isCheckedOutByMe ? 'readonly' : ''}
+            ${isCheckedOut && !isCheckedOutByMe ? "readonly" : ""}
           >${file.comments || ""}</textarea>
         </div>
 
@@ -533,7 +548,7 @@ const canDeleteFiles =
                 data-file-id="${file.id}"
                 ${isCheckedOut && !isCheckedOutByMe ? "disabled" : ""}
               />
-              <div class="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-gray-100 after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-primary-800 ${isCheckedOut && !isCheckedOutByMe ? 'opacity-50 cursor-not-allowed' : ''}">
+              <div class="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-gray-100 after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-primary-800 ${isCheckedOut && !isCheckedOutByMe ? "opacity-50 cursor-not-allowed" : ""}">
               </div>
             </div>
           </label>
@@ -545,13 +560,17 @@ const canDeleteFiles =
         
         <!-- Save Button -->
         <div class="flex justify-end">
-          ${isCheckedOut && !isCheckedOutByMe ? `
+          ${
+            isCheckedOut && !isCheckedOutByMe
+              ? `
             <p class="text-xs text-gray-500 dark:text-gray-400 py-2">
               This file is checked out and cannot be edited
             </p>
-          ` : `
+          `
+              : `
             <div id="save-button-${file.id}"></div>
-          `}
+          `
+          }
         </div>
       </div>
     `;
@@ -656,14 +675,14 @@ const canDeleteFiles =
     `;
 
     // Check if file is an image type for background image
-    const isImageFile = file.fileType && (
-      file.fileType.includes("image") ||
-      file.fileType.includes("png") ||
-      file.fileType.includes("jpg") ||
-      file.fileType.includes("jpeg") ||
-      file.fileType.includes("gif") ||
-      file.fileType.includes("webp")
-    );
+    const isImageFile =
+      file.fileType &&
+      (file.fileType.includes("image") ||
+        file.fileType.includes("png") ||
+        file.fileType.includes("jpg") ||
+        file.fileType.includes("jpeg") ||
+        file.fileType.includes("gif") ||
+        file.fileType.includes("webp"));
     const backgroundImageUrl = isImageFile && file.publicUrl ? file.publicUrl : null;
 
     // Get version badge
@@ -1071,7 +1090,10 @@ const canDeleteFiles =
         try {
           await handleFileCheckout(fileId, "checkout");
         } catch (checkoutError) {
-          console.warn("⚠️ [FILE-MANAGER] Checkout system not available, proceeding with download:", checkoutError);
+          console.warn(
+            "⚠️ [FILE-MANAGER] Checkout system not available, proceeding with download:",
+            checkoutError
+          );
           // Continue with download even if checkout fails
         }
       }
@@ -1298,8 +1320,10 @@ const canDeleteFiles =
         }
       } else {
         // Check if error is due to missing table
-        if (data.details && data.details.includes('does not exist')) {
-          console.warn("⚠️ [FILE-MANAGER] Checkout table not set up yet. Run sql-queriers/create-file-checkouts-table.sql");
+        if (data.details && data.details.includes("does not exist")) {
+          console.warn(
+            "⚠️ [FILE-MANAGER] Checkout table not set up yet. Run sql-queriers/create-file-checkouts-table.sql"
+          );
           // Don't show error to user, just log it
         } else {
           console.error("❌ [FILE-MANAGER] Checkout failed:", data.error);
@@ -1309,7 +1333,7 @@ const canDeleteFiles =
     } catch (error) {
       console.error("❌ [FILE-MANAGER] File checkout error:", error);
       // Don't show error to user if it's a table issue
-      if (!error.message.includes('does not exist')) {
+      if (!error.message.includes("does not exist")) {
         showError(`Error ${action}ing file: ${error.message}`);
       }
     }
@@ -1755,27 +1779,31 @@ const canDeleteFiles =
 <style is:global>
   /* Accordion header with background image - desaturated, low opacity by default, saturated and panned on hover */
   #files-container .accordion-header-with-bg {
-    filter: grayscale(100%) !important;
-    opacity: 0.5 !important;
+    /* filter: grayscale(100%) !important; */
+    /* opacity: 0.5 !important; */
     background-size: cover !important;
     background-position: center center !important;
-    transition: filter 0.3s ease, opacity 0.3s ease, background-size 0.5s ease, background-position 0.5s ease !important;
+    transition:
+      filter 0.3s ease,
+      opacity 0.3s ease,
+      background-size 0.5s ease,
+      background-position 0.5s ease !important;
     overflow: hidden;
     position: relative;
   }
-  
+
   #files-container .accordion-header-with-bg:hover {
-    filter: grayscale(0%) !important;
-    opacity: 1 !important;
+    /* filter: grayscale(0%) !important; */
+    /* opacity: 1 !important; */
     background-size: cover !important;
     background-position: 40% 60% !important;
   }
-  
+
   /* Pan effect variations - alternate between different positions for variety */
   #files-container .accordion-header-with-bg:nth-child(odd):hover {
     background-position: 60% 40% !important;
   }
-  
+
   #files-container .accordion-header-with-bg:nth-child(even):hover {
     background-position: 40% 60% !important;
   }
@@ -1784,8 +1812,8 @@ const canDeleteFiles =
   #upload-dropzone {
     background-image: repeating-linear-gradient(
       -45deg,
-      var(--color-primary-200) 0px,
-      var(--color-primary-200) 20px,
+      var(--color-neutral-200) 0px,
+      var(--color-neutral-200) 20px,
       transparent 20px,
       transparent 40px
     );
@@ -1796,8 +1824,8 @@ const canDeleteFiles =
   .dark #upload-dropzone {
     background-image: repeating-linear-gradient(
       -45deg,
-      var(--color-primary-800) 0px,
-      var(--color-primary-800) 20px,
+      var(--color-neutral-800) 0px,
+      var(--color-neutral-800) 20px,
       transparent 20px,
       transparent 40px
     );
