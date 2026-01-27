@@ -36,8 +36,8 @@ import ForgotPasswordModal from "../components/form/ForgetPasswordModal.astro";
 const userProfile = currentUser?.profile || null;
 
 // Get the carrier key from the stored gateway domain
-const storedCarrierKey = currentUser?.user_metadata?.mobileCarrier
-  ? getCarrierKeyFromGateway(currentUser.user_metadata.mobileCarrier)
+const storedCarrierKey = userProfile?.mobileCarrier
+  ? getCarrierKeyFromGateway(userProfile.mobileCarrier)
   : null;
 ---
 
@@ -189,10 +189,10 @@ const storedCarrierKey = currentUser?.user_metadata?.mobileCarrier
         <PhoneAndSMS
           id="phone"
           name="phone"
-          value={currentUser?.user_metadata?.phone || ""}
+          value={userProfile?.phone || ""}
           placeholder="Enter your phone number"
           showSMS={true}
-          smsChecked={currentUser?.user_metadata?.smsAlerts || false}
+          smsChecked={userProfile?.smsAlerts || false}
           selectedCarrier={storedCarrierKey || ""}
           {globalInputClasses}
         />
@@ -201,14 +201,14 @@ const storedCarrierKey = currentUser?.user_metadata?.mobileCarrier
         <div class="gap-3 pt-4 flex">
           <Button
             type="button"
-            variant="primary"
+            variant="anchor"
             size="sm"
             class="w-auto md:w-full md:flex-1"
             id="back-button"
             icon="chevron-left"
             iconPosition="left"
           >
-            Back
+            <span class="hidden sm:inline"> Back </span>
           </Button>
           <Button
             type="submit"
