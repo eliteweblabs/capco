@@ -7,6 +7,8 @@ import { checkAuth } from "../../lib/auth";
 import App from "../../components/ui/App.astro";
 import Button from "../../components/common/Button.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
+import PageEditorModal from "../../components/ui/PageEditorModal.astro";
+import Overlay from "../../components/ui/Overlay.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
 import { readFileSync, existsSync } from "fs";
@@ -492,7 +494,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
       }
 
       <!-- Pages List -->
-      <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-x-scroll">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-900">
             <tr>
@@ -629,10 +631,12 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
     </div>
   </div>
 
-  <!-- Page Editor Modal -->
+  <!-- Page Editor Modal with Overlay -->
+  <Overlay id="page-editor-modal-overlay" zIndex={49} blurAmount="none" opacity="50" />
+  
   <div
     id="page-editor-modal"
-    class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    class="hidden fixed inset-0 overflow-y-auto h-full w-full z-50"
   >
     <div
       id="page-editor-modal-content"
@@ -1193,6 +1197,13 @@ You can embed components:
           includeInNavCheckbox.checked = false;
         }
         if (modalTitle) modalTitle.textContent = "Create New Page";
+        
+        // Show modal and overlay
+        const overlay = document.getElementById("page-editor-modal-overlay");
+        if (overlay) {
+          overlay.classList.remove("hidden");
+          overlay.classList.add("flex");
+        }
         modal.classList.remove("hidden");
       });
 
@@ -1258,6 +1269,12 @@ You can embed components:
               });
             }
 
+            // Show modal and overlay
+            const overlay = document.getElementById("page-editor-modal-overlay");
+            if (overlay) {
+              overlay.classList.remove("hidden");
+              overlay.classList.add("flex");
+            }
             modal.classList.remove("hidden");
           } catch (error) {
             console.error("Error loading page:", error);
@@ -1305,6 +1322,11 @@ You can embed components:
 
       // Close modal function
       const closeModal = () => {
+        const overlay = document.getElementById("page-editor-modal-overlay");
+        if (overlay) {
+          overlay.classList.add("hidden");
+          overlay.classList.remove("flex");
+        }
         modal.classList.add("hidden");
       };
 
@@ -1315,6 +1337,12 @@ You can embed components:
 
       if (closeBtn) {
         closeBtn.addEventListener("click", closeModal);
+      }
+
+      // Close modal on overlay click
+      const overlay = document.getElementById("page-editor-modal-overlay");
+      if (overlay) {
+        overlay.addEventListener("click", closeModal);
       }
 
       // Drag and drop functionality for reordering pages
