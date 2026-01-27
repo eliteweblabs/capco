@@ -75,7 +75,8 @@ export interface ProjectWithStatus extends Project {
 
 export async function fetchProjects(
   supabaseAdmin: SupabaseClient,
-  userId?: string
+  userId?: string,
+  options?: { includeFiles?: boolean }
 ): Promise<Project[]> {
   try {
     const { data: allProjects, error } = await supabaseAdmin
@@ -117,14 +118,45 @@ export async function fetchProjects(
       );
     }
 
-    // Add featuredImageData, punchlist data, and profile data for projects
+    // Optionally fetch file counts for all projects
+    let filesMap: Record<number, { count: number; files: any[] }> = {};
+    if (options?.includeFiles && projectIds.length > 0) {
+      try {
+        const { data: filesData } = await supabaseAdmin
+          .from("files")
+          .select("id, fileName, fileType, fileSize, uploadedAt, projectId")
+          .in("projectId", projectIds);
+
+        // Group files by projectId
+        (filesData || []).forEach((file) => {
+          if (!filesMap[file.projectId]) {
+            filesMap[file.projectId] = { count: 0, files: [] };
+          }
+          filesMap[file.projectId].count++;
+          filesMap[file.projectId].files.push(file);
+        });
+      } catch (fileError) {
+        console.warn("Could not fetch files for projects:", fileError);
+      }
+    }
+
+    // Add featuredImageData, punchlist data, profile data, and file data for projects
     const projects = (allProjects || []).map((project) => {
-      const projectWithData = {
+      const projectWithData: any = {
         ...project,
         punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+        author: project.authorId ? profilesMap[project.authorId] : null,
+        assignedTo: project.assignedToId ? profilesMap[project.assignedToId] : null,
         authorProfile: project.authorId ? profilesMap[project.authorId] : null,
         assignedToProfile: project.assignedToId ? profilesMap[project.assignedToId] : null,
       };
+
+      // Add file data if requested
+      if (options?.includeFiles) {
+        const fileData = filesMap[project.id] || { count: 0, files: [] };
+        projectWithData.fileCount = fileData.count;
+        projectWithData.projectFiles = fileData.files;
+      }
 
       if (project.featuredImageData) {
         return {
@@ -343,7 +375,8 @@ export async function fetchProjectsWithStatus(
 
 export async function fetchProjectById(
   supabaseAdmin: SupabaseClient,
-  projectId: number
+  projectId: number,
+  options?: { includeFiles?: boolean; includeInvoice?: boolean }
 ): Promise<Project | null> {
   try {
     const { data: project, error } = await supabaseAdmin
@@ -358,6 +391,9 @@ export async function fetchProjectById(
     }
 
     if (!project) return null;
+
+    // Fetch punchlist stats
+    const punchlistStats = await fetchPunchlistStats(supabaseAdmin, [project.id]);
 
     // Fetch author and assignedTo profiles if they exist
     const profileIds = [project.authorId, project.assignedToId].filter(Boolean);
@@ -378,12 +414,60 @@ export async function fetchProjectById(
       );
     }
 
-    // Add profile data to project
-    return {
+    // Optionally fetch file data
+    let fileCount = 0;
+    let projectFiles: any[] = [];
+    if (options?.includeFiles) {
+      try {
+        const { data: filesData } = await supabaseAdmin
+          .from("files")
+          .select("id, fileName, fileType, fileSize, uploadedAt")
+          .eq("projectId", project.id);
+        fileCount = filesData?.length || 0;
+        projectFiles = filesData || [];
+      } catch (fileError) {
+        console.warn("Could not fetch files for project:", project.id, fileError);
+      }
+    }
+
+    // Optionally fetch invoice
+    let invoiceId = null;
+    if (options?.includeInvoice) {
+      try {
+        const { data: invoices } = await supabaseAdmin
+          .from("invoices")
+          .select("id")
+          .eq("projectId", project.id)
+          .limit(1);
+
+        if (invoices && invoices.length > 0) {
+          invoiceId = invoices[0].id;
+        }
+      } catch (invoiceError) {
+        console.warn("Could not fetch invoice for project:", project.id, invoiceError);
+      }
+    }
+
+    // Build result with all data
+    const result: any = {
       ...project,
+      punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+      author: project.authorId ? profilesMap[project.authorId] : null,
+      assignedTo: project.assignedToId ? profilesMap[project.assignedToId] : null,
       authorProfile: project.authorId ? profilesMap[project.authorId] : null,
       assignedToProfile: project.assignedToId ? profilesMap[project.assignedToId] : null,
     };
+
+    if (options?.includeFiles) {
+      result.projectFiles = projectFiles;
+      result.fileCount = fileCount;
+    }
+
+    if (options?.includeInvoice && invoiceId) {
+      result.invoiceId = invoiceId;
+    }
+
+    return result;
   } catch (error) {
     console.error("Failed to fetch project by ID:", error);
     return null;

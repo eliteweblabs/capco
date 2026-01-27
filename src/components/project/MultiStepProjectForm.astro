@@ -168,7 +168,7 @@ const fieldElements = formElements.filter(
     });
 
     // Render current step
-    function renderStep(stepIndex) {
+    async function renderStep(stepIndex) {
       if (stepIndex < 0 || stepIndex >= totalSteps) return;
 
       const element = formElements[stepIndex];
@@ -199,70 +199,46 @@ const fieldElements = formElements.filter(
       // Render field based on type
       if (element.type === "field") {
         if (element.id === "address-input") {
-          // Address field - create InlineAddressSearch HTML dynamically
-          const addressWrapper = document.createElement("div");
-          addressWrapper.className = "inline-address-search-wrapper";
+          // Address field - use shared HTML creator
+          const { createAddressSearchHTML } = await import("../../scripts/inline-address-search");
+          const addressWrapper = createAddressSearchHTML({
+            id: "multi-step-address",
+            name: "address",
+            placeholder: "Search for an address...",
+            inputClasses: `${globalInputClasses} text-xl py-5 text-center`,
+            value: formData["address"] || project?.address || "",
+          });
 
-          // Hidden input
-          const hiddenInput = document.createElement("input");
-          hiddenInput.type = "hidden";
-          hiddenInput.id = "multi-step-address-value";
-          hiddenInput.name = "address";
-          hiddenInput.value = formData["address"] || project?.address || "";
-          addressWrapper.appendChild(hiddenInput);
-
-          // Search input container
-          const searchContainer = document.createElement("div");
-          searchContainer.className = "relative mb-4";
-
-          const searchInput = document.createElement("input");
-          searchInput.type = "text";
-          searchInput.id = "multi-step-address-search-input";
-          searchInput.placeholder = "Search for an address...";
-          searchInput.autocomplete = "off";
-          searchInput.className = `${globalInputClasses} text-xl py-5 text-center`;
-          searchInput.value = formData["address"] || project?.address || "";
-          searchContainer.appendChild(searchInput);
-
-          // Search icon button
-          const searchButton = document.createElement("button");
-          searchButton.type = "button";
-          searchButton.className = "absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-gray-300";
-          searchButton.title = "Search for address";
-          searchButton.innerHTML = `<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`;
-          searchContainer.appendChild(searchButton);
-
-          addressWrapper.appendChild(searchContainer);
-
-          // Results container
-          const resultsContainer = document.createElement("div");
-          resultsContainer.className = "inline-address-results-container relative mb-4 min-h-48 overflow-hidden rounded-lg border-2 border-gray-200 dark:border-gray-600 color-background";
-          resultsContainer.style.cssText = "position: relative; min-height: 12rem; max-height: 24rem;";
-
-          const resultsList = document.createElement("ul");
-          resultsList.id = "multi-step-address-results-list";
-          resultsList.className = "absolute inset-0 overflow-y-auto transition-all duration-300 ease-out";
-          resultsList.style.cssText = "height: 100%; min-height: 12rem; position: absolute; top: 0; left: 0; right: 0; bottom: 0;";
-          resultsContainer.appendChild(resultsList);
-
-          // Empty state
-          const emptyState = document.createElement("div");
-          emptyState.id = "multi-step-address-empty-state";
-          emptyState.className = "absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400";
-          emptyState.innerHTML = `<div class="text-center"><p class="text-sm">Type to search addresses...</p></div>`;
-          resultsContainer.appendChild(emptyState);
-
-          addressWrapper.appendChild(resultsContainer);
           stepDiv.appendChild(addressWrapper);
 
           // Initialize address search functionality only once
           if (!addressComponentInitialized) {
-            setTimeout(() => initializeAddressSearch(), 100);
+            setTimeout(() => {
+              import("../../scripts/inline-address-search").then((module) => {
+                module.initializeAddressSearch({
+                  id: "multi-step-address",
+                  fetchApiEndpoint: "/api/google/places-autocomplete",
+                  apiParams: {
+                    types: "address",
+                    components: "country:us",
+                    locationBias: "circle:100@42.3601,-71.0589",
+                  },
+                  valueField: "description",
+                  labelField: "description",
+                  onSelect: (value, label, data) => {
+                    formData["address"] = label;
+                  },
+                });
+              });
+            }, 100);
             addressComponentInitialized = true;
           }
 
           // Auto-focus the search input
-          setTimeout(() => searchInput.focus(), 150);
+          const searchInput = addressWrapper.querySelector("input[type='text']");
+          if (searchInput) {
+            setTimeout(() => searchInput.focus(), 150);
+          }
         } else if (element.elementType === "text" || element.elementType === "number") {
           // Text/Number input
           const label = document.createElement("label");
@@ -722,226 +698,6 @@ const fieldElements = formElements.filter(
         submitBtn.innerHTML = `${saveIcon}Save Project`;
       }
     });
-
-    // Initialize address search functionality
-    function initializeAddressSearch() {
-      const searchInput = document.getElementById("multi-step-address-search-input");
-      const resultsList = document.getElementById("multi-step-address-results-list");
-      const hiddenInput = document.getElementById("multi-step-address-value");
-      const emptyState = document.getElementById("multi-step-address-empty-state");
-
-      if (!searchInput || !resultsList || !hiddenInput || !emptyState) {
-        console.error("[MULTI-STEP] Address search elements not found");
-        return;
-      }
-
-      let searchTimeout;
-      let selectedIndex = -1;
-
-      // Helper function to create result element
-      function createResultElement(result, index, isSelected = false) {
-        const li = document.createElement("li");
-        li.className = `inline-address-result-item cursor-pointer transition-all duration-200 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 ${
-          isSelected
-            ? "bg-primary-500 text-white hover:bg-primary-600"
-            : "text-gray-900 dark:text-white"
-        }`;
-        li.style.cssText = "user-select: none; -webkit-user-select: none;";
-        li.dataset.index = index;
-        li.dataset.value = result.description || result.value || result.place_id || result.id;
-        li.dataset.label = result.description || result.label;
-
-        const textSpan = document.createElement("span");
-        textSpan.className = "block";
-        textSpan.textContent = result.description || result.label;
-
-        li.appendChild(textSpan);
-        return li;
-      }
-
-      // Helper function to populate results
-      function populateResults(results) {
-        resultsList.innerHTML = "";
-
-        if (results.length > 0) {
-          emptyState.classList.add("hidden");
-          results.forEach((result, index) => {
-            const li = createResultElement(result, index, index === selectedIndex);
-            resultsList.appendChild(li);
-          });
-        } else {
-          emptyState.classList.remove("hidden");
-        }
-      }
-
-      // Handle search input
-      searchInput.addEventListener("input", (e) => {
-        const query = e.target.value.trim();
-
-        // Clear previous timeout
-        if (searchTimeout) {
-          clearTimeout(searchTimeout);
-        }
-
-        // Clear results if query is empty
-        if (query.length === 0) {
-          resultsList.innerHTML = "";
-          emptyState.classList.remove("hidden");
-          selectedIndex = -1;
-          return;
-        }
-
-        // Perform search after debounce
-        if (query.length >= 2) {
-          searchTimeout = setTimeout(async () => {
-            try {
-              console.log(`[MULTI-STEP] Searching for: ${query}`);
-
-              // Build search URL with API params
-              const searchParams = new URLSearchParams({
-                input: query,
-                types: "address",
-                components: "country:us",
-                locationBias: "circle:100@42.3601,-71.0589",
-              });
-
-              const response = await fetch(`/api/google/places-autocomplete?${searchParams}`, {
-                credentials: "include",
-              });
-
-              if (!response.ok) {
-                throw new Error(`Search failed: ${response.status}`);
-              }
-
-              const data = await response.json();
-              console.log(`[MULTI-STEP] Search results:`, data);
-
-              // Handle different data formats
-              let resultsArray = [];
-              if (Array.isArray(data)) {
-                resultsArray = data;
-              } else if (data && Array.isArray(data.predictions)) {
-                resultsArray = data.predictions;
-              } else if (data && Array.isArray(data.results)) {
-                resultsArray = data.results;
-              } else if (data && data.data && Array.isArray(data.data)) {
-                resultsArray = data.data;
-              }
-
-              populateResults(resultsArray);
-            } catch (error) {
-              console.error(`[MULTI-STEP] Search error:`, error);
-              resultsList.innerHTML = "";
-              emptyState.classList.remove("hidden");
-            }
-          }, 300);
-        }
-      });
-
-      // Handle click on result items
-      resultsList.addEventListener("click", (e) => {
-        const li = e.target.closest("li[data-index]");
-        if (li) {
-          const value = li.dataset.value;
-          const label = li.dataset.label;
-
-          console.log(`[MULTI-STEP] Selected: ${label} (${value})`);
-
-          // Update hidden input
-          hiddenInput.value = label;
-
-          // Update search input to show selected value
-          searchInput.value = label;
-
-          // Store in formData
-          formData["address"] = label;
-
-          // Update selection styling
-          const allItems = resultsList.querySelectorAll("li");
-          allItems.forEach((item) => {
-            item.classList.remove("bg-primary-500", "text-white");
-            item.classList.add(
-              "text-gray-900",
-              "dark:text-white",
-              "hover:bg-gray-100",
-              "dark:hover:bg-gray-800"
-            );
-          });
-          li.classList.add("bg-primary-500", "text-white");
-          li.classList.remove(
-            "text-gray-900",
-            "dark:text-white",
-            "hover:bg-gray-100",
-            "dark:hover:bg-gray-800"
-          );
-
-          selectedIndex = parseInt(li.dataset.index);
-        }
-      });
-
-      // Handle keyboard navigation
-      searchInput.addEventListener("keydown", (e) => {
-        const items = resultsList.querySelectorAll("li");
-        const maxIndex = items.length - 1;
-
-        switch (e.key) {
-          case "ArrowDown":
-            e.preventDefault();
-            if (maxIndex >= 0) {
-              selectedIndex = Math.min(selectedIndex + 1, maxIndex);
-              updateSelection(items);
-              scrollToSelected(items[selectedIndex]);
-            }
-            break;
-
-          case "ArrowUp":
-            e.preventDefault();
-            if (maxIndex >= 0) {
-              selectedIndex = Math.max(selectedIndex - 1, 0);
-              updateSelection(items);
-              scrollToSelected(items[selectedIndex]);
-            }
-            break;
-
-          case "Enter":
-            e.preventDefault();
-            if (selectedIndex >= 0 && selectedIndex <= maxIndex) {
-              items[selectedIndex].click();
-            }
-            break;
-        }
-      });
-
-      // Update selection styling
-      function updateSelection(items) {
-        items.forEach((item, index) => {
-          if (index === selectedIndex) {
-            item.classList.add("bg-primary-500", "text-white");
-            item.classList.remove(
-              "text-gray-900",
-              "dark:text-white",
-              "hover:bg-gray-100",
-              "dark:hover:bg-gray-800"
-            );
-          } else {
-            item.classList.remove("bg-primary-500", "text-white");
-            item.classList.add(
-              "text-gray-900",
-              "dark:text-white",
-              "hover:bg-gray-100",
-              "dark:hover:bg-gray-800"
-            );
-          }
-        });
-      }
-
-      // Scroll to selected item
-      function scrollToSelected(item) {
-        if (item) {
-          item.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }
-      }
-    }
 
     // Initialize first step
     renderStep(0);
