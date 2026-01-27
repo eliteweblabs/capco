@@ -77,35 +77,38 @@ const {
   </div>
 </div>
 
-<script>
-  import { initializeAddressSearch } from "../../scripts/inline-address-search";
+<script define:vars={{ id, fetchApiEndpoint, apiParams, valueField, labelField }}>
+  // Import and initialize address search with inline vars
+  import("../../scripts/inline-address-search").then((module) => {
+    // Wait for DOM to ensure elements exist
+    const initWhenReady = () => {
+      const searchInput = document.getElementById(`${id}-search-input`);
+      
+      if (!searchInput) {
+        // If elements don't exist yet, wait a bit and try again
+        console.log(`[INLINE-ADDRESS] Waiting for elements for ${id}...`);
+        setTimeout(initWhenReady, 100);
+        return;
+      }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    const config = {
-      id: document.currentScript?.getAttribute("data-id") || "",
-      fetchApiEndpoint:
-        document.currentScript?.getAttribute("data-endpoint") || "/api/google/places-autocomplete",
-      apiParams: JSON.parse(document.currentScript?.getAttribute("data-params") || "{}"),
-      valueField: document.currentScript?.getAttribute("data-value-field") || "description",
-      labelField: document.currentScript?.getAttribute("data-label-field") || "description",
+      // Elements exist, initialize
+      console.log(`[INLINE-ADDRESS] Initializing address search for ${id}`);
+      module.initializeAddressSearch({
+        id,
+        fetchApiEndpoint,
+        apiParams,
+        valueField,
+        labelField,
+      });
     };
 
-    initializeAddressSearch(config);
+    // Start initialization when DOM is ready
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initWhenReady);
+    } else {
+      initWhenReady();
+    }
   });
-</script>
-
-<script define:vars={{ id, fetchApiEndpoint, apiParams, valueField, labelField }} is:inline>
-  // Set data attributes for the module script to read
-  const scripts = document.querySelectorAll("script");
-  const lastScript = scripts[scripts.length - 1];
-  if (lastScript && lastScript.previousElementSibling) {
-    const moduleScript = lastScript.previousElementSibling;
-    moduleScript.setAttribute("data-id", id);
-    moduleScript.setAttribute("data-endpoint", fetchApiEndpoint);
-    moduleScript.setAttribute("data-params", JSON.stringify(apiParams));
-    moduleScript.setAttribute("data-value-field", valueField);
-    moduleScript.setAttribute("data-label-field", labelField);
-  }
 </script>
 
 <style>

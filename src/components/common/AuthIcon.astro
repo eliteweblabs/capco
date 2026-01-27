@@ -12,18 +12,17 @@ interface Props {
   projects: any[];
 }
 
-const { currentUser } = await checkAuth(Astro.cookies);
+const { currentUser, session, isBackend, projects } = Astro.props;
 const currentRole = currentUser?.profile?.role;
-const { session, isBackend, projects } = Astro.props;
 
 // Get current path to determine auth link
 const currentPath = Astro.url.pathname;
-const isLoginPage = currentPath.includes('/auth/login');
-const isRegisterPage = currentPath.includes('/auth/register');
+const isLoginPage = currentPath.includes("/auth/login");
+const isRegisterPage = currentPath.includes("/auth/register");
 
 // Determine auth link and tooltip text
-const authLink = isLoginPage ? '/auth/register' : '/auth/login';
-const authTooltipText = isLoginPage ? 'Register' : isRegisterPage ? 'Login' : 'Register / Login';
+const authLink = isLoginPage ? "/auth/register" : "/auth/login";
+const authTooltipText = isLoginPage ? "Register" : isRegisterPage ? "Login" : "Register / Login";
 
 // Prioritize profile.avatarUrl (Supabase Storage) over user_metadata.avatarUrl (Google CDN)
 const avatarUrl =
@@ -40,6 +39,7 @@ const avatarUrl =
           class="inline-flex items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
           data-dropdown-toggle="accountDropdown"
           aria-expanded="false"
+          data-dropdown-trigger="hover"
           data-avatar-url={avatarUrl}
         >
           <Tooltip text="Open user menu" position="bottom">
@@ -53,26 +53,31 @@ const avatarUrl =
           class="inline-flex items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
           data-dropdown-toggle="accountDropdown"
           aria-expanded="false"
+          data-dropdown-trigger="hover"
         >
           <span class="sr-only">Open user menu</span>
-          <SimpleIcon name="user" />
+          <SimpleIcon name="user" size="lg" />
         </button>
       )}
 
       <div
         id="accountDropdown"
-        class="hidden w-60 divide-y divide-gray-100 overflow-hidden overflow-y-auto rounded-lg bg-gray-100 shadow-sm dark:divide-gray-600 dark:bg-gray-700"
+        class="hidden divide-y divide-gray-100 overflow-hidden overflow-y-auto rounded-lg bg-gray-100 shadow-sm dark:divide-gray-600 dark:bg-gray-700"
         data-popper-placement="bottom"
       >
-        <ul class="Sh_nhSr0Y5lUywmHhhs_ p-2 text-sm font-medium text-gray-900 dark:text-white">
+        <ul class="p-2 text-sm font-medium text-gray-900 dark:text-white">
           <li>
             <a
               href="/profile"
               title=""
               class="align-center flex px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
             >
-              <SimpleIcon name="user" class="mr-2" />
-              {currentUser?.profile?.companyName || "Add Company Name"} / Profile
+              <>
+                <SimpleIcon name="user-edit" size="lg" />
+                <span class="hidden sm:inline">
+                  {currentUser?.profile?.companyName || "Add Company Name"} / Profile
+                </span>
+              </>
             </a>
           </li>
           <li>
@@ -81,8 +86,8 @@ const avatarUrl =
               title=""
               class="align-center flex px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
             >
-              <SimpleIcon name="dashboard" class="mr-2" />
-              Dashboard
+              <SimpleIcon name="dashboard" size="lg" />
+              <span class="hidden sm:inline">Dashboard</span>
             </a>
           </li>
 
@@ -92,7 +97,8 @@ const avatarUrl =
           )}
         </ul>
 
-        <ul class="Sh_nhSr0Y5lUywmHhhs_ p-2 text-sm font-medium text-gray-900 dark:text-white">
+        {/* new section for sign out */}
+        <ul class="p-2 text-sm font-medium text-gray-900 dark:text-white">
           <li>
             <a
               id="logout-btn"
@@ -100,8 +106,8 @@ const avatarUrl =
               title=""
               class="align-center flex px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
             >
-              <SimpleIcon name="log-out" class="mr-2" />
-              Sign Out
+              <SimpleIcon name="log-out" size="lg" />
+              <span class="hidden sm:inline">Sign Out</span>
             </a>
           </li>
         </ul>
