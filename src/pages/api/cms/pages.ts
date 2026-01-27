@@ -121,8 +121,12 @@ export const POST: APIRoute = async ({ request }) => {
     } = body;
 
     // Sanitize slug: remove leading/trailing slashes and whitespace
+    // EXCEPT for '/' which is allowed for the home page
     if (slug) {
-      slug = slug.trim().replace(/^\/+|\/+$/g, "");
+      slug = slug.trim();
+      if (slug !== "/") {
+        slug = slug.replace(/^\/+|\/+$/g, "");
+      }
     }
     console.log("📥 [CMS-PAGES] Extracted values:", {
       slug,
