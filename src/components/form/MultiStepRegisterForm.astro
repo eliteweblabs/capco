@@ -144,7 +144,7 @@ const submitButtonProps = {
                 d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
               ></path>
             </svg>
-            Sign up with Google
+            Register with Google
           </Button>
         </div>
       </div>
@@ -411,6 +411,7 @@ const submitButtonProps = {
             <SlotMachineModalStaff
               title="Select your carrier"
               id="step-carrier"
+              buttonVariant="primary"
               name="mobileCarrier"
               options={mobileCarrierOptions}
               selectedValue=""
@@ -1028,7 +1029,7 @@ const submitButtonProps = {
       const carrierValue = carrierInput?.value || "";
 
       // Get carrier display text from the button (shows the selected carrier name)
-      const carrierButton = document.getElementById("step-carrier-button") as HTMLElement;
+      const carrierButton = document.getElementById("step-carrier") as HTMLElement;
       const carrierDisplay = carrierButton?.textContent?.trim() || "Not provided";
       const carrier = carrierValue ? carrierDisplay : "Not provided";
 
@@ -1427,10 +1428,23 @@ const submitButtonProps = {
     // Initialize
     updateProgress();
 
-    // Initial AOS refresh
+    // Initial AOS refresh and focus first input
     setTimeout(() => {
       // @ts-ignore - AOS loaded from CDN
       if (typeof AOS !== "undefined") AOS.refresh();
+      
+      // Focus first input after AOS animations complete
+      setTimeout(() => {
+        const firstStep = document.querySelector('.step-content[data-step="1"]');
+        if (firstStep && firstStep.classList.contains('active')) {
+          const firstInput = firstStep.querySelector(
+            "input:not([type=hidden])"
+          ) as HTMLElement;
+          if (firstInput) {
+            firstInput.focus();
+          }
+        }
+      }, 400); // Same delay as in showStep function
     }, 100);
   });
 </script>
