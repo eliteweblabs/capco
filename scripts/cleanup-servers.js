@@ -6,7 +6,7 @@ import { promisify } from "util";
 const execAsync = promisify(exec);
 
 async function killServers() {
-  console.log("🧹 Cleaning up existing servers...");
+  // console.log("🧹 Cleaning up existing servers...");
 
   const processes = [
     "astro dev",
@@ -19,7 +19,7 @@ async function killServers() {
   for (const process of processes) {
     try {
       await execAsync(`pkill -f "${process}"`);
-      console.log(`✅ Killed processes matching: ${process}`);
+      // console.log(`✅ Killed processes matching: ${process}`);
     } catch (error) {
       // Process not found is fine, just continue
       console.log(`ℹ️  No processes found for: ${process}`);
@@ -32,7 +32,7 @@ async function killServers() {
   for (const port of ports) {
     try {
       await execAsync(`lsof -ti:${port} | xargs kill -9`);
-      console.log(`✅ Freed up port ${port}`);
+      // console.log(`✅ Freed up port ${port}`);
     } catch (error) {
       // Port not in use is fine
       console.log(`ℹ️  Port ${port} is already free`);
