@@ -36,6 +36,7 @@ interface Props {
   globalInputClasses?: string; // Optional: Global input classes
   component?: string; // Optional: Component name for the button (default: "")
   componentProps?: any; // Optional: Component props for the button (default: {})
+  buttonType?: "icon" | "text"; // Optional: Button type (default: "text")
   buttonVariant?:
     | "primary"
     | "secondary"
@@ -59,6 +60,7 @@ const {
   placeholder = "Select an option...",
   buttonClass = "",
   buttonText,
+  buttonType = "text",
   showCloseButton = true,
   showCancelButton = true,
   addNewOption = false,
@@ -110,7 +112,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 ---
 
 {
-  component === "UserIcon" ? (
+  buttonType === "icon" ? (
     <a {id} title={displayText || selectedValue || placeholder}>
       {project?.assignedToProfile ? (
         <UserIcon users={[project.assignedToProfile]} {...componentProps} />
@@ -122,20 +124,40 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           size="sm"
           icon={icon || "user"}
           iconPosition="left"
+          iconClasses="m-0"
         >
           {displayText}
         </Button>
       ) : (
         // No value selected - show placeholder
-        <Button
-          variant={buttonVariant || "outline"}
-          class={buttonClass || ""}
-          size="sm"
-          icon={icon || "chevron-down"}
-          iconPosition="right"
+
+        <span
+          class="relative inline-block group w-8 h-8"
+          style="vertical-align: baseline; white-space: nowrap;"
         >
-          {placeholder}
-        </Button>
+          {" "}
+          <span class="sr-only">Open user menu</span>
+          <svg
+            class="inline-block avatar-fallback"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M7.5 6.5C7.5 8.981 9.519 11 12 11s4.5-2.019 4.5-4.5S14.481 2 12 2 7.5 4.019 7.5 6.5zM20 21h1v-1c0-3.859-3.141-7-7-7h-4c-3.86 0-7 3.141-7 7v1h17z" />
+          </svg>
+        </span>
+
+        // <Button
+        //   variant={buttonVariant || "outline"}
+        //   class={buttonClass || ""}
+        //   size="sm"
+        //   icon={icon || "chevron-down"}
+        //   iconPosition="right"
+        //   iconClasses="m-0"
+        // >
+        //   {placeholder}
+        // </Button>
       )}
     </a>
   ) : (
