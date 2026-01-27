@@ -822,7 +822,7 @@ export function showModal(options: {
 
     modal.innerHTML = `
       <div class="relative max-h-full w-full ${sizeClasses[size]} p-4">
-        <div class="relative rounded-lg bg-white shadow dark:bg-gray-800">
+        <div id="${id}-content" class="relative rounded-lg bg-white shadow dark:bg-gray-800">
           <!-- Modal header -->
           <div class="flex items-center justify-between rounded-t border-b p-4 dark:border-gray-600 md:p-5">
             <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id="${id}-title"></h3>
