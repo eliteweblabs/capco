@@ -112,20 +112,52 @@ export class RefreshManager {
     const tagName = element.tagName.toLowerCase();
     const elementType = element.getAttribute("type")?.toLowerCase();
 
-    // Handle different element types
+    // CRITICAL: Update data-meta-value FIRST (for next comparison)
+    if (element.hasAttribute("data-meta-value")) {
+      element.setAttribute("data-meta-value", String(newValue));
+    }
+
+    // Handle different element types - update display
     if (tagName === "input") {
       if (elementType === "checkbox") {
         (element as HTMLInputElement).checked = Boolean(newValue);
       } else {
-        (element as HTMLInputElement).value = String(newValue);
+        // For date inputs with formatted display, update the data attribute but not the display
+        if (element.hasAttribute("data-due-date")) {
+          element.setAttribute("data-due-date", String(newValue));
+          // Format the display value
+          try {
+            const date = new Date(newValue);
+            (element as HTMLInputElement).value = date.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              hour12: true,
+            });
+          } catch (e) {
+            (element as HTMLInputElement).value = String(newValue);
+          }
+        } else {
+          (element as HTMLInputElement).value = String(newValue);
+        }
       }
     } else if (tagName === "select") {
       (element as HTMLSelectElement).value = String(newValue);
     } else if (tagName === "textarea") {
       (element as HTMLTextAreaElement).value = String(newValue);
     } else {
-      // For other elements, update text content
-      element.textContent = String(newValue);
+      // For span elements with dates, format them nicely
+      const fieldName = element.getAttribute("data-refresh");
+      if (fieldName && (fieldName.includes("Date") || fieldName.includes("At"))) {
+        try {
+          const date = new Date(newValue);
+          element.textContent = date.toLocaleString();
+        } catch (e) {
+          element.textContent = String(newValue);
+        }
+      } else {
+        element.textContent = String(newValue);
+      }
     }
   }
 
@@ -457,6 +489,14 @@ export class RefreshManager {
    * Get the current value of an element
    */
   private getElementValue(element: Element): string {
+    // IMPORTANT: Check data-meta-value first (raw database value)
+    // This prevents false positives from formatted display values
+    const dataMetaValue = element.getAttribute("data-meta-value");
+    if (dataMetaValue !== null) {
+      return dataMetaValue;
+    }
+
+    // Fallback to reading the actual display value
     const tagName = element.tagName.toLowerCase();
     const elementType = element.getAttribute("type")?.toLowerCase();
 
