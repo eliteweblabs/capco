@@ -60,7 +60,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       targetUserId = requestedUserId;
     }
 
-    // Add timeout handling for Supabase connection issues
+    // Add timeout handling for Supabase connection issues (reduce to 3s for faster page loads)
     const queryPromise = supabase
       .from("notifications")
       .select("*")
@@ -69,7 +69,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       .range(offset, offset + limit - 1);
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Database connection timeout")), 15000)
+      setTimeout(() => reject(new Error("Database connection timeout")), 3000)
     );
 
     let query = queryPromise;
@@ -173,12 +173,25 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       );
     }
 
-    // Get unread count
-    const { count: unreadCount } = await supabase
+    // Get unread count with timeout
+    const unreadCountPromise = supabase
       .from("notifications")
       .select("*", { count: "exact", head: true })
       .eq("userId", targetUserId)
       .eq("viewed", false);
+
+    const unreadTimeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Unread count timeout")), 3000)
+    );
+
+    let unreadCount = 0;
+    try {
+      const result = await Promise.race([unreadCountPromise, unreadTimeoutPromise]);
+      unreadCount = (result as any).count || 0;
+    } catch (error) {
+      console.warn("🔔 [NOTIFICATIONS] Unread count timeout - returning 0");
+      unreadCount = 0;
+    }
 
     return new Response(
       JSON.stringify({

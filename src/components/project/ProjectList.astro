@@ -97,6 +97,11 @@ const processedProjects = projects.map((project: any) => {
   };
 });
 
+// PERFORMANCE: Initial load - only render first 20 projects
+const INITIAL_LOAD_COUNT = 20;
+const initialProjects = processedProjects.slice(0, INITIAL_LOAD_COUNT);
+const hasMoreProjects = processedProjects.length > INITIAL_LOAD_COUNT;
+
 // Create array of 36 datetime options (9 days × 4 times per day)
 const createDueDateOptions = () => {
   const options = [];
@@ -202,19 +207,15 @@ const dueDateOptions = createDueDateOptions();
       <th scope="col" class="px-4 py-3 font-semibold text-center">
         <Tooltip text="Last Updated"><SimpleIcon name="stopwatch" class="" /> </Tooltip>
       </th>
-      <th scope="col" class="px-4 py-3 font-semibold text-center">Due Date</th>
+      <th scope="col" class="w-10 px-4 py-3 font-semibold text-center">Due Date</th>
     </tr>
   </thead>
-  <tbody>
+  <tbody id="project-list-tbody">
     {
       projects.length > 0 &&
-        processedProjects.map((project: any) => {
-          // console.log("🔍 [DEBUG] ProjectList passing project to ProjectListItem:", {
-          //   id: project.id,
-          //   title: project.title,
-          //   featuredImage: project.featuredImage,
-          //   featuredImageData: project.featuredImageData,
-          // });
+        processedProjects.map((project: any, index: number) => {
+          // Hide projects beyond initial load count
+          const isHidden = index >= INITIAL_LOAD_COUNT;
           return (
             <ProjectItem
               currentUser={currentUser}
@@ -227,9 +228,63 @@ const dueDateOptions = createDueDateOptions();
               staffOptions={staffOptions}
               dueDateOptions={dueDateOptions}
               globalInputClasses={globalInputClasses}
+              isHidden={isHidden}
             />
           );
         })
     }
   </tbody>
 </table>
+
+{
+  hasMoreProjects && (
+    <div class="mt-4 text-center">
+      <button
+        id="load-more-projects"
+        class="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+        data-total={processedProjects.length}
+        data-initial={INITIAL_LOAD_COUNT}
+      >
+        Load More Projects ({processedProjects.length - INITIAL_LOAD_COUNT} remaining)
+      </button>
+    </div>
+  )
+}
+
+<script>
+  // Client-side progressive reveal of hidden rows
+  const loadMoreButton = document.getElementById("load-more-projects");
+  const tbody = document.getElementById("project-list-tbody");
+
+  if (loadMoreButton && tbody) {
+    const BATCH_SIZE = 20;
+    let currentShown = parseInt(loadMoreButton.getAttribute("data-initial") || "20");
+    const total = parseInt(loadMoreButton.getAttribute("data-total") || "0");
+
+    loadMoreButton.addEventListener("click", () => {
+      // Show next batch of hidden rows
+      const allRows = tbody.querySelectorAll("tr[data-hidden='true']");
+      const batch = Array.from(allRows).slice(0, BATCH_SIZE);
+
+      batch.forEach((row) => {
+        row.removeAttribute("data-hidden");
+        (row as HTMLElement).style.display = "";
+      });
+
+      currentShown += batch.length;
+
+      // Update button or remove if all shown
+      if (currentShown >= total) {
+        loadMoreButton.remove();
+      } else {
+        const remaining = total - currentShown;
+        loadMoreButton.textContent = `Load More Projects (${remaining} remaining)`;
+      }
+
+      // Re-run global functions for newly visible rows
+      if ((window as any).renderFileIcons) {
+        (window as any).renderFileIcons();
+      }
+    });
+  }
+</script>
