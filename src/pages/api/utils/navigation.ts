@@ -308,13 +308,15 @@ export const navigation = async (
       return `<li class="${mobileClass}">
         <a
           href="${item.href}"
-            class="flex items-center px-3 py-2 md:p-0 hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg px-3 py-2 whitespace-nowrap  ${
+            class="flex items-center md:p-0  w-full align-center rounded-lg px-3 py-2 whitespace-nowrap  ${
               item.isPrimary
                 ? "text-primary dark:text-primary-dark"
                 : "text-black sm:hover:text-primary dark:text-white sm:dark:hover:text-primary"
             }"
-        >
-          <svg class="hidden lg:inline w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>${item.label}
+         >
+          <svg class="inline w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+          <span class="inline sm:hidden" data-sidebar-collapse-hide="">${item.label}</span>
+          <span class="hidden sm:inline">${item.label}</span>
         </a>
       </li>`;
     });

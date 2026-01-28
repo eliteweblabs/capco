@@ -108,68 +108,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Punchlist completion status updated successfully");
 
-    // Log the punchlist toggle to project activity
-    try {
-      console.log("📝 [UPDATE-PUNCHLIST-COMPLETED] Logging punchlist toggle:", {
-        projectId: punchlistItem.projectId,
-        punchlistId: punchlistId,
-        isCompleted: markCompleted,
-        user: currentUser || "Unknown",
-      });
-
-      await SimpleProjectLogger.addLogEntry(
-        punchlistItem.projectId,
-        markCompleted ? "punchlistCompleted" : "punchlistIncomplete",
-        `Punchlist item ${markCompleted ? "marked as completed" : "marked as incomplete"}: ${(punchlistItem.message?.substring(0, 50) || "No message") + "..."}`,
-        {
-          punchlistId,
-          completed: markCompleted,
-        }
-      );
-
-      console.log("✅ [UPDATE-PUNCHLIST-COMPLETED] Project logging completed successfully");
-    } catch (logError) {
-      console.error("❌ [UPDATE-PUNCHLIST-COMPLETED] Project logging failed:", logError);
-      // Don't fail the entire request if logging fails
-    }
-
-    try {
-      // Get discussion data from the local discussions array instead of querying Supabase
-      const punchlistMessage = punchlistItem.message;
-
-      if (!punchlistMessage) {
-        console.error("Punchlist message not found:", punchlistMessage);
-        // Continue with the response instead of returning
-      }
-
-      const adminContent = ` ${punchlistMessage} marked complete by ${currentUser?.profile?.companyName || currentUser?.email || "Unknown User"}:<br><br>`;
-
-      // THIS IS TO THE ADMINS EMAIL
-      // Send email using the email delivery API
-      const emailResponse = await fetch("/api/delivery/update-delivery", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          usersToNotify: ["jk@capcofire.com", "capco@eliteweblabs.com"], // Use resolved user email
-          method: "email",
-          emailSubject: `Punchlist Item Completed → ${punchlistMessage.message} → ${currentUser?.profile?.companyName || currentUser?.email || "Unknown User"}`,
-          emailContent: adminContent,
-          buttonText: "Access Your Dashboard",
-          buttonLink: "/dashboard",
-        }),
-      });
-
-      if (emailResponse.ok) {
-      } else {
-        console.error(await emailResponse.text());
-      }
-    } catch (emailError) {
-      console.error(emailError);
-    }
-
+    // Return response immediately
     return new Response(
       JSON.stringify({
         success: true,

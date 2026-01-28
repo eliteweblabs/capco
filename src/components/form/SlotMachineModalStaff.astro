@@ -1,7 +1,7 @@
 ---
 import Button from "../common/Button.astro";
 import UserIcon from "../common/UserIcon.astro";
-
+import Tooltip from "../common/Tooltip.astro";
 // Generic Slot Machine Modal Component - Reusable for any picker scenario
 
 interface Props {
@@ -50,6 +50,7 @@ interface Props {
     | "disabled"
     | "selected"
     | "anchor"; // Optional: Button variant (default: "primary")
+  updateCallback?: string; // Optional: JavaScript function name to call after successful update (e.g., "updateStaffIcon")
 }
 
 const {
@@ -86,6 +87,7 @@ const {
   componentProps,
   project,
   component,
+  updateCallback,
   // project = {},
 } = Astro.props;
 
@@ -115,38 +117,34 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   buttonType === "icon" ? (
     <a {id} title={displayText || selectedValue || placeholder}>
       {project?.assignedToProfile ? (
-        <UserIcon users={[project.assignedToProfile]} {...componentProps} />
+        <UserIcon {...componentProps} />
       ) : selectedValue ? (
-        // Fallback: Show button text if profile not loaded but value exists
         <Button
           variant={buttonVariant || "outline"}
           class={buttonClass || ""}
           size="sm"
           icon={icon || "user"}
           iconPosition="left"
-          iconClasses="m-0"
+          iconClasses="m-0 p-2"
         >
           {displayText}
         </Button>
       ) : (
         // No value selected - show placeholder
-
-        <span
-          class="relative inline-block group w-8 h-8"
-          style="vertical-align: baseline; white-space: nowrap;"
-        >
-          {" "}
-          <span class="sr-only">Open user menu</span>
-          <svg
-            class="inline-block avatar-fallback"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path d="M7.5 6.5C7.5 8.981 9.519 11 12 11s4.5-2.019 4.5-4.5S14.481 2 12 2 7.5 4.019 7.5 6.5zM20 21h1v-1c0-3.859-3.141-7-7-7h-4c-3.86 0-7 3.141-7 7v1h17z" />
-          </svg>
-        </span>
+        <Tooltip text="Assign to Staff">
+          <span class="relative inline-block group w-8 h-8">
+            <span class="sr-only">Open user menu</span>
+            <svg
+              class="inline-block avatar-fallback"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M7.5 6.5C7.5 8.981 9.519 11 12 11s4.5-2.019 4.5-4.5S14.481 2 12 2 7.5 4.019 7.5 6.5zM20 21h1v-1c0-3.859-3.141-7-7-7h-4c-3.86 0-7 3.141-7 7v1h17z" />
+            </svg>
+          </span>
+        </Tooltip>
 
         // <Button
         //   variant={buttonVariant || "outline"}
@@ -210,6 +208,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     currentUser,
     globalInputClasses,
     project,
+    updateCallback,
   }}
   is:inline
 >
@@ -516,6 +515,27 @@ const displayText = buttonText || selectedOption?.label || placeholder;
               result
             );
           }
+
+          // Call updateCallback if provided and available
+          if (updateCallback && typeof window[updateCallback] === "function") {
+            console.log(
+              `🎰 [SLOT-MACHINE-${slotMachineId}] Calling updateCallback: ${updateCallback}`
+            );
+            try {
+              // Pass the result data to the callback
+              window[updateCallback](result, value, label);
+              console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] updateCallback completed`);
+            } catch (callbackError) {
+              console.error(
+                `🎰 [SLOT-MACHINE-${slotMachineId}] Error calling updateCallback:`,
+                callbackError
+              );
+            }
+          } else if (updateCallback) {
+            console.warn(
+              `🎰 [SLOT-MACHINE-${slotMachineId}] updateCallback "${updateCallback}" not found on window`
+            );
+          }
         } catch (error) {
           const slotMachineId = this.id || "unknown";
           console.error(
@@ -773,16 +793,77 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       headers.set("x-search-placeholder", searchPlaceholder || "Type to search...");
     }
 
-    const response = await fetch("/partials/slot-machine-modal", {
-      headers: headers,
-    });
+    let response;
+    let modalHTML;
 
-    if (!response.ok) {
-      console.error("Failed to fetch slot machine modal partial:", response.status);
+    try {
+      console.log(`🎰 [SLOT-MACHINE-${id}] Fetching modal partial...`);
+
+      response = await fetch("/partials/slot-machine-modal", {
+        headers: headers,
+      });
+
+      console.log(`🎰 [SLOT-MACHINE-${id}] Fetch response:`, {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`🎰 [SLOT-MACHINE-${id}] Failed to fetch slot machine modal partial:`, {
+          status: response.status,
+          statusText: response.statusText,
+          errorText: errorText.substring(0, 200),
+        });
+
+        // Show error notification to user
+        if (window.showNotice) {
+          window.showNotice(
+            "error",
+            "Failed to Load Templates",
+            "Unable to load templates. Please try again.",
+            5000
+          );
+        }
+
+        // Unlock body scroll before returning
+        if (window.unlockBodyScroll) {
+          window.unlockBodyScroll();
+        } else {
+          document.body.style.overflow = "";
+        }
+
+        return;
+      }
+
+      modalHTML = await response.text();
+      console.log(
+        `🎰 [SLOT-MACHINE-${id}] Modal HTML fetched successfully, length:`,
+        modalHTML.length
+      );
+    } catch (error) {
+      console.error(`🎰 [SLOT-MACHINE-${id}] Error fetching modal partial:`, error);
+
+      // Show error notification to user
+      if (window.showNotice) {
+        window.showNotice(
+          "error",
+          "Failed to Load Templates",
+          `Unable to load templates: ${error.message}`,
+          5000
+        );
+      }
+
+      // Unlock body scroll before returning
+      if (window.unlockBodyScroll) {
+        window.unlockBodyScroll();
+      } else {
+        document.body.style.overflow = "";
+      }
+
       return;
     }
-
-    const modalHTML = await response.text();
     const modalWrapper = document.createElement("div");
     modalWrapper.innerHTML = modalHTML;
     const modal = modalWrapper.firstElementChild;

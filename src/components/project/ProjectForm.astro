@@ -44,7 +44,7 @@ const formElements = await getFilteredUnifiedFormElements(currentRole, isNewProj
 const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 ---
 
-<div id="project-form-container" class="w-full max-w-7xl mx-auto mb-12 px-8">
+<div id="project-form-container">
   {
     showPDFSelector ? (
       <>
@@ -387,32 +387,39 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
           <!-- Form Actions Container -->
           <div class="flex gap-2 pt-16 dark:border-gray-600">
             {
-              formElements
-                .filter((element) => element.type === "action")
-                .map((element) => {
-                  const isReadOnly = isFormElementReadOnly(element, projectStatus);
-                  return (
-                    <StickyActions columns="1">
-                    <Button
-                      type={element.elementType === "submit" ? "submit" : "button"}
-                      variant={
-                        element.variant === "info" ? "secondary" : element.variant || "secondary"
-                      }
-                      size="xl"
-                      icon={element.icon}
-                      iconPosition="left"
-                      class={element.cssClass || ""}
-                      id={element.id}
-                      dataAttributes={{
-                        "data-action": element.action || "",
-                        "data-tab": element.tab || "",
-                      }}
-                    >
-                      {element.label}
-                    </Button>
+              (() => {
+                const actionElements = formElements.filter((element) => element.type === "action");
+                const buttonCount = actionElements.length;
+                
+                if (buttonCount === 0) return null;
+                
+                return (
+                  <StickyActions columns={buttonCount.toString()}>
+                    {actionElements.map((element) => {
+                      const isReadOnly = isFormElementReadOnly(element, projectStatus);
+                      return (
+                        <Button
+                          type={element.elementType === "submit" ? "submit" : "button"}
+                          variant={
+                            element.variant === "info" ? "secondary" : element.variant || "secondary"
+                          }
+                          size="xl"
+                          icon={element.icon}
+                          iconPosition="left"
+                          class={element.cssClass || ""}
+                          id={element.id}
+                          dataAttributes={{
+                            "data-action": element.action || "",
+                            "data-tab": element.tab || "",
+                          }}
+                        >
+                          <span set:html={element.label} />
+                        </Button>
+                      );
+                    })}
                   </StickyActions>
-                  );
-                })
+                );
+              })()
             }
           </div>
         </form>
@@ -711,7 +718,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
             (window as any).SimpleIcons?.getIcon("save", {
               className: "mr-1 inline-block w-4 h-4",
             }) || "";
-          submitBtn.innerHTML = `${saveIcon}Save Project`;
+          submitBtn.innerHTML = `Save<span class="hidden sm:inline"> Project</span> ${saveIcon}`;
         }
       }
     }

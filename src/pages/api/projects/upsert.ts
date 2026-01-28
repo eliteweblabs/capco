@@ -439,6 +439,8 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     // Map form data directly to database fields (no manual mapping!)
     const updateData = mapFormDataToProject(sanitizedData);
     console.log("🔧 [UPDATE-PROJECT] Mapped update data:", updateData);
+    
+    // Note: updatedAt is automatically set by PostgreSQL trigger
 
     // Update the project
     const { data: project, error: updateError } = await supabase!
@@ -453,8 +455,8 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       return createErrorResponse("Failed to update project", 500);
     }
 
-    // Log the update
-    await SimpleProjectLogger.addLogEntry(
+    // Log the update asynchronously (don't block the response)
+    SimpleProjectLogger.addLogEntry(
       parseInt(projectId),
       "projectUpdated",
       "Project was updated",
@@ -462,7 +464,9 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
         oldData: currentProject,
         newData: project,
       }
-    );
+    ).catch((error) => {
+      console.error("⚠️ [UPDATE-PROJECT] Failed to log update (non-critical):", error);
+    });
 
     return new Response(
       JSON.stringify({

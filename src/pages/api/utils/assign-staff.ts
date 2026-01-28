@@ -134,6 +134,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Fetch the updated project with assignedToProfile data
+    let assignedToProfile = null;
+    if (assignedToId) {
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, name, email, companyName")
+        .eq("id", assignedToId)
+        .single();
+
+      if (profileError) {
+        console.error("📧 [ASSIGN-STAFF] Error fetching profile data:", profileError);
+      } else {
+        assignedToProfile = profileData;
+        console.log("📧 [ASSIGN-STAFF] Profile data fetched:", assignedToProfile);
+      }
+    }
+
     // console.log("📧 [ASSIGN-STAFF] Project updated successfully:", projectData);
 
     // If a staff member was assigned (not unassigned), send email notification
@@ -269,6 +286,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           title: "Staff Assigned",
           message: `Project assigned to ${staffName || "Unassigned"}`,
           duration: 1500,
+        },
+        updatedProject: {
+          id: projectId,
+          assignedToId: assignedToId,
+          assignedToProfile: assignedToProfile,
         },
       }),
       {
