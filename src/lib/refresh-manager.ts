@@ -20,7 +20,7 @@ export class RefreshManager {
   private updateCallbacks: Map<string, (value: any) => void> = new Map();
   private refreshInterval: NodeJS.Timeout | null = null;
   private isActive: boolean = false;
-  private refreshIntervalMs: number = 15000; // 15 seconds
+  private refreshIntervalMs: number = 30000; // 30 seconds (increased from 15s to reduce database load)
 
   private constructor() {
     // Register default update callbacks for common field types

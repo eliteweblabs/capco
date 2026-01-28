@@ -767,7 +767,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     name: "delete-project",
     type: "action",
     elementType: "button",
-    label: "Delete Project",
+    label: "Delete<span class='hidden sm:inline'> Project</span>",
     icon: "trash",
     variant: "danger",
     action: "deleteProject",

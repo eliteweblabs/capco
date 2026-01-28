@@ -10,31 +10,25 @@ export async function fetchPunchlistStats(
   if (projectIds.length === 0) return {};
 
   try {
-    const { data: punchlistData, error } = await supabaseAdmin
-      .from("punchlist")
-      .select("projectId, markCompleted")
-      .in("projectId", projectIds);
+    // Fetch punchlistComplete and punchlistCount directly from projects table
+    const { data: projects, error } = await supabaseAdmin
+      .from("projects")
+      .select("id, punchlistComplete, punchlistCount")
+      .in("id", projectIds);
 
     if (error) {
       console.error("🏗️ [PUNCHLIST-STATS] Database error:", error);
       return {};
     }
 
-    // Group by projectId and count completed vs total
+    // Map to stats format
     const stats: Record<number, { completed: number; total: number }> = {};
 
-    projectIds.forEach((projectId) => {
-      stats[projectId] = { completed: 0, total: 0 };
-    });
-
-    (punchlistData || []).forEach((item) => {
-      if (!stats[item.projectId]) {
-        stats[item.projectId] = { completed: 0, total: 0 };
-      }
-      stats[item.projectId].total++;
-      if (item.markCompleted) {
-        stats[item.projectId].completed++;
-      }
+    (projects || []).forEach((project) => {
+      stats[project.id] = {
+        completed: project.punchlistComplete || 0,
+        total: project.punchlistCount || 0,
+      };
     });
 
     return stats;
