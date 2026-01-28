@@ -32,10 +32,7 @@ interface Props {
 const {
   title = undefined,
   description = undefined,
-  currentUser = undefined,
-  session = undefined,
   project = undefined,
-  supabase = undefined,
   supabaseUrl = undefined,
   projects = undefined,
   id = undefined,
@@ -67,6 +64,10 @@ const {
   socialNetworks,
 } = await globalCompanyData();
 
+import { checkAuth } from "../../lib/auth";
+const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+  Astro.cookies
+);
 import { globalClasses } from "../../pages/api/global/global-classes";
 import Tooltip from "../common/Tooltip.astro";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
@@ -2397,6 +2398,11 @@ const debugData = {
     <!-- Lazy Loading Images (Global) -->
     <script>
       import "../../scripts/lazy-load-images";
+    </script>
+
+    <!-- Global Project Item Handlers (Extracted from ProjectItem.astro for performance) -->
+    <script>
+      import "../../scripts/project-item-handlers";
     </script>
 
     <!-- Project Refresh Manager (DISABLED - use generic refresh-manager.ts instead) -->

@@ -77,6 +77,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     // Build query for multiple projects
+    const startQuery = Date.now();
     let query = supabaseAdmin
       .from("projects")
       .select("*", { count: includeTotal ? "exact" : undefined })
@@ -111,6 +112,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     query = query.range(offset, offset + limit - 1);
 
     const { data: projects, error, count } = await query;
+    console.log(`⚡ [PROJECTS-GET] Main query took ${Date.now() - startQuery}ms`);
 
     if (error) {
       console.error("Error fetching projects:", error);
@@ -120,9 +122,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       });
     }
 
-    // Get project IDs for punchlist stats
+    // Get project IDs for later queries
     const projectIds = (projects || []).map((p) => p.id);
-    const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
 
     // Get unique author and assigned-to IDs
     const authorIds = [...new Set((projects || []).map((p) => p.authorId).filter(Boolean))];
@@ -131,43 +132,45 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     ];
     const allProfileIds = [...new Set([...authorIds, ...assignedToIds])];
 
-    // Fetch all relevant profiles in one query
-    let profilesMap: Record<string, any> = {};
-    if (allProfileIds.length > 0) {
-      const { data: profilesData } = await supabaseAdmin
-        .from("profiles")
-        .select("id, firstName, lastName, companyName, email, role")
-        .in("id", allProfileIds);
+    // Fetch profiles and files in parallel
+    const startParallel = Date.now();
+    const [profilesResult, filesResult] = await Promise.all([
+      // Fetch all relevant profiles in one query
+      allProfileIds.length > 0
+        ? supabaseAdmin
+            .from("profiles")
+            .select("id, firstName, lastName, companyName, email, role")
+            .in("id", allProfileIds)
+        : Promise.resolve({ data: [] }),
+      
+      // Fetch file counts for all projects in one query
+      projectIds.length > 0
+        ? supabaseAdmin
+            .from("files")
+            .select("id, fileName, fileType, fileSize, uploadedAt, projectId")
+            .in("projectId", projectIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+    console.log(`⚡ [PROJECTS-GET] Parallel queries took ${Date.now() - startParallel}ms`);
 
-      profilesMap = (profilesData || []).reduce(
-        (acc, profile) => {
-          acc[profile.id] = profile;
-          return acc;
-        },
-        {} as Record<string, any>
-      );
+    // Build profiles map
+    const profilesMap: Record<string, any> = {};
+    if (profilesResult.data) {
+      profilesResult.data.forEach((profile: any) => {
+        profilesMap[profile.id] = profile;
+      });
     }
 
-    // Fetch file counts for all projects in one query
-    let filesMap: Record<number, { count: number; files: any[] }> = {};
-    if (projectIds.length > 0) {
-      try {
-        const { data: filesData } = await supabaseAdmin
-          .from("files")
-          .select("id, fileName, fileType, fileSize, uploadedAt, projectId")
-          .in("projectId", projectIds);
-
-        // Group files by projectId
-        (filesData || []).forEach((file) => {
-          if (!filesMap[file.projectId]) {
-            filesMap[file.projectId] = { count: 0, files: [] };
-          }
-          filesMap[file.projectId].count++;
-          filesMap[file.projectId].files.push(file);
-        });
-      } catch (fileError) {
-        console.warn("Could not fetch files for projects:", fileError);
-      }
+    // Build files map
+    const filesMap: Record<number, { count: number; files: any[] }> = {};
+    if (filesResult.data) {
+      filesResult.data.forEach((file: any) => {
+        if (!filesMap[file.projectId]) {
+          filesMap[file.projectId] = { count: 0, files: [] };
+        }
+        filesMap[file.projectId].count++;
+        filesMap[file.projectId].files.push(file);
+      });
     }
 
     // Add profile data, file data, and punchlist data to projects
@@ -182,7 +185,11 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         assignedToProfile: project.assignedToId ? profilesMap[project.assignedToId] : null,
         projectFiles: fileData.files,
         fileCount: fileData.count,
-        punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
+        // Use punchlist data directly from projects table (no extra query needed!)
+        punchlistItems: {
+          completed: project.punchlistComplete || 0,
+          total: project.punchlistCount || 0,
+        },
       };
     });
 

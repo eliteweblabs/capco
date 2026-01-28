@@ -45,19 +45,41 @@ if (currentUser?.id) {
       apiUrl.searchParams.set("authorId", currentUser.id);
     }
     
-    const response = await fetch(apiUrl.toString(), {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: Astro.request.headers.get("Cookie") || "",
-      },
-    });
+    // Only load first 50 projects for faster initial render
+    apiUrl.searchParams.set("limit", "50");
+    
+    // Add a timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    
+    try {
+      const startTime = Date.now();
+      const response = await fetch(apiUrl.toString(), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: Astro.request.headers.get("Cookie") || "",
+        },
+        signal: controller.signal,
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      projects = data.projects || [];
-    } else {
-      console.error("🏗️ [PROJECT/DASHBOARD] API error:", response.status);
+      clearTimeout(timeoutId);
+      const elapsed = Date.now() - startTime;
+
+      if (response.ok) {
+        const data = await response.json();
+        projects = data.projects || [];
+        console.log(`🏗️ [PROJECT/DASHBOARD] Loaded ${projects.length} projects in ${elapsed}ms`);
+      } else {
+        console.error("🏗️ [PROJECT/DASHBOARD] API error:", response.status);
+      }
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error("🏗️ [PROJECT/DASHBOARD] Request timeout after 8s - loading with empty projects");
+      } else {
+        throw fetchError;
+      }
     }
   } catch (error) {
     console.error("🏗️ [PROJECT/DASHBOARD] Error fetching projects:", error);
@@ -106,3 +128,23 @@ const statusData = statusResponseData.statuses || [];
     primaryTextClasses={primaryTextClasses}
   />
 </App>
+
+<script>
+  // Start the refresh manager to poll for updates
+  import { refreshManager } from "../../lib/refresh-manager";
+  
+  console.log("🔄 [DASHBOARD] Starting refresh manager...");
+  
+  // Wait for DOM to be fully loaded
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("🔄 [DASHBOARD] DOM loaded, initializing refresh manager");
+      refreshManager.startAutoRefreshWithInterval(10); // Poll every 10 seconds (safer than 5)
+      console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
+    });
+  } else {
+    console.log("🔄 [DASHBOARD] DOM already loaded, initializing refresh manager");
+    refreshManager.startAutoRefreshWithInterval(10); // Poll every 10 seconds (safer than 5)
+    console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
+  }
+</script>
