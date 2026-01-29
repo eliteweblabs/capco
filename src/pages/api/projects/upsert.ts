@@ -239,7 +239,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       siteAccess: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
       exteriorBeacon: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
       title: body.title || body.address,
-      address: body.address?.replace(/, USA$/, "") || body.address,
+      address: body.address?.replace(/,?\s*(USA|United States)$/i, "") || body.address,
       architect: body.architect && body.architect.trim() !== "" ? body.architect.trim() : null,
       sqFt: body.sqFt && body.sqFt.trim() !== "" ? parseInt(body.sqFt) : null,
       newConstruction: body.newConstruction === "on" || body.newConstruction === true,
@@ -312,11 +312,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
       console.log(`📝 [CREATE-PROJECT] Applying templates to project ${project.id}`);
       const templateResult = await applyProjectTemplates(project.id, project);
-      
+
       if (templateResult.success) {
-        console.log(`✅ [CREATE-PROJECT] Applied ${templateResult.punchlistCount} punchlist and ${templateResult.discussionCount} discussion templates`);
+        console.log(
+          `✅ [CREATE-PROJECT] Applied ${templateResult.punchlistCount} punchlist and ${templateResult.discussionCount} discussion templates`
+        );
       }
-      
+
       if (templateResult.errors.length > 0) {
         console.warn(`⚠️ [CREATE-PROJECT] Template errors:`, templateResult.errors);
       }
@@ -440,7 +442,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     // Map form data directly to database fields (no manual mapping!)
     const updateData = mapFormDataToProject(sanitizedData);
     console.log("🔧 [UPDATE-PROJECT] Mapped update data:", updateData);
-    
+
     // Note: updatedAt is automatically set by PostgreSQL trigger
 
     // Update the project

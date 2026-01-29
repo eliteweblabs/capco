@@ -119,6 +119,10 @@ const { desktopNavigationHTML, mobileNavigationHTML, visibleNavItems } = navigat
 import "../../styles/global.css"; // Import Tailwind CSS
 // import "../../styles/app.css"; // Import Tailwind CSS
 
+import Overlay from "../ui/Overlay.astro";
+import CloseButton from "../ui/CloseButton.astro";
+import Button from "../common/Button.astro";
+import SimpleIcon from "../common/SimpleIcon.astro";
 import Preloader from "../common/Preloader.astro";
 import Footer from "./Footer.astro";
 import UnifiedNotification from "./UnifiedNotification.astro";
@@ -133,6 +137,7 @@ import FeedbackPanel from "../common/FeedbackPanel.astro";
 import NotificationsModal from "../common/NotificationsModal.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 import VapiChatWidget from "@/features/vapi-chat-widget/VapiChatWidget.astro";
+import PunchlistDrawer from "../project/PunchlistDrawer.astro";
 
 // Notification count loader will be loaded via script tag
 
@@ -659,6 +664,67 @@ const debugData = {
     {
       !currentUser && !isBackend && !isAuthPageResult && !isContactPageResult && (
         <VapiChatWidget basic={true} />
+      )
+    }
+
+    {
+      currentUser && currentUser.id && currentRole !== "Client" && project && (
+        <>
+          {/* Backdrop overlay */}
+          <Overlay id="punchlist-drawer-backdrop" zIndex={40} opacity="50" blurAmount="none" />
+
+          <div
+            id="punchlist-drawer"
+            class="fixed top-0 right-0 h-screen p-4 overflow-y-auto transition-transform translate-x-full bg-neutral-primary-soft w-full sm:w-96"
+            style="will-change: transform; z-index: 10002;"
+          >
+            <div class="flex flex-col h-full">
+              {/* Header */}
+              <div class="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-600 dark:bg-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  {project.title || project.address || "Project"} Punchlist
+                </h3>
+                <CloseButton
+                  id="punchlist-drawer-close"
+                  tooltipText="Close drawer"
+                  position="left"
+                />
+              </div>
+
+              {/* Content */}
+              <div class="flex-1 overflow-y-auto p-4 color-background">
+                <div id="content-punchlist">
+                  <div>
+                    <div id="punchlist-container" data-project-id={projectId}>
+                      {/* Add Punchlist Item Button - Admin Only */}
+                      {currentRole === "Admin" && (
+                        <div class="mb-4">
+                          <Button
+                            id="add-punchlist-item-btn"
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            class="w-full"
+                          >
+                            <SimpleIcon name="plus" class="w-4 h-4 mr-2" />
+                            Add Punchlist Item
+                          </Button>
+                        </div>
+                      )}
+
+                      <div class="mb-6">
+                        {/* <!-- Punchlist Items List --> */}
+                        <div id="punchlist-items-list" class="space-y-4">
+                          {/* <!-- Punchlist items will be dynamically loaded here --> */}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )
     }
 
