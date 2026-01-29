@@ -35,6 +35,11 @@ if (!tutorials || !currentUser || !isAuth) {
       data-user-id={currentUser.id}
       data-tutorial-id={tutorialId}
     >
+      {/* Hidden template for dismissable step close button */}
+      <template id="tutorial-dismiss-button-template">
+        <CloseButton className="tutorial-dismiss-step absolute top-2 right-2 z-10" size="sm" />
+      </template>
+
       {/* Tutorial Mask */}
       <div id="tutorial-mask" class="tutorial-mask"></div>
 
@@ -49,25 +54,10 @@ if (!tutorials || !currentUser || !isAuth) {
             </div>
             <span id="tutorial-step-counter" class="tutorial-step-counter">1 of 5</span>
           </div>
-          <button
+          <CloseButton
             id="tutorial-close"
-            type="button"
-            class="tutorial-close inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Close tutorial"
-          >
-            <svg
-              class="h-4 w-4 text-gray-600 dark:text-gray-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+            className="tutorial-close"
+          />
         </div>
 
         {/* Content */}
@@ -366,20 +356,20 @@ if (!tutorials || !currentUser || !isAuth) {
         if (popoverContent) {
           const existingDismissBtn = popoverContent.querySelector('.tutorial-dismiss-step');
           if (step.dismissable && !existingDismissBtn) {
-            const dismissBtn = document.createElement('button');
-            dismissBtn.type = 'button';
-            dismissBtn.className = 'tutorial-dismiss-step absolute top-2 right-2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 z-10';
-            dismissBtn.setAttribute('aria-label', 'Dismiss this tip');
-            dismissBtn.innerHTML = `<svg class="h-3 w-3 text-gray-600 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>`;
-            dismissBtn.addEventListener('click', () => {
-              this.dismissCurrentStep();
-            });
-            const header = popoverContent.querySelector('.tutorial-header');
-            if (header) {
-              header.appendChild(dismissBtn);
+            // Clone the dismiss button from template
+            const template = document.getElementById('tutorial-dismiss-button-template') as HTMLTemplateElement;
+            if (template) {
+              const dismissBtn = template.content.cloneNode(true) as DocumentFragment;
+              const btnElement = dismissBtn.querySelector('button');
+              if (btnElement) {
+                btnElement.addEventListener('click', () => {
+                  this.dismissCurrentStep();
+                });
+              }
+              const header = popoverContent.querySelector('.tutorial-header');
+              if (header) {
+                header.appendChild(dismissBtn);
+              }
             }
           } else if (!step.dismissable && existingDismissBtn) {
             existingDismissBtn.remove();

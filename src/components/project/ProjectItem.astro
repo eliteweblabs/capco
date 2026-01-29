@@ -1,6 +1,7 @@
 ---
 import SimpleIcon from "../common/SimpleIcon.astro";
 import SlotMachineModalStaff from "../form/SlotMachineModalStaff.astro";
+import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
 interface Props {
   project: {
     punchlistComplete?: number;
@@ -280,13 +281,12 @@ const statusColor = currentStatusColor || "gray";
     currentRole !== "Client" && (
       <td class="E9GV5sZJIbfO_GEQ_moc px-4 py-2">
         <div class="align-center flex">
-          <SimpleIcon
-            name="trash"
-            class="text-red-500"
+          <DeleteConfirmButton
+            id={`delete-project-${project.id}`}
             size="xs"
+            variant="icon"
             dataAttributes={{
               "data-project-id": project.id,
-              onclick: `event.stopPropagation(); deleteProject(${project.id})`,
             }}
           />
         </div>
@@ -572,6 +572,20 @@ const statusColor = currentStatusColor || "gray";
         window[`updateStaffIcon_${projectId}`] = function (result, assignedToId, staffName) {
           (window as any).updateStaffIcon(projectId, result, assignedToId, staffName);
         };
+      }
+
+      // Listen for delete confirmation event on the delete button
+      const deleteButton = projectId
+        ? parentTr?.querySelector(`#delete-project-${projectId}`)
+        : null;
+      if (deleteButton && projectId) {
+        deleteButton.addEventListener("deleteConfirmed", (e) => {
+          e.stopPropagation();
+          const projectId = deleteButton.getAttribute("data-project-id");
+          if (projectId && (window as any).deleteProject) {
+            (window as any).deleteProject(projectId);
+          }
+        });
       }
     </script>
   </td>

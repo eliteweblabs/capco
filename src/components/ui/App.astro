@@ -1168,7 +1168,7 @@ const debugData = {
       };
 
       let isDeleting = false; // Flag to prevent multiple delete operations
-      (window as any).deleteProject = function (projectId: any) {
+      (window as any).deleteProject = async function (projectId: any) {
         // Prevent multiple delete operations
         if (isDeleting) {
           console.log("Delete operation already in progress, ignoring request");
@@ -1191,23 +1191,34 @@ const debugData = {
           return;
         }
 
+        // Fetch project details for confirmation message
+        let projectName = "this project";
+        try {
+          const project = await (window as any).getProject(projectId);
+          if (project) {
+            projectName = project.title || project.address || "this project";
+          }
+        } catch (error) {
+          console.error("Failed to fetch project for delete confirmation:", error);
+        }
+
         // Show confirmation modal with action buttons
         if ((window as any).showNotice) {
           (window as any).showNotice(
             "error",
-            "Delete Project",
-            "Are you sure you want to delete this project? This action cannot be undone.",
+            `Delete ${projectName}?`,
+            `Are you sure you want to delete ${projectName}? This action cannot be undone.`,
             6000000, // 6000 seconds timeout
             [
               {
                 label: "Cancel",
-                variant: "secondary",
+                variant: "link",
                 fullWidth: true,
                 action: () => {},
               },
               {
-                label: "Delete",
-                variant: "danger",
+                label: "Yes",
+                variant: "secondary",
                 fullWidth: true,
                 action: () => {
                   // Set deleting flag to prevent multiple operations
