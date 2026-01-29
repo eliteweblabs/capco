@@ -54,7 +54,8 @@ export interface FormElementConfig {
     | "button-group"
     | "component"
     | "submit"
-    | "button";
+    | "button"
+    | "outline";
   label: string;
   placeholder?: string;
   required?: boolean;
@@ -770,7 +771,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label:
       "<span class='hidden md:inline'>Delete</span><span class='hidden lg:inline'> Project</span>",
     icon: "trash",
-    variant: "danger",
+    variant: "outline",
     action: "deleteProject",
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
