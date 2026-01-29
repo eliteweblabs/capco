@@ -72,7 +72,15 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           data: project,
           pagination: { limit: 1, offset: 0, total: 1, hasMore: false },
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { 
+          status: 200, 
+          headers: { 
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+          } 
+        }
       );
     }
 
@@ -203,7 +211,15 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           hasMore: projectsWithProfiles.length === limit,
         },
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { 
+        status: 200, 
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        } 
+      }
     );
   } catch (error) {
     console.error("Unexpected error in get-project API:", error);

@@ -417,16 +417,17 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       return createErrorResponse("Access denied", 403);
     }
 
+    // PERFORMANCE: Skip fetching current project since we disabled logging
     // Get current project data for logging
-    const { data: currentProject, error: fetchError } = await supabase!
-      .from("projects")
-      .select("*")
-      .eq("id", projectId)
-      .single();
+    // const { data: currentProject, error: fetchError } = await supabase!
+    //   .from("projects")
+    //   .select("*")
+    //   .eq("id", projectId)
+    //   .single();
 
-    if (fetchError || !currentProject) {
-      return createErrorResponse("Project not found", 404);
-    }
+    // if (fetchError || !currentProject) {
+    //   return createErrorResponse("Project not found", 404);
+    // }
 
     // Sanitize and validate form data
     const sanitizedData = sanitizeFormData(body as ProjectUpdateFormData);
@@ -455,18 +456,19 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       return createErrorResponse("Failed to update project", 500);
     }
 
+    // PERFORMANCE: Disable logging for simple field updates to prevent 10+ second saves
     // Log the update asynchronously (don't block the response)
-    SimpleProjectLogger.addLogEntry(
-      parseInt(projectId),
-      "projectUpdated",
-      "Project was updated",
-      {
-        oldData: currentProject,
-        newData: project,
-      }
-    ).catch((error) => {
-      console.error("⚠️ [UPDATE-PROJECT] Failed to log update (non-critical):", error);
-    });
+    // SimpleProjectLogger.addLogEntry(
+    //   parseInt(projectId),
+    //   "projectUpdated",
+    //   "Project was updated",
+    //   {
+    //     oldData: currentProject,
+    //     newData: project,
+    //   }
+    // ).catch((error) => {
+    //   console.error("⚠️ [UPDATE-PROJECT] Failed to log update (non-critical):", error);
+    // });
 
     return new Response(
       JSON.stringify({
