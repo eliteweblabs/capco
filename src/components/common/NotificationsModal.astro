@@ -32,16 +32,15 @@ if (!currentUser || currentRole === "Client") {
 >
   <div class="relative max-h-full w-full max-w-2xl p-4">
     <!-- Modal content -->
-    <div class="relative rounded-lg bg-white shadow outer-shadow outer-shadow-white/10 dark:bg-black">
+    <div
+      class="relative rounded-lg bg-white shadow outer-shadow outer-shadow-white/10 dark:bg-black"
+    >
       <!-- Modal header -->
       <div
         class="flex items-center justify-between border-b border-gray-200 p-3 md:p-4 lg:p-6 dark:border-gray-700"
       >
         <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Notifications</h3>
-        <CloseButton
-          data-modal-hide="notificationsModal"
-          tooltipText="Close modal"
-        />
+        <CloseButton data-modal-hide="notificationsModal" tooltipText="Close modal" />
       </div>
 
       <!-- Modal body -->
@@ -176,41 +175,41 @@ if (!currentUser || currentRole === "Client") {
     openDropdown() {
       const modal = document.getElementById("notificationsModal");
       const overlay = document.getElementById("notificationsModal-overlay");
-      
-      console.log("✅ [NOTIFICATIONS] Opening modal with new system");
-      
+
+      // console.log("✅ [NOTIFICATIONS] Opening modal with new system");
+
       if (modal && overlay) {
         // Show overlay
         overlay.classList.remove("hidden");
         overlay.classList.add("flex");
-        
+
         // Show modal
         modal.classList.remove("hidden");
         modal.classList.add("flex");
         modal.setAttribute("aria-hidden", "false");
-        
+
         this.isOpen = true;
         this.loadNotifications(); // Refresh notifications when opening
-        
+
         // Lock body scroll
         if (typeof lockBodyScroll === "function") {
           lockBodyScroll();
         }
-        
-        console.log("✅ [NOTIFICATIONS] Modal opened successfully");
+
+        // console.log("✅ [NOTIFICATIONS] Modal opened successfully");
       } else {
         console.error("❌ [NOTIFICATIONS] Modal or overlay element not found!");
       }
     }
 
     closeDropdown() {
-      console.log("🔍 [NOTIFICATIONS] Closing modal");
-      
+      // console.log("🔍 [NOTIFICATIONS] Closing modal");
+
       hideModal("notificationsModal");
       this.isOpen = false;
       this.markViewedNotificationsAsRead();
-      
-      console.log("✅ [NOTIFICATIONS] Modal closed");
+
+      // console.log("✅ [NOTIFICATIONS] Modal closed");
     }
 
     async loadNotifications() {
@@ -555,7 +554,7 @@ if (!currentUser || currentRole === "Client") {
 
         console.log("🔍 [NOTIFICATIONS] Delete response status:", response.status);
         if (response.ok) {
-          console.log("✅ [NOTIFICATIONS] Notification deleted successfully, reloading...");
+          // console.log("✅ [NOTIFICATIONS] Notification deleted successfully, reloading...");
           await this.loadNotifications();
         } else {
           console.error("❌ [NOTIFICATIONS] Delete failed with status:", response.status);
@@ -651,27 +650,27 @@ if (!currentUser || currentRole === "Client") {
   }
 
   // Initialize notification manager
-  console.log("🔍 [NOTIFICATIONS] Initializing notification manager");
+  // console.log("🔍 [NOTIFICATIONS] Initializing notification manager");
   const notificationManager = new NotificationManager();
   (window as any).notificationManager = notificationManager;
 
   // Global function for delete confirmation
   (window as any).confirmDeleteNotification = (notificationId: number) => {
-    console.log("🔍 [NOTIFICATIONS] Global confirmDeleteNotification called for ID:", notificationId);
+    // console.log("🔍 [NOTIFICATIONS] Global confirmDeleteNotification called for ID:", notificationId);
     notificationManager.confirmDeleteNotification(notificationId);
   };
 
   // Setup notification bell click handler
-  console.log("🔔 [NOTIFICATIONS] Setting up notification bell click handler");
+  // console.log("🔔 [NOTIFICATIONS] Setting up notification bell click handler");
 
   function setupNotificationBell() {
-    console.log("🔔 [NOTIFICATIONS] setupNotificationBell called");
+    // console.log("🔔 [NOTIFICATIONS] setupNotificationBell called");
     const notificationBell = document.getElementById("notification-bell");
 
-    console.log("🔔 [NOTIFICATIONS] Bell element:", notificationBell);
+    // console.log("🔔 [NOTIFICATIONS] Bell element:", notificationBell);
 
     if (notificationBell) {
-      console.log("✅ [NOTIFICATIONS] Bell button found, adding click listener");
+      // console.log("✅ [NOTIFICATIONS] Bell button found, adding click listener");
 
       // Remove any existing click listeners by cloning the element
       const newBell = notificationBell.cloneNode(true) as HTMLElement;
@@ -680,11 +679,11 @@ if (!currentUser || currentRole === "Client") {
       newBell.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log("🔔 [NOTIFICATIONS] Bell clicked!");
+        // console.log("🔔 [NOTIFICATIONS] Bell clicked!");
         notificationManager.openDropdown();
       });
 
-      console.log("✅ [NOTIFICATIONS] Click listener added successfully");
+      // console.log("✅ [NOTIFICATIONS] Click listener added successfully");
     } else {
       console.error("❌ [NOTIFICATIONS] Bell button NOT found!");
     }
@@ -692,7 +691,7 @@ if (!currentUser || currentRole === "Client") {
 
   // Try multiple times to ensure DOM is ready
   if (document.readyState === "loading") {
-    console.log("🔔 [NOTIFICATIONS] DOM still loading, waiting for DOMContentLoaded");
+    // console.log("🔔 [NOTIFICATIONS] DOM still loading, waiting for DOMContentLoaded");
     document.addEventListener("DOMContentLoaded", setupNotificationBell);
   } else {
     console.log("🔔 [NOTIFICATIONS] DOM already loaded, setting up immediately");
@@ -701,7 +700,7 @@ if (!currentUser || currentRole === "Client") {
 
   // Also try after a short delay in case elements are added dynamically
   setTimeout(() => {
-    console.log("🔔 [NOTIFICATIONS] Delayed setup attempt");
+    // console.log("🔔 [NOTIFICATIONS] Delayed setup attempt");
     setupNotificationBell();
   }, 1000);
 </script>
