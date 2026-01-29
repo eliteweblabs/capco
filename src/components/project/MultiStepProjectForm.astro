@@ -265,7 +265,7 @@ const fieldElements = formElements.filter(
 
           // Handle Enter key to go to next step
           input.addEventListener("keypress", (e) => {
-            if (e.key === "Enter" && !element.required || (element.required && input.value)) {
+            if ((e.key === "Enter" && !element.required) || (element.required && input.value)) {
               e.preventDefault();
               goToNextStep();
             }
@@ -359,7 +359,10 @@ const fieldElements = formElements.filter(
               const parsed = JSON.parse(storedValue);
               selectedValues = Array.isArray(parsed) ? parsed : [storedValue];
             } catch {
-              selectedValues = storedValue.split(",").map((s) => s.trim()).filter((s) => s);
+              selectedValues = storedValue
+                .split(",")
+                .map((s) => s.trim())
+                .filter((s) => s);
             }
           } else {
             selectedValues = [storedValue];
@@ -390,11 +393,7 @@ const fieldElements = formElements.filter(
             if (groupType === "radio") {
               // Radio - deselect all others, select this one
               buttonGroup.querySelectorAll("button").forEach((btn) => {
-                btn.classList.remove(
-                  "bg-primary-600",
-                  "text-white",
-                  "border-primary-600"
-                );
+                btn.classList.remove("bg-primary-600", "text-white", "border-primary-600");
                 btn.classList.add(
                   "bg-white",
                   "dark:bg-gray-800",
@@ -420,11 +419,7 @@ const fieldElements = formElements.filter(
               // Multi-select - toggle selection
               const isCurrentlySelected = button.dataset.selected === "true";
               if (isCurrentlySelected) {
-                button.classList.remove(
-                  "bg-primary-600",
-                  "text-white",
-                  "border-primary-600"
-                );
+                button.classList.remove("bg-primary-600", "text-white", "border-primary-600");
                 button.classList.add(
                   "bg-white",
                   "dark:bg-gray-800",
@@ -695,7 +690,7 @@ const fieldElements = formElements.filter(
           window.SimpleIcons?.getIcon("save", {
             className: "mr-1 inline-block w-4 h-4",
           }) || "";
-        submitBtn.innerHTML = `${saveIcon}Save Project`;
+        submitBtn.innerHTML = `${saveIcon}<span class='hidden md:block'>Save Project</span><span class='block md:hidden'>Save</span>`;
       }
     });
 

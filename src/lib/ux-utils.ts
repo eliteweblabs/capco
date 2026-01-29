@@ -4,12 +4,24 @@
  */
 
 /**
+ * Breakpoint constants matching Tailwind CSS defaults
+ * Use these constants to ensure consistency across the application
+ */
+export const BREAKPOINTS = {
+  SM: 640, // Tailwind sm: breakpoint
+  MD: 768, // Tailwind md: breakpoint (standard mobile/desktop distinction)
+  LG: 1024, // Tailwind lg: breakpoint
+  XL: 1280, // Tailwind xl: breakpoint
+  "2XL": 1536, // Tailwind 2xl: breakpoint
+} as const;
+
+/**
  * Scrolls to the top of the page on mobile devices
  * Only triggers on screens smaller than 768px (mobile breakpoint)
  */
 export function scrollToTopOnMobile(): void {
   // Check if device is mobile (screen width < 768px)
-  if (window.innerWidth < 768) {
+  if (window.innerWidth < BREAKPOINTS.MD) {
     console.log("📱 [UX-UTILS] Scrolling to top on mobile device");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -26,10 +38,20 @@ export function scrollToTop(behavior: ScrollBehavior = "smooth"): void {
 
 /**
  * Checks if the current device is mobile
+ * Uses MD breakpoint (768px) which is the standard mobile/desktop distinction
  * @returns true if screen width is less than 768px
  */
 export function isMobile(): boolean {
-  return window.innerWidth < 768;
+  return window.innerWidth < BREAKPOINTS.MD;
+}
+
+/**
+ * Checks if the current device is small mobile (below sm breakpoint)
+ * Use this for components that use sm: Tailwind classes (like sidebar)
+ * @returns true if screen width is less than 640px
+ */
+export function isSmallMobile(): boolean {
+  return window.innerWidth < BREAKPOINTS.SM;
 }
 
 /**
@@ -37,7 +59,7 @@ export function isMobile(): boolean {
  * @returns true if screen width is between 768px and 1024px
  */
 export function isTablet(): boolean {
-  return window.innerWidth >= 768 && window.innerWidth < 1024;
+  return window.innerWidth >= BREAKPOINTS.MD && window.innerWidth < BREAKPOINTS.LG;
 }
 
 /**
@@ -45,7 +67,7 @@ export function isTablet(): boolean {
  * @returns true if screen width is 1024px or larger
  */
 export function isDesktop(): boolean {
-  return window.innerWidth >= 1024;
+  return window.innerWidth >= BREAKPOINTS.LG;
 }
 
 /**
@@ -759,10 +781,10 @@ export function validateEmail(email: string): string | null {
 /**
  * Shows a modal dialog with customizable content
  * Similar to showNotice but for full modal dialogs
- * 
+ *
  * @param options - Modal configuration options
  * @returns Promise that resolves with action result (true for confirm, false for cancel)
- * 
+ *
  * @example
  * showModal({
  *   title: "Edit Page",
@@ -960,7 +982,7 @@ export function showModal(options: {
     overlay.classList.remove("hidden");
     overlay.classList.add("flex");
   }
-  
+
   modal.classList.remove("hidden");
   modal.classList.add("flex");
   modal.setAttribute("aria-hidden", "false");
@@ -978,7 +1000,7 @@ export function showModal(options: {
 export function hideModal(modalId: string): void {
   const modal = document.getElementById(modalId);
   const overlay = document.getElementById(`${modalId}-overlay`);
-  
+
   if (!modal) return;
 
   modal.classList.add("hidden");
@@ -1004,7 +1026,7 @@ export function hideModal(modalId: string): void {
 export function removeModal(modalId: string): void {
   const modal = document.getElementById(modalId);
   const overlay = document.getElementById(`${modalId}-overlay`);
-  
+
   if (modal) {
     modal.remove();
   }

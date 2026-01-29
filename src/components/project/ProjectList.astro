@@ -174,7 +174,7 @@ const dueDateOptions = createDueDateOptions();
         currentRole !== "Client" && (
           <th scope="col" class="px-4 py-3 font-semibold text-center">
             <Tooltip text="Assigned To">
-              <SimpleIcon name="user" class="" />
+              <SimpleIcon name="user" class="" size="lg" />
             </Tooltip>
           </th>
         )
@@ -205,86 +205,88 @@ const dueDateOptions = createDueDateOptions();
         <Tooltip text="Elapsed Time"><SimpleIcon name="calendar" class="" /> </Tooltip>
       </th>
       <th scope="col" class="px-4 py-3 font-semibold text-center">
-        <Tooltip text="Last Updated"><SimpleIcon name="stopwatch" class="" /> </Tooltip>
+        <Tooltip text="Time since last status change"
+          ><SimpleIcon name="stopwatch" class="" size="lg" />
+        </Tooltip>
+        <th scope="col" class="w-10 px-4 py-3 font-semibold text-center">Due Date</th>
       </th>
-      <th scope="col" class="w-10 px-4 py-3 font-semibold text-center">Due Date</th>
     </tr>
+    <tbody id="project-list-tbody">
+      {
+        projects.length > 0 &&
+          processedProjects.map((project: any, index: number) => {
+            // Hide projects beyond initial load count
+            const isHidden = index >= INITIAL_LOAD_COUNT;
+            return (
+              <ProjectItem
+                currentUser={currentUser}
+                project={project}
+                statusData={statusData}
+                currentStatusName={project.currentStatusName}
+                currentStatusInt={project.currentStatusInt}
+                currentStatusTab={project.currentStatusTab}
+                currentStatusColor={project.currentStatusColor}
+                staffOptions={staffOptions}
+                dueDateOptions={dueDateOptions}
+                globalInputClasses={globalInputClasses}
+                isHidden={isHidden}
+              />
+            );
+          })
+      }
+    </tbody>
   </thead>
-  <tbody id="project-list-tbody">
-    {
-      projects.length > 0 &&
-        processedProjects.map((project: any, index: number) => {
-          // Hide projects beyond initial load count
-          const isHidden = index >= INITIAL_LOAD_COUNT;
-          return (
-            <ProjectItem
-              currentUser={currentUser}
-              project={project}
-              statusData={statusData}
-              currentStatusName={project.currentStatusName}
-              currentStatusInt={project.currentStatusInt}
-              currentStatusTab={project.currentStatusTab}
-              currentStatusColor={project.currentStatusColor}
-              staffOptions={staffOptions}
-              dueDateOptions={dueDateOptions}
-              globalInputClasses={globalInputClasses}
-              isHidden={isHidden}
-            />
-          );
-        })
-    }
-  </tbody>
-</table>
 
-{
-  hasMoreProjects && (
-    <div class="mt-4 text-center">
-      <button
-        id="load-more-projects"
-        class="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
-        data-total={processedProjects.length}
-        data-initial={INITIAL_LOAD_COUNT}
-      >
-        Load More Projects ({processedProjects.length - INITIAL_LOAD_COUNT} remaining)
-      </button>
-    </div>
-  )
-}
-
-<script>
-  // Client-side progressive reveal of hidden rows
-  const loadMoreButton = document.getElementById("load-more-projects");
-  const tbody = document.getElementById("project-list-tbody");
-
-  if (loadMoreButton && tbody) {
-    const BATCH_SIZE = 20;
-    let currentShown = parseInt(loadMoreButton.getAttribute("data-initial") || "20");
-    const total = parseInt(loadMoreButton.getAttribute("data-total") || "0");
-
-    loadMoreButton.addEventListener("click", () => {
-      // Show next batch of hidden rows
-      const allRows = tbody.querySelectorAll("tr[data-hidden='true']");
-      const batch = Array.from(allRows).slice(0, BATCH_SIZE);
-
-      batch.forEach((row) => {
-        row.removeAttribute("data-hidden");
-        (row as HTMLElement).style.display = "";
-      });
-
-      currentShown += batch.length;
-
-      // Update button or remove if all shown
-      if (currentShown >= total) {
-        loadMoreButton.remove();
-      } else {
-        const remaining = total - currentShown;
-        loadMoreButton.textContent = `Load More Projects (${remaining} remaining)`;
-      }
-
-      // Re-run global functions for newly visible rows
-      if ((window as any).renderFileIcons) {
-        (window as any).renderFileIcons();
-      }
-    });
+  {
+    hasMoreProjects && (
+      <div class="mt-4 text-center">
+        <button
+          id="load-more-projects"
+          class="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+          data-total={processedProjects.length}
+          data-initial={INITIAL_LOAD_COUNT}
+        >
+          Load More Projects ({processedProjects.length - INITIAL_LOAD_COUNT} remaining)
+        </button>
+      </div>
+    )
   }
-</script>
+
+  <script>
+    // Client-side progressive reveal of hidden rows
+    const loadMoreButton = document.getElementById("load-more-projects");
+    const tbody = document.getElementById("project-list-tbody");
+
+    if (loadMoreButton && tbody) {
+      const BATCH_SIZE = 20;
+      let currentShown = parseInt(loadMoreButton.getAttribute("data-initial") || "20");
+      const total = parseInt(loadMoreButton.getAttribute("data-total") || "0");
+
+      loadMoreButton.addEventListener("click", () => {
+        // Show next batch of hidden rows
+        const allRows = tbody.querySelectorAll("tr[data-hidden='true']");
+        const batch = Array.from(allRows).slice(0, BATCH_SIZE);
+
+        batch.forEach((row) => {
+          row.removeAttribute("data-hidden");
+          (row as HTMLElement).style.display = "";
+        });
+
+        currentShown += batch.length;
+
+        // Update button or remove if all shown
+        if (currentShown >= total) {
+          loadMoreButton.remove();
+        } else {
+          const remaining = total - currentShown;
+          loadMoreButton.textContent = `Load More Projects (${remaining} remaining)`;
+        }
+
+        // Re-run global functions for newly visible rows
+        if ((window as any).renderFileIcons) {
+          (window as any).renderFileIcons();
+        }
+      });
+    }
+  </script>
+</table>
