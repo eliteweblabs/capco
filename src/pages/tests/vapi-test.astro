@@ -1,0 +1,224 @@
+---
+/**
+ * VAPI Widget Test Page
+ * Diagnostic page to test VAPI widget loading and functionality
+ */
+const assistantId = import.meta.env.PUBLIC_VAPI_ASSISTANT_ID || "";
+const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAPI Widget Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .status-box {
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 8px;
+      border: 2px solid #ccc;
+    }
+    .status-box.success { border-color: #10b981; background: #d1fae5; }
+    .status-box.error { border-color: #ef4444; background: #fee2e2; }
+    .status-box.info { border-color: #3b82f6; background: #dbeafe; }
+    pre {
+      background: #f3f4f6;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .test-button {
+      padding: 0.5rem 1rem;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0.5rem;
+    }
+    .test-button:hover {
+      background: #2563eb;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 VAPI Widget Test</h1>
+  
+  <div class="status-box info">
+    <h2>Environment Variables</h2>
+    <pre>Assistant ID: {assistantId}
+Public Key: {publicKey ? publicKey.substring(0, 20) + '...' : 'NOT SET'}</pre>
+  </div>
+
+  <div class="status-box info">
+    <h2>Test Results</h2>
+    <div id="test-results">
+      <p>Loading tests...</p>
+    </div>
+  </div>
+
+  <div class="status-box info">
+    <h2>Manual Tests</h2>
+    <button class="test-button" id="test-cdn">Test CDN Access</button>
+    <button class="test-button" id="test-widget">Test Widget Init</button>
+    <button class="test-button" id="check-console">Show Console Logs</button>
+  </div>
+
+  <div id="console-output" style="display: none;">
+    <h2>Console Output</h2>
+    <pre id="console-logs"></pre>
+  </div>
+
+  <!-- VAPI Widget -->
+  {assistantId && publicKey && (
+    <vapi-widget
+      id="vapi-widget-test"
+      public-key={publicKey}
+      assistant-id={assistantId}
+      mode="chat"
+      theme="light"
+      accent-color="#3b82f6"
+      border-radius="large"
+      size="compact"
+      position="bottom-right"
+      title="Test Widget"
+      start-button-text="Start"
+      end-button-text="End Call"
+    />
+  )}
+
+  <script
+    src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js"
+    async
+    type="text/javascript"
+  />
+
+  <script define:vars={{ assistantId, publicKey }}>
+    // Console log capture
+    const consoleLogs = [];
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    console.log = function(...args) {
+      consoleLogs.push({ type: 'log', message: args.join(' '), time: new Date().toISOString() });
+      originalLog.apply(console, args);
+    };
+
+    console.error = function(...args) {
+      consoleLogs.push({ type: 'error', message: args.join(' '), time: new Date().toISOString() });
+      originalError.apply(console, args);
+    };
+
+    console.warn = function(...args) {
+      consoleLogs.push({ type: 'warn', message: args.join(' '), time: new Date().toISOString() });
+      originalWarn.apply(console, args);
+    };
+
+    // Test functions
+    async function testCDNAccess() {
+      const results = document.getElementById('test-results');
+      results.innerHTML = '<p>Testing CDN access...</p>';
+      
+      try {
+        const response = await fetch('https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js', {
+          method: 'HEAD'
+        });
+        
+        if (response.ok) {
+          results.innerHTML = '<p style="color: green;">✅ CDN is accessible</p>';
+        } else {
+          results.innerHTML = `<p style="color: red;">❌ CDN returned status: ${response.status}</p>`;
+        }
+      } catch (error) {
+        results.innerHTML = `<p style="color: red;">❌ CDN access failed: ${error.message}</p>`;
+      }
+    }
+
+    async function testWidgetInit() {
+      const results = document.getElementById('test-results');
+      results.innerHTML = '<p>Testing widget initialization...</p>';
+      
+      const widget = document.getElementById('vapi-widget-test');
+      if (widget) {
+        results.innerHTML = '<p style="color: green;">✅ Widget element found</p>';
+        
+        // Check if script loaded
+        if (typeof window.Vapi !== 'undefined' || typeof window.VapiWidget !== 'undefined') {
+          results.innerHTML += '<p style="color: green;">✅ VAPI SDK loaded</p>';
+        } else {
+          results.innerHTML += '<p style="color: orange;">⚠️ VAPI SDK not yet loaded (check console)</p>';
+        }
+      } else {
+        results.innerHTML = '<p style="color: red;">❌ Widget element not found</p>';
+      }
+    }
+
+    function showConsoleLogs() {
+      const consoleOutput = document.getElementById('console-output');
+      const consoleLogsEl = document.getElementById('console-logs');
+      consoleOutput.style.display = 'block';
+      
+      if (consoleLogs.length === 0) {
+        consoleLogsEl.textContent = 'No console logs captured yet.';
+      } else {
+        consoleLogsEl.textContent = consoleLogs.map(log => 
+          `[${log.time}] ${log.type.toUpperCase()}: ${log.message}`
+        ).join('\n');
+      }
+    }
+
+    // Auto-run tests
+    window.addEventListener('DOMContentLoaded', async () => {
+      console.log('VAPI Test Page Loaded');
+      console.log('Assistant ID:', assistantId);
+      console.log('Public Key:', publicKey ? publicKey.substring(0, 20) + '...' : 'NOT SET');
+      
+      // Wait a bit for the script to load
+      setTimeout(async () => {
+        await testCDNAccess();
+        setTimeout(testWidgetInit, 1000);
+      }, 1000);
+    });
+
+    // Button handlers
+    document.getElementById('test-cdn')?.addEventListener('click', testCDNAccess);
+    document.getElementById('test-widget')?.addEventListener('click', testWidgetInit);
+    document.getElementById('check-console')?.addEventListener('click', showConsoleLogs);
+
+    // Listen for script load errors
+    window.addEventListener('error', (e) => {
+      if (e.filename && e.filename.includes('vapi')) {
+        console.error('VAPI Script Load Error:', e.message);
+      }
+    });
+
+    // Monitor network requests
+    const originalFetch = window.fetch;
+    let requestCount = 0;
+    window.fetch = function(...args) {
+      requestCount++;
+      const url = args[0];
+      
+      if (typeof url === 'string' && url.includes('vapi')) {
+        console.log(`VAPI Request #${requestCount}:`, url);
+      }
+      
+      return originalFetch.apply(this, args).catch(error => {
+        if (typeof url === 'string' && url.includes('vapi')) {
+          console.error(`VAPI Request Failed #${requestCount}:`, url, error);
+        }
+        throw error;
+      });
+    };
+  </script>
+</body>
+</html>

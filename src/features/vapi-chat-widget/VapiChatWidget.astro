@@ -67,6 +67,125 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
         async
         type="text/javascript"
       />
+
+      <script>
+        // VAPI Widget Error Handling and Request Monitoring
+        (function() {
+          const LOG_PREFIX = '[VAPI-WIDGET]';
+          let requestFailureCount = 0;
+          const MAX_FAILURES = 50; // Allow more failures since VAPI makes polling requests
+          let widgetDisabled = false;
+          let lastErrorTime = 0;
+          const ERROR_THROTTLE = 5000; // Only log errors every 5 seconds
+          
+          // Wait for widget to load
+          let initAttempts = 0;
+          const MAX_INIT_ATTEMPTS = 20;
+          
+          const initWidget = setInterval(() => {
+            initAttempts++;
+            const widget = document.getElementById('vapi-widget-basic');
+            
+            if (widget || initAttempts >= MAX_INIT_ATTEMPTS) {
+              clearInterval(initWidget);
+              
+              if (widget) {
+                console.log(LOG_PREFIX, '✅ Widget element found');
+                
+                // Monitor widget errors
+                widget.addEventListener('error', (e) => {
+                  console.error(LOG_PREFIX, '❌ Widget error:', e);
+                });
+              } else {
+                console.warn(LOG_PREFIX, '⚠️ Widget element not found after', MAX_INIT_ATTEMPTS, 'attempts');
+              }
+            }
+          }, 500);
+
+          // Monitor fetch requests
+          const originalFetch = window.fetch;
+          window.fetch = async function(...args) {
+            const url = args[0];
+            const isVapiRequest = typeof url === 'string' && 
+              (url.includes('vapi') || url.includes('api.vapi.ai'));
+            
+            if (widgetDisabled && isVapiRequest) {
+              return Promise.reject(new Error('Widget disabled due to excessive failures'));
+            }
+            
+            try {
+              const response = await originalFetch.apply(this, args);
+              
+              // Reset failure count on successful VAPI request
+              if (response.ok && isVapiRequest) {
+                if (requestFailureCount > 0) {
+                  console.log(LOG_PREFIX, '✅ Request succeeded, resetting failure count');
+                  requestFailureCount = 0;
+                }
+              }
+              
+              // Log non-OK responses
+              if (!response.ok && isVapiRequest) {
+                const now = Date.now();
+                if (now - lastErrorTime > ERROR_THROTTLE) {
+                  console.warn(LOG_PREFIX, `⚠️ Request returned ${response.status}:`, url);
+                  lastErrorTime = now;
+                }
+              }
+              
+              return response;
+            } catch (error) {
+              if (isVapiRequest) {
+                requestFailureCount++;
+                
+                const now = Date.now();
+                if (now - lastErrorTime > ERROR_THROTTLE) {
+                  console.error(LOG_PREFIX, `❌ Request failed (${requestFailureCount}/${MAX_FAILURES}):`, error.message);
+                  lastErrorTime = now;
+                }
+                
+                if (requestFailureCount >= MAX_FAILURES) {
+                  widgetDisabled = true;
+                  console.error(LOG_PREFIX, '❌ Too many failures, disabling widget');
+                  
+                  const widget = document.getElementById('vapi-widget-basic');
+                  if (widget) {
+                    widget.style.display = 'none';
+                  }
+                  
+                  if (window.showNotice) {
+                    window.showNotice('error', 'Chat Unavailable', 'The chat service is temporarily unavailable. Please try again later or contact us directly.', 8000);
+                  }
+                }
+              }
+              
+              throw error;
+            }
+          };
+          
+          // Monitor script loading
+          const scriptLoadTimeout = setTimeout(() => {
+            const widget = document.getElementById('vapi-widget-basic');
+            if (widget && !widget.shadowRoot && typeof window.Vapi === 'undefined') {
+              console.error(LOG_PREFIX, '❌ Widget script failed to load after 30 seconds');
+              if (window.showNotice) {
+                window.showNotice('error', 'Chat Loading Failed', 'Unable to load chat widget. Please refresh the page.', 5000);
+              }
+            }
+          }, 30000);
+          
+          // Clear timeout if widget loads successfully
+          window.addEventListener('load', () => {
+            setTimeout(() => {
+              const widget = document.getElementById('vapi-widget-basic');
+              if (widget && (widget.shadowRoot || typeof window.Vapi !== 'undefined')) {
+                console.log(LOG_PREFIX, '✅ Widget loaded successfully');
+                clearTimeout(scriptLoadTimeout);
+              }
+            }, 2000);
+          });
+        })();
+      </script>
     </>
   )
 }
