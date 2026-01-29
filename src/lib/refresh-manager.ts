@@ -117,29 +117,34 @@ export class RefreshManager {
       element.setAttribute("data-meta-value", String(newValue));
     }
 
-    // Handle different element types - update display
+    // Handle different element types - update display with animation
     if (tagName === "input") {
       if (elementType === "checkbox") {
         (element as HTMLInputElement).checked = Boolean(newValue);
       } else {
-        // For date inputs with formatted display, update the data attribute but not the display
+        let displayValue: string;
+        
+        // For date inputs with formatted display, update the data attribute
         if (element.hasAttribute("data-due-date")) {
           element.setAttribute("data-due-date", String(newValue));
           // Format the display value
           try {
             const date = new Date(newValue);
-            (element as HTMLInputElement).value = date.toLocaleDateString("en-US", {
+            displayValue = date.toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               hour: "numeric",
               hour12: true,
             });
           } catch (e) {
-            (element as HTMLInputElement).value = String(newValue);
+            displayValue = String(newValue);
           }
         } else {
-          (element as HTMLInputElement).value = String(newValue);
+          displayValue = String(newValue);
         }
+        
+        // Animate the value change
+        this.animateValueChange(element as HTMLInputElement, displayValue);
       }
     } else if (tagName === "select") {
       (element as HTMLSelectElement).value = String(newValue);
@@ -148,17 +153,90 @@ export class RefreshManager {
     } else {
       // For span elements with dates, format them nicely
       const fieldName = element.getAttribute("data-refresh");
+      let displayValue: string;
+      
       if (fieldName && (fieldName.includes("Date") || fieldName.includes("At"))) {
         try {
           const date = new Date(newValue);
-          element.textContent = date.toLocaleString();
+          displayValue = date.toLocaleString();
         } catch (e) {
-          element.textContent = String(newValue);
+          displayValue = String(newValue);
         }
       } else {
-        element.textContent = String(newValue);
+        displayValue = String(newValue);
       }
+      
+      // Animate the value change for text elements
+      this.animateTextChange(element as HTMLElement, displayValue);
     }
+  }
+
+  /**
+   * Animate value change for input elements (slide out old, slide in new)
+   */
+  private animateValueChange(element: HTMLInputElement, newValue: string): void {
+    const oldValue = element.value;
+    
+    // Skip animation if values are the same
+    if (oldValue === newValue) {
+      return;
+    }
+
+    // Create wrapper if it doesn't exist
+    let wrapper = element.parentElement;
+    if (!wrapper || !wrapper.classList.contains('relative')) {
+      console.warn('Input element needs a relative positioned parent for animation');
+      element.value = newValue;
+      return;
+    }
+
+    // Create old value overlay
+    const overlay = document.createElement('div');
+    overlay.textContent = oldValue;
+    overlay.className = 'absolute inset-0 flex items-center justify-center bg-inherit text-inherit pointer-events-none';
+    overlay.style.animation = 'slideOutDown 0.3s ease-out forwards';
+    wrapper.appendChild(overlay);
+
+    // Update the input value immediately but make it invisible briefly
+    element.style.opacity = '0';
+    element.value = newValue;
+
+    // Slide in the new value
+    setTimeout(() => {
+      element.style.animation = 'slideInDown 0.3s ease-out forwards';
+      element.style.opacity = '1';
+      
+      // Clean up
+      setTimeout(() => {
+        overlay.remove();
+        element.style.animation = '';
+      }, 300);
+    }, 50);
+  }
+
+  /**
+   * Animate text change for span/div elements (slide out old, slide in new)
+   */
+  private animateTextChange(element: HTMLElement, newValue: string): void {
+    const oldValue = element.textContent || '';
+    
+    // Skip animation if values are the same
+    if (oldValue === newValue) {
+      return;
+    }
+
+    // Slide out old value
+    element.style.animation = 'slideOutDown 0.3s ease-out forwards';
+    
+    setTimeout(() => {
+      element.textContent = newValue;
+      element.style.animation = 'slideInDown 0.3s ease-out forwards';
+      
+      // Clean up
+      setTimeout(() => {
+        element.style.animation = '';
+      }, 300);
+    }, 300);
   }
 
   /**
@@ -390,7 +468,18 @@ export class RefreshManager {
       );
 
       if (!currentData) {
-        console.log(`🔄 [REFRESH-MANAGER] No data found for ${contextKey}`);
+        // Check if it's a 404 (project was deleted)
+        if (contextType === "project") {
+          console.log(`🔄 [REFRESH-MANAGER] 🗑️  Project ${contextId} not found (likely deleted)`);
+          // Find and remove the row from the DOM
+          const row = document.querySelector(`tr[data-project-id="${contextId}"]`);
+          if (row) {
+            console.log(`🔄 [REFRESH-MANAGER] 🗑️  Removing deleted project row from DOM`);
+            row.remove();
+          }
+        } else {
+          console.log(`🔄 [REFRESH-MANAGER] No data found for ${contextKey}`);
+        }
         return;
       }
 
@@ -405,9 +494,33 @@ export class RefreshManager {
         // Check if any element needs updating
         let needsUpdateCount = 0;
         elements.forEach((element) => {
+          // CRITICAL: Skip elements that are actively being edited or saving
+          if (element.hasAttribute("data-edited") || element.classList.contains("saving")) {
+            console.log(
+              `🔄 [REFRESH-MANAGER] ⏭️  Skipping ${fieldName} - element is being edited/saved`
+            );
+            return; // Skip this element
+          }
+          
           const currentElementValue = this.getElementValue(element);
           const newValueString = String(currentValue);
-          if (currentElementValue !== newValueString) {
+          
+          // Special handling for date fields - compare as Date objects
+          let valuesAreDifferent = currentElementValue !== newValueString;
+          
+          if (fieldName.includes('Date') || fieldName.includes('At')) {
+            try {
+              const currentDate = new Date(currentElementValue);
+              const newDate = new Date(newValueString);
+              // Compare timestamps (milliseconds since epoch)
+              valuesAreDifferent = currentDate.getTime() !== newDate.getTime();
+            } catch (e) {
+              // If date parsing fails, fall back to string comparison
+              valuesAreDifferent = currentElementValue !== newValueString;
+            }
+          }
+          
+          if (valuesAreDifferent) {
             needsUpdateCount++;
             console.log(
               `🔄 [REFRESH-MANAGER] 🔄 Field ${fieldName} changed: "${currentElementValue}" → "${newValueString}"`

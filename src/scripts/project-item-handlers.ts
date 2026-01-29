@@ -51,7 +51,7 @@ window.updateProjectField = async function (
     clearTimeout((window as any)[timeoutKey]);
   }
 
-  // Debounce: save after 500ms of inactivity
+  // Debounce: save after 200ms of inactivity
   (window as any)[timeoutKey] = setTimeout(async () => {
     console.log(`💾 [SAVE] Saving ${metaName} for project ${projectId}`);
 
@@ -75,14 +75,14 @@ window.updateProjectField = async function (
       element.classList.remove("saving");
       element.classList.add("saved");
 
-      // Fade out after 3 seconds
+      // Fade out after 1 second
       setTimeout(() => {
         element.classList.add("fade-out");
         setTimeout(() => {
           element.classList.remove("saved", "fade-out");
           element.removeAttribute("data-edited"); // Clear edited flag
         }, 300);
-      }, 3000);
+      }, 1000);
     } catch (error) {
       console.error(`Error updating ${metaName}:`, error);
 
@@ -90,11 +90,11 @@ window.updateProjectField = async function (
       element.classList.remove("saving", "saved");
       element.classList.add("save-error");
 
-      // Remove error after 3 seconds
+      // Remove error after 2 seconds
       setTimeout(() => {
         element.classList.remove("save-error");
         element.removeAttribute("data-edited"); // Clear edited flag
-      }, 3000);
+      }, 2000);
 
       // Show error toast
       if (typeof window !== "undefined" && (window as any).showNotice) {
@@ -156,7 +156,7 @@ window.adjustDueDate = async function (projectId: number, hours: number) {
     clearTimeout((window as any)[timeoutKey]);
   }
 
-  console.log(`⏱️  [ADJUST] Setting new timeout for ${timeoutKey} (500ms)`);
+  console.log(`⏱️  [ADJUST] Setting new timeout for ${timeoutKey} (200ms)`);
   (window as any)[timeoutKey] = setTimeout(async () => {
     console.log(`💾 [SAVE] Saving ${metaName} for project ${projectId} after debounce`);
 
@@ -182,14 +182,14 @@ window.adjustDueDate = async function (projectId: number, hours: number) {
       input.classList.remove("saving");
       input.classList.add("saved");
 
-      // Fade out after 3 seconds
+      // Fade out after 1 second
       setTimeout(() => {
         input.classList.add("fade-out");
         setTimeout(() => {
           input.classList.remove("saved", "fade-out");
           input.removeAttribute("data-edited");
         }, 300);
-      }, 3000);
+      }, 1000);
     } catch (error) {
       console.error(`Error updating ${metaName}:`, error);
 
@@ -197,11 +197,11 @@ window.adjustDueDate = async function (projectId: number, hours: number) {
       input.classList.remove("saving", "saved");
       input.classList.add("save-error");
 
-      // Remove error after 3 seconds
+      // Remove error after 2 seconds
       setTimeout(() => {
         input.classList.remove("save-error");
         input.removeAttribute("data-edited");
-      }, 3000);
+      }, 2000);
 
       // Show error toast
       if (typeof window !== "undefined" && (window as any).showNotice) {
@@ -213,7 +213,7 @@ window.adjustDueDate = async function (projectId: number, hours: number) {
         );
       }
     }
-  }, 500); // Wait 500ms after last click before saving
+  }, 200); // Wait 200ms after last click before saving
 };
 
 /**

@@ -12,47 +12,59 @@ if (requireAuthRedirect && (!session || !currentUser)) {
 }
 
 import { globalCompanyData } from "../api/global/global-company-data.ts";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-} = await globalCompanyData();
-
 import { globalClasses } from "../api/global/global-classes.ts";
-const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
-
 import App from "../../components/ui/App.astro";
 import DashboardContent from "../../components/project/Dashboard.astro";
 import "../../lib/refresh-manager.ts";
-import type { Project } from "../../lib/api/.ts";
-// Get auth data directly since App component handles auth requirements
+import type { Project } from "../../lib/api/_projects.ts";
 
-// console.log("🚀 [DASHBOARD] Current user:", currentUser);
-// Initialize data arrays
-let projects: Project[] = [];
+// ⚡ OPTIMIZATION: Run all data fetches in PARALLEL
+console.time("🏗️ [DASHBOARD] Total data fetch");
 
-// Fetch projects from the API endpoint
-if (currentUser?.id) {
-  try {
-    const apiUrl = new URL("/api/projects/get", Astro.url.origin);
-    
-    // For clients, filter by authorId
-    if (currentRole === "Client") {
-      apiUrl.searchParams.set("authorId", currentUser.id);
+const [companyData, statusData, projectsData] = await Promise.all([
+  // Fetch 1: Company data
+  globalCompanyData().catch(err => {
+    console.error("🏗️ [DASHBOARD] ❌ Company data fetch failed:", err);
+    return { globalCompanyName: '', globalCompanySlogan: '', globalCompanyAddress: '', globalCompanyPhone: '', globalCompanyEmail: '', globalCompanyWebsite: '', globalCompanyLogo: '' };
+  }),
+  
+  // Fetch 2: Status data
+  fetch(new URL("/api/status/get", Astro.url.origin).toString(), {
+    method: "GET",
+    headers: { Cookie: Astro.request.headers.get("Cookie") || "" },
+  })
+    .then(r => {
+      console.log(`🏗️ [DASHBOARD] Status API response: ${r.status}`);
+      return r.json();
+    })
+    .then(d => {
+      console.log(`🏗️ [DASHBOARD] Status data:`, d);
+      return d.statuses || [];
+    })
+    .catch(err => {
+      console.error("🏗️ [DASHBOARD] ❌ Status fetch failed:", err);
+      return [];
+    }),
+  
+  // Fetch 3: Projects (with timeout)
+  (async () => {
+    if (!currentUser?.id) {
+      console.log("🏗️ [DASHBOARD] No user ID, skipping project fetch");
+      return [];
     }
     
-    // Only load first 50 projects for faster initial render
-    apiUrl.searchParams.set("limit", "50");
-    
-    // Add a timeout to prevent hanging
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-    
     try {
+      const apiUrl = new URL("/api/projects/get", Astro.url.origin);
+      if (currentRole === "Client") {
+        apiUrl.searchParams.set("authorId", currentUser.id);
+      }
+      apiUrl.searchParams.set("limit", "50");
+      
+      console.log(`🏗️ [DASHBOARD] 📡 Fetching projects from: ${apiUrl.toString()}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+      
       const startTime = Date.now();
       const response = await fetch(apiUrl.toString(), {
         method: "GET",
@@ -62,41 +74,51 @@ if (currentUser?.id) {
         },
         signal: controller.signal,
       });
-
+      
       clearTimeout(timeoutId);
       const elapsed = Date.now() - startTime;
-
+      
+      console.log(`🏗️ [DASHBOARD] 📦 Response status: ${response.status}, took ${elapsed}ms`);
+      
       if (response.ok) {
         const data = await response.json();
-        projects = data.projects || [];
-        console.log(`🏗️ [PROJECT/DASHBOARD] Loaded ${projects.length} projects in ${elapsed}ms`);
-      } else {
-        console.error("🏗️ [PROJECT/DASHBOARD] API error:", response.status);
+        const projectCount = data.projects?.length || 0;
+        console.log(`🏗️ [DASHBOARD] ✅ Successfully loaded ${projectCount} projects`);
+        console.log(`🏗️ [DASHBOARD] 📋 Response structure:`, Object.keys(data));
+        console.log(`🏗️ [DASHBOARD] 📋 Projects array type:`, Array.isArray(data.projects), 'length:', data.projects?.length);
+        return data.projects || [];
       }
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      if (fetchError.name === 'AbortError') {
-        console.error("🏗️ [PROJECT/DASHBOARD] Request timeout after 8s - loading with empty projects");
+      
+      console.error(`🏗️ [DASHBOARD] ❌ API returned error status: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`🏗️ [DASHBOARD] ❌ Error response:`, errorText);
+      return [];
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error("🏗️ [DASHBOARD] ⏱️  Request timeout after 5s - returning empty array");
       } else {
-        throw fetchError;
+        console.error("🏗️ [DASHBOARD] ❌ Fetch error:", error);
       }
+      return [];
     }
-  } catch (error) {
-    console.error("🏗️ [PROJECT/DASHBOARD] Error fetching projects:", error);
-  }
-}
+  })()
+]);
 
-// Fetch project statuses using the unified API
-const statusApiUrl = new URL("/api/status/get", Astro.url.origin);
-const statusResponse = await fetch(statusApiUrl.toString(), {
-  method: "GET",
-  headers: {
-    Cookie: Astro.request.headers.get("Cookie") || "",
-  },
-});
+console.timeEnd("🏗️ [DASHBOARD] Total data fetch");
+console.log(`🏗️ [DASHBOARD] 🎯 Final projectsData:`, Array.isArray(projectsData), 'length:', projectsData?.length);
 
-const statusResponseData = await statusResponse.json();
-const statusData = statusResponseData.statuses || [];
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+} = companyData;
+
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+const projects = projectsData;
 ---
 
 <App
@@ -130,21 +152,21 @@ const statusData = statusResponseData.statuses || [];
 </App>
 
 <script>
-  // Start the refresh manager to poll for updates
+  // Start the refresh manager with safe settings
   import { refreshManager } from "../../lib/refresh-manager";
   
-  console.log("🔄 [DASHBOARD] Starting refresh manager...");
+  console.log("🔄 [DASHBOARD] Starting refresh manager with safe polling (30s interval)...");
   
   // Wait for DOM to be fully loaded
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       console.log("🔄 [DASHBOARD] DOM loaded, initializing refresh manager");
-      refreshManager.startAutoRefreshWithInterval(10); // Poll every 10 seconds (safer than 5)
+      refreshManager.startAutoRefreshWithInterval(30); // Poll every 30 seconds
       console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
     });
   } else {
     console.log("🔄 [DASHBOARD] DOM already loaded, initializing refresh manager");
-    refreshManager.startAutoRefreshWithInterval(10); // Poll every 10 seconds (safer than 5)
+    refreshManager.startAutoRefreshWithInterval(30); // Poll every 30 seconds
     console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
   }
 </script>
