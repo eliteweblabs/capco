@@ -3,12 +3,12 @@
  * DeleteConfirmButton Component
  * Reusable delete button with 2-step confirmation (no alerts)
  * Uses Button.astro and SimpleIcon for consistency
- * 
+ *
  * Usage:
  * <DeleteConfirmButton
  *   id="delete-item-123"
  * />
- * 
+ *
  * Behavior:
  * 1. First click: Shows timer icon for 3 seconds
  * 2. Second click within 3 seconds: Executes delete
@@ -24,130 +24,125 @@ export interface Props {
   size?: "xs" | "sm" | "md" | "lg" | "xl"; // default "sm"
   variant?: "icon" | "button"; // default "icon"
   label?: string; // for button variant
+  dataAttributes?: Record<string, string>; // custom data attributes
 }
 
-const { 
-  id, 
+const {
+  id,
   class: className = "",
-  timeout = 3000,
+  timeout = 30000,
   size = "sm",
   variant = "icon",
-  label = "Delete"
+  label = "Delete",
+  dataAttributes = {},
 } = Astro.props;
 
 // Build button variant based on whether it's icon-only or with label
 const buttonVariant = "danger";
+
+// Merge custom data attributes with internal ones
+const mergedDataAttributes = {
+  "data-state": "trash",
+  "data-timeout": timeout.toString(),
+  ...dataAttributes,
+};
 ---
 
-{variant === "icon" ? (
-  <Button
-    id={id}
-    type="button"
-    variant={buttonVariant}
-    size={size}
-    icon="trash"
-    iconClasses="delete-confirm-icon"
-    class={`delete-confirm-btn rounded-full ${className}`}
-    title="Delete"
-    dataAttributes={{
-      "data-state": "trash",
-      "data-timeout": timeout.toString(),
-    }}
-  />
-) : (
-  <Button
-    id={id}
-    type="button"
-    variant={buttonVariant}
-    size={size}
-    icon="trash"
-    class={`delete-confirm-btn ${className}`}
-    title="Delete"
-    dataAttributes={{
-      "data-state": "trash",
-      "data-timeout": timeout.toString(),
-    }}
-  >
-    {label}
-  </Button>
-)}
+{
+  variant === "icon" ? (
+    <Button
+      id={id}
+      type="button"
+      variant={buttonVariant}
+      size={size}
+      icon="trash"
+      iconClasses="delete-confirm-icon"
+      class={`delete-confirm-btn rounded-full ${className}`}
+      title="Delete"
+      dataAttributes={mergedDataAttributes}
+    />
+  ) : (
+    <Button
+      id={id}
+      type="button"
+      variant={buttonVariant}
+      size={size}
+      icon="trash"
+      class={`delete-confirm-btn ${className}`}
+      title="Delete"
+      dataAttributes={mergedDataAttributes}
+    >
+      {label}
+    </Button>
+  )
+}
 
 <style>
-  @keyframes spin-timer {
+  @keyframes draw-ring {
     from {
-      stroke-dashoffset: 62.83;
+      stroke-dashoffset: 100.53;
     }
     to {
       stroke-dashoffset: 0;
     }
   }
 
-  .timer-icon {
-    animation: spin-timer var(--timer-duration, 3000ms) linear infinite;
+  .timer-ring-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .timer-ring-overlay .timer-icon {
+    animation: draw-ring var(--timer-duration, 3000ms) linear forwards;
   }
 
   .delete-confirm-btn {
     cursor: pointer;
     user-select: none;
+    position: relative;
   }
 
   .delete-confirm-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
-  .timer-question {
-    mix-blend-mode: difference;
-  }
 </style>
 
 <script>
-  import { getIcon } from "../../lib/simple-icons";
-
   /**
    * Initialize delete confirm buttons
-   * This script sets up the 2-step delete confirmation behavior
+   * This script sets up the 2-step delete confirmation behavior with timer ring overlay
    */
   function initDeleteConfirmButtons() {
     // Track active timeouts to prevent memory leaks
     const activeTimeouts = new Map<string, number>();
 
-    // Icon size mapping to match Button.astro
-    const iconSizeMap = {
-      xs: 12,
-      sm: 16,
-      md: 20,
-      lg: 24,
-      xl: 32
-    };
+    // Get timer ring SVG overlay - draws around the button
+    function getTimerRingSvg(buttonSize: number, timeout: number): string {
+      const size = buttonSize + 4; // Slightly larger than button
+      const center = size / 2;
+      const radius = center - 2; // Ring radius
+      const circumference = 2 * Math.PI * radius;
 
-    // Get timer SVG
-    function getTimerSvg(size: number, timeout: number): string {
       return `
-        <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="inline-block">
+        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg" class="timer-ring-overlay">
           <circle 
-            cx="12" 
-            cy="12" 
-            r="10" 
-            fill="transparent" 
-            stroke="white" 
+            cx="${center}" 
+            cy="${center}" 
+            r="${radius}" 
+            fill="none" 
+            stroke="#ef4444" 
             stroke-width="2.5"
-            stroke-dasharray="62.83"
-            stroke-dashoffset="62.83"
-            stroke-linecap="round"
-            transform="rotate(-90 12 12)"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${circumference}"
+            transform="rotate(-90 ${center} ${center})"
             class="timer-icon"
             style="--timer-duration: ${timeout}ms"
           />
-          <text 
-            x="12" 
-            y="18" 
-            text-anchor="middle" 
-            font-size="22" 
-            font-weight="bold" 
-            fill="currentColor"
-            class="timer-question"
-          >?</text>
         </svg>
       `;
     }
@@ -155,40 +150,27 @@ const buttonVariant = "danger";
     document.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
       const button = target.closest(".delete-confirm-btn") as HTMLElement;
-      
+
       if (!button) return;
 
       const buttonId = button.id;
       const timeout = parseInt(button.dataset.timeout || "3000", 10);
       const currentState = button.getAttribute("data-state") || "trash";
 
-      // Find the icon container (SimpleIcon or direct SVG)
-      const iconContainer = button.querySelector(".delete-confirm-icon")?.parentElement || button.querySelector("svg")?.parentElement || button;
-      
-      // Determine icon size from button size classes
-      let iconSize = 16; // default sm
-      if (button.classList.contains("text-xs")) iconSize = iconSizeMap.xs;
-      else if (button.classList.contains("text-sm")) iconSize = iconSizeMap.sm;
-      else if (button.classList.contains("text-base")) iconSize = iconSizeMap.md;
-      else if (button.classList.contains("text-lg")) iconSize = iconSizeMap.lg;
-      else if (button.classList.contains("text-xl")) iconSize = iconSizeMap.xl;
+      // Get button size (assuming it's square for rounded-full buttons)
+      const buttonRect = button.getBoundingClientRect();
+      const buttonSize = Math.max(buttonRect.width, buttonRect.height);
 
       if (currentState === "trash") {
-        // First click: Show confirmation timer
+        // First click: Show timer ring overlay
         e.stopPropagation();
-        
-        // Replace icon with timer
-        const timerSvg = getTimerSvg(iconSize, timeout);
-        if (iconContainer) {
-          iconContainer.innerHTML = timerSvg;
-        }
-        
+
+        // Add timer ring overlay
+        const timerRingSvg = getTimerRingSvg(buttonSize, timeout);
+        button.insertAdjacentHTML("beforeend", timerRingSvg);
+
         button.setAttribute("data-state", "confirm");
         button.title = "Click again to confirm deletion";
-        
-        // Update classes for confirm state (white background, red text)
-        button.classList.remove("bg-red-500", "text-white", "hover:bg-red-600");
-        button.classList.add("bg-white", "text-red-600", "hover:bg-red-600", "hover:text-white");
 
         // Clear any existing timeout for this button
         if (activeTimeouts.has(buttonId)) {
@@ -198,18 +180,14 @@ const buttonVariant = "danger";
         // Auto-revert after timeout
         const timeoutId = window.setTimeout(() => {
           if (button.getAttribute("data-state") === "confirm") {
-            // Restore trash icon
-            const trashSvg = getIcon("trash", { size: iconSize, className: "delete-confirm-icon" });
-            if (iconContainer) {
-              iconContainer.innerHTML = trashSvg;
+            // Remove timer ring
+            const timerOverlay = button.querySelector(".timer-ring-overlay");
+            if (timerOverlay) {
+              timerOverlay.remove();
             }
-            
+
             button.setAttribute("data-state", "trash");
             button.title = "Delete";
-            
-            // Restore original classes
-            button.classList.remove("bg-white", "text-red-600", "hover:text-white");
-            button.classList.add("bg-red-500", "text-white", "hover:bg-red-600");
             activeTimeouts.delete(buttonId);
           }
         }, timeout);
@@ -218,31 +196,27 @@ const buttonVariant = "danger";
       } else if (currentState === "confirm") {
         // Second click: Execute deletion
         e.stopPropagation();
-        
+
         // Clear timeout
         if (activeTimeouts.has(buttonId)) {
           clearTimeout(activeTimeouts.get(buttonId)!);
           activeTimeouts.delete(buttonId);
         }
 
-        // Restore trash icon
-        const trashSvg = getIcon("trash", { size: iconSize, className: "delete-confirm-icon" });
-        if (iconContainer) {
-          iconContainer.innerHTML = trashSvg;
+        // Remove timer ring
+        const timerOverlay = button.querySelector(".timer-ring-overlay");
+        if (timerOverlay) {
+          timerOverlay.remove();
         }
-        
+
         button.setAttribute("data-state", "trash");
         button.title = "Delete";
-        
-        // Restore original classes
-        button.classList.remove("bg-white", "text-red-600", "hover:text-white");
-        button.classList.add("bg-red-500", "text-white", "hover:bg-red-600");
 
         // Dispatch custom event for parent to handle
         const deleteEvent = new CustomEvent("deleteConfirmed", {
           detail: { buttonId },
           bubbles: true,
-          cancelable: true
+          cancelable: true,
         });
         button.dispatchEvent(deleteEvent);
       }

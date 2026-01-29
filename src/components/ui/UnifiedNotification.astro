@@ -157,11 +157,6 @@
     async show(options: NotificationOptions): Promise<string> {
       console.log("🔔 [TOAST] show() called with options:", options);
 
-      // Clear existing notifications unless persist is true
-      if (options.persist !== true) {
-        this.hide(); // Clear all existing notifications
-      }
-
       // Generate unique ID with fallback for older browsers
       const id = crypto.randomUUID
         ? crypto.randomUUID()
@@ -170,30 +165,39 @@
 
       // console.log("🔔 [UNIFIED-NOTIFICATION] Creating notification with ID:", id);
       this.notifications.set(id, fullNotification);
-      await this.render(fullNotification);
 
-      // Handle auto-hide with CSS animation (after element is rendered)
-      // Only set up auto-hide if there's no redirect
-      if (!options.redirect && options.duration !== undefined && options.duration > 0) {
-        // Use setTimeout to ensure DOM is ready and CSS is applied
-        setTimeout(() => {
-          const element = document.getElementById(`toast-${id}`);
-          if (element) {
-            console.log("🔔 [TOAST] Setting up auto-hide timer");
-            // Set up auto-hide timer
-            setTimeout(() => {
-              console.log("🔔 [TOAST] Auto-hide timer expired, hiding toast");
-              this.hide(id);
-            }, options.duration);
-          }
-        }, 100);
-      }
+      // Defer all DOM operations to next frame to avoid blocking
+      requestAnimationFrame(() => {
+        // Clear existing notifications unless persist is true
+        if (options.persist !== true) {
+          this.hide(); // Clear all existing notifications
+        }
 
-      // Handle redirect
-      if (options.redirect) {
-        // console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:", options.redirect);
-        this.setupRedirect(id, options.redirect);
-      }
+        this.render(fullNotification); // Non-blocking render for better performance
+
+        // Handle auto-hide with CSS animation (after element is rendered)
+        // Only set up auto-hide if there's no redirect
+        if (!options.redirect && options.duration !== undefined && options.duration > 0) {
+          // Use setTimeout to ensure DOM is ready and CSS is applied
+          setTimeout(() => {
+            const element = document.getElementById(`toast-${id}`);
+            if (element) {
+              console.log("🔔 [TOAST] Setting up auto-hide timer");
+              // Set up auto-hide timer
+              setTimeout(() => {
+                console.log("🔔 [TOAST] Auto-hide timer expired, hiding toast");
+                this.hide(id);
+              }, options.duration);
+            }
+          }, 100);
+        }
+
+        // Handle redirect
+        if (options.redirect) {
+          // console.log("🔔 [UNIFIED-NOTIFICATION] Setting up redirect:", options.redirect);
+          this.setupRedirect(id, options.redirect);
+        }
+      });
 
       // console.log("🔔 [UNIFIED-NOTIFICATION] show() returning ID:", id);
       return id;
