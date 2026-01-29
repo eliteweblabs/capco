@@ -28,10 +28,10 @@ const projectId = project.id;
       <div class="relative">
         <button
           type="button"
-          id="checklist-drawer-toggle"
+          id="punchlist-drawer-toggle"
           class="inline-flex items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
         >
-          <span class="sr-only">View Checklist</span>
+          <span class="sr-only">View Punchlist</span>
 
           <SimpleIcon name="menu-check" class="w-6 h-6" />
         </button>
@@ -39,21 +39,21 @@ const projectId = project.id;
 
       {/* Backdrop overlay */}
       <div
-        id="checklist-drawer-backdrop"
+        id="punchlist-drawer-backdrop"
         class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 z-40 hidden transition-opacity duration-300"
       />
 
       {/* Drawer */}
       <div
-        id="checklist-drawer"
+        id="punchlist-drawer"
         class="fixed top-0 -right-96 z-50 h-screen w-96 max-w-full transition-all duration-300 ease-in-out bg-white dark:bg-gray-800 shadow-xl"
         style="will-change: transform;"
       >
         <div class="flex flex-col h-full">
           {/* Header */}
           <div class="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-600 dark:bg-gray-700">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Project Checklist</h3>
-            <CloseButton id="checklist-drawer-close" tooltipText="Close drawer" position="left" />
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Project Punchlist</h3>
+            <CloseButton id="punchlist-drawer-close" tooltipText="Close drawer" position="left" />
           </div>
 
           {/* Content */}
@@ -136,8 +136,8 @@ const projectId = project.id;
 
   // Drawer functions
   function openDrawer() {
-    const drawer = document.getElementById("checklist-drawer");
-    const backdrop = document.getElementById("checklist-drawer-backdrop");
+    const drawer = document.getElementById("punchlist-drawer");
+    const backdrop = document.getElementById("punchlist-drawer-backdrop");
 
     if (drawer && backdrop) {
       backdrop.classList.remove("hidden");
@@ -150,8 +150,8 @@ const projectId = project.id;
   }
 
   function closeDrawer() {
-    const drawer = document.getElementById("checklist-drawer");
-    const backdrop = document.getElementById("checklist-drawer-backdrop");
+    const drawer = document.getElementById("punchlist-drawer");
+    const backdrop = document.getElementById("punchlist-drawer-backdrop");
 
     if (drawer && backdrop) {
       drawer.classList.remove("right-0");
@@ -169,7 +169,7 @@ const projectId = project.id;
 
     // Update count directly
     const countElement = document.querySelector(".incomplete-punchlist-items-count");
-    const tabButton = document.getElementById("checklist-drawer-toggle");
+    const tabButton = document.getElementById("punchlist-drawer-toggle");
 
     if (tabButton) {
       // Update count bubble on tab button
@@ -418,19 +418,19 @@ const projectId = project.id;
     setTimeout(initializePunchlist, 100);
 
     // Setup drawer toggle button
-    const drawerToggle = document.getElementById("checklist-drawer-toggle");
+    const drawerToggle = document.getElementById("punchlist-drawer-toggle");
     if (drawerToggle) {
       drawerToggle.addEventListener("click", openDrawer);
     }
 
     // Setup drawer close button
-    const drawerClose = document.getElementById("checklist-drawer-close");
+    const drawerClose = document.getElementById("punchlist-drawer-close");
     if (drawerClose) {
       drawerClose.addEventListener("click", closeDrawer);
     }
 
     // Setup backdrop click to close
-    const backdrop = document.getElementById("checklist-drawer-backdrop");
+    const backdrop = document.getElementById("punchlist-drawer-backdrop");
     if (backdrop) {
       backdrop.addEventListener("click", closeDrawer);
     }
@@ -441,6 +441,60 @@ const projectId = project.id;
         closeDrawer();
       }
     });
+
+    // Swipe to close functionality for punchlist drawer
+    const drawer = document.getElementById("punchlist-drawer");
+    if (drawer) {
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchEndX = 0;
+      let touchEndY = 0;
+      let isDragging = false;
+      let currentTranslateX = 0;
+
+      drawer.addEventListener("touchstart", (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isDragging = true;
+        drawer.style.transition = "none";
+      });
+
+      drawer.addEventListener("touchmove", (e) => {
+        if (!isDragging) return;
+
+        const touchCurrentX = e.touches[0].clientX;
+        const touchCurrentY = e.touches[0].clientY;
+        const deltaX = touchCurrentX - touchStartX;
+        const deltaY = touchCurrentY - touchStartY;
+
+        // Only respond to horizontal swipes (right, to close)
+        if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX > 0) {
+          currentTranslateX = deltaX;
+          drawer.style.transform = `translateX(${deltaX}px)`;
+        }
+      });
+
+      drawer.addEventListener("touchend", (e) => {
+        if (!isDragging) return;
+
+        isDragging = false;
+        drawer.style.transition = "";
+        drawer.style.transform = "";
+
+        const swipeThreshold = 100; // minimum swipe distance in pixels
+
+        // If swiped right more than threshold, close drawer
+        if (currentTranslateX > swipeThreshold) {
+          closeDrawer();
+        }
+
+        currentTranslateX = 0;
+        touchStartX = 0;
+        touchStartY = 0;
+        touchEndX = 0;
+        touchEndY = 0;
+      });
+    }
   });
 
   // Make initializePunchlist globally available for tab switching
