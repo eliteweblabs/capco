@@ -7,6 +7,7 @@ export interface TooltipStyleConfig {
   tooltipClass?: string;
   disabled?: boolean;
   open?: boolean;
+  dismissable?: boolean;
 }
 
 export function getTooltipClasses(config: TooltipStyleConfig = {}): {
@@ -20,6 +21,7 @@ export function getTooltipClasses(config: TooltipStyleConfig = {}): {
     tooltipClass = "",
     disabled = false,
     open = false,
+    dismissable = false,
   } = config;
 
   // Base wrapper classes
@@ -48,8 +50,9 @@ export function getTooltipClasses(config: TooltipStyleConfig = {}): {
     "tooltip-content absolute",
     positionClasses[position],
     "px-3 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm rounded-lg",
-    open ? "opacity-100" : "opacity-0 group-hover:opacity-100",
-    "transition-opacity duration-200 pointer-events-none whitespace-nowrap z-500 block",
+    dismissable ? "opacity-100" : open ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+    dismissable ? "pointer-events-auto" : "transition-opacity duration-200 pointer-events-none",
+    "whitespace-nowrap z-500 block",
     tooltipClass,
     disabled ? "hidden" : "",
   ]
