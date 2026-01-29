@@ -2,6 +2,7 @@
 // prettier-ignore-file
 import SimpleIcon from "./SimpleIcon.astro";
 import CloseButton from "../ui/CloseButton.astro";
+import Tooltip from "./Tooltip.astro";
 
 export interface Props {
   currentUser?: any;
@@ -37,8 +38,8 @@ if (!tutorials || !currentUser || !isAuth) {
       {/* Tutorial Mask */}
       <div id="tutorial-mask" class="tutorial-mask"></div>
 
-      {/* Tutorial Popover */}
-      <div id="tutorial-popover" class="tutorial-popover hidden">
+      {/* Tutorial Popover - now with dismissable tooltip support */}
+      <div id="tutorial-popover" class="tutorial-popover hidden" data-dismissable="false">
       <div class="tutorial-popover-content">
         {/* Header */}
         <div class="tutorial-header">
@@ -48,11 +49,25 @@ if (!tutorials || !currentUser || !isAuth) {
             </div>
             <span id="tutorial-step-counter" class="tutorial-step-counter">1 of 5</span>
           </div>
-          <CloseButton
+          <button
             id="tutorial-close"
-            class="tutorial-close"
-            tooltipText="Close tutorial"
-          />
+            type="button"
+            class="tutorial-close inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="Close tutorial"
+          >
+            <svg
+              class="h-4 w-4 text-gray-600 dark:text-gray-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
         {/* Content */}
@@ -100,14 +115,15 @@ if (!tutorials || !currentUser || !isAuth) {
 
     {/* prettier-ignore */}
     <script>
-      interface TutorialStep {
-        element: string;
-        title: string;
-        message: string;
+  interface TutorialStep {
+    element: string;
+    title: string;
+    message: string;
     position?: "top" | "bottom" | "left" | "right" | "center";
     icon?: string;
     action?: string;
     step?: number;
+    dismissable?: boolean; // Allow individual steps to be dismissable tooltips
   }
 
   interface TutorialConfig {
@@ -222,6 +238,7 @@ if (!tutorials || !currentUser || !isAuth) {
               icon: welcomeData.icon || "info",
               action: welcomeData.action,
               step: stepNumber,
+              dismissable: welcomeData.dismissable || false, // Support dismissable tooltips per step
             });
           } catch (error) {
             console.error("Error parsing tutorial data:", error);
@@ -234,7 +251,7 @@ if (!tutorials || !currentUser || !isAuth) {
 
       console.log(
         "🎓 [TUTORIAL] Collected steps:",
-        this.steps.map((s) => ({ title: s.title, step: s.step }))
+        this.steps.map((s) => ({ title: s.title, step: s.step, dismissable: s.dismissable }))
       );
 
       // Hide tutorial button if no tutorial elements found
@@ -340,6 +357,35 @@ if (!tutorials || !currentUser || !isAuth) {
       this.updatePopoverContent(step);
       this.updateProgress(stepIndex);
       this.updateNavigation(stepIndex);
+
+      // Set dismissable state on popover
+      if (this.popover) {
+        this.popover.setAttribute('data-dismissable', step.dismissable ? 'true' : 'false');
+        // If dismissable, add a mini close button to the popover content
+        const popoverContent = this.popover.querySelector('.tutorial-popover-content');
+        if (popoverContent) {
+          const existingDismissBtn = popoverContent.querySelector('.tutorial-dismiss-step');
+          if (step.dismissable && !existingDismissBtn) {
+            const dismissBtn = document.createElement('button');
+            dismissBtn.type = 'button';
+            dismissBtn.className = 'tutorial-dismiss-step absolute top-2 right-2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 z-10';
+            dismissBtn.setAttribute('aria-label', 'Dismiss this tip');
+            dismissBtn.innerHTML = `<svg class="h-3 w-3 text-gray-600 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>`;
+            dismissBtn.addEventListener('click', () => {
+              this.dismissCurrentStep();
+            });
+            const header = popoverContent.querySelector('.tutorial-header');
+            if (header) {
+              header.appendChild(dismissBtn);
+            }
+          } else if (!step.dismissable && existingDismissBtn) {
+            existingDismissBtn.remove();
+          }
+        }
+      }
 
       // Position popover
       this.positionPopover(targetElement as HTMLElement, step.position || "bottom");
@@ -578,6 +624,15 @@ if (!tutorials || !currentUser || !isAuth) {
       }
     }
 
+    private dismissCurrentStep() {
+      // Hide the current step's popover and move to next step
+      if (this.currentStep < this.steps.length - 1) {
+        this.nextStep();
+      } else {
+        this.finishTutorial();
+      }
+    }
+
     private async saveProgress() {
       if (this.config) {
         this.config.lastStep = this.currentStep;
@@ -738,6 +793,20 @@ if (!tutorials || !currentUser || !isAuth) {
     min-width: 300px;
     pointer-events: all;
     z-index: 10000;
+  }
+
+  /* Dismissable tooltip styling */
+  .tutorial-popover[data-dismissable="true"] {
+    pointer-events: auto;
+    opacity: 1;
+  }
+
+  .tutorial-popover[data-dismissable="true"] .tutorial-actions {
+    display: none; /* Hide navigation when in dismissable mode */
+  }
+
+  .tutorial-dismiss-step {
+    cursor: pointer;
   }
 
   .tutorial-popover-content {
