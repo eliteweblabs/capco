@@ -107,10 +107,10 @@ const { projectId, globalInputClasses, secondaryTextClasses, primaryTextClasses 
           throw new Error(data.error || "Failed to load log");
         }
 
-        this.renderLog(data.log || []);
+        this.renderLog(data.activities || []);
       } catch (error) {
         console.error("Error loading log:", error);
-        window.showNotice("error", "Log Error", "Failed to load project log");
+        this.showError();
       }
     }
 
@@ -285,6 +285,13 @@ const { projectId, globalInputClasses, secondaryTextClasses, primaryTextClasses 
     showLoading() {
       this.loadingEl?.classList.remove("hidden");
       this.errorEl?.classList.add("hidden");
+      this.emptyEl?.classList.add("hidden");
+      this.contentEl?.classList.add("hidden");
+    }
+
+    showError() {
+      this.loadingEl?.classList.add("hidden");
+      this.errorEl?.classList.remove("hidden");
       this.emptyEl?.classList.add("hidden");
       this.contentEl?.classList.add("hidden");
     }

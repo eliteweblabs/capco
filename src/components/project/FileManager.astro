@@ -31,6 +31,7 @@ import StickyActions from "./StickyActions.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Button from "../common/Button.astro";
 import LoadingSpinner from "../ui/LoadingSpinner.astro";
+import Dropzone from "../common/Dropzone.astro";
 
 // Only show for Admin/Staff
 // Storage bucket configuration
@@ -123,30 +124,15 @@ const canDeleteFiles =
     (currentRole === "Client" && projectStatus < 41) ||
     currentRole === "Admin" ||
     currentRole === "Staff" ? (
-      <div
-        id="upload-dropzone"
-        class="mb-6 cursor-pointer border-gray-300 p-12 text-center transition-colors hover:border-gray-400 dark:border-gray-600 dark:hover:border-grey-500 relative overflow-hidden"
-      >
-        <div id="browse-files-btn" class="space-y-4">
-          <div>
-            <p class="hidden font-medium text-gray-600 dark:text-gray-300">
-              Drop files here or click to browse
-            </p>
-            <p class="hidden mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Upload supports PDF, images, CAD files, and documents (max 10MB each)
-            </p>
-          </div>
-          <Button icon="folder-open" iconPosition="left" variant="outline">
-            Browse Files
-          </Button>
-        </div>
-        <input
-          type="file"
-          id="file-input"
-          multiple
+      <div id="file-manager-dropzone-container" class="mb-6">
+        <Dropzone
+          id="file-manager-dropzone"
           accept={allowedFileTypes.join(",")}
-          class="hidden"
-        />{" "}
+          multiple={true}
+          maxSize={50}
+          label="Drop files here or click to browse"
+          description="Upload supports PDF, images, CAD files, and documents (max 50MB each)"
+        />
       </div>
     ) : null
   }
@@ -716,52 +702,27 @@ const canDeleteFiles =
       return;
     }
 
-    const uploadArea = document.querySelector("#file-manager .rounded-lg.border-dashed");
-    const fileInput = document.getElementById("file-input");
-    const browseBtn = document.getElementById("browse-files-btn");
+    const dropzone = document.getElementById("file-manager-dropzone");
     const progressDiv = document.getElementById("upload-progress");
     const progressBar = document.getElementById("progress-bar");
     const statusText = document.getElementById("upload-status");
 
-    // Click to browse
-    browseBtn?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      fileInput?.click();
-    });
+    if (!dropzone) {
+      console.error("❌ [FILE-MANAGER] Dropzone not found");
+      return;
+    }
 
-    uploadArea?.addEventListener("click", () => {
-      fileInput?.click();
-    });
-
-    // Drag and drop
-    uploadArea?.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      uploadArea.classList.add("border-primary-400", "bg-primary-50");
-    });
-
-    uploadArea?.addEventListener("dragleave", (e) => {
-      e.preventDefault();
-      uploadArea.classList.remove("border-primary-400", "bg-primary-50");
-    });
-
-    uploadArea?.addEventListener("drop", (e) => {
-      e.preventDefault();
-      uploadArea.classList.remove("border-primary-400", "bg-primary-50");
-
-      const files = Array.from(e.dataTransfer.files);
-
+    // Listen for files selected from the Dropzone component
+    dropzone.addEventListener("dropzone-files-selected", (e) => {
+      const files = Array.from(e.detail.files);
       if (files.length > 0) {
         handleFileUpload(files);
       }
     });
 
-    // File input change
-    fileInput?.addEventListener("change", (e) => {
-      const files = Array.from(e.target.files);
-
-      if (files.length > 0) {
-        handleFileUpload(files);
-      }
+    // Listen for errors from the Dropzone component
+    dropzone.addEventListener("dropzone-error", (e) => {
+      showError(e.detail.error);
     });
 
     // File validation function
@@ -1806,37 +1767,5 @@ const canDeleteFiles =
 
   #files-container .accordion-header-with-bg:nth-child(even):hover {
     background-position: 40% 60% !important;
-  }
-
-  /* Animated diagonal stripes */
-  #upload-dropzone {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      var(--color-neutral-200) 0px,
-      var(--color-neutral-200) 20px,
-      transparent 20px,
-      transparent 40px
-    );
-    background-size: 56.57px 56.57px;
-    animation: scroll-stripes 2s linear infinite;
-  }
-
-  .dark #upload-dropzone {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      var(--color-neutral-800) 0px,
-      var(--color-neutral-800) 20px,
-      transparent 20px,
-      transparent 40px
-    );
-  }
-
-  @keyframes scroll-stripes {
-    0% {
-      background-position: 0 0;
-    }
-    100% {
-      background-position: 56.57px 0;
-    }
   }
 </style>

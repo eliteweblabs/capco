@@ -61,7 +61,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     secondary:
       "hover:scale-101 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600 shadow-lg hover:shadow-xl",
     success:
-      "rounded-full bg-success-500 text-white hover:bg-success-600 dark:bg-success-500 dark:hover:bg-success-600 shadow-lg hover:shadow-xl",
+      "rounded-full bg-success-500 text-white hover:bg-success-600 dark:bg-success-500 dark:hover:bg-success-600 shadow-lg hover:shadow-xl animate-pulse-breathe",
     warning:
       "bg-warning-500 text-white hover:bg-warning-600 dark:bg-warning-500 dark:hover:bg-warning-600 shadow-lg hover:shadow-xl",
     danger:

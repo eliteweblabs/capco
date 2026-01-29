@@ -767,7 +767,8 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     name: "delete-project",
     type: "action",
     elementType: "button",
-    label: "Delete<span class='hidden sm:inline'> Project</span>",
+    label:
+      "<span class='hidden md:inline'>Delete</span><span class='hidden lg:inline'> Project</span>",
     icon: "trash",
     variant: "danger",
     action: "deleteProject",
@@ -781,7 +782,8 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     name: "save-project",
     type: "action",
     elementType: "submit",
-    label: "Save Project",
+    label:
+      "<span class='hidden md:block'>Save Project</span><span class='block md:hidden'>Save</span>",
     icon: "save",
     variant: "secondary",
     // cssClass:
@@ -796,7 +798,8 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     name: "save-project",
     type: "action",
     elementType: "submit",
-    label: "Save Project",
+    label:
+      "<span class='hidden md:block'>Save Project</span><span class='block md:hidden'>Save</span>",
     icon: "save",
     variant: "secondary",
     // cssClass:
@@ -854,7 +857,8 @@ export function getFilteredUnifiedFormElements(
         if (element.id === "save-project") {
           return {
             ...element,
-            label: "Create Project",
+            label:
+              "<span class='hidden md:block'>Create Project</span><span class='block md:hidden'>Create</span>",
             icon: "plus", // Change icon to plus for create
           };
         }
