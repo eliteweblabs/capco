@@ -25,16 +25,28 @@ export interface Props {
   variant?: "icon" | "button"; // default "icon"
   label?: string; // for button variant
   dataAttributes?: Record<string, string>; // custom data attributes
+  itemType?: string; // type of item being deleted (for logging/analytics)
+  apiEndpoint?: string; // API endpoint for deletion (for future use)
+  onDeleteCallback?: string; // callback function name (for future use)
+  tooltipText?: string; // custom tooltip text
+  confirmTitle?: string; // custom confirmation title (for future use)
+  confirmMessage?: string; // custom confirmation message (for future use)
 }
 
 const {
   id,
   class: className = "",
-  timeout = 30000,
+  timeout = 3000,
   size = "sm",
   variant = "icon",
   label = "Delete",
   dataAttributes = {},
+  itemType,
+  apiEndpoint,
+  onDeleteCallback,
+  tooltipText = "Delete",
+  confirmTitle,
+  confirmMessage,
 } = Astro.props;
 
 // Build button variant based on whether it's icon-only or with label
@@ -44,23 +56,50 @@ const buttonVariant = "danger";
 const mergedDataAttributes = {
   "data-state": "trash",
   "data-timeout": timeout.toString(),
+  ...(itemType && { "data-item-type": itemType }),
+  ...(apiEndpoint && { "data-api-endpoint": apiEndpoint }),
+  ...(onDeleteCallback && { "data-callback": onDeleteCallback }),
   ...dataAttributes,
 };
 ---
 
 {
   variant === "icon" ? (
-    <Button
-      id={id}
-      type="button"
-      variant={buttonVariant}
-      size={size}
-      icon="trash"
-      iconClasses="delete-confirm-icon"
-      class={`delete-confirm-btn rounded-full ${className}`}
-      title="Delete"
-      dataAttributes={mergedDataAttributes}
-    />
+    <div class="delete-confirm-wrapper">
+      <Button
+        id={id}
+        type="button"
+        variant={buttonVariant}
+        size={size}
+        icon="trash"
+        iconClasses="delete-confirm-icon"
+        class={`delete-confirm-btn rounded-full ${className}`}
+        title={tooltipText}
+        dataAttributes={mergedDataAttributes}
+      >
+        <svg
+          width="44"
+          height="44"
+          viewBox="0 0 44 44"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          class="timer-ring-overlay"
+        >
+          <circle
+            cx="22"
+            cy="22"
+            r="18"
+            fill="none"
+            stroke="#ef4444"
+            stroke-width="3"
+            stroke-dasharray="113.1"
+            stroke-dashoffset="113.1"
+            transform="rotate(-90 22 22)"
+            class="timer-icon-test"
+          />
+        </svg>
+      </Button>
+    </div>
   ) : (
     <Button
       id={id}
@@ -69,7 +108,7 @@ const mergedDataAttributes = {
       size={size}
       icon="trash"
       class={`delete-confirm-btn ${className}`}
-      title="Delete"
+      title={tooltipText}
       dataAttributes={mergedDataAttributes}
     >
       {label}
@@ -77,14 +116,21 @@ const mergedDataAttributes = {
   )
 }
 
-<style>
+<style is:global>
   @keyframes draw-ring {
     from {
-      stroke-dashoffset: 100.53;
+      stroke-dashoffset: 113.1;
     }
     to {
       stroke-dashoffset: 0;
     }
+  }
+</style>
+
+<style>
+  .delete-confirm-wrapper {
+    position: relative;
+    display: inline-flex;
   }
 
   .timer-ring-overlay {
@@ -93,11 +139,22 @@ const mergedDataAttributes = {
     left: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    z-index: 10;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.2s;
   }
 
-  .timer-ring-overlay .timer-icon {
-    animation: draw-ring var(--timer-duration, 3000ms) linear forwards;
+  .delete-confirm-wrapper:has([data-state="confirm"]) .timer-ring-overlay {
+    opacity: 1 !important;
+  }
+
+  .delete-confirm-wrapper:has([data-state="confirm"]) .timer-icon-test {
+    animation: draw-ring 3000ms linear forwards;
+  }
+
+  /* Hide trash icon when in confirm state */
+  .delete-confirm-wrapper [data-state="confirm"] .delete-confirm-icon {
+    display: none;
   }
 
   .delete-confirm-btn {
@@ -115,64 +172,60 @@ const mergedDataAttributes = {
 <script>
   /**
    * Initialize delete confirm buttons
-   * This script sets up the 2-step delete confirmation behavior with timer ring overlay
+   * Simple show/hide timer ring with data-state
    */
   function initDeleteConfirmButtons() {
-    // Track active timeouts to prevent memory leaks
+    console.log("[DeleteConfirmButton] Initializing...");
     const activeTimeouts = new Map<string, number>();
-
-    // Get timer ring SVG overlay - draws around the button
-    function getTimerRingSvg(buttonSize: number, timeout: number): string {
-      const size = buttonSize + 4; // Slightly larger than button
-      const center = size / 2;
-      const radius = center - 2; // Ring radius
-      const circumference = 2 * Math.PI * radius;
-
-      return `
-        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg" class="timer-ring-overlay">
-          <circle 
-            cx="${center}" 
-            cy="${center}" 
-            r="${radius}" 
-            fill="none" 
-            stroke="#ef4444" 
-            stroke-width="2.5"
-            stroke-dasharray="${circumference}"
-            stroke-dashoffset="${circumference}"
-            transform="rotate(-90 ${center} ${center})"
-            class="timer-icon"
-            style="--timer-duration: ${timeout}ms"
-          />
-        </svg>
-      `;
-    }
 
     document.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
+      console.log("[DeleteConfirmButton] Click detected on:", target);
+
       const button = target.closest(".delete-confirm-btn") as HTMLElement;
+      console.log("[DeleteConfirmButton] Found button:", button);
 
       if (!button) return;
+
+      console.log("[DeleteConfirmButton] Button clicked:", button.id);
 
       const buttonId = button.id;
       const timeout = parseInt(button.dataset.timeout || "3000", 10);
       const currentState = button.getAttribute("data-state") || "trash";
 
-      // Get button size (assuming it's square for rounded-full buttons)
-      const buttonRect = button.getBoundingClientRect();
-      const buttonSize = Math.max(buttonRect.width, buttonRect.height);
+      console.log("[DeleteConfirmButton] State:", currentState, "Timeout:", timeout);
 
       if (currentState === "trash") {
-        // First click: Show timer ring overlay
+        // First click: Show timer ring
         e.stopPropagation();
+        console.log("[DeleteConfirmButton] First click - showing timer ring");
 
-        // Add timer ring overlay
-        const timerRingSvg = getTimerRingSvg(buttonSize, timeout);
-        button.insertAdjacentHTML("beforeend", timerRingSvg);
+        // Find the wrapper and timer ring
+        const wrapper = button.closest(".delete-confirm-wrapper") as HTMLElement;
+        const timerRing = wrapper?.querySelector(".timer-ring-overlay") as HTMLElement;
+        const timerCircle = timerRing?.querySelector(".timer-icon-test") as SVGCircleElement;
+
+        if (timerCircle) {
+          // Reset animation by removing and re-adding class
+          timerCircle.classList.remove("timer-icon-test");
+          void (timerCircle as unknown as HTMLElement).offsetWidth; // Force reflow
+          timerCircle.classList.add("timer-icon-test");
+        }
 
         button.setAttribute("data-state", "confirm");
         button.title = "Click again to confirm deletion";
 
-        // Clear any existing timeout for this button
+        // Change icon to stopwatch (clock icon from boxicons)
+        const iconElement = button.querySelector(".delete-confirm-icon") as SVGElement;
+        if (iconElement) {
+          iconElement.outerHTML = `<svg class="inline-block stopwatch-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"/>
+            <path d="M12 9v4l2 2"/>
+            <path d="M10 2h4"/>
+          </svg>`;
+        }
+
+        // Clear any existing timeout
         if (activeTimeouts.has(buttonId)) {
           clearTimeout(activeTimeouts.get(buttonId)!);
         }
@@ -180,14 +233,22 @@ const mergedDataAttributes = {
         // Auto-revert after timeout
         const timeoutId = window.setTimeout(() => {
           if (button.getAttribute("data-state") === "confirm") {
-            // Remove timer ring
-            const timerOverlay = button.querySelector(".timer-ring-overlay");
-            if (timerOverlay) {
-              timerOverlay.remove();
-            }
-
+            console.log("[DeleteConfirmButton] Timeout expired");
             button.setAttribute("data-state", "trash");
             button.title = "Delete";
+
+            // Restore trash icon
+            const stopwatchIcon = button.querySelector(".stopwatch-icon") as SVGElement;
+            if (stopwatchIcon) {
+              stopwatchIcon.outerHTML = `<svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+              </svg>`;
+            }
+
             activeTimeouts.delete(buttonId);
           }
         }, timeout);
@@ -196,6 +257,7 @@ const mergedDataAttributes = {
       } else if (currentState === "confirm") {
         // Second click: Execute deletion
         e.stopPropagation();
+        console.log("[DeleteConfirmButton] Second click - confirming delete");
 
         // Clear timeout
         if (activeTimeouts.has(buttonId)) {
@@ -203,14 +265,23 @@ const mergedDataAttributes = {
           activeTimeouts.delete(buttonId);
         }
 
-        // Remove timer ring
-        const timerOverlay = button.querySelector(".timer-ring-overlay");
-        if (timerOverlay) {
-          timerOverlay.remove();
-        }
-
         button.setAttribute("data-state", "trash");
         button.title = "Delete";
+
+        // Restore trash icon
+        const stopwatchIcon = button.querySelector(".stopwatch-icon") as SVGElement;
+        if (stopwatchIcon) {
+          console.log("[DeleteConfirmButton] Restoring trash icon");
+          stopwatchIcon.outerHTML = `<svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>`;
+        }
+
+        console.log("[DeleteConfirmButton] Dispatching deleteConfirmed event for:", buttonId);
 
         // Dispatch custom event for parent to handle
         const deleteEvent = new CustomEvent("deleteConfirmed", {
@@ -219,6 +290,8 @@ const mergedDataAttributes = {
           cancelable: true,
         });
         button.dispatchEvent(deleteEvent);
+
+        console.log("[DeleteConfirmButton] Delete event dispatched");
       }
     });
   }

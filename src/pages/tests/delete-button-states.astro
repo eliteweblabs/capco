@@ -1,0 +1,175 @@
+---
+/**
+ * Visual test page for DeleteConfirmButton states
+ * Shows initial state and confirm state side by side
+ */
+import Button from "../../components/common/Button.astro";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Delete Button States Test</title>
+    <link rel="stylesheet" href="/src/styles/global.css" />
+  </head>
+  <body class="p-8 bg-gray-100">
+    <div class="max-w-4xl mx-auto space-y-8">
+      <h1 class="text-3xl font-bold mb-8">Delete Button States</h1>
+
+      <!-- Initial State -->
+      <div class="bg-white p-8 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Initial State (Trash Icon)</h2>
+        <div class="flex items-center gap-4">
+          <Button
+            id="delete-initial"
+            type="button"
+            variant="danger"
+            size="sm"
+            icon="trash"
+            iconClasses="delete-confirm-icon"
+            class="delete-confirm-btn rounded-full relative"
+            title="Delete"
+          />
+          <span class="text-gray-600">← Red button with trash icon</span>
+        </div>
+      </div>
+
+      <!-- Confirm State with Timer Ring -->
+      <div class="bg-white p-8 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Confirm State (With Timer Ring)</h2>
+        <div class="flex items-center gap-4">
+          <button
+            type="button"
+            class="font-secondary relative inline-flex items-center justify-center font-large transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-2 py-2 text-xs rounded-full bg-danger-500 text-white hover:bg-danger-600 shadow-lg hover:shadow-xl"
+            id="delete-confirm"
+            title="Click again to confirm deletion"
+          >
+            <!-- Trash Icon -->
+            <svg
+              class="inline-block delete-confirm-icon"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              <path d="M10 11v6"></path>
+              <path d="M14 11v6"></path>
+            </svg>
+
+            <!-- Timer Ring Overlay -->
+            <svg
+              width="44"
+              height="44"
+              viewBox="0 0 44 44"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 1;"
+            >
+              <circle
+                cx="22"
+                cy="22"
+                r="18"
+                fill="none"
+                stroke="#ef4444"
+                stroke-width="3"
+                stroke-dasharray="113.1"
+                stroke-dashoffset="113.1"
+                transform="rotate(-90 22 22)"
+                class="timer-icon-test"></circle>
+            </svg>
+          </button>
+          <span class="text-gray-600">← Button with animated red ring (30s animation)</span>
+        </div>
+      </div>
+
+      <!-- Comparison -->
+      <div class="bg-white p-8 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Side by Side</h2>
+        <div class="flex items-center gap-8">
+          <div class="text-center">
+            <p class="text-sm text-gray-600 mb-2">Initial</p>
+            <Button
+              id="delete-initial-2"
+              type="button"
+              variant="danger"
+              size="sm"
+              icon="trash"
+              class="rounded-full relative"
+              title="Delete"
+            />
+          </div>
+
+          <div class="text-center">
+            <p class="text-sm text-gray-600 mb-2">Confirm (animating)</p>
+            <button
+              type="button"
+              class="font-secondary relative inline-flex items-center justify-center font-large transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-2 py-2 text-xs rounded-full bg-danger-500 text-white hover:bg-danger-600 shadow-lg hover:shadow-xl"
+            >
+              <svg
+                class="inline-block"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+              </svg>
+              <svg
+                width="44"
+                height="44"
+                viewBox="0 0 44 44"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 1;"
+              >
+                <circle
+                  cx="22"
+                  cy="22"
+                  r="18"
+                  fill="none"
+                  stroke="#ef4444"
+                  stroke-width="3"
+                  stroke-dasharray="113.1"
+                  stroke-dashoffset="113.1"
+                  transform="rotate(-90 22 22)"
+                  class="timer-icon-test"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      @keyframes draw-ring-test {
+        from {
+          stroke-dashoffset: 113.1;
+        }
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      .timer-icon-test {
+        animation: draw-ring-test 30000ms linear forwards;
+      }
+    </style>
+  </body>
+</html>
