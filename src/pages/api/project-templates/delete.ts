@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { error } = await supabaseAdmin.from("projectitemtemplates").delete().eq("id", id);
+    const { error } = await supabaseAdmin.from("projectItemTemplates").delete().eq("id", id);
 
     if (error) {
       console.error("[project-templates] Delete error:", error);

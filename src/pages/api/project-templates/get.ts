@@ -25,9 +25,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
     // Build query
     let query = supabaseAdmin
-      .from("projectitemtemplates")
+      .from("projectItemTemplates")
       .select("*")
-      .order("orderindex", { ascending: true });
+      .order("orderIndex", { ascending: true });
 
     // Filter by type if specified
     if (type) {

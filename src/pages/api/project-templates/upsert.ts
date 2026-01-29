@@ -49,7 +49,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (id) {
       // Check by id for updates
       const { data } = await supabaseAdmin
-        .from("projectitemtemplates")
+        .from("projectItemTemplates")
         .select("id")
         .eq("id", id)
         .maybeSingle();
@@ -57,11 +57,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Check by unique constraint for new templates (avoid duplicates)
       const { data } = await supabaseAdmin
-        .from("projectitemtemplates")
+        .from("projectItemTemplates")
         .select("id")
         .eq("type", type)
         .eq("title", title)
-        .eq("companyname", companyName || "CAPCo Fire")
+        .eq("companyName", companyName || "CAPCo Fire")
         .maybeSingle();
       existingTemplate = data;
     }
@@ -71,22 +71,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       title,
       message,
       internal: internal ?? false,
-      markcompleted: markCompleted ?? false,
-      orderindex: orderIndex ?? 0,
+      markCompleted: markCompleted ?? false,
+      orderIndex: orderIndex ?? 0,
       enabled: enabled ?? true,
-      companyname: companyName || "CAPCo Fire",
+      companyName: companyName || "CAPCo Fire",
     };
 
     // If template exists, include id for update; otherwise set createdBy for new record
     if (existingTemplate || id) {
       templateData.id = existingTemplate?.id || id;
     } else {
-      templateData.createdby = currentUser.id;
+      templateData.createdBy = currentUser.id;
     }
 
     // Upsert: automatically inserts if not exists, updates if exists (based on id)
     const { data, error } = await supabaseAdmin
-      .from("projectitemtemplates")
+      .from("projectItemTemplates")
       .upsert(templateData, {
         onConflict: "id", // Use primary key for conflict resolution
       })
