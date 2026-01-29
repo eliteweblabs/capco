@@ -20,10 +20,13 @@ export class RefreshManager {
   private updateCallbacks: Map<string, (value: any) => void> = new Map();
   private refreshInterval: NodeJS.Timeout | null = null;
   private isActive: boolean = false;
-  private refreshIntervalMs: number = 30000; // 30 seconds (increased from 15s to reduce database load)
+  private refreshIntervalMs: number = 5000; // 3 seconds (increased from 15s to reduce database load)
   private isRefreshing: boolean = false; // Prevent concurrent refresh cycles
   private lastRefreshTime: number = 0; // Track last refresh time
   private minRefreshGap: number = 3000; // Minimum 3 seconds between refreshes
+
+  // Fields that are computed client-side and don't need server polling
+  private COMPUTED_FIELDS = ["updatedAt", "createdAt"];
 
   private constructor() {
     // Register default update callbacks for common field types
@@ -123,7 +126,7 @@ export class RefreshManager {
         (element as HTMLInputElement).checked = Boolean(newValue);
       } else {
         let displayValue: string;
-        
+
         // For date inputs with formatted display, update the data attribute
         if (element.hasAttribute("data-due-date")) {
           element.setAttribute("data-due-date", String(newValue));
@@ -142,7 +145,7 @@ export class RefreshManager {
         } else {
           displayValue = String(newValue);
         }
-        
+
         // Animate the value change
         this.animateValueChange(element as HTMLInputElement, displayValue);
       }
@@ -154,7 +157,7 @@ export class RefreshManager {
       // For span elements with dates, format them nicely
       const fieldName = element.getAttribute("data-refresh");
       let displayValue: string;
-      
+
       if (fieldName && (fieldName.includes("Date") || fieldName.includes("At"))) {
         try {
           const date = new Date(newValue);
@@ -165,7 +168,7 @@ export class RefreshManager {
       } else {
         displayValue = String(newValue);
       }
-      
+
       // Animate the value change for text elements
       this.animateTextChange(element as HTMLElement, displayValue);
     }
@@ -176,7 +179,7 @@ export class RefreshManager {
    */
   private animateValueChange(element: HTMLInputElement, newValue: string): void {
     const oldValue = element.value;
-    
+
     // Skip animation if values are the same
     if (oldValue === newValue) {
       return;
@@ -184,32 +187,33 @@ export class RefreshManager {
 
     // Create wrapper if it doesn't exist
     let wrapper = element.parentElement;
-    if (!wrapper || !wrapper.classList.contains('relative')) {
-      console.warn('Input element needs a relative positioned parent for animation');
+    if (!wrapper || !wrapper.classList.contains("relative")) {
+      console.warn("Input element needs a relative positioned parent for animation");
       element.value = newValue;
       return;
     }
 
     // Create old value overlay
-    const overlay = document.createElement('div');
+    const overlay = document.createElement("div");
     overlay.textContent = oldValue;
-    overlay.className = 'absolute inset-0 flex items-center justify-center bg-inherit text-inherit pointer-events-none';
-    overlay.style.animation = 'slideOutDown 0.3s ease-out forwards';
+    overlay.className =
+      "absolute inset-0 flex items-center justify-center bg-inherit text-inherit pointer-events-none";
+    overlay.style.animation = "slideOutDown 0.3s ease-out forwards";
     wrapper.appendChild(overlay);
 
     // Update the input value immediately but make it invisible briefly
-    element.style.opacity = '0';
+    element.style.opacity = "0";
     element.value = newValue;
 
     // Slide in the new value
     setTimeout(() => {
-      element.style.animation = 'slideInDown 0.3s ease-out forwards';
-      element.style.opacity = '1';
-      
+      element.style.animation = "slideInDown 0.3s ease-out forwards";
+      element.style.opacity = "1";
+
       // Clean up
       setTimeout(() => {
         overlay.remove();
-        element.style.animation = '';
+        element.style.animation = "";
       }, 300);
     }, 50);
   }
@@ -218,23 +222,23 @@ export class RefreshManager {
    * Animate text change for span/div elements (slide out old, slide in new)
    */
   private animateTextChange(element: HTMLElement, newValue: string): void {
-    const oldValue = element.textContent || '';
-    
+    const oldValue = element.textContent || "";
+
     // Skip animation if values are the same
     if (oldValue === newValue) {
       return;
     }
 
     // Slide out old value
-    element.style.animation = 'slideOutDown 0.3s ease-out forwards';
-    
+    element.style.animation = "slideOutDown 0.3s ease-out forwards";
+
     setTimeout(() => {
       element.textContent = newValue;
-      element.style.animation = 'slideInDown 0.3s ease-out forwards';
-      
+      element.style.animation = "slideInDown 0.3s ease-out forwards";
+
       // Clean up
       setTimeout(() => {
-        element.style.animation = '';
+        element.style.animation = "";
       }, 300);
     }, 300);
   }
@@ -311,13 +315,28 @@ export class RefreshManager {
     }
 
     this.isActive = true;
+    const intervalSeconds = this.refreshIntervalMs / 1000;
+    const startTime = new Date().toLocaleTimeString();
     console.log(
-      `🔄 [REFRESH-MANAGER] Starting auto-refresh cycle every ${this.refreshIntervalMs / 1000} seconds`
+      `🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Starting auto-refresh cycle every ${intervalSeconds} seconds (${this.refreshIntervalMs}ms)`
     );
 
+    // Run the first cycle immediately
+    console.log(`🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Running initial refresh cycle immediately`);
+    this.cycleAndRefresh();
+
+    // Then set up the interval for subsequent cycles
     this.refreshInterval = setInterval(() => {
+      const tickTime = new Date().toLocaleTimeString();
+      console.log(
+        `🔄 [REFRESH-MANAGER] ⏰⏰⏰ [${tickTime}] INTERVAL TICK (every ${intervalSeconds}s) - starting cycle now`
+      );
       this.cycleAndRefresh();
     }, this.refreshIntervalMs);
+
+    console.log(
+      `🔄 [REFRESH-MANAGER] ⏰ Interval ID: ${this.refreshInterval}, will fire every ${this.refreshIntervalMs}ms`
+    );
   }
 
   /**
@@ -362,9 +381,14 @@ export class RefreshManager {
    * Cycle through all refreshable elements and check for updates
    */
   private async cycleAndRefresh(): Promise<void> {
+    const cycleStartTime = new Date().toLocaleTimeString();
+    console.log(`🔄 [REFRESH-MANAGER] 🟢 [${cycleStartTime}] cycleAndRefresh() called`);
+
     // Prevent concurrent refresh cycles
     if (this.isRefreshing) {
-      console.log(`🔄 [REFRESH-MANAGER] ⏭️  Skipping refresh cycle - already in progress`);
+      console.log(
+        `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - already in progress`
+      );
       return;
     }
 
@@ -373,7 +397,7 @@ export class RefreshManager {
     const timeSinceLastRefresh = now - this.lastRefreshTime;
     if (timeSinceLastRefresh < this.minRefreshGap) {
       console.log(
-        `🔄 [REFRESH-MANAGER] ⏭️  Skipping refresh cycle - too soon (${timeSinceLastRefresh}ms since last refresh, minimum ${this.minRefreshGap}ms)`
+        `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - too soon (${timeSinceLastRefresh}ms since last refresh, minimum ${this.minRefreshGap}ms)`
       );
       return;
     }
@@ -381,7 +405,8 @@ export class RefreshManager {
     this.isRefreshing = true;
     this.lastRefreshTime = now;
 
-    console.log(`🔄 [REFRESH-MANAGER] Starting refresh cycle...`);
+    const timestamp = new Date().toLocaleTimeString();
+    console.log(`🔄 [REFRESH-MANAGER] ⏰ [${timestamp}] Starting refresh cycle...`);
 
     const elements = this.getRefreshableElements();
     if (elements.length === 0) {
@@ -401,7 +426,7 @@ export class RefreshManager {
       await this.refreshContextGroup(contextKey, fieldGroups);
     }
 
-    console.log(`🔄 [REFRESH-MANAGER] Refresh cycle completed`);
+    console.log(`🔄 [REFRESH-MANAGER] ⏰ [${timestamp}] Refresh cycle completed`);
     this.isRefreshing = false;
   }
 
@@ -485,6 +510,14 @@ export class RefreshManager {
 
       // Update each field group
       for (const [fieldName, elements] of fieldGroups.entries()) {
+        // Skip fields that are computed client-side
+        if (this.COMPUTED_FIELDS.includes(fieldName)) {
+          console.log(
+            `🔄 [REFRESH-MANAGER] ⏭️ Skipping ${fieldName} - computed live on client-side`
+          );
+          continue;
+        }
+
         const currentValue = currentData[fieldName];
         if (currentValue === undefined) {
           console.log(`🔄 [REFRESH-MANAGER] ⚠️  Field ${fieldName} not in API response`);
@@ -501,14 +534,14 @@ export class RefreshManager {
             );
             return; // Skip this element
           }
-          
+
           const currentElementValue = this.getElementValue(element);
           const newValueString = String(currentValue);
-          
+
           // Special handling for date fields - compare as Date objects
           let valuesAreDifferent = currentElementValue !== newValueString;
-          
-          if (fieldName.includes('Date') || fieldName.includes('At')) {
+
+          if (fieldName.includes("Date") || fieldName.includes("At")) {
             try {
               const currentDate = new Date(currentElementValue);
               const newDate = new Date(newValueString);
@@ -519,7 +552,7 @@ export class RefreshManager {
               valuesAreDifferent = currentElementValue !== newValueString;
             }
           }
-          
+
           if (valuesAreDifferent) {
             needsUpdateCount++;
             console.log(
@@ -579,7 +612,7 @@ export class RefreshManager {
       const data = await response.json();
       console.log(`🔄 [REFRESH-MANAGER] 📦 API Response keys:`, Object.keys(data));
       console.log(`🔄 [REFRESH-MANAGER] 🔍 Looking for fields:`, fieldNames);
-      
+
       // The API might return { data: {...} } or { projects: [...] } or just the project directly
       let projectData = data;
       if (data.data) {
@@ -589,7 +622,7 @@ export class RefreshManager {
         projectData = data.projects[0];
         console.log(`🔄 [REFRESH-MANAGER] Using data.projects[0]`);
       }
-      
+
       console.log(`🔄 [REFRESH-MANAGER] 📋 Project data keys:`, Object.keys(projectData));
       return projectData;
     } catch (error) {
@@ -652,10 +685,10 @@ export class RefreshManager {
    */
   public async forceRefresh(): Promise<void> {
     console.log(`🔄 [REFRESH-MANAGER] Force refresh requested`);
-    
+
     // Reset the last refresh time to allow immediate refresh
     this.lastRefreshTime = 0;
-    
+
     await this.cycleAndRefresh();
   }
 }
