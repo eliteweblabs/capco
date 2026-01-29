@@ -20,8 +20,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { id, type, title, message, internal, markCompleted, orderIndex, enabled, companyName } = body;
-    
+    const { id, type, title, message, internal, markCompleted, orderIndex, enabled, companyName } =
+      body;
+
     console.log("[project-templates] Request body:", JSON.stringify(body, null, 2));
 
     // Validate required fields
@@ -42,13 +43,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Use upsert pattern - check if exists first, then upsert
     // This avoids errors and handles both create/update cases safely
-    
+
     let existingTemplate = null;
-    
+
     if (id) {
       // Check by id for updates
       const { data } = await supabaseAdmin
-        .from("projectItemTemplates")
+        .from("projectitemtemplates")
         .select("id")
         .eq("id", id)
         .maybeSingle();
@@ -56,11 +57,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Check by unique constraint for new templates (avoid duplicates)
       const { data } = await supabaseAdmin
-        .from("projectItemTemplates")
+        .from("projectitemtemplates")
         .select("id")
         .eq("type", type)
         .eq("title", title)
-        .eq("companyName", companyName || "CAPCo Fire")
+        .eq("companyname", companyName || "CAPCo Fire")
         .maybeSingle();
       existingTemplate = data;
     }
@@ -70,22 +71,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       title,
       message,
       internal: internal ?? false,
-      markCompleted: markCompleted ?? false,
-      orderIndex: orderIndex ?? 0,
+      markcompleted: markCompleted ?? false,
+      orderindex: orderIndex ?? 0,
       enabled: enabled ?? true,
-      companyName: companyName || "CAPCo Fire",
+      companyname: companyName || "CAPCo Fire",
     };
 
     // If template exists, include id for update; otherwise set createdBy for new record
     if (existingTemplate || id) {
       templateData.id = existingTemplate?.id || id;
     } else {
-      templateData.createdBy = currentUser.id;
+      templateData.createdby = currentUser.id;
     }
 
     // Upsert: automatically inserts if not exists, updates if exists (based on id)
     const { data, error } = await supabaseAdmin
-      .from("projectItemTemplates")
+      .from("projectitemtemplates")
       .upsert(templateData, {
         onConflict: "id", // Use primary key for conflict resolution
       })
@@ -95,10 +96,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (error) {
       console.error("[project-templates] Upsert error:", error);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: existingTemplate || id ? "Failed to update template" : "Failed to create template",
-          details: error.message || error.code || "Unknown database error"
-        }), 
+          details: error.message || error.code || "Unknown database error",
+        }),
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
@@ -108,15 +109,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const result = data;
 
-    return new Response(
-      JSON.stringify({ success: true, template: result }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true, template: result }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("[project-templates] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

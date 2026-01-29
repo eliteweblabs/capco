@@ -23,16 +23,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { id } = body;
 
     if (!id) {
-      return new Response(
-        JSON.stringify({ error: "Missing required field: id" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Missing required field: id" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const { error } = await supabaseAdmin
-      .from("projectItemTemplates")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabaseAdmin.from("projectitemtemplates").delete().eq("id", id);
 
     if (error) {
       console.error("[project-templates] Delete error:", error);
@@ -42,15 +39,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("[project-templates] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

@@ -25,9 +25,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
     // Build query
     let query = supabaseAdmin
-      .from("projectItemTemplates")
+      .from("projectitemtemplates")
       .select("*")
-      .order("orderIndex", { ascending: true });
+      .order("orderindex", { ascending: true });
 
     // Filter by type if specified
     if (type) {
@@ -55,9 +55,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     });
   } catch (error) {
     console.error("[project-templates] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

@@ -270,10 +270,63 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
     document.addEventListener("click", (e) => {
       if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
         // Check if click is outside sidebar and toggle button
-        if (!sidebar.contains(e.target) && !toggleButton.contains(e.target)) {
+        if (!sidebar.contains(e.target as Node) && !toggleButton.contains(e.target as Node)) {
           hideSidebarMobile();
         }
       }
+    });
+
+    // Swipe to close functionality (mobile only)
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    let isDragging = false;
+    let currentTranslateX = 0;
+
+    sidebar.addEventListener("touchstart", (e) => {
+      if (!isMobile()) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isDragging = true;
+      sidebar.style.transition = "none";
+    });
+
+    sidebar.addEventListener("touchmove", (e) => {
+      if (!isMobile() || !isDragging) return;
+
+      const touchCurrentX = e.touches[0].clientX;
+      const touchCurrentY = e.touches[0].clientY;
+      const deltaX = touchCurrentX - touchStartX;
+      const deltaY = touchCurrentY - touchStartY;
+
+      // Only respond to horizontal swipes (left)
+      if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX < 0) {
+        currentTranslateX = deltaX;
+        sidebar.style.transform = `translateX(${deltaX}px)`;
+      }
+    });
+
+    sidebar.addEventListener("touchend", (e) => {
+      if (!isMobile() || !isDragging) return;
+
+      isDragging = false;
+      sidebar.style.transition = "";
+      sidebar.style.transform = "";
+
+      const deltaX = touchEndX - touchStartX;
+      const swipeThreshold = 100; // minimum swipe distance in pixels
+
+      // If swiped left more than threshold, close sidebar
+      if (currentTranslateX < -swipeThreshold) {
+        hideSidebarMobile();
+      }
+
+      currentTranslateX = 0;
+      touchStartX = 0;
+      touchStartY = 0;
+      touchEndX = 0;
+      touchEndY = 0;
     });
 
     // Handle resize
