@@ -23,48 +23,56 @@ console.time("🏗️ [DASHBOARD] Total data fetch");
 
 const [companyData, statusData, projectsData] = await Promise.all([
   // Fetch 1: Company data
-  globalCompanyData().catch(err => {
+  globalCompanyData().catch((err) => {
     console.error("🏗️ [DASHBOARD] ❌ Company data fetch failed:", err);
-    return { globalCompanyName: '', globalCompanySlogan: '', globalCompanyAddress: '', globalCompanyPhone: '', globalCompanyEmail: '', globalCompanyWebsite: '', globalCompanyLogo: '' };
+    return {
+      globalCompanyName: "",
+      globalCompanySlogan: "",
+      globalCompanyAddress: "",
+      globalCompanyPhone: "",
+      globalCompanyEmail: "",
+      globalCompanyWebsite: "",
+      globalCompanyLogo: "",
+    };
   }),
-  
+
   // Fetch 2: Status data
   fetch(new URL("/api/status/get", Astro.url.origin).toString(), {
     method: "GET",
     headers: { Cookie: Astro.request.headers.get("Cookie") || "" },
   })
-    .then(r => {
+    .then((r) => {
       console.log(`🏗️ [DASHBOARD] Status API response: ${r.status}`);
       return r.json();
     })
-    .then(d => {
+    .then((d) => {
       console.log(`🏗️ [DASHBOARD] Status data:`, d);
       return d.statuses || [];
     })
-    .catch(err => {
+    .catch((err) => {
       console.error("🏗️ [DASHBOARD] ❌ Status fetch failed:", err);
       return [];
     }),
-  
+
   // Fetch 3: Projects (with timeout)
   (async () => {
     if (!currentUser?.id) {
       console.log("🏗️ [DASHBOARD] No user ID, skipping project fetch");
       return [];
     }
-    
+
     try {
       const apiUrl = new URL("/api/projects/get", Astro.url.origin);
       if (currentRole === "Client") {
         apiUrl.searchParams.set("authorId", currentUser.id);
       }
       apiUrl.searchParams.set("limit", "50");
-      
+
       console.log(`🏗️ [DASHBOARD] 📡 Fetching projects from: ${apiUrl.toString()}`);
-      
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-      
+
       const startTime = Date.now();
       const response = await fetch(apiUrl.toString(), {
         method: "GET",
@@ -74,38 +82,48 @@ const [companyData, statusData, projectsData] = await Promise.all([
         },
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
       const elapsed = Date.now() - startTime;
-      
+
       console.log(`🏗️ [DASHBOARD] 📦 Response status: ${response.status}, took ${elapsed}ms`);
-      
+
       if (response.ok) {
         const data = await response.json();
         const projectCount = data.projects?.length || 0;
         console.log(`🏗️ [DASHBOARD] ✅ Successfully loaded ${projectCount} projects`);
         console.log(`🏗️ [DASHBOARD] 📋 Response structure:`, Object.keys(data));
-        console.log(`🏗️ [DASHBOARD] 📋 Projects array type:`, Array.isArray(data.projects), 'length:', data.projects?.length);
+        console.log(
+          `🏗️ [DASHBOARD] 📋 Projects array type:`,
+          Array.isArray(data.projects),
+          "length:",
+          data.projects?.length
+        );
         return data.projects || [];
       }
-      
+
       console.error(`🏗️ [DASHBOARD] ❌ API returned error status: ${response.status}`);
       const errorText = await response.text();
       console.error(`🏗️ [DASHBOARD] ❌ Error response:`, errorText);
       return [];
     } catch (error) {
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         console.error("🏗️ [DASHBOARD] ⏱️  Request timeout after 5s - returning empty array");
       } else {
         console.error("🏗️ [DASHBOARD] ❌ Fetch error:", error);
       }
       return [];
     }
-  })()
+  })(),
 ]);
 
 console.timeEnd("🏗️ [DASHBOARD] Total data fetch");
-console.log(`🏗️ [DASHBOARD] 🎯 Final projectsData:`, Array.isArray(projectsData), 'length:', projectsData?.length);
+console.log(
+  `🏗️ [DASHBOARD] 🎯 Final projectsData:`,
+  Array.isArray(projectsData),
+  "length:",
+  projectsData?.length
+);
 
 const {
   globalCompanyName,
@@ -142,31 +160,31 @@ const projects = projectsData;
   mainClasses="overflow-x-scroll"
 >
   <DashboardContent
-    projects={projects}
-    statusData={statusData}
-    currentUser={currentUser}
-    globalInputClasses={globalInputClasses}
-    secondaryTextClasses={secondaryTextClasses}
-    primaryTextClasses={primaryTextClasses}
+    {projects}
+    {statusData}
+    {currentUser}
+    {globalInputClasses}
+    {secondaryTextClasses}
+    {primaryTextClasses}
   />
 </App>
 
 <script>
   // Start the refresh manager with safe settings
   import { refreshManager } from "../../lib/refresh-manager";
-  
+
   console.log("🔄 [DASHBOARD] Starting refresh manager with safe polling (30s interval)...");
-  
+
   // Wait for DOM to be fully loaded
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       console.log("🔄 [DASHBOARD] DOM loaded, initializing refresh manager");
-      refreshManager.startAutoRefreshWithInterval(30); // Poll every 30 seconds
+      refreshManager.startAutoRefreshWithInterval(5); // Poll every 5 seconds
       console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
     });
   } else {
     console.log("🔄 [DASHBOARD] DOM already loaded, initializing refresh manager");
-    refreshManager.startAutoRefreshWithInterval(30); // Poll every 30 seconds
+    refreshManager.startAutoRefreshWithInterval(5); // Poll every 5 seconds
     console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
   }
 </script>

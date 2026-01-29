@@ -24,14 +24,14 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // Allow public access for featured projects ONLY
     const isFeaturedRequest = featured === "true";
-    
-    console.log("🏗️ [PROJECTS-GET] Featured request:", isFeaturedRequest, "featured param:", featured);
-    
+
+    // console.log("🏗️ [PROJECTS-GET] Featured request:", isFeaturedRequest, "featured param:", featured);
+
     // Check authentication (skip for featured projects)
     const { isAuth, currentUser } = await checkAuth(cookies);
-    
-    console.log("🏗️ [PROJECTS-GET] Auth status:", isAuth, "Current user:", currentUser?.id);
-    
+
+    // console.log("🏗️ [PROJECTS-GET] Auth status:", isAuth, "Current user:", currentUser?.id);
+
     if (!isFeaturedRequest && (!isAuth || !currentUser)) {
       console.log("🏗️ [PROJECTS-GET] Rejecting non-featured request without auth");
       return new Response(JSON.stringify({ error: "Authentication required" }), {
@@ -39,9 +39,9 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    
+
     if (isFeaturedRequest && !isAuth) {
-      console.log("🏗️ [PROJECTS-GET] Allowing public access to featured projects");
+      // console.log("🏗️ [PROJECTS-GET] Allowing public access to featured projects");
     }
 
     console.log("🏗️ [PROJECTS-GET] Project ID:", projectId);
@@ -72,14 +72,14 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           data: project,
           pagination: { limit: 1, offset: 0, total: 1, hasMore: false },
         }),
-        { 
-          status: 200, 
-          headers: { 
+        {
+          status: 200,
+          headers: {
             "Content-Type": "application/json",
             "Cache-Control": "no-store, no-cache, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-          } 
+            Pragma: "no-cache",
+            Expires: "0",
+          },
         }
       );
     }
@@ -135,9 +135,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // Get unique author and assigned-to IDs
     const authorIds = [...new Set((projects || []).map((p) => p.authorId).filter(Boolean))];
-    const assignedToIds = [
-      ...new Set((projects || []).map((p) => p.assignedToId).filter(Boolean)),
-    ];
+    const assignedToIds = [...new Set((projects || []).map((p) => p.assignedToId).filter(Boolean))];
     const allProfileIds = [...new Set([...authorIds, ...assignedToIds])];
 
     // Fetch profiles and files in parallel
@@ -150,7 +148,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             .select("id, firstName, lastName, companyName, email, role")
             .in("id", allProfileIds)
         : Promise.resolve({ data: [] }),
-      
+
       // Fetch file counts for all projects in one query
       projectIds.length > 0
         ? supabaseAdmin
@@ -211,14 +209,14 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           hasMore: projectsWithProfiles.length === limit,
         },
       }),
-      { 
-        status: 200, 
-        headers: { 
+      {
+        status: 200,
+        headers: {
           "Content-Type": "application/json",
           "Cache-Control": "no-store, no-cache, must-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0",
-        } 
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       }
     );
   } catch (error) {
