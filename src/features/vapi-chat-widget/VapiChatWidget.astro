@@ -160,18 +160,23 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
           
           const scriptLoadTimeout = setTimeout(() => {
             const widget = document.getElementById('vapi-widget-basic');
-            if (widget && !widget.shadowRoot && typeof window.Vapi === 'undefined') {
-              console.error(LOG_PREFIX, '❌ Widget script failed to load after 30 seconds');
+            // Only show error if widget truly didn't load (no element at all)
+            if (!widget) {
+              console.error(LOG_PREFIX, '❌ Widget element not found after 30 seconds');
               if (window.showNotice) {
                 window.showNotice('error', 'Chat Loading Failed', 'Unable to load chat widget. Please refresh the page.', 5000);
               }
+            } else if (widget.shadowRoot || typeof window.Vapi !== 'undefined' || widget.getAttribute('public-key')) {
+              // Widget loaded successfully, clear timeout
+              console.log(LOG_PREFIX, '✅ Widget loaded and initialized');
+              clearTimeout(scriptLoadTimeout);
             }
           }, 30000);
           
           window.addEventListener('load', () => {
             setTimeout(() => {
               const widget = document.getElementById('vapi-widget-basic');
-              if (widget && (widget.shadowRoot || typeof window.Vapi !== 'undefined')) {
+              if (widget) {
                 console.log(LOG_PREFIX, '✅ Widget loaded successfully');
                 clearTimeout(scriptLoadTimeout);
               }
