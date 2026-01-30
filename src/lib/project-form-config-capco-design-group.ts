@@ -55,7 +55,8 @@ export interface FormElementConfig {
     | "component"
     | "submit"
     | "button"
-    | "outline";
+    | "outline"
+    | "anchor";
   label: string;
   placeholder?: string;
   required?: boolean;
@@ -72,7 +73,7 @@ export interface FormElementConfig {
   icon?: string; // For actions
   action?: string; // For actions
   tab?: string; // For actions
-  variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "info"; // For actions
+  variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "anchor"; // For actions
   allow?: string[]; // Control visibility based on user roles
   hideAtStatus?: number[]; // Control visibility based on project status
   readOnlyAtStatus?: number[]; // Control read-only state based on project status
@@ -771,7 +772,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     label:
       "<span class='hidden md:inline'>Delete</span><span class='hidden lg:inline'> Project</span>",
     icon: "trash",
-    variant: "outline",
+    variant: "anchor",
     action: "deleteProject",
     allow: ["Admin", "Staff"],
     hideAtStatus: [],
