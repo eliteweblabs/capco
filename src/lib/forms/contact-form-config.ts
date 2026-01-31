@@ -39,7 +39,7 @@ export const contactFormConfig: MultiStepFormConfig = {
     // Step 1: Name
     {
       stepNumber: 1,
-      title: "what's your name?",
+      title: "What's your name?",
       fieldLayout: "grid",
       fields: [
         {
