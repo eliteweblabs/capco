@@ -28,6 +28,9 @@ export class RefreshManager {
   // Fields that are computed client-side and don't need server polling
   private COMPUTED_FIELDS = ["updatedAt", "createdAt"];
 
+  // Store global state for conditional rendering
+  private globalState: Map<string, any> = new Map();
+
   private constructor() {
     // Register default update callbacks for common field types
     this.registerDefaultCallbacks();
@@ -81,6 +84,14 @@ export class RefreshManager {
 
     elements.forEach((element, index) => {
       try {
+        // CRITICAL: Skip elements that are actively being edited or saving
+        if (element.hasAttribute("data-edited") || element.classList.contains("saving")) {
+          console.log(
+            `🔄 [REFRESH-MANAGER] ⏭️  Skipping element ${index + 1} - being edited/saved`
+          );
+          return; // Skip this element
+        }
+
         // Use custom callback if registered
         if (this.updateCallbacks.has(fieldName)) {
           const callback = this.updateCallbacks.get(fieldName)!;
@@ -280,6 +291,20 @@ export class RefreshManager {
       const element = this as any;
       element.textContent = value;
     });
+
+    // Project count - format with singular/plural
+    this.registerCallback("projectCount", (value: number) => {
+      const element = this as any;
+      const count = Number(value) || 0;
+
+      if (count === 0) {
+        element.innerHTML = "New<span class='hidden sm:inline'> Project</span>";
+      } else if (count === 1) {
+        element.innerHTML = "1 Active Project";
+      } else {
+        element.innerHTML = `${count} Active Projects`;
+      }
+    });
   }
 
   /**
@@ -310,33 +335,33 @@ export class RefreshManager {
    */
   public startAutoRefresh(): void {
     if (this.isActive) {
-      // console.log(`🔄 [REFRESH-MANAGER] Auto-refresh is already active`);
+      console.log(`🔄 [REFRESH-MANAGER] Auto-refresh is already active`);
       return;
     }
 
     this.isActive = true;
     const intervalSeconds = this.refreshIntervalMs / 1000;
     const startTime = new Date().toLocaleTimeString();
-    // console.log(
-    //   `🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Starting auto-refresh cycle every ${intervalSeconds} seconds (${this.refreshIntervalMs}ms)`
-    // );
+    console.log(
+      `🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Starting auto-refresh cycle every ${intervalSeconds} seconds (${this.refreshIntervalMs}ms)`
+    );
 
-    // // Run the first cycle immediately
-    // console.log(`🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Running initial refresh cycle immediately`);
+    // Run the first cycle immediately
+    console.log(`🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Running initial refresh cycle immediately`);
     this.cycleAndRefresh();
 
     // Then set up the interval for subsequent cycles
     this.refreshInterval = setInterval(() => {
       const tickTime = new Date().toLocaleTimeString();
-      // console.log(
-      //   `🔄 [REFRESH-MANAGER] ⏰⏰⏰ [${tickTime}] INTERVAL TICK (every ${intervalSeconds}s) - starting cycle now`
-      // );
+      console.log(
+        `🔄 [REFRESH-MANAGER] ⏰⏰⏰ [${tickTime}] INTERVAL TICK (every ${intervalSeconds}s) - starting cycle now`
+      );
       this.cycleAndRefresh();
     }, this.refreshIntervalMs);
 
-    // console.log(
-    //   `🔄 [REFRESH-MANAGER] ⏰ Interval ID: ${this.refreshInterval}, will fire every ${this.refreshIntervalMs}ms`
-    // );
+    console.log(
+      `🔄 [REFRESH-MANAGER] ⏰ Interval ID: ${this.refreshInterval}, will fire every ${this.refreshIntervalMs}ms`
+    );
   }
 
   /**
@@ -382,13 +407,13 @@ export class RefreshManager {
    */
   private async cycleAndRefresh(): Promise<void> {
     const cycleStartTime = new Date().toLocaleTimeString();
-    // console.log(`🔄 [REFRESH-MANAGER] 🟢 [${cycleStartTime}] cycleAndRefresh() called`);
+    console.log(`🔄 [REFRESH-MANAGER] 🟢 [${cycleStartTime}] cycleAndRefresh() called`);
 
     // Prevent concurrent refresh cycles
     if (this.isRefreshing) {
-      // console.log(
-      //   `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - already in progress`
-      // );
+      console.log(
+        `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - already in progress`
+      );
       return;
     }
 
@@ -396,9 +421,9 @@ export class RefreshManager {
     const now = Date.now();
     const timeSinceLastRefresh = now - this.lastRefreshTime;
     if (timeSinceLastRefresh < this.minRefreshGap) {
-      // console.log(
-      //   `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - too soon (${timeSinceLastRefresh}ms since last refresh, minimum ${this.minRefreshGap}ms)`
-      // );
+      console.log(
+        `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - too soon (${timeSinceLastRefresh}ms since last refresh, minimum ${this.minRefreshGap}ms)`
+      );
       return;
     }
 
@@ -406,16 +431,16 @@ export class RefreshManager {
     this.lastRefreshTime = now;
 
     const timestamp = new Date().toLocaleTimeString();
-    // console.log(`🔄 [REFRESH-MANAGER] ⏰ [${timestamp}] Starting refresh cycle...`);
+    console.log(`🔄 [REFRESH-MANAGER] ⏰ [${timestamp}] Starting refresh cycle...`);
 
     const elements = this.getRefreshableElements();
     if (elements.length === 0) {
-      // console.log(`🔄 [REFRESH-MANAGER] No refreshable elements found`);
+      console.log(`🔄 [REFRESH-MANAGER] No refreshable elements found`);
       this.isRefreshing = false;
       return;
     }
 
-    // console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements to check`);
+    console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements to check`);
 
     // Group elements by project/user and field type for efficient API calls
     const groupedElements = this.groupElementsByContext(elements);
@@ -610,20 +635,20 @@ export class RefreshManager {
       }
 
       const data = await response.json();
-      // console.log(`🔄 [REFRESH-MANAGER] 📦 API Response keys:`, Object.keys(data));
-      // console.log(`🔄 [REFRESH-MANAGER] 🔍 Looking for fields:`, fieldNames);
+      console.log(`🔄 [REFRESH-MANAGER] 📦 API Response keys:`, Object.keys(data));
+      console.log(`🔄 [REFRESH-MANAGER] 🔍 Looking for fields:`, fieldNames);
 
       // The API might return { data: {...} } or { projects: [...] } or just the project directly
       let projectData = data;
       if (data.data) {
         projectData = data.data;
-        // console.log(`🔄 [REFRESH-MANAGER] Using data.data`);
+        console.log(`🔄 [REFRESH-MANAGER] Using data.data`);
       } else if (data.projects && data.projects[0]) {
         projectData = data.projects[0];
-        // console.log(`🔄 [REFRESH-MANAGER] Using data.projects[0]`);
+        console.log(`🔄 [REFRESH-MANAGER] Using data.projects[0]`);
       }
 
-      // console.log(`🔄 [REFRESH-MANAGER] 📋 Project data keys:`, Object.keys(projectData));
+      console.log(`🔄 [REFRESH-MANAGER] 📋 Project data keys:`, Object.keys(projectData));
       return projectData;
     } catch (error) {
       console.error(`🔄 [REFRESH-MANAGER] Error fetching data:`, error);
@@ -690,6 +715,207 @@ export class RefreshManager {
     this.lastRefreshTime = 0;
 
     await this.cycleAndRefresh();
+  }
+
+  /**
+   * Set global state value (for aggregate counts, etc.)
+   */
+  public setGlobalState(key: string, value: any): void {
+    const oldValue = this.globalState.get(key);
+    this.globalState.set(key, value);
+
+    console.log(`🌐 [REFRESH-MANAGER] Global state updated: ${key} = ${value} (was ${oldValue})`);
+
+    // Update any elements watching this global state
+    this.updateField(key, value);
+
+    // Check and update conditional visibility
+    this.updateConditionalVisibility();
+  }
+
+  /**
+   * Get global state value
+   */
+  public getGlobalState(key: string): any {
+    return this.globalState.get(key);
+  }
+
+  /**
+   * Fetch and update global counts (like total project count)
+   */
+  public async refreshGlobalCounts(): Promise<void> {
+    try {
+      // Fetch project count - API uses session to determine access
+      // Clients see only their projects, Admins see all
+      const projectCountUrl = `/api/projects/get?count=true`;
+
+      console.log(`🌐 [REFRESH-MANAGER] Fetching global counts from ${projectCountUrl}`);
+
+      const response = await fetch(projectCountUrl);
+      if (!response.ok) {
+        console.error(`🌐 [REFRESH-MANAGER] Failed to fetch global counts: ${response.status}`);
+        return;
+      }
+
+      const data = await response.json();
+      const projectCount = data.count ?? data.projects?.length ?? 0;
+
+      console.log(
+        `🌐 [REFRESH-MANAGER] Fetched project count: ${projectCount} (was: ${this.globalState.get("projectCount")})`
+      );
+
+      // Update global state
+      this.setGlobalState("projectCount", projectCount);
+
+      // Dispatch custom event for other listeners
+      window.dispatchEvent(
+        new CustomEvent("globalCountsUpdated", {
+          detail: { projectCount },
+        })
+      );
+    } catch (error) {
+      console.error(`🌐 [REFRESH-MANAGER] Error fetching global counts:`, error);
+    }
+  }
+
+  /**
+   * Update visibility of elements based on data-condition attributes
+   *
+   * Format: data-condition="expression:action"
+   * Examples:
+   * - data-condition="projectCount>0:show" (show when count > 0)
+   * - data-condition="projectCount===0:hide" (hide when count === 0)
+   */
+  private updateConditionalVisibility(): void {
+    const elements = document.querySelectorAll("[data-condition]");
+
+    const currentProjectCount = this.globalState.get("projectCount");
+
+    // Don't update if projectCount hasn't been set yet
+    if (currentProjectCount === undefined) {
+      console.log(
+        `🔄 [REFRESH-MANAGER] updateConditionalVisibility() skipped - projectCount not set yet`
+      );
+      return;
+    }
+
+    console.log(
+      `🔄 [REFRESH-MANAGER] updateConditionalVisibility() called - projectCount=${currentProjectCount}, checking ${elements.length} elements`
+    );
+
+    elements.forEach((element, index) => {
+      const condition = element.getAttribute("data-condition");
+      if (!condition) return;
+
+      let shouldShow = false;
+
+      // Parse condition format: "expression:action"
+      const parts = condition.split(":");
+      if (parts.length === 2) {
+        const [expression, action] = parts;
+        const expressionResult = this.evaluateCondition(expression);
+
+        // If action is "show", element shows when expression is true
+        // If action is "hide", element hides when expression is true (so shows when false)
+        shouldShow = action === "show" ? expressionResult : !expressionResult;
+
+        console.log(
+          `🔄 [REFRESH-MANAGER] [${index}] condition="${condition}", expression="${expression}"=${expressionResult}, action="${action}", shouldShow=${shouldShow}`
+        );
+      } else {
+        // Legacy support for old format
+        if (condition === "show-if-empty") {
+          const projectCount = this.globalState.get("projectCount") ?? 0;
+          shouldShow = projectCount === 0;
+        } else if (condition === "show-if-has-items") {
+          const projectCount = this.globalState.get("projectCount") ?? 0;
+          shouldShow = projectCount > 0;
+        } else {
+          // Try to evaluate as expression
+          shouldShow = this.evaluateCondition(condition);
+        }
+        console.log(
+          `🔄 [REFRESH-MANAGER] [${index}] legacy condition="${condition}", shouldShow=${shouldShow}`
+        );
+      }
+
+      // Update visibility with animation
+      const currentlyHidden = element.classList.contains("hidden");
+
+      if (shouldShow && currentlyHidden) {
+        console.log(
+          `🔄 [REFRESH-MANAGER] ✅ [${index}] SHOWING element with condition: ${condition}`
+        );
+        element.classList.remove("hidden");
+        // Add fade-in animation
+        element.classList.add("animate-fadeIn");
+        setTimeout(() => element.classList.remove("animate-fadeIn"), 300);
+      } else if (!shouldShow && !currentlyHidden) {
+        console.log(
+          `🔄 [REFRESH-MANAGER] ❌ [${index}] HIDING element with condition: ${condition}`
+        );
+        // Add fade-out animation
+        element.classList.add("animate-fadeOut");
+        setTimeout(() => {
+          element.classList.add("hidden");
+          element.classList.remove("animate-fadeOut");
+        }, 300);
+      } else {
+        console.log(
+          `🔄 [REFRESH-MANAGER] ⏭️  [${index}] NO CHANGE for condition: ${condition} (hidden=${currentlyHidden}, shouldShow=${shouldShow})`
+        );
+      }
+    });
+  }
+
+  /**
+   * Evaluate a condition expression against global state
+   */
+  private evaluateCondition(condition: string): boolean {
+    try {
+      // Replace state keys with their values
+      let expression = condition;
+
+      // Log the original expression
+      console.log(`🔄 [REFRESH-MANAGER] Evaluating expression: "${condition}"`);
+
+      // Replace known state keys
+      this.globalState.forEach((value, key) => {
+        const regex = new RegExp(`\\b${key}\\b`, "g");
+        const before = expression;
+        expression = expression.replace(regex, String(value));
+        if (before !== expression) {
+          console.log(
+            `🔄 [REFRESH-MANAGER]   Replaced "${key}" with "${value}" -> "${expression}"`
+          );
+        }
+      });
+
+      // Safely evaluate simple expressions
+      // Only allow: numbers, operators (>, <, >=, <=, ===, !==, ==, !=), and, or
+      const safeExpression = /^[\d\s><=!&|()]+$/;
+      if (!safeExpression.test(expression)) {
+        console.warn(
+          `🔄 [REFRESH-MANAGER] ⚠️  Unsafe condition expression: ${condition} -> ${expression}`
+        );
+        return false;
+      }
+
+      // Use Function constructor for safe evaluation
+      const result = new Function(`return ${expression}`)();
+      console.log(`🔄 [REFRESH-MANAGER]   Result: ${expression} = ${result}`);
+      return result;
+    } catch (error) {
+      console.error(`🔄 [REFRESH-MANAGER] ❌ Error evaluating condition "${condition}":`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Register callback for global state changes
+   */
+  public onGlobalStateChange(key: string, callback: (value: any) => void): void {
+    this.registerCallback(key, callback);
   }
 }
 

@@ -191,7 +191,7 @@ export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [
     type: "field",
     elementType: "text",
     label: "Title",
-    placeholder: "Title",
+    placeholder: "A descriptive title for the project",
     dataField: "title",
     dataScrap: true,
     allow: ["Admin", "Staff", "Client"],

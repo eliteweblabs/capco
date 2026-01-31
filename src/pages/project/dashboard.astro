@@ -15,7 +15,6 @@ import { globalCompanyData } from "../api/global/global-company-data.ts";
 import { globalClasses } from "../api/global/global-classes.ts";
 import App from "../../components/ui/App.astro";
 import DashboardContent from "../../components/project/Dashboard.astro";
-import "../../lib/refresh-manager.ts";
 import type { Project } from "../../lib/api/_projects.ts";
 
 // ⚡ OPTIMIZATION: Run all data fetches in PARALLEL
@@ -169,22 +168,156 @@ const projects = projectsData;
   />
 </App>
 
-<script>
-  // Start the refresh manager with safe settings
-  import { refreshManager } from "../../lib/refresh-manager";
+<script src="../../lib/refresh-manager.ts"></script>
 
-  console.log("🔄 [DASHBOARD] Starting refresh manager with safe polling (30s interval)...");
+<script
+  define:vars={{ currentUserId: currentUser?.id, currentUserRole: currentUser?.profile?.role }}
+  is:inline
+>
+  console.log("🔄 [DASHBOARD-SCRIPT] ====== SCRIPT IS RUNNING ======");
+  console.log("🔄 [DASHBOARD-SCRIPT] currentUserId:", currentUserId);
+  console.log("🔄 [DASHBOARD-SCRIPT] currentUserRole:", currentUserRole);
+  console.log("🔄 [DASHBOARD-SCRIPT] window.refreshManager:", window.refreshManager);
+  console.log("🔄 [DASHBOARD-SCRIPT] document.readyState:", document.readyState);
+
+  // Start the refresh manager with safe settings
+  console.log("🔄 [DASHBOARD] Starting refresh manager initialization...");
+
+  // Wait for refreshManager to be available
+  function waitForRefreshManager() {
+    return new Promise((resolve, reject) => {
+      if (window.refreshManager) {
+        console.log("🔄 [DASHBOARD] RefreshManager already available");
+        resolve(window.refreshManager);
+        return;
+      }
+
+      console.log("🔄 [DASHBOARD] Waiting for RefreshManager...");
+      let attempts = 0;
+      const maxAttempts = 100; // 5 seconds max (100 * 50ms)
+
+      const checkInterval = setInterval(() => {
+        attempts++;
+
+        if (window.refreshManager) {
+          console.log("🔄 [DASHBOARD] RefreshManager now available after", attempts, "attempts");
+          clearInterval(checkInterval);
+          resolve(window.refreshManager);
+        } else if (attempts >= maxAttempts) {
+          console.error(
+            "🔄 [DASHBOARD] ❌ RefreshManager not available after",
+            attempts,
+            "attempts"
+          );
+          clearInterval(checkInterval);
+          reject(new Error("RefreshManager not available"));
+        } else if (attempts % 20 === 0) {
+          // Log every second
+          console.log("🔄 [DASHBOARD] Still waiting... attempt", attempts);
+        }
+      }, 50);
+    });
+  }
 
   // Wait for DOM to be fully loaded
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      console.log("🔄 [DASHBOARD] DOM loaded, initializing refresh manager");
-      refreshManager.startAutoRefreshWithInterval(5); // Poll every 5 seconds
-      console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
+    console.log("🔄 [DASHBOARD] Document is loading, adding DOMContentLoaded listener");
+    document.addEventListener("DOMContentLoaded", async () => {
+      console.log("🔄 [DASHBOARD] DOM loaded, waiting for refresh manager");
+      try {
+        const refreshManager = await waitForRefreshManager();
+        await initializeRefreshSystem(refreshManager);
+      } catch (error) {
+        console.error("🔄 [DASHBOARD] ❌ Failed to initialize refresh system:", error);
+        console.error(
+          "🔄 [DASHBOARD] Polling will not work. Please check that refresh-manager.ts is loaded."
+        );
+      }
     });
   } else {
-    console.log("🔄 [DASHBOARD] DOM already loaded, initializing refresh manager");
-    refreshManager.startAutoRefreshWithInterval(5); // Poll every 5 seconds
-    console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
+    console.log("🔄 [DASHBOARD] DOM already loaded, waiting for refresh manager");
+    waitForRefreshManager()
+      .then((refreshManager) => {
+        console.log("🔄 [DASHBOARD] Got refresh manager, calling initializeRefreshSystem");
+        return initializeRefreshSystem(refreshManager);
+      })
+      .catch((error) => {
+        console.error("🔄 [DASHBOARD] ❌ Failed to initialize refresh system:", error);
+        console.error(
+          "🔄 [DASHBOARD] Polling will not work. Please check that refresh-manager.ts is loaded."
+        );
+      });
   }
+
+  async function initializeRefreshSystem(refreshManager) {
+    // Fetch the actual count from the database immediately
+    console.log(`🌐 [DASHBOARD] Fetching initial project count from database...`);
+
+    // The API endpoint uses the session to determine what projects to count
+    // Clients see only their projects, Admins see all - handled server-side
+    const countUrl = "/api/projects/get?count=true";
+
+    console.log(`🌐 [DASHBOARD] Count URL: ${countUrl}`);
+
+    try {
+      const response = await fetch(countUrl);
+      if (response.ok) {
+        const data = await response.json();
+        const databaseCount = data.count || 0;
+        console.log(`🌐 [DASHBOARD] ✅ Database count: ${databaseCount}`);
+
+        // Set initial global state from database
+        refreshManager.setGlobalState("projectCount", databaseCount);
+      } else {
+        console.error(`🌐 [DASHBOARD] ❌ Failed to fetch count: ${response.status}`);
+        // Fallback: set to 0 and let polling update it
+        refreshManager.setGlobalState("projectCount", 0);
+      }
+    } catch (error) {
+      console.error(`🌐 [DASHBOARD] ❌ Error fetching initial count:`, error);
+      // Fallback: set to 0 and let polling update it
+      refreshManager.setGlobalState("projectCount", 0);
+    }
+
+    // Start the refresh manager for project-level updates
+    refreshManager.startAutoRefreshWithInterval(5); // Poll every 5 seconds
+
+    console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
+
+    // Start polling for global counts (check every 10 seconds)
+    const pollInterval = setInterval(async () => {
+      console.log(`🌐 [DASHBOARD] ⏰ Polling for global counts... (every 10s)`);
+      // No userId needed - API uses session to determine access
+      await refreshManager.refreshGlobalCounts();
+    }, 10000);
+
+    console.log(`🌐 [DASHBOARD] Global count polling started (every 10 seconds)`);
+
+    // Make refresh manager globally accessible for debugging
+    window.refreshManager = refreshManager;
+    window.manualRefreshCounts = async () => {
+      console.log(`🌐 [DASHBOARD] 🔧 Manual refresh triggered`);
+      await refreshManager.refreshGlobalCounts();
+    };
+
+    console.log(`🌐 [DASHBOARD] Debug: Run window.manualRefreshCounts() to manually check counts`);
+  }
+
+  // Listen for project deletions to update global count
+  document.addEventListener("projectDeleted", (event) => {
+    console.log("🗑️  [DASHBOARD] Project deleted, updating global count");
+    const currentCount = refreshManager.getGlobalState("projectCount") || 0;
+    const newCount = Math.max(0, currentCount - 1);
+    refreshManager.setGlobalState("projectCount", newCount);
+    console.log(`🌐 [DASHBOARD] Updated count: ${currentCount} -> ${newCount}`);
+  });
+
+  // Listen for project creations to update global count
+  document.addEventListener("projectCreated", (event) => {
+    console.log("➕ [DASHBOARD] Project created, updating global count");
+    const currentCount = refreshManager.getGlobalState("projectCount") || 0;
+    const newCount = currentCount + 1;
+    refreshManager.setGlobalState("projectCount", newCount);
+    console.log(`🌐 [DASHBOARD] Updated count: ${currentCount} -> ${newCount}`);
+  });
 </script>

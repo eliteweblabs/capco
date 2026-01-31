@@ -50,7 +50,7 @@ const {
 } = Astro.props;
 
 // Build button variant based on whether it's icon-only or with label
-const buttonVariant = "danger";
+const buttonVariant = "ghost";
 
 // Merge custom data attributes with internal ones
 const mergedDataAttributes = {
@@ -83,7 +83,7 @@ const mergedDataAttributes = {
           viewBox="0 0 44 44"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          class="timer-ring-overlay"
+          class="absolute top-0 left-0 timer-ring-overlay"
         >
           <circle
             cx="22"
@@ -172,52 +172,88 @@ const mergedDataAttributes = {
 <script>
   /**
    * Initialize delete confirm buttons
-   * Simple show/hide timer ring with data-state
+   * Completely self-contained - handles API calls and callbacks
    */
   function initDeleteConfirmButtons() {
-    console.log("[DeleteConfirmButton] Initializing...");
+    console.log("[DeleteConfirmButton] 🚀 Initializing delete confirm buttons...");
+
+    // Check how many buttons exist on page
+    const buttons = document.querySelectorAll(".delete-confirm-btn");
+    console.log(`[DeleteConfirmButton] Found ${buttons.length} delete buttons on page`);
+    buttons.forEach((btn, idx) => {
+      console.log(`[DeleteConfirmButton]   Button ${idx + 1}:`, btn.id, btn.className);
+    });
+
     const activeTimeouts = new Map<string, number>();
 
-    document.addEventListener("click", (e) => {
+    // Add click listener
+    document.addEventListener("click", async (e) => {
+      console.log("[DeleteConfirmButton] 🖱️  Click detected anywhere on page");
+
       const target = e.target as HTMLElement;
-      console.log("[DeleteConfirmButton] Click detected on:", target);
+      console.log("[DeleteConfirmButton]   Click target:", target.tagName, target.className);
 
       const button = target.closest(".delete-confirm-btn") as HTMLElement;
-      console.log("[DeleteConfirmButton] Found button:", button);
+      console.log("[DeleteConfirmButton]   Closest button found:", button ? button.id : "NONE");
 
-      if (!button) return;
+      if (!button) {
+        console.log("[DeleteConfirmButton]   ❌ Not a delete button, ignoring");
+        return;
+      }
 
-      console.log("[DeleteConfirmButton] Button clicked:", button.id);
+      console.log("[DeleteConfirmButton] ✅ Delete button clicked:", button.id);
 
       const buttonId = button.id;
       const timeout = parseInt(button.dataset.timeout || "3000", 10);
       const currentState = button.getAttribute("data-state") || "trash";
+      const apiEndpoint = button.dataset.apiEndpoint;
+      const callbackName = button.dataset.callback;
+      const itemType = button.dataset.itemType;
 
-      console.log("[DeleteConfirmButton] State:", currentState, "Timeout:", timeout);
+      console.log(
+        "[DeleteConfirmButton] State:",
+        currentState,
+        "API:",
+        apiEndpoint,
+        "Callback:",
+        callbackName,
+        "ItemType:",
+        itemType
+      );
 
       if (currentState === "trash") {
         // First click: Show timer ring
         e.stopPropagation();
-        console.log("[DeleteConfirmButton] First click - showing timer ring");
+        console.log("[DeleteConfirmButton] 🎯 FIRST CLICK - showing timer ring");
 
         // Find the wrapper and timer ring
         const wrapper = button.closest(".delete-confirm-wrapper") as HTMLElement;
+        console.log("[DeleteConfirmButton]   Wrapper found:", wrapper ? "YES" : "NO");
+
         const timerRing = wrapper?.querySelector(".timer-ring-overlay") as HTMLElement;
+        console.log("[DeleteConfirmButton]   Timer ring found:", timerRing ? "YES" : "NO");
+
         const timerCircle = timerRing?.querySelector(".timer-icon-test") as SVGCircleElement;
+        console.log("[DeleteConfirmButton]   Timer circle found:", timerCircle ? "YES" : "NO");
 
         if (timerCircle) {
+          console.log("[DeleteConfirmButton]   Resetting timer animation");
           // Reset animation by removing and re-adding class
           timerCircle.classList.remove("timer-icon-test");
           void (timerCircle as unknown as HTMLElement).offsetWidth; // Force reflow
           timerCircle.classList.add("timer-icon-test");
         }
 
+        console.log("[DeleteConfirmButton]   Setting state to 'confirm'");
         button.setAttribute("data-state", "confirm");
         button.title = "Click again to confirm deletion";
 
-        // Change icon to stopwatch (clock icon from boxicons)
+        // Change icon to stopwatch
         const iconElement = button.querySelector(".delete-confirm-icon") as SVGElement;
+        console.log("[DeleteConfirmButton]   Icon element found:", iconElement ? "YES" : "NO");
+
         if (iconElement) {
+          console.log("[DeleteConfirmButton]   Changing icon to stopwatch");
           iconElement.outerHTML = `<svg class="inline-block stopwatch-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="13" r="8"/>
             <path d="M12 9v4l2 2"/>
@@ -227,37 +263,26 @@ const mergedDataAttributes = {
 
         // Clear any existing timeout
         if (activeTimeouts.has(buttonId)) {
+          console.log("[DeleteConfirmButton]   Clearing existing timeout");
           clearTimeout(activeTimeouts.get(buttonId)!);
         }
 
         // Auto-revert after timeout
+        console.log(`[DeleteConfirmButton]   Setting ${timeout}ms auto-revert timeout`);
         const timeoutId = window.setTimeout(() => {
           if (button.getAttribute("data-state") === "confirm") {
-            console.log("[DeleteConfirmButton] Timeout expired");
-            button.setAttribute("data-state", "trash");
-            button.title = "Delete";
-
-            // Restore trash icon
-            const stopwatchIcon = button.querySelector(".stopwatch-icon") as SVGElement;
-            if (stopwatchIcon) {
-              stopwatchIcon.outerHTML = `<svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                <path d="M10 11v6"></path>
-                <path d="M14 11v6"></path>
-              </svg>`;
-            }
-
+            console.log("[DeleteConfirmButton] ⏰ Timeout expired, reverting button");
+            resetButton(button);
             activeTimeouts.delete(buttonId);
           }
         }, timeout);
 
         activeTimeouts.set(buttonId, timeoutId);
+        console.log("[DeleteConfirmButton] ✅ First click complete - waiting for confirmation");
       } else if (currentState === "confirm") {
         // Second click: Execute deletion
         e.stopPropagation();
-        console.log("[DeleteConfirmButton] Second click - confirming delete");
+        console.log("[DeleteConfirmButton] 🎯 SECOND CLICK - executing deletion");
 
         // Clear timeout
         if (activeTimeouts.has(buttonId)) {
@@ -265,35 +290,155 @@ const mergedDataAttributes = {
           activeTimeouts.delete(buttonId);
         }
 
-        button.setAttribute("data-state", "trash");
-        button.title = "Delete";
+        // Reset button immediately
+        resetButton(button);
 
-        // Restore trash icon
-        const stopwatchIcon = button.querySelector(".stopwatch-icon") as SVGElement;
-        if (stopwatchIcon) {
-          console.log("[DeleteConfirmButton] Restoring trash icon");
-          stopwatchIcon.outerHTML = `<svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"></path>
-            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-            <path d="M10 11v6"></path>
-            <path d="M14 11v6"></path>
-          </svg>`;
+        // Disable button during deletion
+        button.setAttribute("disabled", "true");
+
+        // Extract item ID from button ID
+        // Expected format: delete-{itemType}-{id} or custom format
+        const itemId = extractItemId(buttonId, itemType);
+
+        if (!itemId) {
+          console.error("[DeleteConfirmButton] Could not extract item ID from:", buttonId);
+          button.removeAttribute("disabled");
+          if ((window as any).showNotice) {
+            (window as any).showNotice("error", "Delete Failed", "Invalid item ID");
+          }
+          return;
         }
 
-        console.log("[DeleteConfirmButton] Dispatching deleteConfirmed event for:", buttonId);
+        console.log("[DeleteConfirmButton] Extracted item ID:", itemId);
 
-        // Dispatch custom event for parent to handle
-        const deleteEvent = new CustomEvent("deleteConfirmed", {
-          detail: { buttonId },
-          bubbles: true,
-          cancelable: true,
-        });
-        button.dispatchEvent(deleteEvent);
+        // Call API if endpoint provided
+        if (apiEndpoint) {
+          try {
+            console.log("[DeleteConfirmButton] Calling API:", apiEndpoint);
 
-        console.log("[DeleteConfirmButton] Delete event dispatched");
+            const response = await fetch(apiEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+              body: JSON.stringify({
+                itemId: itemId,
+                id: itemId, // Some APIs might expect 'id' instead
+              }),
+            });
+
+            const data = await response.json();
+
+            if (data.success || response.ok) {
+              console.log("[DeleteConfirmButton] API call successful");
+
+              // Call callback if provided
+              if (callbackName && typeof (window as any)[callbackName] === "function") {
+                console.log("[DeleteConfirmButton] Calling callback:", callbackName);
+                await (window as any)[callbackName](itemId);
+              } else {
+                // Show default success message
+                if ((window as any).showSuccess) {
+                  (window as any).showSuccess(
+                    "Deleted",
+                    `${itemType || "Item"} deleted successfully`,
+                    3000
+                  );
+                }
+              }
+            } else {
+              console.error("[DeleteConfirmButton] API returned error:", data.error);
+              if ((window as any).showNotice) {
+                (window as any).showNotice(
+                  "error",
+                  "Delete Failed",
+                  data.error || "Failed to delete item"
+                );
+              }
+            }
+          } catch (error) {
+            console.error("[DeleteConfirmButton] API call failed:", error);
+            if ((window as any).showNotice) {
+              (window as any).showNotice(
+                "error",
+                "Delete Failed",
+                "An error occurred while deleting"
+              );
+            }
+          } finally {
+            button.removeAttribute("disabled");
+          }
+        } else {
+          // No API endpoint - just call callback or dispatch event
+          console.log("[DeleteConfirmButton] No API endpoint, calling callback only");
+
+          if (callbackName && typeof (window as any)[callbackName] === "function") {
+            try {
+              await (window as any)[callbackName](itemId);
+            } catch (error) {
+              console.error("[DeleteConfirmButton] Callback error:", error);
+            }
+          }
+
+          button.removeAttribute("disabled");
+
+          // Dispatch event for backward compatibility
+          const deleteEvent = new CustomEvent("deleteConfirmed", {
+            detail: { buttonId, itemId, itemType },
+            bubbles: true,
+            cancelable: true,
+          });
+          button.dispatchEvent(deleteEvent);
+        }
       }
     });
+
+    function resetButton(button: HTMLElement) {
+      button.setAttribute("data-state", "trash");
+      button.title = button.dataset.originalTitle || "Delete";
+
+      // Restore trash icon
+      const stopwatchIcon = button.querySelector(".stopwatch-icon") as SVGElement;
+      if (stopwatchIcon) {
+        stopwatchIcon.outerHTML = `<svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+        </svg>`;
+      }
+    }
+
+    function extractItemId(buttonId: string, itemType?: string): number | null {
+      // Try different patterns to extract ID
+
+      // Pattern 1: delete-{itemType}-{id}
+      if (itemType) {
+        const pattern1 = new RegExp(`delete-${itemType}-(\\d+)`);
+        const match1 = buttonId.match(pattern1);
+        if (match1) {
+          return parseInt(match1[1], 10);
+        }
+      }
+
+      // Pattern 2: delete-{anything}-{id}
+      const pattern2 = /delete-\w+-(\d+)$/;
+      const match2 = buttonId.match(pattern2);
+      if (match2) {
+        return parseInt(match2[1], 10);
+      }
+
+      // Pattern 3: just the last number in the ID
+      const pattern3 = /(\d+)$/;
+      const match3 = buttonId.match(pattern3);
+      if (match3) {
+        return parseInt(match3[1], 10);
+      }
+
+      return null;
+    }
   }
 
   // Initialize on DOM ready

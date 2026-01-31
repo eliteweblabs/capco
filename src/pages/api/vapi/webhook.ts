@@ -67,7 +67,7 @@ interface VapiWebhookData {
   };
 }
 
-export const POST: APIRoute = async ({ request }): Promise<Response> => {
+export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
   try {
     // Extract calendarType and defaultUsername from URL query parameters
     const url = new URL(request.url);
@@ -77,17 +77,23 @@ export const POST: APIRoute = async ({ request }): Promise<Response> => {
     const body: VapiWebhookData = await request.json();
     const messageType = body.message?.type || "unknown";
 
+    // Extract user metadata from VAPI call
+    const callMetadata = (body as any).message?.call?.metadata || (body as any).call?.metadata;
+    const metadataUserId = callMetadata?.userId;
+    const metadataUserEmail = callMetadata?.userEmail;
+
     console.log(
       `[---VAPI-WEBHOOK] ${messageType}`,
       calendarType ? `(calendarType: ${calendarType})` : "",
-      defaultUsername ? `(defaultUsername: ${defaultUsername})` : ""
+      defaultUsername ? `(defaultUsername: ${defaultUsername})` : "",
+      metadataUserId ? `(userId: ${metadataUserId})` : ""
     );
 
     // Only process function calls and call end status
     if (body.message?.type === "function-call") {
-      return await handleFunctionCall(body.message.functionCall, calendarType, defaultUsername, request);
+      return await handleFunctionCall(body.message.functionCall, calendarType, defaultUsername, request, callMetadata);
     } else if (body.message?.type === "tool-calls") {
-      return await handleToolCalls(body.message, calendarType, defaultUsername, request);
+      return await handleToolCalls(body.message, calendarType, defaultUsername, request, callMetadata);
     }
 
     // Acknowledge all other messages without processing
@@ -117,7 +123,8 @@ async function handleToolCalls(
   message: any,
   calendarType: string = "calcom",
   defaultUsername?: string,
-  request?: Request
+  request?: Request,
+  callMetadata?: any
 ): Promise<Response> {
   try {
     console.log("[---VAPI-WEBHOOK] Processing tool calls...");
@@ -187,6 +194,12 @@ async function handleToolCalls(
 
         console.log(`[---VAPI-WEBHOOK] Creating project with params:`, args);
 
+        // Add user context from call metadata if available
+        if (callMetadata?.userId) {
+          console.log(`[---VAPI-WEBHOOK] Adding authorId from call metadata: ${callMetadata.userId}`);
+          args.authorId = callMetadata.userId;
+        }
+
         // Get base URL - fallback to environment variable if request not available
         let baseUrl: string;
         try {
@@ -200,13 +213,13 @@ async function handleToolCalls(
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Note: VAPI calls don't have user session, so we'll need to handle auth differently
-            // For now, we'll create projects without authorId (system-created)
-            // You may want to pass user info via VAPI assistant variables
+            // Pass user metadata from VAPI call for authentication
+            ...(callMetadata?.userId && { "X-User-Id": callMetadata.userId }),
+            ...(callMetadata?.userEmail && { "X-User-Email": callMetadata.userEmail }),
           },
           body: JSON.stringify({
             ...args,
-            // If authorId is provided, use it; otherwise create as system project
+            // Ensure authorId is set from call metadata
           }),
         });
 
@@ -251,6 +264,9 @@ async function handleToolCalls(
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            // Pass user metadata for authentication
+            ...(callMetadata?.userId && { "X-User-Id": callMetadata.userId }),
+            ...(callMetadata?.userEmail && { "X-User-Email": callMetadata.userEmail }),
           },
           body: JSON.stringify({
             title: args.title || "Conversation Memory",
@@ -258,6 +274,8 @@ async function handleToolCalls(
             category: args.category || "conversation_memory",
             tags: args.tags || [],
             priority: args.priority || 0,
+            // Add user context if available
+            userId: callMetadata?.userId,
           }),
         });
 
@@ -568,7 +586,8 @@ async function handleFunctionCall(
   functionCall: any,
   calendarType: string = "calcom",
   defaultUsername?: string,
-  request?: Request
+  request?: Request,
+  callMetadata?: any
 ): Promise<Response> {
   if (!functionCall) {
     return new Response(JSON.stringify({ success: false, error: "No function call provided" }), {

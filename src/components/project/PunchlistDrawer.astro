@@ -66,7 +66,7 @@ const projectId = project.id;
 
       const data = await response.json();
 
-      console.log("🔍 [TabPunchlist] data:", data);
+      // console.log("🔍 [TabPunchlist] data:", data);
       if (data.success) {
         punchlistItems = data.punchlist;
         renderPunchlistItems();
@@ -343,6 +343,7 @@ const projectId = project.id;
 
         // Update the incomplete punchlist items count
         updateIncompletePunchlistItemsCount();
+
         // Show success notification
         if (window.showNotice) {
           window.showNotice(
@@ -379,6 +380,9 @@ const projectId = project.id;
   document.addEventListener("DOMContentLoaded", function () {
     console.log("🔔 [PUNCHLIST] Punchlist component loaded, initializing...");
     setTimeout(initializePunchlist, 100);
+
+    // Initialize delete confirm buttons
+    initDeleteConfirmButtons();
 
     // Setup drawer toggle button
     const drawerToggle = document.getElementById("punchlist-drawer-toggle");
@@ -458,59 +462,146 @@ const projectId = project.id;
         touchEndY = 0;
       });
     }
+
+    // Add Punchlist Item functionality (Admin only)
+    const addPunchlistBtn = document.getElementById("add-punchlist-item-btn");
+    if (addPunchlistBtn && currentRole === "Admin") {
+      console.log("🔔 [PUNCHLIST] Add button found, attaching event listener");
+      addPunchlistBtn.addEventListener("click", async () => {
+        console.log("🔔 [PUNCHLIST] Add button clicked");
+        // Show the editable form by rendering the partial with editable=true
+        const punchlistContainer = document.getElementById("punchlist-items-list");
+        if (!punchlistContainer) {
+          console.error("🔔 [PUNCHLIST] punchlist-items-list container not found");
+          return;
+        }
+
+        // Check if form already exists
+        if (document.querySelector(".punchlist-item-new")) {
+          console.log("🔔 [PUNCHLIST] Form already open");
+          return;
+        }
+
+        try {
+          // Fetch the editable partial
+          const response = await fetch("/partials/punchlist-item", {
+            method: "GET",
+            headers: {
+              "Content-Type": "text/html",
+              "X-Editable": "true",
+              "X-Current-User-Role": currentRole,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to load form");
+          }
+
+          const formHtml = await response.text();
+
+          // Insert form at the top of the list
+          punchlistContainer.insertAdjacentHTML("afterbegin", formHtml);
+
+          // Attach event listeners to the new form
+          attachNewPunchlistFormHandlers();
+        } catch (error) {
+          console.error("Error loading punchlist form:", error);
+          if (window.showError) {
+            window.showError(
+              "Failed to Load Form",
+              "Unable to load punchlist form. Please try again.",
+              0
+            );
+          }
+        }
+      });
+    } else {
+      console.log("🔔 [PUNCHLIST] Add button not found or user not Admin");
+    }
   });
 
   // Make initializePunchlist globally available for tab switching
   window.initializePunchlist = initializePunchlist;
 
-  // Add Punchlist Item functionality (Admin only)
-  const addPunchlistBtn = document.getElementById("add-punchlist-item-btn");
-  if (addPunchlistBtn && currentRole === "Admin") {
-    addPunchlistBtn.addEventListener("click", async () => {
-      const title = prompt("Enter punchlist item title:");
-      if (!title || !title.trim()) return;
+  // Attach handlers to the new punchlist form
+  function attachNewPunchlistFormHandlers() {
+    const saveBtn = document.getElementById("save-new-punchlist-btn");
+    const cancelBtn = document.getElementById("cancel-new-punchlist-btn");
+    const messageInput = document.getElementById("new-punchlist-message");
 
-      const message = prompt("Enter punchlist item description (optional):", title);
-      if (message === null) return; // User cancelled
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => {
+        // Remove the form
+        const form = document.querySelector(".punchlist-item-new");
+        if (form) form.remove();
+      });
+    }
 
-      try {
-        const response = await fetch("/api/punchlist/upsert", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            projectId: currentProjectId,
-            title: title.trim(),
-            message: (message || title).trim(),
-            markCompleted: false,
-            internal: false,
-          }),
-        });
+    if (saveBtn && messageInput) {
+      saveBtn.addEventListener("click", async () => {
+        const message = messageInput.value.trim();
 
-        if (!response.ok) {
-          throw new Error("Failed to create punchlist item");
+        if (!message) {
+          if (window.showError) {
+            window.showError("Message Required", "Please enter a punchlist item.", 3000);
+          }
+          messageInput.focus();
+          return;
         }
 
-        // Reload punchlist items
-        await loadPunchlistItems(currentProjectId);
-        await renderPunchlistItems();
-        await updateIncompletePunchlistItemsCount();
+        // Disable button during save
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
 
-        if (window.showSuccess) {
-          window.showSuccess("Punchlist Item Added", "Successfully added new punchlist item", 3000);
+        try {
+          const response = await fetch("/api/punchlist/upsert", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              projectId: currentProjectId,
+              message: message,
+              markCompleted: false,
+              internal: false,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to create punchlist item");
+          }
+
+          // Remove the form
+          const form = document.querySelector(".punchlist-item-new");
+          if (form) form.remove();
+
+          // Reload punchlist items
+          await loadPunchlistItems(currentProjectId);
+          await renderPunchlistItems();
+          await updateIncompletePunchlistItemsCount();
+
+          if (window.showSuccess) {
+            window.showSuccess(
+              "Punchlist Item Added",
+              "Successfully added new punchlist item",
+              3000
+            );
+          }
+        } catch (error) {
+          console.error("Error adding punchlist item:", error);
+          if (window.showError) {
+            window.showError(
+              "Failed to Add Item",
+              "Unable to add punchlist item. Please try again.",
+              0
+            );
+          }
+          // Re-enable button
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="bx bx-check"></i> Save Item';
         }
-      } catch (error) {
-        console.error("Error adding punchlist item:", error);
-        if (window.showError) {
-          window.showError(
-            "Failed to Add Item",
-            "Unable to add punchlist item. Please try again.",
-            0
-          );
-        }
-      }
-    });
+      });
+    }
   }
 
   // Delete callback for punchlist items
@@ -533,4 +624,185 @@ const projectId = project.id;
       await renderPunchlistItems();
     }
   };
+
+  // Initialize delete confirm buttons for punchlist
+  function initDeleteConfirmButtons() {
+    console.log("[PUNCHLIST-DELETE] 🚀 Initializing delete confirm buttons...");
+
+    const activeTimeouts = new Map();
+
+    // Check for existing listener to avoid duplicates
+    if (window.__deleteButtonListenerAdded) {
+      console.log("[PUNCHLIST-DELETE] Listener already added, skipping");
+      return;
+    }
+    window.__deleteButtonListenerAdded = true;
+
+    // Add click listener
+    document.addEventListener("click", async (e) => {
+      const target = e.target;
+      const button = target.closest(".delete-confirm-btn");
+
+      if (!button) return;
+
+      // Only handle punchlist delete buttons
+      if (!button.id || !button.id.includes("delete-punchlist")) {
+        console.log("[PUNCHLIST-DELETE] Not a punchlist delete button, ignoring");
+        return;
+      }
+
+      console.log("[PUNCHLIST-DELETE] ✅ Punchlist delete button clicked:", button.id);
+
+      const buttonId = button.id;
+      const timeout = parseInt(button.dataset.timeout || "3000", 10);
+      const currentState = button.getAttribute("data-state") || "trash";
+      const apiEndpoint = button.dataset.apiEndpoint;
+      const callbackName = button.dataset.callback;
+      const itemType = button.dataset.itemType;
+
+      console.log("[PUNCHLIST-DELETE] State:", currentState, "API:", apiEndpoint);
+
+      if (currentState === "trash") {
+        // First click
+        e.stopPropagation();
+        console.log("[PUNCHLIST-DELETE] 🎯 FIRST CLICK - showing confirm state");
+
+        // Find the wrapper and timer ring
+        const wrapper = button.closest(".delete-confirm-wrapper");
+        const timerRing = wrapper?.querySelector(".timer-ring-overlay");
+        const timerCircle = timerRing?.querySelector(".timer-icon-test");
+
+        if (timerCircle) {
+          console.log("[PUNCHLIST-DELETE] Resetting timer animation");
+          // Reset animation
+          timerCircle.classList.remove("timer-icon-test");
+          void timerCircle.offsetWidth; // Force reflow
+          timerCircle.classList.add("timer-icon-test");
+        }
+
+        button.setAttribute("data-state", "confirm");
+        button.title = "Click again to confirm deletion";
+
+        // Change icon to stopwatch
+        const iconElement = button.querySelector(".delete-confirm-icon");
+        if (iconElement) {
+          console.log("[PUNCHLIST-DELETE] Changing icon to stopwatch");
+          iconElement.outerHTML = `<svg class="inline-block stopwatch-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"/>
+            <path d="M12 9v4l2 2"/>
+            <path d="M10 2h4"/>
+          </svg>`;
+        }
+
+        // Clear any existing timeout
+        if (activeTimeouts.has(buttonId)) {
+          clearTimeout(activeTimeouts.get(buttonId));
+        }
+
+        // Auto-revert after timeout
+        const timeoutId = setTimeout(() => {
+          if (button.getAttribute("data-state") === "confirm") {
+            console.log("[PUNCHLIST-DELETE] ⏰ Timeout expired, reverting");
+            resetButton(button);
+            activeTimeouts.delete(buttonId);
+          }
+        }, timeout);
+
+        activeTimeouts.set(buttonId, timeoutId);
+        console.log("[PUNCHLIST-DELETE] ✅ Waiting for confirmation...");
+      } else if (currentState === "confirm") {
+        // Second click
+        e.stopPropagation();
+        console.log("[PUNCHLIST-DELETE] 🎯 SECOND CLICK - executing deletion");
+
+        // Clear timeout
+        if (activeTimeouts.has(buttonId)) {
+          clearTimeout(activeTimeouts.get(buttonId));
+          activeTimeouts.delete(buttonId);
+        }
+
+        // Reset button immediately
+        resetButton(button);
+
+        button.setAttribute("disabled", "true");
+
+        // Extract item ID from button ID (format: delete-punchlist-{id})
+        const itemIdMatch = buttonId.match(/delete-punchlist-(\d+)$/);
+        const itemId = itemIdMatch ? parseInt(itemIdMatch[1], 10) : null;
+
+        console.log("[PUNCHLIST-DELETE] Extracted item ID:", itemId);
+
+        if (!itemId) {
+          console.error("[PUNCHLIST-DELETE] ❌ Could not extract item ID from:", buttonId);
+          button.removeAttribute("disabled");
+          if (window.showNotice) {
+            window.showNotice("error", "Delete Failed", "Invalid item ID");
+          }
+          return;
+        }
+
+        if (apiEndpoint) {
+          try {
+            console.log("[PUNCHLIST-DELETE] 📡 Calling API:", apiEndpoint);
+
+            const response = await fetch(apiEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+              body: JSON.stringify({
+                itemId: itemId,
+              }),
+            });
+
+            const data = await response.json();
+            console.log("[PUNCHLIST-DELETE] Response:", data);
+
+            if (data.success || response.ok) {
+              console.log("[PUNCHLIST-DELETE] ✅ API call successful");
+
+              // Call callback
+              if (callbackName && typeof window[callbackName] === "function") {
+                console.log("[PUNCHLIST-DELETE] 📞 Calling callback:", callbackName);
+                await window[callbackName](itemId);
+              }
+            } else {
+              console.error("[PUNCHLIST-DELETE] ❌ API error:", data.error);
+              if (window.showNotice) {
+                window.showNotice("error", "Delete Failed", data.error || "Failed to delete");
+              }
+            }
+          } catch (error) {
+            console.error("[PUNCHLIST-DELETE] ❌ Exception:", error);
+            if (window.showNotice) {
+              window.showNotice("error", "Delete Failed", "An error occurred");
+            }
+          } finally {
+            button.removeAttribute("disabled");
+          }
+        }
+      }
+    });
+
+    // Helper function to reset button to initial state
+    function resetButton(button) {
+      button.setAttribute("data-state", "trash");
+      button.title = "Delete punchlist item";
+
+      // Restore trash icon
+      const stopwatchIcon = button.querySelector(".stopwatch-icon");
+      if (stopwatchIcon) {
+        stopwatchIcon.outerHTML = `<svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+        </svg>`;
+      }
+    }
+
+    console.log("[PUNCHLIST-DELETE] ✅ Click listener attached");
+  }
 </script>

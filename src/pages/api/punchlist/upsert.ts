@@ -157,7 +157,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .insert({
           projectId: parseInt(projectId),
           authorId: currentUser.id,
-          title: title || message.substring(0, 100),
           message,
           markCompleted: markCompleted || false,
           internal: internal || false,

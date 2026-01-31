@@ -81,6 +81,9 @@ const settings = {
 
   // Social Networks (array of {url: string, label?: string})
   socialNetworks: companyData.socialNetworks || [],
+
+  // Custom CSS (advanced customization)
+  customCss: companyData.customCss || "",
 };
 ---
 
@@ -389,6 +392,62 @@ const settings = {
             <p class="text-xs text-gray-500 mt-1">
               Paste your complete Plausible tracking script here. Get this from your Plausible
               dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom CSS -->
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-2">Custom CSS</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Add custom CSS to override styles or add unique styling to your site. This CSS will be
+          injected into every page.
+        </p>
+        <div
+          class="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800"
+        >
+          <p class="text-xs text-yellow-800 dark:text-yellow-200">
+            <strong>⚠️ Advanced:</strong> Only use this if you're familiar with CSS. Invalid CSS may
+            break the site's appearance. CSS is applied globally and will affect all pages.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label for="custom_css" class="block text-sm font-medium mb-2">
+              Custom CSS
+              {
+                isFromDatabase("custom_css") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
+            </label>
+            <textarea
+              id="custom_css"
+              name="custom_css"
+              rows="12"
+              class={globalInputClasses + " font-mono text-xs"}
+              placeholder={`/* Example: Override button styles */
+.btn-primary {
+  background-color: #ff6b6b;
+  border-radius: 12px;
+}
+
+/* Example: Custom utility class */
+.custom-highlight {
+  background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}`}>{settings.customCss}</textarea
+            >
+            <p class="text-xs text-gray-500 mt-1">
+              Enter custom CSS rules. Changes take effect immediately after saving. Use CSS
+              variables like <code>var(--color-primary-500)</code> for consistent theming.
             </p>
           </div>
         </div>
@@ -1337,6 +1396,7 @@ const settings = {
       og_image: "og_image",
       plausible_tracking_script: "plausible_tracking_script",
       social_networks: "social_networks",
+      custom_css: "custom_css",
     };
 
     // Validation errors

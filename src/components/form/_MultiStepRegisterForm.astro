@@ -1,0 +1,1471 @@
+---
+// Multi-step registration form component with AOS animations
+import Button from "../common/Button.astro";
+import SimpleIcon from "../common/SimpleIcon.astro";
+import SlotMachineModalStaff from "./SlotMachineModalStaff.astro";
+import { SMS_UTILS } from "../../lib/sms-utils";
+
+import { globalClasses } from "../../pages/api/global/global-classes";
+const { globalInputClasses } = globalClasses();
+const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
+
+// Get carrier options for the modal
+const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
+  value: carrier.id,
+  label: carrier.name,
+}));
+
+// Button templates - change these props to customize all buttons at once
+const nextButtonProps = {
+  type: "button" as const,
+  variant: "secondary" as const,
+  size: "lg" as const,
+  class: "next-step",
+  icon: "arrow-right",
+  iconPosition: "right" as const,
+};
+
+const prevButtonProps = {
+  type: "button" as const,
+  variant: "anchor" as const,
+  size: "lg" as const,
+  class: "prev-step",
+  icon: "arrow-left",
+  iconPosition: "left" as const,
+  iconClasses: "",
+};
+const submitButtonProps = {
+  type: "button" as const,
+  variant: "secondary" as const,
+  size: "lg" as const,
+  class: "next-step submit-registration",
+  icon: "arrow-right",
+  iconPosition: "right" as const,
+};
+---
+
+<!-- Full Screen Registration -->
+<div class="relative w-full flex px-4 py-8 max-w-lg">
+  <div class="w-full max-w-3xl">
+    <!-- <div class="mx-auto my-4 w-full max-w-3xl"> --><!-- Progress Bar -->
+    <div class="mb-6 sm:mb-12" data-aos="fade-up">
+      <div class="relative">
+        <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+          <div
+            id="progress-bar"
+            class="h-full rounded-full bg-primary-500 transition-all duration-500 ease-out"
+            style="width: 0%"
+          >
+          </div>
+        </div>
+        <div class="mt-3 text-center">
+          <span id="progress-text" class="text-sm font-medium text-gray-600 dark:text-gray-400">
+            1 / 8
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-step Form -->
+    <form id="multi-step-form" action="/api/auth/register" method="post">
+      <!-- Step 1: Email -->
+      <div class="step-content active" data-step="1">
+        <div class="space-y-8 sm:space-y-12 lg:space-y-16">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+            <h2 class="text-5xl font-bold text-gray-900 dark:text-white">Your email?</h2>
+          </div>
+
+          <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+            <input
+              type="email"
+              name="email"
+              id="step-email"
+              placeholder="your.email@example.com"
+              required
+              autocomplete="email"
+              class={`${appendedGlobalInputClasses}`}
+              data-error="Please enter a valid email address"
+            />
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+            <Button
+              {...prevButtonProps}
+              href="/auth/login"
+              variant="anchor"
+              class="prev-step"
+              icon="arrow-left"
+              iconPosition="left"
+            >
+              Login
+            </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "2" }}> next </Button>
+          </div>
+        </div>
+        <div
+          class="mx-auto w-full max-w-lg my-6 md:my-8 lg:my-12"
+          data-aos="fade-up"
+          data-aos-delay="600"
+        >
+          <div>
+            <hr class="mt-14 h-0 border-t border-zinc-300 dark:border-zinc-600" />
+            <p class="-mt-2.5 text-center text-xs mb-14">
+              <span class="px-4 color-background">Or</span>
+            </p>
+          </div>
+
+          <Button
+            variant="outline"
+            fullWidth
+            name="provider"
+            value="google"
+            onclick="handleGoogleSignup()"
+            class=""
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid"
+              viewBox="0 0 256 262"
+              class="mr-2 inline-flex h-5 w-auto"
+            >
+              <path
+                fill="#4285F4"
+                d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
+              ></path>
+              <path
+                fill="#34A853"
+                d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
+              ></path>
+              <path
+                fill="#FBBC05"
+                d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
+              ></path>
+              <path
+                fill="#EB4335"
+                d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
+              ></path>
+            </svg>
+            Register with Google
+          </Button>
+        </div>
+      </div>
+
+      <!-- Step 2: Name -->
+      <div class="step-content" data-step="2">
+        <div class="space-y-8 sm:space-y-12 lg:space-y-16">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="user" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="text-5xl font-bold text-gray-900 dark:text-white">Your name?</h2>
+            <p class="hidden text-lg text-gray-600 dark:text-gray-400">
+              Help us get to know you better
+            </p>
+          </div>
+
+          <div
+            class="grid grid-cols-1 gap-6 md:grid-cols-2"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          >
+            <div class="input-wrapper">
+              <label
+                for="step-first-name"
+                class="hidden mb-2 block text-center text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                First Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="firstName"
+                id="step-first-name"
+                placeholder="John"
+                required
+                autocomplete="given-name"
+                class={`${appendedGlobalInputClasses}`}
+                data-error="Please enter your first name"
+              />
+            </div>
+
+            <div class="input-wrapper">
+              <label
+                for="step-last-name"
+                class="hidden mb-2 block text-center text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Last Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="lastName"
+                id="step-last-name"
+                placeholder="Doe"
+                required
+                autocomplete="family-name"
+                class={`${appendedGlobalInputClasses}`}
+                data-error="Please enter your last name"
+              />
+            </div>
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "1" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "3" }}> next </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Company -->
+      <div class="step-content" data-step="3">
+        <div class="space-y-8 sm:space-y-12 lg:space-y-16">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon
+                name="building-2"
+                size="xl"
+                class="text-primary-600 dark:text-primary-400"
+              />
+            </div>
+            <h2 class="text-5xl font-bold text-gray-900 dark:text-white">Your company?</h2>
+            <p class="hidden text-lg text-gray-600 dark:text-gray-400">
+              Tell us where you work or the company you represent
+            </p>
+          </div>
+
+          <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+            <input
+              type="text"
+              name="companyName"
+              id="step-company-name"
+              placeholder="Acme Corporation"
+              required
+              autocomplete="organization"
+              class={`${appendedGlobalInputClasses}`}
+              data-error="Please enter your company name"
+            />
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="450">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "2" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "4" }}> next </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Password -->
+      <div class="step-content" data-step="4">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="150">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="lock" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">Create a password</h2>
+            <p class="hidden text-lg text-gray-600 dark:text-gray-400">minimum 6 characters</p>
+          </div>
+
+          <div class="input-wrapper" data-aos="fade-up" data-aos-delay="300">
+            <input
+              type="password"
+              name="password"
+              id="step-password"
+              placeholder="Enter your password"
+              required
+              minlength="6"
+              autocomplete="new-password"
+              class={`${appendedGlobalInputClasses}`}
+              data-error="Password must be at least 6 characters"
+            />
+            <p class="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+              6 characters minimum
+            </p>
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "3" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "5" }}> next </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Phone -->
+      <div class="step-content" data-step="5">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="phone" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">Your phone?</h2>
+          </div>
+
+          <div data-aos="fade-up" data-aos-delay="200">
+            <div class="input-wrapper">
+              <input
+                type="tel"
+                id="step-phone"
+                name="phone"
+                placeholder="1-(555)-123-4567 (optional)"
+                autocomplete="tel"
+                class={`${appendedGlobalInputClasses}`}
+              />
+            </div>
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
+            <Button
+              {...prevButtonProps}
+              size="lg"
+              class="prev-step px-12 text-lg"
+              dataAttributes={{ "data-prev": "4" }}
+            >
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <Button
+              {...nextButtonProps}
+              dataAttributes={{ "data-next": "6" }}
+              class={`${nextButtonProps.class} next-step-phone`}
+            >
+              <span id="next-step-phone-text">Skip</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6: SMS Consent -->
+      <div class="step-content" data-step="6">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="message" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">
+              Opt-in to SMS<span class="hidden sm:inline"> alerts</span>?
+            </h2>
+            <p class="text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+              Not for marketing.<br />Communication and project updates only.
+            </p>
+          </div>
+
+          <!-- Hidden input to store SMS alerts value -->
+          <input type="hidden" name="smsAlerts" id="step-sms-alerts" value="false" />
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="200">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "5" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <div class="flex gap-3">
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                class="sms-choice"
+                dataAttributes={{ "data-next": "8", "data-sms-value": "false" }}
+              >
+                no
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                class="sms-choice"
+                dataAttributes={{ "data-next": "7", "data-sms-value": "true" }}
+              >
+                yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 7: Mobile Carrier (only shown if SMS alerts = yes) -->
+      <div class="step-content" data-step="7">
+        <div class="space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+            <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 hidden"
+            >
+              <SimpleIcon name="wifi" size="xl" class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 class="mb-3 text-5xl font-bold text-gray-900 dark:text-white">
+              your mobile carrier?
+            </h2>
+            <p class="text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+              This helps us deliver SMS messages to your phone.
+            </p>
+          </div>
+
+          <div class="input-wrapper" data-aos="fade-up" data-aos-delay="200">
+            <SlotMachineModalStaff
+              title="Select your carrier"
+              id="step-carrier"
+              buttonVariant="primary"
+              name="mobileCarrier"
+              options={mobileCarrierOptions}
+              selectedValue=""
+              buttonClass="w-full"
+              placeholder="Select your carrier..."
+              icon="wifi"
+              buttonVariant="outline"
+              globalInputClasses={appendedGlobalInputClasses}
+            />
+          </div>
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
+            <Button {...prevButtonProps} dataAttributes={{ "data-prev": "6" }}>
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <Button {...nextButtonProps} dataAttributes={{ "data-next": "8" }}> next </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 8: Review & Submit -->
+      <div class="step-content" data-step="8">
+        <div class="space-y-4 sm:space-y-8">
+          <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+            <!-- <div
+              class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
+            >
+              <SimpleIcon
+                name="check-circle"
+                size="xl"
+                class="text-green-600 dark:text-green-400"
+              />
+            </div> -->
+            <h2 class="hidden sm:block mb-3 text-5xl font-bold text-gray-900 dark:text-white">
+              Almost there!
+            </h2>
+            <p class="text-lg text-gray-600 dark:text-gray-400 hidden md:block">
+              Review your information and create your account
+            </p>
+          </div>
+
+          <!-- Review Summary -->
+          <div
+            class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background"
+            data-aos="fade-up"
+            data-aos-delay="200"
+          >
+            <div
+              class="flex items-start justify-between border-b border-gray-200 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Email</p>
+                <p id="review-email" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="1"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Name</p>
+                <p id="review-name" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="2"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Company</p>
+                <p id="review-company" class="text-lg font-medium text-gray-900 dark:text-white">
+                  -
+                </p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="3"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Password</p>
+                <p id="review-password" class="text-lg font-medium text-gray-900 dark:text-white">
+                  ••••••
+                </p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="4"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Phone</p>
+                <p id="review-phone" class="text-lg font-medium text-gray-900 dark:text-white">-</p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="5"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div
+              class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
+            >
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">SMS Alerts</p>
+                <p id="review-sms-alerts" class="text-lg font-medium text-gray-900 dark:text-white">
+                  -
+                </p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="6"
+              >
+                Edit
+              </button>
+            </div>
+
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Mobile Carrier</p>
+                <p id="review-carrier" class="text-lg font-medium text-gray-900 dark:text-white">
+                  -
+                </p>
+              </div>
+              <button
+                type="button"
+                class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                data-edit="7"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+
+          <input type="hidden" name="role" value="Client" />
+
+          <div class="flex justify-between gap-3" data-aos="fade-up" data-aos-delay="300">
+            <Button
+              {...prevButtonProps}
+              size="lg"
+              class="prev-step px-12 text-lg prev-step-review"
+              dataAttributes={{ "data-prev": "7" }}
+            >
+              <span class="hidden md:block"> back </span>
+            </Button>
+            <Button {...submitButtonProps}> create account </Button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- <div class="mb-4 flex justify-center">
+  <Button
+    type="button"
+    variant="ghost"
+    fullWidth
+    size="md"
+    class="google-signup-btn"
+    onclick="handleGoogleSignup()"
+  >
+    <span class="">or Sign Up with Google </span>
+  </Button>
+</div> -->
+
+<!-- </div> -->
+
+<style>
+  .step-content {
+    display: none;
+  }
+
+  .step-content.active {
+    display: block;
+  }
+</style>
+
+<script>
+  import { getSupabaseClient } from "../../lib/supabase-client";
+  import { validatePhone, formatPhoneAsYouType } from "../../lib/phone-validation";
+
+  // Handle Google Signup with client-side OAuth (ensures code verifier is stored in localStorage)
+  async function handleGoogleSignup() {
+    console.log("[GOOGLE-SIGNUP] Initiating client-side Google OAuth...");
+
+    // CRITICAL: Clear any stale auth state before starting new OAuth flow
+    // This prevents "Invalid Refresh Token" errors from interfering with code verifier storage
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+    if (supabaseUrl) {
+      const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+      const staleKeys = Object.keys(localStorage).filter(
+        (k) => k.includes(`sb-${supabaseProjectRef}`) && !k.includes("code-verifier")
+      );
+      if (staleKeys.length > 0) {
+        console.log("[GOOGLE-SIGNUP] Clearing stale auth state before OAuth:", staleKeys);
+        staleKeys.forEach((k) => localStorage.removeItem(k));
+      }
+    }
+
+    // Get singleton Supabase client (prevents multiple GoTrueClient instances)
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      console.error("[GOOGLE-SIGNUP] Supabase configuration missing");
+      if (window.showNotice) {
+        window.showNotice(
+          "error",
+          "Configuration Error",
+          "Supabase is not configured. Please contact support."
+        );
+      }
+      return;
+    }
+
+    // CRITICAL: Ensure Supabase client is fully initialized before initiating OAuth
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // Get the redirect URL based on current origin
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+    console.log("[GOOGLE-SIGNUP] Redirect URL:", redirectUrl);
+
+    // Initiate OAuth client-side (this will store code verifier in localStorage)
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+            scope: "openid email profile",
+          },
+        },
+      });
+
+      if (error) {
+        console.error("[GOOGLE-SIGNUP] OAuth error:", error);
+        if (window.showNotice) {
+          window.showNotice("error", "Authentication Error", error.message);
+        }
+        return;
+      }
+
+      if (data?.url) {
+        // CRITICAL: Wait for code verifier to be stored before redirecting
+        // This is essential for first-time auth - without it, the callback won't have the verifier
+        if (supabaseUrl) {
+          const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+          const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
+
+          console.log("[GOOGLE-SIGNUP] Waiting for code verifier to be stored in localStorage...");
+
+          // Wait for code verifier with retry logic
+          let codeVerifier = localStorage.getItem(codeVerifierKey);
+          let attempts = 0;
+          const maxAttempts = 20; // Increased to give more time
+          const retryDelay = 100; // Check every 100ms
+
+          while (!codeVerifier && attempts < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+            codeVerifier = localStorage.getItem(codeVerifierKey);
+            attempts++;
+
+            if (attempts % 5 === 0) {
+              console.log(
+                `[GOOGLE-SIGNUP] Still waiting for code verifier... (attempt ${attempts}/${maxAttempts})`
+              );
+            }
+          }
+
+          if (codeVerifier) {
+            console.log(
+              "[GOOGLE-SIGNUP] ✅ Code verifier confirmed in localStorage, redirecting..."
+            );
+            console.log(`[GOOGLE-SIGNUP] Code verifier length: ${codeVerifier.length} characters`);
+          } else {
+            console.error("[GOOGLE-SIGNUP] ❌ Code verifier NOT found after waiting!");
+            console.error("[GOOGLE-SIGNUP] This will cause authentication to fail on callback");
+            console.error(
+              "[GOOGLE-SIGNUP] Available localStorage keys:",
+              Object.keys(localStorage).filter(
+                (k) => k.includes("supabase") || k.includes("sb-") || k.includes("auth")
+              )
+            );
+
+            // Don't proceed if code verifier is missing - this will cause the callback to fail
+            if (window.showNotice) {
+              window.showNotice(
+                "error",
+                "Authentication Error",
+                "Failed to initialize authentication. Please try again."
+              );
+            }
+            return;
+          }
+        }
+
+        console.log("[GOOGLE-SIGNUP] Redirecting to OAuth provider...");
+        // Redirect to Google OAuth
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("[GOOGLE-SIGNUP] Unexpected error:", err);
+      if (window.showNotice) {
+        window.showNotice(
+          "error",
+          "Authentication Error",
+          err instanceof Error ? err.message : "An unexpected error occurred"
+        );
+      }
+    }
+  }
+
+  // Make function globally available
+  (window as any).handleGoogleSignup = handleGoogleSignup;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("multi-step-form") as HTMLFormElement;
+    if (!form) return;
+
+    const progressBar = document.getElementById("progress-bar") as HTMLElement;
+    const progressText = document.getElementById("progress-text") as HTMLElement;
+    let currentStep = 1;
+    const totalSteps = 8;
+
+    // Phone input formatting
+    const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+    const phoneButtonText = document.getElementById("next-step-phone-text") as HTMLElement;
+
+    if (phoneInput) {
+      let lastValue = "";
+
+      phoneInput.addEventListener("input", (e) => {
+        const input = e.target as HTMLInputElement;
+        const cursorPosition = input.selectionStart || 0;
+
+        // Format as user types
+        const formatted = formatPhoneAsYouType(input.value);
+
+        // Detect if user is deleting (value got shorter)
+        const wasDeleting = input.value.length < lastValue.length;
+
+        // Update the value
+        input.value = formatted;
+        lastValue = formatted;
+
+        // Improve cursor position handling
+        if (wasDeleting) {
+          // On delete, keep cursor where it was
+          input.setSelectionRange(cursorPosition, cursorPosition);
+        } else {
+          // On input, move cursor to end
+          input.setSelectionRange(formatted.length, formatted.length);
+        }
+
+        // Update button text based on phone validation
+        if (phoneButtonText) {
+          if (!formatted || formatted.trim() === "") {
+            // Empty: show "Skip"
+            phoneButtonText.textContent = "Skip";
+          } else {
+            // Check if it's a complete phone number (10+ digits)
+            const digitsOnly = formatted.replace(/\D/g, "");
+            if (digitsOnly.length >= 10 && validatePhone(formatted)) {
+              // Complete and valid: show "next"
+              phoneButtonText.textContent = "next";
+            } else {
+              // Has content but incomplete or invalid: show "Skip"
+              phoneButtonText.textContent = "Skip";
+            }
+          }
+        }
+      });
+    }
+
+    // Update progress bar
+    function updateProgress() {
+      const progress = (currentStep / totalSteps) * 100;
+      if (progressBar) progressBar.style.width = `${progress}%`;
+      if (progressText) progressText.textContent = `${currentStep} / ${totalSteps}`;
+    }
+
+    // Show specific step with AOS refresh
+    function showStep(stepNumber: number) {
+      const steps = document.querySelectorAll(".step-content");
+
+      steps.forEach((step) => {
+        step.classList.remove("active");
+      });
+
+      const targetStep = document.querySelector(`.step-content[data-step="${stepNumber}"]`);
+      if (targetStep) {
+        targetStep.classList.add("active");
+        currentStep = stepNumber;
+        updateProgress();
+
+        // Update review section if on final step
+        if (currentStep === 8) {
+          updateReviewSection();
+        }
+
+        // Update phone button text if on step 5
+        if (currentStep === 5) {
+          const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+          const phoneButtonText = document.getElementById("next-step-phone-text") as HTMLElement;
+          if (phoneInput && phoneButtonText) {
+            const phoneValue = phoneInput.value || "";
+            const digitsOnly = phoneValue.replace(/\D/g, "");
+
+            if (!phoneValue || phoneValue.trim() === "") {
+              phoneButtonText.textContent = "Skip";
+            } else if (digitsOnly.length >= 10 && validatePhone(phoneValue)) {
+              phoneButtonText.textContent = "next";
+            } else {
+              phoneButtonText.textContent = "Skip";
+            }
+          }
+        }
+
+        // Refresh AOS animations for the new step
+        setTimeout(() => {
+          // @ts-ignore - AOS loaded from CDN
+          if (typeof AOS !== "undefined") AOS.refresh();
+
+          // Special handling for step 6 (SMS consent) - focus the "yes" button
+          if (stepNumber === 6) {
+            setTimeout(() => {
+              // Find the "yes" button (has data-sms-value="true")
+              const yesButton = targetStep.querySelector(
+                'button[data-sms-value="true"]'
+              ) as HTMLElement;
+              if (yesButton) {
+                // Add focus outline classes
+                // yesButton.classList.add(
+                //   "!outline",
+                //   "!outline-2",
+                //   "!outline-dashed",
+                //   "!outline-primary-500",
+                //   "!outline-offset-2",
+                //   "dark:!outline-primary-400"
+                // );
+                // Also focus for accessibility
+                yesButton.focus();
+              }
+            }, 100);
+          } else {
+            // Delay auto-focus to allow AOS animations to trigger first
+            // This is especially important for elements with hide-on-form-focus class
+            setTimeout(() => {
+              const firstInput = targetStep.querySelector(
+                "input:not([type=hidden])"
+              ) as HTMLElement;
+              if (firstInput) firstInput.focus();
+            }, 400); // Give AOS time to animate elements before hiding them
+          }
+        }, 100);
+      }
+    }
+
+    // Validate current step
+    async function validateStep(stepNumber: number): Promise<boolean> {
+      const stepEl = document.querySelector(`.step-content[data-step="${stepNumber}"]`);
+      if (!stepEl) return false;
+
+      const inputs = stepEl.querySelectorAll("input[required]");
+      let isValid = true;
+
+      // Basic validation first
+      for (const input of inputs) {
+        const inputEl = input as HTMLInputElement;
+        if (!inputEl.checkValidity()) {
+          isValid = false;
+          inputEl.classList.add("touched");
+
+          // Show error using modal if available
+          if (window.showNotice) {
+            const errorMsg =
+              inputEl.getAttribute("data-error") || "Please fill in this field correctly";
+            window.showNotice("error", "Validation Error", errorMsg, 3000);
+          }
+          return false;
+        }
+      }
+
+      // Additional server-side validation for specific fields
+      if (stepNumber === 1) {
+        // Validate email uniqueness
+        const emailInput = stepEl.querySelector('input[name="email"]') as HTMLInputElement;
+        if (emailInput && emailInput.value) {
+          const emailValid = await validateEmailUniqueness(emailInput.value);
+          if (!emailValid) {
+            isValid = false;
+            emailInput.classList.add("touched");
+            if (window.showNotice) {
+              window.showNotice(
+                "warning",
+                "Email Already Registered",
+                "This email is already registered. <br><br><a href='/auth/login' class='text-primary-600 hover:text-primary-500 underline'>Click here to log in instead</a>",
+                8000
+              );
+            }
+            return false;
+          }
+        }
+      }
+
+      if (stepNumber === 3) {
+        // Validate company name (optional - could add business logic here)
+        const companyInput = stepEl.querySelector('input[name="companyName"]') as HTMLInputElement;
+        if (companyInput && companyInput.value) {
+          // Add any company-specific validation here if needed
+          // For now, just ensure it's not empty (already handled by required)
+        }
+      }
+
+      // Special validation for phone field (Step 5)
+      if (stepNumber === 5) {
+        const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+        const phoneValue = phoneInput?.value?.trim() || "";
+
+        // Only validate if phone is provided (it's optional)
+        if (phoneValue && !validatePhone(phoneValue)) {
+          if (window.showNotice) {
+            window.showNotice(
+              "error",
+              "Invalid Phone Number",
+              "Please enter a valid US phone number",
+              3000
+            );
+          }
+          phoneInput?.classList.add("touched");
+          return false;
+        }
+      }
+
+      // Special validation for carrier field (Step 7) - only if SMS alerts is enabled
+      if (stepNumber === 7) {
+        const smsAlertsInput = document.getElementById("step-sms-alerts") as HTMLInputElement;
+        const smsEnabled = smsAlertsInput && smsAlertsInput.value === "true";
+
+        if (smsEnabled) {
+          const carrierInput = document.getElementById("step-carrier-value") as HTMLInputElement;
+          if (carrierInput && !carrierInput.value) {
+            if (window.showNotice) {
+              window.showNotice(
+                "error",
+                "Validation Error",
+                "Please select your mobile carrier",
+                3000
+              );
+            }
+            return false;
+          }
+        }
+      }
+
+      return isValid;
+    }
+
+    // Validate email uniqueness
+    async function validateEmailUniqueness(email: string): Promise<boolean> {
+      try {
+        const response = await fetch("/api/auth/check-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        });
+
+        if (!response.ok) {
+          console.error("Email validation request failed");
+          return true; // Allow progression if validation fails
+        }
+
+        const result = await response.json();
+        return result.available !== false; // true if available, false if taken
+      } catch (error) {
+        console.error("Email validation error:", error);
+        return true; // Allow progression if validation fails
+      }
+    }
+
+    // Update review section
+    function updateReviewSection() {
+      const email =
+        (document.getElementById("step-email") as HTMLInputElement)?.value || "Not provided";
+      const firstName =
+        (document.getElementById("step-first-name") as HTMLInputElement)?.value || "";
+      const lastName = (document.getElementById("step-last-name") as HTMLInputElement)?.value || "";
+      const company =
+        (document.getElementById("step-company-name") as HTMLInputElement)?.value || "Not provided";
+      const password =
+        (document.getElementById("step-password") as HTMLInputElement)?.value || "Not provided";
+      const phone =
+        (document.getElementById("step-phone") as HTMLInputElement)?.value || "Not provided";
+
+      // Get SMS Alerts value
+      const smsAlertsInput = document.getElementById("step-sms-alerts") as HTMLInputElement;
+      const smsAlertsValue = smsAlertsInput?.value || "false";
+      const smsAlerts = smsAlertsValue === "true" ? "Yes" : "No";
+
+      // Get Mobile Carrier value (from hidden input created by SlotMachineModalStaff)
+      const carrierInput = document.getElementById("step-carrier-value") as HTMLInputElement;
+      const carrierValue = carrierInput?.value || "";
+
+      // Get carrier display text from the button (shows the selected carrier name)
+      const carrierButton = document.getElementById("step-carrier") as HTMLElement;
+      const carrierDisplay = carrierButton?.textContent?.trim() || "Not provided";
+      const carrier = carrierValue ? carrierDisplay : "Not provided";
+
+      const reviewEmail = document.getElementById("review-email");
+      const reviewName = document.getElementById("review-name");
+      const reviewCompany = document.getElementById("review-company");
+      const reviewPassword = document.getElementById("review-password");
+      const reviewPhone = document.getElementById("review-phone");
+      const reviewSmsAlerts = document.getElementById("review-sms-alerts");
+      const reviewCarrier = document.getElementById("review-carrier");
+
+      if (reviewEmail) reviewEmail.textContent = email;
+      if (reviewName) reviewName.textContent = `${firstName} ${lastName}`.trim() || "Not provided";
+      if (reviewCompany) reviewCompany.textContent = company;
+      if (reviewPassword) reviewPassword.textContent = password ? "••••••" : "Not provided";
+      if (reviewPhone) reviewPhone.textContent = phone;
+      if (reviewSmsAlerts) reviewSmsAlerts.textContent = smsAlerts;
+      if (reviewCarrier) reviewCarrier.textContent = carrier;
+    }
+
+    // Handle next step buttons
+    form.addEventListener("click", async (e) => {
+      const target = e.target as HTMLElement;
+      const nextBtn = target.closest(".next-step");
+      const prevBtn = target.closest(".prev-step");
+      const editBtn = target.closest(".edit-step");
+      const smsChoiceBtn = target.closest(".sms-choice");
+
+      // Handle SMS consent choice buttons
+      if (smsChoiceBtn) {
+        e.preventDefault();
+        const smsValue = smsChoiceBtn.getAttribute("data-sms-value");
+        const nextStep = parseInt(smsChoiceBtn.getAttribute("data-next") || "8");
+
+        // Store SMS alerts value
+        const smsAlertsInput = document.getElementById("step-sms-alerts") as HTMLInputElement;
+        if (smsAlertsInput) {
+          smsAlertsInput.value = smsValue || "false";
+        }
+
+        showStep(nextStep);
+        return;
+      }
+
+      if (nextBtn) {
+        e.preventDefault();
+        let nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
+
+        // Check if this is the submit button (step 8)
+        if (nextBtn.classList.contains("submit-registration")) {
+          // Trigger form submission instead of moving to next step
+          form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+          return;
+        }
+
+        // Special handling for phone step (step 5)
+        if (currentStep === 5 && nextBtn.classList.contains("next-step-phone")) {
+          const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+          const phoneValue = phoneInput?.value?.trim() || "";
+
+          // If no phone number entered, skip to step 8 (review)
+          if (!phoneValue) {
+            nextStep = 8;
+            // Clear SMS alerts since no phone was provided
+            const smsAlertsInput = document.getElementById("step-sms-alerts") as HTMLInputElement;
+            if (smsAlertsInput) {
+              smsAlertsInput.value = "false";
+            }
+            showStep(nextStep);
+            return;
+          }
+
+          // If phone entered, validate it before proceeding
+          if (!validateStep(currentStep)) {
+            return; // Stop if validation fails
+          }
+
+          // Validation passed, proceed to step 6 (SMS consent)
+          showStep(nextStep);
+          return;
+        }
+
+        // Show loading state
+        // const originalText = nextBtn.textContent;
+        // nextBtn.textContent = "Validating...";
+        (nextBtn as HTMLButtonElement).disabled = true;
+
+        // Validate current step before moving forward
+        try {
+          const isValid = await validateStep(currentStep);
+          if (isValid) {
+            showStep(nextStep);
+          }
+        } catch (error) {
+          console.error("Validation error:", error);
+          if (window.showNotice) {
+            window.showNotice(
+              "error",
+              "Validation Error",
+              "An error occurred during validation. Please try again.",
+              3000
+            );
+          }
+        } finally {
+          // Restore button state
+          // nextBtn.textContent = originalText;
+          (nextBtn as HTMLButtonElement).disabled = false;
+        }
+      }
+
+      if (prevBtn) {
+        // Check if this is a link - if so, allow normal navigation
+        const isLink =
+          prevBtn.tagName === "A" || prevBtn.hasAttribute("href") || prevBtn.closest("a");
+        if (isLink) {
+          // Allow the link to navigate normally
+          return;
+        }
+        e.preventDefault();
+        let prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
+
+        // Special handling for review step (step 8) going back
+        if (currentStep === 8 && prevBtn.classList.contains("prev-step-review")) {
+          const phoneInput = document.getElementById("step-phone") as HTMLInputElement;
+          const phoneValue = phoneInput?.value?.trim() || "";
+
+          // If no phone number, skip back to step 5 (phone)
+          if (!phoneValue) {
+            prevStep = 5;
+          }
+          // If phone exists, go back to step 7 (carrier) as normal
+        }
+
+        showStep(prevStep);
+      }
+
+      if (editBtn) {
+        e.preventDefault();
+        const editStep = parseInt(editBtn.getAttribute("data-edit") || "1");
+        showStep(editStep);
+      }
+    });
+
+    // Add touched class to inputs after user interaction
+    const inputs = form.querySelectorAll("input[required]");
+    inputs.forEach((input) => {
+      input.addEventListener("blur", async () => {
+        input.classList.add("touched");
+        // Real-time validation for email field
+        const inputEl = input as HTMLInputElement;
+        if (inputEl.name === "email" && inputEl.value) {
+          const emailValid = await validateEmailUniqueness(inputEl.value);
+          if (!emailValid) {
+            inputEl.classList.add("border-red-500");
+            if (window.showNotice) {
+              window.showNotice(
+                "warning",
+                "Email Already Registered",
+                "This email is already registered. <br><br><a href='/auth/login' class='text-primary-600 hover:text-primary-500 underline'>Click here to log in instead</a>",
+                8000
+              );
+            }
+          } else {
+            inputEl.classList.remove("border-red-500");
+          }
+        }
+      });
+      input.addEventListener("input", () => {
+        input.classList.add("touched");
+        // Remove error styling when user starts typing
+        const inputEl = input as HTMLInputElement;
+        if (inputEl.name === "email") {
+          inputEl.classList.remove("border-red-500");
+        }
+      });
+    });
+
+    // Handle submit button click (for step 6)
+    const submitBtn = form.querySelector(".submit-registration");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      });
+    }
+
+    // Handle form submission
+    let isSubmitting = false;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // Prevent double submission
+      if (isSubmitting) {
+        console.log("[REGISTER] Already submitting, ignoring duplicate submission");
+        return;
+      }
+
+      // Validate final step before submission
+      const isValid = await validateStep(currentStep);
+      if (!isValid) {
+        console.error("[REGISTER] Final step validation failed");
+        return;
+      }
+
+      isSubmitting = true;
+      const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      const originalButtonText = submitButton?.textContent || "new account";
+
+      // Disable submit button and show loading state
+      if (submitButton) {
+        submitButton.disabled = true;
+        // submitButton.textContent = "Creating Account...";
+      }
+
+      const formData = new FormData(form);
+
+      // Show loading notification
+      if (window.showNotice) {
+        window.showNotice(
+          "info",
+          "Creating Account...",
+          "Please wait while we set up your account.",
+          10000
+        );
+      }
+
+      try {
+        console.log("[REGISTER] Submitting registration form...");
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          body: formData,
+          headers: {
+            // Don't set Content-Type - let browser set it with boundary for FormData
+          },
+        });
+
+        console.log("[REGISTER] Response status:", response.status, response.statusText);
+
+        // Check if response is OK before parsing
+        if (!response.ok) {
+          const contentType = response.headers.get("content-type");
+          let errorData: any = { error: "Registration failed" };
+
+          if (contentType && contentType.includes("application/json")) {
+            try {
+              errorData = await response.json();
+            } catch (parseError) {
+              console.error("[REGISTER] Failed to parse error response:", parseError);
+            }
+          } else {
+            const text = await response.text();
+            console.error("[REGISTER] Non-JSON error response:", text);
+            errorData = { error: `Server error: ${response.status} ${response.statusText}` };
+          }
+
+          // Handle specific error types
+          if (response.status === 400 && errorData.error) {
+            if (window.showNotice) {
+              window.showNotice(
+                "error",
+                "Registration Failed",
+                errorData.error + (errorData.details ? `: ${errorData.details}` : ""),
+                8000
+              );
+            }
+          } else {
+            if (window.showNotice) {
+              window.showNotice(
+                "error",
+                "Registration Failed",
+                errorData.error || `Server error (${response.status}). Please try again.`,
+                8000
+              );
+            }
+          }
+
+          isSubmitting = false;
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
+
+        // Parse successful response
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Server returned non-JSON response. Please try again.");
+        }
+
+        const result = await response.json();
+        console.log("[REGISTER] Registration result:", result);
+
+        // Check for success
+        if (result.success === false || result.error) {
+          if (window.showNotice) {
+            window.showNotice(
+              "error",
+              "Registration Failed",
+              result.error || result.details || "Failed to create account. Please try again.",
+              8000
+            );
+          }
+          isSubmitting = false;
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
+
+        // Success!
+        if (result.success !== false && !result.error) {
+          if (result.session) {
+            if (window.showNotice) {
+              window.showNotice(
+                "success",
+                "Account Created!",
+                "Welcome! You're now signed in and ready to create projects.",
+                3000
+              );
+            }
+          } else {
+            if (window.showNotice) {
+              window.showNotice(
+                "success",
+                "Account Created!",
+                "Your account has been created. Please sign in to continue.",
+                3000
+              );
+            }
+          }
+
+          // Redirect to appropriate page
+          setTimeout(() => {
+            const redirectUrl =
+              result.redirect || (result.session ? "/project/new" : "/auth/login");
+            console.log("[REGISTER] Redirecting to:", redirectUrl);
+            window.location.href = redirectUrl;
+          }, 2000);
+        }
+      } catch (error) {
+        console.error("[REGISTER] Registration error:", error);
+
+        let errorMessage = "An unexpected error occurred. Please try again.";
+
+        if (error instanceof Error) {
+          console.error("[REGISTER] Error details:", error.message, error.stack);
+          if (error.message.includes("non-JSON response")) {
+            errorMessage = "Server error occurred. Please try again in a moment.";
+          } else if (error.message.includes("Failed to fetch") || error.name === "TypeError") {
+            errorMessage = "Network error. Please check your connection and try again.";
+          } else {
+            errorMessage = error.message || errorMessage;
+          }
+        }
+
+        if (window.showNotice) {
+          window.showNotice("error", "Registration Failed", errorMessage, 8000);
+        }
+
+        isSubmitting = false;
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalButtonText;
+        }
+      }
+    });
+
+    // Handle Enter key to move to next step
+    form.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+
+        // Find next button in current step
+        const currentStepEl = document.querySelector(`.step-content[data-step="${currentStep}"]`);
+        const nextBtn = currentStepEl?.querySelector(".next-step") as HTMLElement;
+
+        if (nextBtn && currentStep < totalSteps) {
+          nextBtn.click();
+        } else if (currentStep === totalSteps) {
+          // Submit form on last step
+          const submitBtn = form.querySelector(".submit-registration") as HTMLElement;
+          if (submitBtn) {
+            submitBtn.click();
+          } else {
+            form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+          }
+        }
+      }
+    });
+
+    // Initialize
+    updateProgress();
+
+    // Initial AOS refresh and focus first input
+    setTimeout(() => {
+      // @ts-ignore - AOS loaded from CDN
+      if (typeof AOS !== "undefined") AOS.refresh();
+
+      // Focus first input after AOS animations complete
+      setTimeout(() => {
+        const firstStep = document.querySelector('.step-content[data-step="1"]');
+        if (firstStep && firstStep.classList.contains("active")) {
+          const firstInput = firstStep.querySelector("input:not([type=hidden])") as HTMLElement;
+          if (firstInput) {
+            firstInput.focus();
+          }
+        }
+      }, 400); // Same delay as in showStep function
+    }, 100);
+  });
+</script>

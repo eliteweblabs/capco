@@ -1,0 +1,448 @@
+---
+// Reusable multi-step form component that renders from JSON configuration
+import type { MultiStepFormConfig } from "../../lib/multi-step-form-config";
+import { getButtonConfig } from "../../lib/multi-step-form-config";
+import Button from "../common/Button.astro";
+import SimpleIcon from "../common/SimpleIcon.astro";
+import SlotMachineModalStaff from "./SlotMachineModalStaff.astro";
+import InlineAddressSearch from "./InlineAddressSearch.astro";
+import { SMS_UTILS } from "../../lib/sms-utils";
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+interface Props {
+  config: MultiStepFormConfig;
+  containerClass?: string;
+}
+
+const { config, containerClass = "w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8" } = Astro.props;
+
+const { globalInputClasses } = globalClasses();
+const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
+
+// Get carrier options for mobile carrier component
+const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
+  value: carrier.id,
+  label: carrier.name,
+}));
+---
+
+<div class={containerClass}>
+  {
+    config.progressBar && (
+      <div class="mb-6 sm:mb-12">
+        <div class="relative">
+          <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+            <div
+              id={`${config.formId}-progress-bar`}
+              class="h-full rounded-full bg-primary-500 transition-all duration-500 ease-out"
+              style="width: 0%"
+            />
+          </div>
+          <div class="mt-3 text-center">
+            <span
+              id={`${config.formId}-progress-text`}
+              class="text-sm font-medium text-gray-600 dark:text-gray-400"
+            >
+              1 / {config.totalSteps}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  <form id={config.formId} action={config.formAction} method={config.formMethod || "post"}>
+    {
+      config.steps.map((step) => (
+        <div
+          class="step-content"
+          data-step={step.stepNumber}
+          class:list={[step.stepNumber === 1 ? "active" : ""]}
+        >
+          <div class="space-y-8 sm:space-y-12 lg:space-y-16">
+            {/* Step Header */}
+            <div class="text-center">
+              {step.showIcon && step.icon && (
+                <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+                  <SimpleIcon
+                    name={step.icon}
+                    size="xl"
+                    class="text-primary-600 dark:text-primary-400"
+                  />
+                </div>
+              )}
+              <h2 class="text-5xl font-bold text-gray-900 dark:text-white">{step.title}</h2>
+              {step.subtitle && (
+                <p class="mt-3 text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                  {step.subtitle}
+                </p>
+              )}
+            </div>
+
+            {/* Step Fields */}
+            {step.isReview ? (
+              // Review step - show summary
+              <div class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background">
+                {step.reviewFields?.map((fieldName) => (
+                  <div class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700 last:border-b-0">
+                    <div>
+                      <p class="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                        {fieldName.replace(/([A-Z])/g, " $1").trim()}
+                      </p>
+                      <p
+                        id={`review-${fieldName}`}
+                        class="text-lg font-medium text-gray-900 dark:text-white"
+                      >
+                        {fieldName === "password" ? "••••••" : "-"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                      data-edit={
+                        config.steps.findIndex((s) => s.fields.some((f) => f.name === fieldName)) +
+                        1
+                      }
+                    >
+                      Edit
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                class:list={[
+                  step.fieldLayout === "grid"
+                    ? "grid grid-cols-1 gap-6 md:grid-cols-2"
+                    : "space-y-6",
+                ]}
+              >
+                {step.fields.map((field) => (
+                  <div class:list={["input-wrapper", field.columns === 1 ? "md:col-span-2" : ""]}>
+                    {field.type === "component" && field.component === "SlotMachineModalStaff" ? (
+                      <SlotMachineModalStaff
+                        id={field.id}
+                        name={field.name}
+                        title={field.componentProps?.title || "Select option"}
+                        options={mobileCarrierOptions}
+                        selectedValue=""
+                        globalInputClasses={appendedGlobalInputClasses}
+                        {...field.componentProps}
+                      />
+                    ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
+                      <InlineAddressSearch
+                        id={field.id}
+                        name={field.name}
+                        globalInputClasses={appendedGlobalInputClasses}
+                        {...field.componentProps}
+                      />
+                    ) : field.type === "textarea" ? (
+                      <textarea
+                        id={field.id}
+                        name={field.name}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                        rows={field.rows || 4}
+                        autocomplete={field.autocomplete}
+                        class={appendedGlobalInputClasses}
+                        data-error={field.errorMessage}
+                      />
+                    ) : (
+                      <input
+                        type={field.type === "component" ? "text" : field.type}
+                        id={field.id}
+                        name={field.name}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                        autocomplete={field.autocomplete}
+                        minlength={field.minlength}
+                        autofocus={field.autofocus}
+                        class={appendedGlobalInputClasses}
+                        data-error={field.errorMessage}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Google OAuth (for registration form only) */}
+            {step.additionalContent === "google-oauth" && (
+              <div class="mx-auto w-full max-w-lg my-6 md:my-8 lg:my-12">
+                <div>
+                  <hr class="mt-14 h-0 border-t border-zinc-300 dark:border-zinc-600" />
+                  <p class="-mt-2.5 text-center text-xs mb-14">
+                    <span class="px-4 color-background">Or</span>
+                  </p>
+                </div>
+
+                <Button
+                  variant="outline"
+                  fullWidth
+                  name="provider"
+                  value="google"
+                  onclick="handleGoogleSignup()"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    preserveAspectRatio="xMidYMid"
+                    viewBox="0 0 256 262"
+                    class="mr-2 inline-flex h-5 w-auto"
+                  >
+                    <path
+                      fill="#4285F4"
+                      d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
+                    />
+                    <path
+                      fill="#EB4335"
+                      d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
+                    />
+                  </svg>
+                  Register with Google
+                </Button>
+              </div>
+            )}
+
+            {/* Step Buttons */}
+            <div class="flex justify-between gap-3">
+              {step.buttons.map((button) => {
+                const btnConfig = getButtonConfig(
+                  button,
+                  config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
+                );
+
+                return button.type === "choice" ? (
+                  <Button
+                    type="button"
+                    variant={button.variant || "secondary"}
+                    size={button.size || "lg"}
+                    class="sms-choice"
+                    dataAttributes={{
+                      "data-next": button.dataNext?.toString(),
+                      "data-sms-value": button.dataValue,
+                    }}
+                  >
+                    {button.label}
+                  </Button>
+                ) : button.href ? (
+                  <Button
+                    type="button"
+                    variant={button.variant || "anchor"}
+                    size={button.size || "lg"}
+                    icon={button.icon}
+                    iconPosition={button.iconPosition}
+                    href={button.href}
+                    class={`${button.type}-step ${button.classes || ""}`}
+                  >
+                    <span class="hidden md:block">{button.label}</span>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant={button.variant || btnConfig.variant}
+                    size={button.size || btnConfig.size}
+                    icon={button.icon || btnConfig.icon}
+                    iconPosition={button.iconPosition || btnConfig.iconPosition}
+                    class={`${button.type}-step ${button.classes || ""} ${button.type === "submit" ? "submit-registration submit-contact" : ""}`}
+                    dataAttributes={{
+                      "data-next": button.dataNext?.toString(),
+                      "data-prev": button.dataPrev?.toString(),
+                    }}
+                  >
+                    {button.label === "back" ? (
+                      <span class="hidden md:block">{button.label}</span>
+                    ) : (
+                      <span
+                        id={
+                          button.classes?.includes("phone")
+                            ? `${config.formId}-next-step-phone-text`
+                            : undefined
+                        }
+                      >
+                        {button.label}
+                      </span>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ))
+    }
+
+    {/* Hidden Fields */}
+    {
+      config.hiddenFields?.map((field) => (
+        <input type="hidden" name={field.name} value={field.value} />
+      ))
+    }
+  </form>
+</div>
+
+<style>
+  .step-content {
+    display: none;
+  }
+
+  .step-content.active {
+    display: block;
+  }
+
+  #multi-step-contact-form {
+    width: 80dvw;
+    max-width: 680px;
+  }
+</style>
+
+<script>
+  import { createMultiStepFormHandler } from "../../lib/multi-step-form-handler";
+  import { getSupabaseClient } from "../../lib/supabase-client";
+
+  // Handle Google Signup (for registration form)
+  async function handleGoogleSignup() {
+    console.log("[GOOGLE-SIGNUP] Initiating client-side Google OAuth...");
+
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+    if (supabaseUrl) {
+      const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+      const staleKeys = Object.keys(localStorage).filter(
+        (k) => k.includes(`sb-${supabaseProjectRef}`) && !k.includes("code-verifier")
+      );
+      if (staleKeys.length > 0) {
+        console.log("[GOOGLE-SIGNUP] Clearing stale auth state before OAuth:", staleKeys);
+        staleKeys.forEach((k) => localStorage.removeItem(k));
+      }
+    }
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error("[GOOGLE-SIGNUP] Supabase configuration missing");
+      if (window.showNotice) {
+        window.showNotice(
+          "error",
+          "Configuration Error",
+          "Supabase is not configured. Please contact support."
+        );
+      }
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+    console.log("[GOOGLE-SIGNUP] Redirect URL:", redirectUrl);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+            scope: "openid email profile",
+          },
+        },
+      });
+
+      if (error) {
+        console.error("[GOOGLE-SIGNUP] OAuth error:", error);
+        if (window.showNotice) {
+          window.showNotice("error", "Authentication Error", error.message);
+        }
+        return;
+      }
+
+      if (data?.url) {
+        if (supabaseUrl) {
+          const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+          const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
+
+          console.log("[GOOGLE-SIGNUP] Waiting for code verifier to be stored in localStorage...");
+
+          let codeVerifier = localStorage.getItem(codeVerifierKey);
+          let attempts = 0;
+          const maxAttempts = 20;
+          const retryDelay = 100;
+
+          while (!codeVerifier && attempts < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+            codeVerifier = localStorage.getItem(codeVerifierKey);
+            attempts++;
+
+            if (attempts % 5 === 0) {
+              console.log(
+                `[GOOGLE-SIGNUP] Still waiting for code verifier... (attempt ${attempts}/${maxAttempts})`
+              );
+            }
+          }
+
+          if (codeVerifier) {
+            console.log(
+              "[GOOGLE-SIGNUP] ✅ Code verifier confirmed in localStorage, redirecting..."
+            );
+          } else {
+            console.error("[GOOGLE-SIGNUP] ❌ Code verifier NOT found after waiting!");
+            if (window.showNotice) {
+              window.showNotice(
+                "error",
+                "Authentication Error",
+                "Failed to initialize authentication. Please try again."
+              );
+            }
+            return;
+          }
+        }
+
+        console.log("[GOOGLE-SIGNUP] Redirecting to OAuth provider...");
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("[GOOGLE-SIGNUP] Unexpected error:", err);
+      if (window.showNotice) {
+        window.showNotice(
+          "error",
+          "Authentication Error",
+          err instanceof Error ? err.message : "An unexpected error occurred"
+        );
+      }
+    }
+  }
+
+  // Make function globally available
+  (window as any).handleGoogleSignup = handleGoogleSignup;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Get form ID from first form element
+    const forms = document.querySelectorAll("form[id^='multi-step-']");
+
+    forms.forEach((formElement) => {
+      const form = formElement as HTMLFormElement;
+      const formId = form.id;
+
+      // Count steps
+      const steps = form.querySelectorAll(".step-content");
+      const totalSteps = steps.length;
+
+      console.log(`[MULTISTEP-FORM] Initializing form: ${formId} with ${totalSteps} steps`);
+
+      // Create and initialize form handler
+      const handler = createMultiStepFormHandler(formId, totalSteps, {
+        onStepChange: (stepNumber) => {
+          console.log(`[MULTISTEP-FORM] Changed to step ${stepNumber}`);
+        },
+      });
+
+      handler.init();
+    });
+  });
+</script>

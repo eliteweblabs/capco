@@ -115,6 +115,9 @@ export const globalCompanyData = async () => {
 
     // Social Networks (stored as JSON array of {url: string, label?: string})
     socialNetworks: parseSocialNetworks(get("social_networks")),
+
+    // Custom CSS (allows per-client CSS overrides and customization)
+    customCss: get("custom_css") || "",
   };
 };
 

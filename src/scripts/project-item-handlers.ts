@@ -9,7 +9,7 @@
  * @param newValue - The new value to set
  * @param formatDisplay - Optional function to format the display value
  */
-window.updateProjectField = async function (
+(window as any).updateProjectField = async function (
   element: HTMLElement,
   newValue: any,
   formatDisplay?: (value: any) => string
@@ -112,9 +112,9 @@ window.updateProjectField = async function (
 /**
  * Adjust due date by hours (uses generic function)
  */
-window.adjustDueDate = async function (projectId: number, hours: number) {
+(window as any).adjustDueDate = async function (projectId: number, hours: number) {
   console.log(`🎯 [ADJUST] adjustDueDate called: projectId=${projectId}, hours=${hours}`);
-  
+
   const input = document.getElementById(`due-date-${projectId}`) as HTMLInputElement;
   if (!input) {
     console.error(`❌ [ADJUST] Input not found for project ${projectId}`);
@@ -150,7 +150,7 @@ window.adjustDueDate = async function (projectId: number, hours: number) {
   // Debounce the actual save
   const metaName = "dueDate";
   const timeoutKey = `fieldTimeout_${projectId}_${metaName}`;
-  
+
   if ((window as any)[timeoutKey]) {
     console.log(`⏱️  [ADJUST] Clearing existing timeout for ${timeoutKey}`);
     clearTimeout((window as any)[timeoutKey]);
@@ -167,7 +167,7 @@ window.adjustDueDate = async function (projectId: number, hours: number) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: parseInt(projectId),
+          id: projectId.toString(),
           dueDate: newISO,
         }),
       });
@@ -219,7 +219,7 @@ window.adjustDueDate = async function (projectId: number, hours: number) {
 /**
  * Update time display every minute
  */
-window.updateTimeDisplay = function () {
+(window as any).updateTimeDisplay = function () {
   const timeElements = document.querySelectorAll("[data-time-since-update]");
 
   timeElements.forEach((element) => {
@@ -261,7 +261,7 @@ window.updateTimeDisplay = function () {
 /**
  * Get file icon SVG based on file type
  */
-window.getFileIcon = function (fileType: string) {
+(window as any).getFileIcon = function (fileType: string) {
   const type = (fileType || "").toLowerCase();
 
   if (type.includes("pdf")) {
@@ -339,7 +339,7 @@ window.getFileIcon = function (fileType: string) {
 /**
  * Render file icons with tooltips
  */
-window.renderFileIcons = function () {
+(window as any).renderFileIcons = function () {
   console.log("📁 [RENDER-FILE-ICONS] Called");
   // Dynamic import of tooltip helper
   import("../lib/tooltip-styles").then(({ generateTooltipHTML }) => {
@@ -354,7 +354,9 @@ window.renderFileIcons = function () {
       }
 
       const projectFiles = JSON.parse(projectFilesData);
-      console.log(`📁 [RENDER-FILE-ICONS] Container ${container.id} has ${projectFiles?.length || 0} files`);
+      console.log(
+        `📁 [RENDER-FILE-ICONS] Container ${container.id} has ${projectFiles?.length || 0} files`
+      );
 
       if (!projectFiles || projectFiles.length === 0) {
         return;
@@ -382,8 +384,8 @@ window.renderFileIcons = function () {
 };
 
 // Initialize time display updates (once globally)
-if (!window.__timeDisplayInitialized) {
-  window.__timeDisplayInitialized = true;
+if (!(window as any).__timeDisplayInitialized) {
+  (window as any).__timeDisplayInitialized = true;
   (window as any).updateTimeDisplay();
   setInterval((window as any).updateTimeDisplay, 60000); // 60000ms = 1 minute
 }
@@ -435,12 +437,10 @@ if (!window.__timeDisplayInitialized) {
 
     // Create the new UserIcon HTML with tooltip - matching UserIcon.astro styling
     const newHTML = `
-      <div class="relative inline-block group w-8 h-8">
         <span class="sr-only">Open user menu</span>
         <div class="w-8 h-8 text-sm rounded-full border-2 border-white shadow-sm bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center text-white font-medium cursor-pointer">
           ${initials}
         </div>
-      </div>
     `;
 
     staffElement.innerHTML = newHTML;

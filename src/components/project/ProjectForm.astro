@@ -88,7 +88,6 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
     ) : null
   }
 
-  <div id="project-form-tab-content">
     <!-- Form Tab Content -->
     <div
       class={showPDFSelector ? "" : ""}
@@ -119,6 +118,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
                   return (
                     <div class={`relative ${columnClass}`}>
                       {isNewProject ? (
+                        <div class="col-span-12 md:col-span-6 ">
                         <SlotMachineModal
                           id="address"
                           icon="map-pin"
@@ -144,14 +144,16 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
                           currentUser={currentUser}
                           project={project}
                           globalInputClasses={globalInputClasses}
+                          currentLocation={true}
                         />
+                        </div>
                       ) : (
                         <input
                           type="text"
                           id="address"
                           name="address"
                           value={project?.address || ""}
-                          class="hidden"
+                          readonly={true}
                           data-scrap="true"
                         />
                       )}
@@ -385,7 +387,6 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
           </div>
 
           <!-- Form Actions Container -->
-          <div class="flex gap-2 pt-16 dark:border-gray-600">
             {
               (() => {
                 const actionElements = formElements.filter((element) => element.type === "action");
@@ -421,7 +422,6 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
                 );
               })()
             }
-          </div>
         </form>
       </div>
     </div>
@@ -498,7 +498,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
                   </svg>
                 </button>
 
-                <div class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-2 flex-1 overflow-y-auto min-h-0">
+                <div class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-2 overflow-y-auto min-h-0">
                   <div id="project-form-pdf-viewer" class="w-full h-full">
                     <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                       <p>PDF will appear here</p>
@@ -518,7 +518,6 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
         </div>
       )
     }
-  </div>
 </div>
 
 <script>
@@ -1132,6 +1131,14 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
           setTimeout(() => {
             enableSelectionMode();
           }, 100);
+        }
+
+        // Add focus event listener to current field input to enable selection mode
+        if (currentFieldInput) {
+          currentFieldInput.addEventListener("focus", () => {
+            console.log("🎯 [PDF-GUIDED] Current field input focused, enabling selection mode");
+            enableSelectionMode();
+          });
         }
 
         function handleSetField() {
@@ -1802,12 +1809,45 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
           return reconstructedLines.length > 0 ? reconstructedLines.join("\n") : fallbackText;
         }
 
+        // Convert ALL CAPS text to proper capitalization
+        function normalizeCapitalization(text: string): string {
+          if (!text) return text;
+
+          // Check if text is mostly uppercase (more than 80% uppercase letters)
+          const upperCount = (text.match(/[A-Z]/g) || []).length;
+          const letterCount = (text.match(/[A-Za-z]/g) || []).length;
+          const isAllCaps = letterCount > 0 && upperCount / letterCount > 0.8;
+
+          if (!isAllCaps) return text; // Return as-is if not all caps
+
+          // Convert to title case (capitalize first letter of each word, rest lowercase)
+          return text
+            .toLowerCase()
+            .split(/\b/)
+            .map((word, index) => {
+              // Don't capitalize common small words unless they're first
+              const smallWords = ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'by', 'of', 'in'];
+              if (index > 0 && smallWords.includes(word.toLowerCase().trim())) {
+                return word.toLowerCase();
+              }
+              // Capitalize first letter of each word
+              if (word.match(/^[a-z]/)) {
+                return word.charAt(0).toUpperCase() + word.slice(1);
+              }
+              return word;
+            })
+            .join('');
+        }
+
         // Format extracted text based on field type
         function formatExtractedText(
           text: string,
           input: HTMLInputElement | HTMLTextAreaElement | null
         ): string {
           if (!text || !input) return text;
+
+          // First normalize capitalization for ALL CAPS text
+          text = normalizeCapitalization(text);
 
           const fieldName = (input.name || input.id || "").toLowerCase();
           const inputType = input.type?.toLowerCase() || "";
@@ -2171,10 +2211,15 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 
               // Check if we're using guided interface
               if (guidedInterface && !guidedInterface.classList.contains("hidden")) {
-                // Populate the guided interface input
+                // Normalize capitalization for ALL CAPS text
+                extractedText = normalizeCapitalization(extractedText);
+                
+                // Populate the guided interface input (always overwrite)
                 currentOCRResult = extractedText;
                 if (currentFieldInput) {
                   currentFieldInput.value = extractedText;
+                  // Trigger input event for any listeners
+                  currentFieldInput.dispatchEvent(new Event("input", { bubbles: true }));
                 }
                 if (setFieldBtn) {
                   setFieldBtn.classList.remove("hidden");
@@ -2182,14 +2227,18 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 
                 // Clear selection
                 clearSelection();
-                disableSelectionMode();
+                
+                // Keep selection mode enabled for re-selection if needed
+                setTimeout(() => {
+                  enableSelectionMode();
+                }, 200);
 
                 // Show success feedback
                 if (window.showNotice) {
                   window.showNotice(
                     "success",
                     "Text Extracted",
-                    `Text extracted. Click "Set ${fieldsToFill[currentFieldIndex]?.label.replace("Select ", "")}" to apply it.`
+                    `Text extracted. Click "Set ${fieldsToFill[currentFieldIndex]?.label.replace("Select ", "")}" to apply it, or select again to replace.`
                   );
                 }
               } else {
@@ -2303,7 +2352,8 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
               // In guided mode, restore the guided input
               currentFieldInput.style.opacity = "1";
               currentFieldInput.style.cursor = "";
-              currentFieldInput.placeholder = "Select text from PDF...";
+              const currentField = fieldsToFill[currentFieldIndex];
+              currentFieldInput.placeholder = currentField ? currentField.label : "Select text from PDF...";
 
               // Re-enable selection mode for retry
               setTimeout(() => {
