@@ -267,6 +267,7 @@ export const contactFormConfig: MultiStepFormConfig = {
           type: "skip",
           label: "next / skip",
           dataNext: 8,
+          classes: "next-step-address",
         },
       ],
     },

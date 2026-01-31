@@ -51,9 +51,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
                 {/* Connecting Line */}
                 {index < config.steps.length - 1 && (
-                  <div class="w-full h-1 mx-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div class="w-full h-1 mx-2 bg-transparent dark:bg-transparent rounded-full overflow-hidden">
                     <div
-                      class="h-full bg-primary-500 dark:bg-primary-600 transition-all duration-500 ease-out step-progress-line"
+                      class="h-full bg-transparent dark:bg-transparent transition-all duration-500 ease-out step-progress-line"
                       style="width: 0%"
                     />
                   </div>
@@ -352,7 +352,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           id={
                             button.classes?.includes("phone")
                               ? `${config.formId}-next-step-phone-text`
-                              : undefined
+                              : button.classes?.includes("address")
+                                ? `${config.formId}-next-step-address-text`
+                                : undefined
                           }
                         >
                           <Fragment set:html={button.label} />
@@ -395,19 +397,21 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   }
 
   .step-indicator.active {
-    background-color: var(--color-danger-500);
+    background-color: var(--color-secondary-400);
+    animation: pulse 2s infinite;
   }
 
   .dark .step-indicator.active {
-    background-color: var(--color-danger-600);
+    background-color: var(--color-secondary-600);
+    animation: pulse 2s infinite;
   }
 
   .step-indicator.completed {
-    background-color: var(--color-danger-500);
+    background-color: var(--color-success-500);
   }
 
   .dark .step-indicator.completed {
-    background-color: var(--color-danger-600);
+    background-color: var(--color-success-600);
   }
 
   #multi-step-contact-form {
@@ -425,8 +429,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   };
 </script>
 
-<script type="module">
-  import { initializeMultiStepForm } from "../../lib/multi-step-form-handler.ts";
+<script>
+  import { initializeMultiStepForm } from "../../lib/multi-step-form-handler";
 
   document.addEventListener("DOMContentLoaded", () => {
     // Initialize rotating placeholders for first and last name inputs
@@ -478,15 +482,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       const span = firstNamePlaceholderSpans[index];
       if (span) {
         input.addEventListener("input", () => {
-          if (input.value) {
-            span.style.display = "none";
+          if ((input as HTMLInputElement).value) {
+            (span as HTMLElement).style.display = "none";
           } else {
-            span.style.display = "flex";
+            (span as HTMLElement).style.display = "flex";
           }
         });
         // Check initial value
-        if (input.value) {
-          span.style.display = "none";
+        if ((input as HTMLInputElement).value) {
+          (span as HTMLElement).style.display = "none";
         }
       }
     });
@@ -495,15 +499,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       const span = lastNamePlaceholderSpans[index];
       if (span) {
         input.addEventListener("input", () => {
-          if (input.value) {
-            span.style.display = "none";
+          if ((input as HTMLInputElement).value) {
+            (span as HTMLElement).style.display = "none";
           } else {
-            span.style.display = "flex";
+            (span as HTMLElement).style.display = "flex";
           }
         });
         // Check initial value
-        if (input.value) {
-          span.style.display = "none";
+        if ((input as HTMLInputElement).value) {
+          (span as HTMLElement).style.display = "none";
         }
       }
     });
@@ -512,14 +516,18 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       // Rotate first name placeholders
       firstNameInputs.forEach((input, index) => {
         const span = firstNamePlaceholderSpans[index];
-        if (span && !input.value && span.style.display !== "none") {
+        if (
+          span &&
+          !(input as HTMLInputElement).value &&
+          (span as HTMLElement).style.display !== "none"
+        ) {
           // Only rotate if visible
-          span.style.animation = "slideOutDown 400ms ease-out forwards";
+          (span as HTMLElement).style.animation = "slideOutDown 400ms ease-out forwards";
 
           setTimeout(() => {
             placeholderIndex = (placeholderIndex + 1) % firstNamePlaceholders.length;
             span.textContent = firstNamePlaceholders[placeholderIndex];
-            span.style.animation = "slideInDown 400ms ease-out forwards";
+            (span as HTMLElement).style.animation = "slideInDown 400ms ease-out forwards";
           }, 400);
         }
       });
@@ -528,13 +536,17 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       setTimeout(() => {
         lastNameInputs.forEach((input, index) => {
           const span = lastNamePlaceholderSpans[index];
-          if (span && !input.value && span.style.display !== "none") {
+          if (
+            span &&
+            !(input as HTMLInputElement).value &&
+            (span as HTMLElement).style.display !== "none"
+          ) {
             // Only rotate if visible
-            span.style.animation = "slideOutDown 400ms ease-out forwards";
+            (span as HTMLElement).style.animation = "slideOutDown 400ms ease-out forwards";
 
             setTimeout(() => {
               span.textContent = lastNamePlaceholders[placeholderIndex];
-              span.style.animation = "slideInDown 400ms ease-out forwards";
+              (span as HTMLElement).style.animation = "slideInDown 400ms ease-out forwards";
             }, 400);
           }
         });
@@ -550,7 +562,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     Object.keys(window).forEach((key) => {
       if (key.endsWith("_config")) {
         const { formId, formConfig, initialData } = window[key];
-        const form = document.getElementById(formId);
+        const form = document.getElementById(formId) as HTMLFormElement;
 
         if (!form) {
           console.error(`[MULTISTEP-FORM] Form not found: ${formId}`);
@@ -561,9 +573,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
         // Pre-fill form fields with initial data
         Object.entries(initialData).forEach(([key, value]) => {
-          const input = form.querySelector(`[name="${key}"]`);
+          const input = form.querySelector(`[name="${key}"]`) as HTMLInputElement;
           if (input && value) {
-            input.value = value;
+            (input as HTMLInputElement).value = value as string;
             console.log(`[MULTISTEP-FORM] Pre-filled ${key}:`, value);
           }
         });
