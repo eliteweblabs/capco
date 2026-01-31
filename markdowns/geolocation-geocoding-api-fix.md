@@ -33,7 +33,8 @@ Created `/src/pages/api/google/geocode.ts` that properly handles:
 
 - The Geocoding API requires separate enablement in Google Cloud Console
 - The Places API is already enabled and provides reverse geocoding functionality
-- Using searchNearby with location coordinates returns nearby addresses
+- Using searchNearby with location coordinates returns nearby addresses (100m radius)
+- No type filtering applied - returns all nearby places and addresses
 
 ### 2. Updated SlotMachineModal Geolocation Handler
 

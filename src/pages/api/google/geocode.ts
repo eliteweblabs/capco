@@ -62,7 +62,7 @@ export const GET: APIRoute = async ({ url }) => {
           },
         },
         maxResultCount: 10,
-        includedTypes: ["street_address", "premise", "subpremise"],
+        // Don't specify types - get all nearby places/addresses
       };
 
       console.log("🌍 [GEOCODE] Making request to Google Places API (searchNearby)");

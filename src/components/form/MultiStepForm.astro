@@ -12,9 +12,14 @@ import { globalClasses } from "../../pages/api/global/global-classes";
 interface Props {
   config: MultiStepFormConfig;
   containerClass?: string;
+  initialData?: Record<string, any>;
 }
 
-const { config, containerClass = "w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8" } = Astro.props;
+const {
+  config,
+  containerClass = "w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8",
+  initialData = {},
+} = Astro.props;
 
 const { globalInputClasses } = globalClasses();
 const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
@@ -123,7 +128,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       <SlotMachineModalStaff
                         id={field.id}
                         name={field.name}
-                        title={field.componentProps?.title || "Select option"}
                         options={mobileCarrierOptions}
                         selectedValue=""
                         globalInputClasses={appendedGlobalInputClasses}
@@ -149,7 +153,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       />
                     ) : (
                       <input
-                        type={field.type === "component" ? "text" : field.type}
+                        type={field.type}
                         id={field.id}
                         name={field.name}
                         placeholder={field.placeholder}
@@ -168,7 +172,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
             {/* Google OAuth (for registration form only) */}
             {step.additionalContent === "google-oauth" && (
-              <div class="mx-auto w-full max-w-lg my-6 md:my-8 lg:my-12">
+              <div class="mx-auto w-full my-6 md:my-8 lg:my-12">
                 <div>
                   <hr class="mt-14 h-0 border-t border-zinc-300 dark:border-zinc-600" />
                   <p class="-mt-2.5 text-center text-xs mb-14">
@@ -212,7 +216,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             )}
 
             {/* Step Buttons */}
-            <div class="flex justify-between gap-3">
+            <div
+              class={`flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-between"} gap-3`}
+            >
               {step.buttons.map((button) => {
                 const btnConfig = getButtonConfig(
                   button,
@@ -224,41 +230,35 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                     type="button"
                     variant={button.variant || "secondary"}
                     size={button.size || "lg"}
-                    class="sms-choice"
+                    class={button.classes || ""}
                     dataAttributes={{
                       "data-next": button.dataNext?.toString(),
-                      "data-sms-value": button.dataValue,
+                      "data-value": button.dataValue,
+                      "data-sms-value": button.dataValue, // Keep for backward compatibility with SMS
                     }}
                   >
-                    {button.label}
+                    <Fragment set:html={button.label} />
                   </Button>
                 ) : button.href ? (
                   <Button
-                    type="button"
-                    variant={button.variant || "anchor"}
-                    size={button.size || "lg"}
-                    icon={button.icon}
-                    iconPosition={button.iconPosition}
+                    {...btnConfig}
                     href={button.href}
                     class={`${button.type}-step ${button.classes || ""}`}
                   >
-                    <span class="hidden md:block">{button.label}</span>
+                    <Fragment set:html={button.label} />
                   </Button>
                 ) : (
                   <Button
+                    {...btnConfig}
                     type="button"
-                    variant={button.variant || btnConfig.variant}
-                    size={button.size || btnConfig.size}
-                    icon={button.icon || btnConfig.icon}
-                    iconPosition={button.iconPosition || btnConfig.iconPosition}
-                    class={`${button.type}-step ${button.classes || ""} ${button.type === "submit" ? "submit-registration submit-contact" : ""}`}
+                    class={`${button.type}-step ${button.classes || ""}`}
                     dataAttributes={{
                       "data-next": button.dataNext?.toString(),
                       "data-prev": button.dataPrev?.toString(),
                     }}
                   >
                     {button.label === "back" ? (
-                      <span class="hidden md:block">{button.label}</span>
+                      <Fragment set:html={button.label} />
                     ) : (
                       <span
                         id={
@@ -267,7 +267,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                             : undefined
                         }
                       >
-                        {button.label}
+                        <Fragment set:html={button.label} />
                       </span>
                     )}
                   </Button>
@@ -303,146 +303,47 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   }
 </style>
 
-<script>
-  import { createMultiStepFormHandler } from "../../lib/multi-step-form-handler";
-  import { getSupabaseClient } from "../../lib/supabase-client";
+<script define:vars={{ formId: config.formId, formConfig: config, initialData }}>
+  // Store config in window for the module script to access
+  window[`${formId}_config`] = {
+    formId,
+    formConfig,
+    initialData,
+  };
+</script>
 
-  // Handle Google Signup (for registration form)
-  async function handleGoogleSignup() {
-    console.log("[GOOGLE-SIGNUP] Initiating client-side Google OAuth...");
-
-    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-    if (supabaseUrl) {
-      const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-      const staleKeys = Object.keys(localStorage).filter(
-        (k) => k.includes(`sb-${supabaseProjectRef}`) && !k.includes("code-verifier")
-      );
-      if (staleKeys.length > 0) {
-        console.log("[GOOGLE-SIGNUP] Clearing stale auth state before OAuth:", staleKeys);
-        staleKeys.forEach((k) => localStorage.removeItem(k));
-      }
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      console.error("[GOOGLE-SIGNUP] Supabase configuration missing");
-      if (window.showNotice) {
-        window.showNotice(
-          "error",
-          "Configuration Error",
-          "Supabase is not configured. Please contact support."
-        );
-      }
-      return;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    const redirectUrl = `${window.location.origin}/auth/callback`;
-    console.log("[GOOGLE-SIGNUP] Redirect URL:", redirectUrl);
-
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
-            scope: "openid email profile",
-          },
-        },
-      });
-
-      if (error) {
-        console.error("[GOOGLE-SIGNUP] OAuth error:", error);
-        if (window.showNotice) {
-          window.showNotice("error", "Authentication Error", error.message);
-        }
-        return;
-      }
-
-      if (data?.url) {
-        if (supabaseUrl) {
-          const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-          const codeVerifierKey = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
-
-          console.log("[GOOGLE-SIGNUP] Waiting for code verifier to be stored in localStorage...");
-
-          let codeVerifier = localStorage.getItem(codeVerifierKey);
-          let attempts = 0;
-          const maxAttempts = 20;
-          const retryDelay = 100;
-
-          while (!codeVerifier && attempts < maxAttempts) {
-            await new Promise((resolve) => setTimeout(resolve, retryDelay));
-            codeVerifier = localStorage.getItem(codeVerifierKey);
-            attempts++;
-
-            if (attempts % 5 === 0) {
-              console.log(
-                `[GOOGLE-SIGNUP] Still waiting for code verifier... (attempt ${attempts}/${maxAttempts})`
-              );
-            }
-          }
-
-          if (codeVerifier) {
-            console.log(
-              "[GOOGLE-SIGNUP] ✅ Code verifier confirmed in localStorage, redirecting..."
-            );
-          } else {
-            console.error("[GOOGLE-SIGNUP] ❌ Code verifier NOT found after waiting!");
-            if (window.showNotice) {
-              window.showNotice(
-                "error",
-                "Authentication Error",
-                "Failed to initialize authentication. Please try again."
-              );
-            }
-            return;
-          }
-        }
-
-        console.log("[GOOGLE-SIGNUP] Redirecting to OAuth provider...");
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      console.error("[GOOGLE-SIGNUP] Unexpected error:", err);
-      if (window.showNotice) {
-        window.showNotice(
-          "error",
-          "Authentication Error",
-          err instanceof Error ? err.message : "An unexpected error occurred"
-        );
-      }
-    }
-  }
-
-  // Make function globally available
-  (window as any).handleGoogleSignup = handleGoogleSignup;
+<script type="module">
+  import { initializeMultiStepForm } from "/src/lib/multi-step-form-handler.ts";
 
   document.addEventListener("DOMContentLoaded", () => {
-    // Get form ID from first form element
-    const forms = document.querySelectorAll("form[id^='multi-step-']");
+    // Get all form configs from window
+    Object.keys(window).forEach((key) => {
+      if (key.endsWith("_config")) {
+        const { formId, formConfig, initialData } = window[key];
+        const form = document.getElementById(formId);
 
-    forms.forEach((formElement) => {
-      const form = formElement as HTMLFormElement;
-      const formId = form.id;
+        if (!form) {
+          console.error(`[MULTISTEP-FORM] Form not found: ${formId}`);
+          return;
+        }
 
-      // Count steps
-      const steps = form.querySelectorAll(".step-content");
-      const totalSteps = steps.length;
+        console.log("[MULTISTEP-FORM] Initializing with data:", initialData);
 
-      console.log(`[MULTISTEP-FORM] Initializing form: ${formId} with ${totalSteps} steps`);
+        // Pre-fill form fields with initial data
+        Object.entries(initialData).forEach(([key, value]) => {
+          const input = form.querySelector(`[name="${key}"]`);
+          if (input && value) {
+            input.value = value;
+            console.log(`[MULTISTEP-FORM] Pre-filled ${key}:`, value);
+          }
+        });
 
-      // Create and initialize form handler
-      const handler = createMultiStepFormHandler(formId, totalSteps, {
-        onStepChange: (stepNumber) => {
-          console.log(`[MULTISTEP-FORM] Changed to step ${stepNumber}`);
-        },
-      });
-
-      handler.init();
+        // Initialize the form with skip logic
+        initializeMultiStepForm(form, {
+          initialData,
+          formConfig,
+        });
+      }
     });
   });
 </script>
