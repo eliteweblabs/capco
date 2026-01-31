@@ -6,6 +6,7 @@
 import Alert from "../partials/Alert.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Button from "../common/Button.astro";
+import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
 import StaffCreationForm from "../form/StaffCreationForm.astro";
 
 export interface Props {
@@ -249,6 +250,7 @@ const userCounts = {
                         data-role={user.role}
                         data-name={displayName.toLowerCase()}
                         data-email={user.email.toLowerCase()}
+                        data-user-id={user.id}
                       >
                         <td class="whitespace-nowrap px-6 py-4">
                           <div class="flex items-center">
@@ -310,14 +312,14 @@ const userCounts = {
                           {createdDate}
                         </td>
                         <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                          <Button
-                            variant="ghost"
+                          <DeleteConfirmButton
+                            id={`delete-user-${user.id}`}
+                            itemType="user"
+                            apiEndpoint="/api/users/delete"
+                            onDeleteCallback="handleUserDeleted"
+                            tooltipText={`Delete ${displayName}`}
                             size="sm"
-                            class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 delete-user-btn"
-                            data-user-id={user.id}
-                            data-user-name={displayName}
-                            title="Delete user"
-                            icon="trash"
+                            variant="icon"
                           />
                         </td>
                       </tr>
@@ -372,7 +374,6 @@ const userCounts = {
 
   let currentUsers: User[] = [];
   let currentSort = { field: "created", direction: "desc" };
-  let deleteUserId: string | null = null;
 
   document.addEventListener("DOMContentLoaded", function () {
     const searchInput = document.getElementById("user-search");
@@ -394,7 +395,6 @@ const userCounts = {
 
     setupSearchAndFilter();
     setupSorting();
-    setupDeleteHandlers();
 
     setTimeout(() => {
       filterUsers();
@@ -430,18 +430,28 @@ const userCounts = {
     });
   }
 
-  function setupDeleteHandlers() {
-    document.querySelectorAll(".delete-user-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const userId = (btn as HTMLElement).dataset.userId;
-        const userName = (btn as HTMLElement).dataset.userName;
-        if (userId && userName) {
-          confirmDeleteUser(userId, userName);
-        }
-      });
-    });
-  }
+  // Global callback for DeleteConfirmButton component
+  (window as any).handleUserDeleted = async function (userId: string) {
+    console.log("[AdminUsers] User deleted callback:", userId);
+
+    if ((window as any).showNotice) {
+      (window as any).showNotice(
+        "success",
+        "User Deleted",
+        "User has been successfully deleted.",
+        3000
+      );
+    }
+
+    // Remove the user row from the table
+    const userRow = document.querySelector(`[data-user-id="${userId}"]`)?.closest(".user-row");
+    if (userRow) {
+      userRow.remove();
+    }
+
+    // Reload after a short delay to refresh user counts
+    setTimeout(() => window.location.reload(), 1500);
+  };
 
   function filterUsers() {
     const searchTerm =
@@ -501,87 +511,5 @@ const userCounts = {
     sortedUsers.forEach((user) => {
       tbody.appendChild(user.element);
     });
-  }
-
-  function confirmDeleteUser(userId: string, userName: string) {
-    deleteUserId = userId;
-
-    if ((window as any).showNotice) {
-      (window as any).showNotice(
-        "error",
-        "Delete User",
-        `Are you sure you want to delete ${userName}? This action cannot be undone.`,
-        6000000,
-        [
-          {
-            label: "Cancel",
-            variant: "secondary",
-            fullWidth: true,
-            action: () => {
-              deleteUserId = null;
-            },
-          },
-          {
-            label: "Delete User",
-            variant: "danger",
-            fullWidth: true,
-            action: () => {
-              executeDeleteUser();
-            },
-          },
-        ]
-      );
-    } else {
-      if (confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
-        executeDeleteUser();
-      }
-    }
-  }
-
-  async function executeDeleteUser() {
-    if (!deleteUserId) return;
-
-    try {
-      const response = await fetch("/api/users/delete", {
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: deleteUserId }),
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        if ((window as any).showNotice) {
-          (window as any).showNotice(
-            "success",
-            "User Deleted",
-            "User has been successfully deleted.",
-            3000
-          );
-        }
-
-        const userRow = document
-          .querySelector(`[data-user-id="${deleteUserId}"]`)
-          ?.closest(".user-row");
-        if (userRow) {
-          userRow.remove();
-        }
-
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete user");
-      }
-    } catch (error) {
-      console.error("Delete user error:", error);
-      if ((window as any).showNotice) {
-        (window as any).showNotice(
-          "error",
-          "Delete Failed",
-          (error as Error).message || "Failed to delete user",
-          5000
-        );
-      }
-    } finally {
-      deleteUserId = null;
-    }
   }
 </script>
