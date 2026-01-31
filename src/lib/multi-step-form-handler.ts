@@ -487,6 +487,18 @@ export function createMultiStepFormHandler(
           return;
         }
 
+        // Special handling for SMS consent step
+        if (nextBtn.classList.contains("sms-next-btn")) {
+          const smsToggle = form.querySelector('input[name="smsAlerts"]') as HTMLInputElement;
+          if (smsToggle && smsToggle.checked) {
+            // SMS is enabled, go to carrier selection (step 5)
+            nextStep = 5;
+          } else {
+            // SMS is disabled, skip to step 6
+            nextStep = 6;
+          }
+        }
+
         // Special handling for phone step
         if (nextBtn.classList.contains("next-step-phone")) {
           const phoneInput = form.querySelector('input[type="tel"]') as HTMLInputElement;
