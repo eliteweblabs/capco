@@ -43,12 +43,53 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    // Use Places API for reverse geocoding (since Geocoding API may not be enabled)
-    // Places API can do reverse geocoding by searching with coordinates as locationBias
+    // Try Geocoding API first for accurate reverse geocoding
     if (latlng) {
       const [lat, lng] = latlng.split(",");
 
-      // Use Places API autocomplete with empty input to get nearby places
+      // First, try the Geocoding API for precise address
+      const geocodingUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+      geocodingUrl.searchParams.set("latlng", latlng);
+      geocodingUrl.searchParams.set("key", apiKey);
+
+      console.log("🌍 [GEOCODE] Trying Geocoding API first for precise address");
+
+      const geocodingResponse = await fetch(geocodingUrl.toString());
+      const geocodingData = await geocodingResponse.json();
+
+      // If Geocoding API works, use it (most accurate)
+      if (geocodingData.status === "OK" && geocodingData.results?.length > 0) {
+        console.log("✅ [GEOCODE] Geocoding API succeeded, returning precise addresses");
+
+        const results = geocodingData.results.map((result: any) => ({
+          formatted_address: result.formatted_address,
+          description: result.formatted_address,
+          label: result.formatted_address,
+          value: result.formatted_address,
+          place_id: result.place_id,
+          geometry: result.geometry,
+        }));
+
+        return new Response(
+          JSON.stringify({
+            status: "OK",
+            results: results,
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type",
+            },
+          }
+        );
+      }
+
+      // If Geocoding API not enabled, fall back to Places API
+      console.log("⚠️ [GEOCODE] Geocoding API not available, falling back to Places API");
+
       const placesUrl = new URL("https://places.googleapis.com/v1/places:searchNearby");
 
       const requestBody = {
@@ -58,11 +99,10 @@ export const GET: APIRoute = async ({ url }) => {
               latitude: parseFloat(lat),
               longitude: parseFloat(lng),
             },
-            radius: 100, // 100 meters radius
+            radius: 50, // Smaller radius for closer results
           },
         },
         maxResultCount: 10,
-        // Don't specify types - get all nearby places/addresses
       };
 
       console.log("🌍 [GEOCODE] Making request to Google Places API (searchNearby)");
@@ -104,8 +144,8 @@ export const GET: APIRoute = async ({ url }) => {
       const results =
         data.places?.map((place: any) => ({
           formatted_address: place.formattedAddress,
-          description: place.formattedAddress, // For SlotMachineModal compatibility
-          label: place.formattedAddress, // For SlotMachineModal compatibility
+          description: place.formattedAddress,
+          label: place.formattedAddress,
           value: place.formattedAddress,
           place_id: place.id,
           geometry: {

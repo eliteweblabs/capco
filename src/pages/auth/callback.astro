@@ -65,13 +65,15 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
       const initialSearch = window.location.search;
       const initialHash = window.location.hash;
 
-      // Parse code immediately before any redirects or URL modifications
+      // Parse code and redirect parameter immediately
       const initialUrlParams = new URLSearchParams(initialSearch);
       const initialHashParams = new URLSearchParams(initialHash.substring(1));
       const capturedCode = initialUrlParams.get("code") || initialHashParams.get("code");
       const capturedError = initialUrlParams.get("error") || initialHashParams.get("error");
       const capturedErrorDescription =
         initialUrlParams.get("error_description") || initialHashParams.get("error_description");
+      const capturedRedirect =
+        initialUrlParams.get("redirect") || initialHashParams.get("redirect");
 
       console.log("[AUTH-CALLBACK] IMMEDIATE CAPTURE on page load:");
       console.log("[AUTH-CALLBACK] Initial URL:", initialUrl);
@@ -82,6 +84,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
         capturedCode ? `${capturedCode.substring(0, 20)}...` : null
       );
       console.log("[AUTH-CALLBACK] Captured error:", capturedError);
+      console.log("[AUTH-CALLBACK] Captured redirect:", capturedRedirect);
 
       // CRITICAL: Restore code to URL IMMEDIATELY if it was stripped
       // This MUST happen before Supabase client is imported/initialized
@@ -200,7 +203,9 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
           if (response.ok) {
             console.log("[AUTH-CALLBACK] Authentication successful, redirecting...");
             await new Promise((resolve) => setTimeout(resolve, 300));
-            window.location.replace("/project/dashboard");
+            const redirectUrl = capturedRedirect || "/project/dashboard";
+            console.log("[AUTH-CALLBACK] Redirecting to:", redirectUrl);
+            window.location.replace(redirectUrl);
             return;
           }
         }
@@ -348,7 +353,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
               const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
               if (supabaseUrl) {
                 const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-                
+
                 // Try multiple possible key formats for the code verifier
                 const possibleKeys = [
                   `sb-${supabaseProjectRef}-auth-token-code-verifier`,
@@ -356,10 +361,10 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
                   `supabase.auth.token.code_verifier`,
                   `supabase-auth-token-code-verifier`,
                 ];
-                
+
                 let codeVerifier = null;
                 let foundKey = null;
-                
+
                 for (const key of possibleKeys) {
                   const value = localStorage.getItem(key);
                   if (value) {
@@ -382,14 +387,14 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
                     (k) => k.includes("supabase") || k.includes("sb-") || k.includes("auth")
                   );
                   console.error("[AUTH-CALLBACK] Available localStorage keys:", allAuthKeys);
-                  
+
                   // Don't set an error here - let Supabase try to handle it
                   // The verifier might be stored internally by Supabase
-                  console.warn("[AUTH-CALLBACK] Proceeding anyway - Supabase may have stored verifier internally");
-                } else {
-                  console.log(
-                    "[AUTH-CALLBACK] ✅ Code verifier found at key:", foundKey
+                  console.warn(
+                    "[AUTH-CALLBACK] Proceeding anyway - Supabase may have stored verifier internally"
                   );
+                } else {
+                  console.log("[AUTH-CALLBACK] ✅ Code verifier found at key:", foundKey);
                 }
               }
 
@@ -433,14 +438,16 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
               status: exchangeError.status,
               code: exchangeError.code,
             });
-            
+
             // Handle specific error cases
             const errorMsg = exchangeError.message || "";
-            
+
             if (errorMsg.includes("code verifier") || errorMsg.includes("Code verifier")) {
               // Code verifier issue - user needs to sign in again from scratch
-              console.warn("[AUTH-CALLBACK] Code verifier missing - clearing auth state and redirecting");
-              
+              console.warn(
+                "[AUTH-CALLBACK] Code verifier missing - clearing auth state and redirecting"
+              );
+
               // Clear any stale localStorage items
               const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
               if (supabaseUrl) {
@@ -451,14 +458,15 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
                 keysToRemove.forEach((k) => localStorage.removeItem(k));
                 console.log("[AUTH-CALLBACK] Cleared stale localStorage keys:", keysToRemove);
               }
-              
+
               showError("Session expired. Redirecting to sign in...");
               setTimeout(() => {
-                window.location.href = "/auth/login?error=session_expired&message=Please+sign+in+again";
+                window.location.href =
+                  "/auth/login?error=session_expired&message=Please+sign+in+again";
               }, 1500);
               return;
             }
-            
+
             showError(`Session exchange failed: ${exchangeError.message}`);
             setTimeout(() => {
               window.location.href = "/auth/login?error=session_exchange_failed";
@@ -520,7 +528,9 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
 
           // Use replace instead of href to ensure proper navigation with cookies
           // This ensures the browser includes cookies in the redirect
-          window.location.replace("/project/dashboard");
+          const redirectUrl = capturedRedirect || "/project/dashboard";
+          console.log("[AUTH-CALLBACK] Final redirect to:", redirectUrl);
+          window.location.replace(redirectUrl);
         } catch (err) {
           console.error("[AUTH-CALLBACK] Unexpected error:", err);
           showError(`Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`);

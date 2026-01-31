@@ -7,24 +7,28 @@ if (authCode) {
   return Astro.redirect(`/api/auth/callback?code=${authCode}`);
 }
 
+// Get redirect parameter to send user back after login
+const redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
+
 // Get auth data directly
 import { checkAuth } from "../../lib/auth";
 
 const authResult = await checkAuth(Astro.cookies);
-console.log("🔐 [REGISTER] Auth check result:", {
+console.log("🔐 [LOGIN] Auth check result:", {
   isAuth: authResult.isAuth,
   hasUser: !!authResult.currentUser,
+  redirectUrl,
 });
 
 const { isAuth, currentUser } = authResult;
 
-// Redirect authenticated users to dashboard
+// Redirect authenticated users to specified URL or dashboard
 if (isAuth) {
-  console.log("🔐 [REGISTER] User is authenticated, redirecting to dashboard");
-  return Astro.redirect("/project/dashboard");
+  console.log("🔐 [LOGIN] User is authenticated, redirecting to:", redirectUrl);
+  return Astro.redirect(redirectUrl);
 }
 
-console.log("🔐 [REGISTER] User is not authenticated, showing registration page");
+console.log("🔐 [LOGIN] User is not authenticated, showing login page");
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
 const {
@@ -61,5 +65,5 @@ import AuthForm from "../../components/form/AuthForm.astro";
   centerContent={true}
 >
   <!-- Multi-step Form -->
-  <AuthForm {globalInputClasses} />
+  <AuthForm {globalInputClasses} {redirectUrl} />
 </App>

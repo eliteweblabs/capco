@@ -17,6 +17,8 @@ export interface FormFieldConfig {
   componentProps?: Record<string, any>; // Props to pass to component
   // Grid layout for multi-column layouts
   columns?: 1 | 2; // 1 = full width, 2 = half width in grid
+  gridColumn?: string; // Grid column classes (e.g., "md:grid-cols-2")
+  classes?: string; // Additional CSS classes for the input field
 }
 
 export interface FormButtonConfig {
@@ -64,6 +66,7 @@ export interface MultiStepFormConfig {
   formMethod?: "post" | "get";
   totalSteps: number;
   progressBar?: boolean; // Show progress bar
+  registerUser?: boolean; // If true, require unique email and redirect to login if exists
   // Button templates - defaults for all buttons
   buttonDefaults?: {
     next?: Partial<FormButtonConfig>;

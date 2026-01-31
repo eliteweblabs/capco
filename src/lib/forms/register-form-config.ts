@@ -6,6 +6,7 @@ export const registerFormConfig: MultiStepFormConfig = {
   formMethod: "post",
   totalSteps: 8,
   progressBar: true,
+  registerUser: true, // Require unique email and redirect to login if exists
 
   // Default button styles
   buttonDefaults: {

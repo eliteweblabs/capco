@@ -9,22 +9,35 @@ export const mepFormConfig: MultiStepFormConfig = {
   formAction: "/api/mep/submit",
   formMethod: "post",
   totalSteps: 6,
+  registerUser: true, // Allow existing users to proceed (backend will handle user lookup)
   steps: [
-    // Step 1: Email (skip if authenticated)
+    // Step 1: Name (skip if authenticated)
     {
       stepNumber: 1,
-      title: "Your email?",
+      title:
+        "Hello, welcome to<br>the Rothco Mechanical,<br>Engineering and Plumbing intake.<br>Takes about 2 minutes.<br>We typically respond within<br>1 business day EDT.",
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
+      fieldLayout: "grid", // Enable grid layout for side-by-side fields
       fields: [
         {
-          type: "email",
-          id: "step-email",
-          name: "email",
-          placeholder: "your.email@example.com",
+          type: "text",
+          id: "step-first-name",
+          name: "firstName",
+          placeholder: "John",
           required: true,
-          autocomplete: "email",
-          dataError: "Please enter a valid email address",
+          autocomplete: "given-name",
+          errorMessage: "Please enter your first name",
+          classes: "text-center",
+        },
+        {
+          type: "text",
+          id: "step-last-name",
+          name: "lastName",
+          placeholder: "Doe",
+          required: true,
+          autocomplete: "family-name",
+          errorMessage: "Please enter your last name",
           classes: "text-center",
         },
       ],
@@ -49,34 +62,22 @@ export const mepFormConfig: MultiStepFormConfig = {
       ],
     },
 
-    // Step 2: Name (skip if authenticated)
+    // Step 2: Email (skip if authenticated)
     {
       stepNumber: 2,
-      title: "Your name?",
+      title: "Your email?",
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fields: [
         {
-          type: "text",
-          id: "step-first-name",
-          name: "firstName",
-          placeholder: "John",
+          type: "email",
+          id: "step-email",
+          name: "email",
+          placeholder: "your.email@example.com",
           required: true,
-          autocomplete: "given-name",
-          dataError: "Please enter your first name",
+          autocomplete: "email",
+          errorMessage: "Please enter a valid email address",
           classes: "text-center",
-          gridColumn: "md:grid-cols-2",
-        },
-        {
-          type: "text",
-          id: "step-last-name",
-          name: "lastName",
-          placeholder: "Doe",
-          required: true,
-          autocomplete: "family-name",
-          dataError: "Please enter your last name",
-          classes: "text-center",
-          gridColumn: "md:grid-cols-2",
         },
       ],
       buttons: [
@@ -153,6 +154,7 @@ export const mepFormConfig: MultiStepFormConfig = {
           componentProps: {
             placeholder: "Start typing an address...",
             required: true,
+            currentLocation: true,
           },
         },
       ],

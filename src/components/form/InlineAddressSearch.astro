@@ -11,6 +11,7 @@ interface Props {
   valueField?: string;
   labelField?: string;
   noResultsText?: string;
+  currentLocation?: boolean;
 }
 
 const {
@@ -23,6 +24,7 @@ const {
   valueField = "description",
   labelField = "description",
   noResultsText = "Type to search addresses...",
+  currentLocation = false,
 } = Astro.props;
 ---
 
@@ -39,19 +41,33 @@ const {
       autocomplete="off"
       class={`${globalInputClasses} text-center`}
     />
-    <button
-      type="button"
-      class="absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-gray-300"
-      title="Search for address"
-    >
-      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-      </svg>
-    </button>
+    {
+      currentLocation ? (
+        <button
+          type="button"
+          id={`${id}-use-location-btn`}
+          class="absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-gray-300"
+          title="Use my current location"
+        >
+          <SimpleIcon name="pin-location" size="sm" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          class="absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-gray-300"
+          title="Search for address"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </button>
+      )
+    }
 
     <!-- Dropdown Results Container -->
     <div
@@ -77,7 +93,7 @@ const {
   </div>
 </div>
 
-<script define:vars={{ id, fetchApiEndpoint, apiParams, valueField, labelField }}>
+<script define:vars={{ id, fetchApiEndpoint, apiParams, valueField, labelField, currentLocation }}>
   // Initialize address search inline
   import("/js/inline-address-search.js")
     .then((module) => {
@@ -97,6 +113,7 @@ const {
           apiParams: apiParams,
           valueField: valueField,
           labelField: labelField,
+          currentLocation: currentLocation,
         });
       };
 
