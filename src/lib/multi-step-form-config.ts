@@ -22,8 +22,8 @@ export interface FormFieldConfig {
 export interface FormButtonConfig {
   type: "next" | "prev" | "skip" | "submit" | "choice";
   label: string;
-  variant?: "primary" | "secondary" | "anchor" | "outline";
-  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "secondary" | "anchor" | "outline" | "ghost";
+  size?: "sm" | "md" | "lg" | "base";
   icon?: string;
   iconPosition?: "left" | "right";
   dataNext?: number; // Step number to go to on click
@@ -32,6 +32,7 @@ export interface FormButtonConfig {
   classes?: string; // Additional CSS classes
   href?: string; // For link buttons
   action?: string; // Custom action identifier
+  disabled?: boolean; // Whether button is disabled initially
 }
 
 export interface FormStepConfig {
