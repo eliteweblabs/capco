@@ -885,9 +885,38 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     const cancelButton = modal.querySelector(`#${id}-slot-cancel-btn`);
     const closeButton = modal.querySelector(`#${id}-close-slot-modal`);
     const searchInput = modal.querySelector(`#${id}-slot-search-input`);
+    const clearButton = modal.querySelector(`#${id}-slot-clear-btn`);
     const searchButton = modal.querySelector(`#${id}-slot-search-btn`);
     const liClassName = "text-black dark:text-white";
     const spanClassName = "slot-machine-item-text";
+
+    // Add clear button functionality
+    if (searchInput && clearButton) {
+      // Show/hide clear button based on input value
+      const toggleClearButton = () => {
+        if (searchInput.value.length > 0) {
+          clearButton.classList.remove("opacity-0", "pointer-events-none");
+          clearButton.classList.add("opacity-100");
+        } else {
+          clearButton.classList.add("opacity-0", "pointer-events-none");
+          clearButton.classList.remove("opacity-100");
+        }
+      };
+
+      // Clear input when clear button is clicked
+      clearButton.addEventListener("click", () => {
+        searchInput.value = "";
+        searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+        toggleClearButton();
+        searchInput.focus();
+      });
+
+      // Toggle clear button visibility on input
+      searchInput.addEventListener("input", toggleClearButton);
+
+      // Initial state check
+      toggleClearButton();
+    }
 
     // Add event listeners to buttons from the partial
     if (closeButton) {
@@ -1436,7 +1465,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
     // Handle wheel events (desktop) with natural scroll sensitivity
     let wheelAccumulator = 0;
-    const wheelThreshold = 50; // Require more scroll distance before moving items
+    const wheelThreshold = 20; // Lower threshold for more responsive scrolling
 
     optionsList.addEventListener("wheel", (e) => {
       e.preventDefault();
@@ -1468,10 +1497,11 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       }
     });
 
-    // Handle touch events (mobile)
+    // Handle touch events (mobile) with throw/fling momentum
     let touchStartY = 0;
     let touchStartTime = 0;
     let isScrolling = false;
+    let momentumAnimation = null;
 
     optionsList.addEventListener(
       "touchstart",
@@ -1480,6 +1510,12 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         touchStartY = e.touches[0].clientY;
         touchStartTime = Date.now();
         isScrolling = false;
+
+        // Cancel any ongoing momentum animation
+        if (momentumAnimation) {
+          cancelAnimationFrame(momentumAnimation);
+          momentumAnimation = null;
+        }
       },
       { passive: false }
     );
@@ -1506,23 +1542,61 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         const deltaY = touchStartY - touchEndY;
         const deltaTime = touchEndTime - touchStartTime;
 
-        // Only process if there was significant movement and it was quick enough
-        if (Math.abs(deltaY) > 20 && deltaTime < 500) {
+        // Calculate velocity (pixels per millisecond)
+        const velocity = deltaY / deltaTime;
+
+        // Only process if there was significant movement
+        if (Math.abs(deltaY) > 10) {
           // Get current options count from DOM
           const currentOptions = optionsList.querySelectorAll("li");
           const maxIndex = currentOptions.length - 1;
 
-          if (deltaY > 0) {
-            // Swiping up - move to next item
-            selectedIndex = Math.min(selectedIndex + 1, maxIndex);
-          } else {
-            // Swiping down - move to previous item
-            selectedIndex = Math.max(selectedIndex - 1, 0);
+          // Determine how many items to scroll based on velocity
+          // Fast swipe = more items, slow swipe = 1 item
+          const minVelocity = 0.3; // pixels/ms threshold for throw
+          const itemsToScroll =
+            Math.abs(velocity) > minVelocity
+              ? Math.min(Math.ceil(Math.abs(velocity) * 2), 5) // Max 5 items per throw
+              : 1;
+
+          // Apply momentum with animation
+          let itemsMoved = 0;
+          const direction = deltaY > 0 ? 1 : -1;
+          const animationDuration = Math.min(itemsToScroll * 150, 600); // Longer animation for more items
+          const startTime = Date.now();
+
+          function animateMomentum() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / animationDuration, 1);
+
+            // Easing function (ease-out quad for natural deceleration)
+            const eased = 1 - Math.pow(1 - progress, 2);
+            const targetItemsMoved = Math.floor(eased * itemsToScroll);
+
+            if (targetItemsMoved > itemsMoved) {
+              itemsMoved = targetItemsMoved;
+
+              if (direction > 0) {
+                // Swiping up - move to next items
+                selectedIndex = Math.min(selectedIndex + 1, maxIndex);
+              } else {
+                // Swiping down - move to previous items
+                selectedIndex = Math.max(selectedIndex - 1, 0);
+              }
+
+              centerSelectedItem();
+              updateSelection();
+            }
+
+            if (progress < 1 && itemsMoved < itemsToScroll) {
+              momentumAnimation = requestAnimationFrame(animateMomentum);
+            } else {
+              momentumAnimation = null;
+            }
           }
 
-          // Smoothly center the selected item and update selection
-          centerSelectedItem();
-          updateSelection();
+          // Start momentum animation
+          momentumAnimation = requestAnimationFrame(animateMomentum);
         }
       },
       { passive: false }

@@ -1,0 +1,302 @@
+---
+// OTP Authentication Form Component
+import Button from "../common/Button.astro";
+
+const { globalInputClasses } = Astro.props;
+---
+
+<div class="w-full max-w-lg px-4 py-8">
+  <!-- OTP Request Form (shown first) -->
+  <div id="otp-request-form">
+    <form id="request-otp-form" class="grid w-full grid-cols-1 gap-3 space-y-8">
+      <div>
+        <label
+          for="otp-email"
+          class="hidden mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Email
+        </label>
+        <input
+          type="email"
+          name="email"
+          id="otp-email"
+          placeholder="Your email address"
+          required
+          autocomplete="email"
+          autofocus
+          class={`${globalInputClasses} text-center`}
+        />
+      </div>
+
+      <div class="flex justify-between gap-3">
+        <Button
+          href="/auth/login"
+          variant="outline"
+          size="lg"
+          icon="arrow-left"
+          iconPosition="left"
+        >
+          back
+        </Button>
+        <Button type="submit" variant="primary" size="lg" icon="mail" iconPosition="right">
+          Send Code
+        </Button>
+      </div>
+    </form>
+  </div>
+
+  <!-- OTP Verification Form (hidden initially) -->
+  <div id="otp-verify-form" class="hidden">
+    <form id="verify-otp-form" class="grid w-full grid-cols-1 gap-3 space-y-8">
+      <div>
+        <p class="mb-4 text-sm text-center text-gray-600 dark:text-gray-400">
+          Enter the 6-digit code sent to <span id="otp-sent-email" class="font-semibold"></span>
+        </p>
+        <label
+          for="otp-code"
+          class="hidden mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Verification Code
+        </label>
+        <input
+          type="text"
+          name="token"
+          id="otp-code"
+          placeholder="Enter 6-digit code"
+          required
+          maxlength="6"
+          pattern="[0-9]{6}"
+          autocomplete="one-time-code"
+          class={`${globalInputClasses} text-center text-2xl tracking-widest font-mono`}
+        />
+      </div>
+
+      <div class="flex justify-between gap-3">
+        <Button
+          type="button"
+          id="back-to-email-button"
+          variant="outline"
+          size="lg"
+          icon="arrow-left"
+          iconPosition="left"
+        >
+          back
+        </Button>
+        <Button type="submit" variant="primary" size="lg" icon="check" iconPosition="right">
+          Verify
+        </Button>
+      </div>
+
+      <div class="text-center">
+        <button
+          type="button"
+          id="resend-otp-button"
+          class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+        >
+          Resend code
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let currentEmail = "";
+
+  // Initialize OTP forms
+  function initOTPForms() {
+    const requestForm = document.getElementById("request-otp-form") as HTMLFormElement;
+    const verifyForm = document.getElementById("verify-otp-form") as HTMLFormElement;
+    const backToEmailButton = document.getElementById("back-to-email-button");
+    const resendButton = document.getElementById("resend-otp-button");
+
+    if (!requestForm || !verifyForm) {
+      console.error("[OTP] Forms not found");
+      return;
+    }
+
+    // Handle OTP request
+    requestForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const emailInput = requestForm.querySelector("#otp-email") as HTMLInputElement;
+      const email = emailInput?.value?.trim();
+
+      if (!email) {
+        showNotification("error", "Validation Error", "Please enter your email address");
+        return;
+      }
+
+      currentEmail = email;
+
+      // Show loading
+      showNotification(
+        "info",
+        "Sending Code...",
+        "Please wait while we send your verification code"
+      );
+
+      try {
+        const response = await fetch("/api/auth/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, type: "magiclink" }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.details || result.error || "Failed to send OTP");
+        }
+
+        // Success - show verification form
+        document.getElementById("otp-request-form")?.classList.add("hidden");
+        document.getElementById("otp-verify-form")?.classList.remove("hidden");
+
+        const sentEmailSpan = document.getElementById("otp-sent-email");
+        if (sentEmailSpan) {
+          sentEmailSpan.textContent = email;
+        }
+
+        // Focus on code input
+        const codeInput = document.getElementById("otp-code") as HTMLInputElement;
+        if (codeInput) {
+          setTimeout(() => codeInput.focus(), 100);
+        }
+
+        showNotification("success", "Code Sent!", "Check your email for the verification code");
+      } catch (error) {
+        console.error("[OTP] Error sending code:", error);
+        showNotification(
+          "error",
+          "Error",
+          error instanceof Error ? error.message : "Failed to send verification code"
+        );
+      }
+    });
+
+    // Handle OTP verification
+    verifyForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const codeInput = verifyForm.querySelector("#otp-code") as HTMLInputElement;
+      const token = codeInput?.value?.trim();
+
+      if (!token || token.length !== 6) {
+        showNotification("error", "Validation Error", "Please enter a valid 6-digit code");
+        return;
+      }
+
+      // Show loading
+      showNotification("info", "Verifying...", "Please wait while we verify your code");
+
+      try {
+        const response = await fetch("/api/auth/verify-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: currentEmail, token, type: "email" }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.details || result.error || "Invalid verification code");
+        }
+
+        // Success - redirect to dashboard
+        showNotification("success", "Success!", "Verification successful. Redirecting...");
+
+        setTimeout(() => {
+          window.location.href = "/project/dashboard";
+        }, 1000);
+      } catch (error) {
+        console.error("[OTP] Error verifying code:", error);
+        showNotification(
+          "error",
+          "Verification Failed",
+          error instanceof Error ? error.message : "Invalid or expired code"
+        );
+
+        // Clear the code input
+        if (codeInput) {
+          codeInput.value = "";
+          codeInput.focus();
+        }
+      }
+    });
+
+    // Handle back button
+    if (backToEmailButton) {
+      backToEmailButton.addEventListener("click", () => {
+        document.getElementById("otp-verify-form")?.classList.add("hidden");
+        document.getElementById("otp-request-form")?.classList.remove("hidden");
+
+        // Clear the code input
+        const codeInput = document.getElementById("otp-code") as HTMLInputElement;
+        if (codeInput) {
+          codeInput.value = "";
+        }
+      });
+    }
+
+    // Handle resend button
+    if (resendButton) {
+      resendButton.addEventListener("click", async () => {
+        if (!currentEmail) {
+          showNotification("error", "Error", "Email not found. Please start over.");
+          return;
+        }
+
+        showNotification("info", "Resending Code...", "Please wait");
+
+        try {
+          const response = await fetch("/api/auth/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: currentEmail, type: "magiclink" }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.details || result.error || "Failed to resend OTP");
+          }
+
+          showNotification("success", "Code Resent!", "Check your email for the new code");
+        } catch (error) {
+          console.error("[OTP] Error resending code:", error);
+          showNotification(
+            "error",
+            "Error",
+            error instanceof Error ? error.message : "Failed to resend code"
+          );
+        }
+      });
+    }
+
+    // Auto-format OTP input (only allow numbers)
+    const codeInput = document.getElementById("otp-code") as HTMLInputElement;
+    if (codeInput) {
+      codeInput.addEventListener("input", (e) => {
+        const target = e.target as HTMLInputElement;
+        target.value = target.value.replace(/[^0-9]/g, "");
+      });
+    }
+  }
+
+  // Helper function to show notifications
+  function showNotification(type: string, title: string, message: string) {
+    if (window.showNotice) {
+      window.showNotice(type, title, message);
+    } else {
+      console.log(`🔔 [${type.toUpperCase()}] ${title}: ${message}`);
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initOTPForms);
+  } else {
+    initOTPForms();
+  }
+</script>

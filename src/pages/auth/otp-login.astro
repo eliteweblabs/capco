@@ -1,0 +1,64 @@
+---
+// OTP Login page
+
+// Handle OAuth callback if code is present (MUST be first)
+const authCode = Astro.url.searchParams.get("code");
+if (authCode) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+}
+
+// Get auth data directly
+import { checkAuth } from "../../lib/auth";
+
+const authResult = await checkAuth(Astro.cookies);
+const { isAuth, currentUser } = authResult;
+
+// Redirect authenticated users to dashboard
+if (isAuth) {
+  console.log("🔐 [OTP-LOGIN] User is authenticated, redirecting to dashboard");
+  return Astro.redirect("/project/dashboard");
+}
+
+console.log("🔐 [OTP-LOGIN] User is not authenticated, showing OTP login page");
+
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+} = await globalCompanyData();
+
+import { globalClasses } from "../../pages/api/global/global-classes";
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+
+import App from "../../components/ui/App.astro";
+import OTPForm from "../../components/form/OTPForm.astro";
+---
+
+<App
+  title="OTP Login"
+  {currentUser}
+  description="Sign in with a one-time password sent to your email"
+  {globalCompanyName}
+  {globalCompanySlogan}
+  {globalCompanyAddress}
+  {globalCompanyPhone}
+  {globalCompanyEmail}
+  {globalCompanyWebsite}
+  {globalCompanyLogo}
+  {globalInputClasses}
+  {primaryTextClasses}
+  {secondaryTextClasses}
+  centerContent={true}
+>
+  <div class="text-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Sign in with OTP</h1>
+    <p class="text-gray-600 dark:text-gray-400">We'll send a verification code to your email</p>
+  </div>
+
+  <OTPForm {globalInputClasses} />
+</App>
