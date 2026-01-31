@@ -316,19 +316,29 @@ if (!currentUser || currentRole === "Client") {
                 : ""
             }
           </div>
-          <button
-            type="button"
-            id="delete-notification-${notification.id}"
-            onclick="event.stopPropagation(); window.confirmDeleteNotification(${notification.id})"
-            class="flex-shrink-0 p-1 text-gray-400 dark:text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-900/20 rounded transition-colors delete-btn"
-            data-state="trash"
-            data-notification-id="${notification.id}"
-            title="Delete notification"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-            </svg>
-          </button>
+          <div class="delete-confirm-wrapper flex-shrink-0">
+            <button
+              type="button"
+              id="delete-notification-${notification.id}"
+              class="delete-confirm-btn btn-ghost btn-sm rounded-full inline-flex items-center justify-center p-2 text-sm font-medium text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              data-state="trash"
+              data-timeout="3000"
+              data-item-type="notification"
+              data-callback="handleNotificationDelete"
+              title="Delete notification"
+            >
+              <svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+              </svg>
+              <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" class="absolute top-0 left-0 timer-ring-overlay">
+                <circle cx="22" cy="22" r="18" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 22 22)" class="timer-icon-test" />
+              </svg>
+            </button>
+          </div>
         </div>
       `;
 
@@ -497,51 +507,6 @@ if (!currentUser || currentRole === "Client") {
       }
     }
 
-    confirmDeleteNotification(notificationId: number) {
-      const button = document.getElementById(`delete-notification-${notificationId}`);
-      if (!button) {
-        console.error("❌ [NOTIFICATIONS] Delete button not found for ID:", notificationId);
-        return;
-      }
-
-      const currentState = button.getAttribute("data-state");
-
-      if (currentState === "trash") {
-        // First click: Show question mark
-        button.innerHTML =
-          '<span class="text-lg font-bold w-4 h-4 flex items-center justify-center">?</span>';
-        button.setAttribute("data-state", "confirm");
-        button.title = "Click again to confirm deletion";
-        button.className =
-          "flex-shrink-0 p-1 text-danger-600 hover:text-danger-800 hover:bg-danger-100 dark:hover:bg-danger-900/20 rounded transition-colors delete-btn pulse";
-
-        // Auto-revert after 3 seconds
-        setTimeout(() => {
-          if (button.getAttribute("data-state") === "confirm") {
-            this.revertDeleteButton(notificationId);
-          }
-        }, 3000);
-      } else if (currentState === "confirm") {
-        // Second click: Actually delete
-        this.deleteNotification(notificationId);
-      }
-    }
-
-    revertDeleteButton(notificationId: number) {
-      const button = document.getElementById(`delete-notification-${notificationId}`);
-      if (!button) return;
-
-      button.innerHTML = `
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-        </svg>
-      `;
-      button.setAttribute("data-state", "trash");
-      button.title = "Delete notification";
-      button.className =
-        "flex-shrink-0 p-1 text-gray-400 dark:text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-900/20 rounded transition-colors delete-btn";
-    }
-
     async deleteNotification(notificationId: number) {
       console.log("🔍 [NOTIFICATIONS] Deleting notification ID:", notificationId);
       try {
@@ -654,10 +619,13 @@ if (!currentUser || currentRole === "Client") {
   const notificationManager = new NotificationManager();
   (window as any).notificationManager = notificationManager;
 
-  // Global function for delete confirmation
-  (window as any).confirmDeleteNotification = (notificationId: number) => {
-    // console.log("🔍 [NOTIFICATIONS] Global confirmDeleteNotification called for ID:", notificationId);
-    notificationManager.confirmDeleteNotification(notificationId);
+  // Global callback for delete confirmation (called by DeleteConfirmButton)
+  (window as any).handleNotificationDelete = async (notificationId: number) => {
+    console.log(
+      "🔍 [NOTIFICATIONS] Global handleNotificationDelete called for ID:",
+      notificationId
+    );
+    await notificationManager.deleteNotification(notificationId);
   };
 
   // Setup notification bell click handler

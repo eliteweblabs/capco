@@ -82,6 +82,11 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const metadataUserId = callMetadata?.userId;
     const metadataUserEmail = callMetadata?.userEmail;
 
+    // Debug: Log the entire body structure to see where metadata is
+    if (messageType === "tool-calls") {
+      console.log("[---VAPI-WEBHOOK] Full body structure:", JSON.stringify(body, null, 2));
+    }
+
     console.log(
       `[---VAPI-WEBHOOK] ${messageType}`,
       calendarType ? `(calendarType: ${calendarType})` : "",

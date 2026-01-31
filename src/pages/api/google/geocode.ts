@@ -104,6 +104,9 @@ export const GET: APIRoute = async ({ url }) => {
       const results =
         data.places?.map((place: any) => ({
           formatted_address: place.formattedAddress,
+          description: place.formattedAddress, // For SlotMachineModal compatibility
+          label: place.formattedAddress, // For SlotMachineModal compatibility
+          value: place.formattedAddress,
           place_id: place.id,
           geometry: {
             location: {
