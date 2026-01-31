@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("📧 [EMAIL-WEBHOOK] Extracted project info:", projectInfo);
 
     // Step 4: Create new project
-    const project = await createProjectFromEmail(user.id, projectInfo, user);
+    const project = await createProjectFromEmail(user.id, projectInfo, user, request);
     if (!project) {
       console.error("❌ [EMAIL-WEBHOOK] Failed to create project");
       return new Response(JSON.stringify({ success: false, error: "Failed to create project" }), {
@@ -616,7 +616,7 @@ function extractPlaceholders(text: string): Record<string, string> {
 }
 
 // Create new project using the create-project API (ensures proper notifications)
-async function createProjectFromEmail(userId: string, projectInfo: any, userProfile: any) {
+async function createProjectFromEmail(userId: string, projectInfo: any, userProfile: any, request: Request) {
   try {
     console.log("🏗️ [EMAIL-WEBHOOK] Creating project via API for user:", userId);
 
@@ -675,7 +675,7 @@ async function createProjectFromEmail(userId: string, projectInfo: any, userProf
       console.log("🔔 [EMAIL-WEBHOOK] Updating project status to trigger notifications");
 
       const nextStatus = 10;
-      const statusResponse = await fetch(`${getApiBaseUrl()}/api/update-status`, {
+      const statusResponse = await fetch(`${getApiBaseUrl(request)}/api/update-status`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
