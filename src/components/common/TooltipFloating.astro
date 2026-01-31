@@ -1,0 +1,228 @@
+---
+// Tooltip component using Floating UI for automatic viewport-aware positioning
+export const partial = true;
+
+export interface Props {
+  text?: string;
+  position?: "top" | "bottom" | "left" | "right";
+  className?: string;
+  tooltipClass?: string;
+  disabled?: boolean;
+  open?: boolean;
+  dismissable?: boolean;
+  mobileClickable?: boolean;
+}
+
+const {
+  text = "",
+  position = "top",
+  className = "",
+  tooltipClass = "",
+  disabled = false,
+  open = false,
+  dismissable = false,
+  mobileClickable = false,
+} = Astro.props;
+
+const wrapperClasses =
+  `tooltip-wrapper inline-block ${mobileClickable ? "mobile-clickable" : ""} ${className}`.trim();
+const contentClasses = [
+  "tooltip-content absolute",
+  "px-3 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm rounded-lg shadow-lg",
+  dismissable ? "opacity-100" : open ? "opacity-100" : "opacity-0",
+  dismissable ? "pointer-events-auto" : "pointer-events-none",
+  "whitespace-nowrap z-50 transition-opacity duration-200",
+  tooltipClass,
+  disabled ? "hidden" : "",
+]
+  .filter(Boolean)
+  .join(" ");
+---
+
+<span class={wrapperClasses} data-tooltip-position={position}>
+  <slot />
+  <span class={contentClasses} data-dismissable={dismissable ? "true" : "false"} role="tooltip">
+    {text}
+    {
+      dismissable && (
+        <button
+          type="button"
+          class="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-white/20 tooltip-close-btn"
+          aria-label="Close tooltip"
+        >
+          <svg
+            class="h-3 w-3"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )
+    }
+    <span class="tooltip-arrow" data-popper-arrow></span>
+  </span>
+</span>
+
+<style>
+  .tooltip-arrow,
+  .tooltip-arrow::before {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+  }
+
+  .tooltip-arrow {
+    visibility: hidden;
+  }
+
+  .tooltip-arrow::before {
+    visibility: visible;
+    content: "";
+    transform: rotate(45deg);
+  }
+
+  .tooltip-content[data-popper-placement^="top"] > .tooltip-arrow {
+    bottom: -4px;
+  }
+
+  .tooltip-content[data-popper-placement^="bottom"] > .tooltip-arrow {
+    top: -4px;
+  }
+
+  .tooltip-content[data-popper-placement^="left"] > .tooltip-arrow {
+    right: -4px;
+  }
+
+  .tooltip-content[data-popper-placement^="right"] > .tooltip-arrow {
+    left: -4px;
+  }
+</style>
+
+<script>
+  import { computePosition, flip, shift, offset, arrow } from "@floating-ui/dom";
+
+  const initialized = new WeakSet();
+
+  function initTooltips() {
+    const wrappers = document.querySelectorAll(".tooltip-wrapper");
+
+    wrappers.forEach((wrapper) => {
+      // Skip if already initialized
+      if (initialized.has(wrapper)) return;
+      initialized.add(wrapper);
+
+      const trigger = wrapper.firstElementChild as HTMLElement;
+      const tooltip = wrapper.querySelector(".tooltip-content") as HTMLElement;
+      const arrowElement = tooltip?.querySelector(".tooltip-arrow") as HTMLElement;
+
+      if (!trigger || !tooltip) return;
+
+      const preferredPosition = (wrapper.getAttribute("data-tooltip-position") || "top") as any;
+      const isMobileClickable = wrapper.classList.contains("mobile-clickable");
+      const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+      // Update position using Floating UI
+      async function updatePosition() {
+        if (!tooltip.classList.contains("opacity-100")) return;
+
+        const middleware = [
+          offset(8),
+          flip({ fallbackAxisSideDirection: "start" }),
+          shift({ padding: 8 }),
+        ];
+
+        if (arrowElement) {
+          middleware.push(arrow({ element: arrowElement }));
+        }
+
+        const { x, y, placement, middlewareData } = await computePosition(trigger, tooltip, {
+          placement: preferredPosition,
+          middleware,
+        });
+
+        Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
+        tooltip.setAttribute("data-popper-placement", placement);
+
+        // Position arrow
+        if (arrowElement && middlewareData.arrow) {
+          const { x: arrowX, y: arrowY } = middlewareData.arrow;
+          Object.assign(arrowElement.style, {
+            left: arrowX != null ? `${arrowX}px` : "",
+            top: arrowY != null ? `${arrowY}px` : "",
+          });
+        }
+      }
+
+      // Show/hide helpers
+      const show = () => {
+        tooltip.classList.remove("opacity-0");
+        tooltip.classList.add("opacity-100");
+        tooltip.style.pointerEvents = "auto";
+        updatePosition();
+      };
+
+      const hide = () => {
+        tooltip.classList.remove("opacity-100");
+        tooltip.classList.add("opacity-0");
+        tooltip.style.pointerEvents = "none";
+      };
+
+      // Event handlers
+      if (isTouchDevice && isMobileClickable) {
+        // Mobile: click to toggle
+        const handleClick = (e: Event) => {
+          e.stopPropagation();
+          const isVisible = tooltip.classList.contains("opacity-100");
+
+          // Close all other tooltips
+          document.querySelectorAll(".tooltip-content.opacity-100").forEach((other) => {
+            if (other !== tooltip) {
+              other.classList.remove("opacity-100");
+              other.classList.add("opacity-0");
+            }
+          });
+
+          isVisible ? hide() : show();
+        };
+
+        const handleOutsideClick = (e: Event) => {
+          if (!wrapper.contains(e.target as Node) && tooltip.classList.contains("opacity-100")) {
+            hide();
+          }
+        };
+
+        wrapper.addEventListener("click", handleClick);
+        document.addEventListener("click", handleOutsideClick);
+      } else {
+        // Desktop: hover
+        wrapper.addEventListener("mouseenter", show);
+        wrapper.addEventListener("mouseleave", hide);
+        wrapper.addEventListener("focus", show, true);
+        wrapper.addEventListener("blur", hide, true);
+      }
+
+      // Update on scroll/resize
+      window.addEventListener("scroll", updatePosition, { passive: true });
+      window.addEventListener("resize", updatePosition, { passive: true });
+
+      // Close button
+      const closeBtn = tooltip.querySelector(".tooltip-close-btn");
+      closeBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        hide();
+      });
+    });
+  }
+
+  // Initialize once on load
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initTooltips);
+  } else {
+    initTooltips();
+  }
+</script>

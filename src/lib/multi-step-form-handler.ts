@@ -17,20 +17,90 @@ export function createMultiStepFormHandler(
     onSubmit?: (formData: FormData) => Promise<void>;
     customValidators?: Record<string, (stepNumber: number) => Promise<boolean>>;
     onStepChange?: (stepNumber: number) => void;
+    formConfig?: any; // Add formConfig to access registerUser flag
   } = {}
 ): MultiStepFormHandler {
   let currentStep = 1;
   let isSubmitting = false;
 
   const form = document.getElementById(formId) as HTMLFormElement;
-  const progressBar = document.getElementById(`${formId}-progress-bar`) as HTMLElement;
-  const progressText = document.getElementById(`${formId}-progress-text`) as HTMLElement;
 
   // Update progress bar
   function updateProgress() {
-    const progress = (currentStep / totalSteps) * 100;
-    if (progressBar) progressBar.style.width = `${progress}%`;
-    if (progressText) progressText.textContent = `${currentStep} / ${totalSteps}`;
+    const stepper = document.getElementById(`${formId}-stepper`);
+    if (!stepper) return;
+
+    // Update each step indicator
+    const stepIndicators = stepper.querySelectorAll("[data-step-indicator]");
+    stepIndicators.forEach((indicator) => {
+      const stepNum = parseInt(indicator.getAttribute("data-step-indicator") || "0");
+      const circle = indicator.querySelector("span:first-child");
+      const checkmark = indicator.querySelector(".checkmark-icon");
+      const number = indicator.querySelector(".step-number");
+      const progressLine = indicator.querySelector(".step-progress-line");
+
+      if (!circle) return;
+
+      // Remove all state classes
+      circle.classList.remove(
+        "bg-primary-500",
+        "dark:bg-primary-600",
+        "text-white",
+        "ring-4",
+        "ring-primary-100",
+        "dark:ring-primary-900/30",
+        "bg-green-500",
+        "dark:bg-green-600",
+        "bg-gray-100",
+        "dark:bg-gray-800",
+        "text-gray-500",
+        "dark:text-gray-400"
+      );
+
+      if (stepNum < currentStep) {
+        // Completed step - show checkmark
+        circle.classList.add("bg-green-500", "dark:bg-green-600", "text-white");
+        if (checkmark) checkmark.classList.remove("hidden");
+        if (number) number.classList.add("hidden");
+
+        // Fill progress line 100%
+        if (progressLine) {
+          (progressLine as HTMLElement).style.width = "100%";
+        }
+      } else if (stepNum === currentStep) {
+        // Current step - highlight with ring
+        circle.classList.add(
+          "bg-primary-500",
+          "dark:bg-primary-600",
+          "text-white",
+          "ring-4",
+          "ring-primary-100",
+          "dark:ring-primary-900/30"
+        );
+        if (checkmark) checkmark.classList.add("hidden");
+        if (number) number.classList.remove("hidden");
+
+        // Empty progress line
+        if (progressLine) {
+          (progressLine as HTMLElement).style.width = "0%";
+        }
+      } else {
+        // Future step - gray
+        circle.classList.add(
+          "bg-gray-100",
+          "dark:bg-gray-800",
+          "text-gray-500",
+          "dark:text-gray-400"
+        );
+        if (checkmark) checkmark.classList.add("hidden");
+        if (number) number.classList.remove("hidden");
+
+        // Empty progress line
+        if (progressLine) {
+          (progressLine as HTMLElement).style.width = "0%";
+        }
+      }
+    });
   }
 
   // Show specific step
@@ -61,6 +131,29 @@ export function createMultiStepFormHandler(
       targetStep.classList.add("active");
       currentStep = stepNumber;
       updateProgress();
+
+      // Trigger typewriter effect for title
+      const titleElement = targetStep.querySelector(".typewriter-text") as HTMLElement;
+      if (titleElement) {
+        // Reset animation by removing and re-adding class
+        titleElement.classList.remove("typed");
+        void titleElement.offsetWidth; // Force reflow
+
+        // After animation completes, add 'typed' class to stop cursor
+        setTimeout(() => {
+          titleElement.classList.add("typed");
+        }, 800); // Match typewriter animation duration
+      }
+
+      // Hide title block when moving past step 1
+      const titleBlock = document.querySelector(".step-1-only");
+      if (titleBlock) {
+        if (stepNumber === 1) {
+          (titleBlock as HTMLElement).style.display = "block";
+        } else {
+          (titleBlock as HTMLElement).style.display = "none";
+        }
+      }
 
       // Update review section if on final step
       if (targetStep.querySelector(".edit-step")) {
@@ -186,21 +279,34 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Email uniqueness validation (for registration forms)
-    if (formId.includes("register")) {
+    // Email uniqueness validation (configurable via registerUser flag)
+    const shouldCheckEmailUniqueness = options.formConfig?.registerUser === true;
+
+    if (shouldCheckEmailUniqueness) {
       const emailInput = stepEl.querySelector('input[type="email"]') as HTMLInputElement;
       if (emailInput && emailInput.value) {
         const emailValid = await validateEmailUniqueness(emailInput.value);
         if (!emailValid) {
           emailInput.classList.add("touched");
+
+          // Redirect to login with callback URL to return to this form
+          const currentUrl = window.location.pathname;
+          const loginUrl = `/auth/login?redirect=${encodeURIComponent(currentUrl)}`;
+
           if (window.showNotice) {
             window.showNotice(
               "warning",
               "Email Already Registered",
-              'This email is already registered. <br><br><a href="/auth/login" class="text-primary-600 hover:text-primary-500 underline">Click here to log in instead</a>',
-              8000
+              `This email is already registered. <br><br><a href="${loginUrl}" class="text-primary-600 hover:text-primary-500 underline">Click here to log in and continue</a>`,
+              10000
             );
           }
+
+          // Optional: Auto-redirect after a delay
+          setTimeout(() => {
+            window.location.href = loginUrl;
+          }, 10000);
+
           return false;
         }
       }
@@ -727,6 +833,7 @@ export function initializeMultiStepForm(
     onStepChange: (stepNumber) => {
       console.log(`[MULTISTEP-FORM] Step changed to: ${stepNumber}`);
     },
+    formConfig: formConfig, // Pass formConfig to enable registerUser flag
   });
 
   // Override showStep to respect skip logic

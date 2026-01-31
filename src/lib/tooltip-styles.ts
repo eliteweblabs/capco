@@ -27,7 +27,9 @@ export function getTooltipClasses(config: TooltipStyleConfig = {}): {
   } = config;
 
   // Base wrapper classes - add mobile-clickable class if mobileClickable is enabled
-  const wrapperClasses = `relative inline-block group ${mobileClickable ? "mobile-clickable-tooltip" : ""} ${className}`;
+  // Use contents display to avoid creating an extra visual box
+  const wrapperClasses =
+    `relative inline-block group ${mobileClickable ? "mobile-clickable-tooltip" : ""} ${className}`.trim();
 
   // Position classes for tooltip placement
   const positionClasses = {
@@ -47,7 +49,7 @@ export function getTooltipClasses(config: TooltipStyleConfig = {}): {
       "absolute right-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900 dark:border-r-gray-100",
   };
 
-  // Build tooltip classes
+  // Build tooltip classes - add data attribute for initial position
   const tooltipClasses = [
     "tooltip-content absolute",
     positionClasses[position],
@@ -55,6 +57,7 @@ export function getTooltipClasses(config: TooltipStyleConfig = {}): {
     dismissable ? "opacity-100" : open ? "opacity-100" : "opacity-0 group-hover:opacity-100",
     dismissable ? "pointer-events-auto" : "transition-opacity duration-200 pointer-events-none",
     "whitespace-nowrap z-500 block",
+    "tooltip-auto-position", // Add class for auto-positioning
     tooltipClass,
     disabled ? "hidden" : "",
   ]
@@ -78,13 +81,14 @@ export function generateTooltipHTML(
   config: TooltipStyleConfig = {}
 ): string {
   const { wrapperClasses, tooltipClasses, arrowClasses } = getTooltipClasses(config);
+  const position = config.position || "top";
 
   return `
-    <span class="${wrapperClasses}" style="vertical-align: baseline; white-space: nowrap;">
+    <span class="${wrapperClasses}" style="vertical-align: baseline; white-space: nowrap; background: none; border: none; padding: 0;">
       ${slotContent}
-      <span class="${tooltipClasses}">
+      <span class="${tooltipClasses}" data-tooltip-position="${position}">
         <span class="cursor-pointer">${text}</span>
-        <span class="${arrowClasses}" style="display: block;"></span>
+        <span class="tooltip-arrow" style="display: block;"></span>
       </span>
     </span>
   `;

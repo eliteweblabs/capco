@@ -16,6 +16,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
   const provider = formData.get("provider")?.toString();
+  const redirectTo = formData.get("redirect")?.toString() || "/dashboard";
 
   if (provider) {
     // IMPORTANT: OAuth must be initiated client-side for PKCE to work
@@ -117,5 +118,5 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     // Don't fail the main login if this fails
   }
 
-  return redirect("/dashboard");
+  return redirect(redirectTo);
 };

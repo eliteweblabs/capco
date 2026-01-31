@@ -3,7 +3,7 @@
 import Button from "../common/Button.astro";
 import ForgotPasswordModal from "./ForgetPasswordModal.astro";
 
-const { globalInputClasses } = Astro.props;
+const { globalInputClasses, redirectUrl = "/project/dashboard" } = Astro.props;
 ---
 
 <!-- Full Screen Login -->
@@ -57,6 +57,9 @@ const { globalInputClasses } = Astro.props;
     method="post"
     class="grid w-full grid-cols-1 gap-3 mt-14 space-y-8"
   >
+    <!-- Hidden redirect field -->
+    <input type="hidden" name="redirect" value={redirectUrl} />
+
     <div>
       <label for="email" class="hidden mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
         Email
@@ -133,6 +136,11 @@ const { globalInputClasses } = Astro.props;
 
     console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
 
+    // Get the redirect destination from the page (where to go after auth completes)
+    const redirectDestination =
+      document.querySelector('input[name="redirect"]')?.value || "/project/dashboard";
+    console.log("[GOOGLE-SIGNIN] Post-auth redirect destination:", redirectDestination);
+
     // CRITICAL: Clear any stale auth state before starting new OAuth flow
     // This prevents "Invalid Refresh Token" errors from interfering with code verifier storage
     const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
@@ -175,10 +183,12 @@ const { globalInputClasses } = Astro.props;
     // For production: https://capcofire.com/auth/callback
     // For development: http://localhost:4321/auth/callback
     // Both should be in the Supabase Redirect URLs list
-    const redirectUrl = `${window.location.origin}/auth/callback`;
-    console.log("[GOOGLE-SIGNIN] Redirect URL:", redirectUrl);
+    // Add redirect parameter so callback knows where to go after auth
+    const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectDestination)}`;
+    console.log("[GOOGLE-SIGNIN] Callback URL (OAuth redirect):", callbackUrl);
+    console.log("[GOOGLE-SIGNIN] Final destination (after auth):", redirectDestination);
     console.log("[GOOGLE-SIGNIN] Current origin:", window.location.origin);
-    console.log("[GOOGLE-SIGNIN] Make sure this URL is in Supabase Redirect URLs list!");
+    console.log("[GOOGLE-SIGNIN] Make sure base URL is in Supabase Redirect URLs list!");
 
     // Initiate OAuth (this will store code verifier internally in Supabase)
     // Supabase stores the code verifier in localStorage with a specific key format
@@ -187,7 +197,7 @@ const { globalInputClasses } = Astro.props;
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: callbackUrl,
         queryParams: {
           access_type: "offline",
           prompt: "consent",

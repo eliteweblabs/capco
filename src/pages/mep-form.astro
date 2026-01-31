@@ -3,6 +3,7 @@ import LayoutDefault from "../components/layouts/LayoutDefault.astro";
 import MultiStepForm from "../components/form/MultiStepForm.astro";
 import { mepFormConfig } from "../lib/forms/mep-form-config";
 import { supabase } from "../lib/supabase";
+import App from "../components/ui/App.astro";
 
 const title = "MEP Project Submission";
 const description = "Submit your MEP (Mechanical, Electrical, Plumbing) project information";
@@ -47,24 +48,8 @@ const initialData =
       };
 ---
 
-<LayoutDefault {title} {description}>
-  <main class="container mx-auto px-4 py-16">
-    <div class="mx-auto max-w-2xl">
-      <div class="mb-8 text-center">
-        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">MEP Project</h1>
-        <p class="text-lg text-gray-600 dark:text-gray-400">
-          {description}
-        </p>
-        {
-          isAuthenticated && (
-            <p class="mt-2 text-sm text-primary-600 dark:text-primary-400">
-              Logged in as {user.email}
-            </p>
-          )
-        }
-      </div>
-
-      <MultiStepForm config={mepFormConfig} {initialData} />
-    </div>
-  </main>
-</LayoutDefault>
+<App centerContent={true} mask="center" {title} {description}>
+  <div class="mx-auto max-w-2xl">
+    <MultiStepForm config={mepFormConfig} {initialData} />
+  </div>
+</App>

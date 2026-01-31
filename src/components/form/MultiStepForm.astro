@@ -4,6 +4,7 @@ import type { MultiStepFormConfig } from "../../lib/multi-step-form-config";
 import { getButtonConfig } from "../../lib/multi-step-form-config";
 import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
+import Tooltip from "../common/TooltipFloating.astro";
 import SlotMachineModalStaff from "./SlotMachineModalStaff.astro";
 import InlineAddressSearch from "./InlineAddressSearch.astro";
 import { SMS_UTILS } from "../../lib/sms-utils";
@@ -15,11 +16,7 @@ interface Props {
   initialData?: Record<string, any>;
 }
 
-const {
-  config,
-  containerClass = "w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8",
-  initialData = {},
-} = Astro.props;
+const { config, containerClass = "", initialData = {} } = Astro.props;
 
 const { globalInputClasses } = globalClasses();
 const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
@@ -32,31 +29,71 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 ---
 
 <div class={containerClass}>
+  <!-- Advanced Stepper - Fixed to bottom -->
   {
     config.progressBar && (
-      <div class="mb-6 sm:mb-12">
-        <div class="relative">
-          <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-            <div
-              id={`${config.formId}-progress-bar`}
-              class="h-full rounded-full bg-primary-500 transition-all duration-500 ease-out"
-              style="width: 0%"
-            />
-          </div>
-          <div class="mt-3 text-center">
-            <span
-              id={`${config.formId}-progress-text`}
-              class="text-sm font-medium text-gray-600 dark:text-gray-400"
-            >
-              1 / {config.totalSteps}
-            </span>
-          </div>
+      <div class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-4">
+        <div class="max-w-4xl mx-auto">
+          <ol class="flex items-center w-full" id={`${config.formId}-stepper`}>
+            {config.steps.map((step, index) => (
+              <li
+                class={`flex items-center ${index < config.steps.length - 1 ? "w-full" : ""}`}
+                data-step-indicator={step.stepNumber}
+              >
+                {/* Step Circle/Icon with Tooltip */}
+                <Tooltip text={step.title} position="top" mobileClickable={true}>
+                  <span
+                    class={`flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 rounded-full shrink-0 transition-all duration-300
+                      ${
+                        step.stepNumber === 1
+                          ? "bg-primary-500 dark:bg-primary-600 text-white ring-4 ring-primary-100 dark:ring-primary-900/30"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                      }
+                    `}
+                    data-step-title={step.title}
+                  >
+                    {/* Checkmark for completed steps */}
+                    <svg
+                      class="w-5 h-5 hidden checkmark-icon"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    {/* Number for current/upcoming steps */}
+                    <span class="step-number text-sm font-semibold">{step.stepNumber}</span>
+                  </span>
+                </Tooltip>
+
+                {/* Connecting Line */}
+                {index < config.steps.length - 1 && (
+                  <div class="w-full h-1 mx-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      class="h-full bg-primary-500 dark:bg-primary-600 transition-all duration-500 ease-out step-progress-line"
+                      style="width: 0%"
+                    />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
     )
   }
 
-  <form id={config.formId} action={config.formAction} method={config.formMethod || "post"}>
+  <form
+    id={config.formId}
+    action={config.formAction}
+    method={config.formMethod || "post"}
+    class={config.progressBar ? "pb-24" : ""}
+  >
     {
       config.steps.map((step) => (
         <div
@@ -64,11 +101,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           data-step={step.stepNumber}
           class:list={[step.stepNumber === 1 ? "active" : ""]}
         >
-          <div class="space-y-8 sm:space-y-12 lg:space-y-16">
+          <div class="space-y-24 sm:space-y-6 lg:space-y-8">
             {/* Step Header */}
-            <div class="text-center">
+            <div class="text-left">
               {step.showIcon && step.icon && (
-                <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+                <div class="mx-auto mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
                   <SimpleIcon
                     name={step.icon}
                     size="xl"
@@ -76,9 +113,13 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                   />
                 </div>
               )}
-              <h2 class="text-5xl font-bold text-gray-900 dark:text-white">{step.title}</h2>
+              <h2
+                class="text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white typewriter-text mb-20"
+                data-text={step.title}
+                set:html={step.title}
+              />
               {step.subtitle && (
-                <p class="mt-3 text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                <p class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md">
                   {step.subtitle}
                 </p>
               )}
@@ -128,6 +169,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       <SlotMachineModalStaff
                         id={field.id}
                         name={field.name}
+                        title={field.label || "Select an option"}
                         options={mobileCarrierOptions}
                         selectedValue=""
                         globalInputClasses={appendedGlobalInputClasses}
@@ -151,20 +193,45 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         class={appendedGlobalInputClasses}
                         data-error={field.errorMessage}
                       />
-                    ) : (
-                      <input
-                        type={field.type}
-                        id={field.id}
-                        name={field.name}
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        autocomplete={field.autocomplete}
-                        minlength={field.minlength}
-                        autofocus={field.autofocus}
-                        class={appendedGlobalInputClasses}
-                        data-error={field.errorMessage}
-                      />
-                    )}
+                    ) : field.type !== "component" && field.type !== "textarea" ? (
+                      field.name === "firstName" || field.name === "lastName" ? (
+                        <div class="relative">
+                          <input
+                            type={field.type}
+                            id={field.id}
+                            name={field.name}
+                            placeholder=""
+                            required={field.required}
+                            autocomplete={field.autocomplete}
+                            minlength={field.minlength}
+                            autofocus={field.autofocus}
+                            class={appendedGlobalInputClasses}
+                            data-error={field.errorMessage}
+                            data-has-animated-placeholder="true"
+                            data-original-placeholder={field.placeholder}
+                          />
+                          <span
+                            class="animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500"
+                            data-for={field.id}
+                          >
+                            {field.placeholder}
+                          </span>
+                        </div>
+                      ) : (
+                        <input
+                          type={field.type}
+                          id={field.id}
+                          name={field.name}
+                          placeholder={field.placeholder}
+                          required={field.required}
+                          autocomplete={field.autocomplete}
+                          minlength={field.minlength}
+                          autofocus={field.autofocus}
+                          class={appendedGlobalInputClasses}
+                          data-error={field.errorMessage}
+                        />
+                      )
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -216,66 +283,100 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             )}
 
             {/* Step Buttons */}
-            <div
-              class={`flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-between"} gap-3`}
-            >
-              {step.buttons.map((button) => {
-                const btnConfig = getButtonConfig(
-                  button,
-                  config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
-                );
+            {/* Choice buttons (radio-style options) */}
+            {step.buttons.some((b) => b.type === "choice") && (
+              <div
+                class={`flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-center flex-wrap"} gap-3 mb-6`}
+              >
+                {step.buttons
+                  .filter((button) => button.type === "choice")
+                  .map((button) => {
+                    const btnConfig = getButtonConfig(
+                      button,
+                      config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
+                    );
 
-                return button.type === "choice" ? (
-                  <Button
-                    type="button"
-                    variant={button.variant || "secondary"}
-                    size={button.size || "lg"}
-                    class={`${button.type}-step sms-choice ${button.classes || ""}`}
-                    disabled={button.disabled}
-                    dataAttributes={{
-                      ...(button.dataNext !== undefined && { "data-next": button.dataNext.toString() }),
-                      ...(button.dataValue !== undefined && { "data-value": button.dataValue }),
-                      ...(button.dataValue !== undefined && { "data-sms-value": button.dataValue }), // Keep for backward compatibility with SMS
-                    }}
-                  >
-                    <Fragment set:html={button.label} />
-                  </Button>
-                ) : button.href ? (
-                  <Button
-                    {...btnConfig}
-                    href={button.href}
-                    class={`${button.type}-step ${button.classes || ""}`}
-                    disabled={button.disabled}
-                  >
-                    <Fragment set:html={button.label} />
-                  </Button>
-                ) : (
-                  <Button
-                    {...btnConfig}
-                    type="button"
-                    class={`${button.type}-step ${button.classes || ""}`}
-                    disabled={button.disabled}
-                    dataAttributes={{
-                      ...(button.dataNext !== undefined && { "data-next": button.dataNext.toString() }),
-                      ...(button.dataPrev !== undefined && { "data-prev": button.dataPrev.toString() }),
-                    }}
-                  >
-                    {button.label === "back" ? (
-                      <Fragment set:html={button.label} />
-                    ) : (
-                      <span
-                        id={
-                          button.classes?.includes("phone")
-                            ? `${config.formId}-next-step-phone-text`
-                            : undefined
-                        }
+                    return (
+                      <Button
+                        type="button"
+                        variant={button.variant || "secondary"}
+                        size={button.size || "lg"}
+                        class={`${button.type}-step sms-choice ${button.classes || ""}`}
+                        disabled={button.disabled}
+                        dataAttributes={{
+                          ...(button.dataNext !== undefined && {
+                            "data-next": button.dataNext.toString(),
+                          }),
+                          ...(button.dataValue !== undefined && { "data-value": button.dataValue }),
+                          ...(button.dataValue !== undefined && {
+                            "data-sms-value": button.dataValue,
+                          }), // Keep for backward compatibility with SMS
+                        }}
                       >
                         <Fragment set:html={button.label} />
-                      </span>
-                    )}
-                  </Button>
-                );
-              })}
+                      </Button>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Navigation buttons (prev, next, submit, skip) */}
+            <div
+              class:list={[
+                "mt-12 flex gap-3",
+                step.buttons.filter((b) => b.type !== "choice").length === 1
+                  ? "justify-end"
+                  : "justify-between",
+              ]}
+            >
+              {step.buttons
+                .filter((button) => button.type !== "choice")
+                .map((button) => {
+                  const btnConfig = getButtonConfig(
+                    button,
+                    config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
+                  );
+
+                  return button.href ? (
+                    <Button
+                      {...btnConfig}
+                      href={button.href}
+                      class={`${button.type}-step ${button.classes || ""}`}
+                      disabled={button.disabled}
+                    >
+                      <Fragment set:html={button.label} />
+                    </Button>
+                  ) : (
+                    <Button
+                      {...btnConfig}
+                      type="button"
+                      class={`${button.type}-step ${button.classes || ""}`}
+                      disabled={button.disabled}
+                      dataAttributes={{
+                        ...(button.dataNext !== undefined && {
+                          "data-next": button.dataNext.toString(),
+                        }),
+                        ...(button.dataPrev !== undefined && {
+                          "data-prev": button.dataPrev.toString(),
+                        }),
+                      }}
+                    >
+                      {button.label === "back" ? (
+                        <Fragment set:html={button.label} />
+                      ) : (
+                        <span
+                          id={
+                            button.classes?.includes("phone")
+                              ? `${config.formId}-next-step-phone-text`
+                              : undefined
+                          }
+                        >
+                          <Fragment set:html={button.label} />
+                        </span>
+                      )}
+                    </Button>
+                  );
+                })}
             </div>
           </div>
         </div>
@@ -319,6 +420,121 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   import { initializeMultiStepForm } from "/src/lib/multi-step-form-handler.ts";
 
   document.addEventListener("DOMContentLoaded", () => {
+    // Initialize rotating placeholders for first and last name inputs
+    const firstNameInputs = document.querySelectorAll(
+      'input[name="firstName"][data-has-animated-placeholder="true"]'
+    );
+    const lastNameInputs = document.querySelectorAll(
+      'input[name="lastName"][data-has-animated-placeholder="true"]'
+    );
+
+    // Get corresponding placeholder spans
+    const firstNamePlaceholderSpans = Array.from(firstNameInputs).map((input) =>
+      document.querySelector(`.animated-placeholder[data-for="${input.id}"]`)
+    );
+    const lastNamePlaceholderSpans = Array.from(lastNameInputs).map((input) =>
+      document.querySelector(`.animated-placeholder[data-for="${input.id}"]`)
+    );
+
+    // First name placeholders in different languages
+    const firstNamePlaceholders = [
+      "John", // English
+      "Juan", // Spanish
+      "Jean", // French
+      "João", // Portuguese
+      "Giovanni", // Italian
+      "Hans", // German
+      "Иван", // Russian (Ivan)
+      "太郎", // Japanese (Taro)
+      "伟", // Chinese (Wei)
+    ];
+
+    // Last name placeholders in different languages
+    const lastNamePlaceholders = [
+      "Doe", // English
+      "García", // Spanish
+      "Dupont", // French
+      "Silva", // Portuguese
+      "Rossi", // Italian
+      "Müller", // German
+      "Иванов", // Russian (Ivanov)
+      "山田", // Japanese (Yamada)
+      "李", // Chinese (Li)
+    ];
+
+    let placeholderIndex = 0;
+
+    // Hide placeholder spans when input has value
+    firstNameInputs.forEach((input, index) => {
+      const span = firstNamePlaceholderSpans[index];
+      if (span) {
+        input.addEventListener("input", () => {
+          if (input.value) {
+            span.style.display = "none";
+          } else {
+            span.style.display = "flex";
+          }
+        });
+        // Check initial value
+        if (input.value) {
+          span.style.display = "none";
+        }
+      }
+    });
+
+    lastNameInputs.forEach((input, index) => {
+      const span = lastNamePlaceholderSpans[index];
+      if (span) {
+        input.addEventListener("input", () => {
+          if (input.value) {
+            span.style.display = "none";
+          } else {
+            span.style.display = "flex";
+          }
+        });
+        // Check initial value
+        if (input.value) {
+          span.style.display = "none";
+        }
+      }
+    });
+
+    function rotatePlaceholders() {
+      // Rotate first name placeholders
+      firstNameInputs.forEach((input, index) => {
+        const span = firstNamePlaceholderSpans[index];
+        if (span && !input.value && span.style.display !== "none") {
+          // Only rotate if visible
+          span.style.animation = "slideOutDown 400ms ease-out forwards";
+
+          setTimeout(() => {
+            placeholderIndex = (placeholderIndex + 1) % firstNamePlaceholders.length;
+            span.textContent = firstNamePlaceholders[placeholderIndex];
+            span.style.animation = "slideInDown 400ms ease-out forwards";
+          }, 400);
+        }
+      });
+
+      // Rotate last name placeholders with same index
+      lastNameInputs.forEach((input, index) => {
+        const span = lastNamePlaceholderSpans[index];
+        if (span && !input.value && span.style.display !== "none") {
+          // Only rotate if visible
+          span.style.animation = "slideOutDown 400ms ease-out forwards";
+
+          setTimeout(() => {
+            span.textContent = lastNamePlaceholders[placeholderIndex];
+            span.style.animation = "slideInDown 400ms ease-out forwards";
+          }, 400);
+        }
+      });
+    }
+
+    // Rotate placeholders every 3 seconds (synced with title rotation)
+    if (firstNamePlaceholderSpans.some((s) => s) || lastNamePlaceholderSpans.some((s) => s)) {
+      setInterval(rotatePlaceholders, 3000);
+    }
+
     // Get all form configs from window
     Object.keys(window).forEach((key) => {
       if (key.endsWith("_config")) {

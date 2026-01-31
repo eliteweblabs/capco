@@ -285,6 +285,7 @@ export const navigation = async (
       // Handle button style items
       if (item.buttonStyle && item.href && item.label) {
         // Map buttonStyle to actual CSS classes (matches button-styles.ts)
+        // If current page, force primary background
         const buttonStyleMap: Record<string, string> = {
           primary:
             "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg",
@@ -296,7 +297,10 @@ export const navigation = async (
             "rounded-full text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
         };
 
-        const styleClasses = buttonStyleMap[item.buttonStyle] || buttonStyleMap.primary;
+        // If this is the current page button, use primary style with background
+        const styleClasses = item.isPrimary
+          ? "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg"
+          : buttonStyleMap[item.buttonStyle] || buttonStyleMap.primary;
         const baseClasses =
           "font-secondary relative inline-flex items-center justify-center font-medium transition-all duration-200";
         const sizeClasses = "px-5 py-2.5 text-sm";

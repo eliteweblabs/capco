@@ -89,12 +89,15 @@ currentLocation = Astro.request.headers.get("x-current-location") === "true";
 />
 ```
 
-## Benefits
+## UI Changes
 
-1. **Flexibility**: Location feature can be enabled/disabled per instance
-2. **UX**: Only show location button when relevant (e.g., address pickers, not status pickers)
-3. **Performance**: Avoid unnecessary geolocation requests for non-location fields
-4. **Clarity**: Clear separation between location-based and non-location-based pickers
+The location button has been integrated into the search input:
+
+- **When `currentLocation={true}`**: The search input shows a crosshair icon (📍) instead of magnifying glass
+- **When `currentLocation={false}`**: The search input shows the normal magnifying glass icon
+- **No separate button**: The location feature is now inline with the search field
+
+This provides a cleaner, more intuitive UX where the location feature is directly accessible from the search input.
 
 ## Related
 

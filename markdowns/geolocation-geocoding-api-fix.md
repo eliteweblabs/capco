@@ -29,12 +29,24 @@ Created `/src/pages/api/google/geocode.ts` that properly handles:
 - **Reverse geocoding**: `latlng` parameter (converts coordinates to address)
 - **Forward geocoding**: `address` parameter (converts address to coordinates)
 
-**Important:** The endpoint uses Google's **Places API (searchNearby)** instead of the Geocoding API because:
+**Smart API Selection:**
+The endpoint tries the **Geocoding API first** (most accurate), then falls back to **Places API** if needed:
 
-- The Geocoding API requires separate enablement in Google Cloud Console
-- The Places API is already enabled and provides reverse geocoding functionality
-- Using searchNearby with location coordinates returns nearby addresses (100m radius)
-- No type filtering applied - returns all nearby places and addresses
+1. **Geocoding API (Primary)**: Returns the exact address at the coordinates
+   - Most accurate for reverse geocoding
+   - Requires enablement in Google Cloud Console
+2. **Places API (Fallback)**: Returns nearby places/addresses
+   - Already enabled
+   - Less precise - returns nearby locations within 50m radius
+
+**To get exact addresses, enable the Geocoding API:**
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/library)
+2. Search for "Geocoding API"
+3. Click "Enable"
+4. Restart your dev server
+
+Until then, the fallback will return nearby addresses (which is why you're seeing 4-5 nearby places instead of your exact address).
 
 ### 2. Updated SlotMachineModal Geolocation Handler
 

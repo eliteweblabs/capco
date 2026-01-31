@@ -21,14 +21,20 @@ const isPartial =
 
 // Extract props from either Astro.props or X-headers
 const text = Astro.props.text || Astro.request.headers.get("x-tooltip-text") || "";
-const position = (Astro.props.position || Astro.request.headers.get("x-tooltip-position") || "top") as "top" | "bottom" | "left" | "right";
+const position = (Astro.props.position ||
+  Astro.request.headers.get("x-tooltip-position") ||
+  "top") as "top" | "bottom" | "left" | "right";
 const className = Astro.props.className || Astro.request.headers.get("x-tooltip-class-name") || "";
 const tooltipClass = Astro.props.tooltipClass || Astro.request.headers.get("x-tooltip-class") || "";
 const disabled =
   Astro.props.disabled || Astro.request.headers.get("x-tooltip-disabled") === "true" || false;
 const open = Astro.props.open || Astro.request.headers.get("x-tooltip-open") === "true" || false;
-const dismissable = Astro.props.dismissable || Astro.request.headers.get("x-tooltip-dismissable") === "true" || false;
-const mobileClickable = Astro.props.mobileClickable || Astro.request.headers.get("x-tooltip-mobile-clickable") === "true" || false;
+const dismissable =
+  Astro.props.dismissable || Astro.request.headers.get("x-tooltip-dismissable") === "true" || false;
+const mobileClickable =
+  Astro.props.mobileClickable ||
+  Astro.request.headers.get("x-tooltip-mobile-clickable") === "true" ||
+  false;
 
 // Get slot content for partial mode
 const slotContent = Astro.request.headers.get("x-tooltip-slot-content") || "";
@@ -45,82 +51,329 @@ const { wrapperClasses, tooltipClasses, arrowClasses } = getTooltipClasses({
 });
 ---
 
-<span class={wrapperClasses} style="vertical-align: baseline; white-space: nowrap;">
+<span
+  class={wrapperClasses}
+  style="vertical-align: baseline; white-space: nowrap; background: none; border: none; padding: 0;"
+>
   {isPartial && slotContent ? <Fragment set:html={slotContent} /> : <slot />}
-  <span class={tooltipClasses} data-dismissable={dismissable ? "true" : "false"}>
+  <span
+    class={tooltipClasses}
+    data-dismissable={dismissable ? "true" : "false"}
+    data-tooltip-position={position}
+  >
     <span class="cursor-pointer">{text}</span>
-    {dismissable && (
-      <button
-        type="button"
-        class="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-white/20"
-        aria-label="Close tooltip"
-        onclick="this.closest('[data-dismissable=\"true\"]').style.display = 'none'"
-      >
-        <svg
-          class="h-3 w-3"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+    {
+      dismissable && (
+        <button
+          type="button"
+          class="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-white/20 tooltip-close-btn"
+          aria-label="Close tooltip"
         >
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    )}
-    <span class={arrowClasses} style="display: block;"></span>
+          <svg
+            class="h-3 w-3"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )
+    }
+    <span class="tooltip-arrow" style="display: block;"></span>
   </span>
 </span>
 
 <script>
-  // Mobile clickable tooltip handler
-  // This script enables tooltips to be toggled on touch devices when mobileClickable is enabled
-  document.addEventListener('DOMContentLoaded', function() {
-    const mobileTooltips = document.querySelectorAll('.mobile-clickable-tooltip');
-    
-    // Only proceed if there are mobile-clickable tooltips on the page
-    if (mobileTooltips.length === 0) return;
-    
-    // Check if device supports touch
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    
-    if (isTouchDevice) {
-      mobileTooltips.forEach(wrapper => {
-        const tooltipContent = wrapper.querySelector('.tooltip-content');
-        if (!tooltipContent) return;
-        
-        let isTooltipOpen = false;
-        
-        // Handle tap on the wrapper or its children (except interactive elements)
-        wrapper.addEventListener('click', function(e) {
-          // Don't intercept clicks on buttons, links, or inputs within the wrapper
-          const target = e.target as HTMLElement;
-          if (target.tagName === 'BUTTON' || target.tagName === 'A' || target.tagName === 'INPUT') {
-            return;
-          }
-          
-          e.preventDefault();
-          e.stopPropagation();
-          
-          // Toggle tooltip visibility
-          isTooltipOpen = !isTooltipOpen;
-          if (isTooltipOpen) {
-            tooltipContent.classList.remove('opacity-0');
-            tooltipContent.classList.add('opacity-100');
-          } else {
-            tooltipContent.classList.remove('opacity-100');
-            tooltipContent.classList.add('opacity-0');
+  // Handle dismissable tooltip close button
+  document.addEventListener("click", function (e) {
+    const target = e.target as HTMLElement;
+    const closeBtn = target.closest(".tooltip-close-btn");
+    if (closeBtn) {
+      const tooltip = closeBtn.closest('[data-dismissable="true"]');
+      if (tooltip) {
+        (tooltip as HTMLElement).style.display = "none";
+      }
+    }
+  });
+
+  // Tooltip viewport-aware positioning
+  function adjustTooltipPosition(tooltipEl: HTMLElement) {
+    const wrapper = tooltipEl.closest(".group") as HTMLElement;
+    if (!wrapper) return;
+
+    // Only adjust if tooltip is visible
+    if (!tooltipEl.classList.contains("opacity-100")) return;
+
+    // Wait a tick for the tooltip to render and get proper dimensions
+    requestAnimationFrame(() => {
+      const rect = tooltipEl.getBoundingClientRect();
+      const arrow = tooltipEl.querySelector(".tooltip-arrow") as HTMLElement;
+      const originalPosition = tooltipEl.getAttribute("data-tooltip-position") || "top";
+
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const padding = 8;
+
+      // Reset any previous adjustments
+      tooltipEl.style.left = "";
+      tooltipEl.style.right = "";
+      tooltipEl.style.transform = "";
+
+      let needsRepositioning = false;
+      let newPosition = originalPosition;
+
+      // Check horizontal overflow for top/bottom tooltips
+      if (originalPosition === "top" || originalPosition === "bottom") {
+        if (rect.left < padding) {
+          // Tooltip goes off left edge - shift right
+          const offset = padding - rect.left;
+          tooltipEl.style.left = `calc(50% + ${offset}px)`;
+        } else if (rect.right > viewportWidth - padding) {
+          // Tooltip goes off right edge - shift left
+          const offset = rect.right - (viewportWidth - padding);
+          tooltipEl.style.left = `calc(50% - ${offset}px)`;
+        }
+      } else {
+        // Side tooltips
+        if (originalPosition === "left" && rect.left < padding) {
+          newPosition = "right";
+          needsRepositioning = true;
+        } else if (originalPosition === "right" && rect.right > viewportWidth - padding) {
+          newPosition = "left";
+          needsRepositioning = true;
+        }
+      }
+
+      // Check vertical overflow
+      if (rect.top < padding && originalPosition === "top") {
+        newPosition = "bottom";
+        needsRepositioning = true;
+      } else if (rect.bottom > viewportHeight - padding && originalPosition === "bottom") {
+        newPosition = "top";
+        needsRepositioning = true;
+      }
+
+      // Apply new position if needed
+      if (needsRepositioning && newPosition !== originalPosition) {
+        tooltipEl.className = tooltipEl.className.replace(
+          /bottom-full|top-full|left-full|right-full/g,
+          ""
+        );
+        tooltipEl.className = tooltipEl.className.replace(/mb-2|mt-2|mr-2|ml-2/g, "");
+
+        const positionClasses = {
+          top: "bottom-full mb-2",
+          bottom: "top-full mt-2",
+          left: "right-full mr-2",
+          right: "left-full ml-2",
+        };
+
+        tooltipEl.classList.add(
+          ...positionClasses[newPosition as keyof typeof positionClasses].split(" ")
+        );
+
+        if (arrow) {
+          arrow.className = "tooltip-arrow";
+          const arrowClasses = {
+            top: "absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-100",
+            bottom:
+              "absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900 dark:border-b-gray-100",
+            left: "absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-900 dark:border-l-gray-100",
+            right:
+              "absolute right-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900 dark:border-r-gray-100",
+          };
+          arrow.className = arrowClasses[newPosition as keyof typeof arrowClasses];
+          arrow.style.display = "block";
+        }
+
+        // Re-check horizontal positioning after vertical flip
+        requestAnimationFrame(() => adjustTooltipPosition(tooltipEl));
+      }
+    });
+  }
+
+  // Run on load and when tooltips become visible
+  if (typeof window !== "undefined") {
+    document.addEventListener("DOMContentLoaded", () => {
+      // Add mouseenter listener to all tooltip wrappers
+      const tooltipWrappers = document.querySelectorAll(".group");
+      tooltipWrappers.forEach((wrapper) => {
+        wrapper.addEventListener("mouseenter", () => {
+          const tooltip = wrapper.querySelector(".tooltip-auto-position") as HTMLElement;
+          if (tooltip) {
+            // Small delay to let opacity transition start
+            setTimeout(() => adjustTooltipPosition(tooltip), 50);
           }
         });
-        
-        // Close tooltip when clicking outside
-        document.addEventListener('click', function(e) {
-          if (isTooltipOpen && !wrapper.contains(e.target as Node)) {
-            isTooltipOpen = false;
-            tooltipContent.classList.remove('opacity-100');
-            tooltipContent.classList.add('opacity-0');
+      });
+
+      // Use MutationObserver to detect when tooltips become visible
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === "attributes" && mutation.attributeName === "class") {
+            const target = mutation.target as HTMLElement;
+            if (
+              target.classList.contains("tooltip-auto-position") &&
+              target.classList.contains("opacity-100")
+            ) {
+              adjustTooltipPosition(target);
+            }
+          }
+        });
+      });
+
+      // Observe all tooltip elements
+      document.querySelectorAll(".tooltip-auto-position").forEach((tooltip) => {
+        observer.observe(tooltip, { attributes: true });
+      });
+    });
+
+    // Also check on resize
+    window.addEventListener("resize", () => {
+      document.querySelectorAll(".tooltip-auto-position.opacity-100").forEach((tooltip) => {
+        adjustTooltipPosition(tooltip as HTMLElement);
+      });
+    });
+  }
+</script>
+
+<script>
+  // Mobile clickable tooltip handler
+  // This script enables tooltips to be toggled on touch devices when mobileClickable is enabled
+  document.addEventListener("DOMContentLoaded", function () {
+    const mobileTooltips = document.querySelectorAll(".mobile-clickable-tooltip");
+
+    // Only proceed if there are mobile-clickable tooltips on the page
+    if (mobileTooltips.length === 0) return;
+
+    // Check if device supports touch
+    const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+    if (isTouchDevice) {
+      // Store all tooltip instances to manage single-open behavior
+      const tooltipInstances: Array<{
+        wrapper: Element;
+        content: Element;
+        isOpen: boolean;
+        isProgrammatic: boolean;
+        close: () => void;
+      }> = [];
+
+      mobileTooltips.forEach((wrapper) => {
+        const tooltipContent = wrapper.querySelector(".tooltip-content");
+        if (!tooltipContent) return;
+
+        // Create instance object
+        const instance = {
+          wrapper,
+          content: tooltipContent,
+          isOpen: tooltipContent.classList.contains("opacity-100"),
+          isProgrammatic: false, // Track if tooltip was opened programmatically
+          close: function () {
+            this.isOpen = false;
+            this.isProgrammatic = false;
+            this.content.classList.remove("opacity-100");
+            this.content.classList.add("opacity-0");
+          },
+        };
+
+        tooltipInstances.push(instance);
+
+        // Watch for programmatic changes (e.g., from step navigation)
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.attributeName === "class") {
+              const wasOpen = instance.isOpen;
+              const isNowOpen = tooltipContent.classList.contains("opacity-100");
+
+              // If tooltip was opened externally (not by user click)
+              if (!wasOpen && isNowOpen && !instance.isProgrammatic) {
+                instance.isOpen = true;
+                instance.isProgrammatic = true; // Mark as programmatically opened
+              } else if (wasOpen && !isNowOpen) {
+                instance.isOpen = false;
+                instance.isProgrammatic = false;
+              }
+            }
+          });
+        });
+
+        observer.observe(tooltipContent, { attributes: true });
+
+        // Handle tap on the wrapper or its children (except interactive elements)
+        wrapper.addEventListener("click", function (e) {
+          // Don't intercept clicks on buttons, links, or inputs within the wrapper
+          const target = e.target as HTMLElement;
+          if (target.tagName === "BUTTON" || target.tagName === "A" || target.tagName === "INPUT") {
+            return;
+          }
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          // If it was programmatically opened, allow manual close
+          if (instance.isOpen && instance.isProgrammatic) {
+            instance.close();
+            return;
+          }
+
+          // Close all other tooltips first
+          tooltipInstances.forEach((otherInstance) => {
+            if (otherInstance !== instance && otherInstance.isOpen) {
+              otherInstance.close();
+            }
+          });
+
+          // Toggle this tooltip visibility
+          instance.isOpen = !instance.isOpen;
+          instance.isProgrammatic = false; // This is a manual toggle
+          if (instance.isOpen) {
+            instance.content.classList.remove("opacity-0");
+            instance.content.classList.add("opacity-100");
+          } else {
+            instance.close();
+          }
+        });
+
+        // Close tooltip when clicking outside (only if manually opened)
+        document.addEventListener("click", function (e) {
+          if (instance.isOpen && !instance.isProgrammatic && !wrapper.contains(e.target as Node)) {
+            instance.close();
+          }
+        });
+
+        // Close tooltip when focus is lost (blur event) - only if manually opened
+        wrapper.addEventListener(
+          "blur",
+          function (e) {
+            // Check if the new focus target is outside the wrapper
+            const focusEvent = e as FocusEvent;
+            if (
+              instance.isOpen &&
+              !instance.isProgrammatic &&
+              !wrapper.contains(focusEvent.relatedTarget as Node)
+            ) {
+              instance.close();
+            }
+          },
+          true
+        ); // Use capture phase to ensure we catch all blur events
+
+        // Also handle focusout event as a fallback - only if manually opened
+        wrapper.addEventListener("focusout", function (e) {
+          // Check if focus moved outside the wrapper
+          const focusEvent = e as FocusEvent;
+          if (
+            instance.isOpen &&
+            !instance.isProgrammatic &&
+            !wrapper.contains(focusEvent.relatedTarget as Node)
+          ) {
+            instance.close();
           }
         });
       });

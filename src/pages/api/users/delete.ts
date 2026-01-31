@@ -41,7 +41,9 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log(`🗑️ [DELETE-USER] Admin ${currentUser?.email} attempting to delete user ${userIdToDelete}`);
+    console.log(
+      `🗑️ [DELETE-USER] Admin ${currentUser?.email} attempting to delete user ${userIdToDelete}`
+    );
 
     // Prevent self-deletion
     if (userIdToDelete === currentUser?.id) {
@@ -124,7 +126,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     // Delete user from profiles table first
-    const { error: profileDeleteError } = await supabase.from("profiles").delete().eq("id", userIdToDelete);
+    const { error: profileDeleteError } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", userIdToDelete);
 
     if (profileDeleteError) {
       console.error("🗑️ [DELETE-USER] Error deleting profile:", profileDeleteError);
