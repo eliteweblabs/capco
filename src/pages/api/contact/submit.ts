@@ -186,6 +186,17 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
 
         const adminEmails = admins?.map((admin) => admin.email).filter(Boolean) || [];
 
+        // Add website admin email if available and not already in list
+        const websiteAdminEmail = companyData.globalCompanyEmail;
+        if (websiteAdminEmail && !adminEmails.includes(websiteAdminEmail)) {
+          adminEmails.push(websiteAdminEmail);
+        }
+
+        console.log(
+          `[CONTACT] Sending notifications to ${adminEmails.length} recipient(s):`,
+          adminEmails
+        );
+
         // Email content for admins
         const adminSubject = `🔔 New Contact Form Submission - ${firstName} ${lastName}`;
 
@@ -280,7 +291,7 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
         // Use the delivery system with the email template
         const { getBaseUrl } = await import("../../../lib/url-utils");
         const baseUrl = getBaseUrl(request);
-        
+
         await fetch(`${baseUrl}/api/delivery/update-delivery`, {
           method: "POST",
           headers: {
