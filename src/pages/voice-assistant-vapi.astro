@@ -28,6 +28,11 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
   <div class="container mx-auto px-4 py-8 max-w-4xl">
     <h1 class="text-3xl font-bold mb-6 dark:text-white">Voice Assistant (VAPI)</h1>
 
+    <!-- Gmail Connection Status -->
+    <div id="gmail-status-banner" class="hidden mb-6">
+      <!-- Will be populated by JavaScript -->
+    </div>
+
     <div
       class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6"
     >
@@ -120,70 +125,6 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
         <div id="vapi-file-status" class="mt-2 text-sm"></div>
       </div>
 
-      <!-- Re-Authentication Modal -->
-      <div
-        id="vapi-auth-modal"
-        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      >
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <svg
-              class="h-8 w-8 text-yellow-600 dark:text-yellow-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              ></path>
-            </svg>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Verify Your Identity</h3>
-          </div>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            For security, please re-enter your password to start the voice assistant. This prevents
-            unauthorized use if you step away from your computer.
-          </p>
-          <form id="vapi-auth-form" class="space-y-4">
-            <div>
-              <label
-                for="vapi-auth-password"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Password
-              </label>
-              <input
-                type="password"
-                id="vapi-auth-password"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                placeholder="Enter your password"
-                required
-                autofocus
-              />
-            </div>
-            <div id="vapi-auth-error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
-            <div class="flex gap-3">
-              <button
-                type="button"
-                id="vapi-auth-cancel"
-                class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                id="vapi-auth-submit"
-                class="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
-              >
-                Verify & Start
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
       <!-- Controls -->
       <div class="flex items-center justify-center gap-4">
         <button
@@ -231,9 +172,10 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
       <div class="mt-8 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
         <h3 class="font-semibold text-primary-900 dark:text-primary-200 mb-2">How to Use</h3>
         <ul class="text-sm text-primary-800 dark:text-primary-300 space-y-1 list-disc list-inside">
-          <li>Click "Start Voice Assistant" and verify your password</li>
+          <li>Click "Start Voice Assistant" to begin</li>
           <li>Say "Bee new project" to create a new project</li>
-          <li>The assistant will guide you through all the details</li>
+          <li>Say "Check my email" to see unread emails (Gmail required)</li>
+          <li>The assistant will announce important emails automatically</li>
           <li>
             Upload PDFs or images to extract text content (OCR for images, text extraction for PDFs)
           </li>
@@ -248,9 +190,6 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
       >
         <h3 class="font-semibold text-blue-900 dark:text-blue-200 mb-2">🔒 Security Features</h3>
         <ul class="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
-          <li>
-            <strong>Password Re-Authentication:</strong> Must verify password before each session
-          </li>
           <li>
             <strong>Auto-Timeout:</strong> Stops automatically after 5 minutes of inactivity
           </li>
@@ -370,6 +309,9 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
 
       // Start inactivity timer
       resetInactivityTimer();
+
+      // Start email monitoring if Gmail is connected
+      startEmailMonitoring();
     });
 
     vapi.on("call-end", () => {
@@ -382,6 +324,9 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
 
       // Clear inactivity timer
       clearInactivityTimer();
+
+      // Stop email monitoring
+      stopEmailMonitoring();
     });
 
     vapi.on("speech-start", () => {
@@ -421,89 +366,28 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
 
   // Setup UI listeners
   function setupUIListeners() {
-    const authModal = document.getElementById("vapi-auth-modal");
-    const authForm = document.getElementById("vapi-auth-form");
-    const authPassword = document.getElementById("vapi-auth-password");
-    const authError = document.getElementById("vapi-auth-error");
-    const authCancel = document.getElementById("vapi-auth-cancel");
-    const authSubmit = document.getElementById("vapi-auth-submit");
-
-    // Show re-authentication modal when start button is clicked
+    // Start button - directly start VAPI without password verification
     startBtn.addEventListener("click", async () => {
       if (!vapi) return;
 
-      // Show authentication modal
-      authModal.classList.remove("hidden");
-      authPassword.value = "";
-      authError.classList.add("hidden");
-      authPassword.focus();
-    });
-
-    // Handle cancel
-    authCancel.addEventListener("click", () => {
-      authModal.classList.add("hidden");
-      authPassword.value = "";
-      authError.classList.add("hidden");
-    });
-
-    // Handle form submission
-    authForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      authSubmit.disabled = true;
-      authSubmit.textContent = "Verifying...";
-      authError.classList.add("hidden");
-
       try {
-        // Verify password with Supabase
-        const response = await fetch("/api/auth/verify-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            password: authPassword.value,
-          }),
+        updateStatus("Connecting...", "bg-yellow-400");
+
+        // Pass user context to VAPI for authentication and personalization
+        const userMetadata = {
+          userId: currentUser?.id,
+          userEmail: currentUser?.email,
+          userName: currentUser?.profile?.name,
+          userRole: currentUserRole,
+          sessionStarted: new Date().toISOString(),
+        };
+
+        await vapi.start(assistantId, {
+          metadata: userMetadata,
         });
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.error || "Invalid password");
-        }
-
-        // Password verified - close modal and start VAPI
-        authModal.classList.add("hidden");
-        authPassword.value = "";
-
-        // Start VAPI call
-        try {
-          updateStatus("Connecting...", "bg-yellow-400");
-
-          // Pass user context to VAPI for authentication and personalization
-          const userMetadata = {
-            userId: currentUser?.id,
-            userEmail: currentUser?.email,
-            userName: currentUser?.profile?.name,
-            userRole: currentUserRole,
-            verifiedAt: new Date().toISOString(), // Timestamp of verification
-          };
-
-          await vapi.start(assistantId, {
-            metadata: userMetadata,
-          });
-        } catch (error) {
-          console.error("[VAPI-VOICE] Failed to start:", error);
-          updateStatus("Failed to connect", "bg-red-400");
-        }
       } catch (error) {
-        console.error("[VAPI-VOICE] Auth error:", error);
-        authError.textContent = error.message || "Verification failed. Please try again.";
-        authError.classList.remove("hidden");
-        authPassword.value = "";
-        authPassword.focus();
-      } finally {
-        authSubmit.disabled = false;
-        authSubmit.textContent = "Verify & Start";
+        console.error("[VAPI-VOICE] Failed to start:", error);
+        updateStatus("Failed to connect", "bg-red-400");
       }
     });
 
@@ -671,6 +555,197 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
       inactivityTimeout = null;
     }
   }
+
+  // Gmail Integration
+  let emailCheckInterval = null;
+  let lastEmailCheck = Date.now();
+  let gmailConnected = false;
+
+  // Check Gmail connection status on page load
+  async function checkGmailStatus() {
+    try {
+      const response = await fetch("/api/gmail/status", {
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.connected) {
+        gmailConnected = true;
+        showGmailConnected(data.emailAddress);
+      } else {
+        gmailConnected = false;
+        showGmailDisconnected();
+      }
+    } catch (error) {
+      console.error("[GMAIL-STATUS] Error:", error);
+      gmailConnected = false;
+    }
+  }
+
+  function showGmailConnected(emailAddress) {
+    const banner = document.getElementById("gmail-status-banner");
+    banner.innerHTML = `
+      <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+              <div class="font-semibold text-green-800 dark:text-green-200">Gmail Connected</div>
+              <div class="text-sm text-green-700 dark:text-green-300">${emailAddress}</div>
+            </div>
+          </div>
+          <button
+            onclick="disconnectGmail()"
+            class="px-3 py-1 text-sm border border-green-600 text-green-700 dark:text-green-300 rounded hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+          >
+            Disconnect
+          </button>
+        </div>
+      </div>
+    `;
+    banner.classList.remove("hidden");
+  }
+
+  function showGmailDisconnected() {
+    const banner = document.getElementById("gmail-status-banner");
+    banner.innerHTML = `
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            <div>
+              <div class="font-semibold text-blue-800 dark:text-blue-200">Email Integration Available</div>
+              <div class="text-sm text-blue-700 dark:text-blue-300">Connect Gmail to receive email notifications and manage emails via voice</div>
+            </div>
+          </div>
+          <a
+            href="/api/auth/gmail/authorize"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            Connect Gmail
+          </a>
+        </div>
+      </div>
+    `;
+    banner.classList.remove("hidden");
+  }
+
+  window.disconnectGmail = async function () {
+    if (!confirm("Are you sure you want to disconnect Gmail?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/auth/gmail/disconnect", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        gmailConnected = false;
+        showGmailDisconnected();
+        stopEmailMonitoring();
+      } else {
+        alert("Failed to disconnect Gmail. Please try again.");
+      }
+    } catch (error) {
+      console.error("[GMAIL-DISCONNECT] Error:", error);
+      alert("Failed to disconnect Gmail. Please try again.");
+    }
+  };
+
+  // Email monitoring during active call
+  function startEmailMonitoring() {
+    if (!gmailConnected) {
+      console.log("[EMAIL-MONITOR] Gmail not connected, skipping monitoring");
+      return;
+    }
+
+    console.log("[EMAIL-MONITOR] Starting email monitoring");
+    lastEmailCheck = Date.now();
+
+    // Check every 60 seconds
+    emailCheckInterval = setInterval(async () => {
+      if (!isCallActive) {
+        stopEmailMonitoring();
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/gmail/check-new-emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            userId: currentUser?.id,
+            lastCheckTimestamp: lastEmailCheck,
+          }),
+        });
+
+        const { newEmails, gmailConnected: stillConnected } = await response.json();
+
+        if (!stillConnected) {
+          console.log("[EMAIL-MONITOR] Gmail disconnected");
+          gmailConnected = false;
+          stopEmailMonitoring();
+          return;
+        }
+
+        if (newEmails && newEmails.length > 0) {
+          console.log(`[EMAIL-MONITOR] Found ${newEmails.length} important emails`);
+
+          // Announce each important email
+          for (const email of newEmails) {
+            if (vapi && isCallActive) {
+              const fromName = email.from.match(/^"?([^"<]+)"?/)?.[1] || email.from;
+              vapi.send({
+                type: "add-message",
+                message: {
+                  role: "system",
+                  content: `New important email from ${fromName} about "${email.subject}". Shall I read it?`,
+                },
+              });
+
+              // Add to conversation display
+              addMessage("system", `📧 New email from ${fromName}: "${email.subject}"`, []);
+            }
+          }
+        }
+
+        lastEmailCheck = Date.now();
+      } catch (error) {
+        console.error("[EMAIL-MONITOR] Error checking emails:", error);
+      }
+    }, 60000); // Every 60 seconds
+  }
+
+  function stopEmailMonitoring() {
+    if (emailCheckInterval) {
+      console.log("[EMAIL-MONITOR] Stopping email monitoring");
+      clearInterval(emailCheckInterval);
+      emailCheckInterval = null;
+    }
+  }
+
+  // Check Gmail status on page load
+  document.addEventListener("DOMContentLoaded", () => {
+    checkGmailStatus();
+
+    // Check for Gmail connection success
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("gmail") === "connected") {
+      // Remove query param and reload status
+      window.history.replaceState({}, "", window.location.pathname);
+      setTimeout(() => checkGmailStatus(), 500);
+    }
+  });
 </script>
 
 <style>

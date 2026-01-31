@@ -72,6 +72,41 @@ export function createMultiStepFormHandler(
         options.onStepChange(stepNumber);
       }
 
+      // Handle conditional HVAC options based on fuel source (Step 6)
+      if (stepNumber === 6) {
+        const fuelInput = form.querySelector('input[name="fuelSource"]') as HTMLInputElement;
+        const fuelSource = fuelInput?.value || "";
+
+        console.log(`[MULTISTEP-FORM] Entering step 6 with fuelSource: ${fuelSource}`);
+
+        // Hide all HVAC options first
+        const allHvacButtons = targetStep.querySelectorAll("button.hvac-choice");
+        allHvacButtons.forEach((btn) => {
+          (btn as HTMLElement).style.display = "none";
+        });
+
+        // Show only the relevant options based on fuel source
+        if (fuelSource === "gas") {
+          const gasButtons = targetStep.querySelectorAll("button.hvac-gas");
+          gasButtons.forEach((btn) => {
+            (btn as HTMLElement).style.display = "inline-flex";
+          });
+          console.log(`[MULTISTEP-FORM] Showing ${gasButtons.length} gas HVAC options`);
+        } else if (fuelSource === "electric") {
+          const electricButtons = targetStep.querySelectorAll("button.hvac-electric");
+          electricButtons.forEach((btn) => {
+            (btn as HTMLElement).style.display = "inline-flex";
+          });
+          console.log(`[MULTISTEP-FORM] Showing ${electricButtons.length} electric HVAC options`);
+        }
+
+        // Update subtitle based on fuel source
+        const subtitle = targetStep.querySelector("p.text-base");
+        if (subtitle && fuelSource) {
+          subtitle.textContent = `Select your ${fuelSource === "gas" ? "Gas" : "Electric"} HVAC system:`;
+        }
+      }
+
       // Auto-focus handling
       setTimeout(() => {
         // Check if this step has SMS choice buttons
@@ -285,8 +320,42 @@ export function createMultiStepFormHandler(
       const nextBtn = target.closest("button.next-step, a.next-step, button.submit-step");
       const prevBtn = target.closest("button.prev-step, a.prev-step");
       const smsChoiceBtn = target.closest("button.sms-choice, a.sms-choice");
+      const fuelChoiceBtn = target.closest("button.fuel-choice, a.fuel-choice");
+      const hvacChoiceBtn = target.closest("button.hvac-choice, a.hvac-choice");
       const editBtn = target.closest("button.edit-step");
       const skipBtn = target.closest("button.skip-step");
+
+      // Fuel choice buttons (Gas/Electric)
+      if (fuelChoiceBtn) {
+        e.preventDefault();
+        const fuelValue = fuelChoiceBtn.getAttribute("data-value");
+        const nextStep = parseInt(fuelChoiceBtn.getAttribute("data-next") || "1");
+
+        const fuelInput = form.querySelector('input[name="fuelSource"]') as HTMLInputElement;
+        if (fuelInput) {
+          fuelInput.value = fuelValue || "";
+          console.log(`[MULTISTEP-FORM] Set fuelSource to: ${fuelValue}`);
+        }
+
+        showStep(nextStep);
+        return;
+      }
+
+      // HVAC choice buttons
+      if (hvacChoiceBtn) {
+        e.preventDefault();
+        const hvacValue = hvacChoiceBtn.getAttribute("data-value");
+        const nextStep = parseInt(hvacChoiceBtn.getAttribute("data-next") || "1");
+
+        const hvacInput = form.querySelector('input[name="hvacSystem"]') as HTMLInputElement;
+        if (hvacInput) {
+          hvacInput.value = hvacValue || "";
+          console.log(`[MULTISTEP-FORM] Set hvacSystem to: ${hvacValue}`);
+        }
+
+        showStep(nextStep);
+        return;
+      }
 
       // SMS choice buttons
       if (smsChoiceBtn) {
@@ -544,4 +613,112 @@ export function createMultiStepFormHandler(
     showStep,
     getCurrentStep: () => currentStep,
   };
+}
+
+// New simplified initialization function for forms with skip logic
+export function initializeMultiStepForm(
+  form: HTMLFormElement,
+  options: {
+    initialData?: Record<string, any>;
+    formConfig?: any;
+  } = {}
+) {
+  const { initialData = {}, formConfig } = options;
+
+  console.log("[MULTISTEP-FORM] Initializing form with skip logic");
+
+  // Helper function to check if a step should be skipped
+  function shouldSkipStep(stepNumber: number): boolean {
+    if (!formConfig?.steps) return false;
+
+    const step = formConfig.steps.find((s: any) => s.stepNumber === stepNumber);
+    if (!step?.skipCondition) return false;
+
+    // Evaluate skip condition
+    const condition = step.skipCondition;
+
+    // Simple evaluation - check if condition exists in initialData
+    if (typeof condition === "string") {
+      // For simple boolean checks like "isAuthenticated"
+      if (initialData[condition] === true || initialData[condition] === "true") {
+        console.log(
+          `[MULTISTEP-FORM] Skipping step ${stepNumber} (condition: ${condition} = true)`
+        );
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // Find the first non-skipped step
+  function getFirstValidStep(): number {
+    if (!formConfig?.steps) return 1;
+
+    for (let i = 1; i <= formConfig.totalSteps; i++) {
+      if (!shouldSkipStep(i)) {
+        console.log(`[MULTISTEP-FORM] First valid step: ${i}`);
+        return i;
+      }
+    }
+
+    return 1;
+  }
+
+  // Find the next non-skipped step
+  function getNextValidStep(currentStep: number): number {
+    for (let i = currentStep + 1; i <= formConfig.totalSteps; i++) {
+      if (!shouldSkipStep(i)) {
+        return i;
+      }
+    }
+    return currentStep; // No valid next step
+  }
+
+  // Find the previous non-skipped step
+  function getPrevValidStep(currentStep: number): number {
+    for (let i = currentStep - 1; i >= 1; i--) {
+      if (!shouldSkipStep(i)) {
+        return i;
+      }
+    }
+    return currentStep; // No valid previous step
+  }
+
+  // Initialize with the handler, but override the initial step
+  const firstStep = getFirstValidStep();
+
+  // Use the existing handler
+  const handler = createMultiStepFormHandler(form.id, formConfig?.totalSteps || 8, {
+    onStepChange: (stepNumber) => {
+      console.log(`[MULTISTEP-FORM] Step changed to: ${stepNumber}`);
+    },
+  });
+
+  // Override showStep to respect skip logic
+  const originalShowStep = handler.showStep;
+  handler.showStep = (stepNumber: number) => {
+    if (shouldSkipStep(stepNumber)) {
+      console.log(`[MULTISTEP-FORM] Step ${stepNumber} should be skipped, finding next valid step`);
+      // If trying to go forward and this step should be skipped, go to next valid
+      const nextValid = getNextValidStep(stepNumber - 1);
+      if (nextValid !== stepNumber) {
+        originalShowStep(nextValid);
+        return;
+      }
+      // If trying to go backward, go to previous valid
+      const prevValid = getPrevValidStep(stepNumber + 1);
+      originalShowStep(prevValid);
+      return;
+    }
+    originalShowStep(stepNumber);
+  };
+
+  // Initialize and show first valid step
+  handler.init();
+  if (firstStep !== 1) {
+    handler.showStep(firstStep);
+  }
+
+  return handler;
 }

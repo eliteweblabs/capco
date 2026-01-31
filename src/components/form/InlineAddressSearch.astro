@@ -78,37 +78,37 @@ const {
 </div>
 
 <script define:vars={{ id, fetchApiEndpoint, apiParams, valueField, labelField }}>
-  // Import and initialize address search with inline vars
-  import("../../scripts/inline-address-search").then((module) => {
-    // Wait for DOM to ensure elements exist
-    const initWhenReady = () => {
-      const searchInput = document.getElementById(`${id}-search-input`);
-      
-      if (!searchInput) {
-        // If elements don't exist yet, wait a bit and try again
-        console.log(`[INLINE-ADDRESS] Waiting for elements for ${id}...`);
-        setTimeout(initWhenReady, 100);
-        return;
+  // Initialize address search inline
+  import("/js/inline-address-search.js")
+    .then((module) => {
+      const initWhenReady = () => {
+        const searchInput = document.getElementById(`${id}-search-input`);
+
+        if (!searchInput) {
+          console.log(`[INLINE-ADDRESS] Waiting for elements for ${id}...`);
+          setTimeout(initWhenReady, 100);
+          return;
+        }
+
+        console.log(`[INLINE-ADDRESS] Initializing address search for ${id}`);
+        module.initializeAddressSearch({
+          id: id,
+          fetchApiEndpoint: fetchApiEndpoint,
+          apiParams: apiParams,
+          valueField: valueField,
+          labelField: labelField,
+        });
+      };
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initWhenReady);
+      } else {
+        initWhenReady();
       }
-
-      // Elements exist, initialize
-      console.log(`[INLINE-ADDRESS] Initializing address search for ${id}`);
-      module.initializeAddressSearch({
-        id,
-        fetchApiEndpoint,
-        apiParams,
-        valueField,
-        labelField,
-      });
-    };
-
-    // Start initialization when DOM is ready
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initWhenReady);
-    } else {
-      initWhenReady();
-    }
-  });
+    })
+    .catch((err) => {
+      console.error("[INLINE-ADDRESS] Failed to load module:", err);
+    });
 </script>
 
 <style>

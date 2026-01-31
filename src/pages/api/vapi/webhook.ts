@@ -91,9 +91,21 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     // Only process function calls and call end status
     if (body.message?.type === "function-call") {
-      return await handleFunctionCall(body.message.functionCall, calendarType, defaultUsername, request, callMetadata);
+      return await handleFunctionCall(
+        body.message.functionCall,
+        calendarType,
+        defaultUsername,
+        request,
+        callMetadata
+      );
     } else if (body.message?.type === "tool-calls") {
-      return await handleToolCalls(body.message, calendarType, defaultUsername, request, callMetadata);
+      return await handleToolCalls(
+        body.message,
+        calendarType,
+        defaultUsername,
+        request,
+        callMetadata
+      );
     }
 
     // Acknowledge all other messages without processing
@@ -196,19 +208,28 @@ async function handleToolCalls(
 
         // Add user context from call metadata if available
         if (callMetadata?.userId) {
-          console.log(`[---VAPI-WEBHOOK] Adding authorId from call metadata: ${callMetadata.userId}`);
+          console.log(
+            `[---VAPI-WEBHOOK] Adding authorId from call metadata: ${callMetadata.userId}`
+          );
           args.authorId = callMetadata.userId;
         }
 
         // Get base URL - fallback to environment variable if request not available
         let baseUrl: string;
         try {
-          baseUrl = request ? getApiBaseUrl(request) : (process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com');
+          baseUrl = request
+            ? getApiBaseUrl(request)
+            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
+              process.env.RAILWAY_PUBLIC_DOMAIN ||
+              "https://capcofire.com";
         } catch (error) {
           console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-          baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com';
+          baseUrl =
+            process.env.PUBLIC_RAILWAY_STATIC_URL ||
+            process.env.RAILWAY_PUBLIC_DOMAIN ||
+            "https://capcofire.com";
         }
-        
+
         const projectResponse = await fetch(`${baseUrl}/api/projects/upsert`, {
           method: "POST",
           headers: {
@@ -254,12 +275,19 @@ async function handleToolCalls(
         // Get base URL - fallback to environment variable if request not available
         let baseUrl: string;
         try {
-          baseUrl = request ? getApiBaseUrl(request) : (process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com');
+          baseUrl = request
+            ? getApiBaseUrl(request)
+            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
+              process.env.RAILWAY_PUBLIC_DOMAIN ||
+              "https://capcofire.com";
         } catch (error) {
           console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-          baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com';
+          baseUrl =
+            process.env.PUBLIC_RAILWAY_STATIC_URL ||
+            process.env.RAILWAY_PUBLIC_DOMAIN ||
+            "https://capcofire.com";
         }
-        
+
         const rememberResponse = await fetch(`${baseUrl}/api/voice-assistant/remember`, {
           method: "POST",
           headers: {
@@ -395,6 +423,217 @@ async function handleToolCalls(
 
         // Skip the cal-integration fetch for loadKnowledge
         continue;
+      } else if (functionName === "getUnreadEmails") {
+        // Handle getting unread emails from Gmail
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+
+        console.log(`[---VAPI-WEBHOOK] Getting unread emails for user`);
+
+        const userId = callMetadata?.userId;
+        if (!userId) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I need you to be logged in to check your email.",
+          });
+          continue;
+        }
+
+        try {
+          const { getUnreadEmails, extractName } = await import("../../../lib/gmail");
+          const emails = await getUnreadEmails(userId, args.limit || 10);
+
+          if (emails.length === 0) {
+            results.push({
+              toolCallId: toolCall.id,
+              result: "You have no unread emails. Your inbox is clear!",
+            });
+          } else {
+            const emailList = emails
+              .slice(0, 5)
+              .map((e, i) => `${i + 1}. From ${extractName(e.from)} about "${e.subject}"`)
+              .join(". ");
+
+            const moreText = emails.length > 5 ? ` and ${emails.length - 5} more` : "";
+
+            results.push({
+              toolCallId: toolCall.id,
+              result: `You have ${emails.length} unread email${emails.length > 1 ? "s" : ""}. ${emailList}${moreText}. Which would you like me to read?`,
+            });
+          }
+        } catch (error: any) {
+          console.error(`❌ [VAPI-WEBHOOK] Error getting emails:`, error);
+          const isNotConnected = error.message.includes("Gmail not connected");
+          results.push({
+            toolCallId: toolCall.id,
+            result: isNotConnected
+              ? "You need to connect your Gmail account first. Please visit the voice assistant page and click 'Connect Gmail'."
+              : "I'm having trouble accessing your email right now. Please try again in a moment.",
+          });
+        }
+
+        continue;
+      } else if (functionName === "readEmail") {
+        // Handle reading a specific email
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+
+        console.log(`[---VAPI-WEBHOOK] Reading email ${args.emailId}`);
+
+        const userId = callMetadata?.userId;
+        if (!userId) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I need you to be logged in to read emails.",
+          });
+          continue;
+        }
+
+        try {
+          const { readEmail, markAsRead, extractName, formatDateForVoice } = await import(
+            "../../../lib/gmail"
+          );
+          const email = await readEmail(userId, args.emailId);
+
+          // Mark as read after fetching
+          await markAsRead(userId, args.emailId);
+
+          const fromName = extractName(email.from);
+          const dateFormatted = formatDateForVoice(email.date);
+
+          // Truncate very long emails
+          let body = email.body || email.snippet;
+          if (body.length > 1000) {
+            body =
+              body.substring(0, 1000) + "... The email continues but I've read the first part.";
+          }
+
+          const result = `Email from ${fromName}. Subject: ${email.subject}. Received ${dateFormatted}. The email says: ${body}`;
+
+          results.push({
+            toolCallId: toolCall.id,
+            result: result,
+          });
+        } catch (error: any) {
+          console.error(`❌ [VAPI-WEBHOOK] Error reading email:`, error);
+          results.push({
+            toolCallId: toolCall.id,
+            result:
+              "I couldn't read that email. It may have been deleted or archived, or there may be a connection issue.",
+          });
+        }
+
+        continue;
+      } else if (functionName === "sendEmail") {
+        // Handle sending a new email
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+
+        console.log(`[---VAPI-WEBHOOK] Sending email to ${args.to}`);
+
+        const userId = callMetadata?.userId;
+        if (!userId) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I need you to be logged in to send emails.",
+          });
+          continue;
+        }
+
+        try {
+          const { sendEmail } = await import("../../../lib/gmail");
+          await sendEmail(userId, args.to, args.subject, args.body);
+
+          results.push({
+            toolCallId: toolCall.id,
+            result: `Email sent successfully to ${args.to}.`,
+          });
+        } catch (error: any) {
+          console.error(`❌ [VAPI-WEBHOOK] Error sending email:`, error);
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I couldn't send that email. Please check the recipient address and try again.",
+          });
+        }
+
+        continue;
+      } else if (functionName === "replyToEmail") {
+        // Handle replying to an email
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+
+        console.log(`[---VAPI-WEBHOOK] Replying to email ${args.emailId}`);
+
+        const userId = callMetadata?.userId;
+        if (!userId) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I need you to be logged in to reply to emails.",
+          });
+          continue;
+        }
+
+        try {
+          const { replyToEmail } = await import("../../../lib/gmail");
+          await replyToEmail(userId, args.emailId, args.body);
+
+          results.push({
+            toolCallId: toolCall.id,
+            result: "Reply sent successfully.",
+          });
+        } catch (error: any) {
+          console.error(`❌ [VAPI-WEBHOOK] Error replying to email:`, error);
+          results.push({
+            toolCallId: toolCall.id,
+            result:
+              "I couldn't send that reply. The email may have been deleted or there may be a connection issue.",
+          });
+        }
+
+        continue;
+      } else if (functionName === "archiveEmail") {
+        // Handle archiving an email
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+
+        console.log(`[---VAPI-WEBHOOK] Archiving email ${args.emailId}`);
+
+        const userId = callMetadata?.userId;
+        if (!userId) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I need you to be logged in to archive emails.",
+          });
+          continue;
+        }
+
+        try {
+          const { archiveEmail } = await import("../../../lib/gmail");
+          await archiveEmail(userId, args.emailId);
+
+          results.push({
+            toolCallId: toolCall.id,
+            result: "Email archived successfully.",
+          });
+        } catch (error: any) {
+          console.error(`❌ [VAPI-WEBHOOK] Error archiving email:`, error);
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I couldn't archive that email.",
+          });
+        }
+
+        continue;
       } else if (functionName === "processFile") {
         // Handle file processing (PDF/image uploads)
         const args =
@@ -408,10 +647,17 @@ async function handleToolCalls(
           // Get base URL - fallback to environment variable if request not available
           let baseUrl: string;
           try {
-            baseUrl = request ? getApiBaseUrl(request) : (process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com');
+            baseUrl = request
+              ? getApiBaseUrl(request)
+              : process.env.PUBLIC_RAILWAY_STATIC_URL ||
+                process.env.RAILWAY_PUBLIC_DOMAIN ||
+                "https://capcofire.com";
           } catch (error) {
             console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-            baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com';
+            baseUrl =
+              process.env.PUBLIC_RAILWAY_STATIC_URL ||
+              process.env.RAILWAY_PUBLIC_DOMAIN ||
+              "https://capcofire.com";
           }
 
           // Download the file from the provided URL
@@ -492,12 +738,19 @@ async function handleToolCalls(
       // Get base URL - fallback to environment variable if request not available
       let baseUrl: string;
       try {
-        baseUrl = request ? getApiBaseUrl(request) : (process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com');
+        baseUrl = request
+          ? getApiBaseUrl(request)
+          : process.env.PUBLIC_RAILWAY_STATIC_URL ||
+            process.env.RAILWAY_PUBLIC_DOMAIN ||
+            "https://capcofire.com";
       } catch (error) {
         console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-        baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com';
+        baseUrl =
+          process.env.PUBLIC_RAILWAY_STATIC_URL ||
+          process.env.RAILWAY_PUBLIC_DOMAIN ||
+          "https://capcofire.com";
       }
-      
+
       const response = await fetch(`${baseUrl}/api/vapi/cal-integration`, {
         method: "POST",
         headers: {
@@ -753,12 +1006,19 @@ async function handleFunctionCall(
         // Get base URL - fallback to environment variable if request not available
         let baseUrl: string;
         try {
-          baseUrl = request ? getApiBaseUrl(request) : (process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com');
+          baseUrl = request
+            ? getApiBaseUrl(request)
+            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
+              process.env.RAILWAY_PUBLIC_DOMAIN ||
+              "https://capcofire.com";
         } catch (error) {
           console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-          baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com';
+          baseUrl =
+            process.env.PUBLIC_RAILWAY_STATIC_URL ||
+            process.env.RAILWAY_PUBLIC_DOMAIN ||
+            "https://capcofire.com";
         }
-        
+
         const response = await fetch(`${baseUrl}/api/vapi/cal-integration`, {
           method: "POST",
           headers: {
