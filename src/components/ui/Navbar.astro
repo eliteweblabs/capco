@@ -42,7 +42,8 @@ const currentRole = currentUser?.profile?.role;
 ---
 
 <nav
-  class=`flex flex-col z-50 fixed top-4 left-0 right-4 rounded-r-full backdrop-blur-sm shadow-primary-md`
+  id="main-navbar"
+  class=`flex flex-col z-50 fixed top-4 left-0 right-4 rounded-r-full backdrop-blur-sm shadow-primary-md transition-opacity duration-200`
 >
   <!-- Top Banner Alerts (if any) -->
   <BannerAlertsLoader position="top" />
@@ -152,6 +153,65 @@ const currentRole = currentUser?.profile?.role;
         console.error("📋 [HEADER] Logout error:", error);
       }
     });
+  }
+
+  // Hide navbar on mobile when modals open
+  function setupNavbarHideOnModal() {
+    const navbar = document.getElementById("main-navbar");
+    if (!navbar) return;
+
+    // Check if device is mobile (screen width < 768px)
+    function isMobile() {
+      return window.innerWidth < 768;
+    }
+
+    // Observe for modal visibility changes
+    const observer = new MutationObserver((mutations) => {
+      if (!isMobile()) return;
+
+      // Check if any modal is visible
+      const modals = document.querySelectorAll('[id*="modal"]');
+      let hasVisibleModal = false;
+
+      modals.forEach((modal) => {
+        const isVisible = !modal.classList.contains("hidden") && modal.classList.contains("flex");
+        if (isVisible) {
+          hasVisibleModal = true;
+        }
+      });
+
+      // Hide or show navbar based on modal visibility
+      if (hasVisibleModal) {
+        navbar.style.opacity = "0";
+        navbar.style.pointerEvents = "none";
+      } else {
+        navbar.style.opacity = "1";
+        navbar.style.pointerEvents = "auto";
+      }
+    });
+
+    // Observe the body for modal changes
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+      subtree: true,
+      childList: true,
+    });
+
+    // Also listen for window resize to re-check mobile status
+    window.addEventListener("resize", () => {
+      if (!isMobile() && navbar.style.opacity === "0") {
+        navbar.style.opacity = "1";
+        navbar.style.pointerEvents = "auto";
+      }
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupNavbarHideOnModal);
+  } else {
+    setupNavbarHideOnModal();
   }
 </script>
 <style>

@@ -32,6 +32,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 ```
 
 This ensures:
+
 - Only authenticated users can access the page
 - Page redirects to login if not authenticated
 - User context is available throughout the session
@@ -52,6 +53,7 @@ await vapi.start(assistantId, {
 ```
 
 **Benefits:**
+
 - VAPI webhooks receive user context
 - Assistant knows who it's talking to
 - Can personalize responses
@@ -64,7 +66,7 @@ In your webhook endpoint (`/api/vapi/webhook.ts`), validate the user:
 ```typescript
 export async function POST({ request, cookies }) {
   // 1. Verify VAPI webhook signature (if configured)
-  const signature = request.headers.get('x-vapi-signature');
+  const signature = request.headers.get("x-vapi-signature");
   // ... verify signature ...
 
   // 2. Extract user metadata from call
@@ -74,12 +76,15 @@ export async function POST({ request, cookies }) {
 
   // 3. Validate user session
   const { currentUser } = await checkAuth(cookies);
-  
+
   // 4. Verify metadata user matches session user
   if (currentUser?.id !== userId) {
-    return new Response(JSON.stringify({ 
-      error: 'Unauthorized' 
-    }), { status: 401 });
+    return new Response(
+      JSON.stringify({
+        error: "Unauthorized",
+      }),
+      { status: 401 }
+    );
   }
 
   // 5. Process webhook with validated user context
@@ -92,29 +97,31 @@ export async function POST({ request, cookies }) {
 For additional security, implement JWT tokens:
 
 **Server-side (generate token):**
+
 ```typescript
-import { SignJWT } from 'jose';
+import { SignJWT } from "jose";
 
 async function generateVapiToken(userId: string) {
   const secret = new TextEncoder().encode(process.env.VAPI_JWT_SECRET);
-  
-  const token = await new SignJWT({ 
+
+  const token = await new SignJWT({
     userId,
     role: currentUserRole,
-    exp: Math.floor(Date.now() / 1000) + (60 * 30) // 30 min
+    exp: Math.floor(Date.now() / 1000) + 60 * 30, // 30 min
   })
-    .setProtectedHeader({ alg: 'HS256' })
+    .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime('30m')
+    .setExpirationTime("30m")
     .sign(secret);
-    
+
   return token;
 }
 ```
 
 **Client-side (use token):**
+
 ```javascript
-const token = await fetch('/api/vapi/token').then(r => r.text());
+const token = await fetch("/api/vapi/token").then((r) => r.text());
 
 await vapi.start(assistantId, {
   jwt: token,
@@ -123,6 +130,7 @@ await vapi.start(assistantId, {
 ```
 
 **Configure in VAPI Dashboard:**
+
 - Go to Assistant settings → Security
 - Enable JWT Authentication
 - Add your JWT secret
@@ -131,9 +139,11 @@ await vapi.start(assistantId, {
 ## Security Best Practices
 
 ### 1. Page-Level Protection
+
 ✅ Already implemented via `checkAuth()` in Astro page
 
 ### 2. Environment Variables
+
 ```bash
 PUBLIC_VAPI_KEY=your_public_key
 PUBLIC_VAPI_ASSISTANT_ID=your_assistant_id
@@ -142,29 +152,35 @@ VAPI_JWT_SECRET=your_jwt_secret    # For JWT auth (optional)
 ```
 
 ### 3. Webhook Validation
+
 Always validate:
+
 - VAPI signature (prove request is from VAPI)
 - User session (prove user is authenticated)
 - Metadata match (prove call belongs to user)
 
 ### 4. Rate Limiting
+
 Implement rate limiting to prevent abuse:
+
 ```typescript
 // Example using Redis or similar
 const callsInLastHour = await redis.get(`vapi:calls:${userId}`);
 if (callsInLastHour > 100) {
-  return new Response('Rate limit exceeded', { status: 429 });
+  return new Response("Rate limit exceeded", { status: 429 });
 }
 ```
 
 ### 5. Audit Logging
+
 Log all VAPI interactions for security auditing:
+
 ```typescript
-await supabase.from('vapi_call_logs').insert({
+await supabase.from("vapi_call_logs").insert({
   user_id: userId,
   call_id: callId,
   started_at: new Date(),
-  user_agent: request.headers.get('user-agent'),
+  user_agent: request.headers.get("user-agent"),
 });
 ```
 
@@ -181,6 +197,7 @@ The updated `/voice-assistant-vapi.astro` page now:
 ## Testing Authentication
 
 ### Test 1: Unauthenticated Access
+
 ```bash
 # Should redirect to login
 curl -I https://your-domain.com/voice-assistant-vapi
@@ -188,6 +205,7 @@ curl -I https://your-domain.com/voice-assistant-vapi
 ```
 
 ### Test 2: Authenticated Access
+
 ```bash
 # Should load page with user context
 # Open browser, log in, navigate to /voice-assistant-vapi
@@ -195,6 +213,7 @@ curl -I https://your-domain.com/voice-assistant-vapi
 ```
 
 ### Test 3: Webhook Validation
+
 ```bash
 # Test webhook endpoint
 curl -X POST https://your-domain.com/api/vapi/webhook \
@@ -213,32 +232,38 @@ const callerPhone = body.message?.call?.customer?.number;
 
 // Look up user by phone
 const { data: user } = await supabase
-  .from('profiles')
-  .select('*')
-  .eq('phone', callerPhone)
+  .from("profiles")
+  .select("*")
+  .eq("phone", callerPhone)
   .single();
 
 if (!user) {
-  return new Response(JSON.stringify({
-    error: 'Unknown phone number'
-  }), { status: 403 });
+  return new Response(
+    JSON.stringify({
+      error: "Unknown phone number",
+    }),
+    { status: 403 }
+  );
 }
 ```
 
 ## Summary
 
 **For Web Calls:**
+
 - Use Supabase session auth (already implemented ✅)
 - Pass user metadata to VAPI
 - Validate in webhooks
 - Optional: Add JWT tokens for extra security
 
 **For Phone Calls:**
+
 - Authenticate by phone number lookup
 - Prompt for PIN/verification code
 - Use caller ID validation
 
 **Security Layers:**
+
 1. Page auth (Supabase) ✅
 2. User metadata passing ✅
 3. Webhook validation (implement)
