@@ -7,6 +7,7 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 import Tooltip from "../common/TooltipFloating.astro";
 import SlotMachineModalStaff from "./SlotMachineModalStaff.astro";
 import InlineAddressSearch from "./InlineAddressSearch.astro";
+import SlideToggle from "../common/SlideToggle.astro";
 import { SMS_UTILS } from "../../lib/sms-utils";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
@@ -148,6 +149,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         globalInputClasses={appendedGlobalInputClasses}
                         {...field.componentProps}
                       />
+                    ) : field.type === "component" && field.component === "SlideToggle" ? (
+                      <div class="flex items-center justify-center py-8">
+                        <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
+                      </div>
                     ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
                       <InlineAddressSearch
                         id={field.id}
@@ -339,7 +344,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       }}
                     >
                       {button.label === "back" ? (
-                        <Fragment set:html={button.label} />
+                        <span class="hidden sm:inline">
+                          <Fragment set:html={button.label} />
+                        </span>
                       ) : (
                         <span
                           id={
