@@ -34,67 +34,26 @@ export function createMultiStepFormHandler(
     const stepIndicators = stepper.querySelectorAll("[data-step-indicator]");
     stepIndicators.forEach((indicator) => {
       const stepNum = parseInt(indicator.getAttribute("data-step-indicator") || "0");
-      const circle = indicator.querySelector("span:first-child");
-      const checkmark = indicator.querySelector(".checkmark-icon");
-      const number = indicator.querySelector(".step-number");
+      const circle = indicator.querySelector(".step-indicator");
       const progressLine = indicator.querySelector(".step-progress-line");
 
       if (!circle) return;
 
-      // Remove all state classes
-      circle.classList.remove(
-        "bg-primary-500",
-        "dark:bg-primary-600",
-        "text-white",
-        "ring-4",
-        "ring-primary-100",
-        "dark:ring-primary-900/30",
-        "bg-green-500",
-        "dark:bg-green-600",
-        "bg-gray-100",
-        "dark:bg-gray-800",
-        "text-gray-500",
-        "dark:text-gray-400"
-      );
+      // Remove active class from all
+      circle.classList.remove("active");
 
-      if (stepNum < currentStep) {
-        // Completed step - show checkmark
-        circle.classList.add("bg-green-500", "dark:bg-green-600", "text-white");
-        if (checkmark) checkmark.classList.remove("hidden");
-        if (number) number.classList.add("hidden");
+      if (stepNum <= currentStep) {
+        // Current or completed step - highlight
+        circle.classList.add("active");
 
-        // Fill progress line 100%
-        if (progressLine) {
+        // Fill progress line 100% for completed steps
+        if (progressLine && stepNum < currentStep) {
           (progressLine as HTMLElement).style.width = "100%";
-        }
-      } else if (stepNum === currentStep) {
-        // Current step - highlight with ring
-        circle.classList.add(
-          "bg-primary-500",
-          "dark:bg-primary-600",
-          "text-white",
-          "ring-4",
-          "ring-primary-100",
-          "dark:ring-primary-900/30"
-        );
-        if (checkmark) checkmark.classList.add("hidden");
-        if (number) number.classList.remove("hidden");
-
-        // Empty progress line
-        if (progressLine) {
+        } else if (progressLine) {
           (progressLine as HTMLElement).style.width = "0%";
         }
       } else {
-        // Future step - gray
-        circle.classList.add(
-          "bg-gray-100",
-          "dark:bg-gray-800",
-          "text-gray-500",
-          "dark:text-gray-400"
-        );
-        if (checkmark) checkmark.classList.add("hidden");
-        if (number) number.classList.remove("hidden");
-
+        // Future step - gray (default)
         // Empty progress line
         if (progressLine) {
           (progressLine as HTMLElement).style.width = "0%";
@@ -734,7 +693,8 @@ export function createMultiStepFormHandler(
     });
 
     // Initialize
-    updateProgress();
+    // Show first step and update progress
+    showStep(currentStep);
 
     // Focus first input
     setTimeout(() => {
