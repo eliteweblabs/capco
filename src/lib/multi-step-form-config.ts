@@ -25,7 +25,7 @@ export interface FormButtonConfig {
   type: "next" | "prev" | "skip" | "submit" | "choice";
   label: string;
   variant?: "primary" | "secondary" | "anchor" | "outline" | "ghost";
-  size?: "sm" | "md" | "lg" | "base";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   icon?: string;
   iconPosition?: "left" | "right";
   dataNext?: number; // Step number to go to on click
