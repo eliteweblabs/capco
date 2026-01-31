@@ -431,9 +431,13 @@ async function handleToolCalls(
             : toolCall.function?.arguments || {};
 
         console.log(`[---VAPI-WEBHOOK] Getting unread emails for user`);
+        console.log(`[---VAPI-WEBHOOK] Call metadata:`, JSON.stringify(callMetadata, null, 2));
 
         const userId = callMetadata?.userId;
+        console.log(`[---VAPI-WEBHOOK] Extracted userId:`, userId);
+
         if (!userId) {
+          console.error(`[---VAPI-WEBHOOK] No userId found in callMetadata`);
           results.push({
             toolCallId: toolCall.id,
             result: "I need you to be logged in to check your email.",
