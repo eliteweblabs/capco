@@ -325,35 +325,69 @@ export function createMultiStepFormHandler(
       const editBtn = target.closest("button.edit-step");
       const skipBtn = target.closest("button.skip-step");
 
-      // Fuel choice buttons (Gas/Electric)
+      // Fuel choice buttons (Gas/Electric) - Select only, don't advance
       if (fuelChoiceBtn) {
         e.preventDefault();
         const fuelValue = fuelChoiceBtn.getAttribute("data-value");
-        const nextStep = parseInt(fuelChoiceBtn.getAttribute("data-next") || "1");
 
+        // Update hidden input
         const fuelInput = form.querySelector('input[name="fuelSource"]') as HTMLInputElement;
         if (fuelInput) {
           fuelInput.value = fuelValue || "";
           console.log(`[MULTISTEP-FORM] Set fuelSource to: ${fuelValue}`);
         }
 
-        showStep(nextStep);
+        // Visual feedback: highlight selected button
+        const allFuelButtons = form.querySelectorAll("button.fuel-choice");
+        allFuelButtons.forEach((btn) => {
+          btn.classList.remove("!ring-2", "!ring-primary-600", "!bg-primary-50");
+          btn.classList.add("hover:bg-gray-50");
+        });
+        fuelChoiceBtn.classList.add("!ring-2", "!ring-primary-600", "!bg-primary-50");
+        fuelChoiceBtn.classList.remove("hover:bg-gray-50");
+
+        // Enable the next button
+        const nextButton = form.querySelector(
+          `.sms-step[data-step="${currentStep}"] button.next-step`
+        ) as HTMLButtonElement;
+        if (nextButton) {
+          nextButton.disabled = false;
+        }
+
         return;
       }
 
-      // HVAC choice buttons
+      // HVAC choice buttons - Select only, don't advance
       if (hvacChoiceBtn) {
         e.preventDefault();
         const hvacValue = hvacChoiceBtn.getAttribute("data-value");
-        const nextStep = parseInt(hvacChoiceBtn.getAttribute("data-next") || "1");
 
+        // Update hidden input
         const hvacInput = form.querySelector('input[name="hvacSystem"]') as HTMLInputElement;
         if (hvacInput) {
           hvacInput.value = hvacValue || "";
           console.log(`[MULTISTEP-FORM] Set hvacSystem to: ${hvacValue}`);
         }
 
-        showStep(nextStep);
+        // Visual feedback: highlight selected button
+        const allHvacButtons = form.querySelectorAll(
+          "button.hvac-choice:not([style*='display: none'])"
+        );
+        allHvacButtons.forEach((btn) => {
+          btn.classList.remove("!ring-2", "!ring-primary-600", "!bg-primary-50");
+          btn.classList.add("hover:bg-gray-50");
+        });
+        hvacChoiceBtn.classList.add("!ring-2", "!ring-primary-600", "!bg-primary-50");
+        hvacChoiceBtn.classList.remove("hover:bg-gray-50");
+
+        // Enable the submit button
+        const submitButton = form.querySelector(
+          `.sms-step[data-step="${currentStep}"] button.submit-step`
+        ) as HTMLButtonElement;
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+
         return;
       }
 
