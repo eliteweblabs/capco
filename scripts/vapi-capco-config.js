@@ -53,13 +53,16 @@ const CLIENT_PHONE = undefined; // e.g., "+19783479161"
 const LOG_PREFIX = "[VAPI-CAPCO]";
 
 // Webhook domain - the live URL where the webhook is hosted
-let WEBHOOK_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.WEBHOOK_DOMAIN || "https://capcofire.com";
+let WEBHOOK_DOMAIN =
+  process.env.RAILWAY_PUBLIC_DOMAIN || process.env.WEBHOOK_DOMAIN || "https://capcofire.com";
 
 // Validate that WEBHOOK_DOMAIN is not a placeholder (like ${LOCALTUNNEL_URL})
 // JavaScript template literals use ${} but env vars shouldn't contain these as literal strings
 if (WEBHOOK_DOMAIN.includes("${") || WEBHOOK_DOMAIN.includes("{{")) {
   console.warn(`⚠️ ${LOG_PREFIX} WEBHOOK_DOMAIN contains a placeholder: ${WEBHOOK_DOMAIN}`);
-  console.warn(`⚠️ ${LOG_PREFIX} Placeholders like \${LOCALTUNNEL_URL} are not evaluated in env vars`);
+  console.warn(
+    `⚠️ ${LOG_PREFIX} Placeholders like \${LOCALTUNNEL_URL} are not evaluated in env vars`
+  );
   console.warn(`⚠️ ${LOG_PREFIX} Using fallback: https://capcofire.com`);
   WEBHOOK_DOMAIN = "https://capcofire.com";
 }
@@ -313,17 +316,16 @@ Remember: Your goal is efficient service - whether booking appointments, managin
     toolIds: [
       "0b17d3bc-a697-432b-8386-7ed1235fd111", // getStaffSchedule({ username: 'capco' })
       "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment({ username: 'capco', start, name, email, phone })
-      // TODO: Add Gmail tool IDs after creating them in VAPI dashboard
-      // "TOOL_ID_HERE", // getUnreadEmails()
-      // "TOOL_ID_HERE", // readEmail(emailId)
-      // "TOOL_ID_HERE", // sendEmail(to, subject, body)
-      // "TOOL_ID_HERE", // replyToEmail(emailId, body)
-      // "TOOL_ID_HERE", // archiveEmail(emailId)
+      "5e721363-2451-403b-b835-1015f2b37539", // getUnreadEmails()
+      "0d6f3b7f-895d-4ff1-9844-7b963b0e1a2b", // readEmail(emailId)
+      "5d6a11c6-0ca2-4a5d-9789-4f92b68cb007", // sendEmail(to, subject, body)
+      "0fa95b37-a835-41a0-bb22-de2dc18dd5c0", // replyToEmail(emailId, body)
+      "b37284e9-edde-475f-867d-45ec6a1ca2ca", // archiveEmail(emailId)
     ],
   },
   voice: {
-    provider: "vapi",
-    voiceId: "Kylie",
+    provider: "11labs",
+    voiceId: "paula", // Modern, professional female voice
   },
   firstMessage: "Thank you for calling {{COMPANY_NAME}}. How may I assist you today?",
   maxDurationSeconds: 300,
