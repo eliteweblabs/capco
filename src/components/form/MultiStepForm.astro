@@ -43,13 +43,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 {/* Step Circle/Icon with Tooltip */}
                 <Tooltip text={step.title} position="top" mobileClickable={true}>
                   <span
-                    class={`flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0 transition-all duration-300
-                      ${
-                        step.stepNumber === 1
-                          ? "bg-primary-500 dark:bg-primary-600 ring-4 ring-primary-100 dark:ring-primary-900/30"
-                          : "bg-gray-300 dark:bg-gray-700"
-                      }
-                    `}
+                    class="step-indicator flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0 transition-all duration-300 bg-gray-300 dark:bg-gray-700"
                     data-step-title={step.title}
                   />
                 </Tooltip>
@@ -79,12 +73,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   >
     {
       config.steps.map((step) => (
-        <div
-          class="step-content"
-          data-step={step.stepNumber}
-          class:list={[step.stepNumber === 1 ? "active" : ""]}
-        >
-          <div class="space-y-24 sm:space-y-6 lg:space-y-8">
+        <div class="step-content" data-step={step.stepNumber}>
+          <div class="space-y-12 sm:space-y-6 lg:space-y-8">
             {/* Step Header */}
             <div>
               {step.showIcon && step.icon && (
@@ -176,44 +166,42 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         class={appendedGlobalInputClasses}
                         data-error={field.errorMessage}
                       />
-                    ) : (
-                      field.name === "firstName" || field.name === "lastName" ? (
-                        <div class="relative">
-                          <input
-                            type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
-                            id={field.id}
-                            name={field.name}
-                            placeholder=""
-                            required={field.required}
-                            autocomplete={field.autocomplete}
-                            minlength={field.minlength}
-                            autofocus={field.autofocus}
-                            class={appendedGlobalInputClasses}
-                            data-error={field.errorMessage}
-                            data-has-animated-placeholder="true"
-                            data-original-placeholder={field.placeholder}
-                          />
-                          <span
-                            class="animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500"
-                            data-for={field.id}
-                          >
-                            {field.placeholder}
-                          </span>
-                        </div>
-                      ) : (
+                    ) : field.name === "firstName" || field.name === "lastName" ? (
+                      <div class="relative">
                         <input
                           type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
                           id={field.id}
                           name={field.name}
-                          placeholder={field.placeholder}
+                          placeholder=""
                           required={field.required}
                           autocomplete={field.autocomplete}
                           minlength={field.minlength}
                           autofocus={field.autofocus}
                           class={appendedGlobalInputClasses}
                           data-error={field.errorMessage}
+                          data-has-animated-placeholder="true"
+                          data-original-placeholder={field.placeholder}
                         />
-                      )
+                        <span
+                          class="animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500"
+                          data-for={field.id}
+                        >
+                          {field.placeholder}
+                        </span>
+                      </div>
+                    ) : (
+                      <input
+                        type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
+                        id={field.id}
+                        name={field.name}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                        autocomplete={field.autocomplete}
+                        minlength={field.minlength}
+                        autofocus={field.autofocus}
+                        class={appendedGlobalInputClasses}
+                        data-error={field.errorMessage}
+                      />
                     )}
                   </div>
                 ))}
@@ -390,6 +378,23 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     display: block;
   }
 
+  /* Step indicator states */
+  .step-indicator {
+    background-color: rgb(209 213 219); /* gray-300 */
+  }
+
+  .dark .step-indicator {
+    background-color: rgb(55 65 81); /* gray-700 */
+  }
+
+  .step-indicator.active {
+    background-color: rgb(var(--color-primary-500, 99 102 241));
+  }
+
+  .dark .step-indicator.active {
+    background-color: rgb(var(--color-primary-600, 79 70 229));
+  }
+
   #multi-step-contact-form {
     width: 80dvw;
     max-width: 680px;
@@ -504,19 +509,21 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         }
       });
 
-      // Rotate last name placeholders with same index
-      lastNameInputs.forEach((input, index) => {
-        const span = lastNamePlaceholderSpans[index];
-        if (span && !input.value && span.style.display !== "none") {
-          // Only rotate if visible
-          span.style.animation = "slideOutDown 400ms ease-out forwards";
+      // Rotate last name placeholders with same index - delayed by 200ms for staggered effect
+      setTimeout(() => {
+        lastNameInputs.forEach((input, index) => {
+          const span = lastNamePlaceholderSpans[index];
+          if (span && !input.value && span.style.display !== "none") {
+            // Only rotate if visible
+            span.style.animation = "slideOutDown 400ms ease-out forwards";
 
-          setTimeout(() => {
-            span.textContent = lastNamePlaceholders[placeholderIndex];
-            span.style.animation = "slideInDown 400ms ease-out forwards";
-          }, 400);
-        }
-      });
+            setTimeout(() => {
+              span.textContent = lastNamePlaceholders[placeholderIndex];
+              span.style.animation = "slideInDown 400ms ease-out forwards";
+            }, 400);
+          }
+        });
+      }, 200); // Stagger the second input animation by 200ms
     }
 
     // Rotate placeholders every 3 seconds (synced with title rotation)
