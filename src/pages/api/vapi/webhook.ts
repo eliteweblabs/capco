@@ -77,14 +77,37 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const body: VapiWebhookData = await request.json();
     const messageType = body.message?.type || "unknown";
 
-    // Extract user metadata from VAPI call
-    const callMetadata = (body as any).message?.call?.metadata || (body as any).call?.metadata;
+    // Extract user metadata from VAPI call - check multiple possible locations
+    let callMetadata = null;
+    
+    // Try multiple extraction paths
+    callMetadata = (body as any).message?.call?.metadata ||
+                   (body as any).call?.metadata ||
+                   (body as any).metadata ||
+                   (body as any).message?.metadata ||
+                   null;
+
+    // Debug: Log what we found
+    console.log("[---VAPI-WEBHOOK] Metadata extraction attempts:", {
+      fromMessageCall: !!(body as any).message?.call?.metadata,
+      fromCall: !!(body as any).call?.metadata,
+      fromRoot: !!(body as any).metadata,
+      fromMessage: !!(body as any).message?.metadata,
+      found: !!callMetadata,
+    });
+
     const metadataUserId = callMetadata?.userId;
     const metadataUserEmail = callMetadata?.userEmail;
 
     // Debug: Log the entire body structure to see where metadata is
     if (messageType === "tool-calls") {
-      console.log("[---VAPI-WEBHOOK] Full body structure:", JSON.stringify(body, null, 2));
+      console.log("[---VAPI-WEBHOOK] Full body keys:", Object.keys(body));
+      if ((body as any).message) {
+        console.log("[---VAPI-WEBHOOK] Message keys:", Object.keys((body as any).message));
+      }
+      if ((body as any).call) {
+        console.log("[---VAPI-WEBHOOK] Call keys:", Object.keys((body as any).call));
+      }
     }
 
     console.log(
