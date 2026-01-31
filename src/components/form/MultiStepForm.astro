@@ -230,12 +230,12 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                     type="button"
                     variant={button.variant || "secondary"}
                     size={button.size || "lg"}
-                    class={button.classes || ""}
+                    class={`${button.type}-step sms-choice ${button.classes || ""}`}
                     disabled={button.disabled}
                     dataAttributes={{
-                      "data-next": button.dataNext?.toString(),
-                      "data-value": button.dataValue,
-                      "data-sms-value": button.dataValue, // Keep for backward compatibility with SMS
+                      ...(button.dataNext !== undefined && { "data-next": button.dataNext.toString() }),
+                      ...(button.dataValue !== undefined && { "data-value": button.dataValue }),
+                      ...(button.dataValue !== undefined && { "data-sms-value": button.dataValue }), // Keep for backward compatibility with SMS
                     }}
                   >
                     <Fragment set:html={button.label} />
@@ -256,8 +256,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                     class={`${button.type}-step ${button.classes || ""}`}
                     disabled={button.disabled}
                     dataAttributes={{
-                      "data-next": button.dataNext?.toString(),
-                      "data-prev": button.dataPrev?.toString(),
+                      ...(button.dataNext !== undefined && { "data-next": button.dataNext.toString() }),
+                      ...(button.dataPrev !== undefined && { "data-prev": button.dataPrev.toString() }),
                     }}
                   >
                     {button.label === "back" ? (
