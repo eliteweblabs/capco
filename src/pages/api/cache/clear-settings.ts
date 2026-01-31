@@ -1,8 +1,7 @@
----
 // API endpoint to clear the global settings cache
 // GET /api/cache/clear-settings
 import type { APIRoute } from "astro";
-import { clearSettingsCache } from "../../global/global-company-data";
+import { clearSettingsCache } from "../global/global-company-data";
 
 export const GET: APIRoute = async ({ request }) => {
   try {
