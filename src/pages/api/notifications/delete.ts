@@ -24,16 +24,17 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { id } = body;
+    const { id, itemId, notificationId } = body;
+    const notifId = id || itemId || notificationId;
 
-    if (!id) {
+    if (!notifId) {
       return new Response(JSON.stringify({ error: "Notification ID is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    console.log(`🔔 [NOTIFICATIONS-DELETE] Deleting notification:`, id);
+    console.log(`🔔 [NOTIFICATIONS-DELETE] Deleting notification:`, notifId);
 
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
@@ -46,7 +47,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const { data: notification, error: notificationError } = await supabaseAdmin
       .from("notifications")
       .select("id, title, userId")
-      .eq("id", id)
+      .eq("id", notifId)
       .single();
 
     if (notificationError || !notification) {
@@ -69,7 +70,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     // Delete the notification
-    const { error: deleteError } = await supabaseAdmin.from("notifications").delete().eq("id", id);
+    const { error: deleteError } = await supabaseAdmin.from("notifications").delete().eq("id", notifId);
 
     if (deleteError) {
       console.error("❌ [NOTIFICATIONS-DELETE] Error deleting notification:", deleteError);
@@ -82,7 +83,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log(`✅ [NOTIFICATIONS-DELETE] Notification deleted successfully:`, id);
+    console.log(`✅ [NOTIFICATIONS-DELETE] Notification deleted successfully:`, notifId);
 
     return new Response(
       JSON.stringify({

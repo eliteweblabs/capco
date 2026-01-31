@@ -25,9 +25,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { userId } = body;
+    const { userId, itemId, id } = body;
+    const userIdToDelete = userId || itemId || id;
 
-    if (!userId) {
+    if (!userIdToDelete) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -40,10 +41,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log(`🗑️ [DELETE-USER] Admin ${currentUser?.email} attempting to delete user ${userId}`);
+    console.log(`🗑️ [DELETE-USER] Admin ${currentUser?.email} attempting to delete user ${userIdToDelete}`);
 
     // Prevent self-deletion
-    if (userId === currentUser?.id) {
+    if (userIdToDelete === currentUser?.id) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -73,7 +74,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const { data: userToDelete, error: fetchError } = await supabase
       .from("profiles")
       .select("firstName, lastName, companyName, role")
-      .eq("id", userId)
+      .eq("id", userIdToDelete)
       .single();
 
     if (fetchError || !userToDelete) {
@@ -101,7 +102,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const { data: userProjects, error: projectsError } = await supabase
       .from("projects")
       .select("id, title")
-      .eq("authorId", userId);
+      .eq("authorId", userIdToDelete);
 
     if (projectsError) {
       console.error("🗑️ [DELETE-USER] Error checking user projects:", projectsError);
@@ -123,7 +124,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     // Delete user from profiles table first
-    const { error: profileDeleteError } = await supabase.from("profiles").delete().eq("id", userId);
+    const { error: profileDeleteError } = await supabase.from("profiles").delete().eq("id", userIdToDelete);
 
     if (profileDeleteError) {
       console.error("🗑️ [DELETE-USER] Error deleting profile:", profileDeleteError);
@@ -142,7 +143,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Delete user from auth.users table using admin client
     try {
-      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userIdToDelete);
 
       if (authDeleteError) {
         console.error("🗑️ [DELETE-USER] Error deleting auth user:", authDeleteError);

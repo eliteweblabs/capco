@@ -324,6 +324,7 @@ if (!currentUser || currentRole === "Client") {
               data-state="trash"
               data-timeout="3000"
               data-item-type="notification"
+              data-api-endpoint="/api/notifications/delete"
               data-callback="handleNotificationDelete"
               title="Delete notification"
             >
@@ -509,24 +510,10 @@ if (!currentUser || currentRole === "Client") {
 
     async deleteNotification(notificationId: number) {
       console.log("🔍 [NOTIFICATIONS] Deleting notification ID:", notificationId);
-      try {
-        const response = await fetch("/api/notifications/get", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ notificationId }),
-        });
-
-        console.log("🔍 [NOTIFICATIONS] Delete response status:", response.status);
-        if (response.ok) {
-          // console.log("✅ [NOTIFICATIONS] Notification deleted successfully, reloading...");
-          await this.loadNotifications();
-        } else {
-          console.error("❌ [NOTIFICATIONS] Delete failed with status:", response.status);
-        }
-      } catch (error) {
-        console.error("❌ [NOTIFICATIONS] Error deleting notification:", error);
-      }
+      
+      // The DeleteConfirmButton component handles the API call
+      // This method just updates the UI after successful deletion
+      await this.loadNotifications();
     }
 
     updateBadge(count: number) {

@@ -9,6 +9,7 @@ import Button from "../../components/common/Button.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
 import PageEditorModal from "../../components/ui/PageEditorModal.astro";
 import Overlay from "../../components/ui/Overlay.astro";
+import DeleteConfirmButton from "../../components/common/DeleteConfirmButton.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
 import { readFileSync, existsSync } from "fs";
@@ -608,18 +609,26 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
                       )}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        class="text-primary hover:text-primary-dark mr-4 edit-page-btn"
-                        data-slug={page.slug}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 delete-page-btn"
-                        data-slug={page.slug}
-                      >
-                        Delete
-                      </button>
+                      <div class="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon="edit"
+                          class="edit-page-btn"
+                          data-slug={page.slug}
+                          title="Edit page"
+                        />
+                        <DeleteConfirmButton
+                          id={`delete-cms-page-${page.id}`}
+                          itemType="cms-page"
+                          apiEndpoint="/api/cms/pages"
+                          onDeleteCallback="handleCmsPageDeleted"
+                          tooltipText={`Delete ${page.slug}`}
+                          size="sm"
+                          variant="icon"
+                          dataAttributes={{ slug: page.slug }}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -633,11 +642,8 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
 
   <!-- Page Editor Modal with Overlay -->
   <Overlay id="page-editor-modal-overlay" zIndex={49} blurAmount="none" opacity="50" />
-  
-  <div
-    id="page-editor-modal"
-    class="hidden fixed inset-0 overflow-y-auto h-full w-full z-50"
-  >
+
+  <div id="page-editor-modal" class="hidden fixed inset-0 overflow-y-auto h-full w-full z-50">
     <div
       id="page-editor-modal-content"
       class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800"
@@ -1197,7 +1203,7 @@ You can embed components:
           includeInNavCheckbox.checked = false;
         }
         if (modalTitle) modalTitle.textContent = "Create New Page";
-        
+
         // Show modal and overlay
         const overlay = document.getElementById("page-editor-modal-overlay");
         if (overlay) {
@@ -1345,16 +1351,61 @@ You can embed components:
         overlay.addEventListener("click", closeModal);
       }
 
-      // Drag and drop functionality for reordering pages
+      // Drag and drop functionality for reordering pages (with touch support)
       let draggedElement = null;
       let draggedIndex = -1;
+      let touchStartY = 0;
+      let touchCurrentY = 0;
+      let placeholder = null;
 
       const tbody = document.querySelector("tbody");
       if (tbody) {
+        // Function to update page order in database
+        async function updatePageOrder() {
+          const newRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
+          const orderUpdates = [];
+
+          newRows.forEach((r, idx) => {
+            const pageId = r.getAttribute("data-page-id");
+            if (pageId) {
+              orderUpdates.push({
+                id: pageId,
+                display_order: idx,
+              });
+            }
+          });
+
+          // Save new order to database
+          try {
+            const response = await fetch("/api/cms/pages", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orders: orderUpdates }),
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || "Failed to update order");
+            }
+
+            // Update data attributes
+            newRows.forEach((r, idx) => {
+              r.setAttribute("data-display-order", idx.toString());
+            });
+          } catch (error) {
+            console.error("Error updating page order:", error);
+            if (window.showError) {
+              window.showError("Save Failed", "Failed to save new order. Reloading page...", 3000);
+            }
+            setTimeout(() => location.reload(), 1000);
+          }
+        }
+
         // Make rows draggable
         const rows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
 
         rows.forEach((row, index) => {
+          // Mouse drag events
           row.addEventListener("dragstart", (e) => {
             draggedElement = row;
             draggedIndex = index;
@@ -1402,51 +1453,140 @@ You can embed components:
                 tbody.insertBefore(draggedElement, row);
               }
 
-              // Update display_order in database
-              const newRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
-              const orderUpdates = [];
-
-              newRows.forEach((r, idx) => {
-                const pageId = r.getAttribute("data-page-id");
-                if (pageId) {
-                  orderUpdates.push({
-                    id: pageId,
-                    display_order: idx,
-                  });
-                }
-              });
-
-              // Save new order to database
-              try {
-                const response = await fetch("/api/cms/pages", {
-                  method: "PUT",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ orders: orderUpdates }),
-                });
-
-                if (!response.ok) {
-                  const error = await response.json();
-                  throw new Error(error.error || "Failed to update order");
-                }
-
-                // Update data attributes
-                newRows.forEach((r, idx) => {
-                  r.setAttribute("data-display-order", idx.toString());
-                });
-              } catch (error) {
-                console.error("Error updating page order:", error);
-                if (window.showError) {
-                  window.showError(
-                    "Save Failed",
-                    "Failed to save new order. Reloading page...",
-                    3000
-                  );
-                }
-                setTimeout(() => location.reload(), 1000);
-              }
+              await updatePageOrder();
             }
           });
+
+          // Touch events for mobile
+          row.addEventListener(
+            "touchstart",
+            (e) => {
+              // Only handle single touch
+              if (e.touches.length !== 1) return;
+
+              draggedElement = row;
+              draggedIndex = Array.from(tbody.querySelectorAll("tr[draggable='true']")).indexOf(
+                row
+              );
+              touchStartY = e.touches[0].clientY;
+              touchCurrentY = touchStartY;
+
+              // Add visual feedback
+              row.classList.add("opacity-50", "scale-105", "z-50", "shadow-lg");
+              row.style.position = "relative";
+
+              // Prevent text selection
+              e.preventDefault();
+            },
+            { passive: false }
+          );
+
+          row.addEventListener(
+            "touchmove",
+            (e) => {
+              if (!draggedElement || e.touches.length !== 1) return;
+
+              e.preventDefault();
+              touchCurrentY = e.touches[0].clientY;
+              const deltaY = touchCurrentY - touchStartY;
+
+              // Move the element
+              draggedElement.style.transform = `translateY(${deltaY}px)`;
+
+              // Find the element we're hovering over
+              const afterElement = getDragAfterElement(tbody, touchCurrentY);
+              const currentRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
+
+              // Remove all border highlights
+              currentRows.forEach((r) => {
+                r.classList.remove("border-t-2", "border-primary-500");
+              });
+
+              // Add border to target row
+              if (afterElement == null) {
+                const lastRow = currentRows[currentRows.length - 1];
+                if (lastRow !== draggedElement) {
+                  lastRow.classList.add("border-t-2", "border-primary-500");
+                }
+              } else if (afterElement !== draggedElement) {
+                afterElement.classList.add("border-t-2", "border-primary-500");
+              }
+            },
+            { passive: false }
+          );
+
+          row.addEventListener(
+            "touchend",
+            async (e) => {
+              if (!draggedElement) return;
+
+              e.preventDefault();
+
+              // Get the current position
+              const afterElement = getDragAfterElement(tbody, touchCurrentY);
+              const currentRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
+
+              // Reorder DOM
+              if (afterElement == null) {
+                tbody.appendChild(draggedElement);
+              } else {
+                tbody.insertBefore(draggedElement, afterElement);
+              }
+
+              // Reset styles
+              draggedElement.classList.remove("opacity-50", "scale-105", "z-50", "shadow-lg");
+              draggedElement.style.transform = "";
+              draggedElement.style.position = "";
+
+              // Remove all border highlights
+              currentRows.forEach((r) => {
+                r.classList.remove("border-t-2", "border-primary-500");
+              });
+
+              // Update database
+              await updatePageOrder();
+
+              draggedElement = null;
+              draggedIndex = -1;
+            },
+            { passive: false }
+          );
+
+          row.addEventListener("touchcancel", () => {
+            if (draggedElement) {
+              draggedElement.classList.remove("opacity-50", "scale-105", "z-50", "shadow-lg");
+              draggedElement.style.transform = "";
+              draggedElement.style.position = "";
+              const currentRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
+              currentRows.forEach((r) => {
+                r.classList.remove("border-t-2", "border-primary-500");
+              });
+            }
+            draggedElement = null;
+            draggedIndex = -1;
+          });
         });
+      }
+
+      // Helper function to determine which element is after the current position
+      function getDragAfterElement(container, y) {
+        const draggableElements = [
+          ...container.querySelectorAll("tr[draggable='true']:not(.opacity-50)"),
+        ];
+
+        return draggableElements.reduce(
+          (closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+              return { offset: offset, element: child };
+            } else {
+              return closest;
+            }
+          },
+          { offset: Number.NEGATIVE_INFINITY }
+        ).element;
       }
 
       // Import markdown file
