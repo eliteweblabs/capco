@@ -485,7 +485,7 @@ export function extractPlaceholders(text: string): Record<string, string> {
 }
 
 // Create new project using the create-project API (ensures proper notifications)
-export async function createProjectFromEmail(userId: string, projectInfo: any, userProfile: any) {
+export async function createProjectFromEmail(userId: string, projectInfo: any, userProfile: any, request?: Request) {
   try {
     console.log("🏗️ [EMAIL-WEBHOOK] Creating project via API for user:", userId);
 
@@ -515,7 +515,7 @@ export async function createProjectFromEmail(userId: string, projectInfo: any, u
     console.log("🏗️ [EMAIL-WEBHOOK] Project data for API:", JSON.stringify(projectData, null, 2));
 
     // Call the create-project API endpoint to ensure proper processing
-    const createProjectUrl = `${getApiBaseUrl()}/api/projects/upsert`;
+    const createProjectUrl = `${getApiBaseUrl(request)}/api/projects/upsert`;
     const createProjectResponse = await fetch(createProjectUrl, {
       method: "POST",
       headers: {
@@ -544,7 +544,7 @@ export async function createProjectFromEmail(userId: string, projectInfo: any, u
       console.log("🔔 [EMAIL-WEBHOOK] Updating project status to trigger notifications");
 
       const nextStatus = 10;
-      const statusResponse = await fetch(`${getApiBaseUrl()}/api/update-status`, {
+      const statusResponse = await fetch(`${getApiBaseUrl(request)}/api/update-status`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

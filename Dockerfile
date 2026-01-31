@@ -20,8 +20,9 @@ COPY . .
 # Ensure the production startup script has execute permissions and verify it exists
 RUN ls -la scripts/start-production.sh && chmod +x scripts/start-production.sh && ls -la scripts/start-production.sh
 
-# Make content init script executable
+# Make content init scripts executable
 RUN chmod +x scripts/init-persistent-content.sh 2>/dev/null || true
+RUN chmod +x scripts/init-content.sh 2>/dev/null || true
 
 # Initialize persistent content volume (runs at build time, but volume persists at runtime)
 # Note: Volume must be mounted at /data/content in Railway
