@@ -39,22 +39,24 @@ export function createMultiStepFormHandler(
 
       if (!circle) return;
 
-      // Remove active class from all
-      circle.classList.remove("active");
+      // Remove all state classes
+      circle.classList.remove("active", "completed");
 
-      if (stepNum <= currentStep) {
-        // Current or completed step - highlight
-        circle.classList.add("active");
-
+      if (stepNum < currentStep) {
+        // Completed step
+        circle.classList.add("completed");
         // Fill progress line 100% for completed steps
-        if (progressLine && stepNum < currentStep) {
+        if (progressLine) {
           (progressLine as HTMLElement).style.width = "100%";
-        } else if (progressLine) {
+        }
+      } else if (stepNum === currentStep) {
+        // Current active step
+        circle.classList.add("active");
+        if (progressLine) {
           (progressLine as HTMLElement).style.width = "0%";
         }
       } else {
         // Future step - gray (default)
-        // Empty progress line
         if (progressLine) {
           (progressLine as HTMLElement).style.width = "0%";
         }
@@ -374,6 +376,54 @@ export function createMultiStepFormHandler(
             } else {
               phoneButtonText.textContent = "skip";
             }
+          }
+        }
+      });
+    });
+
+    // Address input change listener - update button text
+    const addressInputs = form.querySelectorAll('input[name="address"]');
+    addressInputs.forEach((addressInput) => {
+      const input = addressInput as HTMLInputElement;
+
+      // Create a MutationObserver to watch for value changes
+      const observer = new MutationObserver(() => {
+        const addressButtonText = document.getElementById(`${formId}-next-step-address-text`);
+        if (addressButtonText) {
+          if (!input.value || input.value.trim() === "") {
+            addressButtonText.textContent = "skip";
+          } else {
+            addressButtonText.textContent = "next";
+          }
+        }
+      });
+
+      // Observe attribute changes (for value attribute)
+      observer.observe(input, {
+        attributes: true,
+        attributeFilter: ["value"],
+      });
+
+      // Also listen for input events
+      input.addEventListener("input", () => {
+        const addressButtonText = document.getElementById(`${formId}-next-step-address-text`);
+        if (addressButtonText) {
+          if (!input.value || input.value.trim() === "") {
+            addressButtonText.textContent = "skip";
+          } else {
+            addressButtonText.textContent = "next";
+          }
+        }
+      });
+
+      // Also listen for change events
+      input.addEventListener("change", () => {
+        const addressButtonText = document.getElementById(`${formId}-next-step-address-text`);
+        if (addressButtonText) {
+          if (!input.value || input.value.trim() === "") {
+            addressButtonText.textContent = "skip";
+          } else {
+            addressButtonText.textContent = "next";
           }
         }
       });
