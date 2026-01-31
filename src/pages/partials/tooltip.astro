@@ -5,7 +5,7 @@ import TooltipComponent from "../../components/common/Tooltip.astro";
 // Check if we have props (when used as component) or need to use headers (when used as partial)
 const hasProps = Object.keys(Astro.props).length > 0;
 
-let text, position, className, tooltipClass, disabled, open, slotContent;
+let text, position, className, tooltipClass, disabled, open, slotContent, mobileClickable;
 
 if (hasProps) {
   // Use props when available (prioritize props over headers)
@@ -17,6 +17,7 @@ if (hasProps) {
   disabled = props.disabled || false;
   open = props.open || false;
   slotContent = props.slotContent;
+  mobileClickable = props.mobileClickable || false;
 } else {
   // Fall back to headers when used as partial
   text = Astro.request.headers.get("x-tooltip-text") || "";
@@ -26,6 +27,7 @@ if (hasProps) {
   disabled = Astro.request.headers.get("x-tooltip-disabled") === "true";
   open = Astro.request.headers.get("x-tooltip-open") === "true";
   slotContent = Astro.request.headers.get("x-tooltip-slot-content");
+  mobileClickable = Astro.request.headers.get("x-tooltip-mobile-clickable") === "true";
 }
 ---
 
@@ -36,6 +38,7 @@ if (hasProps) {
   {tooltipClass}
   {disabled}
   {open}
+  {mobileClickable}
 >
   {slotContent ? <Fragment set:html={slotContent} /> : <slot />}
 </TooltipComponent>

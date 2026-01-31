@@ -8,6 +8,7 @@ export interface TooltipStyleConfig {
   disabled?: boolean;
   open?: boolean;
   dismissable?: boolean;
+  mobileClickable?: boolean;
 }
 
 export function getTooltipClasses(config: TooltipStyleConfig = {}): {
@@ -22,10 +23,11 @@ export function getTooltipClasses(config: TooltipStyleConfig = {}): {
     disabled = false,
     open = false,
     dismissable = false,
+    mobileClickable = false,
   } = config;
 
-  // Base wrapper classes
-  const wrapperClasses = `relative inline-block group ${className}`;
+  // Base wrapper classes - add mobile-clickable class if mobileClickable is enabled
+  const wrapperClasses = `relative inline-block group ${mobileClickable ? "mobile-clickable-tooltip" : ""} ${className}`;
 
   // Position classes for tooltip placement
   const positionClasses = {
