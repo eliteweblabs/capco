@@ -20,7 +20,8 @@ let componentId,
   projectId,
   name,
   globalInputClasses,
-  labelField;
+  labelField,
+  currentLocation;
 
 if (hasProps) {
   // Use props when available (prioritize props over headers)
@@ -42,6 +43,7 @@ if (hasProps) {
   projectId = props.projectId || "";
   name = props.name || "";
   globalInputClasses = props.globalInputClasses || "";
+  currentLocation = props.currentLocation || false;
 } else {
   // Fall back to headers when used as partial
   componentId = Astro.request.headers.get("x-component-id") || "slot-machine";
@@ -61,9 +63,11 @@ if (hasProps) {
   projectId = Astro.request.headers.get("x-project-id") || "";
   name = Astro.request.headers.get("x-name") || "";
   globalInputClasses = Astro.request.headers.get("x-global-input-classes") || "";
+  currentLocation = Astro.request.headers.get("x-current-location") === "true";
 }
 
 import Button from "../../components/common/Button.astro";
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
 ---
 
 <div
@@ -98,7 +102,7 @@ import Button from "../../components/common/Button.astro";
       {
         showSearch && (
           <div class="mb-4">
-            <div class="relative">
+            <div class="relative mb-2">
               <input
                 type="text"
                 id={`${componentId}-slot-search-input`}
@@ -122,6 +126,17 @@ import Button from "../../components/common/Button.astro";
                 </svg>
               </button>
             </div>
+            {currentLocation && (
+              <button
+                type="button"
+                id={`${componentId}-use-location-btn`}
+                class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                title="Use my current location"
+              >
+                <SimpleIcon name="crosshair" size="sm" />
+                <span>Use My Current Location</span>
+              </button>
+            )}
           </div>
         )
       }

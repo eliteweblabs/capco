@@ -21,6 +21,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const sortBy = url.searchParams.get("sortBy") || "createdAt";
     const sortOrder = url.searchParams.get("sortOrder") === "asc" ? true : false;
     const includeTotal = url.searchParams.get("includeTotal") === "true";
+    const countOnly = url.searchParams.get("count") === "true"; // NEW: count-only mode
 
     // Allow public access for featured projects ONLY
     const isFeaturedRequest = featured === "true";
@@ -44,11 +45,61 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       // console.log("🏗️ [PROJECTS-GET] Allowing public access to featured projects");
     }
 
-    console.log("🏗️ [PROJECTS-GET] Project ID:", projectId);
+    console.log("🏗️ [PROJECTS-GET] Project ID:", projectId, "Count only:", countOnly);
     if (!supabase || !supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // NEW: Handle count-only requests
+    if (countOnly) {
+      let countQuery = supabaseAdmin
+        .from("projects")
+        .select("*", { count: "exact", head: true })
+        .neq("id", 0); // Exclude system log project
+
+      // Apply filters
+      if (authorId) {
+        countQuery = countQuery.eq("authorId", authorId);
+      }
+      if (assignedToId) {
+        countQuery = countQuery.eq("assignedToId", assignedToId);
+      }
+      if (status) {
+        countQuery = countQuery.eq("status", status);
+      }
+      if (featured === "true") {
+        countQuery = countQuery.eq("featured", true);
+      }
+
+      // Apply role-based filtering
+      if (!isFeaturedRequest && currentUser) {
+        const userRole = currentUser.profile?.role;
+        if (userRole === "Client") {
+          countQuery = countQuery.eq("authorId", currentUser.id);
+        }
+      }
+
+      const { count, error } = await countQuery;
+
+      if (error) {
+        console.error("Error fetching project count:", error);
+        return new Response(JSON.stringify({ error: "Failed to fetch project count" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ count: count || 0 }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       });
     }
 

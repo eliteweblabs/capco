@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeleteConfirmButton Debug Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        padding: 2rem;
+        font-family: system-ui;
+      }
+      .log-output {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 8px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        max-height: 400px;
+        overflow-y: auto;
+        margin-top: 1rem;
+      }
+      .log-entry {
+        margin: 0.25rem 0;
+      }
+      .test-area {
+        border: 2px solid #ccc;
+        padding: 2rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 class="text-2xl font-bold mb-4">DeleteConfirmButton Debug Test</h1>
+
+    <div class="test-area">
+      <h2 class="text-lg font-semibold mb-4">Test Button</h2>
+      <button
+        type="button"
+        id="delete-punchlist-202"
+        class="delete-confirm-btn inline-flex items-center justify-center font-secondary relative inline-flex items-center justify-center font-large transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1) px-2 py-2 text-xs rounded-full"
+        data-state="trash"
+        data-timeout="3000"
+        data-item-type="punchlist"
+        data-api-endpoint="/api/punchlist/delete"
+        data-callback="handlePunchlistDelete"
+        title="Delete punchlist item"
+      >
+        <svg
+          class="inline-block delete-confirm-icon"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+        </svg>
+      </button>
+
+      <div class="mt-4 text-sm text-gray-600">
+        <p><strong>Button ID:</strong> delete-punchlist-202</p>
+        <p><strong>Classes:</strong> delete-confirm-btn</p>
+        <p><strong>Data attributes:</strong> state, timeout, item-type, api-endpoint, callback</p>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="text-lg font-semibold mb-2">Console Output</h2>
+      <div class="log-output" id="console-output"></div>
+    </div>
+
+    <script>
+      // Capture console.log
+      const consoleOutput = document.getElementById("console-output");
+      const originalLog = console.log;
+      const originalError = console.error;
+      const originalWarn = console.warn;
+
+      function addLog(message, type = "log") {
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        const color = type === "error" ? "#f87171" : type === "warn" ? "#fbbf24" : "#d4d4d4";
+        entry.style.color = color;
+        entry.textContent = message;
+        consoleOutput.appendChild(entry);
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+      }
+
+      console.log = function (...args) {
+        originalLog.apply(console, args);
+        addLog(args.join(" "), "log");
+      };
+
+      console.error = function (...args) {
+        originalError.apply(console, args);
+        addLog("ERROR: " + args.join(" "), "error");
+      };
+
+      console.warn = function (...args) {
+        originalWarn.apply(console, args);
+        addLog("WARN: " + args.join(" "), "warn");
+      };
+
+      // Mock window functions
+      window.showSuccess = (title, message, duration) => {
+        console.log(`SUCCESS: ${title} - ${message}`);
+      };
+
+      window.showNotice = (type, title, message) => {
+        console.log(`NOTICE (${type}): ${title} - ${message}`);
+      };
+
+      window.handlePunchlistDelete = async (itemId) => {
+        console.log(`CALLBACK: handlePunchlistDelete called with itemId: ${itemId}`);
+      };
+
+      // Initialize the delete button script
+      console.log("[TEST] Initializing delete button...");
+
+      function initDeleteConfirmButtons() {
+        console.log("[DeleteConfirmButton] 🚀 Initializing delete confirm buttons...");
+
+        // Check how many buttons exist on page
+        const buttons = document.querySelectorAll(".delete-confirm-btn");
+        console.log(`[DeleteConfirmButton] Found ${buttons.length} delete buttons on page`);
+        buttons.forEach((btn, idx) => {
+          console.log(
+            `[DeleteConfirmButton]   Button ${idx + 1}: ${btn.id}, classes: ${btn.className}`
+          );
+        });
+
+        const activeTimeouts = new Map();
+
+        // Add click listener
+        document.addEventListener("click", async (e) => {
+          console.log("[DeleteConfirmButton] 🖱️  Click detected anywhere on page");
+
+          const target = e.target;
+          console.log(
+            `[DeleteConfirmButton]   Click target: ${target.tagName}, classes: ${target.className}`
+          );
+
+          const button = target.closest(".delete-confirm-btn");
+          console.log(
+            `[DeleteConfirmButton]   Closest button found: ${button ? button.id : "NONE"}`
+          );
+
+          if (!button) {
+            console.log("[DeleteConfirmButton]   ❌ Not a delete button, ignoring");
+            return;
+          }
+
+          console.log(`[DeleteConfirmButton] ✅ Delete button clicked: ${button.id}`);
+
+          const buttonId = button.id;
+          const timeout = parseInt(button.dataset.timeout || "3000", 10);
+          const currentState = button.getAttribute("data-state") || "trash";
+          const apiEndpoint = button.dataset.apiEndpoint;
+          const callbackName = button.dataset.callback;
+          const itemType = button.dataset.itemType;
+
+          console.log(
+            `[DeleteConfirmButton] State: ${currentState}, API: ${apiEndpoint}, Callback: ${callbackName}`
+          );
+
+          if (currentState === "trash") {
+            e.stopPropagation();
+            console.log("[DeleteConfirmButton] 🎯 FIRST CLICK - setting confirm state");
+
+            button.setAttribute("data-state", "confirm");
+            button.title = "Click again to confirm deletion";
+
+            console.log(`[DeleteConfirmButton]   Setting ${timeout}ms timeout`);
+            const timeoutId = setTimeout(() => {
+              if (button.getAttribute("data-state") === "confirm") {
+                console.log("[DeleteConfirmButton] ⏰ Timeout expired, reverting");
+                button.setAttribute("data-state", "trash");
+                button.title = "Delete";
+              }
+            }, timeout);
+
+            activeTimeouts.set(buttonId, timeoutId);
+            console.log("[DeleteConfirmButton] ✅ First click complete - waiting for confirmation");
+          } else if (currentState === "confirm") {
+            e.stopPropagation();
+            console.log("[DeleteConfirmButton] 🎯 SECOND CLICK - executing deletion");
+
+            if (activeTimeouts.has(buttonId)) {
+              clearTimeout(activeTimeouts.get(buttonId));
+              activeTimeouts.delete(buttonId);
+            }
+
+            button.setAttribute("data-state", "trash");
+            button.setAttribute("disabled", "true");
+
+            // Extract item ID
+            const itemIdMatch = buttonId.match(/delete-\w+-(\d+)$/);
+            const itemId = itemIdMatch ? parseInt(itemIdMatch[1], 10) : null;
+
+            console.log(`[DeleteConfirmButton]   Extracted item ID: ${itemId}`);
+
+            if (!itemId) {
+              console.error("[DeleteConfirmButton] ❌ Could not extract item ID");
+              button.removeAttribute("disabled");
+              return;
+            }
+
+            if (apiEndpoint) {
+              console.log(`[DeleteConfirmButton] 📡 Simulating API call to: ${apiEndpoint}`);
+              console.log(`[DeleteConfirmButton]   Would send: { itemId: ${itemId} }`);
+
+              // Simulate API success
+              setTimeout(() => {
+                console.log("[DeleteConfirmButton] ✅ API call successful (simulated)");
+
+                if (callbackName && typeof window[callbackName] === "function") {
+                  console.log(`[DeleteConfirmButton] 📞 Calling callback: ${callbackName}`);
+                  window[callbackName](itemId);
+                }
+
+                button.removeAttribute("disabled");
+              }, 500);
+            }
+          }
+        });
+      }
+
+      // Initialize on DOM ready
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initDeleteConfirmButtons);
+      } else {
+        initDeleteConfirmButtons();
+      }
+
+      console.log("[TEST] Test page loaded successfully!");
+      console.log("[TEST] Click the trash icon button above to test");
+    </script>
+  </body>
+</html>

@@ -2,6 +2,7 @@
 import Alert from "../../components/partials/Alert.astro";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 import Dropzone from "../../components/common/Dropzone.astro";
+import Tooltip from "../../components/common/Tooltip.astro";
 
 export interface Props {
   currentUser?: any;
@@ -55,188 +56,60 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
     background: rgba(255, 255, 255, 0.5);
   }
 </style>
-<App title="PDF System">
-  <div class="pdf-system-container p-6 color-background rounded-lg shadow-lg">
-    <div class="mb-6">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">PDF System</h2>
-      <p class="text-gray-600 dark:text-gray-400">
-        Create templates and generate professional PDFs
-      </p>
-    </div>
+<div class="pdf-system-container p-6 color-background rounded-lg shadow-lg">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">PDF System</h2>
+    <p class="text-gray-600 dark:text-gray-400">Create templates and generate professional PDFs</p>
+  </div>
 
-    <!-- Tab Navigation -->
-    <div class="mb-6">
-      <div class="border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex space-x-8">
-          <button
-            id="templates-tab"
-            class="pdf-tab py-2 px-1 border-b-2 border-primary-500 font-medium text-sm text-primary-600 dark:text-primary-400"
-            data-tab="templates"
-          >
-            <SimpleIcon name="file-text" class="w-4 h-4 inline mr-2" />
-            Templates
-          </button>
-          <button
-            id="generate-tab"
-            class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-            data-tab="generate"
-          >
-            <SimpleIcon name="file-plus" class="w-4 h-4 inline mr-2" />
-            Generate PDF
-          </button>
-          <button
-            id="contacts-tab"
-            class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-            data-tab="contacts"
-          >
-            <SimpleIcon name="user" class="w-4 h-4 inline mr-2" />
-            Google Contacts
-          </button>
-          <button
-            id="scanner-tab"
-            class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-            data-tab="scanner"
-          >
-            <SimpleIcon name="file-search" class="w-4 h-4 inline mr-2" />
-            Scanner
-          </button>
-        </nav>
-      </div>
-    </div>
-
-    <!-- Templates Tab Content -->
-    <div id="templates-content" class="pdf-tab-content">
-      <div class="mb-6">
-        <div class="flex justify-between items-center mb-4">
-          <!-- <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Template Management</h3> -->
-          <div class="w-full">
-            <Dropzone
-              id="new-template-dropzone"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
-              maxSize={50}
-              label="Drop a document here or click to browse"
-              description="Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF"
-              required={false}
-            />
-          </div>
-        </div>
-
-        <!-- Template Editor Accordion (hidden by default) -->
-        <div
-          id="template-editor-accordion"
-          class="hidden mb-6 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+  <!-- Tab Navigation -->
+  <div class="mb-6">
+    <div class="border-b border-gray-200 dark:border-gray-700">
+      <nav class="-mb-px flex space-x-8">
+        <button
+          id="templates-tab"
+          class="pdf-tab py-2 px-1 border-b-2 border-primary-500 font-medium text-sm text-primary-600 dark:text-primary-400"
+          data-tab="templates"
         >
-          <div class="color-background p-6">
-            <!-- Template Form -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Template Name
-                </label>
-                <input
-                  type="text"
-                  id="template-name"
-                  placeholder="Enter template name..."
-                  class={globalInputClasses}
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Template Type
-                </label>
-                <select id="template-type" class={globalInputClasses}>
-                  <option value="body">Body Template</option>
-                  <option value="header">Header Template</option>
-                  <option value="footer">Footer Template</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Template Content Editor -->
-            <div class="grid grid-cols-12 gap-4">
-              <div class="mb-6 col-span-8">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Template Content
-                </label>
-                <div
-                  id="template-editor"
-                  class="border border-gray-300 dark:border-gray-600 rounded-md min-h-[400px]"
-                >
-                  <!-- Quill Editor will be loaded here -->
-                </div>
-              </div>
-              <!-- Extracted Fields -->
-              <div id="extracted-fields" class="mb-6 hidden col-span-4 flex flex-col max-h-[600px]">
-                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3 flex-shrink-0">
-                  Detected Fields
-                </h4>
-                <div id="fields-list" class="space-y-2 overflow-y-auto flex-1 pr-2">
-                  <!-- Extracted fields will be displayed here -->
-                </div>
-              </div>
-            </div>
-
-            <!-- Save Options -->
-            <div class="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md hidden">
-              <label class="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked="checked"
-                  id="save-html-template-checkbox"
-                  class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Save HTML version to templates directory
-                </span>
-              </label>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
-                Saves the OCR'd/extracted content as an HTML file in the templates folder for
-                preview purposes
-              </p>
-            </div>
-
-            <!-- Save Template -->
-            <div class="flex justify-end space-x-4 mt-6">
-              <button
-                id="cancel-template-btn"
-                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                id="save-template-btn"
-                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                <SimpleIcon name="save" class="w-4 h-4 inline mr-2" />
-                Save Template
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Template List -->
-        <div id="templates-list" class="space-y-4">
-          <!-- Templates will be loaded here -->
-        </div>
-      </div>
+          <SimpleIcon name="file-text" class="w-4 h-4 inline mr-2" />
+          Templates
+        </button>
+        <button
+          id="generate-tab"
+          class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+          data-tab="generate"
+        >
+          <SimpleIcon name="file-plus" class="w-4 h-4 inline mr-2" />
+          Generate PDF
+        </button>
+        <button
+          id="contacts-tab"
+          class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+          data-tab="contacts"
+        >
+          <SimpleIcon name="user" class="w-4 h-4 inline mr-2" />
+          Google Contacts
+        </button>
+        <button
+          id="scanner-tab"
+          class="pdf-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+          data-tab="scanner"
+        >
+          <SimpleIcon name="file-search" class="w-4 h-4 inline mr-2" />
+          Scanner
+        </button>
+      </nav>
     </div>
+  </div>
 
-    <!-- Scanner Tab Content -->
-    <div id="scanner-content" class="pdf-tab-content hidden">
-      <div class="mb-6">
-        <div class="flex justify-between items-center mb-4">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Document Scanner</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Upload and view documents with OCR text extraction. No template generation - just scan
-              and view.
-            </p>
-          </div>
-        </div>
-
-        <div class="w-full mb-6">
+  <!-- Templates Tab Content -->
+  <div id="templates-content" class="pdf-tab-content">
+    <div class="mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <!-- <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Template Management</h3> -->
+        <div class="w-full">
           <Dropzone
-            id="scanner-dropzone"
+            id="new-template-dropzone"
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
             maxSize={50}
             label="Drop a document here or click to browse"
@@ -244,37 +117,161 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             required={false}
           />
         </div>
+      </div>
 
-        <!-- PDF Viewer / Document Display -->
-        <div id="scanner-viewer-section" class="hidden mb-6">
+      <!-- Template Editor Accordion (hidden by default) -->
+      <div
+        id="template-editor-accordion"
+        class="hidden mb-6 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+      >
+        <div class="color-background p-6">
+          <!-- Template Form -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Template Name
+              </label>
+              <input
+                type="text"
+                id="template-name"
+                placeholder="Enter template name..."
+                class={globalInputClasses}
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Template Type
+              </label>
+              <select id="template-type" class={globalInputClasses}>
+                <option value="body">Body Template</option>
+                <option value="header">Header Template</option>
+                <option value="footer">Footer Template</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Template Content Editor -->
           <div class="grid grid-cols-12 gap-4">
-            <!-- PDF Viewer / Image Display -->
-            <div class="col-span-8">
+            <div class="mb-6 col-span-8">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Template Content
+              </label>
               <div
-                class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-4 min-h-[600px] max-h-[800px] overflow-y-auto"
+                id="template-editor"
+                class="border border-gray-300 dark:border-gray-600 rounded-md min-h-[400px]"
               >
-                <div id="scanner-pdf-viewer" class="w-full">
-                  <!-- PDF.js viewer or image will be rendered here -->
-                  <div class="text-center text-gray-500 dark:text-gray-400 py-20">
-                    <p>Document preview will appear here</p>
-                  </div>
+                <!-- Quill Editor will be loaded here -->
+              </div>
+            </div>
+            <!-- Extracted Fields -->
+            <div id="extracted-fields" class="mb-6 hidden col-span-4 flex flex-col max-h-[600px]">
+              <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3 flex-shrink-0">
+                Detected Fields
+              </h4>
+              <div id="fields-list" class="space-y-2 overflow-y-auto flex-1 pr-2">
+                <!-- Extracted fields will be displayed here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Save Options -->
+          <div class="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md hidden">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked="checked"
+                id="save-html-template-checkbox"
+                class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Save HTML version to templates directory
+              </span>
+            </label>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
+              Saves the OCR'd/extracted content as an HTML file in the templates folder for preview
+              purposes
+            </p>
+          </div>
+
+          <!-- Save Template -->
+          <div class="flex justify-end space-x-4 mt-6">
+            <button
+              id="cancel-template-btn"
+              class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              id="save-template-btn"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              <SimpleIcon name="save" class="w-4 h-4 inline mr-2" />
+              Save Template
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Template List -->
+      <div id="templates-list" class="space-y-4">
+        <!-- Templates will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scanner Tab Content -->
+  <div id="scanner-content" class="pdf-tab-content hidden">
+    <div class="mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Document Scanner</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Upload and view documents with OCR text extraction. No template generation - just scan
+            and view.
+          </p>
+        </div>
+      </div>
+
+      <div class="w-full mb-6">
+        <Dropzone
+          id="scanner-dropzone"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+          maxSize={50}
+          label="Drop a document here or click to browse"
+          description="Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF"
+          required={false}
+        />
+      </div>
+
+      <!-- PDF Viewer / Document Display -->
+      <div id="scanner-viewer-section" class="hidden mb-6">
+        <div class="grid grid-cols-12 gap-4">
+          <!-- PDF Viewer / Image Display -->
+          <div class="col-span-8">
+            <div
+              class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-4 min-h-[600px] max-h-[800px] overflow-y-auto"
+            >
+              <div id="scanner-pdf-viewer" class="w-full">
+                <!-- PDF.js viewer or image will be rendered here -->
+                <div class="text-center text-gray-500 dark:text-gray-400 py-20">
+                  <p>Document preview will appear here</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Detected Fields Panel -->
-            <div class="col-span-4">
-              <div
-                id="scanner-extracted-fields"
-                class="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 p-4 max-h-[600px] overflow-y-auto"
-              >
-                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
-                  Detected Fields
-                </h4>
-                <div id="scanner-fields-list" class="space-y-2">
-                  <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
-                    Upload a document to detect fields...
-                  </div>
+          <!-- Detected Fields Panel -->
+          <div class="col-span-4">
+            <div
+              id="scanner-extracted-fields"
+              class="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 p-4 max-h-[600px] overflow-y-auto"
+            >
+              <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
+                Detected Fields
+              </h4>
+              <div id="scanner-fields-list" class="space-y-2">
+                <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                  Upload a document to detect fields...
                 </div>
               </div>
             </div>
@@ -282,19 +279,20 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Generate PDF Tab Content -->
-    <div id="generate-content" class="pdf-tab-content hidden">
+  <!-- Generate PDF Tab Content -->
+  <div id="generate-content" class="pdf-tab-content hidden">
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generate PDF</h3>
+
+      <!-- User Search -->
       <div class="mb-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generate PDF</h3>
-
-        <!-- User Search -->
-        <div class="mb-6">
-          <label class="hidden block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Search User
-          </label>
-          <div class="flex space-x-2">
-            <!-- <input
+        <label class="hidden block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Search User
+        </label>
+        <div class="flex space-x-2">
+          <!-- <input
             type="text"
             id="user-search"
             placeholder="Search by user name, address, or client..."
@@ -307,8 +305,8 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             <SimpleIcon name="search" class="w-4 h-4 inline mr-2" />
             Search
           </button> -->
-            <!-- replace the above with slot machine for google contacts endpoint -->
-            <!-- <button
+          <!-- replace the above with slot machine for google contacts endpoint -->
+          <!-- <button
             id="search-user-btn"
             class="hidden px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors"
             onclick="window.pdfSystem.checkGoogleAuthAndSearch()"
@@ -317,236 +315,232 @@ console.log("🚀 [PDF-SYSTEM] Current user:", currentUser);
             Search for a user...
           </button> -->
 
-            <!-- Hidden SlotMachineModal for when auth is ready -->
-            <SlotMachineModalFunction
-              id="user-search"
-              icon="user"
-              title="Search User"
-              options={[]}
-              placeholder="Search for a user..."
-              showCloseButton={true}
-              showCancelButton={true}
-              fetchApiEndpoint="/api/google/contacts"
-              searchText="Search for a user..."
-              searchPlaceholder="Search for a user..."
-              valueField="id"
-              labelField="name"
-              {currentUser}
-              {globalInputClasses}
-            />
+          <!-- Hidden SlotMachineModal for when auth is ready -->
+          <SlotMachineModalFunction
+            id="user-search"
+            icon="user"
+            title="Search User"
+            options={[]}
+            placeholder="Search for a user..."
+            showCloseButton={true}
+            showCancelButton={true}
+            fetchApiEndpoint="/api/google/contacts"
+            searchText="Search for a user..."
+            searchPlaceholder="Search for a user..."
+            valueField="id"
+            labelField="name"
+            {currentUser}
+            {globalInputClasses}
+          />
+        </div>
+        <div class="flex space-x-2">
+          <!-- Selected user preview (rendered by SlotMachineModalFunction) -->
+          <div id="user-search-preview" class="mt-4 rounded-md border p-4 text-sm color-background">
           </div>
-          <div class="flex space-x-2">
-            <!-- Selected user preview (rendered by SlotMachineModalFunction) -->
-            <div
-              id="user-search-preview"
-              class="mt-4 rounded-md border p-4 text-sm color-background"
+        </div>
+      </div>
+
+      <!-- Template Selection -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Select Template
+        </label>
+        <select id="template-select" class={globalInputClasses}>
+          <option value="">Choose a template...</option>
+        </select>
+      </div>
+
+      <!-- Template Preview Section (for interactive placeholder mapping) -->
+      <div id="template-preview-section" class="mb-6 hidden">
+        <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-1">
+                Map Placeholders
+              </h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                <span id="placeholder-progress">0 of 0</span> placeholders mapped
+              </p>
+            </div>
+            <button
+              id="skip-mapping-btn"
+              class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             >
-            </div>
+              Skip for now
+            </button>
           </div>
-        </div>
-
-        <!-- Template Selection -->
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Select Template
-          </label>
-          <select id="template-select" class={globalInputClasses}>
-            <option value="">Choose a template...</option>
-          </select>
-        </div>
-
-        <!-- Template Preview Section (for interactive placeholder mapping) -->
-        <div id="template-preview-section" class="mb-6 hidden">
-          <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-1">
-                  Map Placeholders
-                </h4>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                  <span id="placeholder-progress">0 of 0</span> placeholders mapped
-                </p>
-              </div>
-              <button
-                id="skip-mapping-btn"
-                class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              >
-                Skip for now
-              </button>
-            </div>
-            <div
-              id="template-preview-container"
-              class="border border-gray-300 dark:border-gray-600 rounded-md p-6 bg-white dark:bg-gray-800"
-            >
-              <!-- Template content with highlighted placeholders will be rendered here -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Placeholder Mapping Tooltip (positioned absolutely) -->
-        <div
-          id="placeholder-tooltip"
-          class="hidden fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-4 max-w-md"
-          style="display: none;"
-        >
           <div
-            id="tooltip-drag-handle"
-            class="flex items-center justify-between mb-3 cursor-move select-none"
+            id="template-preview-container"
+            class="border border-gray-300 dark:border-gray-600 rounded-md p-6 bg-white dark:bg-gray-800"
           >
-            <h5 class="text-sm font-semibold text-gray-900 dark:text-white">
-              Select value for <span
-                id="tooltip-placeholder-name"
-                class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"></span>
-            </h5>
-            <button
-              id="close-tooltip-btn"
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
-            >
-              ×
-            </button>
-          </div>
-          <div id="tooltip-contact-fields" class="space-y-2 max-h-64 overflow-y-auto mb-3">
-            <!-- Contact field options will be rendered here -->
-          </div>
-          <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Or enter manually:
-            </label>
-            <input
-              type="text"
-              id="tooltip-manual-input"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-              placeholder="Enter value..."
-            />
-            <button
-              id="tooltip-apply-btn"
-              class="mt-3 w-full bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Apply
-            </button>
+            <!-- Template content with highlighted placeholders will be rendered here -->
           </div>
         </div>
+      </div>
 
-        <!-- Placeholder Mapping Section -->
-        <div id="placeholder-mapping-section" class="mb-6 hidden">
-          <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
-            <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
-              Map Template Placeholders to Contact Data
-            </h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Map each placeholder to a Google contact field or enter a value manually.
-            </p>
-            <div id="placeholder-mappings-list" class="space-y-3">
-              <!-- Placeholder mappings will be rendered here -->
-            </div>
-          </div>
-        </div>
-
-        <!-- User Results -->
-        <div id="user-results" class="mb-6">
-          <!-- User search results will be displayed here -->
-        </div>
-
-        <!-- PDF Generation Options -->
-        <div class="mb-6 p-4 color-background rounded-lg">
-          <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">PDF Options</h4>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Page Size
-              </label>
-              <select id="page-size" class={globalInputClasses}>
-                <option value="8.5x11">8.5" x 11" (Letter)</option>
-                <option value="A4">A4</option>
-                <option value="A3">A3</option>
-                <option value="11x17">11" x 17" (Tabloid)</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Orientation
-              </label>
-              <select id="orientation" class={globalInputClasses}>
-                <option value="portrait">Portrait</option>
-                <option value="landscape">Landscape</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Generate Button -->
-        <div class="flex space-x-4">
+      <!-- Placeholder Mapping Tooltip (positioned absolutely) -->
+      <div
+        id="placeholder-tooltip"
+        class="hidden fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-4 max-w-md"
+        style="display: none;"
+      >
+        <div
+          id="tooltip-drag-handle"
+          class="flex items-center justify-between mb-3 cursor-move select-none"
+        >
+          <h5 class="text-sm font-semibold text-gray-900 dark:text-white">
+            Select value for <span
+              id="tooltip-placeholder-name"
+              class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"></span>
+          </h5>
           <button
-            id="preview-pdf-btn"
-            class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+            id="close-tooltip-btn"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
           >
-            <SimpleIcon name="eye" class="w-4 h-4 inline mr-2" />
-            Preview
+            ×
           </button>
+        </div>
+        <div id="tooltip-contact-fields" class="space-y-2 max-h-64 overflow-y-auto mb-3">
+          <!-- Contact field options will be rendered here -->
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Or enter manually:
+          </label>
+          <input
+            type="text"
+            id="tooltip-manual-input"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+            placeholder="Enter value..."
+          />
           <button
-            id="generate-pdf-btn"
-            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+            id="tooltip-apply-btn"
+            class="mt-3 w-full bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           >
-            <SimpleIcon name="download" class="w-4 h-4 inline mr-2" />
-            Generate PDF
+            Apply
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- Google Contacts Tab Content -->
-    <div id="contacts-content" class="pdf-tab-content hidden">
-      <div class="mb-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Google Contacts</h3>
-
-        <!-- Information Card -->
-        <div
-          class="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg"
-        >
-          <div class="flex items-start">
-            <div
-              class="w-5 h-5 text-primary-600 dark:text-primary-400 mr-3 mt-0.5 flex-shrink-0 text-lg font-bold"
-            >
-              i
-            </div>
-            <div class="flex-1">
-              <p class="text-sm text-primary-800 dark:text-primary-300">
-                <strong>Note:</strong> Google Contacts cannot be embedded in iframes due to security
-                restrictions. Click the button below to open Google Contacts in a new tab where you can
-                manage your contacts.
-              </p>
-            </div>
+      <!-- Placeholder Mapping Section -->
+      <div id="placeholder-mapping-section" class="mb-6 hidden">
+        <div class="p-4 color-background rounded-lg border border-gray-200 dark:border-gray-700">
+          <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
+            Map Template Placeholders to Contact Data
+          </h4>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Map each placeholder to a Google contact field or enter a value manually.
+          </p>
+          <div id="placeholder-mappings-list" class="space-y-3">
+            <!-- Placeholder mappings will be rendered here -->
           </div>
         </div>
+      </div>
 
-        <!-- Open Google Contacts Button -->
-        <div
-          class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50"
-        >
-          <SimpleIcon name="user" class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
-          <h4 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            Manage Google Contacts
-          </h4>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">
-            Add, edit, or search your Google Contacts in a new tab
-          </p>
-          <a
-            href="https://contacts.google.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-md font-medium transition-colors shadow-lg hover:shadow-xl"
-          >
-            Open Google Contacts
-            <span class="ml-2 text-sm">↗</span>
-          </a>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">Opens in a new tab</p>
+      <!-- User Results -->
+      <div id="user-results" class="mb-6">
+        <!-- User search results will be displayed here -->
+      </div>
+
+      <!-- PDF Generation Options -->
+      <div class="mb-6 p-4 color-background rounded-lg">
+        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">PDF Options</h4>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Page Size
+            </label>
+            <select id="page-size" class={globalInputClasses}>
+              <option value="8.5x11">8.5" x 11" (Letter)</option>
+              <option value="A4">A4</option>
+              <option value="A3">A3</option>
+              <option value="11x17">11" x 17" (Tabloid)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Orientation
+            </label>
+            <select id="orientation" class={globalInputClasses}>
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </div>
         </div>
+      </div>
+
+      <!-- Generate Button -->
+      <div class="flex space-x-4">
+        <button
+          id="preview-pdf-btn"
+          class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          <SimpleIcon name="eye" class="w-4 h-4 inline mr-2" />
+          Preview
+        </button>
+        <button
+          id="generate-pdf-btn"
+          class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          <SimpleIcon name="download" class="w-4 h-4 inline mr-2" />
+          Generate PDF
+        </button>
       </div>
     </div>
   </div>
-</App>
+
+  <!-- Google Contacts Tab Content -->
+  <div id="contacts-content" class="pdf-tab-content hidden">
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Google Contacts</h3>
+
+      <!-- Information Card -->
+      <div
+        class="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg"
+      >
+        <div class="flex items-start">
+          <div
+            class="w-5 h-5 text-primary-600 dark:text-primary-400 mr-3 mt-0.5 flex-shrink-0 text-lg font-bold"
+          >
+            i
+          </div>
+          <div class="flex-1">
+            <p class="text-sm text-primary-800 dark:text-primary-300">
+              <strong>Note:</strong> Google Contacts cannot be embedded in iframes due to security restrictions.
+              Click the button below to open Google Contacts in a new tab where you can manage your contacts.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Open Google Contacts Button -->
+      <div
+        class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+      >
+        <SimpleIcon name="user" class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
+        <h4 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          Manage Google Contacts
+        </h4>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">
+          Add, edit, or search your Google Contacts in a new tab
+        </p>
+        <a
+          href="https://contacts.google.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-md font-medium transition-colors shadow-lg hover:shadow-xl"
+        >
+          Open Google Contacts
+          <span class="ml-2 text-sm">↗</span>
+        </a>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">Opens in a new tab</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script
   is:inline
   define:vars={{ currentUser, globalInputClasses, primaryTextClasses, secondaryTextClasses }}

@@ -4,9 +4,11 @@
 **Issue**: VAPI assistant returning 403 on `/chat/web` endpoint
 
 ## Problem Analysis
+
 The assistant is configured for **phone calls only**, not web chat. The widget embed was trying to use a phone assistant for web chat.
 
 ## Solution Implemented
+
 Switched from the `vapi-widget` custom element to the **VAPI Web SDK** which provides more control and better error handling.
 
 ### Changes Made
@@ -27,6 +29,7 @@ Switched from the `vapi-widget` custom element to the **VAPI Web SDK** which pro
 ### Usage
 
 The widget will now:
+
 1. Load the VAPI Web SDK
 2. Initialize a client with your public key
 3. Show a chat button in bottom-right corner
@@ -49,6 +52,7 @@ Alternatively, contact VAPI support to enable web chat on your existing assistan
 ### Testing
 
 Refresh your page and check console for:
+
 - `[VAPI] Initializing web client...`
 - `[VAPI] Client created successfully`
 - `[VAPI] Widget initialized successfully`

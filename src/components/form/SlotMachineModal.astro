@@ -35,6 +35,7 @@ interface Props {
   globalInputClasses?: string; // Optional: Global input classes
   required?: boolean; // Optional: Whether the field is required (default: false)
   requiredText?: string; // Optional: Required text (default: "Required")
+  currentLocation?: boolean; // Optional: Current location (default: false)
   buttonVariant?:
     | "primary"
     | "secondary"
@@ -82,6 +83,7 @@ const {
   showNotification = false,
   buttonVariant = "primary",
   project,
+  currentLocation = false,
   // project = {},
 } = Astro.props;
 
@@ -152,6 +154,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     projectId,
     noResultsText,
     globalInputClasses,
+    currentLocation,
     // project,
   }}
   is:inline
@@ -677,6 +680,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     headers.set("x-select-button", "Select");
     headers.set("x-no-results-text", noResultsText);
     headers.set("x-global-input-classes", globalInputClasses || "");
+    headers.set("x-current-location", currentLocation.toString());
 
     // Add search-specific headers if search is enabled
     if (enableSearch) {
@@ -707,6 +711,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     const cancelButton = modal.querySelector(`#${id}-slot-cancel-btn`);
     const closeButton = modal.querySelector(`#${id}-close-slot-modal`);
     const searchInput = modal.querySelector(`#${id}-slot-search-input`);
+    const useLocationBtn = modal.querySelector(`#${id}-use-location-btn`);
     const liClassName = "text-black dark:text-white";
     const spanClassName = "slot-machine-item-text";
 
@@ -722,6 +727,112 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       cancelButton.addEventListener("click", async () => {
         await cleanupModal();
         setTimeout(() => modal.remove(), 300);
+      });
+    }
+
+    // Add geolocation button handler
+    if (useLocationBtn) {
+      useLocationBtn.addEventListener("click", async () => {
+        // Disable button and show loading state
+        useLocationBtn.disabled = true;
+        const originalHTML = useLocationBtn.innerHTML;
+        useLocationBtn.innerHTML = `
+          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Getting location...</span>
+        `;
+
+        try {
+          // Check if geolocation is supported
+          if (!navigator.geolocation) {
+            throw new Error("Geolocation is not supported by your browser");
+          }
+
+          // Get current position
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0,
+            });
+          });
+
+          const { latitude, longitude } = position.coords;
+          console.log(`📍 [SLOT-MACHINE] Got coordinates: ${latitude}, ${longitude}`);
+
+          // Use Google Maps Geocoding API to get address
+          const geocodeEndpoint = "/api/google/geocode";
+          const response = await fetch(`${geocodeEndpoint}?latlng=${latitude},${longitude}`, {
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            throw new Error(`Geocoding failed: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log(`📍 [SLOT-MACHINE] Geocoding results:`, data);
+
+          // Transform data if transform function exists
+          let transformedData = data;
+          if (dataTransform && typeof window[dataTransform] === "function") {
+            transformedData = window[dataTransform](data);
+          }
+
+          // Handle different data formats
+          let optionsArray = [];
+          if (Array.isArray(transformedData)) {
+            optionsArray = transformedData;
+          } else if (transformedData && Array.isArray(transformedData.predictions)) {
+            optionsArray = transformedData.predictions;
+          } else if (transformedData && Array.isArray(transformedData.results)) {
+            optionsArray = transformedData.results;
+          } else if (
+            transformedData &&
+            transformedData.data &&
+            Array.isArray(transformedData.data)
+          ) {
+            optionsArray = transformedData.data;
+          }
+
+          // Update options list with geocoded results
+          if (optionsList && optionsArray.length > 0) {
+            const newSelectedIndex = populateOptionsList(optionsArray);
+            selectedIndex = newSelectedIndex;
+            updateSelection();
+            centerSelectedItem();
+
+            // Auto-populate search input with the first result
+            if (searchInput && optionsArray[0]) {
+              const firstResult =
+                optionsArray[0][labelField] || optionsArray[0].label || optionsArray[0].description;
+              searchInput.value = firstResult;
+              searchQueryCache[id] = firstResult;
+            }
+          }
+        } catch (error) {
+          console.error(`📍 [SLOT-MACHINE] Geolocation error:`, error);
+
+          // Show error notification if available
+          if (window.showNotice) {
+            let errorMessage = "Failed to get your location. Please try again or search manually.";
+            if (error.code === 1) {
+              errorMessage =
+                "Location access denied. Please enable location permissions and try again.";
+            } else if (error.code === 2) {
+              errorMessage = "Location unavailable. Please try again or search manually.";
+            } else if (error.code === 3) {
+              errorMessage = "Location request timed out. Please try again.";
+            }
+            window.showNotice("error", "Location Error", errorMessage, 5000);
+          }
+        } finally {
+          // Restore button state
+          useLocationBtn.disabled = false;
+          useLocationBtn.innerHTML = originalHTML;
+        }
       });
     }
 

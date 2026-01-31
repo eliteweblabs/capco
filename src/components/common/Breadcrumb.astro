@@ -9,6 +9,11 @@ interface BreadcrumbItem {
   href?: string;
   current?: boolean;
   icon?: string;
+  // For polling support
+  refreshField?: string; // e.g., "projectCount" for global counts
+  projectId?: number; // for project-specific data
+  userId?: string; // for user-specific data
+  metaValue?: any; // current raw value for comparison
 }
 
 interface Props {
@@ -43,7 +48,14 @@ const { items, class: className = "" } = Astro.props;
           )}
 
           {item.current ? (
-            <span class="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400 md:ml-2" set:html={item.label} />
+            <span
+              data-refresh={item.refreshField}
+              data-project-id={item.projectId}
+              data-user-id={item.userId}
+              data-meta-value={item.metaValue}
+              class="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400 md:ml-2"
+              set:html={item.label}
+            />
           ) : (
             <a
               href={item.href}
