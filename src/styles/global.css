@@ -115,9 +115,7 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:active {
   animation-name: onAutoFillStart;
   animation-duration: 0.001s;
-
   border-color: var(--color-primary-400);
-
   /* Match base input styles - use inset shadow like non-autofilled inputs */
   background-color: rgba(var(--color-background), 0.5) !important;
   backdrop-filter: blur(4px);
@@ -127,7 +125,9 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: var(--color-text-primary) !important;
   font-size: inherit !important;
   font-family: inherit !important;
-  transition: background-color 5000s ease-in-out 0s, box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 5000s ease-in-out 0s,
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Autofill focus state - apply outer shadow on focus only */
@@ -148,7 +148,9 @@ input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--color-text-primary) !important;
   font-size: inherit !important;
   font-family: inherit !important;
-  transition: background-color 5000s ease-in-out 0s, box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 5000s ease-in-out 0s,
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark input:-webkit-autofill,
@@ -238,6 +240,53 @@ input:invalid {
 input:focus-visible,
 input:focus {
   outline: none;
+}
+
+/* ============================================
+   GLOBAL FOCUS STYLES - Input Focus Effects
+   ============================================ */
+
+/* Base transition for all inputs */
+input:not([type="hidden"]),
+textarea,
+select {
+  transition: box-shadow 250ms ease-in-out;
+}
+
+/* Primary focus shadow - applies to all inputs globally */
+input:not([type="hidden"]):focus,
+textarea:focus,
+select:focus {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+
+/* Auto-filled fields get same shadow as focused fields */
+input:not([type="hidden"]):-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+
+/* Valid fields get GREEN shadow when not focused */
+input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
+textarea:valid:not(:placeholder-shown):not(:focus),
+select:valid:not(:placeholder-shown):not(:focus) {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+
+/* Valid fields keep PRIMARY shadow while focused (prioritize focus state) */
+input:not([type="hidden"]):valid:focus,
+textarea:valid:focus,
+select:valid:focus {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
 /* Custom validation tooltip container */

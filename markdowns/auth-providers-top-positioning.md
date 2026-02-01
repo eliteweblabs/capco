@@ -1,11 +1,13 @@
 # Auth Providers Top Positioning
 
 ## Overview
+
 Moved the authentication providers (OAuth buttons) to the top of the login/registration form panel, above the email input fields.
 
 ## Changes Made
 
 ### MultiStepForm.astro
+
 - **Relocated auth providers section** from after fields to after step header (before fields)
 - **Updated separator text** to reflect new positioning:
   - Login: "or continue with email" (was "or sign in with")
@@ -45,22 +47,27 @@ Moved the authentication providers (OAuth buttons) to the top of the login/regis
 ```
 
 ## Benefits
+
 1. **Better UX**: OAuth buttons are immediately visible without scrolling
 2. **Priority**: Emphasizes the faster OAuth login method
 3. **Modern Pattern**: Follows common auth UI patterns (Google, GitHub, etc.)
 4. **Reduced Friction**: Users see all options upfront
 
 ## Files Modified
+
 - `/src/components/form/MultiStepForm.astro`
   - Lines 121-139: New position (after header, before fields)
   - Lines 290-308: Removed (old position after fields)
 
 ## Related Configuration
+
 This affects any form config that uses:
+
 ```typescript
-additionalContent: "auth-providers" // or "google-oauth"
+additionalContent: "auth-providers"; // or "google-oauth"
 ```
 
 Currently used in:
+
 - `src/lib/forms/login-form-config.ts` (Step 1)
 - `src/lib/forms/register-form-config.ts` (if applicable)

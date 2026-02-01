@@ -14,8 +14,7 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 1: Name (skip if authenticated)
     {
       stepNumber: 1,
-      title:
-        "Hello, welcome to<br>the Rothco Mechanical,<br>Engineering and Plumbing intake.<br>Takes about 2 minutes.<br>We typically respond within<br>1 business day EDT.",
+      title: `Hello, welcome to<br>the Mechanical,<br>Engineering and Plumbing intake.<br>Takes about 2 minutes.<br>We typically respond within<br>1 business day EDT.`,
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fieldLayout: "grid", // Enable grid layout for side-by-side fields

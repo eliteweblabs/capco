@@ -35,19 +35,19 @@ const { globalInputClasses } = Astro.props;
       <div class="flex justify-between gap-3">
         <Button
           href="/auth/login"
-          variant="outline"
-          size="lg"
+          variant={otpFormButtonConfig.back.variant}
+          size={otpFormButtonConfig.back.size}
           icon={otpFormButtonConfig.back.icon}
-          iconPosition="left"
+          iconPosition={otpFormButtonConfig.back.iconPosition}
         >
           {otpFormButtonConfig.back.label}
         </Button>
         <Button
-          type="submit"
-          variant="primary"
-          size="lg"
+          type={otpFormButtonConfig.sendCode.type}
+          variant={otpFormButtonConfig.sendCode.variant}
+          size={otpFormButtonConfig.sendCode.size}
           icon={otpFormButtonConfig.sendCode.icon}
-          iconPosition="right"
+          iconPosition={otpFormButtonConfig.sendCode.iconPosition}
         >
           {otpFormButtonConfig.sendCode.label}
         </Button>
@@ -75,7 +75,7 @@ const { globalInputClasses } = Astro.props;
           maxlength={otpCodeConfig.maxlength}
           pattern={otpCodeConfig.pattern}
           autocomplete={otpCodeConfig.autocomplete}
-          class={`${globalInputClasses} text-center text-2xl tracking-widest font-mono`}
+          class={`${globalInputClasses} text-center`}
         />
       </div>
 
@@ -83,30 +83,26 @@ const { globalInputClasses } = Astro.props;
         <Button
           type="button"
           id="back-to-email-button"
-          variant="outline"
-          size="lg"
+          variant={otpFormButtonConfig.back.variant}
+          size={otpFormButtonConfig.back.size}
           icon={otpFormButtonConfig.back.icon}
-          iconPosition="left"
+          iconPosition={otpFormButtonConfig.back.iconPosition}
         >
           {otpFormButtonConfig.back.label}
         </Button>
         <Button
-          type="submit"
-          variant="primary"
-          size="lg"
+          type={otpFormButtonConfig.verify.type}
+          variant={otpFormButtonConfig.verify.variant}
+          size={otpFormButtonConfig.verify.size}
           icon={otpFormButtonConfig.verify.icon}
-          iconPosition="right"
+          iconPosition={otpFormButtonConfig.verify.iconPosition}
         >
           {otpFormButtonConfig.verify.label}
         </Button>
       </div>
 
       <div class="text-center">
-        <button
-          type="button"
-          id="resend-otp-button"
-          class={otpFormButtonConfig.resend.classes}
-        >
+        <button type="button" id="resend-otp-button" class={otpFormButtonConfig.resend.classes}>
           {otpFormButtonConfig.resend.label}
         </button>
       </div>
@@ -140,9 +136,7 @@ const { globalInputClasses } = Astro.props;
     requestForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const emailInput = requestForm.querySelector(
-        `#${otpEmailConfig.id}`
-      ) as HTMLInputElement;
+      const emailInput = requestForm.querySelector(`#${otpEmailConfig.id}`) as HTMLInputElement;
       const email = emailInput?.value?.trim();
 
       if (!email) {
@@ -213,9 +207,7 @@ const { globalInputClasses } = Astro.props;
     verifyForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const codeInput = verifyForm.querySelector(
-        `#${otpCodeConfig.id}`
-      ) as HTMLInputElement;
+      const codeInput = verifyForm.querySelector(`#${otpCodeConfig.id}`) as HTMLInputElement;
       const token = codeInput?.value?.trim();
 
       if (!token || token.length !== otpCodeConfig.validation.length) {
