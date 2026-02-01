@@ -30,71 +30,91 @@ function initTypewriterTexts(): void {
       return;
     }
 
-    // Decode HTML entities if present
-    const textarea = document.createElement("textarea");
-    textarea.innerHTML = text;
-    text = textarea.value;
+    // Check if this element contains session meta data
+    const hasSessionMeta = text.includes('data-form-session-meta');
+    
+    // If it has session meta, mark it but DON'T initialize yet
+    // It will be initialized when the step becomes active
+    if (hasSessionMeta) {
+      console.log("[TYPEWRITER] Element has session meta, deferring initialization:", element);
+      element.setAttribute("data-typewriter-deferred", "true");
+      return;
+    }
 
-    // Inject form session meta data into the text before typewriter starts
-    text = injectSessionMetaIntoText(text);
-
-    console.log("[TYPEWRITER] Initializing element with text:", text.substring(0, 50) + "...");
-
-    // Clear the element content
-    element.innerHTML = "";
-
-    // Mark as initialized
-    element.setAttribute("data-typewriter-ready", "true");
-
-    // Parse text for custom pause spans
-    const segments = parseTextWithPauses(text);
-
-    // Create TypeIt instance
-    const instance = new TypeIt(element, {
-      speed: 33, // Faster typing (33% faster than 50ms)
-      cursor: true, // Show blinking cursor
-      waitUntilVisible: true,
-      html: true, // Enable HTML parsing for <br> tags
-      lifeLike: true, // Add natural typing variations
-    });
-
-    // Build the typing sequence with pauses and natural variations
-    segments.forEach((segment, index) => {
-      if (segment.type === "text") {
-        const text = segment.content!;
-
-        // Add natural pauses at punctuation and line breaks
-        const words = text.split(/(<br>|[.,!?;:])/gi);
-
-        words.forEach((word, wordIndex) => {
-          if (!word) return;
-
-          // Type the word
-          instance.type(word);
-
-          // Add natural pauses after punctuation
-          if (word.match(/[.,!?;:]/)) {
-            instance.pause(200 + Math.random() * 300); // 200-500ms pause
-          } else if (word === "<br>") {
-            instance.pause(300 + Math.random() * 400); // 300-700ms pause for line breaks
-          } else if (wordIndex < words.length - 1 && words[wordIndex + 1] !== "<br>") {
-            // Small pause between words (human hesitation)
-            if (Math.random() > 0.5) {
-              // 30% chance of slight hesitation
-              instance.pause(50 + Math.random() * 100);
-            }
-          }
-        });
-      } else if (segment.type === "pause") {
-        instance.pause(segment.duration);
-      }
-    });
-
-    // Store instance on element for later use
-    (element as any).__typeItInstance = instance;
+    // Initialize immediately for elements without session meta
+    initializeTypewriterInstance(element, text);
   });
 
   console.log(`[TYPEWRITER] Initialized ${typewriterElements.length} elements`);
+}
+
+/**
+ * Initialize a single TypeIt instance for an element
+ */
+function initializeTypewriterInstance(element: HTMLElement, text: string): void {
+  // Decode HTML entities if present
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = text;
+  text = textarea.value;
+
+  // Inject form session meta data into the text before typewriter starts
+  text = injectSessionMetaIntoText(text);
+
+  console.log("[TYPEWRITER] Initializing element with text:", text.substring(0, 50) + "...");
+
+  // Clear the element content
+  element.innerHTML = "";
+
+  // Mark as initialized
+  element.setAttribute("data-typewriter-ready", "true");
+  element.removeAttribute("data-typewriter-deferred");
+
+  // Parse text for custom pause spans
+  const segments = parseTextWithPauses(text);
+
+  // Create TypeIt instance
+  const instance = new TypeIt(element, {
+    speed: 33, // Faster typing (33% faster than 50ms)
+    cursor: true, // Show blinking cursor
+    waitUntilVisible: true,
+    html: true, // Enable HTML parsing for <br> tags
+    lifeLike: true, // Add natural typing variations
+  });
+
+  // Build the typing sequence with pauses and natural variations
+  segments.forEach((segment, index) => {
+    if (segment.type === "text") {
+      const text = segment.content!;
+
+      // Add natural pauses at punctuation and line breaks
+      const words = text.split(/(<br>|[.,!?;:])/gi);
+
+      words.forEach((word, wordIndex) => {
+        if (!word) return;
+
+        // Type the word
+        instance.type(word);
+
+        // Add natural pauses after punctuation
+        if (word.match(/[.,!?;:]/)) {
+          instance.pause(200 + Math.random() * 300); // 200-500ms pause
+        } else if (word === "<br>") {
+          instance.pause(300 + Math.random() * 400); // 300-700ms pause for line breaks
+        } else if (wordIndex < words.length - 1 && words[wordIndex + 1] !== "<br>") {
+          // Small pause between words (human hesitation)
+          if (Math.random() > 0.5) {
+            // 30% chance of slight hesitation
+            instance.pause(50 + Math.random() * 100);
+          }
+        }
+      });
+    } else if (segment.type === "pause") {
+      instance.pause(segment.duration);
+    }
+  });
+
+  // Store instance on element for later use
+  (element as any).__typeItInstance = instance;
 }
 
 /**
@@ -196,7 +216,23 @@ function triggerActiveStepTypewriter(): void {
 
   console.log("[TYPEWRITER] Found active step:", activeStep);
 
-  // Find typewriter elements in active step
+  // First, check for any deferred typewriter elements that need initialization
+  const deferredElements = activeStep.querySelectorAll(
+    ".typewriter-text[data-typewriter-deferred='true']"
+  ) as NodeListOf<HTMLElement>;
+
+  if (deferredElements.length > 0) {
+    console.log("[TYPEWRITER] Found", deferredElements.length, "deferred elements, initializing now...");
+    
+    deferredElements.forEach((element) => {
+      const text = element.getAttribute("data-text");
+      if (text) {
+        initializeTypewriterInstance(element, text);
+      }
+    });
+  }
+
+  // Find typewriter elements in active step (now initialized)
   const typewriterElements = activeStep.querySelectorAll(
     ".typewriter-text[data-typewriter-ready='true']"
   ) as NodeListOf<HTMLElement>;

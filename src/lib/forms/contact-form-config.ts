@@ -143,6 +143,7 @@ export const contactFormConfig: MultiStepFormConfig = {
     {
       stepNumber: 3,
       title: "your phone?",
+      effect: "typewriter",
       fields: [
         {
           id: "contact-phone",

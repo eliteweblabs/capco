@@ -38,6 +38,7 @@ export const mepFormConfig: MultiStepFormConfig = {
   formAction: "/api/mep/submit",
   formMethod: "post",
   totalSteps: 6,
+  progressBar: true,
   registerUser: true, // Allow existing users to proceed (backend will handle user lookup)
   // Global button defaults - change here to update ALL buttons of that type
 
@@ -151,7 +152,8 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 3: Phone (skip if authenticated)
     {
       stepNumber: 4,
-      title: "Your phone?",
+      title:
+        "What's a good phone number <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fields: [

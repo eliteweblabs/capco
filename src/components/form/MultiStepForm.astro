@@ -248,8 +248,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           autofocus={field.autofocus}
                           class:list={[
                             appendedGlobalInputClasses,
-                            field.icon && field.iconPosition === "right" ? "pr-12" : "",
-                            field.icon && field.iconPosition !== "right" ? "pl-12" : "",
+                            field.icon && field.iconPosition === "right" ? "px-12" : "px-12",
+                            field.icon && field.iconPosition !== "right" ? "px-12" : "px-12",
                           ]}
                           data-error={field.errorMessage}
                           data-has-animated-placeholder="true"
@@ -553,17 +553,31 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         `.animated-placeholder[data-for="${input.id}"]`
       ) as HTMLElement;
       if (span) {
-        input.addEventListener("input", () => {
+        // Function to check and hide placeholder if input has value
+        const checkAndHidePlaceholder = () => {
           if (input.value) {
             span.style.display = "none";
           } else {
             span.style.display = "flex";
           }
+        };
+
+        // Listen for input changes
+        input.addEventListener("input", checkAndHidePlaceholder);
+
+        // Listen for autofill (Chrome fires animationstart when autofill occurs)
+        input.addEventListener("animationstart", (e: AnimationEvent) => {
+          if (e.animationName === "onAutoFillStart") {
+            checkAndHidePlaceholder();
+          }
         });
+
         // Check initial value
-        if (input.value) {
-          span.style.display = "none";
-        }
+        checkAndHidePlaceholder();
+
+        // Additional check after a short delay to catch async autofill
+        setTimeout(checkAndHidePlaceholder, 100);
+        setTimeout(checkAndHidePlaceholder, 500);
       }
     });
 
@@ -606,7 +620,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
 
     // Store interval ID so we can clear it
-    let placeholderInterval: number | null = null;
+    let placeholderInterval: ReturnType<typeof setInterval> | null = null;
 
     // Start placeholder rotation
     function startPlaceholderRotation() {
@@ -999,6 +1013,37 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   :global(.dark) {
     --autofill-bg: rgba(17, 24, 39, 0.9);
     --text-color: #f9fafb;
+  }
+
+  /* Autofill detection animations - triggers animationstart event */
+  @keyframes onAutoFillStart {
+    from {
+      /**/
+    }
+    to {
+      /**/
+    }
+  }
+
+  @keyframes onAutoFillCancel {
+    from {
+      /**/
+    }
+    to {
+      /**/
+    }
+  }
+
+  /* Trigger animation when autofill happens */
+  input:-webkit-autofill {
+    animation-name: onAutoFillStart;
+    animation-duration: 0.001s;
+  }
+
+  /* Trigger animation when autofill is removed */
+  input:not(:-webkit-autofill) {
+    animation-name: onAutoFillCancel;
+    animation-duration: 0.001s;
   }
 
   /* Circular pulse animation for focus */
