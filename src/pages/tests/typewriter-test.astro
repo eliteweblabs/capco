@@ -1,0 +1,146 @@
+---
+// Test page for typewriter effect
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typewriter Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .test-section {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    
+    .typewriter-text {
+      font-size: 32px;
+      font-weight: bold;
+      color: #1a1a1a;
+      line-height: 1.4;
+    }
+    
+    .description {
+      color: #666;
+      margin-bottom: 20px;
+    }
+    
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    
+    button:hover {
+      background: #2563eb;
+    }
+
+    .step-content {
+      display: none;
+    }
+
+    .step-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="text-align: center; font-size: 36px; margin-bottom: 40px;">TypeIt Typewriter Test</h1>
+
+  <!-- Test 1: Simple text -->
+  <div class="test-section">
+    <h1>Test 1: Simple Text</h1>
+    <p class="description">Basic typewriter effect with simple text</p>
+    <div 
+      class="typewriter-text" 
+      id="test1"
+      data-text="Hello, World! This is a simple typewriter test.">
+    </div>
+  </div>
+
+  <!-- Test 2: Text with line breaks -->
+  <div class="test-section">
+    <h1>Test 2: Text with Line Breaks</h1>
+    <p class="description">Typewriter effect with HTML line breaks</p>
+    <div 
+      class="typewriter-text" 
+      id="test2"
+      data-text="Welcome to CAPCO<br>This is line 2<br>This is line 3">
+    </div>
+  </div>
+
+  <!-- Test 3: Multiple lines (the actual use case) -->
+  <div class="test-section">
+    <h1>Test 3: Full Form Text</h1>
+    <p class="description">The actual text from the form</p>
+    <div 
+      class="typewriter-text" 
+      id="test3"
+      data-text="Welcome to the CAPCO Design Group<br>mechanical, engineering & plumbing intake form.<br>It takes about 2 minutes to complete<br>We typically respond within 1 business day EDT.">
+    </div>
+  </div>
+
+  <!-- Test 4: Simulating multi-step form behavior -->
+  <div class="test-section">
+    <h1>Test 4: Multi-Step Simulation</h1>
+    <p class="description">This simulates how it works in the actual form</p>
+    
+    <div class="step-content active" data-step="1">
+      <div 
+        class="typewriter-text" 
+        id="test4"
+        data-text="Step 1: This is the first step<br>It should animate automatically">
+      </div>
+      <button onclick="goToStep(2)" style="margin-top: 20px;">Next Step</button>
+    </div>
+
+    <div class="step-content" data-step="2">
+      <div 
+        class="typewriter-text" 
+        id="test5"
+        data-text="Step 2: This is the second step<br>It should animate when you navigate here">
+      </div>
+      <button onclick="goToStep(1)" style="margin-top: 20px;">Previous Step</button>
+    </div>
+  </div>
+</body>
+</html>
+
+<script>
+  import "../../scripts/typewriter-text.ts";
+
+  // Function to switch steps (for test 4)
+  window.goToStep = function(stepNumber) {
+    const steps = document.querySelectorAll('.step-content');
+    steps.forEach(step => {
+      step.classList.remove('active');
+    });
+    
+    const targetStep = document.querySelector(`[data-step="${stepNumber}"]`);
+    if (targetStep) {
+      targetStep.classList.add('active');
+    }
+  };
+</script>

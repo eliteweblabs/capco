@@ -1,5 +1,51 @@
 // Multi-step form configuration system
 // This allows you to define forms using JSON configuration instead of writing repetitive HTML
+import { globalClasses } from "../pages/api/global/global-classes";
+const { globalInputClasses } = globalClasses();
+const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
+
+// GLOBAL EMAIL PLACEHOLDER DEFAULTS - funny/generic rotating placeholders for email fields
+export const DEFAULT_EMAIL_PLACEHOLDERS = [
+  "hello@example.com",
+  "definitely.not.spam@email.com",
+  "inbox.zero@impossible.com",
+  "reply.all@regrets.com",
+  "unsubscribe@never.works",
+  "404@notfound.com",
+  "no.reply@void.com",
+  "you@company.com",
+  "professional.email@work.biz",
+  "sent.from.my.iphone@mobile.com",
+];
+
+// GLOBAL BUTTON DEFAULTS - applies to ALL forms using MultiStepForm
+// Change these to update button styles across ALL forms at once
+export const GLOBAL_BUTTON_DEFAULTS = {
+  next: {
+    variant: "secondary" as const,
+    size: "md" as const,
+    icon: "arrow-right",
+    iconPosition: "right" as const,
+    label: "next",
+  },
+  prev: {
+    variant: "anchor" as const,
+    size: "md" as const,
+    icon: "arrow-left",
+    iconPosition: "left" as const,
+    label: "back",
+  },
+  skip: {
+    variant: "outline" as const,
+    size: "md" as const,
+  },
+  submit: {
+    variant: "primary" as const,
+    size: "lg" as const,
+    icon: "check",
+    iconPosition: "right" as const,
+  },
+};
 
 export interface FormFieldConfig {
   id: string;
@@ -7,6 +53,7 @@ export interface FormFieldConfig {
   type: "text" | "email" | "tel" | "password" | "textarea" | "hidden" | "component";
   label?: string;
   placeholder?: string;
+  animatedPlaceholders?: string[]; // Array of rotating placeholder values
   required?: boolean;
   autocomplete?: string;
   errorMessage?: string;
@@ -26,7 +73,7 @@ export interface FormFieldConfig {
 
 export interface FormButtonConfig {
   type: "next" | "prev" | "skip" | "submit" | "choice";
-  label: string;
+  label?: string; // Optional button label
   id?: string; // Optional unique identifier for the button
   variant?: "primary" | "secondary" | "anchor" | "outline" | "ghost";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
@@ -62,6 +109,10 @@ export interface FormStepConfig {
   customContent?: string; // Custom HTML/components to inject
   // Additional content
   additionalContent?: "google-oauth" | "auth-providers" | "custom"; // Special content like OAuth buttons
+  // Progress bar visibility
+  hideProgressBar?: boolean; // Hide progress bar for this specific step (useful for intro/welcome steps)
+  // Animation effects
+  effect?: "reveal-text" | "typewriter"; // Text animation effect for title
 }
 
 export interface MultiStepFormConfig {
@@ -81,7 +132,7 @@ export interface MultiStepFormConfig {
   // Steps
   steps: FormStepConfig[];
   // Global settings
-  inputClasses?: string; // Default input classes
+  inputClasses?: { globalInputClasses: string; appendedGlobalInputClasses: string }; // Default input classes
   // Submission handling
   onSubmitSuccess?: string; // Function name or redirect URL
   onSubmitError?: string; // Function name
@@ -90,12 +141,18 @@ export interface MultiStepFormConfig {
 }
 
 // Helper function to get button config with defaults
+// Priority: individual button config > form-specific buttonDefaults > GLOBAL_BUTTON_DEFAULTS
 export function getButtonConfig(
   button: FormButtonConfig,
-  defaults?: Partial<FormButtonConfig>
+  formDefaults?: Partial<FormButtonConfig>
 ): FormButtonConfig {
+  // Get global defaults for this button type
+  const globalDefaults =
+    GLOBAL_BUTTON_DEFAULTS[button.type as keyof typeof GLOBAL_BUTTON_DEFAULTS] || {};
+
   return {
-    ...defaults,
+    ...globalDefaults,
+    ...formDefaults,
     ...button,
   };
 }

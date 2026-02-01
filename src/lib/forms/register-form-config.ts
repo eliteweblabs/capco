@@ -1,4 +1,31 @@
 import type { MultiStepFormConfig } from "../multi-step-form-config";
+import { DEFAULT_EMAIL_PLACEHOLDERS } from "../multi-step-form-config";
+
+// First name placeholders in different languages
+const FIRST_NAME_PLACEHOLDERS = [
+  "John", // English
+  "Juan", // Spanish
+  "Jean", // French
+  "João", // Portuguese
+  "Giovanni", // Italian
+  "Hans", // German
+  "Иван", // Russian (Ivan)
+  "太郎", // Japanese (Taro)
+  "伟", // Chinese (Wei)
+];
+
+// Last name placeholders in different languages
+const LAST_NAME_PLACEHOLDERS = [
+  "Doe", // English
+  "García", // Spanish
+  "Dupont", // French
+  "Silva", // Portuguese
+  "Rossi", // Italian
+  "Müller", // German
+  "Иванов", // Russian (Ivanov)
+  "山田", // Japanese (Yamada)
+  "李", // Chinese (Li)
+];
 
 export const registerFormConfig: MultiStepFormConfig = {
   formId: "multi-step-register-form",
@@ -44,12 +71,14 @@ export const registerFormConfig: MultiStepFormConfig = {
     {
       stepNumber: 1,
       title: "",
+      hideProgressBar: true,
       fields: [
         {
           id: "step-email",
           name: "email",
           type: "email",
-          placeholder: "your.email@example.com",
+          placeholder: DEFAULT_EMAIL_PLACEHOLDERS[0],
+          animatedPlaceholders: DEFAULT_EMAIL_PLACEHOLDERS,
           required: true,
           autocomplete: "email",
           errorMessage: "Please enter a valid email address",
@@ -60,11 +89,9 @@ export const registerFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "back to login",
+          label: "login",
           variant: "anchor",
           href: "/auth/login",
-          icon: "",
-          iconPosition: "left",
         },
         {
           type: "next",
@@ -85,7 +112,8 @@ export const registerFormConfig: MultiStepFormConfig = {
           id: "step-first-name",
           name: "firstName",
           type: "text",
-          placeholder: "John",
+          placeholder: FIRST_NAME_PLACEHOLDERS[0],
+          animatedPlaceholders: FIRST_NAME_PLACEHOLDERS,
           required: true,
           autocomplete: "given-name",
           errorMessage: "Please enter your first name",
@@ -97,7 +125,8 @@ export const registerFormConfig: MultiStepFormConfig = {
           id: "step-last-name",
           name: "lastName",
           type: "text",
-          placeholder: "Doe",
+          placeholder: LAST_NAME_PLACEHOLDERS[0],
+          animatedPlaceholders: LAST_NAME_PLACEHOLDERS,
           required: true,
           autocomplete: "family-name",
           errorMessage: "Please enter your last name",

@@ -1,4 +1,5 @@
 import type { MultiStepFormConfig } from "../multi-step-form-config";
+import { DEFAULT_EMAIL_PLACEHOLDERS } from "../multi-step-form-config";
 
 export const loginFormConfig: MultiStepFormConfig = {
   formId: "multi-step-login-form",
@@ -46,7 +47,8 @@ export const loginFormConfig: MultiStepFormConfig = {
           id: "login-email",
           name: "email",
           type: "email",
-          placeholder: "Your email address",
+          placeholder: DEFAULT_EMAIL_PLACEHOLDERS[0],
+          animatedPlaceholders: DEFAULT_EMAIL_PLACEHOLDERS,
           required: true,
           autocomplete: "email",
           errorMessage: "Please enter a valid email address",
@@ -60,7 +62,7 @@ export const loginFormConfig: MultiStepFormConfig = {
           type: "prev",
           label: "new?",
           variant: "anchor",
-          size: "md",
+          size: "sm",
           href: "/auth/register",
           icon: "user-plus",
           iconPosition: "left",
@@ -70,9 +72,9 @@ export const loginFormConfig: MultiStepFormConfig = {
           id: "forgot-password-btn",
           label: "forgot?",
           variant: "anchor",
-          size: "md",
+          size: "sm",
           href: "/auth/forgot-password",
-          icon: "key",
+          icon: "",
           iconPosition: "left",
         },
         {

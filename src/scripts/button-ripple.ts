@@ -53,15 +53,15 @@ function createRipple(button: HTMLElement, options: RippleOptions): void {
     // Remove ripple after animation completes
     setTimeout(() => {
       ripple.remove();
-    }, 1500);
+    }, 350);
   } else if (options.type === "focus") {
     // Focus ripple - centered, slower animation
     ripple.classList.add("focus-ripple");
 
-    // Remove ripple after animation completes (2500ms for slow animation)
+    // Remove ripple after animation completes
     setTimeout(() => {
       ripple.remove();
-    }, 2500);
+    }, 350);
   }
 
   // Add ripple to button
@@ -76,7 +76,20 @@ function initButtonRipples(): void {
 
   // Track recently clicked buttons to prevent double ripple (click + focus)
   const recentlyClicked = new WeakMap<HTMLElement, number>();
-  const CLICK_FOCUS_DELAY = 100; // ms - time to ignore focus after click
+  const CLICK_FOCUS_DELAY = 500; // ms - time to ignore focus after click
+  
+  // Track if user is using mouse or keyboard
+  let lastInteractionWasMouse = false;
+
+  // Detect mouse usage
+  document.addEventListener("mousedown", () => {
+    lastInteractionWasMouse = true;
+  }, true);
+
+  // Detect keyboard usage
+  document.addEventListener("keydown", () => {
+    lastInteractionWasMouse = false;
+  }, true);
 
   // Handle click ripples using event delegation
   document.addEventListener(
@@ -119,12 +132,14 @@ function initButtonRipples(): void {
           const lastClick = recentlyClicked.get(button);
           const timeSinceClick = lastClick ? Date.now() - lastClick : Infinity;
 
-          // Only show focus ripple if focus was NOT from a click (e.g., keyboard navigation)
-          if (timeSinceClick > CLICK_FOCUS_DELAY) {
+          // Only show focus ripple if:
+          // 1. Focus was NOT from a recent click, AND
+          // 2. Last interaction was keyboard (not mouse)
+          if (timeSinceClick > CLICK_FOCUS_DELAY && !lastInteractionWasMouse) {
             console.log("[BUTTON-RIPPLE] Focus ripple on:", button);
             createRipple(button, { type: "focus" });
           } else {
-            console.log("[BUTTON-RIPPLE] Skipping focus ripple (from click):", button);
+            console.log("[BUTTON-RIPPLE] Skipping focus ripple (from mouse/click):", button);
           }
         }
       }

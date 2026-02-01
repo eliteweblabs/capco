@@ -35,7 +35,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   {
     config.progressBar && (
       <div
-        class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-4"
+        id={`${config.formId}-progress-bar`}
+        class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-4 transition-opacity duration-300"
         tabindex="-1"
       >
         <div class="w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] max-w-6xl mx-auto" tabindex="-1">
@@ -84,7 +85,12 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   >
     {
       config.steps.map((step) => (
-        <div class="step-content" data-step={step.stepNumber} tabindex="-1">
+        <div
+          class="step-content"
+          data-step={step.stepNumber}
+          data-hide-progress-bar={step.hideProgressBar ? "true" : "false"}
+          tabindex="-1"
+        >
           <div class="space-y-12 sm:space-y-6 lg:space-y-8" tabindex="-1">
             {/* Step Header */}
             <div tabindex="-1">
@@ -102,7 +108,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
               )}
               {step.title && (
                 <h2
-                  class="inline text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white scroll-reveal-text"
+                  class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
+                    step.effect === "typewriter" ? "typewriter-text" : ""
+                  }`}
                   data-text={step.title}
                   set:html={step.title}
                   tabindex="-1"
@@ -121,12 +129,12 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {/* Auth Providers (for registration and login forms) - at top */}
             {(step.additionalContent === "google-oauth" ||
               step.additionalContent === "auth-providers") && (
-              <div class="my-3 md:my-8 lg:my-12 space-y-8" tabindex="-1">
+              <div class="space-y-8" tabindex="-1">
                 <AuthProviders
                   mode={step.additionalContent === "auth-providers" ? "login" : "register"}
                 />
 
-                <div class="flex items-center gap-4" tabindex="-1">
+                <div class="flex items-center gap-4 pb-4" tabindex="-1">
                   <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
                   <span class="text-xs text-zinc-500 dark:text-zinc-400 uppercase">
                     {step.additionalContent === "auth-providers"
@@ -219,8 +227,16 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         class={appendedGlobalInputClasses}
                         data-error={field.errorMessage}
                       />
-                    ) : field.name === "firstName" || field.name === "lastName" ? (
-                      <div class="relative" tabindex="-1">
+                    ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 ? (
+                      <div
+                        class:list={[
+                          "relative",
+                          field.icon ? "input-with-icon" : "",
+                          field.iconPosition === "right" ? "icon-right" : "icon-left",
+                        ]}
+                        data-icon={field.icon}
+                        tabindex="-1"
+                      >
                         <input
                           type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
                           id={field.id}
@@ -230,10 +246,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           autocomplete={field.autocomplete}
                           minlength={field.minlength}
                           autofocus={field.autofocus}
-                          class={appendedGlobalInputClasses}
+                          class:list={[
+                            appendedGlobalInputClasses,
+                            field.icon && field.iconPosition === "right" ? "pr-12" : "",
+                            field.icon && field.iconPosition !== "right" ? "pl-12" : "",
+                          ]}
                           data-error={field.errorMessage}
                           data-has-animated-placeholder="true"
                           data-original-placeholder={field.placeholder}
+                          data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
                         />
                         <span
                           class="animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500"
@@ -319,7 +340,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           }), // Keep for backward compatibility with SMS
                         }}
                       >
-                        <Fragment set:html={button.label} />
+                        {btnConfig.label && <Fragment set:html={btnConfig.label} />}
                       </Button>
                     );
                   })}
@@ -329,7 +350,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {/* Navigation buttons (prev, next, submit, skip) */}
             <div
               class:list={[
-                "flex gap-3",
+                "flex",
                 step.buttons.filter((b) => b.type !== "choice").length === 1
                   ? "justify-end"
                   : "justify-between",
@@ -353,7 +374,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       class={`${button.type}-step ${button.classes || ""}`}
                       disabled={button.disabled}
                     >
-                      <Fragment set:html={button.label} />
+                      {btnConfig.label && <Fragment set:html={btnConfig.label} />}
                     </Button>
                   ) : (
                     <Button
@@ -373,23 +394,24 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         }),
                       }}
                     >
-                      {button.label === "back" ? (
-                        <span class="hidden sm:inline">
-                          <Fragment set:html={button.label} />
-                        </span>
-                      ) : (
-                        <span
-                          id={
-                            button.classes?.includes("phone")
-                              ? `${config.formId}-next-step-phone-text`
-                              : button.classes?.includes("address")
-                                ? `${config.formId}-next-step-address-text`
-                                : undefined
-                          }
-                        >
-                          <Fragment set:html={button.label} />
-                        </span>
-                      )}
+                      {btnConfig.label &&
+                        (btnConfig.label === "back" ? (
+                          <span class="hidden sm:inline">
+                            <Fragment set:html={btnConfig.label} />
+                          </span>
+                        ) : (
+                          <span
+                            id={
+                              button.classes?.includes("phone")
+                                ? `${config.formId}-next-step-phone-text`
+                                : button.classes?.includes("address")
+                                  ? `${config.formId}-next-step-address-text`
+                                  : undefined
+                            }
+                          >
+                            <Fragment set:html={btnConfig.label} />
+                          </span>
+                        ))}
                     </Button>
                   );
                 })}
@@ -496,131 +518,141 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
 <script>
   import { initializeMultiStepForm } from "../../lib/multi-step-form-handler";
+  import "../../scripts/typewriter-text";
 
   document.addEventListener("DOMContentLoaded", () => {
-    // Initialize rotating placeholders for first and last name inputs
-    const firstNameInputs = document.querySelectorAll(
-      'input[name="firstName"][data-has-animated-placeholder="true"]'
-    );
-    const lastNameInputs = document.querySelectorAll(
-      'input[name="lastName"][data-has-animated-placeholder="true"]'
-    );
+    // Initialize rotating placeholders for all inputs with animated placeholders
+    const animatedInputs = document.querySelectorAll(
+      'input[data-has-animated-placeholder="true"]'
+    ) as NodeListOf<HTMLInputElement>;
 
-    // Get corresponding placeholder spans
-    const firstNamePlaceholderSpans = Array.from(firstNameInputs).map((input) =>
-      document.querySelector(`.animated-placeholder[data-for="${input.id}"]`)
-    );
-    const lastNamePlaceholderSpans = Array.from(lastNameInputs).map((input) =>
-      document.querySelector(`.animated-placeholder[data-for="${input.id}"]`)
-    );
+    // Store placeholder data for each field
+    const placeholderData = new Map<string, { index: number; values: string[] }>();
 
-    // First name placeholders in different languages
-    const firstNamePlaceholders = [
-      "John", // English
-      "Juan", // Spanish
-      "Jean", // French
-      "João", // Portuguese
-      "Giovanni", // Italian
-      "Hans", // German
-      "Иван", // Russian (Ivan)
-      "太郎", // Japanese (Taro)
-      "伟", // Chinese (Wei)
-    ];
+    // Initialize placeholder data for each input
+    animatedInputs.forEach((input) => {
+      const placeholders = input.getAttribute("data-animated-placeholders");
+      const fieldId = input.id;
 
-    // Last name placeholders in different languages
-    const lastNamePlaceholders = [
-      "Doe", // English
-      "García", // Spanish
-      "Dupont", // French
-      "Silva", // Portuguese
-      "Rossi", // Italian
-      "Müller", // German
-      "Иванов", // Russian (Ivanov)
-      "山田", // Japanese (Yamada)
-      "李", // Chinese (Li)
-    ];
-
-    let placeholderIndex = 0;
-
-    // Hide placeholder spans when input has value
-    firstNameInputs.forEach((input, index) => {
-      const span = firstNamePlaceholderSpans[index];
-      if (span) {
-        input.addEventListener("input", () => {
-          if ((input as HTMLInputElement).value) {
-            (span as HTMLElement).style.display = "none";
-          } else {
-            (span as HTMLElement).style.display = "flex";
-          }
-        });
-        // Check initial value
-        if ((input as HTMLInputElement).value) {
-          (span as HTMLElement).style.display = "none";
+      if (placeholders) {
+        try {
+          const values = JSON.parse(placeholders);
+          placeholderData.set(fieldId, { index: 0, values });
+          console.log(
+            `[ANIMATED-PLACEHOLDER] Initialized ${fieldId} with ${values.length} placeholders`
+          );
+        } catch (e) {
+          console.error(`[ANIMATED-PLACEHOLDER] Failed to parse placeholders for ${fieldId}:`, e);
         }
       }
     });
 
-    lastNameInputs.forEach((input, index) => {
-      const span = lastNamePlaceholderSpans[index];
+    // Hide placeholder spans when input has value
+    animatedInputs.forEach((input) => {
+      const span = document.querySelector(
+        `.animated-placeholder[data-for="${input.id}"]`
+      ) as HTMLElement;
       if (span) {
         input.addEventListener("input", () => {
-          if ((input as HTMLInputElement).value) {
-            (span as HTMLElement).style.display = "none";
+          if (input.value) {
+            span.style.display = "none";
           } else {
-            (span as HTMLElement).style.display = "flex";
+            span.style.display = "flex";
           }
         });
         // Check initial value
-        if ((input as HTMLInputElement).value) {
-          (span as HTMLElement).style.display = "none";
+        if (input.value) {
+          span.style.display = "none";
         }
       }
     });
 
     function rotatePlaceholders() {
-      // Rotate first name placeholders
-      firstNameInputs.forEach((input, index) => {
-        const span = firstNamePlaceholderSpans[index];
-        if (
-          span &&
-          !(input as HTMLInputElement).value &&
-          (span as HTMLElement).style.display !== "none"
-        ) {
+      animatedInputs.forEach((input) => {
+        const span = document.querySelector(
+          `.animated-placeholder[data-for="${input.id}"]`
+        ) as HTMLElement;
+        const fieldId = input.id;
+        const data = placeholderData.get(fieldId);
+
+        if (span && data && !input.value && span.style.display !== "none") {
           // Only rotate if visible
-          (span as HTMLElement).style.animation = "slideOutDown 400ms ease-out forwards";
+          span.style.animation = "slideOutDown 400ms ease-out forwards";
 
           setTimeout(() => {
-            placeholderIndex = (placeholderIndex + 1) % firstNamePlaceholders.length;
-            span.textContent = firstNamePlaceholders[placeholderIndex];
-            (span as HTMLElement).style.animation = "slideInDown 400ms ease-out forwards";
+            data.index = (data.index + 1) % data.values.length;
+            span.textContent = data.values[data.index];
+            span.style.animation = "slideInDown 400ms ease-out forwards";
           }, 400);
         }
       });
-
-      // Rotate last name placeholders with same index - delayed by 200ms for staggered effect
-      setTimeout(() => {
-        lastNameInputs.forEach((input, index) => {
-          const span = lastNamePlaceholderSpans[index];
-          if (
-            span &&
-            !(input as HTMLInputElement).value &&
-            (span as HTMLElement).style.display !== "none"
-          ) {
-            // Only rotate if visible
-            (span as HTMLElement).style.animation = "slideOutDown 400ms ease-out forwards";
-
-            setTimeout(() => {
-              span.textContent = lastNamePlaceholders[placeholderIndex];
-              (span as HTMLElement).style.animation = "slideInDown 400ms ease-out forwards";
-            }, 400);
-          }
-        });
-      }, 200); // Stagger the second input animation by 200ms
     }
 
-    // Rotate placeholders every 3 seconds (synced with title rotation)
-    if (firstNamePlaceholderSpans.some((s) => s) || lastNamePlaceholderSpans.some((s) => s)) {
-      setInterval(rotatePlaceholders, 3000);
+    // Reset and restart placeholder animation
+    function resetPlaceholderAnimation() {
+      animatedInputs.forEach((input) => {
+        const span = document.querySelector(
+          `.animated-placeholder[data-for="${input.id}"]`
+        ) as HTMLElement;
+        const fieldId = input.id;
+        const data = placeholderData.get(fieldId);
+
+        if (span && data && !input.value) {
+          data.index = 0;
+          span.textContent = data.values[0];
+          span.style.animation = "slideInDown 400ms ease-out forwards";
+        }
+      });
+    }
+
+    // Store interval ID so we can clear it
+    let placeholderInterval: number | null = null;
+
+    // Start placeholder rotation
+    function startPlaceholderRotation() {
+      // Clear any existing interval
+      if (placeholderInterval) {
+        clearInterval(placeholderInterval);
+      }
+
+      // Reset to first placeholder
+      resetPlaceholderAnimation();
+
+      // Start new interval
+      placeholderInterval = setInterval(rotatePlaceholders, 3000);
+    }
+
+    // Rotate placeholders every 3 seconds
+    if (animatedInputs.length > 0) {
+      startPlaceholderRotation();
+
+      // Watch for step changes and restart animation
+      const stepObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === "attributes" && mutation.attributeName === "class") {
+            const target = mutation.target as HTMLElement;
+            if (target.classList.contains("active") && target.classList.contains("step-content")) {
+              // Check if this step has animated placeholders
+              const hasPlaceholders = target.querySelector(
+                '[data-has-animated-placeholder="true"]'
+              );
+              if (hasPlaceholders) {
+                console.log("[PLACEHOLDER] Restarting placeholder animation for active step");
+                startPlaceholderRotation();
+              }
+            }
+          }
+        });
+      });
+
+      // Observe all step-content elements
+      const steps = document.querySelectorAll(".step-content");
+      steps.forEach((step) => {
+        stepObserver.observe(step, {
+          attributes: true,
+          attributeFilter: ["class"],
+        });
+      });
     }
 
     // Add focus/blur shadow animation to all form inputs using event delegation
@@ -637,7 +669,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             target.tagName === "SELECT") &&
           (target as HTMLInputElement).type !== "hidden"
         ) {
-          console.log("[FOCUS-SHADOW] Adding shadow to:", target.id || target.name);
+          const formElement = target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+          console.log("[FOCUS-SHADOW] Adding shadow to:", formElement.id || formElement.name);
           target.classList.add("shadow-focus");
         }
       },
@@ -654,7 +687,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             target.tagName === "TEXTAREA" ||
             target.tagName === "SELECT")
         ) {
-          console.log("[FOCUS-SHADOW] Removing shadow from:", target.id || target.name);
+          const formElement = target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+          console.log("[FOCUS-SHADOW] Removing shadow from:", formElement.id || formElement.name);
           target.classList.remove("shadow-focus");
         }
       },

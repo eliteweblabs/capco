@@ -1,5 +1,34 @@
 import type { MultiStepFormConfig } from "../multi-step-form-config";
+import { DEFAULT_EMAIL_PLACEHOLDERS } from "../multi-step-form-config";
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
+// First name placeholders in different languages
+const FIRST_NAME_PLACEHOLDERS = [
+  "John", // English
+  "Juan", // Spanish
+  "Jean", // French
+  "João", // Portuguese
+  "Giovanni", // Italian
+  "Hans", // German
+  "Иван", // Russian (Ivan)
+  "太郎", // Japanese (Taro)
+  "伟", // Chinese (Wei)
+];
+
+// Last name placeholders in different languages
+const LAST_NAME_PLACEHOLDERS = [
+  "Doe", // English
+  "García", // Spanish
+  "Dupont", // French
+  "Silva", // Portuguese
+  "Rossi", // Italian
+  "Müller", // German
+  "Иванов", // Russian (Ivanov)
+  "山田", // Japanese (Yamada)
+  "李", // Chinese (Li)
+];
+
+const { globalCompanyName } = await globalCompanyData();
 /**
  * MEP Form Configuration
  * Multi-step form for MEP (Mechanical, Electrical, Plumbing) projects
@@ -10,11 +39,37 @@ export const mepFormConfig: MultiStepFormConfig = {
   formMethod: "post",
   totalSteps: 6,
   registerUser: true, // Allow existing users to proceed (backend will handle user lookup)
+  // Global button defaults - change here to update ALL buttons of that type
+
   steps: [
     // Step 1: Name (skip if authenticated)
     {
       stepNumber: 1,
-      title: `Hello, welcome to<br>the Mechanical,<br>Engineering and Plumbing intake.<br>Takes about 2 minutes.<br>We typically respond within<br>1 business day EDT.`,
+      title: `Hi, I'm Leah from ${globalCompanyName}. I'll assist you with the mechanical, engineering & plumbing intake process.<span data-typewriter-pause="250">.</span><span data-typewriter-pause="100">.</span><br><br>Ready to get started?<span data-typewriter-pause="360">!</span>`,
+      effect: "typewriter",
+      // subtitle:
+      //   "It takes about 2 minutes to complete. We typically respond within 1 business day EDT. ready to get started?",
+      skipCondition: "isAuthenticated", // Skip for logged-in users
+      fieldLayout: "grid", // Enable grid layout for side-by-side fields
+      fields: [],
+      buttons: [
+        {
+          type: "prev",
+          label: '<span class="hidden md:block">Back to Home</span>',
+          href: "/",
+        },
+        {
+          type: "next",
+          label: "begin",
+          dataNext: 2,
+        },
+      ],
+    },
+
+    {
+      stepNumber: 2,
+      title: `What's your name?`,
+      effect: "typewriter",
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fieldLayout: "grid", // Enable grid layout for side-by-side fields
@@ -23,7 +78,8 @@ export const mepFormConfig: MultiStepFormConfig = {
           type: "text",
           id: "step-first-name",
           name: "firstName",
-          placeholder: "John",
+          placeholder: FIRST_NAME_PLACEHOLDERS[0],
+          animatedPlaceholders: FIRST_NAME_PLACEHOLDERS,
           required: true,
           autocomplete: "given-name",
           errorMessage: "Please enter your first name",
@@ -35,7 +91,8 @@ export const mepFormConfig: MultiStepFormConfig = {
           type: "text",
           id: "step-last-name",
           name: "lastName",
-          placeholder: "Doe",
+          placeholder: LAST_NAME_PLACEHOLDERS[0],
+          animatedPlaceholders: LAST_NAME_PLACEHOLDERS,
           required: true,
           autocomplete: "family-name",
           errorMessage: "Please enter your last name",
@@ -47,28 +104,21 @@ export const mepFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: '<span class="hidden md:block">Back to Home</span>',
-          variant: "ghost",
-          href: "/",
-          icon: "arrow-left",
-          iconPosition: "left",
+          dataPrev: 1,
         },
         {
           type: "next",
-          label: "next",
-          variant: "secondary",
-          size: "md",
-          dataNext: 2,
-          icon: "arrow-right",
-          iconPosition: "right",
+          dataNext: 3,
         },
       ],
     },
 
     // Step 2: Email (skip if authenticated)
     {
-      stepNumber: 2,
-      title: "Your email?",
+      stepNumber: 3,
+      title:
+        "What's your email <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
+      effect: "typewriter",
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fields: [
@@ -76,7 +126,8 @@ export const mepFormConfig: MultiStepFormConfig = {
           type: "email",
           id: "step-email",
           name: "email",
-          placeholder: "your.email@example.com",
+          placeholder: DEFAULT_EMAIL_PLACEHOLDERS[0],
+          animatedPlaceholders: DEFAULT_EMAIL_PLACEHOLDERS,
           required: true,
           autocomplete: "email",
           errorMessage: "Please enter a valid email address",
@@ -88,27 +139,18 @@ export const mepFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: '<span class="hidden md:block">back</span>',
-          variant: "ghost",
-          dataPrev: 1,
-          icon: "arrow-left",
-          iconPosition: "left",
+          dataPrev: 2,
         },
         {
           type: "next",
-          label: "next",
-          variant: "secondary",
-          size: "md",
-          dataNext: 3,
-          icon: "arrow-right",
-          iconPosition: "right",
+          dataNext: 4,
         },
       ],
     },
 
     // Step 3: Phone (skip if authenticated)
     {
-      stepNumber: 3,
+      stepNumber: 4,
       title: "Your phone?",
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
@@ -129,26 +171,20 @@ export const mepFormConfig: MultiStepFormConfig = {
         {
           type: "prev",
           label: '<span class="hidden md:block">back</span>',
-          variant: "ghost",
-          dataPrev: 2,
-          icon: "arrow-left",
-          iconPosition: "left",
+          dataPrev: 3,
         },
         {
           type: "next",
-          label: "next",
-          variant: "secondary",
-          size: "md",
-          dataNext: 4,
-          icon: "arrow-right",
-          iconPosition: "right",
+          label: "skip",
+          classes: "phone", // Enables dynamic skip/next label based on phone validation
+          dataNext: 5,
         },
       ],
     },
 
     // Step 4: Address
     {
-      stepNumber: 4,
+      stepNumber: 5,
       title: "Project address?",
       subtitle: "Where is the MEP project located?",
       fields: [
@@ -168,27 +204,20 @@ export const mepFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: '<span class="hidden md:block">back</span>',
-          variant: "ghost",
-          dataPrev: 3,
-          icon: "arrow-left",
-          iconPosition: "left",
+          dataPrev: 4,
         },
         {
           type: "next",
-          label: "next",
-          variant: "secondary",
-          size: "md",
-          dataNext: 5,
-          icon: "arrow-right",
-          iconPosition: "right",
+          label: "skip",
+          classes: "address", // Enables dynamic skip/next label based on address input
+          dataNext: 6,
         },
       ],
     },
 
     // Step 5: Fuel Source (Radio buttons via choice buttons)
     {
-      stepNumber: 5,
+      stepNumber: 6,
       title: "Fuel Source?",
       subtitle: "What type of fuel does the HVAC system use?",
       fields: [
@@ -229,7 +258,7 @@ export const mepFormConfig: MultiStepFormConfig = {
           label: "next",
           variant: "secondary",
           size: "md",
-          dataNext: 6,
+          dataNext: 7,
           icon: "arrow-right",
           iconPosition: "right",
           classes: "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -240,7 +269,7 @@ export const mepFormConfig: MultiStepFormConfig = {
 
     // Step 6: HVAC System Type (conditional based on fuel source)
     {
-      stepNumber: 6,
+      stepNumber: 7,
       title: "HVAC System Type?",
       subtitle: "Select your system:",
       fieldLayout: "single",

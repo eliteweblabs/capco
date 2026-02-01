@@ -1,114 +1,147 @@
-# Scroll-Driven Text Reveal Implementation + User Auto-Fill
+# Scroll-Driven Text Reveal Animation
 
-## Summary
+## Overview
+Implementation of a scroll-driven text reveal animation for multi-step form titles, inspired by modern CSS scroll-driven animations.
 
-1. Replaced the typewriter effect in multi-step forms with a modern scroll-driven text reveal animation inspired by [this CodePen](https://codepen.io/jh3y/pen/eYbYydG).
-2. Added automatic form field pre-filling for logged-in users using their profile data.
+## Implementation Details
 
-## Changes Made
+### 1. Type Definition
+Added `effect` property to `FormStepConfig` interface in `src/lib/multi-step-form-config.ts`:
 
-### 1. CSS Updates (`src/styles/global.css`)
-
-- **Removed**: Typewriter effect (`.typewriter-text`, typewriter animation, blink animation)
-- **Added**: Scroll-reveal text effect with progressive gradient reveal
-  - Starts with light gray (30% opacity)
-  - Gradually reveals to full color (100% opacity)
-  - Smooth 0.8s cubic-bezier transition
-  - Supports dark mode
-  - Respects `prefers-reduced-motion`
-  - Uses `animation-timeline: scroll()` for Chrome 115+ support
-
-### 2. Component Updates (`src/components/form/MultiStepForm.astro`)
-
-- Changed class from `typewriter-text` to `scroll-reveal-text`
-- Text now reveals smoothly when steps change
-
-### 3. Handler Updates (`src/lib/multi-step-form-handler.ts`)
-
-- **Removed**:
-  - `backspaceTitle()` function (no longer needed)
-  - Typewriter animation logic
-  - Cursor blink management
-  - 500ms delay for backspace animation
-- **Added**:
-  - Simple reveal class toggle
-  - 50ms delay for smooth reveal trigger
-  - Cleaner step transition logic
-
-### 4. User Auto-Fill (`src/pages/contact-json.astro`)
-
-- **Added**: Authentication check using cookies or middleware
-- **Added**: Profile data fetching from Supabase
-- **Added**: Pre-fill logic for:
-  - `firstName` - from profile name or user metadata
-  - `lastName` - from profile name or user metadata
-  - `email` - from user.email
-  - `phone` - from profile phone or user metadata
-  - `company` - from profile company or user metadata
-- **Added**: `initialData` prop passed to MultiStepForm component
-
-## Features
-
-### Progressive Reveal
-
-- Text starts at 30% opacity (light gray)
-- Animates to 100% opacity (full color) over 0.8s
-- Uses CSS custom property `--reveal-progress` for smooth transitions
-
-### Browser Support
-
-- Modern browsers: Native scroll-driven animations (Chrome 115+)
-- Fallback: CSS transitions for older browsers
-- Accessibility: Respects `prefers-reduced-motion`
-
-### Dark Mode
-
-- Automatic adjustment for dark backgrounds
-- Uses appropriate gray tones (107, 114, 128)
-
-### User Auto-Fill
-
-- Detects logged-in users via cookies or Astro.locals
-- Fetches profile data from Supabase `profiles` table
-- Pre-fills form fields with user data
-- Falls back to empty fields for non-authenticated users
-- Works seamlessly with existing form logic
-
-## Benefits Over Typewriter
-
-1. **Faster**: No character-by-character animation
-2. **Smoother**: Gradient reveal feels more polished
-3. **Modern**: Uses cutting-edge CSS features with fallbacks
-4. **Cleaner Code**: Less JavaScript, more CSS
-5. **Better UX**: No waiting for text to "type out"
-6. **More Subtle**: Professional appearance without being distracting
-7. **User-Friendly**: Auto-fills known information for logged-in users
-
-## Testing
-
-Tested on `/contact-json` page:
-
-- ✅ Initial load shows gradient reveal effect
-- ✅ Step transitions are smooth and fast
-- ✅ No typewriter cursor or character-by-character typing
-- ✅ Text appears with subtle fade-in from gray to full color
-- ✅ Logged-in user fields are pre-filled:
-  - Name: "Thomas Sénecal"
-  - Email: "sen@eliteweblabs.com"
-  - Phone: (empty if not in profile)
-  - Company: (empty if not in profile)
-
-## Files Modified
-
-1. `src/styles/global.css` - CSS animations
-2. `src/components/form/MultiStepForm.astro` - Component class
-3. `src/lib/multi-step-form-handler.ts` - JavaScript handler logic
-4. `src/pages/contact-json.astro` - User authentication and pre-fill logic
-
-## Rollback Instructions
-
-If needed, revert using git:
-
-```bash
-git checkout HEAD -- src/styles/global.css src/components/form/MultiStepForm.astro src/lib/multi-step-form-handler.ts src/pages/contact-json.astro
+```typescript
+effect?: "reveal-text" | "typewriter"; // Text animation effect for title
 ```
+
+### 2. Component Logic
+Updated `MultiStepForm.astro` to conditionally apply animation classes based on the `effect` property:
+
+```astro
+<h2
+  class={`inline text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white ${
+    step.effect === "reveal-text" ? "scroll-reveal-text" : 
+    step.effect === "typewriter" ? "typewriter-text" : 
+    "scroll-reveal-text"
+  }`}
+  data-text={step.title}
+  set:html={step.title}
+  tabindex="-1"
+/>
+```
+
+### 3. CSS Animation
+Added scroll-driven animation styles to `src/styles/global.css`:
+
+#### View Timeline Setup
+```css
+.scroll-reveal-text {
+  view-timeline-name: --reveal-timeline;
+  view-timeline-axis: block;
+  animation: reveal-text linear;
+  animation-timeline: --reveal-timeline;
+  animation-range: entry 0% cover 30%;
+}
+```
+
+#### Keyframe Animation
+```css
+@keyframes reveal-text {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+```
+
+#### Browser Fallback
+```css
+@supports not (animation-timeline: --reveal-timeline) {
+  .scroll-reveal-text {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+```
+
+## Usage
+
+### Basic Usage
+Add the `effect` property to any step in your form configuration:
+
+```typescript
+{
+  stepNumber: 1,
+  title: "Welcome to our form",
+  effect: "reveal-text",
+  fields: [...],
+  buttons: [...]
+}
+```
+
+### Options
+- `"reveal-text"` - Scroll-driven reveal animation with blur and translateY
+- `"typewriter"` - Classic typewriter effect (existing)
+- No effect specified - Defaults to `"reveal-text"`
+
+## Browser Support
+
+### Full Support
+- Chrome 115+
+- Edge 115+
+- Opera 101+
+
+### Fallback Support
+Browsers without scroll-driven animation support will show text immediately without animation, ensuring graceful degradation.
+
+## Animation Behavior
+
+1. **Entry Phase**: Text starts invisible, blurred (10px), and shifted down (20px)
+2. **Animation Range**: Animates from when element enters viewport (0%) to 30% of cover
+3. **Completion**: Text becomes fully visible, sharp, and in position
+
+## Performance Considerations
+
+- Uses native CSS scroll-driven animations (hardware accelerated)
+- No JavaScript required for animation
+- Minimal performance impact
+- GPU-accelerated transforms and filters
+
+## Customization
+
+To adjust animation timing, modify the `animation-range`:
+```css
+animation-range: entry 0% cover 50%; /* Slower reveal */
+animation-range: entry 0% cover 20%; /* Faster reveal */
+```
+
+To adjust animation effects, modify the keyframe values:
+```css
+@keyframes reveal-text {
+  from {
+    opacity: 0;
+    transform: translateY(40px); /* More dramatic entrance */
+    filter: blur(15px); /* More blur */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+```
+
+## Related Files
+- `src/lib/multi-step-form-config.ts` - Type definitions
+- `src/components/form/MultiStepForm.astro` - Component implementation
+- `src/styles/global.css` - Animation styles
+- `src/lib/forms/mep-form-config.ts` - Example usage
+
+## References
+- Inspired by: https://codepen.io/shunyadezain/pen/zYNZjJL
+- CSS Scroll-driven Animations: https://developer.chrome.com/docs/css-ui/scroll-driven-animations

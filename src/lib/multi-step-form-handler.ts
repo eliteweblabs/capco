@@ -64,41 +64,40 @@ export function createMultiStepFormHandler(
     });
   }
 
-  // Backspace animation function
-  async function backspaceTitle(titleElement: HTMLElement): Promise<void> {
-    return new Promise((resolve) => {
-      const originalText = titleElement.getAttribute("data-text") || titleElement.textContent || "";
-      let currentLength = originalText.length;
+  // Inject form session data into spans with data-form-session-meta attribute
+  function injectSessionMetaData(stepElement: HTMLElement) {
+    // Find all spans with data-form-session-meta in title and subtitle
+    const metaSpans = stepElement.querySelectorAll('[data-form-session-meta]') as NodeListOf<HTMLElement>;
+    
+    if (metaSpans.length === 0) return;
 
-      const backspaceInterval = setInterval(() => {
-        if (currentLength > 0) {
-          currentLength--;
-          titleElement.textContent = originalText.substring(0, currentLength);
+    console.log(`[SESSION-META] Found ${metaSpans.length} meta spans to populate`);
+
+    metaSpans.forEach((span) => {
+      const fieldName = span.getAttribute('data-form-session-meta');
+      if (!fieldName) return;
+
+      // Get the input value from the form
+      const input = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
+      if (input && input.value) {
+        const value = input.value.trim();
+        if (value) {
+          console.log(`[SESSION-META] Injecting ${fieldName}: ${value}`);
+          span.textContent = value;
+          span.classList.add('text-primary-600', 'dark:text-primary-400', 'font-semibold');
         } else {
-          clearInterval(backspaceInterval);
-          resolve();
+          // Reset to default if no value
+          span.textContent = span.getAttribute('data-default') || 'friend';
         }
-      }, 30); // Speed of backspace (30ms per character)
+      } else {
+        // Reset to default if input not found or empty
+        span.textContent = span.getAttribute('data-default') || 'friend';
+      }
     });
   }
 
   // Show specific step with animation
   async function showStep(stepNumber: number, direction: "forward" | "backward" = "forward") {
-    // Get current active step for backspace animation
-    const currentActiveStep = document.querySelector(
-      `#${formId} .step-content.active`
-    ) as HTMLElement;
-
-    // If there's a current step, backspace its title first
-    if (currentActiveStep) {
-      const currentTitle = currentActiveStep.querySelector(".typewriter-text") as HTMLElement;
-      if (currentTitle) {
-        // Wait 500ms, then backspace
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await backspaceTitle(currentTitle);
-      }
-    }
-
     const steps = document.querySelectorAll(`#${formId} .step-content`);
 
     steps.forEach((step) => {
@@ -126,27 +125,24 @@ export function createMultiStepFormHandler(
       currentStep = stepNumber;
       updateProgress();
 
-      // Trigger typewriter effect for title
-      const titleElement = targetStep.querySelector(".typewriter-text") as HTMLElement;
-      if (titleElement) {
-        // Always restore the original text first
-        const text = titleElement.getAttribute("data-text") || "";
-        titleElement.textContent = text;
-
-        if (direction === "forward") {
-          // Reset animation by removing "typed" class
-          titleElement.classList.remove("typed");
-          void titleElement.offsetWidth; // Force reflow
-
-          // After animation completes, add 'typed' class to stop cursor
-          setTimeout(() => {
-            titleElement.classList.add("typed");
-          }, 800); // Match typewriter animation duration
+      // Handle progress bar visibility based on step's hideProgressBar property
+      const progressBar = document.getElementById(`${formId}-progress-bar`);
+      const shouldHideProgressBar = targetStep.getAttribute("data-hide-progress-bar") === "true";
+      
+      if (progressBar) {
+        if (shouldHideProgressBar) {
+          progressBar.style.opacity = "0";
+          progressBar.style.pointerEvents = "none";
         } else {
-          // For backward navigation, just show the text immediately without animation
-          titleElement.classList.add("typed");
+          progressBar.style.opacity = "1";
+          progressBar.style.pointerEvents = "auto";
         }
       }
+
+      // Inject form session data into spans with data-form-session-meta attribute
+      injectSessionMetaData(targetStep);
+
+      // Note: Typewriter animation is now handled by typewriter-text.ts script
 
       // Hide title block when moving past step 1
       const titleBlock = document.querySelector(".step-1-only");
