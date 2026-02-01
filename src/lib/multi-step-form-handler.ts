@@ -126,11 +126,15 @@ export function createMultiStepFormHandler(
       currentStep = stepNumber;
       updateProgress();
 
-      // Trigger typewriter effect for title only when going forward
+      // Trigger typewriter effect for title
       const titleElement = targetStep.querySelector(".typewriter-text") as HTMLElement;
       if (titleElement) {
+        // Always restore the original text first
+        const text = titleElement.getAttribute("data-text") || "";
+        titleElement.textContent = text;
+
         if (direction === "forward") {
-          // Reset animation by removing and re-adding class
+          // Reset animation by removing "typed" class
           titleElement.classList.remove("typed");
           void titleElement.offsetWidth; // Force reflow
 
@@ -139,10 +143,8 @@ export function createMultiStepFormHandler(
             titleElement.classList.add("typed");
           }, 800); // Match typewriter animation duration
         } else {
-          // For backward navigation, just show the text immediately
+          // For backward navigation, just show the text immediately without animation
           titleElement.classList.add("typed");
-          const text = titleElement.getAttribute("data-text") || "";
-          titleElement.textContent = text;
         }
       }
 
@@ -266,7 +268,19 @@ export function createMultiStepFormHandler(
     const phoneInput = stepEl.querySelector('input[type="tel"]') as HTMLInputElement;
     if (phoneInput) {
       const phoneValue = phoneInput.value?.trim() || "";
+      // Only validate if there's a phone value AND it's not valid
+      // Empty or partial phones will be handled by skip logic (noValidPhone condition)
       if (phoneValue && !validatePhone(phoneValue)) {
+        const digitsOnly = phoneValue.replace(/\D/g, "");
+
+        // If it's a partial number (less than 10 digits), allow progression
+        // The skip logic will handle jumping to the correct step
+        if (digitsOnly.length < 10) {
+          console.log("[PHONE-VALIDATION] Partial number, allowing progression with skip logic");
+          return true; // Allow progression, skip logic will handle the redirect
+        }
+
+        // If it's 10+ digits but invalid, show error
         if (window.showNotice) {
           window.showNotice(
             "error",
@@ -404,17 +418,33 @@ export function createMultiStepFormHandler(
           target.setSelectionRange(formatted.length, formatted.length);
         }
 
-        // Update button text for phone steps
+        // Update button text and data-next attribute for phone steps
+        const phoneButton = document.querySelector(`.next-step-phone`);
         const phoneButtonText = document.getElementById(`${formId}-next-step-phone-text`);
-        if (phoneButtonText) {
-          if (!formatted || formatted.trim() === "") {
-            phoneButtonText.textContent = "skip";
-          } else {
-            const digitsOnly = formatted.replace(/\D/g, "");
-            if (digitsOnly.length >= 10 && validatePhone(formatted)) {
+
+        if (phoneButtonText || phoneButton) {
+          const digitsOnly = formatted.replace(/\D/g, "");
+          const isValid = digitsOnly.length >= 10 && validatePhone(formatted);
+
+          // Update button text
+          if (phoneButtonText) {
+            if (!formatted || formatted.trim() === "") {
+              phoneButtonText.textContent = "skip";
+            } else if (isValid) {
               phoneButtonText.textContent = "next";
             } else {
               phoneButtonText.textContent = "skip";
+            }
+          }
+
+          // Update data-next attribute dynamically
+          if (phoneButton) {
+            if (isValid) {
+              phoneButton.setAttribute("data-next", "4"); // Go to SMS Consent
+              console.log("[PHONE-INPUT] Valid phone - data-next set to 4");
+            } else {
+              phoneButton.setAttribute("data-next", "6"); // Skip to Company
+              console.log("[PHONE-INPUT] Invalid/empty phone - data-next set to 6");
             }
           }
         }
@@ -589,26 +619,9 @@ export function createMultiStepFormHandler(
           }
         }
 
-        // Special handling for phone step
-        if (nextBtn.classList.contains("next-step-phone")) {
-          const phoneInput = form.querySelector('input[type="tel"]') as HTMLInputElement;
-          const phoneValue = phoneInput?.value?.trim() || "";
-
-          if (!phoneValue) {
-            // Skip SMS steps if no phone
-            const smsInput = form.querySelector('input[name="smsAlerts"]') as HTMLInputElement;
-            if (smsInput) smsInput.value = "false";
-
-            // Find the step after SMS steps
-            nextStep = nextStep + 2; // Skip SMS consent and carrier selection
-            await showStep(nextStep);
-            return;
-          }
-
-          if (!(await validateStep(currentStep))) {
-            return;
-          }
-        }
+        // NOTE: Phone step skip logic is now handled by skipCondition in form config
+        // The initializeMultiStepForm function will automatically skip SMS steps
+        // if phone is invalid or empty based on the "noValidPhone" condition
 
         (nextBtn as HTMLButtonElement).disabled = true;
 
@@ -629,25 +642,9 @@ export function createMultiStepFormHandler(
         e.preventDefault();
         let prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
 
-        // Special handling for going back from company step
-        if (prevBtn.classList.contains("prev-step-company")) {
-          const phoneInput = form.querySelector('input[type="tel"]') as HTMLInputElement;
-          const phoneValue = phoneInput?.value?.trim() || "";
-
-          if (!phoneValue) {
-            prevStep = prevStep - 2; // Skip back over SMS steps
-          }
-        }
-
-        // Special handling for going back from review step
-        if (prevBtn.classList.contains("prev-step-review")) {
-          const phoneInput = form.querySelector('input[type="tel"]') as HTMLInputElement;
-          const phoneValue = phoneInput?.value?.trim() || "";
-
-          if (!phoneValue) {
-            prevStep = prevStep - 2; // Skip back over SMS steps
-          }
-        }
+        // NOTE: Back button skip logic is now handled by skipCondition in form config
+        // The initializeMultiStepForm function will automatically skip over
+        // steps with skipConditions when navigating backward
 
         await showStep(prevStep, "backward");
       }
@@ -798,6 +795,27 @@ export function createMultiStepFormHandler(
     // Show first step and update progress
     showStep(currentStep);
 
+    // Initialize phone button data-next based on current phone value
+    // Reuse the phoneInputs already queried above
+    phoneInputs.forEach((phoneInput) => {
+      const input = phoneInput as HTMLInputElement;
+      const phoneValue = input.value?.trim() || "";
+      const phoneButton = form.querySelector(`.next-step-phone`);
+
+      if (phoneButton && phoneValue) {
+        const digitsOnly = phoneValue.replace(/\D/g, "");
+        const isValid = digitsOnly.length >= 10 && validatePhone(phoneValue);
+
+        if (isValid) {
+          phoneButton.setAttribute("data-next", "4");
+          console.log("[PHONE-INIT] Pre-filled valid phone - data-next set to 4");
+        } else {
+          phoneButton.setAttribute("data-next", "6");
+          console.log("[PHONE-INIT] Pre-filled invalid phone - data-next set to 6");
+        }
+      }
+    });
+
     // Focus first input
     setTimeout(() => {
       const firstStep = form.querySelector('.step-content[data-step="1"]') as HTMLElement;
@@ -838,6 +856,22 @@ export function initializeMultiStepForm(
 
     // Evaluate skip condition
     const condition = step.skipCondition;
+
+    // Handle special dynamic conditions
+    if (condition === "noValidPhone") {
+      // Check if phone is valid
+      const phoneInput = form.querySelector('input[type="tel"]') as HTMLInputElement;
+      const phoneValue = phoneInput?.value?.trim() || "";
+      const isPhoneValid = phoneValue && validatePhone(phoneValue);
+
+      if (!isPhoneValid) {
+        console.log(
+          `[MULTISTEP-FORM] Skipping step ${stepNumber} (no valid phone: "${phoneValue}")`
+        );
+        return true;
+      }
+      return false;
+    }
 
     // Simple evaluation - check if condition exists in initialData
     if (typeof condition === "string") {

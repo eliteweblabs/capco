@@ -46,6 +46,11 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
     dropdown.classList.add("hidden");
   }
 
+  // Helper function to format address (remove USA)
+  function formatAddress(address: string): string {
+    return address.replace(/, USA$/i, "").trim();
+  }
+
   // Helper function to create result element
   function createResultElement(result: any, index: number, isSelected = false) {
     const li = document.createElement("li");
@@ -57,7 +62,11 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
     li.style.cssText = "user-select: none; -webkit-user-select: none;";
     li.dataset.index = String(index);
     li.dataset.value = result[valueField] || result.value || result.place_id || result.id;
-    li.dataset.label = result[labelField] || result.label || result.description;
+
+    // Format the label to remove USA
+    const rawLabel = result[labelField] || result.label || result.description;
+    const formattedLabel = formatAddress(rawLabel);
+    li.dataset.label = formattedLabel;
 
     try {
       li.dataset.json = JSON.stringify(result);
@@ -67,7 +76,7 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
 
     const textSpan = document.createElement("span");
     textSpan.className = "block";
-    textSpan.textContent = result[labelField] || result.label || result.description;
+    textSpan.textContent = formattedLabel;
 
     li.appendChild(textSpan);
     return li;
@@ -280,7 +289,13 @@ export function createAddressSearchHTML(config: {
   inputClasses?: string;
   value?: string;
 }): HTMLDivElement {
-  const { id, name = id, placeholder = "Search for an address...", inputClasses = "", value = "" } = config;
+  const {
+    id,
+    name = id,
+    placeholder = "Search for an address...",
+    inputClasses = "",
+    value = "",
+  } = config;
 
   // Wrapper
   const wrapper = document.createElement("div");
@@ -321,7 +336,7 @@ export function createAddressSearchHTML(config: {
   const dropdown = document.createElement("div");
   dropdown.id = `${id}-dropdown`;
   dropdown.className =
-    "inline-address-results-container hidden absolute z-10 mt-2 w-full bg-white divide-y divide-gray-100 rounded-lg shadow-lg dark:bg-gray-700 dark:divide-gray-600";
+    "inline-address-results-container hidden absolute z-10 mt-2 w-full divide-y divide-gray-100 color-background-50 no-scrollbar rounded-lg shadow-lg dark:divide-gray-600";
 
   // Results list
   const resultsList = document.createElement("ul");

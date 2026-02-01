@@ -15,6 +15,9 @@ export interface FormFieldConfig {
   autofocus?: boolean;
   component?: string; // Component name (e.g., "InlineAddressSearch", "SlotMachineModalStaff")
   componentProps?: Record<string, any>; // Props to pass to component
+  // Icon configuration
+  icon?: string; // Icon name (e.g., "mail", "lock-alt")
+  iconPosition?: "left" | "right"; // Position of icon relative to input
   // Grid layout for multi-column layouts
   columns?: 1 | 2; // 1 = full width, 2 = half width in grid
   gridColumn?: string; // Grid column classes (e.g., "md:grid-cols-2")
@@ -24,6 +27,7 @@ export interface FormFieldConfig {
 export interface FormButtonConfig {
   type: "next" | "prev" | "skip" | "submit" | "choice";
   label: string;
+  id?: string; // Optional unique identifier for the button
   variant?: "primary" | "secondary" | "anchor" | "outline" | "ghost";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   icon?: string;
@@ -57,7 +61,7 @@ export interface FormStepConfig {
   // Custom content
   customContent?: string; // Custom HTML/components to inject
   // Additional content
-  additionalContent?: "google-oauth" | "custom"; // Special content like OAuth buttons
+  additionalContent?: "google-oauth" | "auth-providers" | "custom"; // Special content like OAuth buttons
 }
 
 export interface MultiStepFormConfig {

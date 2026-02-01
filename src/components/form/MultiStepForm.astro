@@ -8,6 +8,7 @@ import Tooltip from "../common/TooltipFloating.astro";
 import SlotMachineModalStaff from "./SlotMachineModalStaff.astro";
 import InlineAddressSearch from "./InlineAddressSearch.astro";
 import SlideToggle from "../common/SlideToggle.astro";
+import AuthProviders from "./AuthProviders.astro";
 import { SMS_UTILS } from "../../lib/sms-utils";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
@@ -29,32 +30,41 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 }));
 ---
 
-<div class={containerClass}>
+<div data-multi-step-form class={containerClass} tabindex="-1">
   <!-- Advanced Stepper - Fixed to bottom -->
   {
     config.progressBar && (
-      <div class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-4">
-        <div class="max-w-4xl mx-auto">
-          <ol class="flex items-center w-full" id={`${config.formId}-stepper`}>
+      <div
+        class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-4"
+        tabindex="-1"
+      >
+        <div class="w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] max-w-6xl mx-auto" tabindex="-1">
+          <ol class="flex items-center w-full" id={`${config.formId}-stepper`} tabindex="-1">
             {config.steps.map((step, index) => (
               <li
                 class={`relative flex items-center ${index < config.steps.length - 1 ? "w-full" : ""}`}
                 data-step-indicator={step.stepNumber}
+                tabindex="-1"
               >
                 {/* Step Circle/Icon with Tooltip */}
                 <Tooltip text={step.title} position="top" mobileClickable={true}>
                   <span
                     class="relative step-indicator flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0 transition-all duration-300 bg-gray-300 dark:bg-gray-700"
                     data-step-title={step.title}
+                    tabindex="-1"
                   />
                 </Tooltip>
 
                 {/* Connecting Line */}
                 {index < config.steps.length - 1 && (
-                  <div class="w-full h-1 mx-2 bg-transparent dark:bg-transparent rounded-full overflow-hidden">
+                  <div
+                    class="w-full h-1 mx-2 bg-transparent dark:bg-transparent rounded-full overflow-hidden"
+                    tabindex="-1"
+                  >
                     <div
                       class="h-full bg-transparent dark:bg-transparent transition-all duration-500 ease-out step-progress-line"
                       style="width: 0%"
+                      tabindex="-1"
                     />
                   </div>
                 )}
@@ -74,12 +84,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   >
     {
       config.steps.map((step) => (
-        <div class="step-content" data-step={step.stepNumber}>
-          <div class="space-y-12 sm:space-y-6 lg:space-y-8">
+        <div class="step-content" data-step={step.stepNumber} tabindex="-1">
+          <div class="space-y-12 sm:space-y-6 lg:space-y-8" tabindex="-1">
             {/* Step Header */}
-            <div>
+            <div tabindex="-1">
               {step.showIcon && step.icon && (
-                <div class="mx-auto mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+                <div
+                  class="mx-auto mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30"
+                  tabindex="-1"
+                >
                   <SimpleIcon
                     name={step.icon}
                     size="xl"
@@ -87,31 +100,64 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                   />
                 </div>
               )}
-              <h2
-                class="inline text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white typewriter-text"
-                data-text={step.title}
-                set:html={step.title}
-              />
+              {step.title && (
+                <h2
+                  class="inline text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white scroll-reveal-text"
+                  data-text={step.title}
+                  set:html={step.title}
+                  tabindex="-1"
+                />
+              )}
               {step.subtitle && (
-                <p class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md">
+                <p
+                  class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md"
+                  tabindex="-1"
+                >
                   {step.subtitle}
                 </p>
               )}
             </div>
 
+            {/* Auth Providers (for registration and login forms) - at top */}
+            {(step.additionalContent === "google-oauth" ||
+              step.additionalContent === "auth-providers") && (
+              <div class="my-3 md:my-8 lg:my-12 space-y-8" tabindex="-1">
+                <AuthProviders
+                  mode={step.additionalContent === "auth-providers" ? "login" : "register"}
+                />
+
+                <div class="flex items-center gap-4" tabindex="-1">
+                  <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
+                  <span class="text-xs text-zinc-500 dark:text-zinc-400 uppercase">
+                    {step.additionalContent === "auth-providers"
+                      ? "or continue with email"
+                      : "or register with email"}
+                  </span>
+                  <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
+                </div>
+              </div>
+            )}
+
             {/* Step Fields */}
             {step.isReview ? (
               // Review step - show summary
-              <div class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background">
+              <div
+                class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background"
+                tabindex="-1"
+              >
                 {step.reviewFields?.map((fieldName) => (
-                  <div class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700 last:border-b-0">
-                    <div>
-                      <p class="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                  <div
+                    class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700 last:border-b-0"
+                    tabindex="-1"
+                  >
+                    <div tabindex="-1">
+                      <p class="text-sm text-gray-600 dark:text-gray-400 capitalize" tabindex="-1">
                         {fieldName.replace(/([A-Z])/g, " $1").trim()}
                       </p>
                       <p
                         id={`review-${fieldName}`}
                         class="text-lg font-medium text-gray-900 dark:text-white"
+                        tabindex="-1"
                       >
                         {fieldName === "password" ? "••••••" : "-"}
                       </p>
@@ -132,13 +178,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             ) : (
               <div
                 class:list={[
-                  step.fieldLayout === "grid"
-                    ? "grid grid-cols-1 gap-6 md:grid-cols-2"
-                    : "space-y-6",
+                  step.fieldLayout === "grid" ? "grid grid-cols-1 gap-6 md:grid-cols-2" : "",
                 ]}
+                tabindex="-1"
               >
                 {step.fields.map((field) => (
-                  <div class:list={["input-wrapper", field.columns === 1 ? "md:col-span-2" : ""]}>
+                  <div
+                    class:list={["input-wrapper", field.columns === 1 ? "md:col-span-2" : ""]}
+                    tabindex="-1"
+                  >
                     {field.type === "component" && field.component === "SlotMachineModalStaff" ? (
                       <SlotMachineModalStaff
                         id={field.id}
@@ -150,7 +198,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         {...field.componentProps}
                       />
                     ) : field.type === "component" && field.component === "SlideToggle" ? (
-                      <div class="flex items-center justify-center py-8">
+                      <div class="flex items-center justify-center py-8" tabindex="-1">
                         <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
                       </div>
                     ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
@@ -172,7 +220,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         data-error={field.errorMessage}
                       />
                     ) : field.name === "firstName" || field.name === "lastName" ? (
-                      <div class="relative">
+                      <div class="relative" tabindex="-1">
                         <input
                           type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
                           id={field.id}
@@ -190,9 +238,35 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         <span
                           class="animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500"
                           data-for={field.id}
+                          tabindex="-1"
                         >
                           {field.placeholder}
                         </span>
+                      </div>
+                    ) : field.icon ? (
+                      <div
+                        class:list={[
+                          "relative input-with-icon",
+                          field.iconPosition === "right" ? "icon-right" : "icon-left",
+                        ]}
+                        data-icon={field.icon}
+                        tabindex="-1"
+                      >
+                        <input
+                          type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
+                          id={field.id}
+                          name={field.name}
+                          placeholder={field.placeholder}
+                          required={field.required}
+                          autocomplete={field.autocomplete}
+                          minlength={field.minlength}
+                          autofocus={field.autofocus}
+                          class:list={[
+                            appendedGlobalInputClasses,
+                            field.iconPosition === "right" ? "pr-12 pl-12" : "pl-12 pr-12",
+                          ]}
+                          data-error={field.errorMessage}
+                        />
                       </div>
                     ) : (
                       <input
@@ -213,56 +287,12 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
               </div>
             )}
 
-            {/* Google OAuth (for registration form only) */}
-            {step.additionalContent === "google-oauth" && (
-              <div class="mx-auto w-full my-6 md:my-8 lg:my-12">
-                <div>
-                  <hr class="mt-14 h-0 border-t border-zinc-300 dark:border-zinc-600" />
-                  <p class="-mt-2.5 text-center text-xs mb-14">
-                    <span class="px-4 color-background">Or</span>
-                  </p>
-                </div>
-
-                <Button
-                  variant="outline"
-                  fullWidth
-                  name="provider"
-                  value="google"
-                  onclick="handleGoogleSignup()"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    preserveAspectRatio="xMidYMid"
-                    viewBox="0 0 256 262"
-                    class="mr-2 inline-flex h-5 w-auto"
-                  >
-                    <path
-                      fill="#4285F4"
-                      d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782"
-                    />
-                    <path
-                      fill="#EB4335"
-                      d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
-                    />
-                  </svg>
-                  Register with Google
-                </Button>
-              </div>
-            )}
-
             {/* Step Buttons */}
             {/* Choice buttons (radio-style options) */}
             {step.buttons.some((b) => b.type === "choice") && (
               <div
                 class={`flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-center flex-wrap"} gap-3 mb-6`}
+                tabindex="-1"
               >
                 {step.buttons
                   .filter((button) => button.type === "choice")
@@ -276,7 +306,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       <Button
                         type="button"
                         variant={button.variant || "secondary"}
-                        size={button.size || "lg"}
+                        size={button.size || "md"}
                         class={`${button.type}-step sms-choice ${button.classes || ""}`}
                         disabled={button.disabled}
                         dataAttributes={{
@@ -377,6 +407,41 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
   </form>
 </div>
+
+<style is:global>
+  /* Focus shadow animation - global so it works across all components */
+  input:not([type="hidden"]),
+  textarea,
+  select {
+    transition: box-shadow 250ms ease-in-out;
+  }
+
+  input:not([type="hidden"]):focus,
+  textarea:focus,
+  select:focus {
+    box-shadow:
+      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+  }
+
+  /* Auto-filled fields get same shadow as focused fields */
+  input:not([type="hidden"]):-webkit-autofill,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    box-shadow:
+      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+  }
+
+  /* Valid fields get same shadow as focused fields */
+  input:not([type="hidden"]):valid:not(:placeholder-shown),
+  textarea:valid:not(:placeholder-shown),
+  select:valid:not(:placeholder-shown) {
+    box-shadow:
+      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+  }
+</style>
 
 <style>
   .step-content {
@@ -558,6 +623,95 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       setInterval(rotatePlaceholders, 3000);
     }
 
+    // Add focus/blur shadow animation to all form inputs using event delegation
+    // This works for both existing and dynamically added inputs
+    // Run immediately, not waiting for DOMContentLoaded
+    document.addEventListener(
+      "focus",
+      (e) => {
+        const target = e.target as HTMLElement;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.tagName === "SELECT") &&
+          (target as HTMLInputElement).type !== "hidden"
+        ) {
+          console.log("[FOCUS-SHADOW] Adding shadow to:", target.id || target.name);
+          target.classList.add("shadow-focus");
+        }
+      },
+      true
+    );
+
+    document.addEventListener(
+      "blur",
+      (e) => {
+        const target = e.target as HTMLElement;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.tagName === "SELECT")
+        ) {
+          console.log("[FOCUS-SHADOW] Removing shadow from:", target.id || target.name);
+          target.classList.remove("shadow-focus");
+        }
+      },
+      true
+    );
+
+    // Prevent non-interactive elements from stealing focus
+    // This prevents accidental taps on background elements from removing input focus
+    document.addEventListener(
+      "mousedown",
+      (e) => {
+        const target = e.target as HTMLElement;
+
+        if (!target) return;
+
+        // Get the currently focused element
+        const focusedElement = document.activeElement as HTMLElement;
+
+        // Check if an input/textarea/select is currently focused
+        const isInputFocused =
+          focusedElement &&
+          (focusedElement.tagName === "INPUT" ||
+            focusedElement.tagName === "TEXTAREA" ||
+            focusedElement.tagName === "SELECT") &&
+          (focusedElement as HTMLInputElement).type !== "hidden";
+
+        if (!isInputFocused) return;
+
+        // Define interactive elements that SHOULD be allowed to take focus
+        const isInteractiveElement =
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.tagName === "BUTTON" ||
+          target.tagName === "A" ||
+          target.hasAttribute("contenteditable") ||
+          target.closest("button") || // Check if inside a button
+          target.closest("a"); // Check if inside a link
+
+        // If clicking on a non-interactive element while an input has focus,
+        // prevent focus loss
+        if (!isInteractiveElement) {
+          e.preventDefault();
+          // Ensure focus stays on the input
+          setTimeout(() => {
+            focusedElement.focus();
+          }, 0);
+          console.log(
+            "[FOCUS-LOCK] Prevented focus loss. Target:",
+            target.tagName,
+            target.className
+          );
+        }
+      },
+      true
+    );
+
     // Get all form configs from window
     Object.keys(window).forEach((key) => {
       if (key.endsWith("_config")) {
@@ -577,6 +731,16 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           if (input && value) {
             (input as HTMLInputElement).value = value as string;
             console.log(`[MULTISTEP-FORM] Pre-filled ${key}:`, value);
+
+            // Hide animated placeholder if this is firstName or lastName
+            if (key === "firstName" || key === "lastName") {
+              const span = document.querySelector(
+                `.animated-placeholder[data-for="${input.id}"]`
+              ) as HTMLElement;
+              if (span) {
+                span.style.display = "none";
+              }
+            }
           }
         });
 
@@ -585,6 +749,357 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           initialData,
           formConfig,
         });
+      }
+    });
+  });
+
+  // Add validation state classes for visual feedback
+  document.addEventListener("DOMContentLoaded", () => {
+    const inputs = document.querySelectorAll(
+      'input[type="email"], input[type="password"], input[type="text"], input[type="tel"]'
+    );
+
+    inputs.forEach((input) => {
+      // Check validity on input
+      input.addEventListener("input", (e) => {
+        const target = e.target as HTMLInputElement;
+
+        if (target.value.length > 0) {
+          if (target.validity.valid) {
+            target.classList.add("is-valid");
+            target.classList.remove("is-invalid");
+          } else {
+            target.classList.add("is-invalid");
+            target.classList.remove("is-valid");
+          }
+        } else {
+          target.classList.remove("is-valid", "is-invalid");
+        }
+      });
+
+      // Check validity on blur
+      input.addEventListener("blur", (e) => {
+        const target = e.target as HTMLInputElement;
+
+        if (target.value.length > 0) {
+          if (target.validity.valid) {
+            target.classList.add("is-valid");
+            target.classList.remove("is-invalid");
+          } else {
+            target.classList.add("is-invalid");
+            target.classList.remove("is-valid");
+          }
+        }
+      });
+
+      // Remove invalid state on focus
+      input.addEventListener("focus", (e) => {
+        const target = e.target as HTMLInputElement;
+        target.classList.remove("is-invalid");
+      });
+    });
+  });
+</script>
+
+<style>
+  /* Enhanced input styling with focus glow, pulse, and validation states */
+
+  /* Base input styles with stronger focus glow */
+  input[type="email"],
+  input[type="password"],
+  input[type="text"],
+  input[type="tel"] {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Create circular focus glow with pseudo-element */
+  input[type="email"]:focus::before,
+  input[type="password"]:focus::before,
+  input[type="text"]:focus::before,
+  input[type="tel"]:focus::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 75px;
+    height: 75px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.2) 0%, transparent 70%);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    animation: pulse-circle 1s ease-in-out infinite;
+    z-index: -1;
+  }
+
+  /* Focus state - subtle bottom glow + circular overlay */
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="text"]:focus,
+  input[type="tel"]:focus {
+    box-shadow:
+      0 3px 9px -1.5px rgba(14, 165, 233, 0.15),
+      0 6px 15px -3px rgba(14, 165, 233, 0.1);
+  }
+
+  :global(.dark) input[type="email"]:focus::before,
+  :global(.dark) input[type="password"]:focus::before,
+  :global(.dark) input[type="text"]:focus::before,
+  :global(.dark) input[type="tel"]:focus::before {
+    background: radial-gradient(circle, rgba(55, 185, 243, 0.25) 0%, transparent 70%);
+  }
+
+  :global(.dark) input[type="email"]:focus,
+  :global(.dark) input[type="password"]:focus,
+  :global(.dark) input[type="text"]:focus,
+  :global(.dark) input[type="tel"]:focus {
+    box-shadow:
+      0 3px 9px -1.5px rgba(55, 185, 243, 0.2),
+      0 6px 15px -3px rgba(55, 185, 243, 0.125);
+  }
+
+  /* Valid state - green glow from bottom with circular overlay */
+  input[type="email"]:focus.is-valid::before,
+  input[type="password"]:focus.is-valid::before,
+  input[type="text"]:focus.is-valid::before,
+  input[type="tel"]:focus.is-valid::before,
+  input[type="email"].is-valid::before,
+  input[type="password"].is-valid::before,
+  input[type="text"].is-valid::before,
+  input[type="tel"].is-valid::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 75px;
+    height: 75px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    animation: pulse-circle-green 1s ease-in-out infinite;
+    z-index: -1;
+  }
+
+  input[type="email"]:focus.is-valid,
+  input[type="password"]:focus.is-valid,
+  input[type="text"]:focus.is-valid,
+  input[type="tel"]:focus.is-valid,
+  input[type="email"].is-valid,
+  input[type="password"].is-valid,
+  input[type="text"].is-valid,
+  input[type="tel"].is-valid {
+    box-shadow:
+      0 3px 9px -1.5px rgba(34, 197, 94, 0.15),
+      0 6px 15px -3px rgba(34, 197, 94, 0.1) !important;
+  }
+
+  :global(.dark) input[type="email"]:focus.is-valid::before,
+  :global(.dark) input[type="password"]:focus.is-valid::before,
+  :global(.dark) input[type="text"]:focus.is-valid::before,
+  :global(.dark) input[type="tel"]:focus.is-valid::before,
+  :global(.dark) input[type="email"].is-valid::before,
+  :global(.dark) input[type="password"].is-valid::before,
+  :global(.dark) input[type="text"].is-valid::before,
+  :global(.dark) input[type="tel"].is-valid::before {
+    background: radial-gradient(circle, rgba(74, 222, 128, 0.25) 0%, transparent 70%);
+  }
+
+  :global(.dark) input[type="email"]:focus.is-valid,
+  :global(.dark) input[type="password"]:focus.is-valid,
+  :global(.dark) input[type="text"]:focus.is-valid,
+  :global(.dark) input[type="tel"]:focus.is-valid,
+  :global(.dark) input[type="email"].is-valid,
+  :global(.dark) input[type="password"].is-valid,
+  :global(.dark) input[type="text"].is-valid,
+  :global(.dark) input[type="tel"].is-valid {
+    box-shadow:
+      0 3px 9px -1.5px rgba(74, 222, 128, 0.2),
+      0 6px 15px -3px rgba(74, 222, 128, 0.15) !important;
+  }
+
+  /* Invalid state - red/pink glow from bottom */
+  input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
+  input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
+  input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
+  input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
+  input.is-invalid:not(:focus) {
+    box-shadow:
+      0 3px 9px -1.5px rgba(239, 68, 68, 0.1),
+      0 6px 15px -3px rgba(239, 68, 68, 0.075);
+  }
+
+  :global(.dark) input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
+  :global(.dark) input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
+  :global(.dark) input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
+  :global(.dark) input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
+  :global(.dark) input.is-invalid:not(:focus) {
+    box-shadow:
+      0 3px 9px -1.5px rgba(251, 113, 133, 0.15),
+      0 6px 15px -3px rgba(251, 113, 133, 0.1);
+  }
+
+  /* Autofill state - purple glow from bottom */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-box-shadow:
+      0 3px 9px -1.5px rgba(139, 92, 246, 0.15),
+      0 6px 15px -3px rgba(139, 92, 246, 0.1),
+      0 0 0 1000px var(--autofill-bg) inset !important;
+    box-shadow:
+      0 3px 9px -1.5px rgba(139, 92, 246, 0.15),
+      0 6px 15px -3px rgba(139, 92, 246, 0.1);
+    -webkit-text-fill-color: var(--text-color) !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* CSS Variables for autofill */
+  :root {
+    --autofill-bg: rgba(249, 250, 251, 0.9);
+    --text-color: #111827;
+  }
+
+  :global(.dark) {
+    --autofill-bg: rgba(17, 24, 39, 0.9);
+    --text-color: #f9fafb;
+  }
+
+  /* Circular pulse animation for focus */
+  @keyframes pulse-circle {
+    0%,
+    100% {
+      width: 100px;
+      height: 100px;
+      opacity: 0.3;
+    }
+    50% {
+      width: 140px;
+      height: 140px;
+      opacity: 0.4;
+    }
+  }
+
+  /* Circular pulse animation for valid state */
+  @keyframes pulse-circle-green {
+    0%,
+    100% {
+      width: 100px;
+      height: 100px;
+      opacity: 0.3;
+    }
+    50% {
+      width: 140px;
+      height: 140px;
+      opacity: 0.4;
+    }
+  }
+
+  /* Input icon styling using ::before and ::after */
+  .input-with-icon {
+    position: relative;
+  }
+
+  /* Icon positioned on the left */
+  .input-with-icon.icon-left::before {
+    content: "";
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    opacity: 0.5;
+    z-index: 1;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    /* Icon SVG will be injected via JavaScript */
+  }
+
+  /* Icon positioned on the right */
+  .input-with-icon.icon-right::after {
+    content: "";
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    opacity: 0.5;
+    z-index: 1;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    /* Icon SVG will be injected via JavaScript */
+  }
+
+  /* Increase icon opacity on input focus */
+  .input-with-icon:focus-within::before,
+  .input-with-icon:focus-within::after {
+    opacity: 0.7;
+  }
+
+  /* Dark mode icon color */
+  :global(.dark) .input-with-icon::before,
+  :global(.dark) .input-with-icon::after {
+    filter: brightness(0.8);
+  }
+
+  :global(.dark) .input-with-icon:focus-within::before,
+  :global(.dark) .input-with-icon:focus-within::after {
+    filter: brightness(1);
+  }
+</style>
+
+<script>
+  // Inject icons into input wrappers using SimpleIcons
+  import { getIcon } from "../../lib/simple-icons";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const inputWrappers = document.querySelectorAll(".input-with-icon[data-icon]");
+
+    inputWrappers.forEach((wrapper) => {
+      const iconName = wrapper.getAttribute("data-icon");
+      const isRightIcon = wrapper.classList.contains("icon-right");
+
+      if (iconName) {
+        // Get icon SVG with appropriate size and color
+        const iconSVG = getIcon(iconName, {
+          size: 20,
+          className: "text-gray-500 dark:text-gray-400",
+        });
+
+        // Create a temporary container to parse the SVG
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = iconSVG;
+        const svgElement = tempDiv.firstElementChild as SVGElement;
+
+        if (svgElement) {
+          // Position the SVG
+          svgElement.style.position = "absolute";
+          svgElement.style[isRightIcon ? "right" : "left"] = "1rem";
+          svgElement.style.top = "50%";
+          svgElement.style.transform = "translateY(-50%)";
+          svgElement.style.pointerEvents = "none";
+          svgElement.style.zIndex = "1";
+          svgElement.style.opacity = "0.5";
+          svgElement.style.transition = "opacity 0.3s ease";
+
+          // Add focus listener to increase opacity
+          const input = wrapper.querySelector("input");
+          if (input) {
+            input.addEventListener("focus", () => {
+              svgElement.style.opacity = "0.7";
+            });
+            input.addEventListener("blur", () => {
+              svgElement.style.opacity = "0.5";
+            });
+          }
+
+          // Insert the SVG into the wrapper
+          wrapper.appendChild(svgElement);
+        }
       }
     });
   });

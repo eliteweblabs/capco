@@ -12,7 +12,7 @@ export const contactFormConfig: MultiStepFormConfig = {
     next: {
       type: "next",
       variant: "secondary",
-      size: "lg",
+      size: "md",
       icon: "arrow-right",
       iconPosition: "right",
       label: "next",
@@ -27,8 +27,8 @@ export const contactFormConfig: MultiStepFormConfig = {
     },
     submit: {
       type: "submit",
-      variant: "primary",
-      size: "lg",
+      variant: "secondary",
+      size: "md",
       icon: "send",
       iconPosition: "right",
       label: "send message",
@@ -52,6 +52,8 @@ export const contactFormConfig: MultiStepFormConfig = {
           errorMessage: "Please enter your first name",
           autofocus: true,
           columns: 2,
+          icon: "user",
+          iconPosition: "left",
         },
         {
           id: "contact-last-name",
@@ -62,6 +64,8 @@ export const contactFormConfig: MultiStepFormConfig = {
           autocomplete: "family-name",
           errorMessage: "Please enter your last name",
           columns: 2,
+          icon: "user",
+          iconPosition: "left",
         },
       ],
       buttons: [
@@ -86,6 +90,8 @@ export const contactFormConfig: MultiStepFormConfig = {
           required: true,
           autocomplete: "email",
           errorMessage: "Please enter a valid email address",
+          icon: "mail",
+          iconPosition: "left",
         },
       ],
       buttons: [
@@ -114,6 +120,8 @@ export const contactFormConfig: MultiStepFormConfig = {
           placeholder: "(555) 123-4567",
           autocomplete: "tel",
           required: false,
+          icon: "phone",
+          iconPosition: "left",
         },
       ],
       buttons: [
@@ -125,7 +133,7 @@ export const contactFormConfig: MultiStepFormConfig = {
         {
           type: "next",
           label: "skip",
-          dataNext: 4,
+          dataNext: 6, // Default to skip to Company (will change to 4 if valid phone entered)
           classes: "next-step-phone",
         },
       ],
@@ -137,6 +145,7 @@ export const contactFormConfig: MultiStepFormConfig = {
       stepNumber: 4,
       title: "contact via SMS?",
       subtitle: "Not for marketing. Communication and project updates only.",
+      skipCondition: "noValidPhone", // Skip if phone is invalid or empty
       fields: [
         {
           id: "contact-sms-alerts",
@@ -173,6 +182,7 @@ export const contactFormConfig: MultiStepFormConfig = {
       stepNumber: 5,
       title: "your mobile carrier?",
       subtitle: "This helps us deliver SMS messages to your phone.",
+      skipCondition: "noValidPhone", // Skip if phone is invalid or empty
       fields: [
         {
           id: "contact-carrier",
@@ -216,6 +226,8 @@ export const contactFormConfig: MultiStepFormConfig = {
           required: true,
           autocomplete: "organization",
           errorMessage: "Please enter your company name",
+          icon: "building",
+          iconPosition: "left",
         },
       ],
       buttons: [
@@ -254,6 +266,7 @@ export const contactFormConfig: MultiStepFormConfig = {
             valueField: "description",
             labelField: "description",
             noResultsText: "Type to search addresses...",
+            currentLocation: true, // Enable geolocation button
           },
         },
       ],
@@ -268,6 +281,8 @@ export const contactFormConfig: MultiStepFormConfig = {
           label: "next / skip",
           dataNext: 8,
           classes: "next-step-address",
+          variant: "secondary",
+          size: "lg",
         },
       ],
     },
