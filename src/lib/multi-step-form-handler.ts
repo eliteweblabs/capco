@@ -64,8 +64,41 @@ export function createMultiStepFormHandler(
     });
   }
 
-  // Show specific step
-  function showStep(stepNumber: number) {
+  // Backspace animation function
+  async function backspaceTitle(titleElement: HTMLElement): Promise<void> {
+    return new Promise((resolve) => {
+      const originalText = titleElement.getAttribute("data-text") || titleElement.textContent || "";
+      let currentLength = originalText.length;
+
+      const backspaceInterval = setInterval(() => {
+        if (currentLength > 0) {
+          currentLength--;
+          titleElement.textContent = originalText.substring(0, currentLength);
+        } else {
+          clearInterval(backspaceInterval);
+          resolve();
+        }
+      }, 30); // Speed of backspace (30ms per character)
+    });
+  }
+
+  // Show specific step with animation
+  async function showStep(stepNumber: number, direction: "forward" | "backward" = "forward") {
+    // Get current active step for backspace animation
+    const currentActiveStep = document.querySelector(
+      `#${formId} .step-content.active`
+    ) as HTMLElement;
+
+    // If there's a current step, backspace its title first
+    if (currentActiveStep) {
+      const currentTitle = currentActiveStep.querySelector(".typewriter-text") as HTMLElement;
+      if (currentTitle) {
+        // Wait 500ms, then backspace
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await backspaceTitle(currentTitle);
+      }
+    }
+
     const steps = document.querySelectorAll(`#${formId} .step-content`);
 
     steps.forEach((step) => {
@@ -93,17 +126,24 @@ export function createMultiStepFormHandler(
       currentStep = stepNumber;
       updateProgress();
 
-      // Trigger typewriter effect for title
+      // Trigger typewriter effect for title only when going forward
       const titleElement = targetStep.querySelector(".typewriter-text") as HTMLElement;
       if (titleElement) {
-        // Reset animation by removing and re-adding class
-        titleElement.classList.remove("typed");
-        void titleElement.offsetWidth; // Force reflow
+        if (direction === "forward") {
+          // Reset animation by removing and re-adding class
+          titleElement.classList.remove("typed");
+          void titleElement.offsetWidth; // Force reflow
 
-        // After animation completes, add 'typed' class to stop cursor
-        setTimeout(() => {
+          // After animation completes, add 'typed' class to stop cursor
+          setTimeout(() => {
+            titleElement.classList.add("typed");
+          }, 800); // Match typewriter animation duration
+        } else {
+          // For backward navigation, just show the text immediately
           titleElement.classList.add("typed");
-        }, 800); // Match typewriter animation duration
+          const text = titleElement.getAttribute("data-text") || "";
+          titleElement.textContent = text;
+        }
       }
 
       // Hide title block when moving past step 1
@@ -517,7 +557,7 @@ export function createMultiStepFormHandler(
           smsInput.value = smsValue || "false";
         }
 
-        showStep(nextStep);
+        await showStep(nextStep);
         return;
       }
 
@@ -561,7 +601,7 @@ export function createMultiStepFormHandler(
 
             // Find the step after SMS steps
             nextStep = nextStep + 2; // Skip SMS consent and carrier selection
-            showStep(nextStep);
+            await showStep(nextStep);
             return;
           }
 
@@ -574,7 +614,7 @@ export function createMultiStepFormHandler(
 
         try {
           if (await validateStep(currentStep)) {
-            showStep(nextStep);
+            await showStep(nextStep);
           }
         } finally {
           (nextBtn as HTMLButtonElement).disabled = false;
@@ -609,21 +649,21 @@ export function createMultiStepFormHandler(
           }
         }
 
-        showStep(prevStep);
+        await showStep(prevStep, "backward");
       }
 
       // Edit button (for review step)
       if (editBtn) {
         e.preventDefault();
         const editStep = parseInt(editBtn.getAttribute("data-edit") || "1");
-        showStep(editStep);
+        await showStep(editStep);
       }
 
       // Skip button
       if (skipBtn) {
         e.preventDefault();
         const nextStep = parseInt(skipBtn.getAttribute("data-next") || "1");
-        showStep(nextStep);
+        await showStep(nextStep);
       }
     });
 
