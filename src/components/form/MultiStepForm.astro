@@ -200,6 +200,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       field.type === "hidden" ? "" : "input-wrapper",
                       field.columns === 1 ? "md:col-span-2" : "",
                     ]}
+                    data-conditional-field={field.conditional ? field.conditional.field : undefined}
+                    data-conditional-value={
+                      field.conditional
+                        ? Array.isArray(field.conditional.value)
+                          ? field.conditional.value.join(",")
+                          : field.conditional.value
+                        : undefined
+                    }
+                    style={field.conditional ? "display: none;" : undefined}
                     tabindex="-1"
                   >
                     {field.type === "component" && field.component === "SlotMachineModalStaff" ? (
@@ -272,10 +281,38 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           data-for={field.id}
                           tabindex="-1"
                         >
-                          {field.placeholder}
-                        </span>
-                      </div>
-                    ) : field.icon ? (
+                        {field.placeholder}
+                      </span>
+                    </div>
+                  ) : field.type === "button-group" ? (
+                    <div class="flex flex-col gap-3" tabindex="-1">
+                      {field.buttons?.map((button) => {
+                        const btnConfig = getButtonConfig(
+                          button,
+                          config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
+                        );
+                        return (
+                          <Button
+                            variant={btnConfig.variant}
+                            size={btnConfig.size}
+                            icon={btnConfig.icon}
+                            iconPosition={btnConfig.iconPosition}
+                            class={btnConfig.classes}
+                            dataAttributes={{
+                              ...(button.dataValue && { "data-value": button.dataValue }),
+                              ...(button.dataNext !== undefined && { "data-next": button.dataNext.toString() }),
+                            }}
+                          >
+                            {btnConfig.label && (
+                              <span class="button-text">
+                                <Fragment set:html={btnConfig.label} />
+                              </span>
+                            )}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  ) : field.icon ? (
                       <div
                         class:list={[
                           "relative input-with-icon",

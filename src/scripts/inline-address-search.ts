@@ -312,7 +312,7 @@ export function createAddressSearchHTML(config: {
   // Search container
   const searchContainer = document.createElement("div");
   searchContainer.className = "relative";
-
+  
   // Search input
   const searchInput = document.createElement("input");
   searchInput.type = "text";
@@ -322,15 +322,6 @@ export function createAddressSearchHTML(config: {
   searchInput.className = inputClasses;
   searchInput.value = value;
   searchContainer.appendChild(searchInput);
-
-  // Search icon
-  const searchButton = document.createElement("button");
-  searchButton.type = "button";
-  searchButton.className =
-    "absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-gray-300";
-  searchButton.title = "Search for address";
-  searchButton.innerHTML = `<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`;
-  searchContainer.appendChild(searchButton);
 
   // Dropdown
   const dropdown = document.createElement("div");

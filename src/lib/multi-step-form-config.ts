@@ -50,7 +50,7 @@ export const GLOBAL_BUTTON_DEFAULTS = {
 export interface FormFieldConfig {
   id: string;
   name: string;
-  type: "text" | "email" | "tel" | "password" | "textarea" | "hidden" | "component";
+  type: "text" | "email" | "tel" | "password" | "textarea" | "hidden" | "component" | "button-group";
   label?: string;
   placeholder?: string;
   animatedPlaceholders?: string[]; // Array of rotating placeholder values
@@ -69,6 +69,13 @@ export interface FormFieldConfig {
   columns?: 1 | 2; // 1 = full width, 2 = half width in grid
   gridColumn?: string; // Grid column classes (e.g., "md:grid-cols-2")
   classes?: string; // Additional CSS classes for the input field
+  // Button group configuration (for type="button-group")
+  buttons?: FormButtonConfig[]; // Array of choice buttons for button-group type
+  // Conditional rendering
+  conditional?: {
+    field: string; // Field name to check (e.g., "fuelSource")
+    value: string | string[]; // Value(s) that must match to show this field
+  };
 }
 
 export interface FormButtonConfig {

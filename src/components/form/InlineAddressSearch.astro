@@ -41,12 +41,13 @@ const {
       autocomplete="off"
       class={`${globalInputClasses} text-center pr-10`}
     />
+    <!-- Location/Search Button -->
     {
       currentLocation ? (
         <button
           type="button"
           id={`${id}-use-location-btn`}
-          class="absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 pointer-events-auto"
+          class="location-btn absolute right-2 top-0 transform p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 pointer-events-auto"
           title="Use my current location"
         >
           <SimpleIcon
@@ -59,7 +60,8 @@ const {
       ) : (
         <button
           type="button"
-          class="absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 pointer-events-auto"
+          id={`${id}-location-btn`}
+          class="location-btn absolute right-2 top-0 transform p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 pointer-events-auto"
           title="Search for address"
         >
           <SimpleIcon
@@ -71,15 +73,30 @@ const {
         </button>
       )
     }
+    
+    <!-- Clear Button (hidden by default) -->
+    <button
+      type="button"
+      id={`${id}-clear-btn`}
+      class="clear-btn hidden absolute right-2 top-0 transform p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 pointer-events-auto"
+      title="Clear address"
+    >
+      <SimpleIcon
+        name="x"
+        size="sm"
+        backgroundColor="primary"
+        style="fill: var(--color-primary-500);"
+      />
+    </button>
 
     <!-- Dropdown Results Container -->
     <div
       id={`${id}-dropdown`}
-      class="inline-address-results-container hidden absolute z-10 mt-2 w-full bg-white divide-y divide-gray-100 rounded-lg shadow-lg dark:color-background-50 color-background-50 backdrop-blur-sm"
+      class="inline-address-results-container hidden mt-2 w-full bg-white divide-y divide-gray-100 rounded-lg shadow-lg dark:color-background-50 color-background-50 backdrop-blur-sm"
     >
       <ul
         id={`${id}-results-list`}
-        class="max-h-60 overflow-y-auto py-2 text-sm text-gray-700 dark:text-gray-200"
+        class="max-h-60 overflow-y-auto py-2 text-sm text-gray-700 dark:text-gray-200 text-center address-results-list"
       >
         <!-- Results will be populated dynamically -->
       </ul>
@@ -141,5 +158,15 @@ const {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    opacity: 0;
+    transform: translateY(-10px);
+    animation: slideInResult 0.3s ease-out forwards;
+  }
+
+  @keyframes slideInResult {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 </style>

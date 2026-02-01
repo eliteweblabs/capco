@@ -83,6 +83,15 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
       console.log("[TYPEWRITER] Animation complete, triggering content animations");
       // Dispatch custom event when typewriter completes
       element.dispatchEvent(new CustomEvent("typewriter-complete", { bubbles: true }));
+      
+      // Remove cursor after 2 seconds
+      setTimeout(() => {
+        const cursor = element.querySelector('.ti-cursor');
+        if (cursor) {
+          cursor.remove();
+          console.log("[TYPEWRITER] Cursor removed");
+        }
+      }, 2000);
     },
   });
 

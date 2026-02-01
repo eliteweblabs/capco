@@ -526,21 +526,62 @@ export function createMultiStepFormHandler(
       });
     });
 
-    // Address input change listener - update button text
+    // Address input change listener - update button text with validLabel
+    window.addEventListener('inline-address-select', (e: any) => {
+      console.log('[ADDRESS-SELECT] Address selected:', e.detail);
+      
+      // Find the address input
+      const addressInput = form.querySelector('input[name="address"]') as HTMLInputElement;
+      if (!addressInput) return;
+      
+      // Find current active step
+      const activeStep = form.querySelector('.step-content.active');
+      if (!activeStep) return;
+      
+      // Find buttons with validLabel in the active step
+      const buttons = activeStep.querySelectorAll('button');
+      buttons.forEach((btn) => {
+        const validLabel = btn.getAttribute('data-valid-label');
+        const defaultLabel = btn.getAttribute('data-default-label');
+        const buttonText = btn.querySelector('.button-text');
+        
+        if (buttonText && validLabel && defaultLabel) {
+          // Address was selected, show validLabel
+          if (e.detail.value) {
+            buttonText.textContent = validLabel;
+          } else {
+            buttonText.textContent = defaultLabel;
+          }
+        }
+      });
+    });
+
+    // Also handle when address input is cleared
     const addressInputs = form.querySelectorAll('input[name="address"]');
     addressInputs.forEach((addressInput) => {
       const input = addressInput as HTMLInputElement;
 
       // Create a MutationObserver to watch for value changes
       const observer = new MutationObserver(() => {
-        const addressButtonText = document.getElementById(`${formId}-next-step-address-text`);
-        if (addressButtonText) {
-          if (!input.value || input.value.trim() === "") {
-            addressButtonText.textContent = "skip";
-          } else {
-            addressButtonText.textContent = "next";
+        // Find current active step
+        const activeStep = form.querySelector('.step-content.active');
+        if (!activeStep) return;
+        
+        // Find buttons with validLabel in the active step
+        const buttons = activeStep.querySelectorAll('button');
+        buttons.forEach((btn) => {
+          const validLabel = btn.getAttribute('data-valid-label');
+          const defaultLabel = btn.getAttribute('data-default-label');
+          const buttonText = btn.querySelector('.button-text');
+          
+          if (buttonText && validLabel && defaultLabel) {
+            if (!input.value || input.value.trim() === "") {
+              buttonText.textContent = defaultLabel;
+            } else {
+              buttonText.textContent = validLabel;
+            }
           }
-        }
+        });
       });
 
       // Observe attribute changes (for value attribute)
@@ -551,28 +592,100 @@ export function createMultiStepFormHandler(
 
       // Also listen for input events
       input.addEventListener("input", () => {
-        const addressButtonText = document.getElementById(`${formId}-next-step-address-text`);
-        if (addressButtonText) {
-          if (!input.value || input.value.trim() === "") {
-            addressButtonText.textContent = "skip";
-          } else {
-            addressButtonText.textContent = "next";
+        const activeStep = form.querySelector('.step-content.active');
+        if (!activeStep) return;
+        
+        const buttons = activeStep.querySelectorAll('button');
+        buttons.forEach((btn) => {
+          const validLabel = btn.getAttribute('data-valid-label');
+          const defaultLabel = btn.getAttribute('data-default-label');
+          const buttonText = btn.querySelector('.button-text');
+          
+          if (buttonText && validLabel && defaultLabel) {
+            if (!input.value || input.value.trim() === "") {
+              buttonText.textContent = defaultLabel;
+            } else {
+              buttonText.textContent = validLabel;
+            }
           }
-        }
-      });
-
-      // Also listen for change events
-      input.addEventListener("change", () => {
-        const addressButtonText = document.getElementById(`${formId}-next-step-address-text`);
-        if (addressButtonText) {
-          if (!input.value || input.value.trim() === "") {
-            addressButtonText.textContent = "skip";
-          } else {
-            addressButtonText.textContent = "next";
-          }
-        }
+        });
       });
     });
+
+    // === Generic Hidden Input Handler for Button Label Updates ===
+    // Handle all hidden inputs that might affect button labels (e.g., fuelSource, hvacSystem)
+    const allHiddenInputs = form.querySelectorAll('input[type="hidden"][name]');
+    allHiddenInputs.forEach((hiddenInput) => {
+      const input = hiddenInput as HTMLInputElement;
+      
+      // Function to update button labels based on hidden input value
+      const updateButtonLabels = () => {
+        // Find current active step
+        const activeStep = form.querySelector('.step-content.active');
+        if (!activeStep) return;
+        
+        // Find buttons with validLabel in the active step
+        const buttons = activeStep.querySelectorAll('button[data-valid-label][data-default-label]');
+        buttons.forEach((btn) => {
+          const validLabel = btn.getAttribute('data-valid-label');
+          const defaultLabel = btn.getAttribute('data-default-label');
+          const buttonText = btn.querySelector('.button-text');
+          
+          if (buttonText && validLabel && defaultLabel) {
+            // Check if this hidden input has a value
+            if (!input.value || input.value.trim() === "") {
+              buttonText.textContent = defaultLabel;
+            } else {
+              buttonText.textContent = validLabel;
+            }
+          }
+        });
+      };
+      
+      // Create a MutationObserver to watch for value changes
+      const observer = new MutationObserver(updateButtonLabels);
+      
+      // Observe attribute changes (for value attribute)
+      observer.observe(input, {
+        attributes: true,
+        attributeFilter: ["value"],
+      });
+      
+      // Also listen for input/change events
+      input.addEventListener("input", updateButtonLabels);
+      input.addEventListener("change", updateButtonLabels);
+    });
+
+    // === Conditional Field Visibility ===
+    function updateConditionalFields() {
+      const conditionalWrappers = form.querySelectorAll("[data-conditional-field]");
+      
+      conditionalWrappers.forEach((wrapper) => {
+        const fieldName = wrapper.getAttribute("data-conditional-field");
+        const requiredValue = wrapper.getAttribute("data-conditional-value");
+        
+        if (!fieldName || !requiredValue) return;
+        
+        // Get the current value of the conditional field
+        const conditionalInput = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
+        const currentValue = conditionalInput?.value || "";
+        
+        // Check if current value matches required value(s)
+        const requiredValues = requiredValue.split(",");
+        const shouldShow = requiredValues.includes(currentValue);
+        
+        // Show/hide the wrapper
+        if (shouldShow) {
+          (wrapper as HTMLElement).style.display = "";
+        } else {
+          (wrapper as HTMLElement).style.display = "none";
+        }
+      });
+    }
+
+    // Update conditional fields whenever form values change
+    form.addEventListener("input", updateConditionalFields);
+    form.addEventListener("change", updateConditionalFields);
 
     // Handle button clicks
     form.addEventListener("click", async (e) => {
@@ -580,26 +693,60 @@ export function createMultiStepFormHandler(
       const nextBtn = target.closest("button.next-step, a.next-step, button.submit-step");
       const prevBtn = target.closest("button.prev-step, a.prev-step");
       const smsChoiceBtn = target.closest("button.sms-choice, a.sms-choice");
-      const fuelChoiceBtn = target.closest("button.fuel-choice, a.fuel-choice");
-      const hvacChoiceBtn = target.closest("button.hvac-choice, a.hvac-choice");
+      
+      // Generic choice button (any button with data-value inside a button-group)
+      const choiceBtn = target.closest("button[data-value], a[data-value]");
+      
       const editBtn = target.closest("button.edit-step");
       const skipBtn = target.closest("button.skip-step");
 
-      // Fuel choice buttons (Gas/Electric) - Select only, don't advance
-      if (fuelChoiceBtn) {
+      // Generic choice button handler (for button-groups)
+      if (choiceBtn && !smsChoiceBtn) {
         e.preventDefault();
-        const fuelValue = fuelChoiceBtn.getAttribute("data-value");
-
-        // Update hidden input
-        const fuelInput = form.querySelector('input[name="fuelSource"]') as HTMLInputElement;
-        if (fuelInput) {
-          fuelInput.value = fuelValue || "";
-          console.log(`[MULTISTEP-FORM] Set fuelSource to: ${fuelValue}`);
+        const choiceValue = choiceBtn.getAttribute("data-value");
+        
+        // Find the button-group wrapper to get the field name
+        const buttonGroup = choiceBtn.closest(".flex.flex-col.gap-3");
+        if (!buttonGroup) {
+          console.warn("[MULTISTEP-FORM] Choice button not inside button-group wrapper");
+          return;
         }
+        
+        // Find the hidden input by looking for inputs in the same step
+        const stepContent = choiceBtn.closest(".step-content");
+        if (!stepContent) return;
+        
+        // Find all hidden inputs in this step
+        const hiddenInputs = stepContent.querySelectorAll('input[type="hidden"][name]');
+        
+        // Find which hidden input this button-group controls
+        // We'll match based on the button's data-value being set as the input's value
+        let targetInput: HTMLInputElement | null = null;
+        
+        // Try to find by checking if any hidden input's name makes sense
+        // For now, we'll use the first hidden input that's not for session data
+        hiddenInputs.forEach((input) => {
+          const inp = input as HTMLInputElement;
+          if (!inp.id.includes("session") && !targetInput) {
+            targetInput = inp;
+          }
+        });
+        
+        if (!targetInput) {
+          console.warn("[MULTISTEP-FORM] Could not find hidden input for choice button");
+          return;
+        }
+        
+        // Update hidden input
+        targetInput.value = choiceValue || "";
+        console.log(`[MULTISTEP-FORM] Set ${targetInput.name} to: ${choiceValue}`);
+        
+        // Manually trigger change event to update button labels
+        targetInput.dispatchEvent(new Event('change', { bubbles: true }));
 
         // Visual feedback: highlight selected button
-        const allFuelButtons = form.querySelectorAll("button.fuel-choice");
-        allFuelButtons.forEach((btn) => {
+        const allChoiceButtons = stepContent.querySelectorAll("button[data-value]");
+        allChoiceButtons.forEach((btn) => {
           btn.classList.remove(
             "!ring-2",
             "!ring-primary-600",
@@ -610,7 +757,7 @@ export function createMultiStepFormHandler(
           );
           btn.classList.add("hover:bg-gray-50");
         });
-        fuelChoiceBtn.classList.add(
+        choiceBtn.classList.add(
           "!ring-2",
           "!ring-primary-600",
           "!bg-primary-600",
@@ -618,62 +765,24 @@ export function createMultiStepFormHandler(
           "!text-white",
           "dark:!text-white"
         );
-        fuelChoiceBtn.classList.remove("hover:bg-gray-50");
+        choiceBtn.classList.remove("hover:bg-gray-50");
 
-        // Enable the next button
-        const nextButton = form.querySelector(
-          `.sms-step[data-step="${currentStep}"] button.next-step`
-        ) as HTMLButtonElement;
-        if (nextButton) {
-          nextButton.disabled = false;
-        }
+        // Update conditional fields
+        updateConditionalFields();
 
-        return;
-      }
-
-      // HVAC choice buttons - Select only, don't advance
-      if (hvacChoiceBtn) {
-        e.preventDefault();
-        const hvacValue = hvacChoiceBtn.getAttribute("data-value");
-
-        // Update hidden input
-        const hvacInput = form.querySelector('input[name="hvacSystem"]') as HTMLInputElement;
-        if (hvacInput) {
-          hvacInput.value = hvacValue || "";
-          console.log(`[MULTISTEP-FORM] Set hvacSystem to: ${hvacValue}`);
-        }
-
-        // Visual feedback: highlight selected button
-        const allHvacButtons = form.querySelectorAll(
-          "button.hvac-choice:not([style*='display: none'])"
-        );
-        allHvacButtons.forEach((btn) => {
-          btn.classList.remove(
-            "!ring-2",
-            "!ring-primary-600",
-            "!bg-primary-600",
-            "dark:!bg-primary-600",
-            "!text-white",
-            "dark:!text-white"
-          );
-          btn.classList.add("hover:bg-gray-50");
-        });
-        hvacChoiceBtn.classList.add(
-          "!ring-2",
-          "!ring-primary-600",
-          "!bg-primary-600",
-          "dark:!bg-primary-600",
-          "!text-white",
-          "dark:!text-white"
-        );
-        hvacChoiceBtn.classList.remove("hover:bg-gray-50");
-
-        // Enable the submit button
-        const submitButton = form.querySelector(
-          `.sms-step[data-step="${currentStep}"] button.submit-step`
-        ) as HTMLButtonElement;
-        if (submitButton) {
-          submitButton.disabled = false;
+        // Check if button has data-next for auto-advance
+        const nextStep = choiceBtn.getAttribute("data-next");
+        if (nextStep) {
+          console.log(`[MULTISTEP-FORM] Auto-advancing to step ${nextStep}`);
+          setTimeout(async () => {
+            await showStep(parseInt(nextStep));
+          }, 300); // Small delay for visual feedback
+        } else {
+          // Enable the next/submit button if no auto-advance
+          const nextButton = stepContent.querySelector("button.next-step, button.submit-step") as HTMLButtonElement;
+          if (nextButton) {
+            nextButton.disabled = false;
+          }
         }
 
         return;
@@ -886,11 +995,38 @@ export function createMultiStepFormHandler(
     form.addEventListener("keypress", (e) => {
       if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
         e.preventDefault();
+        const target = e.target as HTMLElement;
         const currentStepEl = form.querySelector(`.step-content[data-step="${currentStep}"]`);
+        
+        // Check if target is an input field
+        if (target.tagName === "INPUT") {
+          // Get all visible inputs in the current step (not hidden)
+          const inputs = Array.from(
+            currentStepEl?.querySelectorAll('input:not([type="hidden"]), textarea') || []
+          ).filter(input => {
+            const el = input as HTMLElement;
+            return el.offsetParent !== null; // Check if visible
+          }) as HTMLInputElement[];
+          
+          const currentIndex = inputs.indexOf(target as HTMLInputElement);
+          
+          // If there's a next input, focus it
+          if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
+            const nextInput = inputs[currentIndex + 1];
+            nextInput.focus();
+            console.log('[ENTER-KEY] Moving to next input');
+            return;
+          }
+        }
+        
+        // If we're on the last input or not on an input, click next button
         const nextBtn = currentStepEl?.querySelector(
           ".next-step, .submit-registration, .submit-contact"
         ) as HTMLElement;
-        if (nextBtn) nextBtn.click();
+        if (nextBtn) {
+          console.log('[ENTER-KEY] Clicking next button');
+          nextBtn.click();
+        }
       }
     });
 

@@ -25,7 +25,7 @@ export const isAuthPage = (pathname: string) => {
 };
 
 export const isContactPage = (pathname: string) => {
-  const contactPaths = ["/contact"];
+  const contactPaths = ["/contact", "/mep-form"];
 
   return contactPaths.some((path) => pathname.startsWith(path));
 };

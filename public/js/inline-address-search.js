@@ -17,16 +17,59 @@ export function initializeAddressSearch(config) {
   const hiddenInput = document.getElementById(`${id}-value`);
   const emptyState = document.getElementById(`${id}-empty-state`);
   const dropdown = document.getElementById(`${id}-dropdown`);
-  const locationBtn = document.getElementById(`${id}-use-location-btn`);
+  const locationBtn = document.getElementById(`${id}-use-location-btn`) || document.getElementById(`${id}-location-btn`);
+  const clearBtn = document.getElementById(`${id}-clear-btn`);
+  
   if (!searchInput || !resultsList || !hiddenInput || !emptyState || !dropdown) {
     console.error(`[INLINE-ADDRESS] Required elements not found for ${id}`);
     return;
   }
   let searchTimeout;
   let selectedIndex = -1;
-  // Handle geolocation button click if enabled
+  
+  // Helper function to update button visibility based on input state
+  function updateButtonVisibility() {
+    const hasValue = searchInput.value && searchInput.value.trim() !== '';
+    
+    if (hasValue) {
+      // Show clear button, hide location button
+      if (locationBtn) locationBtn.classList.add('hidden');
+      if (clearBtn) clearBtn.classList.remove('hidden');
+    } else {
+      // Show location button, hide clear button
+      if (locationBtn) locationBtn.classList.remove('hidden');
+      if (clearBtn) clearBtn.classList.add('hidden');
+    }
+  }
+  
+  // Handle clear button click
+  if (clearBtn) {
+    clearBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      // Clear the input and hidden value
+      searchInput.value = '';
+      hiddenInput.value = '';
+      hideDropdown();
+      updateButtonVisibility();
+      
+      // Dispatch event to notify that address was cleared
+      window.dispatchEvent(
+        new CustomEvent("inline-address-select", {
+          detail: {
+            componentId: id,
+            value: "",
+            label: "",
+            data: null,
+          },
+        })
+      );
+    });
+  }
+  
+  // Handle location button click
   if (currentLocation && locationBtn) {
-    locationBtn.addEventListener("click", async () => {
+    locationBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
       console.log(`📍 [INLINE-ADDRESS] Getting current location for ${id}`);
       // Disable button and show loading state
       locationBtn.disabled = true;
@@ -79,6 +122,7 @@ export function initializeAddressSearch(config) {
           searchInput.value = cleanedAddress;
           hiddenInput.value = firstResult[valueField] || firstResult.value || firstResult.place_id;
           console.log(`✅ [INLINE-ADDRESS] Auto-selected: ${cleanedAddress}`);
+          updateButtonVisibility();
         }
       } catch (error) {
         console.error(`📍 [INLINE-ADDRESS] Geolocation error:`, error);
@@ -99,6 +143,7 @@ export function initializeAddressSearch(config) {
         // Restore button state
         locationBtn.disabled = false;
         locationBtn.innerHTML = originalHTML;
+        updateButtonVisibility();
       }
     });
   }
@@ -150,9 +195,13 @@ export function initializeAddressSearch(config) {
     if (results.length > 0) {
       emptyState.classList.add("hidden");
       resultsList.classList.remove("hidden");
+      
+      // Add results with staggered timing (100ms between each)
       results.forEach((result, index) => {
-        const li = createResultElement(result, index, index === selectedIndex);
-        resultsList.appendChild(li);
+        setTimeout(() => {
+          const li = createResultElement(result, index, index === selectedIndex);
+          resultsList.appendChild(li);
+        }, index * 100); // 100ms delay between each result
       });
       showDropdown();
     } else {
@@ -163,6 +212,9 @@ export function initializeAddressSearch(config) {
   // Handle search input
   searchInput.addEventListener("input", (e) => {
     const query = e.target.value.trim();
+    // Update button visibility based on input state
+    updateButtonVisibility();
+    
     // Clear previous timeout
     if (searchTimeout) {
       clearTimeout(searchTimeout);
@@ -172,6 +224,19 @@ export function initializeAddressSearch(config) {
       resultsList.innerHTML = "";
       hideDropdown();
       selectedIndex = -1;
+      // Clear the hidden input value
+      hiddenInput.value = "";
+      // Dispatch event to notify that address was cleared
+      window.dispatchEvent(
+        new CustomEvent("inline-address-select", {
+          detail: {
+            componentId: id,
+            value: "",
+            label: "",
+            data: null,
+          },
+        })
+      );
       return;
     }
     // Perform search after debounce
@@ -225,6 +290,8 @@ export function initializeAddressSearch(config) {
       hiddenInput.value = value;
       // Update search input to show selected value
       searchInput.value = label;
+      // Update button visibility to show clear button
+      updateButtonVisibility();
       // Hide dropdown after selection
       hideDropdown();
       // Update selection styling
