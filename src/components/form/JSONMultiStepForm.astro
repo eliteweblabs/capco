@@ -69,7 +69,7 @@ const getFieldId = (field: any, stepIndex: number) => {
 
   <!-- Progress Bar -->
   {showProgressBar && (
-    <div class={`mb-6 sm:mb-12 ${config.progressBar?.class || ''}`}>
+    <div class={`mb-6 sm:mb-12 hidden ${config.progressBar?.class || ''}`} id={`${formId}-progress-bar-container`}>
       <div class="relative">
         <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
           <div 
@@ -504,6 +504,16 @@ const getFieldId = (field: any, stepIndex: number) => {
       const progress = (currentStep / totalSteps) * 100;
       if (progressBar) progressBar.style.width = `${progress}%`;
       if (progressText) progressText.textContent = `${currentStep} / ${totalSteps}`;
+      
+      // Show/hide progress bar based on current step
+      const progressBarContainer = document.getElementById(`${formId}-progress-bar-container`);
+      if (progressBarContainer) {
+        if (currentStep === 1) {
+          progressBarContainer.classList.add('hidden');
+        } else {
+          progressBarContainer.classList.remove('hidden');
+        }
+      }
     }
 
     // Show specific step

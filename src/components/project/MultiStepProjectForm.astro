@@ -48,7 +48,7 @@ const fieldElements = formElements.filter(
 
 <div id="multi-step-form-container" class="w-full max-w-4xl mx-auto mb-12 px-8">
   <!-- Progress Bar -->
-  <div class="mb-8">
+  <div class="mb-8 hidden" id="multi-step-progress-bar-container">
     <div class="flex items-center justify-between mb-2">
       <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
         Step <span id="current-step-number">1</span> of <span id="total-steps"
@@ -471,6 +471,16 @@ const fieldElements = formElements.filter(
       if (progressBar) progressBar.style.width = `${progress}%`;
       if (currentStepNumber) currentStepNumber.textContent = currentStepIndex + 1;
       if (progressPercentage) progressPercentage.textContent = progress;
+      
+      // Show/hide progress bar based on current step
+      const progressBarContainer = document.getElementById('multi-step-progress-bar-container');
+      if (progressBarContainer) {
+        if (currentStepIndex === 0) {
+          progressBarContainer.classList.add('hidden');
+        } else {
+          progressBarContainer.classList.remove('hidden');
+        }
+      }
     }
 
     // Update button visibility
