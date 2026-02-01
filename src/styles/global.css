@@ -112,52 +112,67 @@ button:has(.bx) {
 /* Apply autofill detection to all inputs */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   animation-name: onAutoFillStart;
   animation-duration: 0.001s;
-  /* Preserve original border styling */
-  /* border: inherit !important;
-  border-width: inherit !important;
-  border-style: inherit !important;
-  border-color: inherit !important; */
-  /* Override browser default autofill background */
-  /* -webkit-box-shadow: 0 0 0 3px var(--color-primary-100) inset !important; */
-  /* box-shadow: 0 0 0 3px var(--color-primary-100) inset !important; */
 
   border-color: var(--color-primary-400);
 
-  /* Equivalent to: color-background-50 backdrop-blur-sm shadow-primary-inner-md */
+  /* Match base input styles - use inset shadow like non-autofilled inputs */
   background-color: rgba(var(--color-background), 0.5) !important;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  box-shadow: inset 0 0 8px 0 color-mix(in srgb, var(--color-primary-500) 13%, transparent);
+  box-shadow: inset 0 0 8px 0 color-mix(in srgb, var(--color-primary-500) 13%, transparent) !important;
 
   -webkit-text-fill-color: var(--color-text-primary) !important;
-  transition: background-color 5000s ease-in-out 0s;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  transition: background-color 5000s ease-in-out 0s, box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Autofill focus state - apply outer shadow on focus only */
+input:-webkit-autofill:focus {
+  animation-name: onAutoFillStart;
+  animation-duration: 0.001s;
+
+  border-color: var(--color-primary-400);
+
+  /* On focus, apply outer shadow */
+  background-color: rgba(var(--color-background), 0.5) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  transition: background-color 5000s ease-in-out 0s, box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark input:-webkit-autofill,
 .dark input:-webkit-autofill:hover,
-.dark input:-webkit-autofill:focus,
 .dark input:-webkit-autofill:active {
-  /* -webkit-box-shadow: 0 0 0 3px var(--color-primary-900) inset !important;
-  box-shadow: 0 0 0 3px var(--color-primary-900) inset !important;
-  -webkit-text-fill-color: var(--color-text-primary) !important; */
-
   border-color: var(--color-primary-400);
 
-  /* Equivalent to: color-background-50 backdrop-blur-sm shadow-primary-inner-md (dark mode) */
+  /* Match base input styles - use inset shadow like non-autofilled inputs (dark mode) */
   background-color: rgba(var(--color-background-dark), 0.5) !important;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  box-shadow: inset 0 0 8px 0 color-mix(in srgb, var(--color-primary-500) 13%, transparent);
+  box-shadow: inset 0 0 8px 0 color-mix(in srgb, var(--color-primary-500) 13%, transparent) !important;
+}
 
-  /* --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width)
-    var(--tw-ring-offset-color);
-  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width))
-    var(--tw-ring-color);
-  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000); */
+.dark input:-webkit-autofill:focus {
+  border-color: var(--color-primary-400);
+
+  /* On focus, apply outer shadow (dark mode) */
+  background-color: rgba(var(--color-background-dark), 0.5) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
 input:not(:-webkit-autofill) {
@@ -1226,4 +1241,130 @@ span[data-refresh][data-edited="true"].fade-out::after {
 .typewriter-text.typed {
   border-right: none;
   animation: none;
+}
+
+/* ============================================
+   BUTTON FOCUS & RIPPLE ANIMATIONS
+   ============================================ */
+
+/* Button base styles - ensure positioning for ripple effect */
+button,
+a[role="button"],
+[role="button"] {
+  position: relative;
+  overflow: hidden !important;
+}
+
+/* Ripple effect container */
+.button-ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Click ripple - fast animation from click position */
+.button-ripple.click-ripple {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-primary-500) 50%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 30%, transparent) 40%,
+    transparent 100%
+  );
+  animation: ripple-click 1500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus ripple - SLOWER animation from center (1200ms vs 600ms) */
+.button-ripple.focus-ripple {
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(0);
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  animation: ripple-focus 2500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Click ripple animation - fast */
+@keyframes ripple-click {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
+  }
+}
+
+/* Focus ripple animation - SLOW and smooth */
+@keyframes ripple-focus {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Dark button ripple (for outline, ghost buttons) */
+button.ripple-dark .button-ripple.click-ripple,
+.ripple-dark .button-ripple.click-ripple,
+a.ripple-dark .button-ripple.click-ripple {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-primary-500) 30%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 20%, transparent) 40%,
+    transparent 100%
+  );
+}
+
+/* Ensure button content stays above ripple */
+button > *:not(.button-ripple),
+a[role="button"] > *:not(.button-ripple),
+[role="button"] > *:not(.button-ripple) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Remove default focus outline since we have custom ripple */
+button:focus-visible,
+a[role="button"]:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+}
+
+/* Disable ripple on disabled buttons */
+button:disabled,
+button[aria-disabled="true"],
+a[aria-disabled="true"] {
+  pointer-events: none;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .button-ripple {
+    display: none !important;
+  }
+
+  button:focus-visible,
+  a[role="button"]:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
 }

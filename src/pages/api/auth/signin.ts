@@ -18,6 +18,9 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const provider = formData.get("provider")?.toString();
   const redirectTo = formData.get("redirect")?.toString() || "/dashboard";
 
+  // Check if this is a fetch request (JSON expected) vs form submission (redirect expected)
+  const acceptsJson = request.headers.get("accept")?.includes("application/json");
+
   if (provider) {
     // IMPORTANT: OAuth must be initiated client-side for PKCE to work
     // Server-side OAuth initiation doesn't store code verifier in browser localStorage
@@ -37,6 +40,18 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   }
 
   if (!email || !password) {
+    if (acceptsJson) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Please provide both email and password",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
     return redirect("/auth/login?error=invalid_credentials");
   }
 
@@ -58,7 +73,19 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       console.error("[---AUTH-SIGNIN] Error logging failed login:", logError);
     }
 
-    // Redirect to login page with error parameter
+    // Return JSON error for fetch requests, redirect for form submissions
+    if (acceptsJson) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid email or password",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
     return redirect("/auth/login?error=invalid_credentials");
   }
 
@@ -118,5 +145,19 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     // Don't fail the main login if this fails
   }
 
+  // Return JSON response for fetch requests, redirect for form submissions
+  if (acceptsJson) {
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Login successful",
+        redirect: redirectTo,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
   return redirect(redirectTo);
 };

@@ -1,7 +1,7 @@
 export const globalClasses = () => {
   return {
     globalInputClasses:
-      "border-gray-100/50 dark:border-gray-900/50 color-background-50  w-full rounded-lg border-2 py-2.5 px-4 text-gray-900 transition-colors duration-200 placeholder:text-gray-400 focus:border-secondary-500 focus:outline-none focus:ring-2 focus:ring-secondary-500/20 dark:border-gray-800/50 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-secondary-400 dark:focus:ring-secondary-400/20",
+      "backdrop-blur-sm border-gray-100/50 dark:border-gray-900/50 bg-white/50 dark:bg-black/50 backdrop-blur-sm shadow-secondary-inner-md w-full rounded-xl border-0 py-2.5 px-4 text-gray-900 transition-colors duration-200 placeholder:text-gray-400 focus:outline-none dark:text-white dark:placeholder:text-gray-500 no-scrollbar",
     primaryTextClasses: "text-gray-900 dark:text-gray-100",
     secondaryTextClasses: "text-gray-800 dark:text-gray-200",
   };

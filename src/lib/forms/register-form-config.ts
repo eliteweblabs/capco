@@ -13,7 +13,7 @@ export const registerFormConfig: MultiStepFormConfig = {
     next: {
       type: "next",
       variant: "secondary",
-      size: "lg",
+      size: "md",
       icon: "arrow-right",
       iconPosition: "right",
       label: "next",
@@ -21,7 +21,7 @@ export const registerFormConfig: MultiStepFormConfig = {
     prev: {
       type: "prev",
       variant: "anchor",
-      size: "lg",
+      size: "md",
       icon: "arrow-left",
       iconPosition: "left",
       label: "back",
@@ -29,7 +29,7 @@ export const registerFormConfig: MultiStepFormConfig = {
     submit: {
       type: "submit",
       variant: "secondary",
-      size: "lg",
+      size: "md",
       icon: "arrow-right",
       iconPosition: "right",
       label: "create account",
@@ -43,7 +43,7 @@ export const registerFormConfig: MultiStepFormConfig = {
     // Step 1: Email
     {
       stepNumber: 1,
-      title: "Your email?",
+      title: "",
       fields: [
         {
           id: "step-email",
@@ -53,15 +53,17 @@ export const registerFormConfig: MultiStepFormConfig = {
           required: true,
           autocomplete: "email",
           errorMessage: "Please enter a valid email address",
+          icon: "mail",
+          iconPosition: "left",
         },
       ],
       buttons: [
         {
           type: "prev",
-          label: "Login",
+          label: "back to login",
           variant: "anchor",
           href: "/auth/login",
-          icon: "arrow-left",
+          icon: "",
           iconPosition: "left",
         },
         {
@@ -88,6 +90,8 @@ export const registerFormConfig: MultiStepFormConfig = {
           autocomplete: "given-name",
           errorMessage: "Please enter your first name",
           columns: 2,
+          icon: "user",
+          iconPosition: "left",
         },
         {
           id: "step-last-name",
@@ -98,6 +102,8 @@ export const registerFormConfig: MultiStepFormConfig = {
           autocomplete: "family-name",
           errorMessage: "Please enter your last name",
           columns: 2,
+          icon: "user",
+          iconPosition: "left",
         },
       ],
       buttons: [
@@ -127,6 +133,8 @@ export const registerFormConfig: MultiStepFormConfig = {
           required: true,
           autocomplete: "organization",
           errorMessage: "Please enter your company name",
+          icon: "building",
+          iconPosition: "left",
         },
       ],
       buttons: [
@@ -158,6 +166,8 @@ export const registerFormConfig: MultiStepFormConfig = {
           minlength: 6,
           autocomplete: "new-password",
           errorMessage: "Password must be at least 6 characters",
+          icon: "lock",
+          iconPosition: "left",
         },
       ],
       buttons: [
@@ -186,6 +196,8 @@ export const registerFormConfig: MultiStepFormConfig = {
           placeholder: "1-(555)-123-4567 (optional)",
           autocomplete: "tel",
           required: false,
+          icon: "phone",
+          iconPosition: "left",
         },
       ],
       buttons: [
