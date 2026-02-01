@@ -46,7 +46,7 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 1: Name (skip if authenticated)
     {
       stepNumber: 1,
-      title: `Hi, I'm Leah...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's get you started with the mechanical, engineering & plumbing intake process.<br><br>Ready to get started?<span data-typewriter-pause="360">!</span>`,
+      title: `<span data-typewriter-pause="1360"></span>Hi, I'm Leah...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's get you started with the mechanical, engineering & plumbing intake process.<br><br>Ready to get started?`,
       // subtitle:
       //   "It takes about 2 minutes to complete. We typically respond within 1 business day EDT. ready to get started?",
       skipCondition: "isAuthenticated", // Skip for logged-in users
@@ -175,7 +175,7 @@ export const mepFormConfig: MultiStepFormConfig = {
         {
           type: "next",
           label: "skip",
-          classes: "phone", // Enables dynamic skip/next label based on phone validation
+          validLabel: "next",
           dataNext: 5,
         },
       ],
@@ -184,8 +184,7 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 4: Address
     {
       stepNumber: 5,
-      title:
-        "Where is this MEP project located? Or leave blank to skip.<span data-typewriter-pause='500'>.</span><span data-typewriter-pause='500'>.</span>",
+      title: "Where is this MEP project located?",
       subtitle: "",
       fields: [
         {
@@ -209,7 +208,7 @@ export const mepFormConfig: MultiStepFormConfig = {
         {
           type: "next",
           label: "skip",
-          classes: "address", // Enables dynamic skip/next label based on address input
+          validLabel: "next",
           dataNext: 6,
         },
       ],

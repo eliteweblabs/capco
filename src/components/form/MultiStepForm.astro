@@ -403,6 +403,12 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         ...(button.dataPrev !== undefined && {
                           "data-prev": button.dataPrev.toString(),
                         }),
+                        ...(button.label && {
+                          "data-default-label": button.label,
+                        }),
+                        ...(button.validLabel && {
+                          "data-valid-label": button.validLabel,
+                        }),
                       }}
                     >
                       {btnConfig.label &&
@@ -411,15 +417,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                             <Fragment set:html={btnConfig.label} />
                           </span>
                         ) : (
-                          <span
-                            id={
-                              button.classes?.includes("phone")
-                                ? `${config.formId}-next-step-phone-text`
-                                : button.classes?.includes("address")
-                                  ? `${config.formId}-next-step-address-text`
-                                  : undefined
-                            }
-                          >
+                          <span class="button-text">
                             <Fragment set:html={btnConfig.label} />
                           </span>
                         ))}
@@ -442,9 +440,32 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 </div>
 
 <style is:global>
-  /* Hide cursor for inputs with animated placeholders */
-  input[data-has-animated-placeholder="true"] {
-    caret-color: transparent;
+  /* Content reveal animation after typewriter completes */
+  .step-content .input-wrapper,
+  .step-content .inline-address-search-wrapper,
+  .step-content button,
+  .step-content a {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+  }
+
+  /* When typewriter completes, reveal content */
+  .step-content.typewriter-complete .input-wrapper,
+  .step-content.typewriter-complete .inline-address-search-wrapper,
+  .step-content.typewriter-complete button,
+  .step-content.typewriter-complete a {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* For steps without typewriter effect, show content immediately */
+  .step-content:not(.has-typewriter) .input-wrapper,
+  .step-content:not(.has-typewriter) .inline-address-search-wrapper,
+  .step-content:not(.has-typewriter) button,
+  .step-content:not(.has-typewriter) a {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   /* Focus shadow animation - global so it works across all components */
@@ -537,6 +558,44 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   import "../../scripts/typewriter-text";
 
   document.addEventListener("DOMContentLoaded", () => {
+    // Listen for typewriter completion to trigger content animations
+    document.addEventListener('typewriter-complete', (e) => {
+      const target = e.target as HTMLElement;
+      const stepContent = target.closest('.step-content');
+      if (stepContent) {
+        console.log('[MULTISTEP-FORM] Typewriter complete, revealing content');
+        
+        // Collect all animatable elements in DOM order
+        const elements: HTMLElement[] = [];
+        
+        // Get all input wrappers and address search wrappers
+        const inputWrappers = stepContent.querySelectorAll('.input-wrapper, .inline-address-search-wrapper');
+        inputWrappers.forEach(el => elements.push(el as HTMLElement));
+        
+        // Get all buttons and anchors (both choice buttons and navigation buttons)
+        const buttons = stepContent.querySelectorAll('button, a');
+        buttons.forEach(el => elements.push(el as HTMLElement));
+        
+        // Apply staggered delays (100ms between each)
+        elements.forEach((element, index) => {
+          const delay = index * 0.1; // 100ms = 0.1s
+          element.style.transitionDelay = `${delay}s`;
+          console.log(`[ANIMATION] Element ${index + 1}: ${delay}s delay`);
+        });
+        
+        // Add the class to trigger animations
+        stepContent.classList.add('typewriter-complete');
+      }
+    });
+
+    // Mark steps with typewriter effect
+    document.querySelectorAll('.step-content').forEach((step) => {
+      const hasTypewriter = step.querySelector('.typewriter-text');
+      if (hasTypewriter) {
+        step.classList.add('has-typewriter');
+      }
+    });
+
     // Initialize rotating placeholders for all inputs with animated placeholders
     const animatedInputs = document.querySelectorAll(
       'input[data-has-animated-placeholder="true"]'

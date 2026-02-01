@@ -31,8 +31,8 @@ function initTypewriterTexts(): void {
     }
 
     // Check if this element contains session meta data
-    const hasSessionMeta = text.includes('data-form-session-meta');
-    
+    const hasSessionMeta = text.includes("data-form-session-meta");
+
     // If it has session meta, mark it but DON'T initialize yet
     // It will be initialized when the step becomes active
     if (hasSessionMeta) {
@@ -74,11 +74,16 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
 
   // Create TypeIt instance
   const instance = new TypeIt(element, {
-    speed: 33, // Faster typing (33% faster than 50ms)
+    speed: 20, // Faster typing (20% faster than 50ms)
     cursor: true, // Show blinking cursor
     waitUntilVisible: true,
     html: true, // Enable HTML parsing for <br> tags
     lifeLike: true, // Add natural typing variations
+    afterComplete: () => {
+      console.log("[TYPEWRITER] Animation complete, triggering content animations");
+      // Dispatch custom event when typewriter completes
+      element.dispatchEvent(new CustomEvent("typewriter-complete", { bubbles: true }));
+    },
   });
 
   // Build the typing sequence with pauses and natural variations
@@ -97,9 +102,9 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
 
         // Add natural pauses after punctuation
         if (word.match(/[.,!?;:]/)) {
-          instance.pause(200 + Math.random() * 300); // 200-500ms pause
+          instance.pause(+Math.random() * 300); // 200-500ms pause
         } else if (word === "<br>") {
-          instance.pause(300 + Math.random() * 400); // 300-700ms pause for line breaks
+          instance.pause(Math.random() * 400); // 300-700ms pause for line breaks
         } else if (wordIndex < words.length - 1 && words[wordIndex + 1] !== "<br>") {
           // Small pause between words (human hesitation)
           if (Math.random() > 0.5) {
@@ -123,29 +128,30 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
  */
 function injectSessionMetaIntoText(text: string): string {
   // Find all spans with data-form-session-meta attribute
-  const metaRegex = /<span[^>]*data-form-session-meta=['"]([^'"]+)['"][^>]*data-default=['"]([^'"]+)['"][^>]*>([^<]*)<\/span>/gi;
-  
+  const metaRegex =
+    /<span[^>]*data-form-session-meta=['"]([^'"]+)['"][^>]*data-default=['"]([^'"]+)['"][^>]*>([^<]*)<\/span>/gi;
+
   let replacedText = text;
   let match;
-  
+
   while ((match = metaRegex.exec(text)) !== null) {
     const fullMatch = match[0];
     const fieldName = match[1];
     const defaultValue = match[2];
-    
+
     // Try to get the value from the form
-    const form = document.querySelector('form') as HTMLFormElement;
+    const form = document.querySelector("form") as HTMLFormElement;
     if (form) {
       const input = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
       const value = input && input.value ? input.value.trim() : defaultValue;
-      
+
       // Replace the entire span with just the plain text value (TypeIt handles styling via CSS)
       replacedText = replacedText.replace(fullMatch, value);
-      
+
       console.log(`[SESSION-META] Replaced ${fieldName} with: ${value}`);
     }
   }
-  
+
   return replacedText;
 }
 
@@ -222,8 +228,12 @@ function triggerActiveStepTypewriter(): void {
   ) as NodeListOf<HTMLElement>;
 
   if (deferredElements.length > 0) {
-    console.log("[TYPEWRITER] Found", deferredElements.length, "deferred elements, initializing now...");
-    
+    console.log(
+      "[TYPEWRITER] Found",
+      deferredElements.length,
+      "deferred elements, initializing now..."
+    );
+
     deferredElements.forEach((element) => {
       const text = element.getAttribute("data-text");
       if (text) {
@@ -298,7 +308,7 @@ const observer = new MutationObserver((mutations) => {
             const segments = parseTextWithPauses(text);
 
             const instance = new TypeIt(node, {
-              speed: 33,
+              speed: 20,
               cursor: true,
               waitUntilVisible: true,
               html: true,
@@ -351,7 +361,7 @@ const observer = new MutationObserver((mutations) => {
             const segments = parseTextWithPauses(text);
 
             const instance = new TypeIt(child, {
-              speed: 33,
+              speed: 20,
               cursor: true,
               waitUntilVisible: true,
               html: true,

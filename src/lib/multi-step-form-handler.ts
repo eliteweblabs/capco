@@ -496,35 +496,32 @@ export function createMultiStepFormHandler(
           target.setSelectionRange(newCursorPos, newCursorPos);
         }
 
-        // Update button text and data-next attribute for phone steps
-        const phoneButton = document.querySelector(`.next-step-phone`);
-        const phoneButtonText = document.getElementById(`${formId}-next-step-phone-text`);
-
-        if (phoneButtonText || phoneButton) {
+        // Update button text for buttons with validLabel (dynamic skip/next based on validation)
+        const currentStepEl = form.querySelector(`#${formId} .step-content.active`);
+        if (currentStepEl) {
           const digitsOnly = formatted.replace(/\D/g, "");
           const isValid = digitsOnly.length >= 10 && validatePhone(formatted);
-
-          // Update button text
-          if (phoneButtonText) {
-            if (!formatted || formatted.trim() === "") {
-              phoneButtonText.textContent = "skip";
-            } else if (isValid) {
-              phoneButtonText.textContent = "next";
-            } else {
-              phoneButtonText.textContent = "skip";
+          
+          // Find buttons in current step that might have dynamic labels
+          const nextButtons = currentStepEl.querySelectorAll('button.next-step');
+          nextButtons.forEach((btn) => {
+            const buttonText = btn.querySelector('.button-text');
+            if (buttonText) {
+              // Check if button has data attributes for label switching
+              const defaultLabel = btn.getAttribute('data-default-label');
+              const validLabel = btn.getAttribute('data-valid-label');
+              
+              if (defaultLabel && validLabel) {
+                if (!formatted || formatted.trim() === "") {
+                  buttonText.textContent = defaultLabel;
+                } else if (isValid) {
+                  buttonText.textContent = validLabel;
+                } else {
+                  buttonText.textContent = defaultLabel;
+                }
+              }
             }
-          }
-
-          // Update data-next attribute dynamically
-          if (phoneButton) {
-            if (isValid) {
-              phoneButton.setAttribute("data-next", "4"); // Go to SMS Consent
-              console.log("[PHONE-INPUT] Valid phone - data-next set to 4");
-            } else {
-              phoneButton.setAttribute("data-next", "6"); // Skip to Company
-              console.log("[PHONE-INPUT] Invalid/empty phone - data-next set to 6");
-            }
-          }
+          });
         }
       });
     });

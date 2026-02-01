@@ -74,6 +74,7 @@ export interface FormFieldConfig {
 export interface FormButtonConfig {
   type: "next" | "prev" | "skip" | "submit" | "choice";
   label?: string; // Optional button label
+  validLabel?: string; // Label to show when field is valid (for dynamic labels based on validation)
   id?: string; // Optional unique identifier for the button
   variant?: "primary" | "secondary" | "anchor" | "outline" | "ghost";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
