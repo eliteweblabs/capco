@@ -14,6 +14,7 @@ interface Props {
   secondaryColor?: string;
   globalCompanyName?: string;
   theme?: "light" | "dark";
+  currentUser?: any;
 }
 
 // Get company data from database
@@ -26,6 +27,7 @@ const {
   primaryColor = Astro.props.primaryColor || companyData.primaryColor || "#000000",
   secondaryColor = Astro.props.secondaryColor || companyData.secondaryColor || "#000000",
   globalCompanyName = Astro.props.globalCompanyName || companyData.globalCompanyName || "",
+  currentUser = null,
 } = Astro.props;
 
 const themeCookie = Astro.cookies.get("theme");
@@ -49,6 +51,18 @@ const fgColor = theme === "dark" ? "#000000" : "#ffffff";
         id="vapi-widget-basic"
         public-key={publicKey}
         assistant-id={assistantId}
+        assistant-overrides={currentUser ? JSON.stringify({
+          variableValues: {
+            userId: currentUser.id,
+            userName: currentUser.user_metadata?.name || currentUser.email,
+            userEmail: currentUser.email,
+          },
+          metadata: {
+            userId: currentUser.id,
+            userName: currentUser.user_metadata?.name || currentUser.email,
+            userEmail: currentUser.email,
+          }
+        }) : undefined}
         mode="chat"
         base-bg-color=""
         theme={theme}
