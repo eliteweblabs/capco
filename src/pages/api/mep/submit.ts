@@ -125,10 +125,11 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     }
 
     // Now create the MEP project
+    const cleanedAddress = data.address?.toString().replace(/,\s*USA$/i, "").trim() || "";
     const projectData = {
       authorId: userId,
-      address: data.address?.toString() || "",
-      title: `MEP Project - ${data.address?.toString() || "No Address"}`,
+      address: cleanedAddress,
+      title: `MEP Project - ${cleanedAddress || "No Address"}`,
       // Add other MEP-specific fields here as you add more steps
       status: 1, // Initial status
     };

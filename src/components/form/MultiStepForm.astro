@@ -41,36 +41,38 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       >
         <div class="w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] max-w-6xl mx-auto" tabindex="-1">
           <ol class="flex items-center w-full" id={`${config.formId}-stepper`} tabindex="-1">
-            {config.steps.map((step, index) => (
-              <li
-                class={`relative flex items-center ${index < config.steps.length - 1 ? "w-full" : ""}`}
-                data-step-indicator={step.stepNumber}
-                tabindex="-1"
-              >
-                {/* Step Circle/Icon with Tooltip */}
-                <Tooltip text={step.title} position="top" mobileClickable={true}>
-                  <span
-                    class="relative step-indicator flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0 transition-all duration-300 bg-gray-300 dark:bg-gray-700"
-                    data-step-title={step.title}
-                    tabindex="-1"
-                  />
-                </Tooltip>
-
-                {/* Connecting Line */}
-                {index < config.steps.length - 1 && (
-                  <div
-                    class="w-full h-1 mx-2 bg-transparent dark:bg-transparent rounded-full overflow-hidden"
-                    tabindex="-1"
-                  >
-                    <div
-                      class="h-full bg-transparent dark:bg-transparent transition-all duration-500 ease-out step-progress-line"
-                      style="width: 0%"
+            {config.steps
+              .filter((step) => !step.hideProgressBar)
+              .map((step, index, filteredSteps) => (
+                <li
+                  class={`relative flex items-center ${index < filteredSteps.length - 1 ? "w-full" : ""}`}
+                  data-step-indicator={step.stepNumber}
+                  tabindex="-1"
+                >
+                  {/* Step Circle/Icon with Tooltip */}
+                  <Tooltip text={step.title} position="top" mobileClickable={true}>
+                    <span
+                      class="relative step-indicator flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0 transition-all duration-300 bg-gray-300 dark:bg-gray-700"
+                      data-step-title={step.title}
                       tabindex="-1"
                     />
-                  </div>
-                )}
-              </li>
-            ))}
+                  </Tooltip>
+
+                  {/* Connecting Line */}
+                  {index < filteredSteps.length - 1 && (
+                    <div
+                      class="w-full h-1 mx-2 bg-transparent dark:bg-transparent rounded-full overflow-hidden"
+                      tabindex="-1"
+                    >
+                      <div
+                        class="h-full bg-transparent dark:bg-transparent transition-all duration-500 ease-out step-progress-line"
+                        style="width: 0%"
+                        tabindex="-1"
+                      />
+                    </div>
+                  )}
+                </li>
+              ))}
           </ol>
         </div>
       </div>
@@ -109,7 +111,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
               {step.title && (
                 <h2
                   class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
-                    step.effect === "typewriter" ? "typewriter-text" : ""
+                    (step.effect === "typewriter" || !step.effect) ? "typewriter-text" : ""
                   }`}
                   data-text={step.title}
                   set:html={step.title}
@@ -186,13 +188,18 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             ) : (
               <div
                 class:list={[
-                  step.fieldLayout === "grid" ? "grid grid-cols-1 gap-6 md:grid-cols-2" : "",
+                  step.fieldLayout === "grid"
+                    ? "grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6"
+                    : "",
                 ]}
                 tabindex="-1"
               >
                 {step.fields.map((field) => (
                   <div
-                    class:list={["input-wrapper", field.columns === 1 ? "md:col-span-2" : ""]}
+                    class:list={[
+                      field.type === "hidden" ? "" : "input-wrapper",
+                      field.columns === 1 ? "md:col-span-2" : "",
+                    ]}
                     tabindex="-1"
                   >
                     {field.type === "component" && field.component === "SlotMachineModalStaff" ? (
@@ -248,8 +255,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           autofocus={field.autofocus}
                           class:list={[
                             appendedGlobalInputClasses,
-                            field.icon && field.iconPosition === "right" ? "px-12" : "px-12",
-                            field.icon && field.iconPosition !== "right" ? "px-12" : "px-12",
+                            field.icon && field.iconPosition === "right" ? "pr-12" : "",
+                            field.icon && field.iconPosition !== "right" ? "pl-12" : "",
                           ]}
                           data-error={field.errorMessage}
                           data-has-animated-placeholder="true"
@@ -257,7 +264,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
                         />
                         <span
-                          class="animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500"
+                          class:list={[
+                            "animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500",
+                            field.icon && field.iconPosition === "right" ? "pr-7 mr-1.25" : "",
+                            field.icon && field.iconPosition !== "right" ? "pl-7 ml-1.25" : "",
+                          ]}
                           data-for={field.id}
                           tabindex="-1"
                         >
@@ -431,6 +442,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 </div>
 
 <style is:global>
+  /* Hide cursor for inputs with animated placeholders */
+  input[data-has-animated-placeholder="true"] {
+    caret-color: transparent;
+  }
+
   /* Focus shadow animation - global so it works across all components */
   input:not([type="hidden"]),
   textarea,
@@ -553,36 +569,25 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         `.animated-placeholder[data-for="${input.id}"]`
       ) as HTMLElement;
       if (span) {
-        // Function to check and hide placeholder if input has value
-        const checkAndHidePlaceholder = () => {
+        input.addEventListener("input", () => {
           if (input.value) {
             span.style.display = "none";
           } else {
             span.style.display = "flex";
           }
-        };
-
-        // Listen for input changes
-        input.addEventListener("input", checkAndHidePlaceholder);
-
-        // Listen for autofill (Chrome fires animationstart when autofill occurs)
-        input.addEventListener("animationstart", (e: AnimationEvent) => {
-          if (e.animationName === "onAutoFillStart") {
-            checkAndHidePlaceholder();
-          }
         });
-
         // Check initial value
-        checkAndHidePlaceholder();
-
-        // Additional check after a short delay to catch async autofill
-        setTimeout(checkAndHidePlaceholder, 100);
-        setTimeout(checkAndHidePlaceholder, 500);
+        if (input.value) {
+          span.style.display = "none";
+        }
       }
     });
 
     function rotatePlaceholders() {
-      animatedInputs.forEach((input) => {
+      // Find the active step to determine which inputs are visible
+      const activeStep = document.querySelector(".step-content.active");
+
+      animatedInputs.forEach((input, index) => {
         const span = document.querySelector(
           `.animated-placeholder[data-for="${input.id}"]`
         ) as HTMLElement;
@@ -590,14 +595,30 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         const data = placeholderData.get(fieldId);
 
         if (span && data && !input.value && span.style.display !== "none") {
-          // Only rotate if visible
-          span.style.animation = "slideOutDown 400ms ease-out forwards";
+          // Check if this input is in the active step
+          const isInActiveStep = activeStep?.contains(input);
+
+          if (!isInActiveStep) return;
+
+          // Find the index of this input within the active step
+          const activeStepInputs = Array.from(
+            activeStep.querySelectorAll('input[data-has-animated-placeholder="true"]')
+          );
+          const stepIndex = activeStepInputs.indexOf(input);
+
+          // Add staggered delay: 200ms per field in the same step
+          const staggerDelay = stepIndex * 200;
 
           setTimeout(() => {
-            data.index = (data.index + 1) % data.values.length;
-            span.textContent = data.values[data.index];
-            span.style.animation = "slideInDown 400ms ease-out forwards";
-          }, 400);
+            // Only rotate if visible
+            span.style.animation = "slideOutDown 400ms ease-out forwards";
+
+            setTimeout(() => {
+              data.index = (data.index + 1) % data.values.length;
+              span.textContent = data.values[data.index];
+              span.style.animation = "slideInDown 400ms ease-out forwards";
+            }, 400);
+          }, staggerDelay);
         }
       });
     }
@@ -1013,37 +1034,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   :global(.dark) {
     --autofill-bg: rgba(17, 24, 39, 0.9);
     --text-color: #f9fafb;
-  }
-
-  /* Autofill detection animations - triggers animationstart event */
-  @keyframes onAutoFillStart {
-    from {
-      /**/
-    }
-    to {
-      /**/
-    }
-  }
-
-  @keyframes onAutoFillCancel {
-    from {
-      /**/
-    }
-    to {
-      /**/
-    }
-  }
-
-  /* Trigger animation when autofill happens */
-  input:-webkit-autofill {
-    animation-name: onAutoFillStart;
-    animation-duration: 0.001s;
-  }
-
-  /* Trigger animation when autofill is removed */
-  input:not(:-webkit-autofill) {
-    animation-name: onAutoFillCancel;
-    animation-duration: 0.001s;
   }
 
   /* Circular pulse animation for focus */

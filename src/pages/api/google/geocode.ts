@@ -1,5 +1,11 @@
 import type { APIRoute } from "astro";
 
+// Helper function to clean address by removing ", USA" suffix
+function cleanAddress(address: string | undefined): string {
+  if (!address) return '';
+  return address.replace(/, USA$/i, '').trim();
+}
+
 /**
  * Geocoding API endpoint - converts coordinates to addresses
  * Handles both forward geocoding (address -> coordinates) and reverse geocoding (coordinates -> address)
@@ -61,14 +67,17 @@ export const GET: APIRoute = async ({ url }) => {
       if (geocodingData.status === "OK" && geocodingData.results?.length > 0) {
         console.log("✅ [GEOCODE] Geocoding API succeeded, returning precise addresses");
 
-        const results = geocodingData.results.map((result: any) => ({
-          formatted_address: result.formatted_address,
-          description: result.formatted_address,
-          label: result.formatted_address,
-          value: result.formatted_address,
-          place_id: result.place_id,
-          geometry: result.geometry,
-        }));
+        const results = geocodingData.results.map((result: any) => {
+          const cleanedAddress = cleanAddress(result.formatted_address);
+          return {
+            formatted_address: cleanedAddress,
+            description: cleanedAddress,
+            label: cleanedAddress,
+            value: cleanedAddress,
+            place_id: result.place_id,
+            geometry: result.geometry,
+          };
+        });
 
         return new Response(
           JSON.stringify({
@@ -142,19 +151,22 @@ export const GET: APIRoute = async ({ url }) => {
 
       // Convert Places API response to Geocoding API format for compatibility
       const results =
-        data.places?.map((place: any) => ({
-          formatted_address: place.formattedAddress,
-          description: place.formattedAddress,
-          label: place.formattedAddress,
-          value: place.formattedAddress,
-          place_id: place.id,
-          geometry: {
-            location: {
-              lat: parseFloat(lat),
-              lng: parseFloat(lng),
+        data.places?.map((place: any) => {
+          const cleanedAddress = cleanAddress(place.formattedAddress);
+          return {
+            formatted_address: cleanedAddress,
+            description: cleanedAddress,
+            label: cleanedAddress,
+            value: cleanedAddress,
+            place_id: place.id,
+            geometry: {
+              location: {
+                lat: parseFloat(lat),
+                lng: parseFloat(lng),
+              },
             },
-          },
-        })) || [];
+          };
+        }) || [];
 
       const geocodeResponse = {
         status: results.length > 0 ? "OK" : "ZERO_RESULTS",
@@ -215,10 +227,13 @@ export const GET: APIRoute = async ({ url }) => {
 
       // Convert to geocoding format
       const results =
-        data.suggestions?.map((suggestion: any) => ({
-          formatted_address: suggestion.placePrediction?.text?.text,
-          place_id: suggestion.placePrediction?.placeId,
-        })) || [];
+        data.suggestions?.map((suggestion: any) => {
+          const cleanedAddress = cleanAddress(suggestion.placePrediction?.text?.text);
+          return {
+            formatted_address: cleanedAddress,
+            place_id: suggestion.placePrediction?.placeId,
+          };
+        }) || [];
 
       const geocodeResponse = {
         status: results.length > 0 ? "OK" : "ZERO_RESULTS",

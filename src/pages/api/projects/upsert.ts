@@ -239,7 +239,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       siteAccess: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
       exteriorBeacon: body.address ? body.address.match(/^[^,]+/)?.[0]?.trim() : null,
       title: body.title || body.address,
-      address: body.address?.replace(/,?\s*(USA|United States)$/i, "") || body.address,
+      address: body.address?.replace(/,\s*USA$/i, "").trim() || body.address,
       architect: body.architect && body.architect.trim() !== "" ? body.architect.trim() : null,
       sqFt: body.sqFt && body.sqFt.trim() !== "" ? parseInt(body.sqFt) : null,
       newConstruction: body.newConstruction === "on" || body.newConstruction === true,

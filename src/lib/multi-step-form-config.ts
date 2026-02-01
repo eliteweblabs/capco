@@ -112,7 +112,7 @@ export interface FormStepConfig {
   // Progress bar visibility
   hideProgressBar?: boolean; // Hide progress bar for this specific step (useful for intro/welcome steps)
   // Animation effects
-  effect?: "reveal-text" | "typewriter"; // Text animation effect for title
+  effect?: "reveal-text" | "typewriter" | "none"; // Text animation effect for title (defaults to "typewriter")
 }
 
 export interface MultiStepFormConfig {

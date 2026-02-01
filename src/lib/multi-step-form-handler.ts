@@ -262,18 +262,39 @@ export function createMultiStepFormHandler(
 
     // Phone validation (if step has phone input)
     const phoneInput = stepEl.querySelector('input[type="tel"]') as HTMLInputElement;
-    if (phoneInput) {
+    if (phoneInput && phoneInput.required) {
+      // Only validate phone if it's marked as required
       const phoneValue = phoneInput.value?.trim() || "";
-      // Only validate if there's a phone value AND it's not valid
-      // Empty or partial phones will be handled by skip logic (noValidPhone condition)
-      if (phoneValue && !validatePhone(phoneValue)) {
+      
+      if (!phoneValue) {
+        // Empty phone on required field
+        if (window.showNotice) {
+          window.showNotice(
+            "error",
+            "Phone Number Required",
+            "Please enter a phone number",
+            3000
+          );
+        }
+        phoneInput.classList.add("touched");
+        return false;
+      }
+      
+      if (!validatePhone(phoneValue)) {
         const digitsOnly = phoneValue.replace(/\D/g, "");
 
-        // If it's a partial number (less than 10 digits), allow progression
-        // The skip logic will handle jumping to the correct step
+        // If it's a partial number (less than 10 digits), show error
         if (digitsOnly.length < 10) {
-          console.log("[PHONE-VALIDATION] Partial number, allowing progression with skip logic");
-          return true; // Allow progression, skip logic will handle the redirect
+          if (window.showNotice) {
+            window.showNotice(
+              "error",
+              "Invalid Phone Number",
+              "Please enter a complete 10-digit phone number",
+              3000
+            );
+          }
+          phoneInput.classList.add("touched");
+          return false;
         }
 
         // If it's 10+ digits but invalid, show error
@@ -288,6 +309,42 @@ export function createMultiStepFormHandler(
         phoneInput.classList.add("touched");
         return false;
       }
+    } else if (phoneInput && !phoneInput.required) {
+      // Optional phone field - only validate if user entered something
+      const phoneValue = phoneInput.value?.trim() || "";
+      
+      if (phoneValue) {
+        const digitsOnly = phoneValue.replace(/\D/g, "");
+        
+        // If user started entering a phone but it's incomplete, show gentle error
+        if (digitsOnly.length > 0 && digitsOnly.length < 10) {
+          if (window.showNotice) {
+            window.showNotice(
+              "warning",
+              "Incomplete Phone Number",
+              "Phone number should be 10 digits, or leave blank to skip",
+              3000
+            );
+          }
+          phoneInput.classList.add("touched");
+          return false;
+        }
+        
+        // If 10+ digits, validate it
+        if (digitsOnly.length >= 10 && !validatePhone(phoneValue)) {
+          if (window.showNotice) {
+            window.showNotice(
+              "error",
+              "Invalid Phone Number",
+              "Please enter a valid US phone number",
+              3000
+            );
+          }
+          phoneInput.classList.add("touched");
+          return false;
+        }
+      }
+      // Empty phone on optional field is OK - allow progression
     }
 
     // Email uniqueness validation (configurable via registerUser flag)
@@ -402,16 +459,41 @@ export function createMultiStepFormHandler(
       input.addEventListener("input", (e) => {
         const target = e.target as HTMLInputElement;
         const cursorPosition = target.selectionStart || 0;
-        const formatted = formatPhoneAsYouType(target.value);
-        const wasDeleting = target.value.length < lastValue.length;
+        const oldValue = lastValue;
+        const newRawValue = target.value;
+        
+        // Count digits before cursor position to maintain relative position
+        const textBeforeCursor = newRawValue.substring(0, cursorPosition);
+        const digitsBeforeCursor = textBeforeCursor.replace(/\D/g, "").length;
+        
+        const formatted = formatPhoneAsYouType(newRawValue);
+        const wasDeleting = newRawValue.length < oldValue.length;
 
         target.value = formatted;
         lastValue = formatted;
 
+        // Calculate new cursor position based on digit count
         if (wasDeleting) {
+          // When deleting, keep cursor where it was
           target.setSelectionRange(cursorPosition, cursorPosition);
         } else {
-          target.setSelectionRange(formatted.length, formatted.length);
+          // Find the position after the same number of digits in formatted string
+          let newCursorPos = 0;
+          let digitCount = 0;
+          
+          for (let i = 0; i < formatted.length && digitCount < digitsBeforeCursor; i++) {
+            if (/\d/.test(formatted[i])) {
+              digitCount++;
+            }
+            newCursorPos = i + 1;
+          }
+          
+          // If we're at the end or past it, move to end
+          if (digitsBeforeCursor >= formatted.replace(/\D/g, "").length) {
+            newCursorPos = formatted.length;
+          }
+          
+          target.setSelectionRange(newCursorPos, newCursorPos);
         }
 
         // Update button text and data-next attribute for phone steps
@@ -521,10 +603,24 @@ export function createMultiStepFormHandler(
         // Visual feedback: highlight selected button
         const allFuelButtons = form.querySelectorAll("button.fuel-choice");
         allFuelButtons.forEach((btn) => {
-          btn.classList.remove("!ring-2", "!ring-primary-600", "!bg-primary-50");
+          btn.classList.remove(
+            "!ring-2",
+            "!ring-primary-600",
+            "!bg-primary-600",
+            "dark:!bg-primary-600",
+            "!text-white",
+            "dark:!text-white"
+          );
           btn.classList.add("hover:bg-gray-50");
         });
-        fuelChoiceBtn.classList.add("!ring-2", "!ring-primary-600", "!bg-primary-50");
+        fuelChoiceBtn.classList.add(
+          "!ring-2",
+          "!ring-primary-600",
+          "!bg-primary-600",
+          "dark:!bg-primary-600",
+          "!text-white",
+          "dark:!text-white"
+        );
         fuelChoiceBtn.classList.remove("hover:bg-gray-50");
 
         // Enable the next button
@@ -555,10 +651,24 @@ export function createMultiStepFormHandler(
           "button.hvac-choice:not([style*='display: none'])"
         );
         allHvacButtons.forEach((btn) => {
-          btn.classList.remove("!ring-2", "!ring-primary-600", "!bg-primary-50");
+          btn.classList.remove(
+            "!ring-2",
+            "!ring-primary-600",
+            "!bg-primary-600",
+            "dark:!bg-primary-600",
+            "!text-white",
+            "dark:!text-white"
+          );
           btn.classList.add("hover:bg-gray-50");
         });
-        hvacChoiceBtn.classList.add("!ring-2", "!ring-primary-600", "!bg-primary-50");
+        hvacChoiceBtn.classList.add(
+          "!ring-2",
+          "!ring-primary-600",
+          "!bg-primary-600",
+          "dark:!bg-primary-600",
+          "!text-white",
+          "dark:!text-white"
+        );
         hvacChoiceBtn.classList.remove("hover:bg-gray-50");
 
         // Enable the submit button

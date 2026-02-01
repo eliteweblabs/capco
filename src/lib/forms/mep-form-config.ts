@@ -46,17 +46,17 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 1: Name (skip if authenticated)
     {
       stepNumber: 1,
-      title: `Hi, I'm Leah from ${globalCompanyName}. I'll assist you with the mechanical, engineering & plumbing intake process.<span data-typewriter-pause="250">.</span><span data-typewriter-pause="100">.</span><br><br>Ready to get started?<span data-typewriter-pause="360">!</span>`,
-      effect: "typewriter",
+      title: `Hi, I'm Leah...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's get you started with the mechanical, engineering & plumbing intake process.<br><br>Ready to get started?<span data-typewriter-pause="360">!</span>`,
       // subtitle:
       //   "It takes about 2 minutes to complete. We typically respond within 1 business day EDT. ready to get started?",
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fieldLayout: "grid", // Enable grid layout for side-by-side fields
       fields: [],
+      hideProgressBar: true,
       buttons: [
         {
           type: "prev",
-          label: '<span class="hidden md:block">Back to Home</span>',
+          label: "Back",
           href: "/",
         },
         {
@@ -70,7 +70,6 @@ export const mepFormConfig: MultiStepFormConfig = {
     {
       stepNumber: 2,
       title: `What's your name?`,
-      effect: "typewriter",
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fieldLayout: "grid", // Enable grid layout for side-by-side fields
@@ -119,7 +118,6 @@ export const mepFormConfig: MultiStepFormConfig = {
       stepNumber: 3,
       title:
         "What's your email <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
-      effect: "typewriter",
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fields: [
@@ -153,7 +151,7 @@ export const mepFormConfig: MultiStepFormConfig = {
     {
       stepNumber: 4,
       title:
-        "What's a good phone number <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
+        "What's a good phone number to reach you <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
       subtitle: "",
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fields: [
@@ -162,7 +160,7 @@ export const mepFormConfig: MultiStepFormConfig = {
           id: "step-phone",
           name: "phone",
           placeholder: "1-(555)-123-4567",
-          required: true,
+          required: false,
           autocomplete: "tel",
           icon: "phone",
           iconPosition: "left",
@@ -172,7 +170,6 @@ export const mepFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: '<span class="hidden md:block">back</span>',
           dataPrev: 3,
         },
         {
@@ -187,18 +184,19 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 4: Address
     {
       stepNumber: 5,
-      title: "Project address?",
-      subtitle: "Where is the MEP project located?",
+      title:
+        "Where is this MEP project located? Or leave blank to skip.<span data-typewriter-pause='500'>.</span><span data-typewriter-pause='500'>.</span>",
+      subtitle: "",
       fields: [
         {
           type: "component",
           id: "step-address",
           name: "address",
           component: "InlineAddressSearch",
-          required: true,
+          required: false,
           componentProps: {
             placeholder: "Start typing an address...",
-            required: true,
+            required: false,
             currentLocation: true,
           },
         },
@@ -220,8 +218,9 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 5: Fuel Source (Radio buttons via choice buttons)
     {
       stepNumber: 6,
-      title: "Fuel Source?",
-      subtitle: "What type of fuel does the HVAC system use?",
+      title:
+        "What is the fuel source for <span data-form-session-meta='address' data-default='this project'>this project</span>?",
+      // subtitle: "What type of fuel does the HVAC system use?",
       fields: [
         {
           type: "hidden",
@@ -233,11 +232,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: '<span class="hidden md:block">back</span>',
-          variant: "ghost",
           dataPrev: 4,
-          icon: "arrow-left",
-          iconPosition: "left",
         },
         {
           type: "choice",

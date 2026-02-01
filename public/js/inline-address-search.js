@@ -75,9 +75,10 @@ export function initializeAddressSearch(config) {
           const firstResult = resultsArray[0];
           const firstAddress =
             firstResult[labelField] || firstResult.label || firstResult.description;
-          searchInput.value = firstAddress;
+          const cleanedAddress = cleanAddress(firstAddress);
+          searchInput.value = cleanedAddress;
           hiddenInput.value = firstResult[valueField] || firstResult.value || firstResult.place_id;
-          console.log(`✅ [INLINE-ADDRESS] Auto-selected: ${firstAddress}`);
+          console.log(`✅ [INLINE-ADDRESS] Auto-selected: ${cleanedAddress}`);
         }
       } catch (error) {
         console.error(`📍 [INLINE-ADDRESS] Geolocation error:`, error);
@@ -109,6 +110,12 @@ export function initializeAddressSearch(config) {
   function hideDropdown() {
     dropdown.classList.add("hidden");
   }
+  // Helper function to clean address (remove ", USA" suffix)
+  function cleanAddress(address) {
+    if (!address) return address;
+    return address.replace(/, USA$/i, '').trim();
+  }
+  
   // Helper function to create result element
   function createResultElement(result, index, isSelected = false) {
     const li = document.createElement("li");
@@ -120,7 +127,12 @@ export function initializeAddressSearch(config) {
     li.style.cssText = "user-select: none; -webkit-user-select: none;";
     li.dataset.index = String(index);
     li.dataset.value = result[valueField] || result.value || result.place_id || result.id;
-    li.dataset.label = result[labelField] || result.label || result.description;
+    
+    // Clean the label to remove ", USA"
+    const rawLabel = result[labelField] || result.label || result.description;
+    const cleanedLabel = cleanAddress(rawLabel);
+    li.dataset.label = cleanedLabel;
+    
     try {
       li.dataset.json = JSON.stringify(result);
     } catch (e) {
@@ -128,7 +140,7 @@ export function initializeAddressSearch(config) {
     }
     const textSpan = document.createElement("span");
     textSpan.className = "block";
-    textSpan.textContent = result[labelField] || result.label || result.description;
+    textSpan.textContent = cleanedLabel;
     li.appendChild(textSpan);
     return li;
   }

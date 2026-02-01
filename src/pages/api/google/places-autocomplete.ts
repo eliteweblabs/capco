@@ -1,5 +1,11 @@
 import type { APIRoute } from "astro";
 
+// Helper function to clean address by removing ", USA" suffix
+function cleanAddress(address: string | undefined): string {
+  if (!address) return '';
+  return address.replace(/, USA$/i, '').trim();
+}
+
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
 console.log("🚧 [DEAD-STOP-2024-12-19] places-autocomplete.ts accessed - may be unused");
@@ -122,14 +128,17 @@ export const GET: APIRoute = async ({ url }) => {
 
     // Convert new API response to legacy format for compatibility
     const allPredictions =
-      data.suggestions?.map((suggestion: any) => ({
-        place_id: suggestion.placePrediction?.placeId,
-        description: suggestion.placePrediction?.text?.text,
-        structured_formatting: {
-          main_text: suggestion.placePrediction?.text?.text,
-          secondary_text: suggestion.placePrediction?.text?.text,
-        },
-      })) || [];
+      data.suggestions?.map((suggestion: any) => {
+        const description = cleanAddress(suggestion.placePrediction?.text?.text);
+        return {
+          place_id: suggestion.placePrediction?.placeId,
+          description: description,
+          structured_formatting: {
+            main_text: description,
+            secondary_text: description,
+          },
+        };
+      }) || [];
 
     // Limit results to maxResults parameter
     const limitedPredictions = allPredictions.slice(0, maxResults);
