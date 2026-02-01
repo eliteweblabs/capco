@@ -1,6 +1,13 @@
 ---
 // OTP Authentication Form Component
 import Button from "../common/Button.astro";
+import {
+  otpEmailConfig,
+  otpCodeConfig,
+  otpFormButtonConfig,
+  otpApiConfig,
+  otpNotificationConfig,
+} from "../../lib/otp-email-config";
 
 const { globalInputClasses } = Astro.props;
 ---
@@ -10,20 +17,17 @@ const { globalInputClasses } = Astro.props;
   <div id="otp-request-form">
     <form id="request-otp-form" class="grid w-full grid-cols-1 gap-3 space-y-8">
       <div>
-        <label
-          for="otp-email"
-          class="hidden mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Email
+        <label for={otpEmailConfig.id} class={otpEmailConfig.label.classes}>
+          {otpEmailConfig.label.text}
         </label>
         <input
-          type="email"
-          name="email"
-          id="otp-email"
-          placeholder="Your email address"
-          required
-          autocomplete="email"
-          autofocus
+          type={otpEmailConfig.type}
+          name={otpEmailConfig.name}
+          id={otpEmailConfig.id}
+          placeholder={otpEmailConfig.placeholder}
+          required={otpEmailConfig.required}
+          autocomplete={otpEmailConfig.autocomplete}
+          autofocus={otpEmailConfig.autofocus}
           class={`${globalInputClasses} text-center`}
         />
       </div>
@@ -31,15 +35,21 @@ const { globalInputClasses } = Astro.props;
       <div class="flex justify-between gap-3">
         <Button
           href="/auth/login"
-          variant="outline"
-          size="lg"
-          icon="arrow-left"
-          iconPosition="left"
+          variant={otpFormButtonConfig.back.variant}
+          size={otpFormButtonConfig.back.size}
+          icon={otpFormButtonConfig.back.icon}
+          iconPosition={otpFormButtonConfig.back.iconPosition}
         >
-          back
+          {otpFormButtonConfig.back.label}
         </Button>
-        <Button type="submit" variant="primary" size="lg" icon="mail" iconPosition="right">
-          Send Code
+        <Button
+          type={otpFormButtonConfig.sendCode.type}
+          variant={otpFormButtonConfig.sendCode.variant}
+          size={otpFormButtonConfig.sendCode.size}
+          icon={otpFormButtonConfig.sendCode.icon}
+          iconPosition={otpFormButtonConfig.sendCode.iconPosition}
+        >
+          {otpFormButtonConfig.sendCode.label}
         </Button>
       </div>
     </form>
@@ -50,23 +60,21 @@ const { globalInputClasses } = Astro.props;
     <form id="verify-otp-form" class="grid w-full grid-cols-1 gap-3 space-y-8">
       <div>
         <p class="mb-4 text-sm text-center text-gray-600 dark:text-gray-400">
-          Enter the 6-digit code sent to <span id="otp-sent-email" class="font-semibold"></span>
+          {otpCodeConfig.instructionText}
+          <span id="otp-sent-email" class="font-semibold"></span>
         </p>
-        <label
-          for="otp-code"
-          class="hidden mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Verification Code
+        <label for={otpCodeConfig.id} class={otpCodeConfig.label.classes}>
+          {otpCodeConfig.label.text}
         </label>
         <input
-          type="text"
-          name="token"
-          id="otp-code"
-          placeholder="Enter 6-digit code"
-          required
-          maxlength="6"
-          pattern="[0-9]{6}"
-          autocomplete="one-time-code"
+          type={otpCodeConfig.type}
+          name={otpCodeConfig.name}
+          id={otpCodeConfig.id}
+          placeholder={otpCodeConfig.placeholder}
+          required={otpCodeConfig.required}
+          maxlength={otpCodeConfig.maxlength}
+          pattern={otpCodeConfig.pattern}
+          autocomplete={otpCodeConfig.autocomplete}
           class={`${globalInputClasses} text-center text-2xl tracking-widest font-mono`}
         />
       </div>
@@ -75,25 +83,31 @@ const { globalInputClasses } = Astro.props;
         <Button
           type="button"
           id="back-to-email-button"
-          variant="outline"
-          size="lg"
-          icon="arrow-left"
-          iconPosition="left"
+          variant={otpFormButtonConfig.back.variant}
+          size={otpFormButtonConfig.back.size}
+          icon={otpFormButtonConfig.back.icon}
+          iconPosition={otpFormButtonConfig.back.iconPosition}
         >
-          back
+          {otpFormButtonConfig.back.label}
         </Button>
-        <Button type="submit" variant="primary" size="lg" icon="check" iconPosition="right">
-          Verify
+        <Button
+          type={otpFormButtonConfig.verify.type}
+          variant={otpFormButtonConfig.verify.variant}
+          size={otpFormButtonConfig.verify.size}
+          icon={otpFormButtonConfig.verify.icon}
+          iconPosition={otpFormButtonConfig.verify.iconPosition}
+        >
+          {otpFormButtonConfig.verify.label}
         </Button>
       </div>
 
       <div class="text-center">
         <button
-          type="button"
+          type={otpFormButtonConfig.resend.type}
           id="resend-otp-button"
-          class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+          class={otpFormButtonConfig.resend.classes}
         >
-          Resend code
+          {otpFormButtonConfig.resend.label}
         </button>
       </div>
     </form>
@@ -101,6 +115,13 @@ const { globalInputClasses } = Astro.props;
 </div>
 
 <script>
+  import {
+    otpEmailConfig,
+    otpCodeConfig,
+    otpApiConfig,
+    otpNotificationConfig,
+  } from "../../lib/otp-email-config";
+
   let currentEmail = "";
 
   // Initialize OTP forms
@@ -119,11 +140,17 @@ const { globalInputClasses } = Astro.props;
     requestForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const emailInput = requestForm.querySelector("#otp-email") as HTMLInputElement;
+      const emailInput = requestForm.querySelector(
+        `#${otpEmailConfig.id}`
+      ) as HTMLInputElement;
       const email = emailInput?.value?.trim();
 
       if (!email) {
-        showNotification("error", "Validation Error", "Please enter your email address");
+        showNotification(
+          otpNotificationConfig.error.type,
+          otpNotificationConfig.error.title,
+          otpEmailConfig.validation.errorMessage
+        );
         return;
       }
 
@@ -131,16 +158,19 @@ const { globalInputClasses } = Astro.props;
 
       // Show loading
       showNotification(
-        "info",
-        "Sending Code...",
-        "Please wait while we send your verification code"
+        otpNotificationConfig.sending.type,
+        otpNotificationConfig.sending.title,
+        otpNotificationConfig.sending.message
       );
 
       try {
-        const response = await fetch("/api/auth/send-otp", {
+        const response = await fetch(otpApiConfig.endpoints.sendOtp, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, type: "magiclink" }),
+          body: JSON.stringify({
+            email,
+            type: otpApiConfig.requestBody.sendOtp.type,
+          }),
         });
 
         const result = await response.json();
@@ -159,17 +189,21 @@ const { globalInputClasses } = Astro.props;
         }
 
         // Focus on code input
-        const codeInput = document.getElementById("otp-code") as HTMLInputElement;
+        const codeInput = document.getElementById(otpCodeConfig.id) as HTMLInputElement;
         if (codeInput) {
           setTimeout(() => codeInput.focus(), 100);
         }
 
-        showNotification("success", "Code Sent!", "Check your email for the verification code");
+        showNotification(
+          otpNotificationConfig.sent.type,
+          otpNotificationConfig.sent.title,
+          otpNotificationConfig.sent.message
+        );
       } catch (error) {
         console.error("[OTP] Error sending code:", error);
         showNotification(
-          "error",
-          "Error",
+          otpNotificationConfig.error.type,
+          otpNotificationConfig.error.title,
           error instanceof Error ? error.message : "Failed to send verification code"
         );
       }
@@ -179,22 +213,36 @@ const { globalInputClasses } = Astro.props;
     verifyForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const codeInput = verifyForm.querySelector("#otp-code") as HTMLInputElement;
+      const codeInput = verifyForm.querySelector(
+        `#${otpCodeConfig.id}`
+      ) as HTMLInputElement;
       const token = codeInput?.value?.trim();
 
-      if (!token || token.length !== 6) {
-        showNotification("error", "Validation Error", "Please enter a valid 6-digit code");
+      if (!token || token.length !== otpCodeConfig.validation.length) {
+        showNotification(
+          otpNotificationConfig.error.type,
+          otpNotificationConfig.error.title,
+          otpCodeConfig.validation.errorMessage
+        );
         return;
       }
 
       // Show loading
-      showNotification("info", "Verifying...", "Please wait while we verify your code");
+      showNotification(
+        otpNotificationConfig.verifying.type,
+        otpNotificationConfig.verifying.title,
+        otpNotificationConfig.verifying.message
+      );
 
       try {
-        const response = await fetch("/api/auth/verify-otp", {
+        const response = await fetch(otpApiConfig.endpoints.verifyOtp, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: currentEmail, token, type: "email" }),
+          body: JSON.stringify({
+            email: currentEmail,
+            token,
+            type: otpApiConfig.requestBody.verifyOtp.type,
+          }),
         });
 
         const result = await response.json();
@@ -204,15 +252,19 @@ const { globalInputClasses } = Astro.props;
         }
 
         // Success - redirect to dashboard
-        showNotification("success", "Success!", "Verification successful. Redirecting...");
+        showNotification(
+          otpNotificationConfig.verified.type,
+          otpNotificationConfig.verified.title,
+          otpNotificationConfig.verified.message
+        );
 
         setTimeout(() => {
-          window.location.href = "/project/dashboard";
+          window.location.href = otpApiConfig.redirectUrl;
         }, 1000);
       } catch (error) {
         console.error("[OTP] Error verifying code:", error);
         showNotification(
-          "error",
+          otpNotificationConfig.error.type,
           "Verification Failed",
           error instanceof Error ? error.message : "Invalid or expired code"
         );
@@ -232,7 +284,7 @@ const { globalInputClasses } = Astro.props;
         document.getElementById("otp-request-form")?.classList.remove("hidden");
 
         // Clear the code input
-        const codeInput = document.getElementById("otp-code") as HTMLInputElement;
+        const codeInput = document.getElementById(otpCodeConfig.id) as HTMLInputElement;
         if (codeInput) {
           codeInput.value = "";
         }
@@ -243,17 +295,28 @@ const { globalInputClasses } = Astro.props;
     if (resendButton) {
       resendButton.addEventListener("click", async () => {
         if (!currentEmail) {
-          showNotification("error", "Error", "Email not found. Please start over.");
+          showNotification(
+            otpNotificationConfig.error.type,
+            otpNotificationConfig.error.title,
+            "Email not found. Please start over."
+          );
           return;
         }
 
-        showNotification("info", "Resending Code...", "Please wait");
+        showNotification(
+          otpNotificationConfig.resending.type,
+          otpNotificationConfig.resending.title,
+          otpNotificationConfig.resending.message
+        );
 
         try {
-          const response = await fetch("/api/auth/send-otp", {
+          const response = await fetch(otpApiConfig.endpoints.sendOtp, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: currentEmail, type: "magiclink" }),
+            body: JSON.stringify({
+              email: currentEmail,
+              type: otpApiConfig.requestBody.sendOtp.type,
+            }),
           });
 
           const result = await response.json();
@@ -262,12 +325,16 @@ const { globalInputClasses } = Astro.props;
             throw new Error(result.details || result.error || "Failed to resend OTP");
           }
 
-          showNotification("success", "Code Resent!", "Check your email for the new code");
+          showNotification(
+            otpNotificationConfig.resent.type,
+            otpNotificationConfig.resent.title,
+            otpNotificationConfig.resent.message
+          );
         } catch (error) {
           console.error("[OTP] Error resending code:", error);
           showNotification(
-            "error",
-            "Error",
+            otpNotificationConfig.error.type,
+            otpNotificationConfig.error.title,
             error instanceof Error ? error.message : "Failed to resend code"
           );
         }
@@ -275,7 +342,7 @@ const { globalInputClasses } = Astro.props;
     }
 
     // Auto-format OTP input (only allow numbers)
-    const codeInput = document.getElementById("otp-code") as HTMLInputElement;
+    const codeInput = document.getElementById(otpCodeConfig.id) as HTMLInputElement;
     if (codeInput) {
       codeInput.addEventListener("input", (e) => {
         const target = e.target as HTMLInputElement;
