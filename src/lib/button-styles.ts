@@ -57,27 +57,27 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
   // Variant classes using global color system
   const variantClasses = {
     primary:
-      "hover:scale-101 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl",
+      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl transition-all duration-200 rounded-full border-2 border-primary-500 bg-primary-500 text-white [@media(hover:hover)]:hover:bg-primary-600 dark:bg-primary-500 dark:[@media(hover:hover)]:hover:bg-primary-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl",
     secondary:
-      "hover:scale-101 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600 shadow-lg hover:shadow-xl",
+      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white [@media(hover:hover)]:hover:bg-secondary-600 dark:bg-secondary-500 dark:[@media(hover:hover)]:hover:bg-secondary-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl",
     success:
-      "rounded-full bg-success-500 text-white hover:bg-success-600 dark:bg-success-500 dark:hover:bg-success-600 shadow-lg hover:shadow-xl animate-pulse-breathe",
+      "rounded-full bg-success-500 text-white [@media(hover:hover)]:hover:bg-success-600 dark:bg-success-500 dark:[@media(hover:hover)]:hover:bg-success-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl animate-pulse-breathe",
     warning:
-      "bg-warning-500 text-white hover:bg-warning-600 dark:bg-warning-500 dark:hover:bg-warning-600 shadow-lg hover:shadow-xl",
+      "bg-warning-500 text-white [@media(hover:hover)]:hover:bg-warning-600 dark:bg-warning-500 dark:[@media(hover:hover)]:hover:bg-warning-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl",
     danger:
-      "rounded-full bg-danger-500 text-white hover:bg-danger-600 dark:bg-danger-500 dark:hover:bg-danger-600 shadow-lg hover:shadow-xl",
+      "rounded-full bg-danger-500 text-white [@media(hover:hover)]:hover:bg-danger-600 dark:bg-danger-500 dark:[@media(hover:hover)]:hover:bg-danger-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl",
     outline:
-      "hover:scale-101 hover:-translate-y-0.5 hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-sm",
+      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-sm",
     ghost:
-      "rounded-full text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
-    link: "link text-primary-500 hover:underline hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300",
+      "rounded-full text-primary-500 [@media(hover:hover)]:hover:bg-primary-50 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-900/20",
+    link: "link text-primary-500 [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:text-primary-600 dark:text-primary-400 dark:[@media(hover:hover)]:hover:text-primary-300",
     loading: "bg-primary-500 text-white cursor-not-allowed opacity-75 dark:bg-primary-500",
     disabled:
       "rounded-full bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700 disabled",
     selected:
       "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
     anchor:
-      "text-gray-800 dark:text-gray-200 hover:text-primary dark:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 hover:shadow-none opacity-100 transition-all duration-200",
+      "text-gray-800 dark:text-gray-200 [@media(hover:hover)]:hover:text-primary dark:[@media(hover:hover)]:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 [@media(hover:hover)]:hover:shadow-none opacity-100 transition-all duration-200",
     tab: "tab-button pill-nav-item",
   };
 

@@ -45,6 +45,10 @@ export const GLOBAL_BUTTON_DEFAULTS = {
     icon: "check",
     iconPosition: "right" as const,
   },
+  choice: {
+    variant: "outline" as const,
+    size: "md" as const,
+  },
 };
 
 export interface FormFieldConfig {

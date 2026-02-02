@@ -755,12 +755,6 @@ export function createMultiStepFormHandler(
             "!text-white",
             "dark:!text-white"
           );
-          choiceBtn.classList.add("hover:bg-gray-50");
-          
-          // Force blur to remove hover state after deselect
-          if (choiceBtn instanceof HTMLElement) {
-            choiceBtn.blur();
-          }
         } else {
           // Select: update hidden input
           targetInput.value = choiceValue || "";
@@ -777,7 +771,6 @@ export function createMultiStepFormHandler(
               "!text-white",
               "dark:!text-white"
             );
-            btn.classList.add("hover:bg-gray-50");
           });
           
           // Add selection to clicked button
@@ -789,12 +782,6 @@ export function createMultiStepFormHandler(
             "!text-white",
             "dark:!text-white"
           );
-          choiceBtn.classList.remove("hover:bg-gray-50");
-          
-          // Force blur to remove hover state after select
-          if (choiceBtn instanceof HTMLElement) {
-            choiceBtn.blur();
-          }
         }
         
         // Manually trigger change event to update button labels

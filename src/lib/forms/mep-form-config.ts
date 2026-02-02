@@ -46,7 +46,7 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 1: Name (skip if authenticated)
     {
       stepNumber: 1,
-      title: `<span data-typewriter-pause="1360"></span>Hi, I'm Leah...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's get you started with the mechanical, engineering & plumbing intake process.<br><br>Ready to get started?`,
+      title: `<span data-typewriter-pause="1360"></span>Hi, I'm Leah...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's get you started with the mechanical, engineering & plumbing intake process.<br><br>Ready to begin?`,
       // subtitle:
       //   "It takes about 2 minutes to complete. We typically respond within 1 business day EDT. ready to get started?",
       skipCondition: "isAuthenticated", // Skip for logged-in users
@@ -214,7 +214,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       ],
     },
 
-    // Step 5: Fuel Source (Radio buttons via choice buttons)
+    // Step 6: Fuel Source (Radio buttons via choice buttons)
     {
       stepNumber: 6,
       title:
@@ -236,13 +236,11 @@ export const mepFormConfig: MultiStepFormConfig = {
             {
               type: "choice",
               label: "Gas",
-              variant: "outline",
               dataValue: "gas",
             },
             {
               type: "choice",
               label: "Electric",
-              variant: "outline",
               dataValue: "electric",
             },
           ],
@@ -251,7 +249,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          dataPrev: 5,
+          dataPrev: 6,
         },
         {
           type: "next",
@@ -262,11 +260,12 @@ export const mepFormConfig: MultiStepFormConfig = {
       ],
     },
 
-    // Step 6: HVAC System Type (conditional based on fuel source)
+    // Step 7: HVAC System Type (conditional based on fuel source)
     {
       stepNumber: 7,
-      title: "HVAC System",
-      subtitle: "Select your system:",
+      title:
+        "What type of <span data-form-session-meta='fuelSource' data-default=''></span> HVAC system is at <span data-form-session-meta='address' data-default='this project'>this project</span>?",
+      subtitle: "",
       fieldLayout: "single",
       fields: [
         {
@@ -288,66 +287,37 @@ export const mepFormConfig: MultiStepFormConfig = {
             {
               type: "choice",
               label: "Natural gas fired air handler and furnace",
-              variant: "outline",
-              size: "md",
               dataValue: "Natural gas fired air handler and furnace",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "Propane gas fired air handler and furnace",
-              variant: "outline",
-              size: "md",
               dataValue: "Propane gas fired air handler and furnace",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "Conventional ducted system",
-              variant: "outline",
-              size: "md",
               dataValue: "Conventional ducted system",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "High velocity deducted system",
-              variant: "outline",
-              size: "md",
               dataValue: "High velocity deducted system",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "Forced hot water radiant baseboard",
-              variant: "outline",
-              size: "md",
               dataValue: "Forced hot water radiant baseboard",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "Other radiant heat",
-              variant: "outline",
-              size: "md",
               dataValue: "Other radiant heat",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "Other",
-              variant: "outline",
-              size: "md",
               dataValue: "Other",
-              classes: "w-full !justify-start !text-left mb-2",
-            },
-            {
-              type: "choice",
-              label: "N/A",
-              variant: "outline",
-              size: "md",
-              dataValue: "N/A",
-              classes: "w-full !justify-start !text-left mb-2",
             },
           ],
         },
@@ -364,50 +334,27 @@ export const mepFormConfig: MultiStepFormConfig = {
             {
               type: "choice",
               label: "Ceiling cassette mini split",
-              variant: "outline",
-              size: "md",
               dataValue: "Ceiling cassette mini split",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "Wall mounted mini split",
-              variant: "outline",
-              size: "md",
               dataValue: "Wall mounted mini split",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "Electric mini split air handler and conventional ductwork",
-              variant: "outline",
-              size: "md",
               dataValue: "Electric mini split air handler and conventional ductwork",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "Cove Heating",
-              variant: "outline",
-              size: "md",
               dataValue: "Cove Heating",
-              classes: "w-full !justify-start !text-left mb-2",
             },
             {
               type: "choice",
               label: "Other",
-              variant: "outline",
-              size: "md",
               dataValue: "Other",
-              classes: "w-full !justify-start !text-left mb-2",
-            },
-            {
-              type: "choice",
-              label: "N/A",
-              variant: "outline",
-              size: "md",
-              dataValue: "N/A",
-              classes: "w-full !justify-start !text-left mb-2",
             },
           ],
         },
@@ -418,9 +365,146 @@ export const mepFormConfig: MultiStepFormConfig = {
           dataPrev: 6,
         },
         {
-          type: "submit",
-          label: "submit",
-          icon: "check",
+          type: "next",
+          dataNext: 8,
+        },
+      ],
+    },
+
+    // Step 8: Electric Service (Radio buttons via choice buttons)
+    {
+      stepNumber: 8,
+      title:
+        "What is the electric service at <span data-form-session-meta='address' data-default='this project'>this project</span>?",
+      // subtitle: "What type of fuel does the HVAC system use?",
+      fields: [
+        {
+          type: "hidden",
+          id: "step-electric-service",
+          name: "electricService",
+          required: false,
+        },
+        {
+          type: "button-group",
+          id: "electric-service-group",
+          name: "electricService",
+          required: false,
+          buttons: [
+            {
+              type: "choice",
+              label: "New Service",
+              dataValue: "New Service",
+            },
+            {
+              type: "choice",
+              label: "Existing Service",
+              dataValue: "Existing Service",
+            },
+          ],
+        },
+      ],
+      buttons: [
+        {
+          type: "prev",
+          dataPrev: 7,
+        },
+        {
+          type: "next",
+          label: "unsure",
+          validLabel: "next",
+          dataNext: 9,
+        },
+      ],
+    },
+
+    // Step 9: Electric Service Type (Radio buttons via choice buttons)
+    {
+      stepNumber: 9,
+      title:
+        "Is there a transformer at <span data-form-session-meta='address' data-default='this project'>this project</span>?",
+      // subtitle: "What type of fuel does the HVAC system use?",
+      fields: [
+        {
+          type: "hidden",
+          id: "step-transformer",
+          name: "transformer",
+          required: false,
+        },
+        {
+          type: "button-group",
+          id: "electric-service-group",
+          name: "transformer",
+          required: false,
+          buttons: [
+            {
+              type: "choice",
+              label: "Yes",
+              dataValue: "Yes",
+            },
+            {
+              type: "choice",
+              label: "No",
+              dataValue: "No",
+            },
+          ],
+        },
+      ],
+      buttons: [
+        {
+          type: "prev",
+          dataPrev: 8,
+        },
+        {
+          type: "next",
+          label: "unsure",
+          validLabel: "next",
+          dataNext: 10,
+        },
+      ],
+    },
+
+    // Step 10: EV Charging Service (Radio buttons via choice buttons)
+    {
+      stepNumber: 10,
+      title:
+        "Is there EV charging service at <span data-form-session-meta='address' data-default='this project'>this project</span>?",
+      // subtitle: "What type of fuel does the HVAC system use?",
+      fields: [
+        {
+          type: "hidden",
+          id: "step-ev-charging-service",
+          name: "evChargingService",
+          required: false,
+        },
+        {
+          type: "button-group",
+          id: "electric-service-group",
+          name: "evChargingService",
+          required: false,
+          buttons: [
+            {
+              type: "choice",
+              label: "Yes",
+              dataValue: "Yes",
+            },
+            {
+              type: "choice",
+              label: "No",
+              dataValue: "No",
+            },
+          ],
+        },
+      ],
+      buttons: [
+        {
+          type: "prev",
+          dataPrev: 9,
+        },
+        {
+          type: "next",
+          label: "unsure",
+          validLabel: "next",
+          dataNext: 11,
         },
       ],
     },
