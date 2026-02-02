@@ -43,15 +43,13 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     {
       config.steps.map((step) => (
         <div
-          class="step-content"
+          class="step-content space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12"
           data-step={step.stepNumber}
           data-hide-progress-bar={step.hideProgressBar ? "true" : "false"}
           tabindex="-1"
         >
-          <div class="space-y-12 sm:space-y-18 lg:space-y-24" tabindex="-1">
-            {/* Step Header */}
-            <div tabindex="-1">
-              {step.showIcon && step.icon && (
+          {/* Step Header */}
+          {/* {step.showIcon && step.icon && (
                 <div
                   class="mx-auto mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30"
                   tabindex="-1"
@@ -62,291 +60,270 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                     class="text-primary-600 dark:text-primary-400"
                   />
                 </div>
-              )}
-              {step.title && (
-                <div class="title-scroll-container relative" tabindex="-1">
-                  <div class="title-scroll-fade-top" />
-                  <div class="title-scroll-wrapper" tabindex="-1">
-                    <h2
-                      class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
-                        step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
-                      }`}
-                      data-text={step.title}
-                      set:html={step.title}
-                      tabindex="-1"
-                    />
-                  </div>
-                </div>
-              )}
-              {step.subtitle && (
-                <p
-                  class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md"
+              )} */}
+          {step.title && (
+            <div class="title-scroll-container relative" tabindex="-1">
+              <div class="title-scroll-fade-top" />
+              <div class="title-scroll-wrapper" tabindex="-1">
+                <h2
+                  class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
+                    step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
+                  }`}
+                  data-text={step.title}
+                  set:html={step.title}
                   tabindex="-1"
-                >
-                  {step.subtitle}
-                </p>
-              )}
+                />
+              </div>
             </div>
+          )}
+          {step.subtitle && (
+            <p
+              class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md"
+              tabindex="-1"
+            >
+              {step.subtitle}
+            </p>
+          )}
 
-            {/* Auth Providers (for registration and login forms) - at top */}
-            {(step.additionalContent === "google-oauth" ||
-              step.additionalContent === "auth-providers") && (
-              <div class="space-y-8" tabindex="-1">
+          {/* Auth Providers (for registration and login forms) - at top */}
+          {(step.additionalContent === "google-oauth" ||
+            step.additionalContent === "auth-providers") && (
+            <>
+              <div class="" tabindex="-1">
                 <AuthProviders
                   mode={step.additionalContent === "auth-providers" ? "login" : "register"}
                 />
-
-                <div class="flex items-center gap-4 pb-4" tabindex="-1">
-                  <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
-                  <span class="text-xs text-zinc-500 dark:text-zinc-400 uppercase">
-                    {step.additionalContent === "auth-providers"
-                      ? "or continue with email"
-                      : "or register with email"}
-                  </span>
-                  <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
-                </div>
               </div>
-            )}
+              <div class="flex items-center gap-4 pb-4" tabindex="-1">
+                <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
+                <span class="text-xs text-zinc-500 dark:text-zinc-400 uppercase">
+                  {step.additionalContent === "auth-providers"
+                    ? "or continue with email"
+                    : "or register with email"}
+                </span>
+                <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
+              </div>
+            </>
+          )}
 
-            {/* Step Fields */}
-            {step.isReview ? (
-              // Review step - show summary
-              <div
-                class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background"
-                tabindex="-1"
-              >
-                {step.reviewFields?.map((fieldName) => (
-                  <div
-                    class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700 last:border-b-0"
-                    tabindex="-1"
-                  >
-                    <div tabindex="-1">
-                      <p class="text-sm text-gray-600 dark:text-gray-400 capitalize" tabindex="-1">
-                        {fieldName.replace(/([A-Z])/g, " $1").trim()}
-                      </p>
-                      <p
-                        id={`review-${fieldName}`}
-                        class="text-lg font-medium text-gray-900 dark:text-white"
-                        tabindex="-1"
-                      >
-                        {fieldName === "password" ? "••••••" : "-"}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-                      data-edit={
-                        config.steps.findIndex((s) => s.fields.some((f) => f.name === fieldName)) +
-                        1
-                      }
+          {/* Step Fields */}
+          {step.isReview ? (
+            // Review step - show summary
+            <div
+              class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background"
+              tabindex="-1"
+            >
+              {step.reviewFields?.map((fieldName) => (
+                <div
+                  class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700 last:border-b-0"
+                  tabindex="-1"
+                >
+                  <div tabindex="-1">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 capitalize" tabindex="-1">
+                      {fieldName.replace(/([A-Z])/g, " $1").trim()}
+                    </p>
+                    <p
+                      id={`review-${fieldName}`}
+                      class="text-lg font-medium text-gray-900 dark:text-white"
+                      tabindex="-1"
                     >
-                      Edit
-                    </button>
+                      {fieldName === "password" ? "••••••" : "-"}
+                    </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div
-                class:list={[
-                  step.fieldLayout === "grid"
-                    ? "grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6"
-                    : "",
-                ]}
-                tabindex="-1"
-              >
-                {step.fields.map((field) => (
-                  <div
-                    class:list={[
-                      field.type === "hidden" ? "" : "input-wrapper",
-                      field.columns === 1 ? "md:col-span-2" : "",
-                    ]}
-                    data-conditional-field={field.conditional ? field.conditional.field : undefined}
-                    data-conditional-value={
-                      field.conditional
-                        ? Array.isArray(field.conditional.value)
-                          ? field.conditional.value.join(",")
-                          : field.conditional.value
-                        : undefined
+                  <button
+                    type="button"
+                    class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                    data-edit={
+                      config.steps.findIndex((s) => s.fields.some((f) => f.name === fieldName)) + 1
                     }
-                    style={field.conditional ? "display: none;" : undefined}
-                    tabindex="-1"
                   >
-                    {field.type === "component" && field.component === "SlotMachineModalStaff" ? (
-                      <SlotMachineModalStaff
-                        id={field.id}
-                        name={field.name}
-                        title={field.label || "Select an option"}
-                        options={mobileCarrierOptions}
-                        selectedValue=""
-                        globalInputClasses={appendedGlobalInputClasses}
-                        {...field.componentProps}
-                      />
-                    ) : field.type === "component" && field.component === "SlideToggle" ? (
-                      <div class="flex items-center justify-center py-8" tabindex="-1">
-                        <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
-                      </div>
-                    ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
-                      <InlineAddressSearch
-                        id={field.id}
-                        name={field.name}
-                        globalInputClasses={appendedGlobalInputClasses}
-                        {...field.componentProps}
-                      />
-                    ) : field.type === "component" && field.component === "UnitSlider" ? (
-                      <UnitSlider
-                        name={field.name}
-                        label={field.label || field.name}
-                        value={Number(field.value) || 1}
-                        required={field.required}
-                        min={field.min}
-                        max={field.max}
-                        step={field.step}
-                        {...field.componentProps}
-                      />
-                    ) : field.type === "component" && field.component === "ToggleButton" ? (
-                      <div class="flex flex-wrap gap-3" tabindex="-1">
-                        {field.options?.map((option) => (
-                          <ToggleButton
-                            value={option.value}
-                            group={field.name}
-                            type={field.toggleType || "radio"}
-                            class={field.classes}
-                          >
-                            {option.label}
-                          </ToggleButton>
-                        ))}
-                      </div>
-                    ) : field.type === "component" && field.component === "FileUpload" ? (
-                      <FileUpload
-                        name={field.name}
-                        label={field.label}
-                        required={field.required}
-                        accept={field.accept}
-                        multiple={field.multiple}
-                        maxFiles={field.maxFiles}
-                        maxSize={field.maxSize}
-                        {...field.componentProps}
-                      />
-                    ) : field.type === "range" ? (
-                      <UnitSlider
-                        name={field.name}
-                        label={field.label || field.name}
-                        value={Number(field.value) || Number(field.min) || 0}
-                        required={field.required}
-                        min={field.min || 0}
-                        max={field.max || 100}
-                        step={field.step || 1}
-                      />
-                    ) : field.type === "textarea" ? (
-                      <textarea
-                        id={field.id}
-                        name={field.name}
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        rows={field.rows || 4}
-                        autocomplete={field.autocomplete}
-                        class={appendedGlobalInputClasses}
-                        data-error={field.errorMessage}
-                      />
-                    ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 ? (
-                      <div
-                        class:list={[
-                          "relative",
-                          field.icon ? "input-with-icon" : "",
-                          field.iconPosition === "right" ? "icon-right" : "icon-left",
-                        ]}
-                        data-icon={field.icon}
-                        tabindex="-1"
-                      >
-                        <input
-                          type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
-                          id={field.id}
-                          name={field.name}
-                          placeholder=""
-                          required={field.required}
-                          autocomplete={field.autocomplete}
-                          minlength={field.minlength}
-                          autofocus={field.autofocus}
-                          class:list={[
-                            appendedGlobalInputClasses,
-                            field.icon && field.iconPosition === "right" ? "pr-12" : "",
-                            field.icon && field.iconPosition !== "right" ? "pl-12" : "",
-                          ]}
-                          data-error={field.errorMessage}
-                          data-has-animated-placeholder="true"
-                          data-original-placeholder={field.placeholder}
-                          data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
-                        />
-                        <span
-                          class:list={[
-                            "animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500",
-                            field.icon && field.iconPosition === "right" ? "pr-7 mr-1.25" : "",
-                            field.icon && field.iconPosition !== "right" ? "pl-7 ml-1.25" : "",
-                          ]}
-                          data-for={field.id}
-                          tabindex="-1"
+                    Edit
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              class:list={[
+                step.fieldLayout === "grid" ? "grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6" : "",
+              ]}
+              tabindex="-1"
+            >
+              {step.fields.map((field) => (
+                <div
+                  class:list={[
+                    field.type === "hidden" ? "" : "input-wrapper",
+                    field.columns === 1 ? "md:col-span-2" : "",
+                  ]}
+                  data-conditional-field={field.conditional ? field.conditional.field : undefined}
+                  data-conditional-value={
+                    field.conditional
+                      ? Array.isArray(field.conditional.value)
+                        ? field.conditional.value.join(",")
+                        : field.conditional.value
+                      : undefined
+                  }
+                  style={field.conditional ? "display: none;" : undefined}
+                  tabindex="-1"
+                >
+                  {field.type === "component" && field.component === "SlotMachineModalStaff" ? (
+                    <SlotMachineModalStaff
+                      id={field.id}
+                      name={field.name}
+                      title={field.label || "Select an option"}
+                      options={mobileCarrierOptions}
+                      selectedValue=""
+                      globalInputClasses={appendedGlobalInputClasses}
+                      {...field.componentProps}
+                    />
+                  ) : field.type === "component" && field.component === "SlideToggle" ? (
+                    <div class="flex items-center justify-center py-8" tabindex="-1">
+                      <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
+                    </div>
+                  ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
+                    <InlineAddressSearch
+                      id={field.id}
+                      name={field.name}
+                      globalInputClasses={appendedGlobalInputClasses}
+                      {...field.componentProps}
+                    />
+                  ) : field.type === "component" && field.component === "UnitSlider" ? (
+                    <UnitSlider
+                      name={field.name}
+                      label={field.label || field.name}
+                      value={Number(field.value) || 1}
+                      required={field.required}
+                      min={field.min}
+                      max={field.max}
+                      step={field.step}
+                      {...field.componentProps}
+                    />
+                  ) : field.type === "component" && field.component === "ToggleButton" ? (
+                    <div class="flex flex-wrap gap-3" tabindex="-1">
+                      {field.options?.map((option) => (
+                        <ToggleButton
+                          value={option.value}
+                          group={field.name}
+                          type={field.toggleType || "radio"}
+                          class={field.classes}
                         >
-                          {field.placeholder}
-                        </span>
-                      </div>
-                    ) : field.type === "button-group" ? (
-                      <div class="flex flex-wrap gap-3" tabindex="-1">
-                        {field.buttons?.map((button) => {
-                          const btnConfig = getButtonConfig(
-                            button,
-                            config.buttonDefaults?.[
-                              button.type as keyof typeof config.buttonDefaults
-                            ]
-                          );
-                          return (
-                            <Button
-                              variant={btnConfig.variant}
-                              size={btnConfig.size}
-                              icon={btnConfig.icon}
-                              iconPosition={btnConfig.iconPosition}
-                              class={btnConfig.classes}
-                              dataAttributes={{
-                                ...(button.dataValue && { "data-value": button.dataValue }),
-                                ...(button.dataNext !== undefined && {
-                                  "data-next": button.dataNext.toString(),
-                                }),
-                              }}
-                            >
-                              {btnConfig.label && (
-                                <span class="button-text">
-                                  <Fragment set:html={btnConfig.label} />
-                                </span>
-                              )}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    ) : field.icon ? (
-                      <div
+                          {option.label}
+                        </ToggleButton>
+                      ))}
+                    </div>
+                  ) : field.type === "component" && field.component === "FileUpload" ? (
+                    <FileUpload
+                      name={field.name}
+                      label={field.label}
+                      required={field.required}
+                      accept={field.accept}
+                      multiple={field.multiple}
+                      maxFiles={field.maxFiles}
+                      maxSize={field.maxSize}
+                      {...field.componentProps}
+                    />
+                  ) : field.type === "range" ? (
+                    <UnitSlider
+                      name={field.name}
+                      label={field.label || field.name}
+                      value={Number(field.value) || Number(field.min) || 0}
+                      required={field.required}
+                      min={field.min || 0}
+                      max={field.max || 100}
+                      step={field.step || 1}
+                    />
+                  ) : field.type === "textarea" ? (
+                    <textarea
+                      id={field.id}
+                      name={field.name}
+                      placeholder={field.placeholder}
+                      required={field.required}
+                      rows={field.rows || 4}
+                      autocomplete={field.autocomplete}
+                      class={appendedGlobalInputClasses}
+                      data-error={field.errorMessage}
+                    />
+                  ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 ? (
+                    <div
+                      class:list={[
+                        "relative",
+                        field.icon ? "input-with-icon" : "",
+                        field.iconPosition === "right" ? "icon-right" : "icon-left",
+                      ]}
+                      data-icon={field.icon}
+                      tabindex="-1"
+                    >
+                      <input
+                        type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
+                        id={field.id}
+                        name={field.name}
+                        placeholder=""
+                        required={field.required}
+                        autocomplete={field.autocomplete}
+                        minlength={field.minlength}
+                        autofocus={field.autofocus}
                         class:list={[
-                          "relative input-with-icon",
-                          field.iconPosition === "right" ? "icon-right" : "icon-left",
+                          appendedGlobalInputClasses,
+                          field.icon && field.iconPosition === "right" ? "pr-12" : "",
+                          field.icon && field.iconPosition !== "right" ? "pl-12" : "",
                         ]}
-                        data-icon={field.icon}
+                        data-error={field.errorMessage}
+                        data-has-animated-placeholder="true"
+                        data-original-placeholder={field.placeholder}
+                        data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
+                      />
+                      <span
+                        class:list={[
+                          "animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500",
+                          field.icon && field.iconPosition === "right" ? "pr-7 mr-1.25" : "",
+                          field.icon && field.iconPosition !== "right" ? "pl-7 ml-1.25" : "",
+                        ]}
+                        data-for={field.id}
                         tabindex="-1"
                       >
-                        <input
-                          type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
-                          id={field.id}
-                          name={field.name}
-                          placeholder={field.placeholder}
-                          required={field.required}
-                          autocomplete={field.autocomplete}
-                          minlength={field.minlength}
-                          autofocus={field.autofocus}
-                          class:list={[
-                            appendedGlobalInputClasses,
-                            field.iconPosition === "right" ? "pr-12 pl-12" : "pl-12 pr-12",
-                          ]}
-                          data-error={field.errorMessage}
-                        />
-                      </div>
-                    ) : (
+                        {field.placeholder}
+                      </span>
+                    </div>
+                  ) : field.type === "button-group" ? (
+                    <div class="flex flex-wrap gap-3" tabindex="-1">
+                      {field.buttons?.map((button) => {
+                        const btnConfig = getButtonConfig(
+                          button,
+                          config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
+                        );
+                        return (
+                          <Button
+                            id={button.id}
+                            variant={btnConfig.variant}
+                            size="sm"
+                            icon={btnConfig.icon}
+                            iconPosition={btnConfig.iconPosition}
+                            class={btnConfig.classes}
+                            dataAttributes={{
+                              ...(button.dataValue && { "data-value": button.dataValue }),
+                              ...(button.dataNext !== undefined && {
+                                "data-next": button.dataNext.toString(),
+                              }),
+                            }}
+                          >
+                            {btnConfig.label && (
+                              <span class="button-text">
+                                <Fragment set:html={btnConfig.label} />
+                              </span>
+                            )}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  ) : field.icon ? (
+                    <div
+                      class:list={[
+                        "relative input-with-icon",
+                        field.iconPosition === "right" ? "icon-right" : "icon-left",
+                      ]}
+                      data-icon={field.icon}
+                      tabindex="-1"
+                    >
                       <input
                         type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
                         id={field.id}
@@ -356,131 +333,151 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         autocomplete={field.autocomplete}
                         minlength={field.minlength}
                         autofocus={field.autofocus}
-                        class={appendedGlobalInputClasses}
+                        class:list={[
+                          appendedGlobalInputClasses,
+                          field.iconPosition === "right" ? "pr-12 pl-12" : "pl-12 pr-12",
+                        ]}
                         data-error={field.errorMessage}
                       />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+                    </div>
+                  ) : (
+                    <input
+                      type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
+                      id={field.id}
+                      name={field.name}
+                      placeholder={field.placeholder}
+                      required={field.required}
+                      autocomplete={field.autocomplete}
+                      minlength={field.minlength}
+                      autofocus={field.autofocus}
+                      class={appendedGlobalInputClasses}
+                      data-error={field.errorMessage}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
-            {/* Step Buttons */}
-            {/* Choice buttons (radio-style options) */}
-            {step.buttons.some((b) => b.type === "choice") && (
-              <div
-                class={`flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-center flex-wrap"} gap-3 mb-6`}
-                tabindex="-1"
-              >
-                {step.buttons
-                  .filter((button) => button.type === "choice")
-                  .map((button) => {
-                    const btnConfig = getButtonConfig(
-                      button,
-                      config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
-                    );
-
-                    return (
-                      <Button
-                        type="button"
-                        variant={btnConfig.variant || "outline"}
-                        size={btnConfig.size || "md"}
-                        class={`${button.type}-step sms-choice ${button.classes || ""}`}
-                        disabled={button.disabled}
-                        dataAttributes={{
-                          ...(button.dataNext !== undefined && {
-                            "data-next": button.dataNext.toString(),
-                          }),
-                          ...(button.dataValue !== undefined && { "data-value": button.dataValue }),
-                          ...(button.dataValue !== undefined && {
-                            "data-sms-value": button.dataValue,
-                          }), // Keep for backward compatibility with SMS
-                        }}
-                      >
-                        {btnConfig.label && <Fragment set:html={btnConfig.label} />}
-                      </Button>
-                    );
-                  })}
-              </div>
-            )}
-
-            {/* Navigation buttons (prev, next, submit, skip) */}
+          {/* Step Buttons */}
+          {/* Choice buttons (radio-style options) */}
+          {step.buttons.some((b) => b.type === "choice") && (
             <div
-              class:list={[
-                "flex",
-                step.buttons.filter((b) => b.type !== "choice").length === 1
-                  ? "justify-end"
-                  : "justify-between",
-              ]}
+              class={`flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-center flex-wrap"} gap-3 mb-6`}
+              tabindex="-1"
             >
               {step.buttons
-                .filter((button) => button.type !== "choice")
+                .filter((button) => button.type === "choice")
                 .map((button) => {
                   const btnConfig = getButtonConfig(
                     button,
                     config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
                   );
 
-                  return button.href ? (
+                  return (
                     <Button
-                      variant={btnConfig.variant}
-                      size={btnConfig.size}
-                      icon={btnConfig.icon}
-                      iconPosition={btnConfig.iconPosition}
-                      href={button.href}
-                      class={`${button.type}-step ${button.classes || ""}`}
-                      disabled={button.disabled}
-                    >
-                      {btnConfig.label && <Fragment set:html={btnConfig.label} />}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant={btnConfig.variant}
-                      size={btnConfig.size}
-                      icon={btnConfig.icon}
-                      iconPosition={btnConfig.iconPosition}
+                      id={button.id}
                       type="button"
-                      class={`${button.type}-step ${button.classes || ""} ${button.validLabel ? "has-valid-state" : ""}`}
+                      variant={btnConfig.variant || "outline"}
+                      size={"sm"}
+                      class={`${button.type}-step sms-choice ${button.classes || ""}`}
                       disabled={button.disabled}
                       dataAttributes={{
                         ...(button.dataNext !== undefined && {
                           "data-next": button.dataNext.toString(),
                         }),
-                        ...(button.dataPrev !== undefined && {
-                          "data-prev": button.dataPrev.toString(),
-                        }),
-                        ...(button.label && {
-                          "data-default-label": button.label,
-                        }),
-                        ...(button.validLabel && {
-                          "data-valid-label": button.validLabel,
-                        }),
+                        ...(button.dataValue !== undefined && { "data-value": button.dataValue }),
+                        ...(button.dataValue !== undefined && {
+                          "data-sms-value": button.dataValue,
+                        }), // Keep for backward compatibility with SMS
                       }}
                     >
-                      {btnConfig.label &&
-                        (btnConfig.label === "back" ? (
-                          <span class="hidden sm:inline">
-                            <Fragment set:html={btnConfig.label} />
-                          </span>
-                        ) : (
-                          <span class="button-text">
-                            <Fragment set:html={btnConfig.label} />
-                          </span>
-                        ))}
-                      {/* Valid state checkmark icon (hidden by default, shown when valid) */}
-                      {button.validLabel && btnConfig.iconPosition === "right" && (
-                        <SimpleIcon
-                          name="check"
-                          size={
-                            btnConfig.size === "lg" ? "lg" : btnConfig.size === "xl" ? "xl" : "md"
-                          }
-                          class="ml-2 icon-valid hidden"
-                        />
-                      )}
+                      {btnConfig.label && <Fragment set:html={btnConfig.label} />}
                     </Button>
                   );
                 })}
             </div>
+          )}
+
+          {/* Navigation buttons (prev, next, submit, skip) */}
+          <div
+            class:list={[
+              "flex",
+              "gap-3",
+              step.buttons.filter((b) => b.type !== "choice").length === 1
+                ? "justify-end"
+                : "justify-between",
+            ]}
+          >
+            {step.buttons
+              .filter((button) => button.type !== "choice")
+              .map((button) => {
+                const btnConfig = getButtonConfig(
+                  button,
+                  config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
+                );
+
+                return button.href ? (
+                  <Button
+                    id={button.id}
+                    variant={btnConfig.variant}
+                    size="sm"
+                    icon={btnConfig.icon}
+                    iconPosition={btnConfig.iconPosition}
+                    href={button.href}
+                    class={`${button.type}-step ${button.classes || ""}`}
+                    disabled={button.disabled}
+                  >
+                    {btnConfig.label && <Fragment set:html={btnConfig.label} />}
+                  </Button>
+                ) : (
+                  <Button
+                    id={button.id}
+                    variant={btnConfig.variant}
+                    size="sm"
+                    icon={btnConfig.icon}
+                    iconPosition={btnConfig.iconPosition}
+                    type="button"
+                    class={`${button.type}-step ${button.classes || ""} ${button.validLabel ? "has-valid-state" : ""}`}
+                    disabled={button.disabled}
+                    dataAttributes={{
+                      ...(button.dataNext !== undefined && {
+                        "data-next": button.dataNext.toString(),
+                      }),
+                      ...(button.dataPrev !== undefined && {
+                        "data-prev": button.dataPrev.toString(),
+                      }),
+                      ...(button.label && {
+                        "data-default-label": button.label,
+                      }),
+                      ...(button.validLabel && {
+                        "data-valid-label": button.validLabel,
+                      }),
+                    }}
+                  >
+                    {btnConfig.label &&
+                      (btnConfig.label === "back" ? (
+                        <span class="hidden sm:inline">
+                          <Fragment set:html={btnConfig.label} />
+                        </span>
+                      ) : (
+                        <span class="button-text">
+                          <Fragment set:html={btnConfig.label} />
+                        </span>
+                      ))}
+                    {/* Valid state checkmark icon (hidden by default, shown when valid) */}
+                    {button.validLabel && btnConfig.iconPosition === "right" && (
+                      <SimpleIcon
+                        name="check"
+                        size={
+                          btnConfig.size === "lg" ? "lg" : btnConfig.size === "xl" ? "xl" : "md"
+                        }
+                        class="ml-2 icon-valid hidden"
+                      />
+                    )}
+                  </Button>
+                );
+              })}
           </div>
         </div>
       ))
@@ -1153,6 +1150,154 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       }
     });
   });
+
+  // Forgot password modal handler (for login form)
+  // Only initialize if we're on the login form
+  if (document.getElementById("multi-step-login-form")) {
+    const forgotPasswordBtn = document.getElementById("forgot-password-btn");
+
+    // Modal open/close functionality
+    async function openForgotPasswordModal() {
+      try {
+        const headers = new Headers();
+        const globalInputClasses =
+          document.querySelector('input:not([type="hidden"])')?.className || "";
+        headers.set("x-global-input-classes", globalInputClasses);
+
+        const response = await fetch("/partials/forgot-password-form", {
+          headers: headers,
+        });
+
+        if (!response.ok) {
+          console.error("Failed to fetch forgot password form partial:", response.status);
+          return;
+        }
+
+        const formHTML = await response.text();
+
+        const modalId = await (window as any).showNotice({
+          type: "",
+          title: "Forgot Password",
+          message: formHTML,
+          modal: true,
+        });
+
+        // Set up cancel button handler and focus email input when modal opens
+        setTimeout(() => {
+          const emailInput = document.querySelector(
+            '#forgot-password-form input[name="email"]'
+          ) as HTMLInputElement;
+          emailInput?.focus();
+
+          // Add cancel button click handler
+          const cancelBtn = document.getElementById("cancel-forgot");
+          if (cancelBtn) {
+            cancelBtn.addEventListener("click", () => {
+              if ((window as any).toastNotificationManager && modalId) {
+                (window as any).toastNotificationManager.hide(modalId);
+              }
+            });
+          }
+        }, 100);
+      } catch (error) {
+        console.error("Failed to load forgot password form:", error);
+        alert("Failed to load password reset form. Please try again.");
+      }
+    }
+
+    // Event listeners for modal
+    forgotPasswordBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      openForgotPasswordModal();
+    });
+
+    // Handle form submission using event delegation (since form will be in modal)
+    document.addEventListener("submit", async (e) => {
+      const target = e.target as HTMLFormElement;
+      if (target.id === "forgot-password-form") {
+        e.preventDefault();
+
+        const emailInput = target.querySelector('input[name="email"]') as HTMLInputElement;
+        const email = emailInput?.value.trim();
+
+        if (!email) {
+          if ((window as any).showNotice) {
+            (window as any).showNotice({
+              type: "error",
+              title: "Validation Error",
+              message: "Please enter your email address.",
+              persist: true,
+              modal: true,
+            });
+          }
+          return;
+        }
+
+        const sendResetLinkBtn = target.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+        if (sendResetLinkBtn) {
+          sendResetLinkBtn.disabled = true;
+          sendResetLinkBtn.textContent = "Sending...";
+        }
+
+        try {
+          const response = await fetch("/api/auth/forgot-password", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            if ((window as any).showNotice) {
+              (window as any).showNotice({
+                type: "success",
+                title: "Reset Link Sent",
+                message:
+                  "If an account with that email exists, you will receive a password reset link shortly.",
+                redirect: { url: "/", delay: 3500, showCountdown: true },
+                modal: true,
+              });
+            }
+
+            const closeBtn = document.querySelector(
+              '[data-modal-hide="forgot-password-modal"]'
+            ) as HTMLElement;
+            if (closeBtn) closeBtn.click();
+          } else {
+            if ((window as any).showNotice) {
+              (window as any).showNotice({
+                type: "error",
+                title: "Error",
+                message: result.error || "Failed to send reset link. Please try again.",
+                persist: true,
+                modal: true,
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Forgot password error:", error);
+          if ((window as any).showNotice) {
+            (window as any).showNotice({
+              type: "error",
+              title: "Network Error",
+              message: "Failed to send reset link. Please check your connection and try again.",
+              persist: true,
+              modal: true,
+            });
+          }
+        } finally {
+          if (sendResetLinkBtn) {
+            sendResetLinkBtn.disabled = false;
+            sendResetLinkBtn.textContent = "Send Reset Link";
+          }
+        }
+      }
+    });
+  }
 
   // Helper function to check if all fields in current step are valid
   function checkAllFieldsValid() {

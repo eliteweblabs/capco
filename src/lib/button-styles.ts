@@ -40,18 +40,18 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
   // Size classes check if theres an icon and if so, make padding match so the icon is centered and the button is round perfectly
   const sizeClasses = icon
     ? {
-        xs: "px-2 py-2 text-xs",
-        sm: "px-3 py-3 text-sm",
-        md: "px-2 py-2 text-xs",
-        lg: "px-5 py-5 text-base",
-        xl: "px-6 py-6 text-lg",
+        xs: "px-3 py-2 text-xs",
+        sm: "px-4 py-3 text-sm",
+        md: "px-5 py-4 text-md",
+        lg: "px-6 py-5 text-lg",
+        xl: "px-7 py-6 text-xl",
       }
     : {
-        xs: "px-2 py-2 text-xs",
-        sm: "px-4 py-2 text-sm",
-        md: "px-3 py-0.5 text-xs",
-        lg: "px-6 py-3 text-base",
-        xl: "px-7 py-3.5 text-lg",
+        xs: "px-3 py-2 text-xs",
+        sm: "px-4 py-3 text-sm",
+        md: "px-5 py-4 text-md",
+        lg: "px-6 py-5 text-lg",
+        xl: "px-7 py-6 text-xl",
       };
 
   // Variant classes using global color system

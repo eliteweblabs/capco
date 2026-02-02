@@ -13,6 +13,7 @@ interface Props {
   primaryTextClasses?: string;
   secondaryTextClasses?: string;
   globalInputClasses?: string;
+  globalIconButtonClasses?: string;
   year?: string;
   globalCompanyName?: string;
   globalCompanySlogan?: string;
@@ -36,7 +37,6 @@ const {
   supabaseUrl = undefined,
   projects = undefined,
   id = undefined,
-
   statusData = undefined,
   statusOptions = undefined,
   mainClasses = "",
@@ -45,7 +45,6 @@ const {
 } = Astro.props;
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
-
 const {
   globalCompanyName,
   globalCompanySlogan,
@@ -71,7 +70,8 @@ const { currentUser, session, supabase, refreshToken, accessToken } = await chec
 );
 import { globalClasses } from "../../pages/api/global/global-classes";
 import Tooltip from "../common/TooltipFloating.astro";
-const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses, globalIconButtonClasses } =
+  globalClasses();
 
 // Get theme from cookie (set by client-side script)
 // Note: Cookie is set client-side, so on first load it may not exist yet
@@ -616,6 +616,7 @@ const debugData = {
     <UnifiedNotification />
 
     <Navbar
+      {globalIconButtonClasses}
       {desktopNavigationHTML}
       {currentUser}
       {session}
@@ -628,6 +629,7 @@ const debugData = {
 
     <div class="flex">
       <Aside
+        {globalIconButtonClasses}
         {currentUser}
         {globalInputClasses}
         {primaryTextClasses}
@@ -637,13 +639,13 @@ const debugData = {
 
       <div
         id="main-content"
-        class=`w-full pt-20 ${currentUser ? "sm:ml-16" : ""} ${mainClasses} ${centerContent ? "" : "overflow-x-hidden"} transition-all duration-300 ease-in-out`
+        class=`w-full pt-20 ${currentUser ? "sm:ml-16" : ""} ${mainClasses} transition-all duration-300 ease-in-out`
         style=`${centerContent ? "overscroll-behavior-y: contain; touch-action: pan-x;" : ""}`
       >
         <!-- <div class="relative w-full flex items-center justify-center px-4 py-8 max-w-lg">
         <div class="w-full max-w-3xl"> -->
         <main
-          class={`flex-1 relative min-h-[calc(100dvh-8rem)] md:min-h-[calc(100dvh-8rem)] lg:min-h-[calc(100dvh-8.5rem)] ${centerContent ? "flex items-center justify-center px-8 overscroll-y-contain" : "p-4"}`}
+          class={`flex-1 relative min-h-[calc(100dvh-8rem)] md:min-h-[calc(100dvh-8rem)] lg:min-h-[calc(100dvh-8.5rem)] ${centerContent ? "flex items-center justify-center px-8 overscroll-y-contain" : "p-4 overflow-x-hidden"}`}
         >
           <slot />
         </main>
@@ -651,6 +653,7 @@ const debugData = {
         <BannerAlertsLoader position="bottom" />
         <!-- Footer -->
         <Footer
+          {globalIconButtonClasses}
           {globalCompanyName}
           {isBackend}
           {globalCompanyPhone}

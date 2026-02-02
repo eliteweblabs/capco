@@ -44,6 +44,7 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
     if (preloader) {
       console.log("✅ [PRELOADER] Hiding preloader");
       preloader.style.opacity = "0";
+      preloader.style.pointerEvents = "none";
       setTimeout(() => {
         preloader.style.display = "none";
       }, 300);
@@ -52,8 +53,18 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
     }
   }
 
+  // Try to hide immediately (for cached pages)
+  if (document.readyState === "complete") {
+    console.log("✅ [PRELOADER] Page already loaded, hiding immediately");
+    hidePreloader();
+  }
+
   // Try multiple events to ensure preloader hides
-  window.addEventListener("load", hidePreloader);
+  window.addEventListener("load", () => {
+    console.log("✅ [PRELOADER] window.load event fired");
+    hidePreloader();
+  });
+  
   document.addEventListener("DOMContentLoaded", function () {
     console.log("✅ [PRELOADER] DOMContentLoaded event fired");
     // Add a small delay to ensure everything is ready
@@ -62,13 +73,13 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
 
   // Fallback: hide after 1 second regardless
   setTimeout(() => {
-    console.log("✅ [PRELOADER] Fallback timeout fired");
+    console.log("✅ [PRELOADER] Fallback timeout (1s) fired");
     hidePreloader();
   }, 1000);
 
   // Immediate fallback for debugging
   setTimeout(() => {
-    console.log("✅ [PRELOADER] Immediate fallback fired");
+    console.log("✅ [PRELOADER] Immediate fallback (100ms) fired");
     hidePreloader();
   }, 100);
 </script>
