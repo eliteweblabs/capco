@@ -1,5 +1,6 @@
 ---
 import { getIcon } from "../../lib/simple-icons";
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
 interface Props {
   name: string;
@@ -54,6 +55,13 @@ const {
   ...rest
 } = Astro.props;
 
+// Fetch global company icon if name is 'logo'
+let globalCompanyIcon: string | undefined;
+if (name === "logo") {
+  const companyData = await globalCompanyData();
+  globalCompanyIcon = companyData.globalCompanyIcon;
+}
+
 // Use simple icon system
 const iconSize =
   size === "xs"
@@ -96,6 +104,7 @@ const finalClasses = [baseClasses, className, variantClasses].filter(Boolean).jo
 let iconHTML = getIcon(name, {
   size: iconSize,
   className: "", // Don't add classes here, we'll inject them below
+  globalCompanyIcon, // Pass the global company icon for 'logo' name
 });
 
 // Build attribute string for ALL props

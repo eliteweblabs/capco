@@ -6,6 +6,7 @@ import iconData from "./icon-data.json";
 export interface IconConfig {
   size?: number;
   className?: string;
+  globalCompanyIcon?: string; // Pass the global company icon SVG for 'logo' name
 }
 
 // Import icons from single source
@@ -13,9 +14,16 @@ export const SIMPLE_ICONS: Record<string, string> = iconData;
 
 // Function to get icon with size and class customization
 export function getIcon(name: string, config: IconConfig = {}): string {
-  const { size = 16, className = "" } = config;
+  const { size = 16, className = "", globalCompanyIcon } = config;
 
-  const iconSvg = SIMPLE_ICONS[name];
+  // Special case: if name is 'logo', use the global company icon
+  let iconSvg: string | undefined;
+  if (name === "logo" && globalCompanyIcon) {
+    iconSvg = globalCompanyIcon;
+  } else {
+    iconSvg = SIMPLE_ICONS[name];
+  }
+
   if (!iconSvg) {
     return `<span class="inline-block text-red-500">[icon:${name}]</span>`; // Debug fallback
   }
@@ -29,15 +37,15 @@ export function getIcon(name: string, config: IconConfig = {}): string {
   let result = iconSvg
     .replace(/width="16"/g, `width="${size}"`)
     .replace(/height="16"/g, `height="${size}"`);
-  
+
   // Then add class attribute if it doesn't exist, or replace if it does
   if (result.includes('class="')) {
     result = result.replace(/class="[^"]*"/g, `class="${classes}"`);
   } else {
     // Add class attribute after the opening <svg tag
-    result = result.replace('<svg', `<svg class="${classes}"`);
+    result = result.replace("<svg", `<svg class="${classes}"`);
   }
-  
+
   return result;
 }
 

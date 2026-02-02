@@ -54,7 +54,16 @@ export const GLOBAL_BUTTON_DEFAULTS = {
 export interface FormFieldConfig {
   id: string;
   name: string;
-  type: "text" | "email" | "tel" | "password" | "textarea" | "hidden" | "component" | "button-group";
+  type:
+    | "text"
+    | "email"
+    | "tel"
+    | "password"
+    | "textarea"
+    | "hidden"
+    | "component"
+    | "button-group"
+    | "range";
   label?: string;
   placeholder?: string;
   animatedPlaceholders?: string[]; // Array of rotating placeholder values
@@ -64,7 +73,7 @@ export interface FormFieldConfig {
   minlength?: number;
   rows?: number;
   autofocus?: boolean;
-  component?: string; // Component name (e.g., "InlineAddressSearch", "SlotMachineModalStaff")
+  component?: string; // Component name (e.g., "InlineAddressSearch", "SlotMachineModalStaff", "UnitSlider", "ToggleButton", "FileUpload")
   componentProps?: Record<string, any>; // Props to pass to component
   // Icon configuration
   icon?: string; // Icon name (e.g., "mail", "lock-alt")
@@ -75,6 +84,19 @@ export interface FormFieldConfig {
   classes?: string; // Additional CSS classes for the input field
   // Button group configuration (for type="button-group")
   buttons?: FormButtonConfig[]; // Array of choice buttons for button-group type
+  // Range/Slider configuration (for type="range" or component="UnitSlider")
+  min?: number;
+  max?: number;
+  step?: number;
+  value?: number | string; // Default value
+  // Toggle button configuration (for component="ToggleButton")
+  options?: Array<{ value: string; label: string }>; // Options for toggle buttons
+  toggleType?: "radio" | "multi-select"; // Toggle button behavior
+  // File upload configuration (for component="FileUpload")
+  accept?: string; // Accepted file types
+  multiple?: boolean; // Allow multiple file uploads
+  maxFiles?: number; // Maximum number of files
+  maxSize?: number; // Maximum file size in bytes
   // Conditional rendering
   conditional?: {
     field: string; // Field name to check (e.g., "fuelSource")

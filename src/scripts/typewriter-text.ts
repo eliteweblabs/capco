@@ -79,6 +79,48 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
     waitUntilVisible: true,
     html: true, // Enable HTML parsing for <br> tags
     lifeLike: true, // Add natural typing variations
+    afterStep: () => {
+      // Auto-scroll to keep cursor at fixed vertical position
+      const scrollWrapper = element.closest('.title-scroll-wrapper');
+      const scrollContainer = element.closest('.title-scroll-container');
+      if (scrollWrapper) {
+        // Check if content overflows
+        const hasOverflow = scrollWrapper.scrollHeight > scrollWrapper.clientHeight;
+        
+        if (hasOverflow) {
+          // Add class to switch to top alignment when overflowing
+          scrollWrapper.classList.add('has-overflow');
+          
+          // Find the cursor element
+          const cursor = element.querySelector('.ti-cursor');
+          if (cursor) {
+            // Get cursor position relative to the scrollable container
+            const cursorRect = cursor.getBoundingClientRect();
+            const wrapperRect = scrollWrapper.getBoundingClientRect();
+            
+            // Target position: keep cursor at 75% down the visible area (with settling effect)
+            const targetPosition = wrapperRect.height * 0.75;
+            const currentCursorPosition = cursorRect.top - wrapperRect.top;
+            
+            // Calculate how much to scroll to keep cursor at target position
+            const scrollAdjustment = currentCursorPosition - targetPosition;
+            
+            // Apply scroll with smooth settling (only scroll if needed)
+            if (scrollAdjustment > 5) { // 5px threshold to avoid jitter
+              scrollWrapper.scrollTop += scrollAdjustment;
+            }
+          } else {
+            // Fallback: scroll to bottom if cursor not found
+            scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
+          }
+          
+          // Check if scrolled and add class for fade effect
+          if (scrollContainer && scrollWrapper.scrollTop > 10) {
+            scrollContainer.classList.add('is-scrolled');
+          }
+        }
+      }
+    },
     afterComplete: () => {
       console.log("[TYPEWRITER] Animation complete, triggering content animations");
       // Dispatch custom event when typewriter completes
@@ -322,6 +364,47 @@ const observer = new MutationObserver((mutations) => {
               waitUntilVisible: true,
               html: true,
               lifeLike: true,
+              afterStep: () => {
+                // Auto-scroll to keep cursor at fixed vertical position
+                const scrollWrapper = node.closest('.title-scroll-wrapper');
+                const scrollContainer = node.closest('.title-scroll-container');
+                if (scrollWrapper) {
+                  // Check if content overflows
+                  const hasOverflow = scrollWrapper.scrollHeight > scrollWrapper.clientHeight;
+                  
+                  if (hasOverflow) {
+                    // Add class to switch to top alignment when overflowing
+                    scrollWrapper.classList.add('has-overflow');
+                    
+                    // Find the cursor element
+                    const cursor = node.querySelector('.ti-cursor');
+                    if (cursor) {
+                      // Get cursor position relative to the scrollable container
+                      const cursorRect = cursor.getBoundingClientRect();
+                      const wrapperRect = scrollWrapper.getBoundingClientRect();
+                      
+                      // Target position: keep cursor at 75% down the visible area
+                      const targetPosition = wrapperRect.height * 0.75;
+                      const currentCursorPosition = cursorRect.top - wrapperRect.top;
+                      
+                      // Calculate how much to scroll to keep cursor at target position
+                      const scrollAdjustment = currentCursorPosition - targetPosition;
+                      
+                      // Apply scroll with smooth settling
+                      if (scrollAdjustment > 5) {
+                        scrollWrapper.scrollTop += scrollAdjustment;
+                      }
+                    } else {
+                      scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
+                    }
+                    
+                    // Check if scrolled and add class for fade effect
+                    if (scrollContainer && scrollWrapper.scrollTop > 10) {
+                      scrollContainer.classList.add('is-scrolled');
+                    }
+                  }
+                }
+              },
             });
 
             // Build the typing sequence with pauses and natural variations
@@ -375,6 +458,28 @@ const observer = new MutationObserver((mutations) => {
               waitUntilVisible: true,
               html: true,
               lifeLike: true,
+              afterStep: () => {
+                // Auto-scroll the title container as typing progresses
+                const scrollWrapper = child.closest('.title-scroll-wrapper');
+                const scrollContainer = child.closest('.title-scroll-container');
+                if (scrollWrapper) {
+                  // Check if content overflows
+                  const hasOverflow = scrollWrapper.scrollHeight > scrollWrapper.clientHeight;
+                  
+                  if (hasOverflow) {
+                    // Add class to switch to top alignment when overflowing
+                    scrollWrapper.classList.add('has-overflow');
+                    
+                    // Scroll to bottom to keep latest text visible
+                    scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
+                    
+                    // Check if scrolled and add class for fade effect
+                    if (scrollContainer && scrollWrapper.scrollTop > 10) {
+                      scrollContainer.classList.add('is-scrolled');
+                    }
+                  }
+                }
+              },
             });
 
             // Build the typing sequence with pauses and natural variations

@@ -10,14 +10,13 @@ const { globalCompanyPhone, globalCompanyName } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Tooltip from "../common/TooltipFloating.astro";
-import Overlay from "./Overlay.astro";
+import Modal from "./Modal.astro";
 import Button from "../common/Button.astro";
 // Speed dial component for quick actions
 ---
 
 <!-- Blur overlay for small screens -->
-<Overlay id="speed-dial-overlay" zIndex={9999} mobileOnly={true} />
-
+<Modal id="speed-dial-overlay" zIndex={9999} mobileOnly={true} />
 <div
   id="speed-dial"
   data-dial-init
@@ -27,7 +26,7 @@ import Button from "../common/Button.astro";
   <div id="speed-dial-menu" class="mb-4 flex hidden flex-col items-center space-y-2">
     {
       currentUser && (
-        <Tooltip position="left" open={true} text="Tutorial" className="-translate-y-2.5">
+        <Tooltip position="left" text="Tutorial" className="speed-dial-tooltip" dismissable={false} >
           <button
             id="tutorial-trigger"
             type="button"
@@ -43,7 +42,7 @@ import Button from "../common/Button.astro";
 
     {
       currentRole === "Admin" && (
-        <Tooltip position="left" open={true} text="Debug" className="-translate-y-2.5">
+        <Tooltip position="left" text="Debug" className="speed-dial-tooltip" dismissable={false} >
           <button
             id="debug-toggle-btn"
             type="button"
@@ -60,7 +59,7 @@ import Button from "../common/Button.astro";
     {
       !currentUser && (
 
-      <Tooltip position="left" open={true} text="Register" className="-translate-y-2.5">
+      <Tooltip position="left" text="Register" className="speed-dial-tooltip" dismissable={false} >
           <button
             id="register-toggle-btn"
             type="button"
@@ -73,7 +72,7 @@ import Button from "../common/Button.astro";
           </button>
         </Tooltip>
 
-        <Tooltip position="left" open={true} text="Login" className="-translate-y-2.5">
+        <Tooltip position="left" text="Login" className="speed-dial-tooltip" dismissable={false} >
           <button
             id="login-toggle-btn"
             type="button"
@@ -88,18 +87,17 @@ import Button from "../common/Button.astro";
       )
     }
 
-    {
-      !currentUser && (
+ 
         <Tooltip
           position="left"
-          open={true}
           text={`Call`}
-          className="-translate-y-2.5"
+          className="speed-dial-tooltip"
+          dismissable={false}
         >
           <button
             id="phone-call-btn"
             type="button"
-            title="Call Us"
+            title="Call Us" 
             aria-label="Call Us"
             onclick={`window.location.href='tel:${globalCompanyPhone}'`}
             class="flex h-12 w-12 items-center justify-center rounded-full bg-primary-700 text-white shadow-xs hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
@@ -107,12 +105,11 @@ import Button from "../common/Button.astro";
             <SimpleIcon name="phone" size="lg" />
           </button>
         </Tooltip>
-      )
-    }
+  
 
     {
       currentUser && (
-        <Tooltip position="left" open={true} text="Feedback" className="-translate-y-2.5">
+        <Tooltip position="left" text="Feedback" className="speed-dial-tooltip" dismissable={false} >
           <button
             id="feedback-button"
             type="button"
@@ -126,7 +123,7 @@ import Button from "../common/Button.astro";
       )
     }
 
-    <Tooltip position="left" open={true} text="Contact" className="-translate-y-2.5">
+    <Tooltip position="left" text="Contact" className="speed-dial-tooltip" dismissable={false} >
       <button
         id="contact-toggle-btn"
         type="button"
@@ -144,7 +141,7 @@ import Button from "../common/Button.astro";
     type="button"
     variant="outline"
     size="md"
-    class="h-12 w-12 rounded-full"
+    class="h-12 w-12 rounded-full  [@media(hover:hover)]:hover:-translate-y-0"
     dataAttributes={{
       "data-dial-toggle": "speed-dial-menu"
     }}
@@ -208,7 +205,74 @@ import Button from "../common/Button.astro";
           svg.style.transform = "rotate(45deg)";
           svg.style.transition = "transform 0.2s ease";
         }
+
+        // Wait for menu to settle, then show tooltips with FloatingUI positioning
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip");
+            if (tooltips) {
+              // Convert NodeList to Array and reverse it (bottom to top)
+              const tooltipsArray = Array.from(tooltips).reverse();
+              
+              tooltipsArray.forEach((tooltipWrapper, index) => {
+                const tooltipContent = tooltipWrapper.querySelector(".tooltip-content") as HTMLElement;
+                if (tooltipContent) {
+                  setTimeout(async () => {
+                    // Show tooltip
+                    tooltipContent.classList.remove("opacity-0");
+                    tooltipContent.classList.add("opacity-100");
+                    tooltipContent.style.pointerEvents = "auto";
+                    
+                    // Manually trigger FloatingUI position calculation
+                    const trigger = tooltipWrapper.firstElementChild as HTMLElement;
+                    const arrowElement = tooltipContent.querySelector(".tooltip-arrow") as HTMLElement;
+                    const preferredPosition = tooltipWrapper.getAttribute("data-tooltip-position") || "left";
+                    
+                    if (trigger) {
+                      const { computePosition, flip, shift, offset, arrow } = await import("@floating-ui/dom");
+                      
+                      const middleware = [
+                        offset(8),
+                        flip({ fallbackAxisSideDirection: "start" }),
+                        shift({ padding: 8 }),
+                      ];
+                      
+                      if (arrowElement) {
+                        middleware.push(arrow({ element: arrowElement }));
+                      }
+                      
+                      const { x, y, placement, middlewareData } = await computePosition(trigger, tooltipContent, {
+                        placement: preferredPosition as any,
+                        middleware,
+                      });
+                      
+                      Object.assign(tooltipContent.style, { left: `${x}px`, top: `${y}px` });
+                      tooltipContent.setAttribute("data-popper-placement", placement);
+                      
+                      // Position arrow
+                      if (arrowElement && middlewareData.arrow) {
+                        const { x: arrowX, y: arrowY } = middlewareData.arrow;
+                        Object.assign(arrowElement.style, {
+                          left: arrowX != null ? `${arrowX}px` : "",
+                          top: arrowY != null ? `${arrowY}px` : "",
+                        });
+                      }
+                    }
+                  }, index * 100); // 100ms stagger between each tooltip
+                }
+              });
+            }
+          }, 50); // 50ms base delay for menu to settle
+        });
       } else {
+        // Hide tooltips immediately when closing
+        const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip .tooltip-content");
+        tooltips?.forEach((tooltip) => {
+          tooltip.classList.remove("opacity-100");
+          tooltip.classList.add("opacity-0");
+          (tooltip as HTMLElement).style.pointerEvents = "none";
+        });
+
         speedDialMenu?.classList.add("hidden");
         speedDialOverlay?.classList.add("hidden");
         speedDialButton?.setAttribute("aria-expanded", "false");
@@ -223,6 +287,15 @@ import Button from "../common/Button.astro";
     function hideSpeedDial() {
       if (isOpen) {
         isOpen = false;
+
+        // Hide tooltips immediately
+        const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip .tooltip-content");
+        tooltips?.forEach((tooltip) => {
+          tooltip.classList.remove("opacity-100");
+          tooltip.classList.add("opacity-0");
+          (tooltip as HTMLElement).style.pointerEvents = "none";
+        });
+
         speedDialMenu?.classList.add("hidden");
         speedDialOverlay?.classList.add("hidden");
         speedDialButton?.setAttribute("aria-expanded", "false");

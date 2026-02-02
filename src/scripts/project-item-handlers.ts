@@ -337,48 +337,41 @@
 };
 
 /**
- * Render file icons with tooltips
+ * Render file icons with native browser tooltips
  */
 (window as any).renderFileIcons = function () {
   console.log("📁 [RENDER-FILE-ICONS] Called");
-  // Dynamic import of tooltip helper
-  import("../lib/tooltip-styles").then(({ generateTooltipHTML }) => {
-    // Find all project file containers
-    const containers = document.querySelectorAll('[id^="project-files-"]');
-    console.log(`📁 [RENDER-FILE-ICONS] Found ${containers.length} file containers`);
 
-    containers.forEach((container) => {
-      const projectFilesData = container.getAttribute("data-project-files");
-      if (!projectFilesData) {
-        return;
-      }
+  // Find all project file containers
+  const containers = document.querySelectorAll('[id^="project-files-"]');
+  console.log(`📁 [RENDER-FILE-ICONS] Found ${containers.length} file containers`);
 
-      const projectFiles = JSON.parse(projectFilesData);
-      console.log(
-        `📁 [RENDER-FILE-ICONS] Container ${container.id} has ${projectFiles?.length || 0} files`
-      );
+  containers.forEach((container) => {
+    const projectFilesData = container.getAttribute("data-project-files");
+    if (!projectFilesData) {
+      return;
+    }
 
-      if (!projectFiles || projectFiles.length === 0) {
-        return;
-      }
+    const projectFiles = JSON.parse(projectFilesData);
+    console.log(
+      `📁 [RENDER-FILE-ICONS] Container ${container.id} has ${projectFiles?.length || 0} files`
+    );
 
-      // Clear existing content
-      container.innerHTML = "";
+    if (!projectFiles || projectFiles.length === 0) {
+      return;
+    }
 
-      // Create file icons with tooltips
-      projectFiles.forEach((file: any) => {
-        const fileIconContainer = document.createElement("div");
+    // Clear existing content
+    container.innerHTML = "";
 
-        // Use the generateTooltipHTML helper from tooltip-styles.ts
-        const iconHTML = `<div class="cursor-pointer">${(window as any).getFileIcon(file.fileType)}</div>`;
-        const tooltipHTML = generateTooltipHTML(file.title || file.fileName, iconHTML, {
-          position: "top",
-        });
+    // Create file icons with native browser tooltips
+    projectFiles.forEach((file: any) => {
+      const fileIconContainer = document.createElement("div");
+      fileIconContainer.className = "cursor-pointer";
+      fileIconContainer.title = file.title || file.fileName; // Native browser tooltip
+      fileIconContainer.innerHTML = (window as any).getFileIcon(file.fileType);
 
-        fileIconContainer.innerHTML = tooltipHTML;
-
-        container.appendChild(fileIconContainer);
-      });
+      container.appendChild(fileIconContainer);
     });
   });
 };

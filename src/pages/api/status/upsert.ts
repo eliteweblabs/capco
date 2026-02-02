@@ -2,6 +2,14 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
+import statusesData from "../../../../config/data/statuses.json";
+
+// Helper function to get status name by status code
+function getStatusName(statusCode: number): string {
+  const statusArray = statusesData[0]?.json_agg || [];
+  const status = statusArray.find((s: any) => s.statusCode === statusCode);
+  return status?.adminStatusName || `Status ${statusCode}`;
+}
 
 export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
@@ -92,24 +100,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log the status change to project activity
     try {
+      const oldStatusName = getStatusName(oldStatus);
+      const newStatusName = getStatusName(newStatus);
+
       console.log("📝 [UPDATE-STATUS] Logging status change:", {
         projectId,
         oldStatus,
         newStatus,
+        oldStatusName,
+        newStatusName,
         user: currentUser?.email || "Unknown",
       });
 
-      await SimpleProjectLogger.addLogEntry(
-        projectId,
-        "statusChange",
-        `Status changed from ${oldStatus} to ${newStatus}`,
-        {
-          oldStatus,
-          newStatus,
-          changedBy: currentUser?.email || "Unknown",
-          timestamp: new Date().toISOString(),
-        }
-      );
+      const logMessage =
+        oldStatus === newStatus
+          ? `Status refreshed: ${newStatusName}`
+          : `Status changed from "${oldStatusName}" to "${newStatusName}"`;
+
+      await SimpleProjectLogger.addLogEntry(projectId, "statusChange", logMessage, {
+        oldStatus,
+        newStatus,
+        oldStatusName,
+        newStatusName,
+        changedBy: currentUser?.email || "Unknown",
+        timestamp: new Date().toISOString(),
+      });
 
       console.log("✅ [UPDATE-STATUS] Status change logged successfully");
     } catch (logError) {

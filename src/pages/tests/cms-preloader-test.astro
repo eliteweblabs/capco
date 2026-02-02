@@ -1,0 +1,153 @@
+---
+/**
+ * CMS Preloader Test Page
+ * Demonstrates the zoom-in preloader animation
+ */
+import App from "../../components/ui/App.astro";
+import CMSPreloader from "../../components/ui/CMSPreloader.astro";
+import Button from "../../components/common/Button.astro";
+import { checkAuth } from "../../lib/auth";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+---
+
+<App title="CMS Preloader Test" currentUser={currentUser} session={session}>
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">
+      CMS Preloader Test
+    </h1>
+
+    <div class="space-y-6">
+      <!-- Info Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          Interactive Demo
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+          Use the buttons below to show/hide the preloader animation. The animation features a zoom-in pulse effect with a library/CMS icon.
+        </p>
+
+        <!-- Control Buttons -->
+        <div class="flex flex-wrap gap-4">
+          <Button variant="primary" id="show-preloader">
+            Show Preloader
+          </Button>
+          <Button variant="secondary" id="hide-preloader">
+            Hide Preloader
+          </Button>
+          <Button variant="secondary" id="toggle-preloader">
+            Toggle Preloader
+          </Button>
+        </div>
+      </div>
+
+      <!-- Auto Demo Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          Auto Demo
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+          Click the button below to see the preloader automatically show for 2 seconds.
+        </p>
+        <Button variant="secondary" id="auto-demo">
+          Run Auto Demo
+        </Button>
+      </div>
+
+      <!-- Usage Examples -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          Usage Examples
+        </h2>
+        
+        <div class="space-y-4">
+          <div>
+            <h3 class="font-medium text-gray-900 dark:text-white mb-2">
+              1. Show on Page Load (Auto-hide)
+            </h3>
+            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded overflow-x-auto text-sm"><code>&lt;CMSPreloader showByDefault={true} /&gt;
+
+&lt;script&gt;
+  // Auto-hide after content loads
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      window.cmsPreloader.hide();
+    }, 500);
+  });
+&lt;/script&gt;</code></pre>
+          </div>
+
+          <div>
+            <h3 class="font-medium text-gray-900 dark:text-white mb-2">
+              2. Show During Async Operations
+            </h3>
+            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded overflow-x-auto text-sm"><code>async function loadData() {
+  window.cmsPreloader.show();
+  
+  try {
+    const data = await fetch('/api/data');
+    // Process data...
+  } finally {
+    window.cmsPreloader.hide();
+  }
+}</code></pre>
+          </div>
+
+          <div>
+            <h3 class="font-medium text-gray-900 dark:text-white mb-2">
+              3. Custom z-index
+            </h3>
+            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded overflow-x-auto text-sm"><code>&lt;CMSPreloader zIndex="z-[9999]" /&gt;</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Include the Preloader -->
+  <CMSPreloader showByDefault={false} />
+</App>
+
+<script>
+  // Button handlers
+  const showBtn = document.getElementById('show-preloader');
+  const hideBtn = document.getElementById('hide-preloader');
+  const toggleBtn = document.getElementById('toggle-preloader');
+  const autoDemoBtn = document.getElementById('auto-demo');
+
+  if (showBtn) {
+    showBtn.addEventListener('click', () => {
+      if (window.cmsPreloader) {
+        window.cmsPreloader.show();
+      }
+    });
+  }
+
+  if (hideBtn) {
+    hideBtn.addEventListener('click', () => {
+      if (window.cmsPreloader) {
+        window.cmsPreloader.hide();
+      }
+    });
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      if (window.cmsPreloader) {
+        window.cmsPreloader.toggle();
+      }
+    });
+  }
+
+  if (autoDemoBtn) {
+    autoDemoBtn.addEventListener('click', () => {
+      if (window.cmsPreloader) {
+        window.cmsPreloader.show();
+        setTimeout(() => {
+          window.cmsPreloader.hide();
+        }, 2000);
+      }
+    });
+  }
+</script>
+</App>

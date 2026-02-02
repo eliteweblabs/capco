@@ -27,19 +27,37 @@ const LAST_NAME_PLACEHOLDERS = [
   "李", // Chinese (Li)
 ];
 
+// Funny fake company name placeholders (fire protection, architecture, real estate puns)
+const COMPANY_NAME_PLACEHOLDERS = [
+  "Sprinkler Twinkle Fire Safety",
+  "Alarm and Dangerous Systems",
+  "For Lease Navidad Properties",
+  "Smoke Gets In Your Detectors",
+  "Arch Nemesis Architecture",
+  "Fire When Ready Protection",
+  "Location³ Real Estate",
+  "Extinguisher Wishes Inc.",
+  "Column A or Column B Design",
+  "House of Cards Construction",
+  "Wright or Wrong Architects",
+  "Hot Property Fire Prevention",
+];
+
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
+const { globalCompanyName } = await globalCompanyData();
+
 export const contactFormConfig: MultiStepFormConfig = {
   formId: "multi-step-contact-form",
   formAction: "/api/contact/submit",
   formMethod: "post",
   totalSteps: 8,
-  progressBar: true,
+  progressBar: false,
 
   // Default button styles
   buttonDefaults: {
     next: {
       type: "next",
       variant: "secondary",
-      size: "md",
       icon: "arrow-right",
       iconPosition: "right",
       label: "next",
@@ -47,7 +65,6 @@ export const contactFormConfig: MultiStepFormConfig = {
     prev: {
       type: "prev",
       variant: "anchor",
-      size: "lg",
       icon: "arrow-left",
       iconPosition: "left",
       label: "back",
@@ -55,7 +72,6 @@ export const contactFormConfig: MultiStepFormConfig = {
     submit: {
       type: "submit",
       variant: "secondary",
-      size: "md",
       icon: "send",
       iconPosition: "right",
       label: "send message",
@@ -66,7 +82,8 @@ export const contactFormConfig: MultiStepFormConfig = {
     // Step 1: Name
     {
       stepNumber: 1,
-      title: "What's your name?",
+      title: `<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!`,
+
       effect: "typewriter",
       fieldLayout: "grid",
       fields: [
@@ -110,7 +127,8 @@ export const contactFormConfig: MultiStepFormConfig = {
     // Step 2: Email
     {
       stepNumber: 2,
-      title: "your email?",
+      title:
+        "What's your email <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
       fields: [
         {
           id: "contact-email",
@@ -142,31 +160,31 @@ export const contactFormConfig: MultiStepFormConfig = {
     // Step 3: Phone
     {
       stepNumber: 3,
-      title: "your phone?",
-      effect: "typewriter",
+      title:
+        "What's a good phone number to reach you <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
       fields: [
         {
-          id: "contact-phone",
-          name: "phone",
           type: "tel",
-          placeholder: "(555) 123-4567",
-          autocomplete: "tel",
+          id: "step-phone",
+          name: "phone",
+          placeholder: "1-(555)-123-4567",
           required: false,
+          autocomplete: "tel",
           icon: "phone",
           iconPosition: "left",
+          classes: "text-center",
         },
       ],
       buttons: [
         {
           type: "prev",
-          label: "back",
           dataPrev: 2,
         },
         {
           type: "next",
           label: "skip",
-          dataNext: 6, // Default to skip to Company (will change to 4 if valid phone entered)
-          classes: "next-step-phone",
+          validLabel: "next",
+          dataNext: 6,
         },
       ],
       customValidation: "validatePhone",
@@ -188,7 +206,7 @@ export const contactFormConfig: MultiStepFormConfig = {
             id: "contact-sms-toggle",
             name: "smsAlerts",
             label: "Enable SMS",
-            color: "danger",
+            color: "primary",
             size: "xl",
             checked: false,
           },
@@ -254,7 +272,8 @@ export const contactFormConfig: MultiStepFormConfig = {
           id: "contact-company",
           name: "company",
           type: "text",
-          placeholder: "Acme Corporation",
+          placeholder: COMPANY_NAME_PLACEHOLDERS[0],
+          animatedPlaceholders: COMPANY_NAME_PLACEHOLDERS,
           required: true,
           autocomplete: "organization",
           errorMessage: "Please enter your company name",

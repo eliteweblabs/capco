@@ -1,0 +1,161 @@
+---
+import TooltipFloating from "../../components/common/TooltipFloating.astro";
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tooltip Arrow Test</title>
+    <script>
+      // Simple dark mode setup
+      if (
+        localStorage.getItem("color-theme") === "dark" ||
+        (!("color-theme" in localStorage) &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    </script>
+    <style>
+      body {
+        margin: 0;
+        padding: 40px;
+        min-height: 100vh;
+        background: white;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      body.dark {
+        background: #1a1a1a;
+        color: white;
+      }
+      .test-container {
+        display: flex;
+        flex-direction: column;
+        gap: 60px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .test-row {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        gap: 40px;
+        padding: 40px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+      }
+      .dark .test-row {
+        border-color: #444;
+      }
+      .test-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #2563eb;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      .test-button:hover {
+        background: #1d4ed8;
+      }
+      h1,
+      h2 {
+        text-align: center;
+      }
+      .toggle-dark {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="toggle-dark" onclick="document.documentElement.classList.toggle('dark')">
+      Toggle Dark Mode
+    </button>
+
+    <div class="test-container">
+      <h1>Tooltip Arrow Test</h1>
+
+      <div class="test-row">
+        <h2>Position: Top</h2>
+        <TooltipFloating text="Tooltip on Top" position="top">
+          <button class="test-button">
+            <SimpleIcon name="user" size="md" />
+          </button>
+        </TooltipFloating>
+      </div>
+
+      <div class="test-row">
+        <h2>Position: Bottom</h2>
+        <TooltipFloating text="Tooltip on Bottom" position="bottom">
+          <button class="test-button">
+            <SimpleIcon name="heart" size="md" />
+          </button>
+        </TooltipFloating>
+      </div>
+
+      <div class="test-row">
+        <h2>Position: Left</h2>
+        <TooltipFloating text="Tooltip on Left" position="left">
+          <button class="test-button">
+            <SimpleIcon name="star" size="md" />
+          </button>
+        </TooltipFloating>
+      </div>
+
+      <div class="test-row">
+        <h2>Position: Right</h2>
+        <TooltipFloating text="Tooltip on Right" position="right">
+          <button class="test-button">
+            <SimpleIcon name="phone" size="md" />
+          </button>
+        </TooltipFloating>
+      </div>
+
+      <div class="test-row">
+        <h2>Speed Dial Style (Left)</h2>
+        <TooltipFloating
+          text="Contact"
+          position="left"
+          className="speed-dial-tooltip"
+          dismissable={false}
+        >
+          <button class="test-button">
+            <SimpleIcon name="message-square" size="md" />
+          </button>
+        </TooltipFloating>
+      </div>
+    </div>
+
+    <script>
+      // Manually show the speed dial tooltip on page load for testing
+      setTimeout(() => {
+        const speedDialTooltip = document.querySelector(".speed-dial-tooltip .tooltip-content");
+        if (speedDialTooltip) {
+          speedDialTooltip.classList.remove("opacity-0");
+          speedDialTooltip.classList.add("opacity-100");
+          speedDialTooltip.style.pointerEvents = "auto";
+        }
+      }, 500);
+    </script>
+  </body>
+</html>

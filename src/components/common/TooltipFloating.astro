@@ -11,6 +11,7 @@ export interface Props {
   open?: boolean;
   dismissable?: boolean;
   mobileClickable?: boolean;
+  html?: boolean; // Whether to render text as HTML
 }
 
 const {
@@ -22,6 +23,7 @@ const {
   open = false,
   dismissable = false,
   mobileClickable = false,
+  html = false,
 } = Astro.props;
 
 const wrapperClasses =
@@ -42,7 +44,7 @@ const contentClasses = [
 <span class={wrapperClasses} data-tooltip-position={position}>
   <slot />
   <span class={contentClasses} data-dismissable={dismissable ? "true" : "false"} role="tooltip">
-    {text}
+    {html ? <span set:html={text} /> : text}
     {
       dismissable && (
         <button
@@ -74,9 +76,13 @@ const contentClasses = [
   .tooltip-arrow,
   .tooltip-arrow::before {
     position: absolute;
-    width: 8px;
-    height: 8px;
-    background: inherit;
+    width: 8px !important;
+    height: 8px !important;
+    background: inherit !important;
+    border: none !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    border-color: transparent !important;
   }
 
   .tooltip-arrow {

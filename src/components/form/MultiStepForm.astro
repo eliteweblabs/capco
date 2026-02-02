@@ -8,6 +8,9 @@ import Tooltip from "../common/TooltipFloating.astro";
 import SlotMachineModalStaff from "./SlotMachineModalStaff.astro";
 import InlineAddressSearch from "./InlineAddressSearch.astro";
 import SlideToggle from "../common/SlideToggle.astro";
+import UnitSlider from "./UnitSlider.astro";
+import ToggleButton from "./ToggleButton.astro";
+import FileUpload from "./FileUpload.astro";
 import AuthProviders from "./AuthProviders.astro";
 import { SMS_UTILS } from "../../lib/sms-utils";
 import { globalClasses } from "../../pages/api/global/global-classes";
@@ -31,54 +34,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 ---
 
 <div data-multi-step-form class={containerClass} tabindex="-1">
-  <!-- Advanced Stepper - Fixed to bottom -->
-  {
-    config.progressBar && (
-      <div
-        id={`${config.formId}-progress-bar`}
-        class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-4 transition-opacity duration-300"
-        tabindex="-1"
-      >
-        <div class="w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] max-w-6xl mx-auto" tabindex="-1">
-          <ol class="flex items-center w-full" id={`${config.formId}-stepper`} tabindex="-1">
-            {config.steps
-              .filter((step) => !step.hideProgressBar)
-              .map((step, index, filteredSteps) => (
-                <li
-                  class={`relative flex items-center ${index < filteredSteps.length - 1 ? "w-full" : ""}`}
-                  data-step-indicator={step.stepNumber}
-                  tabindex="-1"
-                >
-                  {/* Step Circle/Icon with Tooltip */}
-                  <Tooltip text={step.title} position="top" mobileClickable={true}>
-                    <span
-                      class="relative step-indicator flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0 transition-all duration-300 bg-gray-300 dark:bg-gray-700"
-                      data-step-title={step.title}
-                      tabindex="-1"
-                    />
-                  </Tooltip>
-
-                  {/* Connecting Line */}
-                  {index < filteredSteps.length - 1 && (
-                    <div
-                      class="w-full h-1 mx-2 bg-transparent dark:bg-transparent rounded-full overflow-hidden"
-                      tabindex="-1"
-                    >
-                      <div
-                        class="h-full bg-transparent dark:bg-transparent transition-all duration-500 ease-out step-progress-line"
-                        style="width: 0%"
-                        tabindex="-1"
-                      />
-                    </div>
-                  )}
-                </li>
-              ))}
-          </ol>
-        </div>
-      </div>
-    )
-  }
-
   <form
     id={config.formId}
     action={config.formAction}
@@ -93,7 +48,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           data-hide-progress-bar={step.hideProgressBar ? "true" : "false"}
           tabindex="-1"
         >
-          <div class="space-y-12 sm:space-y-6 lg:space-y-8" tabindex="-1">
+          <div class="space-y-12 sm:space-y-18 lg:space-y-24" tabindex="-1">
             {/* Step Header */}
             <div tabindex="-1">
               {step.showIcon && step.icon && (
@@ -109,14 +64,19 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 </div>
               )}
               {step.title && (
-                <h2
-                  class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
-                    (step.effect === "typewriter" || !step.effect) ? "typewriter-text" : ""
-                  }`}
-                  data-text={step.title}
-                  set:html={step.title}
-                  tabindex="-1"
-                />
+                <div class="title-scroll-container relative" tabindex="-1">
+                  <div class="title-scroll-fade-top" />
+                  <div class="title-scroll-wrapper" tabindex="-1">
+                    <h2
+                      class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
+                        step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
+                      }`}
+                      data-text={step.title}
+                      set:html={step.title}
+                      tabindex="-1"
+                    />
+                  </div>
+                </div>
               )}
               {step.subtitle && (
                 <p
@@ -232,6 +192,51 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         globalInputClasses={appendedGlobalInputClasses}
                         {...field.componentProps}
                       />
+                    ) : field.type === "component" && field.component === "UnitSlider" ? (
+                      <UnitSlider
+                        name={field.name}
+                        label={field.label || field.name}
+                        value={Number(field.value) || 1}
+                        required={field.required}
+                        min={field.min}
+                        max={field.max}
+                        step={field.step}
+                        {...field.componentProps}
+                      />
+                    ) : field.type === "component" && field.component === "ToggleButton" ? (
+                      <div class="flex flex-wrap gap-3" tabindex="-1">
+                        {field.options?.map((option) => (
+                          <ToggleButton
+                            value={option.value}
+                            group={field.name}
+                            type={field.toggleType || "radio"}
+                            class={field.classes}
+                          >
+                            {option.label}
+                          </ToggleButton>
+                        ))}
+                      </div>
+                    ) : field.type === "component" && field.component === "FileUpload" ? (
+                      <FileUpload
+                        name={field.name}
+                        label={field.label}
+                        required={field.required}
+                        accept={field.accept}
+                        multiple={field.multiple}
+                        maxFiles={field.maxFiles}
+                        maxSize={field.maxSize}
+                        {...field.componentProps}
+                      />
+                    ) : field.type === "range" ? (
+                      <UnitSlider
+                        name={field.name}
+                        label={field.label || field.name}
+                        value={Number(field.value) || Number(field.min) || 0}
+                        required={field.required}
+                        min={field.min || 0}
+                        max={field.max || 100}
+                        step={field.step || 1}
+                      />
                     ) : field.type === "textarea" ? (
                       <textarea
                         id={field.id}
@@ -281,38 +286,42 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           data-for={field.id}
                           tabindex="-1"
                         >
-                        {field.placeholder}
-                      </span>
-                    </div>
-                  ) : field.type === "button-group" ? (
-                    <div class="flex flex-wrap gap-3" tabindex="-1">
-                      {field.buttons?.map((button) => {
-                        const btnConfig = getButtonConfig(
-                          button,
-                          config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
-                        );
-                        return (
-                          <Button
-                            variant={btnConfig.variant}
-                            size={btnConfig.size}
-                            icon={btnConfig.icon}
-                            iconPosition={btnConfig.iconPosition}
-                            class={btnConfig.classes}
-                            dataAttributes={{
-                              ...(button.dataValue && { "data-value": button.dataValue }),
-                              ...(button.dataNext !== undefined && { "data-next": button.dataNext.toString() }),
-                            }}
-                          >
-                            {btnConfig.label && (
-                              <span class="button-text">
-                                <Fragment set:html={btnConfig.label} />
-                              </span>
-                            )}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  ) : field.icon ? (
+                          {field.placeholder}
+                        </span>
+                      </div>
+                    ) : field.type === "button-group" ? (
+                      <div class="flex flex-wrap gap-3" tabindex="-1">
+                        {field.buttons?.map((button) => {
+                          const btnConfig = getButtonConfig(
+                            button,
+                            config.buttonDefaults?.[
+                              button.type as keyof typeof config.buttonDefaults
+                            ]
+                          );
+                          return (
+                            <Button
+                              variant={btnConfig.variant}
+                              size={btnConfig.size}
+                              icon={btnConfig.icon}
+                              iconPosition={btnConfig.iconPosition}
+                              class={btnConfig.classes}
+                              dataAttributes={{
+                                ...(button.dataValue && { "data-value": button.dataValue }),
+                                ...(button.dataNext !== undefined && {
+                                  "data-next": button.dataNext.toString(),
+                                }),
+                              }}
+                            >
+                              {btnConfig.label && (
+                                <span class="button-text">
+                                  <Fragment set:html={btnConfig.label} />
+                                </span>
+                              )}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    ) : field.icon ? (
                       <div
                         class:list={[
                           "relative input-with-icon",
@@ -431,7 +440,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       icon={btnConfig.icon}
                       iconPosition={btnConfig.iconPosition}
                       type="button"
-                      class={`${button.type}-step ${button.classes || ""}`}
+                      class={`${button.type}-step ${button.classes || ""} ${button.validLabel ? "has-valid-state" : ""}`}
                       disabled={button.disabled}
                       dataAttributes={{
                         ...(button.dataNext !== undefined && {
@@ -458,6 +467,16 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                             <Fragment set:html={btnConfig.label} />
                           </span>
                         ))}
+                      {/* Valid state checkmark icon (hidden by default, shown when valid) */}
+                      {button.validLabel && btnConfig.iconPosition === "right" && (
+                        <SimpleIcon
+                          name="check"
+                          size={
+                            btnConfig.size === "lg" ? "lg" : btnConfig.size === "xl" ? "xl" : "md"
+                          }
+                          class="ml-2 icon-valid hidden"
+                        />
+                      )}
                     </Button>
                   );
                 })}
@@ -476,7 +495,116 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   </form>
 </div>
 
+<!-- Advanced Stepper - Fixed to bottom (outside of container to avoid flex interference) -->
+{
+  config.progressBar && (
+    <div
+      id={`${config.formId}-progress-bar`}
+      class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-4 transition-opacity duration-300"
+      tabindex="-1"
+    >
+      <div class="w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] max-w-6xl mx-auto" tabindex="-1">
+        <ol class="flex items-center w-full" id={`${config.formId}-stepper`} tabindex="-1">
+          {config.steps
+            .filter((step) => !step.hideProgressBar)
+            .map((step, index, filteredSteps) => (
+              <li
+                class={`relative flex items-center ${index < filteredSteps.length - 1 ? "w-full" : ""}`}
+                data-step-indicator={step.stepNumber}
+                tabindex="-1"
+              >
+                {/* Step Circle/Icon with Tooltip */}
+                <Tooltip text={step.title} position="top" mobileClickable={true} html={true}>
+                  <span
+                    class="relative step-indicator flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0 transition-all duration-300 bg-gray-300 dark:bg-gray-700"
+                    data-step-title={step.title}
+                    tabindex="-1"
+                  />
+                </Tooltip>
+
+                {/* Connecting Line */}
+                {index < filteredSteps.length - 1 && (
+                  <div
+                    class="w-full h-1 mx-2 bg-transparent dark:bg-transparent rounded-full overflow-hidden"
+                    tabindex="-1"
+                  >
+                    <div
+                      class="h-full bg-transparent dark:bg-transparent transition-all duration-500 ease-out step-progress-line"
+                      style="width: 0%"
+                      tabindex="-1"
+                    />
+                  </div>
+                )}
+              </li>
+            ))}
+        </ol>
+      </div>
+    </div>
+  )
+}
+
 <style is:global>
+  /* Title scroll container with max height */
+  .title-scroll-container {
+    position: relative;
+    max-height: 400px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .title-scroll-wrapper {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    flex: 1;
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  /* When content overflows, switch to normal alignment */
+  .title-scroll-wrapper.has-overflow {
+    justify-content: flex-start;
+  }
+
+  .title-scroll-wrapper::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera */
+  }
+
+  /* Fade out gradient at top */
+  .title-scroll-fade-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to bottom, var(--scroll-fade-color) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  /* Show fade when scrolled */
+  .title-scroll-container.is-scrolled .title-scroll-fade-top {
+    opacity: 1;
+  }
+
+  /* Color variables for fade gradient */
+  :root {
+    --scroll-fade-color: rgba(255, 255, 255, 0.95);
+  }
+
+  .dark {
+    --scroll-fade-color: rgba(17, 24, 39, 0.95);
+  }
+
   /* Content reveal animation after typewriter completes */
   .step-content .input-wrapper,
   .step-content .inline-address-search-wrapper,
@@ -484,7 +612,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content a {
     opacity: 0;
     transform: translateY(20px);
-    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    transition:
+      opacity 0.4s ease-out,
+      transform 0.4s ease-out;
   }
 
   /* When typewriter completes, reveal content */
@@ -579,6 +709,35 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     width: 80dvw;
     max-width: 680px;
   }
+
+  /* Button icon state management for validation feedback */
+  button.has-valid-state .icon-valid {
+    display: none;
+  }
+
+  button.has-valid-state.is-valid .icon-default {
+    display: none;
+  }
+
+  button.has-valid-state.is-valid .icon-valid {
+    display: inline-block;
+    animation: iconSwapIn 300ms ease-out;
+  }
+
+  /* Icon swap animations */
+  @keyframes iconSwapIn {
+    0% {
+      transform: scale(0) rotate(-90deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.2) rotate(0deg);
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
 </style>
 
 <script define:vars={{ formId: config.formId, formConfig: config, initialData }}>
@@ -596,40 +755,42 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
   document.addEventListener("DOMContentLoaded", () => {
     // Listen for typewriter completion to trigger content animations
-    document.addEventListener('typewriter-complete', (e) => {
+    document.addEventListener("typewriter-complete", (e) => {
       const target = e.target as HTMLElement;
-      const stepContent = target.closest('.step-content');
+      const stepContent = target.closest(".step-content");
       if (stepContent) {
-        console.log('[MULTISTEP-FORM] Typewriter complete, revealing content');
-        
+        console.log("[MULTISTEP-FORM] Typewriter complete, revealing content");
+
         // Collect all animatable elements in DOM order
         const elements: HTMLElement[] = [];
-        
+
         // Get all input wrappers and address search wrappers
-        const inputWrappers = stepContent.querySelectorAll('.input-wrapper, .inline-address-search-wrapper');
-        inputWrappers.forEach(el => elements.push(el as HTMLElement));
-        
+        const inputWrappers = stepContent.querySelectorAll(
+          ".input-wrapper, .inline-address-search-wrapper"
+        );
+        inputWrappers.forEach((el) => elements.push(el as HTMLElement));
+
         // Get all buttons and anchors (both choice buttons and navigation buttons)
-        const buttons = stepContent.querySelectorAll('button, a');
-        buttons.forEach(el => elements.push(el as HTMLElement));
-        
+        const buttons = stepContent.querySelectorAll("button, a");
+        buttons.forEach((el) => elements.push(el as HTMLElement));
+
         // Apply staggered delays (100ms between each)
         elements.forEach((element, index) => {
           const delay = index * 0.1; // 100ms = 0.1s
           element.style.transitionDelay = `${delay}s`;
           console.log(`[ANIMATION] Element ${index + 1}: ${delay}s delay`);
         });
-        
+
         // Add the class to trigger animations
-        stepContent.classList.add('typewriter-complete');
+        stepContent.classList.add("typewriter-complete");
       }
     });
 
     // Mark steps with typewriter effect
-    document.querySelectorAll('.step-content').forEach((step) => {
-      const hasTypewriter = step.querySelector('.typewriter-text');
+    document.querySelectorAll(".step-content").forEach((step) => {
+      const hasTypewriter = step.querySelector(".typewriter-text");
       if (hasTypewriter) {
-        step.classList.add('has-typewriter');
+        step.classList.add("has-typewriter");
       }
     });
 
@@ -639,7 +800,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     ) as NodeListOf<HTMLInputElement>;
 
     // Store placeholder data for each field
-    const placeholderData = new Map<string, { index: number; values: string[] }>();
+    const placeholderData = new Map<
+      string,
+      { index: number; values: string[]; syncGroup?: string }
+    >();
 
     // Initialize placeholder data for each input
     animatedInputs.forEach((input) => {
@@ -649,9 +813,21 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       if (placeholders) {
         try {
           const values = JSON.parse(placeholders);
-          placeholderData.set(fieldId, { index: 0, values });
+          // Determine sync group based on field name (firstName and lastName should sync)
+          const fieldName = input.name;
+          let syncGroup: string | undefined = undefined;
+
+          // Group firstName and lastName together
+          if (fieldName === "firstName" || fieldName === "lastName") {
+            // Find the step container to create a step-specific sync group
+            const stepContent = input.closest(".step-content");
+            const stepNumber = stepContent?.getAttribute("data-step");
+            syncGroup = `name-step-${stepNumber}`;
+          }
+
+          placeholderData.set(fieldId, { index: 0, values, syncGroup });
           console.log(
-            `[ANIMATED-PLACEHOLDER] Initialized ${fieldId} with ${values.length} placeholders`
+            `[ANIMATED-PLACEHOLDER] Initialized ${fieldId} with ${values.length} placeholders${syncGroup ? ` (sync group: ${syncGroup})` : ""}`
           );
         } catch (e) {
           console.error(`[ANIMATED-PLACEHOLDER] Failed to parse placeholders for ${fieldId}:`, e);
@@ -665,23 +841,42 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         `.animated-placeholder[data-for="${input.id}"]`
       ) as HTMLElement;
       if (span) {
-        input.addEventListener("input", () => {
+        // Helper function to check and hide/show placeholder
+        const checkAndHidePlaceholder = () => {
           if (input.value) {
             span.style.display = "none";
+            console.log(`[ANIMATED-PLACEHOLDER] Hiding placeholder for ${input.id} (has value)`);
           } else {
             span.style.display = "flex";
           }
+        };
+
+        // Listen for manual input changes
+        input.addEventListener("input", checkAndHidePlaceholder);
+
+        // Listen for autofill detection via CSS animation
+        input.addEventListener("animationstart", (e: AnimationEvent) => {
+          if (e.animationName === "onAutoFillStart") {
+            console.log(`[ANIMATED-PLACEHOLDER] Autofill detected for ${input.id}`);
+            checkAndHidePlaceholder();
+          }
         });
-        // Check initial value
-        if (input.value) {
-          span.style.display = "none";
-        }
+
+        // Check initial value immediately
+        checkAndHidePlaceholder();
+
+        // Delayed checks for autofill (fallback for browsers that don't support animation detection)
+        setTimeout(checkAndHidePlaceholder, 100);
+        setTimeout(checkAndHidePlaceholder, 500);
       }
     });
 
     function rotatePlaceholders() {
       // Find the active step to determine which inputs are visible
       const activeStep = document.querySelector(".step-content.active");
+
+      // Track which sync groups have been processed to keep them in sync
+      const processedSyncGroups = new Set<string>();
 
       animatedInputs.forEach((input, index) => {
         const span = document.querySelector(
@@ -702,19 +897,59 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           );
           const stepIndex = activeStepInputs.indexOf(input);
 
-          // Add staggered delay: 200ms per field in the same step
-          const staggerDelay = stepIndex * 200;
+          // If this field is part of a sync group, check if we've already processed it
+          if (data.syncGroup) {
+            if (processedSyncGroups.has(data.syncGroup)) {
+              // Already processed by another field in the group, skip individual processing
+              return;
+            }
+            // Mark this sync group as processed
+            processedSyncGroups.add(data.syncGroup);
 
-          setTimeout(() => {
-            // Only rotate if visible
-            span.style.animation = "slideOutDown 400ms ease-out forwards";
+            // Find all fields in the same sync group
+            const syncedFields = Array.from(placeholderData.entries())
+              .filter(([_, d]) => d.syncGroup === data.syncGroup)
+              .map(([id, _]) => id);
+
+            // Rotate all synced fields together with NO stagger (they happen simultaneously)
+            syncedFields.forEach((syncedFieldId) => {
+              const syncedInput = document.getElementById(syncedFieldId) as HTMLInputElement;
+              const syncedSpan = document.querySelector(
+                `.animated-placeholder[data-for="${syncedFieldId}"]`
+              ) as HTMLElement;
+              const syncedData = placeholderData.get(syncedFieldId);
+
+              if (
+                syncedSpan &&
+                syncedData &&
+                !syncedInput?.value &&
+                syncedSpan.style.display !== "none"
+              ) {
+                // No stagger delay - all synced fields animate together
+                syncedSpan.style.animation = "slideOutDown 400ms ease-out forwards";
+
+                setTimeout(() => {
+                  syncedData.index = (syncedData.index + 1) % syncedData.values.length;
+                  syncedSpan.textContent = syncedData.values[syncedData.index];
+                  syncedSpan.style.animation = "slideInDown 400ms ease-out forwards";
+                }, 400);
+              }
+            });
+          } else {
+            // Not part of a sync group, use normal staggered delay
+            const staggerDelay = stepIndex * 100;
 
             setTimeout(() => {
-              data.index = (data.index + 1) % data.values.length;
-              span.textContent = data.values[data.index];
-              span.style.animation = "slideInDown 400ms ease-out forwards";
-            }, 400);
-          }, staggerDelay);
+              // Only rotate if visible
+              span.style.animation = "slideOutDown 400ms ease-out forwards";
+
+              setTimeout(() => {
+                data.index = (data.index + 1) % data.values.length;
+                span.textContent = data.values[data.index];
+                span.style.animation = "slideInDown 400ms ease-out forwards";
+              }, 400);
+            }, staggerDelay);
+          }
         }
       });
     }
@@ -750,10 +985,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       resetPlaceholderAnimation();
 
       // Start new interval
-      placeholderInterval = setInterval(rotatePlaceholders, 3000);
+      placeholderInterval = setInterval(rotatePlaceholders, 2000);
     }
 
-    // Rotate placeholders every 3 seconds
+    // Rotate placeholders every 2 seconds
     if (animatedInputs.length > 0) {
       startPlaceholderRotation();
 
@@ -897,13 +1132,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             (input as HTMLInputElement).value = value as string;
             console.log(`[MULTISTEP-FORM] Pre-filled ${key}:`, value);
 
-            // Hide animated placeholder if this is firstName or lastName
-            if (key === "firstName" || key === "lastName") {
+            // Hide animated placeholder if this input has one
+            if (input.hasAttribute("data-has-animated-placeholder")) {
               const span = document.querySelector(
                 `.animated-placeholder[data-for="${input.id}"]`
               ) as HTMLElement;
               if (span) {
                 span.style.display = "none";
+                console.log(`[MULTISTEP-FORM] Hid animated placeholder for ${key}`);
               }
             }
           }
@@ -917,6 +1153,53 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       }
     });
   });
+
+  // Helper function to check if all fields in current step are valid
+  function checkAllFieldsValid() {
+    const activeStep = document.querySelector(".step-content.active");
+    if (!activeStep) {
+      console.log("[FIELD-VALIDATION] No active step found");
+      return false;
+    }
+
+    // Get all required inputs in the active step (not hidden)
+    const requiredInputs = activeStep.querySelectorAll(
+      'input[required]:not([type="hidden"]), textarea[required]'
+    );
+
+    if (requiredInputs.length === 0) {
+      console.log("[FIELD-VALIDATION] No required fields in active step");
+      return false;
+    }
+
+    let allValid = true;
+    const fieldStates: { name: string; value: string; valid: boolean }[] = [];
+
+    requiredInputs.forEach((input) => {
+      const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
+      const isValid = inputEl.validity.valid && inputEl.value.length > 0;
+
+      fieldStates.push({
+        name: inputEl.name || inputEl.id,
+        value: inputEl.value.substring(0, 20) + (inputEl.value.length > 20 ? "..." : ""),
+        valid: isValid,
+      });
+
+      if (!isValid) {
+        allValid = false;
+      }
+    });
+
+    console.log("[FIELD-VALIDATION] Current step field states:", fieldStates);
+
+    if (allValid) {
+      console.log("✅ [FIELD-VALIDATION] ALL FIELDS IN PANEL ARE VALID!");
+    } else {
+      console.log("❌ [FIELD-VALIDATION] Some fields are invalid or empty");
+    }
+
+    return allValid;
+  }
 
   // Add validation state classes for visual feedback
   document.addEventListener("DOMContentLoaded", () => {
@@ -940,6 +1223,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         } else {
           target.classList.remove("is-valid", "is-invalid");
         }
+
+        // Check if all fields in panel are valid after each input
+        checkAllFieldsValid();
       });
 
       // Check validity on blur
@@ -955,6 +1241,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             target.classList.remove("is-valid");
           }
         }
+
+        // Check if all fields in panel are valid after blur
+        checkAllFieldsValid();
       });
 
       // Remove invalid state on focus

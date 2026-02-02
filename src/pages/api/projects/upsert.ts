@@ -445,8 +445,16 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
     // Note: updatedAt is automatically set by PostgreSQL trigger
 
+    // Use supabaseAdmin for Admin/Staff users to bypass RLS
+    const dbClient =
+      (userRole === "admin" || userRole === "staff") && supabaseAdmin ? supabaseAdmin : supabase;
+
+    if (!dbClient) {
+      return createErrorResponse("Database connection not available", 500);
+    }
+
     // Update the project
-    const { data: project, error: updateError } = await supabase!
+    const { data: project, error: updateError } = await dbClient
       .from("projects")
       .update(updateData)
       .eq("id", projectId)

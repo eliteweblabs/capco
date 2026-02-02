@@ -41,15 +41,15 @@ try {
 
     console.log("🐛 [FEATURED-PROJECTS] Projects count:", projects.length);
     
-    // For each project with featuredImageId, fetch the actual marketing image
+    // For each project with featuredImageUrl or featuredImageId
     featuredProjects = await Promise.all(
       (projects || [])
         .filter((project: any) => project.featured === true || project.featured === "yes")
         .map(async (project: any) => {
-          let featuredImageUrl = null;
+          let featuredImageUrl = project.featuredImageUrl || null;
 
-          // If project has a featuredImageId, fetch the image from marketing bucket
-          if (project.featuredImageId) {
+          // If no direct featuredImageUrl but has featuredImageId, fetch the image from marketing bucket
+          if (!featuredImageUrl && project.featuredImageId) {
             try {
               const imageResponse = await fetch(
                 `${baseUrl}/api/files/get?projectId=${project.id}&targetLocation=marketing&bucketName=project-marketing`,
@@ -79,6 +79,8 @@ try {
             } catch (imgError) {
               console.error("❌ [FEATURED-PROJECTS] Error fetching featured image for project", project.id, ":", imgError);
             }
+          } else if (featuredImageUrl) {
+            console.log("✅ [FEATURED-PROJECTS] Using direct featuredImageUrl for project", project.id, ":", featuredImageUrl);
           }
 
           return {

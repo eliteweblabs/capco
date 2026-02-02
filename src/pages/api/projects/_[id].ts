@@ -15,6 +15,66 @@ const mapFormDataToProject = (data: ProjectUpdateFormData) => data;
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 
+// Helper function to generate descriptive log messages
+function generateUpdateLogMessage(oldData: any, newData: any): string {
+  const changes: string[] = [];
+
+  // Field labels for better readability
+  const fieldLabels: Record<string, string> = {
+    title: "Title",
+    address: "Address",
+    description: "Description",
+    sqFt: "Square Footage",
+    status: "Status",
+    newConstruction: "New Construction",
+    assignedTo: "Assigned To",
+    buildingTypes: "Building Types",
+    systems: "Systems",
+    waterSupply: "Water Supply",
+    buildingDetails: "Building Details",
+  };
+
+  // Compare fields and track changes
+  for (const key in newData) {
+    if (key === "log" || key === "updatedAt" || key === "createdAt") {
+      continue; // Skip metadata fields
+    }
+
+    const oldValue = oldData?.[key];
+    const newValue = newData[key];
+
+    // Check if value actually changed
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      const label = fieldLabels[key] || key;
+
+      // Format the change message based on the type
+      if (Array.isArray(newValue)) {
+        changes.push(`${label}: ${newValue.join(", ") || "None"}`);
+      } else if (typeof newValue === "boolean") {
+        changes.push(`${label}: ${newValue ? "Yes" : "No"}`);
+      } else if (newValue === null || newValue === undefined || newValue === "") {
+        changes.push(`${label} cleared`);
+      } else {
+        changes.push(`${label}: ${newValue}`);
+      }
+    }
+  }
+
+  if (changes.length === 0) {
+    return "Project was updated";
+  }
+
+  if (changes.length === 1) {
+    return `Updated ${changes[0]}`;
+  }
+
+  if (changes.length <= 3) {
+    return `Updated ${changes.join(", ")}`;
+  }
+
+  return `Updated ${changes.length} fields: ${changes.slice(0, 2).join(", ")}, and ${changes.length - 2} more`;
+}
+
 export const PUT: APIRoute = async ({ request, cookies, params }) => {
   console.log("🔧 [UPDATE-PROJECT] API called with projectId:", params.id);
   try {
@@ -75,13 +135,12 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       return createErrorResponse("Failed to update project", 500);
     }
 
-    // Log the update
-    await SimpleProjectLogger.addLogEntry(
-      parseInt(projectId),
-      "projectUpdated",
-      "Project was updated",
-      { oldData: currentProject, newData: project }
-    );
+    // Log the update with descriptive message
+    const logMessage = generateUpdateLogMessage(currentProject, project);
+    await SimpleProjectLogger.addLogEntry(parseInt(projectId), "projectUpdated", logMessage, {
+      oldData: currentProject,
+      newData: project,
+    });
 
     return new Response(
       JSON.stringify({

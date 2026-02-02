@@ -66,102 +66,94 @@ import { loginFormConfig } from "../../lib/forms/login-form-config";
   centerContent={true}
   mask="center"
 >
-  <div class="mx-auto max-w-2xl">
-    <!-- Full Screen Login -->
-    <div>
-      <!-- Multi-Step Login Form (includes Auth Providers via config) -->
-      <div class="mt-6">
-        <MultiStepForm
-          config={loginFormConfig}
-          initialData={{ redirect: redirectUrl }}
-          containerClass="w-full max-w-md mx-auto"
-        />
-      </div>
-    </div>
+  <MultiStepForm
+    config={loginFormConfig}
+    initialData={{ redirect: redirectUrl }}
+    containerClass="w-full max-w-md mx-auto"
+  />
 
-    <script>
-      // Use singleton Supabase client to avoid multiple instances
-      import { getSupabaseClient } from "../../lib/supabase-client";
+  <script>
+    // Use singleton Supabase client to avoid multiple instances
+    import { getSupabaseClient } from "../../lib/supabase-client";
 
-      // Extract OAuth initiation logic into a reusable function
-      async function triggerGoogleOAuth(e?: Event) {
-        if (e) {
-          e.preventDefault();
-        }
+    // Extract OAuth initiation logic into a reusable function
+    async function triggerGoogleOAuth(e?: Event) {
+      if (e) {
+        e.preventDefault();
+      }
 
-        console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
+      console.log("[GOOGLE-SIGNIN] Initiating client-side OAuth...");
 
-        // Get the redirect destination from hidden input in the MultiStepForm
-        const redirectDestination =
-          (document.querySelector('input[name="redirect"]') as HTMLInputElement)?.value ||
-          "/project/dashboard";
-        console.log("[GOOGLE-SIGNIN] Post-auth redirect destination:", redirectDestination);
+      // Get the redirect destination from hidden input in the MultiStepForm
+      const redirectDestination =
+        (document.querySelector('input[name="redirect"]') as HTMLInputElement)?.value ||
+        "/project/dashboard";
+      console.log("[GOOGLE-SIGNIN] Post-auth redirect destination:", redirectDestination);
 
-        // CRITICAL: Clear any stale auth state before starting new OAuth flow
-        const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-        if (supabaseUrl) {
-          const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-          const staleKeys = Object.keys(localStorage).filter(
-            (k) => k.includes(`sb-${supabaseProjectRef}`) && !k.includes("code-verifier")
-          );
-          if (staleKeys.length > 0) {
-            console.log("[GOOGLE-SIGNIN] Clearing stale auth state before OAuth:", staleKeys);
-            staleKeys.forEach((k) => localStorage.removeItem(k));
-          }
-        }
-
-        // Get singleton Supabase client
-        const supabase = getSupabaseClient();
-
-        if (!supabase) {
-          console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
-          if (window.showNotice) {
-            window.showNotice(
-              "error",
-              "Configuration Error",
-              "Supabase is not configured. Please contact support."
-            );
-          }
-          return;
-        }
-
-        // Ensure Supabase client is fully initialized
-        await new Promise((resolve) => setTimeout(resolve, 200));
-
-        const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectDestination)}`;
-        console.log("[GOOGLE-SIGNIN] Callback URL:", callbackUrl);
-
-        try {
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: "google",
-            options: {
-              redirectTo: callbackUrl,
-              queryParams: {
-                access_type: "offline",
-                prompt: "consent",
-              },
-            },
-          });
-
-          if (error) {
-            console.error("[GOOGLE-SIGNIN] OAuth error:", error);
-            if (window.showNotice) {
-              window.showNotice("error", "Sign In Error", error.message);
-            }
-          } else {
-            console.log("[GOOGLE-SIGNIN] OAuth initiated successfully");
-          }
-        } catch (err) {
-          console.error("[GOOGLE-SIGNIN] Unexpected error:", err);
-          if (window.showNotice) {
-            window.showNotice("error", "Sign In Error", "An unexpected error occurred");
-          }
+      // CRITICAL: Clear any stale auth state before starting new OAuth flow
+      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+      if (supabaseUrl) {
+        const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+        const staleKeys = Object.keys(localStorage).filter(
+          (k) => k.includes(`sb-${supabaseProjectRef}`) && !k.includes("code-verifier")
+        );
+        if (staleKeys.length > 0) {
+          console.log("[GOOGLE-SIGNIN] Clearing stale auth state before OAuth:", staleKeys);
+          staleKeys.forEach((k) => localStorage.removeItem(k));
         }
       }
 
-      // Make OAuth trigger available globally for AuthProviders
-      (window as any).handleGoogleSignup = triggerGoogleOAuth;
-    </script>
-  </div>
-  <!-- Multi-step Form -->
+      // Get singleton Supabase client
+      const supabase = getSupabaseClient();
+
+      if (!supabase) {
+        console.error("[GOOGLE-SIGNIN] Supabase configuration missing");
+        if (window.showNotice) {
+          window.showNotice(
+            "error",
+            "Configuration Error",
+            "Supabase is not configured. Please contact support."
+          );
+        }
+        return;
+      }
+
+      // Ensure Supabase client is fully initialized
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectDestination)}`;
+      console.log("[GOOGLE-SIGNIN] Callback URL:", callbackUrl);
+
+      try {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: callbackUrl,
+            queryParams: {
+              access_type: "offline",
+              prompt: "consent",
+            },
+          },
+        });
+
+        if (error) {
+          console.error("[GOOGLE-SIGNIN] OAuth error:", error);
+          if (window.showNotice) {
+            window.showNotice("error", "Sign In Error", error.message);
+          }
+        } else {
+          console.log("[GOOGLE-SIGNIN] OAuth initiated successfully");
+        }
+      } catch (err) {
+        console.error("[GOOGLE-SIGNIN] Unexpected error:", err);
+        if (window.showNotice) {
+          window.showNotice("error", "Sign In Error", "An unexpected error occurred");
+        }
+      }
+    }
+
+    // Make OAuth trigger available globally for AuthProviders
+    (window as any).handleGoogleSignup = triggerGoogleOAuth;
+  </script>
 </App>
+<!-- Multi-step Form -->

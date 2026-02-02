@@ -1,0 +1,531 @@
+---
+/**
+ * Custom VAPI Chat Interface
+ *
+ * A beautiful chat interface that uses VAPI for conversational AI
+ * Styled to match your multi-step form design with typewriter effects
+ */
+
+interface Props {
+  assistantId?: string;
+  publicKey?: string;
+  title?: string;
+  placeholder?: string;
+  introMessage?: string;
+  containerClass?: string;
+}
+
+const {
+  assistantId = import.meta.env.PUBLIC_VAPI_ASSISTANT_ID || "3ae002d5-fe9c-4870-8034-4c66a9b43b51",
+  publicKey = import.meta.env.PUBLIC_VAPI_KEY || "",
+  title = "How can I help you today?",
+  placeholder = "Type your message or ask a question...",
+  introMessage = "Hi! I'm here to help with your fire protection project. Feel free to ask me anything!",
+  containerClass = "w-full max-w-2xl mx-auto",
+} = Astro.props;
+---
+
+<div class={`vapi-chat-container ${containerClass}`} data-vapi-chat>
+  <!-- Chat Panel -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-white typewriter-text" data-text={title}>
+          {title}
+        </h2>
+        <div class="flex items-center gap-3">
+          <!-- Voice Status Indicator -->
+          <div class="flex items-center gap-2">
+            <div
+              id="vapi-voice-status"
+              class="w-3 h-3 rounded-full bg-gray-300 transition-all duration-300"
+              title="Voice Assistant Status"
+            >
+            </div>
+            <span id="vapi-voice-label" class="text-xs text-white/80">Ready</span>
+          </div>
+
+          <!-- Voice Toggle Button -->
+          <button
+            id="vapi-voice-toggle"
+            class="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+            title="Toggle voice assistant"
+          >
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+              ></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div
+      id="vapi-messages"
+      class="h-[500px] overflow-y-auto px-6 py-6 space-y-4 bg-gray-50 dark:bg-gray-900"
+    >
+      <!-- Intro Message -->
+      <div class="message-assistant animate-slide-up">
+        <div class="flex items-start gap-3">
+          <div
+            class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-primary-600 dark:text-primary-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+              ></path>
+            </svg>
+          </div>
+          <div
+            class="flex-1 bg-white dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm"
+          >
+            <p class="text-gray-900 dark:text-gray-100 text-sm leading-relaxed">
+              {introMessage}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-white dark:bg-gray-800">
+      <div class="flex items-end gap-3">
+        <!-- Text Input -->
+        <div class="flex-1">
+          <textarea
+            id="vapi-input"
+            rows="1"
+            {placeholder}
+            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
+            style="max-height: 120px;"></textarea>
+        </div>
+
+        <!-- Send Button -->
+        <button
+          id="vapi-send-btn"
+          class="flex-shrink-0 px-6 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          disabled
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+          </svg>
+          <span>Send</span>
+        </button>
+      </div>
+
+      <!-- Typing Indicator (hidden by default) -->
+      <div id="vapi-typing" class="hidden mt-3">
+        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <div class="flex gap-1">
+            <span
+              class="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+              style="animation-delay: 0ms;"></span>
+            <span
+              class="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+              style="animation-delay: 150ms;"></span>
+            <span
+              class="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+              style="animation-delay: 300ms;"></span>
+          </div>
+          <span>Assistant is thinking...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configuration Error (if any) -->
+  {
+    !publicKey && (
+      <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <p class="text-red-800 dark:text-red-200 text-sm">
+          ⚠️ <strong>Configuration Required:</strong> Please set <code>PUBLIC_VAPI_KEY</code> in
+          your environment variables.
+        </p>
+      </div>
+    )
+  }
+</div>
+
+<!-- Load VAPI SDK -->
+<script
+  src="https://cdn.jsdelivr.net/gh/balacodeio/Vapi-Web-UMD@latest/dist/latest/vapi-web-bundle.min.js"
+  is:inline></script>
+
+<script define:vars={{ assistantId, publicKey }}>
+  // VAPI Chat Interface Handler
+  let vapi = null;
+  let isVoiceActive = false;
+  let conversationHistory = [];
+
+  // DOM Elements
+  const messagesContainer = document.getElementById("vapi-messages");
+  const inputTextarea = document.getElementById("vapi-input");
+  const sendBtn = document.getElementById("vapi-send-btn");
+  const voiceToggle = document.getElementById("vapi-voice-toggle");
+  const voiceStatus = document.getElementById("vapi-voice-status");
+  const voiceLabel = document.getElementById("vapi-voice-label");
+  const typingIndicator = document.getElementById("vapi-typing");
+
+  // Initialize VAPI
+  document.addEventListener("DOMContentLoaded", async () => {
+    if (!publicKey) {
+      console.error("[VAPI-CHAT] Missing PUBLIC_VAPI_KEY");
+      return;
+    }
+
+    try {
+      vapi = new window.Vapi(publicKey);
+      console.log("[VAPI-CHAT] VAPI initialized");
+      setupVapiListeners();
+      setupUIListeners();
+    } catch (error) {
+      console.error("[VAPI-CHAT] Failed to initialize:", error);
+    }
+  });
+
+  // Setup VAPI event listeners
+  function setupVapiListeners() {
+    vapi.on("call-start", () => {
+      console.log("[VAPI-CHAT] Voice call started");
+      isVoiceActive = true;
+      updateVoiceStatus("active", "Listening");
+      addSystemMessage("Voice assistant activated. You can now speak or type.");
+    });
+
+    vapi.on("call-end", () => {
+      console.log("[VAPI-CHAT] Voice call ended");
+      isVoiceActive = false;
+      updateVoiceStatus("ready", "Ready");
+      addSystemMessage("Voice assistant deactivated.");
+    });
+
+    vapi.on("speech-start", () => {
+      console.log("[VAPI-CHAT] Assistant speaking");
+      updateVoiceStatus("speaking", "Speaking");
+      showTypingIndicator();
+    });
+
+    vapi.on("speech-end", () => {
+      console.log("[VAPI-CHAT] Assistant stopped speaking");
+      updateVoiceStatus("active", "Listening");
+      hideTypingIndicator();
+    });
+
+    vapi.on("message", (message) => {
+      console.log("[VAPI-CHAT] Message:", message);
+
+      if (message.type === "transcript" && message.transcript) {
+        const role = message.transcript.role;
+        const text = message.transcript.message;
+
+        if (role === "user") {
+          addUserMessage(text, "voice");
+        } else if (role === "assistant") {
+          hideTypingIndicator();
+          addAssistantMessage(text);
+        }
+      }
+
+      // Handle function calls
+      if (message.type === "function-call") {
+        console.log("[VAPI-CHAT] Function call:", message.functionCall);
+        addSystemMessage(`Executing: ${message.functionCall.name}...`);
+      }
+    });
+
+    vapi.on("error", (error) => {
+      console.error("[VAPI-CHAT] Error:", error);
+      addSystemMessage(`Error: ${error.message || "Something went wrong"}`);
+      hideTypingIndicator();
+    });
+  }
+
+  // Setup UI listeners
+  function setupUIListeners() {
+    // Auto-resize textarea
+    inputTextarea.addEventListener("input", () => {
+      inputTextarea.style.height = "auto";
+      inputTextarea.style.height = inputTextarea.scrollHeight + "px";
+
+      // Enable/disable send button
+      sendBtn.disabled = !inputTextarea.value.trim();
+    });
+
+    // Send message on Enter (Shift+Enter for new line)
+    inputTextarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Send button click
+    sendBtn.addEventListener("click", sendMessage);
+
+    // Voice toggle
+    voiceToggle.addEventListener("click", toggleVoice);
+  }
+
+  // Send text message
+  async function sendMessage() {
+    const text = inputTextarea.value.trim();
+    if (!text) return;
+
+    // Add to UI
+    addUserMessage(text, "text");
+
+    // Clear input
+    inputTextarea.value = "";
+    inputTextarea.style.height = "auto";
+    sendBtn.disabled = true;
+
+    // Show typing indicator
+    showTypingIndicator();
+
+    try {
+      if (isVoiceActive && vapi) {
+        // Send to VAPI if voice is active
+        await vapi.send({
+          type: "add-message",
+          message: {
+            role: "user",
+            content: text,
+          },
+        });
+      } else {
+        // Start a voice call with this message if voice is not active
+        // Or send to a text-only endpoint
+        await startVoiceWithMessage(text);
+      }
+    } catch (error) {
+      console.error("[VAPI-CHAT] Failed to send message:", error);
+      hideTypingIndicator();
+      addSystemMessage("Failed to send message. Please try again.");
+    }
+  }
+
+  // Start voice call with initial message
+  async function startVoiceWithMessage(initialMessage) {
+    if (!vapi) return;
+
+    try {
+      await vapi.start(assistantId, {
+        metadata: {
+          initialMessage: initialMessage,
+        },
+      });
+    } catch (error) {
+      console.error("[VAPI-CHAT] Failed to start voice:", error);
+      hideTypingIndicator();
+      addSystemMessage("Failed to start assistant. Please try again.");
+    }
+  }
+
+  // Toggle voice assistant
+  async function toggleVoice() {
+    if (!vapi) return;
+
+    if (isVoiceActive) {
+      vapi.stop();
+    } else {
+      try {
+        updateVoiceStatus("connecting", "Connecting");
+        await vapi.start(assistantId);
+      } catch (error) {
+        console.error("[VAPI-CHAT] Failed to start voice:", error);
+        updateVoiceStatus("ready", "Ready");
+        addSystemMessage("Failed to start voice. Please try again.");
+      }
+    }
+  }
+
+  // Update voice status indicator
+  function updateVoiceStatus(status, label) {
+    voiceLabel.textContent = label;
+
+    // Remove all status classes
+    voiceStatus.className = "w-3 h-3 rounded-full transition-all duration-300";
+
+    // Add appropriate status class
+    switch (status) {
+      case "ready":
+        voiceStatus.classList.add("bg-gray-300");
+        break;
+      case "connecting":
+        voiceStatus.classList.add("bg-yellow-400", "animate-pulse");
+        break;
+      case "active":
+        voiceStatus.classList.add("bg-green-400", "animate-pulse");
+        break;
+      case "speaking":
+        voiceStatus.classList.add("bg-purple-400", "animate-pulse");
+        break;
+    }
+  }
+
+  // Show/hide typing indicator
+  function showTypingIndicator() {
+    typingIndicator.classList.remove("hidden");
+  }
+
+  function hideTypingIndicator() {
+    typingIndicator.classList.add("hidden");
+  }
+
+  // Add user message to chat
+  function addUserMessage(text, source = "text") {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = "message-user animate-slide-up";
+    messageDiv.innerHTML = `
+      <div class="flex items-start gap-3 justify-end">
+        <div class="flex-1 bg-primary-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm max-w-[80%] ml-auto">
+          <p class="text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p>
+          ${source === "voice" ? '<span class="text-xs opacity-75 mt-1 block">🎤 Voice</span>' : ""}
+        </div>
+        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+        </div>
+      </div>
+    `;
+
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+
+    // Store in history
+    conversationHistory.push({ role: "user", content: text, source });
+  }
+
+  // Add assistant message to chat
+  function addAssistantMessage(text) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = "message-assistant animate-slide-up";
+    messageDiv.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+          </svg>
+        </div>
+        <div class="flex-1 bg-white dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm max-w-[80%]">
+          <p class="text-gray-900 dark:text-gray-100 text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p>
+        </div>
+      </div>
+    `;
+
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+
+    // Store in history
+    conversationHistory.push({ role: "assistant", content: text });
+  }
+
+  // Add system message
+  function addSystemMessage(text) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = "message-system animate-fade-in";
+    messageDiv.innerHTML = `
+      <div class="flex justify-center">
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-3 py-2">
+          <p class="text-xs text-yellow-800 dark:text-yellow-200">${escapeHtml(text)}</p>
+        </div>
+      </div>
+    `;
+
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+  }
+
+  // Utility: Scroll to bottom
+  function scrollToBottom() {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  // Utility: Escape HTML
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>
+
+<style>
+  /* Smooth scrollbar */
+  #vapi-messages {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  }
+
+  #vapi-messages::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #vapi-messages::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #vapi-messages::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+  }
+
+  /* Animations */
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  /* Typing indicator bounce animation */
+  @keyframes bounce {
+    0%,
+    80%,
+    100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-4px);
+    }
+  }
+</style>
