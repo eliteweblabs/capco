@@ -237,11 +237,13 @@ export const mepFormConfig: MultiStepFormConfig = {
               type: "choice",
               label: "Gas",
               dataValue: "gas",
+              dataNext: 7,
             },
             {
               type: "choice",
               label: "Electric",
               dataValue: "electric",
+              dataNext: 7,
             },
           ],
         },
@@ -406,7 +408,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          dataPrev: 7,
+          dataPrev: 6,
         },
         {
           type: "next",
@@ -484,6 +486,57 @@ export const mepFormConfig: MultiStepFormConfig = {
           buttons: [
             {
               type: "choice",
+              label: "1 Charger",
+              dataValue: "1 Charger",
+            },
+            {
+              type: "choice",
+              label: "2-4 Chargers",
+              dataValue: "2-4 Chargers",
+            },
+            {
+              type: "choice",
+              label: "5+ Chargers",
+              dataValue: "5+ Chargers",
+            },
+          ],
+        },
+      ],
+      buttons: [
+        {
+          type: "prev",
+          dataPrev: 9,
+        },
+        {
+          type: "next",
+          label: "unsure",
+          validLabel: "no EV",
+          dataNext: 11,
+        },
+      ],
+    },
+
+    // Step 11: Smart Home  (Radio buttons via choice buttons)
+    {
+      stepNumber: 9,
+      title:
+        "Is there a smart home system installed at <span data-form-session-meta='address' data-default='this project'>this project</span> or planned for the future?",
+      // subtitle: "What type of fuel does the HVAC system use?",
+      fields: [
+        {
+          type: "hidden",
+          id: "step-smart-home-system",
+          name: "smartHomeSystem",
+          required: false,
+        },
+        {
+          type: "button-group",
+          id: "electric-service-group",
+          name: "transformer",
+          required: false,
+          buttons: [
+            {
+              type: "choice",
               label: "Yes",
               dataValue: "Yes",
             },
@@ -498,13 +551,13 @@ export const mepFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          dataPrev: 9,
+          dataPrev: 10,
         },
         {
           type: "next",
           label: "unsure",
           validLabel: "next",
-          dataNext: 11,
+          dataNext: 12,
         },
       ],
     },
