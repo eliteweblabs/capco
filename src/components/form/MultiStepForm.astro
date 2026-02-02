@@ -810,21 +810,13 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       if (placeholders) {
         try {
           const values = JSON.parse(placeholders);
-          // Determine sync group based on field name (firstName and lastName should sync)
-          const fieldName = input.name;
-          let syncGroup: string | undefined = undefined;
-
-          // Group firstName and lastName together
-          if (fieldName === "firstName" || fieldName === "lastName") {
-            // Find the step container to create a step-specific sync group
-            const stepContent = input.closest(".step-content");
-            const stepNumber = stepContent?.getAttribute("data-step");
-            syncGroup = `name-step-${stepNumber}`;
-          }
-
-          placeholderData.set(fieldId, { index: 0, values, syncGroup });
+          
+          // Note: Sync groups have been removed - all fields now use staggered delays
+          // Previously firstName and lastName were synced, but this prevented the stagger effect
+          
+          placeholderData.set(fieldId, { index: 0, values, syncGroup: undefined });
           console.log(
-            `[ANIMATED-PLACEHOLDER] Initialized ${fieldId} with ${values.length} placeholders${syncGroup ? ` (sync group: ${syncGroup})` : ""}`
+            `[ANIMATED-PLACEHOLDER] Initialized ${fieldId} with ${values.length} placeholders`
           );
         } catch (e) {
           console.error(`[ANIMATED-PLACEHOLDER] Failed to parse placeholders for ${fieldId}:`, e);
@@ -941,22 +933,18 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             // See: .cursor/rules/multistep-form-placeholder-stagger.md
             // See: markdowns/animated-placeholder-stagger-delay.md
             // Not part of a sync group, use normal staggered delay
-            const staggerDelay = stepIndex * 100;
-
-            console.log(`[ROTATE-PLACEHOLDER] ${fieldId}: stepIndex=${stepIndex}, staggerDelay=${staggerDelay}ms`);
-
-            // Apply delay via CSS animation-delay for better visual stagger
-            span.style.animationDelay = `${staggerDelay}ms`;
-            span.style.animation = "slideOutDown 400ms ease-out forwards";
-            console.log(`[ROTATE-PLACEHOLDER] Starting slideOut for ${fieldId} with ${staggerDelay}ms CSS delay`);
+            const staggerDelay = stepIndex * 200;
 
             setTimeout(() => {
-              data.index = (data.index + 1) % data.values.length;
-              span.textContent = data.values[data.index];
-              span.style.animationDelay = "0ms"; // Reset delay for slideIn
-              span.style.animation = "slideInDown 400ms ease-out forwards";
-              console.log(`[ROTATE-PLACEHOLDER] Starting slideIn for ${fieldId}`);
-            }, 400 + staggerDelay); // Wait for slideOut animation + stagger delay
+              // Only rotate if visible
+              span.style.animation = "slideOutDown 400ms ease-out forwards";
+
+              setTimeout(() => {
+                data.index = (data.index + 1) % data.values.length;
+                span.textContent = data.values[data.index];
+                span.style.animation = "slideInDown 400ms ease-out forwards";
+              }, 400);
+            }, staggerDelay);
           }
         }
       });
@@ -991,17 +979,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           );
           const stepIndex = activeStepInputs.indexOf(input);
           
-          // Apply stagger delay for reset animation too
-          const staggerDelay = stepIndex * 100;
+          // Apply stagger delay for reset animation too (200ms per field)
+          const staggerDelay = stepIndex * 200;
           
-          console.log(`[RESET-PLACEHOLDER] ${fieldId}: stepIndex=${stepIndex}, staggerDelay=${staggerDelay}ms`);
-          
-          // Set animation with delay directly in CSS
-          data.index = 0;
-          span.textContent = data.values[0];
-          span.style.animationDelay = `${staggerDelay}ms`;
-          span.style.animation = "slideInDown 400ms ease-out forwards";
-          console.log(`[RESET-PLACEHOLDER] Set animation for ${fieldId} with ${staggerDelay}ms CSS delay`);
+          setTimeout(() => {
+            data.index = 0;
+            span.textContent = data.values[0];
+            span.style.animation = "slideInDown 400ms ease-out forwards";
+          }, staggerDelay);
         }
       });
     }
