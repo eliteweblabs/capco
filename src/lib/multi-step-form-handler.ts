@@ -114,6 +114,13 @@ export function createMultiStepFormHandler(
           "dark:!outline-primary-400"
         );
       });
+      
+      // Clear stored original data-next when leaving a step
+      const nextButton = step.querySelector("button.next-step, button.submit-step") as HTMLButtonElement;
+      if (nextButton && nextButton.hasAttribute("data-original-next")) {
+        nextButton.removeAttribute("data-original-next");
+        console.log(`[MULTISTEP-FORM] Cleared stored data-original-next when leaving step`);
+      }
     });
 
     const targetStep = document.querySelector(
@@ -790,19 +797,38 @@ export function createMultiStepFormHandler(
         // Update conditional fields
         updateConditionalFields();
 
-        // Check if button has data-next for auto-advance
-        const nextStep = choiceBtn.getAttribute("data-next");
-        if (nextStep && !isAlreadySelected) {
-          console.log(`[MULTISTEP-FORM] Auto-advancing to step ${nextStep}`);
-          setTimeout(async () => {
-            await showStep(parseInt(nextStep));
-          }, 300); // Small delay for visual feedback
-        } else {
-          // Enable the next/submit button if no auto-advance
-          const nextButton = stepContent.querySelector("button.next-step, button.submit-step") as HTMLButtonElement;
-          if (nextButton) {
-            nextButton.disabled = false;
+        // Check if button has data-next - update the Next button instead of auto-advancing
+        const choiceDataNext = choiceBtn.getAttribute("data-next");
+        const nextButton = stepContent.querySelector("button.next-step, button.submit-step") as HTMLButtonElement;
+        
+        if (choiceDataNext && nextButton) {
+          if (isAlreadySelected) {
+            // Deselected: restore original data-next (or default to currentStep + 1)
+            const originalDataNext = nextButton.getAttribute("data-original-next");
+            if (originalDataNext) {
+              nextButton.setAttribute("data-next", originalDataNext);
+              console.log(`[MULTISTEP-FORM] Restored Next button data-next to: ${originalDataNext}`);
+            } else {
+              // Fallback: use currentStep + 1
+              const currentStepNum = parseInt(stepContent.getAttribute("data-step") || "1");
+              nextButton.setAttribute("data-next", (currentStepNum + 1).toString());
+              console.log(`[MULTISTEP-FORM] Restored Next button data-next to default: ${currentStepNum + 1}`);
+            }
+          } else {
+            // Selected: store original data-next if not already stored, then update it
+            if (!nextButton.hasAttribute("data-original-next")) {
+              const originalNext = nextButton.getAttribute("data-next") || "";
+              nextButton.setAttribute("data-original-next", originalNext);
+              console.log(`[MULTISTEP-FORM] Stored original data-next: ${originalNext}`);
+            }
+            nextButton.setAttribute("data-next", choiceDataNext);
+            console.log(`[MULTISTEP-FORM] Updated Next button data-next to: ${choiceDataNext}`);
           }
+        }
+        
+        // Enable the next/submit button
+        if (nextButton) {
+          nextButton.disabled = false;
         }
 
         return;

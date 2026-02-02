@@ -509,8 +509,8 @@ export const mepFormConfig: MultiStepFormConfig = {
         },
         {
           type: "next",
-          label: "unsure",
-          validLabel: "no EV",
+          label: "no EV",
+          validLabel: "next",
           dataNext: 11,
         },
       ],
@@ -518,7 +518,7 @@ export const mepFormConfig: MultiStepFormConfig = {
 
     // Step 11: Smart Home  (Radio buttons via choice buttons)
     {
-      stepNumber: 9,
+      stepNumber: 11,
       title:
         "Is there a smart home system installed at <span data-form-session-meta='address' data-default='this project'>this project</span> or planned for the future?",
       // subtitle: "What type of fuel does the HVAC system use?",
