@@ -44,25 +44,40 @@ Added styles to `MultiStepForm.astro` global styles:
 
 ### 3. Auto-Scroll Functionality
 
-Modified `src/scripts/typewriter-text.ts` to add auto-scrolling:
+Modified `src/scripts/typewriter-text.ts` to add cursor-anchored scrolling:
 
 ```typescript
 afterStep: () => {
-  // Auto-scroll the title container as typing progresses
+  // Auto-scroll to keep cursor at fixed vertical position
   const scrollWrapper = element.closest('.title-scroll-wrapper');
   const scrollContainer = element.closest('.title-scroll-container');
   if (scrollWrapper) {
-    // Check if content overflows
     const hasOverflow = scrollWrapper.scrollHeight > scrollWrapper.clientHeight;
     
     if (hasOverflow) {
-      // Add class to switch to top alignment when overflowing
       scrollWrapper.classList.add('has-overflow');
       
-      // Scroll to bottom to keep latest text visible
-      scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
+      // Find the cursor element
+      const cursor = element.querySelector('.ti-cursor');
+      if (cursor) {
+        // Get cursor position relative to container
+        const cursorRect = cursor.getBoundingClientRect();
+        const wrapperRect = scrollWrapper.getBoundingClientRect();
+        
+        // Target: keep cursor at 75% down the visible area
+        const targetPosition = wrapperRect.height * 0.75;
+        const currentCursorPosition = cursorRect.top - wrapperRect.top;
+        
+        // Calculate scroll adjustment to maintain cursor position
+        const scrollAdjustment = currentCursorPosition - targetPosition;
+        
+        // Apply scroll with 5px threshold to avoid jitter
+        if (scrollAdjustment > 5) {
+          scrollWrapper.scrollTop += scrollAdjustment;
+        }
+      }
       
-      // Check if scrolled and add class for fade effect
+      // Show fade when scrolled
       if (scrollContainer && scrollWrapper.scrollTop > 10) {
         scrollContainer.classList.add('is-scrolled');
       }

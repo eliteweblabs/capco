@@ -459,7 +459,7 @@ const observer = new MutationObserver((mutations) => {
               html: true,
               lifeLike: true,
               afterStep: () => {
-                // Auto-scroll the title container as typing progresses
+                // Auto-scroll to keep cursor at fixed vertical position
                 const scrollWrapper = child.closest('.title-scroll-wrapper');
                 const scrollContainer = child.closest('.title-scroll-container');
                 if (scrollWrapper) {
@@ -470,8 +470,27 @@ const observer = new MutationObserver((mutations) => {
                     // Add class to switch to top alignment when overflowing
                     scrollWrapper.classList.add('has-overflow');
                     
-                    // Scroll to bottom to keep latest text visible
-                    scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
+                    // Find the cursor element
+                    const cursor = child.querySelector('.ti-cursor');
+                    if (cursor) {
+                      // Get cursor position relative to the scrollable container
+                      const cursorRect = cursor.getBoundingClientRect();
+                      const wrapperRect = scrollWrapper.getBoundingClientRect();
+                      
+                      // Target position: keep cursor at 75% down the visible area
+                      const targetPosition = wrapperRect.height * 0.75;
+                      const currentCursorPosition = cursorRect.top - wrapperRect.top;
+                      
+                      // Calculate how much to scroll to keep cursor at target position
+                      const scrollAdjustment = currentCursorPosition - targetPosition;
+                      
+                      // Apply scroll with smooth settling
+                      if (scrollAdjustment > 5) {
+                        scrollWrapper.scrollTop += scrollAdjustment;
+                      }
+                    } else {
+                      scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
+                    }
                     
                     // Check if scrolled and add class for fade effect
                     if (scrollContainer && scrollWrapper.scrollTop > 10) {
