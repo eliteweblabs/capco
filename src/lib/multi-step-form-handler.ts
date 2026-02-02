@@ -706,7 +706,7 @@ export function createMultiStepFormHandler(
         const choiceValue = choiceBtn.getAttribute("data-value");
         
         // Find the button-group wrapper to get the field name
-        const buttonGroup = choiceBtn.closest(".flex.flex-col.gap-3");
+        const buttonGroup = choiceBtn.closest(".flex.flex-wrap.gap-3");
         if (!buttonGroup) {
           console.warn("[MULTISTEP-FORM] Choice button not inside button-group wrapper");
           return;
@@ -737,17 +737,17 @@ export function createMultiStepFormHandler(
           return;
         }
         
-        // Update hidden input
-        targetInput.value = choiceValue || "";
-        console.log(`[MULTISTEP-FORM] Set ${targetInput.name} to: ${choiceValue}`);
+        // Check if this button is already selected (toggle behavior)
+        const isAlreadySelected = choiceBtn.classList.contains("!ring-2") && 
+                                 choiceBtn.classList.contains("!bg-primary-600");
         
-        // Manually trigger change event to update button labels
-        targetInput.dispatchEvent(new Event('change', { bubbles: true }));
-
-        // Visual feedback: highlight selected button
-        const allChoiceButtons = stepContent.querySelectorAll("button[data-value]");
-        allChoiceButtons.forEach((btn) => {
-          btn.classList.remove(
+        if (isAlreadySelected) {
+          // Deselect: clear the value
+          targetInput.value = "";
+          console.log(`[MULTISTEP-FORM] Cleared ${targetInput.name}`);
+          
+          // Remove visual feedback
+          choiceBtn.classList.remove(
             "!ring-2",
             "!ring-primary-600",
             "!bg-primary-600",
@@ -755,24 +755,57 @@ export function createMultiStepFormHandler(
             "!text-white",
             "dark:!text-white"
           );
-          btn.classList.add("hover:bg-gray-50");
-        });
-        choiceBtn.classList.add(
-          "!ring-2",
-          "!ring-primary-600",
-          "!bg-primary-600",
-          "dark:!bg-primary-600",
-          "!text-white",
-          "dark:!text-white"
-        );
-        choiceBtn.classList.remove("hover:bg-gray-50");
+          choiceBtn.classList.add("hover:bg-gray-50");
+          
+          // Force blur to remove hover state after deselect
+          if (choiceBtn instanceof HTMLElement) {
+            choiceBtn.blur();
+          }
+        } else {
+          // Select: update hidden input
+          targetInput.value = choiceValue || "";
+          console.log(`[MULTISTEP-FORM] Set ${targetInput.name} to: ${choiceValue}`);
+          
+          // Visual feedback: remove selection from all buttons
+          const allChoiceButtons = stepContent.querySelectorAll("button[data-value]");
+          allChoiceButtons.forEach((btn) => {
+            btn.classList.remove(
+              "!ring-2",
+              "!ring-primary-600",
+              "!bg-primary-600",
+              "dark:!bg-primary-600",
+              "!text-white",
+              "dark:!text-white"
+            );
+            btn.classList.add("hover:bg-gray-50");
+          });
+          
+          // Add selection to clicked button
+          choiceBtn.classList.add(
+            "!ring-2",
+            "!ring-primary-600",
+            "!bg-primary-600",
+            "dark:!bg-primary-600",
+            "!text-white",
+            "dark:!text-white"
+          );
+          choiceBtn.classList.remove("hover:bg-gray-50");
+          
+          // Force blur to remove hover state after select
+          if (choiceBtn instanceof HTMLElement) {
+            choiceBtn.blur();
+          }
+        }
+        
+        // Manually trigger change event to update button labels
+        targetInput.dispatchEvent(new Event('change', { bubbles: true }));
 
         // Update conditional fields
         updateConditionalFields();
 
         // Check if button has data-next for auto-advance
         const nextStep = choiceBtn.getAttribute("data-next");
-        if (nextStep) {
+        if (nextStep && !isAlreadySelected) {
           console.log(`[MULTISTEP-FORM] Auto-advancing to step ${nextStep}`);
           setTimeout(async () => {
             await showStep(parseInt(nextStep));
