@@ -44,40 +44,25 @@ Added styles to `MultiStepForm.astro` global styles:
 
 ### 3. Auto-Scroll Functionality
 
-Modified `src/scripts/typewriter-text.ts` to add cursor-anchored scrolling:
+Modified `src/scripts/typewriter-text.ts` to add auto-scrolling:
 
 ```typescript
 afterStep: () => {
-  // Auto-scroll to keep cursor at fixed vertical position
+  // Auto-scroll the title container as typing progresses
   const scrollWrapper = element.closest('.title-scroll-wrapper');
   const scrollContainer = element.closest('.title-scroll-container');
   if (scrollWrapper) {
+    // Check if content overflows
     const hasOverflow = scrollWrapper.scrollHeight > scrollWrapper.clientHeight;
     
     if (hasOverflow) {
+      // Add class to switch to top alignment when overflowing
       scrollWrapper.classList.add('has-overflow');
       
-      // Find the cursor element
-      const cursor = element.querySelector('.ti-cursor');
-      if (cursor) {
-        // Get cursor position relative to container
-        const cursorRect = cursor.getBoundingClientRect();
-        const wrapperRect = scrollWrapper.getBoundingClientRect();
-        
-        // Target: keep cursor at 75% down the visible area
-        const targetPosition = wrapperRect.height * 0.75;
-        const currentCursorPosition = cursorRect.top - wrapperRect.top;
-        
-        // Calculate scroll adjustment to maintain cursor position
-        const scrollAdjustment = currentCursorPosition - targetPosition;
-        
-        // Apply scroll with 5px threshold to avoid jitter
-        if (scrollAdjustment > 5) {
-          scrollWrapper.scrollTop += scrollAdjustment;
-        }
-      }
+      // Scroll to bottom to keep latest text visible
+      scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
       
-      // Show fade when scrolled
+      // Check if scrolled and add class for fade effect
       if (scrollContainer && scrollWrapper.scrollTop > 10) {
         scrollContainer.classList.add('is-scrolled');
       }
@@ -138,9 +123,13 @@ This title uses multiple line breaks and could overflow on smaller screens. With
 - **Container behavior**: Uses flexbox with `justify-content: flex-end` to naturally position text at bottom
 - **Overflow detection**: Compares `scrollHeight` vs `clientHeight` to detect when content overflows
 - **Dynamic alignment**: Automatically switches from bottom-aligned to top-aligned when content overflows
+- **Cursor anchor position**: 75% down the visible area (configurable in TypeScript)
+- **Cursor tracking**: Uses `getBoundingClientRect()` to calculate cursor position and scroll adjustment
+- **Jitter prevention**: 5px threshold prevents unnecessary micro-scrolls
+- **Settling behavior**: Incremental scroll adjustments create natural "settling in" effect for initial lines
 - **Fade height**: 60px from top
 - **Scroll trigger**: 10px scrollTop threshold
-- **Performance**: Uses native scroll events, no external libraries
+- **Performance**: Uses native scroll events and DOM measurements, no external libraries
 - **Accessibility**: Maintains keyboard navigation and screen reader compatibility
 
 ## Files Modified
