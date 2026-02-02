@@ -531,8 +531,8 @@ export const mepFormConfig: MultiStepFormConfig = {
         },
         {
           type: "button-group",
-          id: "electric-service-group",
-          name: "transformer",
+          id: "smart-home-system-group",
+          name: "smartHomeSystem",
           required: false,
           buttons: [
             {
