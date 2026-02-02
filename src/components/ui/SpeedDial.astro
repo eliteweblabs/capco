@@ -10,18 +10,15 @@ const { globalCompanyPhone, globalCompanyName } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Tooltip from "../common/TooltipFloating.astro";
-import Modal from "./Modal.astro";
 import Button from "../common/Button.astro";
 // Speed dial component for quick actions
 ---
 
-<!-- Blur overlay for small screens -->
-<Modal id="speed-dial-overlay" zIndex={9999} mobileOnly={true} />
 <div
   id="speed-dial"
   data-dial-init
   class="hide-on-form-focus group fixed"
-  style="bottom: 1.5rem; right: 1.5rem; z-index: 9999"
+  style="bottom: 1.5rem; right: 1.5rem; z-index: 19999"
 >
   <div id="speed-dial-menu" class="mb-4 flex hidden flex-col items-center space-y-2">
     {
@@ -141,10 +138,11 @@ import Button from "../common/Button.astro";
     type="button"
     variant="outline"
     size="md"
-    class="h-12 w-12 rounded-full  [@media(hover:hover)]:hover:-translate-y-0"
+    class="h-12 w-12 rounded-full [@media(hover:hover)]:hover:translate-y-0"
     dataAttributes={{
       "data-dial-toggle": "speed-dial-menu"
     }}
+
   >
     <svg
       class="h-5 w-5 transition-transform"
@@ -178,7 +176,7 @@ import Button from "../common/Button.astro";
     const speedDialButton = document.querySelector('[data-dial-toggle="speed-dial-menu"]');
     const speedDialMenu = document.getElementById("speed-dial-menu");
     const speedDial = document.getElementById("speed-dial");
-    const speedDialOverlay = document.getElementById("speed-dial-overlay");
+    // const speedDialOverlay = document.getElementById("global-modal-overlay");
 
 
 
@@ -199,7 +197,7 @@ import Button from "../common/Button.astro";
 
       if (isOpen) {
         speedDialMenu?.classList.remove("hidden");
-        speedDialOverlay?.classList.remove("hidden");
+        // speedDialOverlay?.classList.remove("hidden");
         speedDialButton?.setAttribute("aria-expanded", "true");
         if (svg) {
           svg.style.transform = "rotate(45deg)";
@@ -274,7 +272,7 @@ import Button from "../common/Button.astro";
         });
 
         speedDialMenu?.classList.add("hidden");
-        speedDialOverlay?.classList.add("hidden");
+        // speedDialOverlay?.classList.add("hidden");
         speedDialButton?.setAttribute("aria-expanded", "false");
         if (svg) {
           svg.style.transform = "rotate(0deg)";
@@ -297,7 +295,7 @@ import Button from "../common/Button.astro";
         });
 
         speedDialMenu?.classList.add("hidden");
-        speedDialOverlay?.classList.add("hidden");
+        // speedDialOverlay?.classList.add("hidden");
         speedDialButton?.setAttribute("aria-expanded", "false");
         const svg = speedDialButton?.querySelector("svg");
         if (svg) {
@@ -377,10 +375,10 @@ import Button from "../common/Button.astro";
     });
 
     // Hide when clicking on the overlay
-    speedDialOverlay?.addEventListener("click", function (e) {
-      e.stopPropagation();
-      hideSpeedDial();
-    });
+    // speedDialOverlay?.addEventListener("click", function (e) {
+    //   e.stopPropagation();
+    //   hideSpeedDial();
+    // });
 
     // Hide when pressing Escape key
     document.addEventListener("keydown", function (e) {

@@ -1,10 +1,9 @@
 ---
 /**
  * NotificationsModal Component
- * Using the new modal system with Modal component
+ * Uses the global modal overlay from App.astro
  */
 import CloseButton from "../ui/CloseButton.astro";
-import Modal from "../ui/Modal.astro";
 
 export interface Props {
   currentUser?: any;
@@ -19,16 +18,13 @@ if (!currentUser || currentRole === "Client") {
 }
 ---
 
-<!-- Modal Overlay -->
-<Modal id="notificationsModal-overlay" zIndex={100010} blurAmount="lg" opacity="50" />
-
 <!-- Notifications Modal -->
 <div
   id="notificationsModal"
   tabindex="-1"
   aria-hidden="true"
-  class="fixed left-0 right-0 top-0 hidden h-[calc(100%-1rem)] max-h-full w-full items-center justify-center overflow-y-auto overflow-x-hidden md:inset-0"
-  style="z-index: 50;"
+  class="fixed inset-0 hidden max-h-full w-full items-center justify-center overflow-y-auto overflow-x-hidden"
+  style="z-index: 10040;"
 >
   <div class="relative max-h-full w-full max-w-2xl p-4">
     <!-- Modal content -->
@@ -130,7 +126,7 @@ if (!currentUser || currentRole === "Client") {
 
     bindEvents() {
       const modal = document.getElementById("notificationsModal");
-      const overlay = document.getElementById("notificationsModal-overlay");
+      const overlay = document.getElementById("global-modal-overlay");
       const markAllRead = document.getElementById("mark-all-read");
       const closeButtons = document.querySelectorAll('[data-modal-hide="notificationsModal"]');
 
@@ -174,7 +170,7 @@ if (!currentUser || currentRole === "Client") {
 
     openDropdown() {
       const modal = document.getElementById("notificationsModal");
-      const overlay = document.getElementById("notificationsModal-overlay");
+      const overlay = document.getElementById("global-modal-overlay");
 
       // console.log("✅ [NOTIFICATIONS] Opening modal with new system");
 

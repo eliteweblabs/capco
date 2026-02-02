@@ -10,6 +10,7 @@ import Button from "../../components/common/Button.astro";
 import DeleteConfirmButton from "../../components/common/DeleteConfirmButton.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
+import StickyActionButton from "../../components/project/StickyActions.astro";
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
@@ -84,6 +85,9 @@ const settings = {
 
   // Custom CSS (advanced customization)
   customCss: companyData.customCss || "",
+
+  // Logo Classes (for styling the logo)
+  logoClasses: companyData.logoClasses || "",
 };
 ---
 
@@ -371,7 +375,7 @@ const settings = {
             <label for="plausible_tracking_script" class="block text-sm font-medium mb-2">
               Plausible Tracking Script
               {
-                isFromDatabase("plausible_tracking_script") && (
+                isFromDatabase("plausibleTrackingScript") && (
                   <span
                     class="ml-2 text-xs text-green-600 dark:text-green-400"
                     title="Stored in database"
@@ -417,7 +421,7 @@ const settings = {
             <label for="custom_css" class="block text-sm font-medium mb-2">
               Custom CSS
               {
-                isFromDatabase("custom_css") && (
+                isFromDatabase("customCss") && (
                   <span
                     class="ml-2 text-xs text-green-600 dark:text-green-400"
                     title="Stored in database"
@@ -461,7 +465,7 @@ const settings = {
             <label for="font_family" class="block text-sm font-medium mb-2">
               Primary Font Family
               {
-                isFromDatabase("font_family") && (
+                isFromDatabase("fontFamily") && (
                   <span
                     class="ml-2 text-xs text-green-600 dark:text-green-400"
                     title="Stored in database"
@@ -559,7 +563,7 @@ const settings = {
             <label for="secondary_font_family" class="block text-sm font-medium mb-2">
               Secondary Font Family
               {
-                isFromDatabase("secondary_font_family") && (
+                isFromDatabase("secondaryFontFamily") && (
                   <span
                     class="ml-2 text-xs text-green-600 dark:text-green-400"
                     title="Stored in database"
@@ -723,7 +727,7 @@ const settings = {
             <label for="primary_color" class="block text-sm font-medium mb-2">
               Primary Color
               {
-                isFromDatabase("primary_color") && (
+                isFromDatabase("primaryColor") && (
                   <span
                     class="ml-2 text-xs text-green-600 dark:text-green-400"
                     title="Stored in database"
@@ -759,7 +763,7 @@ const settings = {
             <label for="secondary_color" class="block text-sm font-medium mb-2">
               Secondary Color
               {
-                isFromDatabase("secondary_color") && (
+                isFromDatabase("secondaryColor") && (
                   <span
                     class="ml-2 text-xs text-green-600 dark:text-green-400"
                     title="Stored in database"
@@ -805,6 +809,32 @@ const settings = {
               >currentColor</code
             > or media queries like <code>@media (prefers-color-scheme: dark)</code> for automatic theme
             switching.
+          </p>
+        </div>
+        <div class="mb-4">
+          <label for="logoClasses" class="block text-sm font-medium mb-2">
+            Logo CSS Classes
+            {
+              isFromDatabase("logoClasses") && (
+                <span
+                  class="ml-2 text-xs text-green-600 dark:text-green-400"
+                  title="Stored in database"
+                >
+                  💾
+                </span>
+              )
+            }
+          </label>
+          <input
+            type="text"
+            id="logoClasses"
+            name="logoClasses"
+            value={settings.logoClasses}
+            class={globalInputClasses}
+            placeholder="h-8 w-auto text-primary-600 dark:text-white"
+          />
+          <p class="text-xs text-gray-500 mt-1">
+            Tailwind CSS classes to style the logo wrapper (e.g., size, color, spacing).
           </p>
         </div>
         <div>
@@ -973,7 +1003,7 @@ const settings = {
           <label for="og_image" class="block text-sm font-medium mb-2">
             OG Image URL
             {
-              isFromDatabase("og_image") && (
+              isFromDatabase("ogImage") && (
                 <span
                   class="ml-2 text-xs text-green-600 dark:text-green-400"
                   title="Stored in database"
@@ -1029,8 +1059,12 @@ const settings = {
           ← Back to CMS
         </a>
         <div class="flex gap-3">
-          <Button type="button" variant="primary" id="reset-form-btn"> Reset </Button>
-          <Button type="submit" variant="secondary" id="save-settings-btn"> Save Settings </Button>
+          <StickyActionButton type="button" variant="primary">
+            <Button type="button" variant="primary" id="reset-form-btn"> Reset </Button>
+            <Button type="submit" variant="secondary" id="save-settings-btn">
+              Save Settings
+            </Button>
+          </StickyActionButton>
         </div>
       </div>
     </form>
@@ -1379,7 +1413,7 @@ const settings = {
     const formData = new FormData(form);
     const settings: Record<string, string> = {};
 
-    // Map form field names to database keys
+    // Map form field names to database keys (all camelCase)
     const fieldMapping: Record<string, string> = {
       companyName: "companyName",
       slogan: "slogan",
@@ -1387,16 +1421,17 @@ const settings = {
       phone: "phone",
       email: "email",
       website: "website",
-      primary_color: "primary_color",
-      secondary_color: "secondary_color",
-      font_family: "font_family",
-      secondary_font_family: "secondary_font_family",
+      primary_color: "primaryColor",
+      secondary_color: "secondaryColor",
+      font_family: "fontFamily",
+      secondary_font_family: "secondaryFontFamily",
       logo: "logo",
+      logoClasses: "logoClasses",
       icon: "icon",
-      og_image: "og_image",
-      plausible_tracking_script: "plausible_tracking_script",
-      social_networks: "social_networks",
-      custom_css: "custom_css",
+      og_image: "ogImage",
+      plausible_tracking_script: "plausibleTrackingScript",
+      social_networks: "socialNetworks",
+      custom_css: "customCss",
     };
 
     // Validation errors
@@ -1436,8 +1471,12 @@ const settings = {
           }
         }
 
-        // Validate SVG (basic check)
-        if ((dbKey.includes("logo") || dbKey.includes("icon")) && trimmedValue) {
+        // Validate SVG (basic check) - exclude logoClasses which is for CSS classes
+        if (
+          (dbKey.includes("logo") || dbKey.includes("icon")) &&
+          trimmedValue &&
+          dbKey !== "logoClasses"
+        ) {
           if (!trimmedValue.trim().startsWith("<svg")) {
             validationErrors.push(
               `${formKey.replace("_", " ")} must be valid SVG markup starting with <svg>`
@@ -1492,25 +1531,25 @@ const settings = {
 
       // Inject dynamic colors and fonts if they were updated
       if (
-        settings.primary_color ||
-        settings.secondary_color ||
-        settings.font_family ||
-        settings.secondary_font_family
+        settings.primaryColor ||
+        settings.secondaryColor ||
+        settings.fontFamily ||
+        settings.secondaryFontFamily
       ) {
         try {
           // Import and inject dynamic colors
           const { injectDynamicColors } = await import("../../lib/dynamic-colors");
 
           // Get the new color values from the settings object we just saved
-          const newPrimaryColor = settings.primary_color || primaryColorInput?.value;
-          const newSecondaryColor = settings.secondary_color || secondaryColorInput?.value;
+          const newPrimaryColor = settings.primaryColor || primaryColorInput?.value;
+          const newSecondaryColor = settings.secondaryColor || secondaryColorInput?.value;
           const fontFamilySelect = document.getElementById("font_family") as HTMLSelectElement;
           const secondaryFontFamilySelect = document.getElementById(
             "secondary_font_family"
           ) as HTMLSelectElement;
-          const newFontFamily = settings.font_family || fontFamilySelect?.value;
+          const newFontFamily = settings.fontFamily || fontFamilySelect?.value;
           const newSecondaryFontFamily =
-            settings.secondary_font_family || secondaryFontFamilySelect?.value;
+            settings.secondaryFontFamily || secondaryFontFamilySelect?.value;
 
           if (newPrimaryColor || newSecondaryColor) {
             console.log("[settings] Injecting dynamic colors:", {
@@ -1534,8 +1573,8 @@ const settings = {
           }
 
           const updates = [];
-          if (settings.primary_color || settings.secondary_color) updates.push("colors");
-          if (settings.font_family || settings.secondary_font_family) updates.push("fonts");
+          if (settings.primaryColor || settings.secondaryColor) updates.push("colors");
+          if (settings.fontFamily || settings.secondaryFontFamily) updates.push("fonts");
           if (updates.length > 0 && window.showSuccess) {
             window.showSuccess(
               "Settings Updated",

@@ -76,7 +76,8 @@ export interface Props {
   className?: string;
 }
 
-const { link = "/", className = "" } = Astro.props;
+const { link = "/" } = Astro.props;
+
 
 // Validate link
 let validLink = link;
@@ -88,15 +89,28 @@ if (typeof validLink === "string") {
   }
 }
 
-if (!logoSvg || !logoSvg.includes("<svg")) return null;
+// Get the logo classes from the CMS (defaults to empty string if not set)
+const logoClassesFromDb = companyData.logoClasses || "";
+// Merge prop className with database classes (prop classes come first for specificity)
+const propClassName = Astro.props.className || "";
+const className = propClassName ? `${propClassName} ${logoClassesFromDb}`.trim() : logoClassesFromDb;
+
+// Debug logging (will only show in dev/server logs)
+if (import.meta.env.DEV) {
+  console.log("[Logo] logoClassesFromDb:", logoClassesFromDb);
+  console.log("[Logo] propClassName:", propClassName);
+  console.log("[Logo] Final className:", className);
+}
 ---
 
-<a
-  href={validLink}
-  title="Go to home page"
-  class={`logo-svg-wrapper w-36 sm:w-40 ${className}`.trim()}
-  set:html={logoSvg}
-/>
+{logoSvg && logoSvg.includes("<svg") && (
+  <a
+    href={validLink}
+    title="Go to home page"
+    class={`logo-svg-wrapper ${className}`.trim()}
+    set:html={logoSvg}
+  />
+)}
 
 <script>
   // Remove any remaining inline fill attributes on client side

@@ -91,6 +91,9 @@ export const globalCompanyData = async () => {
     // Single SVG with CSS in <defs> or <style> for theme support
     globalCompanyLogo: logo,
 
+    // Logo CSS classes (for styling the logo wrapper)
+    logoClasses: get("logoClasses") || "",
+
     // SVG markup for icon (used for favicons, converted to data URIs)
     // Single SVG with CSS for theme support
     globalCompanyIcon: icon,
@@ -100,24 +103,24 @@ export const globalCompanyData = async () => {
     globalCompanyFaviconPng: faviconPngPath,
 
     // Theme colors
-    primaryColor: get("primary_color", "GLOBAL_COLOR_PRIMARY"),
-    secondaryColor: get("secondary_color", "GLOBAL_COLOR_SECONDARY"),
+    primaryColor: get("primaryColor", "GLOBAL_COLOR_PRIMARY"),
+    secondaryColor: get("secondaryColor", "GLOBAL_COLOR_SECONDARY"),
 
     // Typography
-    fontFamily: get("font_family", "FONT_FAMILY") || "Outfit Variable",
-    secondaryFontFamily: get("secondary_font_family", "FONT_FAMILY_FALLBACK") || "sans-serif",
+    fontFamily: get("fontFamily", "FONT_FAMILY") || "Outfit Variable",
+    secondaryFontFamily: get("secondaryFontFamily", "FONT_FAMILY_FALLBACK") || "sans-serif",
 
     // Analytics settings
-    plausibleTrackingScript: get("plausible_tracking_script", "PLAUSIBLE_TRACKING_SCRIPT") || "",
+    plausibleTrackingScript: get("plausibleTrackingScript", "PLAUSIBLE_TRACKING_SCRIPT") || "",
 
     // OG Image for social sharing (URL path like /images/og-image.png)
-    ogImage: get("og_image", "OG_IMAGE") || "",
+    ogImage: get("ogImage", "OG_IMAGE") || "",
 
     // Social Networks (stored as JSON array of {url: string, label?: string})
-    socialNetworks: parseSocialNetworks(get("social_networks")),
+    socialNetworks: parseSocialNetworks(get("socialNetworks")),
 
     // Custom CSS (allows per-client CSS overrides and customization)
-    customCss: get("custom_css") || "",
+    customCss: get("customCss") || "",
   };
 };
 

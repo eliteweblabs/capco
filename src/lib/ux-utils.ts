@@ -823,10 +823,11 @@ export function showModal(options: {
 
   // Check if modal already exists
   let modal = document.getElementById(id);
-  let overlay = document.getElementById(`${id}-overlay`);
+  // Use global overlay if it exists, otherwise check for specific overlay
+  let overlay = document.getElementById("global-modal-overlay") || document.getElementById(`${id}-overlay`);
   const isNewModal = !modal;
 
-  // Create overlay if it doesn't exist
+  // Create overlay if it doesn't exist (fallback for cases where global overlay isn't available)
   if (!overlay) {
     overlay = document.createElement("div");
     overlay.id = `${id}-overlay`;
@@ -999,7 +1000,8 @@ export function showModal(options: {
  */
 export function hideModal(modalId: string): void {
   const modal = document.getElementById(modalId);
-  const overlay = document.getElementById(`${modalId}-overlay`);
+  // Use global overlay if it exists, otherwise check for specific overlay
+  const overlay = document.getElementById("global-modal-overlay") || document.getElementById(`${modalId}-overlay`);
 
   if (!modal) return;
 

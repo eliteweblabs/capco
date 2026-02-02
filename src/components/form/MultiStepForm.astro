@@ -98,7 +98,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
                 <span class="text-xs text-zinc-500 dark:text-zinc-400 uppercase">
                   {step.additionalContent === "auth-providers"
-                    ? "or continue with email"
+                    ? "or login with email"
                     : "or register with email"}
                 </span>
                 <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
@@ -908,6 +908,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
               .filter(([_, d]) => d.syncGroup === data.syncGroup)
               .map(([id, _]) => id);
 
+            // ⚠️ PROTECTED CODE - DO NOT ADD STAGGER DELAY HERE ⚠️
+            // Synced fields (like firstName/lastName) must animate together simultaneously
+            // See: .cursor/rules/multistep-form-placeholder-stagger.md
             // Rotate all synced fields together with NO stagger (they happen simultaneously)
             syncedFields.forEach((syncedFieldId) => {
               const syncedInput = document.getElementById(syncedFieldId) as HTMLInputElement;
@@ -933,19 +936,27 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
               }
             });
           } else {
+            // ⚠️ PROTECTED CODE - DO NOT REMOVE ⚠️
+            // This stagger delay creates a cascading animation effect for successive placeholders.
+            // See: .cursor/rules/multistep-form-placeholder-stagger.md
+            // See: markdowns/animated-placeholder-stagger-delay.md
             // Not part of a sync group, use normal staggered delay
             const staggerDelay = stepIndex * 100;
 
-            setTimeout(() => {
-              // Only rotate if visible
-              span.style.animation = "slideOutDown 400ms ease-out forwards";
+            console.log(`[ROTATE-PLACEHOLDER] ${fieldId}: stepIndex=${stepIndex}, staggerDelay=${staggerDelay}ms`);
 
-              setTimeout(() => {
-                data.index = (data.index + 1) % data.values.length;
-                span.textContent = data.values[data.index];
-                span.style.animation = "slideInDown 400ms ease-out forwards";
-              }, 400);
-            }, staggerDelay);
+            // Apply delay via CSS animation-delay for better visual stagger
+            span.style.animationDelay = `${staggerDelay}ms`;
+            span.style.animation = "slideOutDown 400ms ease-out forwards";
+            console.log(`[ROTATE-PLACEHOLDER] Starting slideOut for ${fieldId} with ${staggerDelay}ms CSS delay`);
+
+            setTimeout(() => {
+              data.index = (data.index + 1) % data.values.length;
+              span.textContent = data.values[data.index];
+              span.style.animationDelay = "0ms"; // Reset delay for slideIn
+              span.style.animation = "slideInDown 400ms ease-out forwards";
+              console.log(`[ROTATE-PLACEHOLDER] Starting slideIn for ${fieldId}`);
+            }, 400 + staggerDelay); // Wait for slideOut animation + stagger delay
           }
         }
       });
@@ -953,6 +964,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
     // Reset and restart placeholder animation
     function resetPlaceholderAnimation() {
+      // Find the active step to apply stagger delay correctly
+      const activeStep = document.querySelector(".step-content.active");
+      
       animatedInputs.forEach((input) => {
         const span = document.querySelector(
           `.animated-placeholder[data-for="${input.id}"]`
@@ -961,9 +975,33 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         const data = placeholderData.get(fieldId);
 
         if (span && data && !input.value) {
+          // Check if this input is in the active step
+          const isInActiveStep = activeStep?.contains(input);
+          
+          if (!isInActiveStep) {
+            // Not in active step, just reset without animation
+            data.index = 0;
+            span.textContent = data.values[0];
+            return;
+          }
+          
+          // Find the index of this input within the active step for stagger delay
+          const activeStepInputs = Array.from(
+            activeStep.querySelectorAll('input[data-has-animated-placeholder="true"]')
+          );
+          const stepIndex = activeStepInputs.indexOf(input);
+          
+          // Apply stagger delay for reset animation too
+          const staggerDelay = stepIndex * 100;
+          
+          console.log(`[RESET-PLACEHOLDER] ${fieldId}: stepIndex=${stepIndex}, staggerDelay=${staggerDelay}ms`);
+          
+          // Set animation with delay directly in CSS
           data.index = 0;
           span.textContent = data.values[0];
+          span.style.animationDelay = `${staggerDelay}ms`;
           span.style.animation = "slideInDown 400ms ease-out forwards";
+          console.log(`[RESET-PLACEHOLDER] Set animation for ${fieldId} with ${staggerDelay}ms CSS delay`);
         }
       });
     }
