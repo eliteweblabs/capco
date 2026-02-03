@@ -200,6 +200,20 @@ if (currentUser) {
       // Show banner after a short delay
       setTimeout(() => {
         cookieBanner?.classList.remove("translate-y-full", "hidden");
+
+        const element = document.querySelectorAll(".hide-on-form-focus");
+        if (!element.length) return;
+
+        // Set up CSS transitions for fade effect
+        const transitionDuration = 300; // milliseconds
+        const blurDelay = 100; // Delay before showing (prevents flash when tabbing between inputs)
+        let blurTimeout: ReturnType<typeof setTimeout> | null = null;
+
+        element.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          htmlEl.style.transition = `opacity ${transitionDuration}ms ease-in-out`;
+          htmlEl.style.opacity = "0";
+        });
       }, 1000);
     } else {
       // cookieBanner?.remove();
@@ -294,6 +308,19 @@ if (currentUser) {
     // Hide Banner
     function hideBanner() {
       cookieBanner?.classList.add("translate-y-full");
+      const element = document.querySelectorAll(".hide-on-form-focus");
+      if (!element.length) return;
+
+      // Set up CSS transitions for fade effect
+      const transitionDuration = 300; // milliseconds
+      const blurDelay = 100; // Delay before showing (prevents flash when tabbing between inputs)
+      let blurTimeout: ReturnType<typeof setTimeout> | null = null;
+
+      element.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.transition = `opacity ${transitionDuration}ms ease-in-out`;
+        htmlEl.style.opacity = "1";
+      });
     }
 
     // Show Preferences Modal

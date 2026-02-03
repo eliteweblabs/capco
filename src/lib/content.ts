@@ -257,10 +257,10 @@ async function getDefaultPageContent(slug: string): Promise<PageContent | null> 
 
   const defaults: Record<string, PageContent> = {
     home: {
-      title:
-        companyData?.globalCompanyName ||
-        process.env.RAILWAY_PROJECT_NAME ||
-        "Fire Protection Services",
+      title: "",
+      // companyData?.globalCompanyName ||
+      // process.env.RAILWAY_PROJECT_NAME ||
+      // "Fire Protection Services",
       description:
         companyData?.globalCompanySlogan || "Professional fire protection plan review and approval",
       template: "fullwidth",

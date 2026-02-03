@@ -1,0 +1,160 @@
+---
+/**
+ * Agent Chat Interface
+ * Framework/logic inspired by chat agent UIs (structure: messages, input, send, typing indicator)
+ */
+
+import App from "../components/ui/App.astro";
+import Button from "../components/common/Button.astro";
+import { checkAuth } from "../lib/auth";
+
+const { currentUser } = await checkAuth(Astro.cookies);
+---
+
+<App title="Agent" {currentUser} centerContent={true}>
+  <div class="mx-auto max-w-4xl px-4 py-8">
+    <!-- Agent chat container -->
+    <div
+      id="agent-chat"
+      class="flex flex-col"
+      style="height: calc(100vh - 8rem); min-height: 50px;"
+    >
+      <!-- Messages area with top fade -->
+      <div
+        id="agent-messages"
+        class="flex-1 overflow-y-auto p-4 space-y-4 [mask-image:linear-gradient(to_bottom,transparent_0%,black_15%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_15%)] [mask-size:100%_100%] [-webkit-mask-size:100%_100%]"
+      >
+        <!-- Welcome / empty state -->
+        <div
+          id="agent-welcome"
+          class="flex flex-col items-center justify-center h-full min-h-[200px] text-center"
+        >
+          <!-- <p class="text-gray-500 dark:text-gray-400 mb-2">Start a conversation</p>
+          <p class="text-sm text-gray-400 dark:text-gray-500">
+            Type a message below and press Send
+          </p> -->
+        </div>
+      </div>
+
+      <!-- Typing indicator (hidden by default) -->
+      <div id="agent-typing" class="hidden px-4 pb-2">
+        <div
+          class="inline-flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2"
+        >
+          <span class="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 0ms"
+          ></span>
+          <span
+            class="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+            style="animation-delay: 150ms"></span>
+          <span
+            class="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+            style="animation-delay: 300ms"></span>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="border-t border-gray-200 dark:border-gray-700 p-4">
+        <div class="flex gap-2">
+          <input
+            type="text"
+            id="agent-input"
+            placeholder="Type your message..."
+            class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-gray-900 dark:text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900"
+            autocomplete="off"
+          />
+          <Button id="agent-send" variant="primary" size="md"> Send </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script define:vars={{}}>
+    (function () {
+      const messagesEl = document.getElementById("agent-messages");
+      const welcomeEl = document.getElementById("agent-welcome");
+      const typingEl = document.getElementById("agent-typing");
+      const inputEl = document.getElementById("agent-input");
+      const sendBtn = document.getElementById("agent-send");
+
+      function scrollToBottom() {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      function addMessage(content, isUser, useTypingEffect = false) {
+        // Hide welcome on first message
+        if (welcomeEl) welcomeEl.classList.add("hidden");
+
+        const bubble = document.createElement("div");
+        bubble.className = `flex ${isUser ? "justify-end" : "justify-start"}`;
+        const bubbleInner = document.createElement("div");
+        bubbleInner.className = `max-w-[80%] rounded-lg px-4 py-2 ${isUser ? "text-white" : "text-gray-900 dark:text-white"}`;
+        bubble.appendChild(bubbleInner);
+        messagesEl.appendChild(bubble);
+
+        if (useTypingEffect && content) {
+          const safeContent = escapeHtml(content);
+          let i = 0;
+          const delayMs = 30;
+          function typeNext() {
+            if (i <= safeContent.length) {
+              bubbleInner.innerHTML = safeContent.slice(0, i);
+              scrollToBottom();
+              i++;
+              setTimeout(typeNext, delayMs);
+            }
+          }
+          typeNext();
+        } else {
+          bubbleInner.innerHTML = escapeHtml(content);
+          scrollToBottom();
+        }
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function showTyping(show) {
+        typingEl.classList.toggle("hidden", !show);
+        if (show) scrollToBottom();
+      }
+
+      function sendMessage() {
+        const text = (inputEl?.value || "").trim();
+        if (!text) return;
+
+        addMessage(text, true);
+        inputEl.value = "";
+
+        // Demo: simulate agent response (replace with real API call)
+        showTyping(true);
+        setTimeout(() => {
+          showTyping(false);
+          addMessage(
+            "This is a placeholder response. Connect to your API to get real replies.",
+            false,
+            true
+          );
+        }, 800);
+      }
+
+      sendBtn?.addEventListener("click", sendMessage);
+      inputEl?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      setTimeout(() => {
+        showTyping(true);
+        setTimeout(() => {
+          showTyping(false);
+          addMessage("Hello, how are you?", false, true);
+        }, 800);
+      }, 800);
+    })();
+  </script>
+</App>

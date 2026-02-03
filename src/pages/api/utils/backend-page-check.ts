@@ -4,6 +4,8 @@ export const isBackendPage = (pathname: string) => {
     "/profile",
     "/dashboard",
     "/project/", // Matches /project/123, /project/new, etc. but not /projects
+    "/voice-assistant-vapi",
+    "/agent",
   ];
 
   return backendPaths.some((path) => pathname.startsWith(path));

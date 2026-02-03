@@ -1,15 +1,9 @@
 ---
-// Fixed Flowbite Navbar Component with proper Tailwind classes
-// import AssignedProjects from "../common/AssignedProjects.astro";
 import AuthIcon from "../common/AuthIcon.astro";
-import Button from "../common/Button.astro";
 import Logo from "./Logo.astro";
-import ProjectSearch from "../project/ProjectSearch.astro";
 import PunchlistDrawer from "../project/PunchlistDrawer.astro";
 import ToggleSidebar from "./ToggleSidebar.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
-import SearchForm from "../common/SearchForm.astro";
-import NotificationsModal from "../common/NotificationsModal.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 import Tooltip from "../common/TooltipFloating.astro";
@@ -30,29 +24,20 @@ const {
   currentUser,
   session,
   desktopNavigationHTML,
-  id,
   projects,
   isBackend,
   supabaseUrl,
   project,
   globalIconButtonClasses,
 } = Astro.props;
-
-const currentUrl = Astro.url.pathname;
-
-const isAuth = currentUser ? true : false;
 const currentRole = currentUser?.profile?.role;
 ---
 
-<nav
-  id="main-navbar"
-  class=`z-1 fixed left-0 top-4 right-4 shadow-primary-md transition-opacity duration-200 rounded-r-full backdrop-blur-sm  px-4`
->
-  <!-- Top Banner Alerts (if any) -->
-  <BannerAlertsLoader position="top" />
-
+<nav id="main-navbar" class=`z-1 fixed left-0 top-4 right-4 `>
   <!-- Main Navbar Content -->
-  <div class="flex gap-1 px-1 py-3 h-16 min-w-0 justify-between">
+  <div
+    class="flex gap-1 px-1 py-3 h-16 min-w-0 justify-between shadow-primary-md transition-opacity duration-200 rounded-r-full backdrop-blur-sm px-4"
+  >
     <div class="flex items-center flex-shrink-0 gap-1 min-w-0">
       <ToggleSidebar {currentUser} />
 
@@ -61,7 +46,7 @@ const currentRole = currentUser?.profile?.role;
 
     {
       !isBackend && (
-        <div class="hidden md:block flex-1 min-w-0 mx-2" id="navbar-default">
+        <div class="hidden md:block flex-1 min-w-0 mx-2 max-w-3xl mx-auto" id="navbar-default">
           <ul
             class="items-center flex flex-row font-medium justify-evenly"
             set:html={desktopNavigationHTML}
@@ -69,12 +54,6 @@ const currentRole = currentUser?.profile?.role;
         </div>
       )
     }
-    <!-- Search -->
-    <!-- {
-      currentUrl === "/project/dashboard" && currentRole !== "Client" && (
-        <ProjectSearch projects={projects} />
-      )
-    } -->
 
     <div class="flex items-center gap-1 flex-shrink-0">
       <ThemeToggle {globalIconButtonClasses} />
@@ -86,35 +65,27 @@ const currentRole = currentUser?.profile?.role;
       }
       {
         currentUser && currentRole !== "Client" && (
-          <>
-            <a
-              href="#"
-              id="notification-bell"
-              title="View notifications"
-              class={globalIconButtonClasses}
-              data-modal-target="notificationsModal"
-              data-modal-toggle="notificationsModal"
-              data-tooltip-target="tooltip-notifications-navbar"
-              data-tooltip-placement="bottom"
-            >
-              <SimpleIcon name="bell" size="md" class="" />
-              <span class="sr-only">View notifications</span>
-            </a>
-            <div
-              id="tooltip-notifications-navbar"
-              role="tooltip"
-              class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700"
-            >
-              View notifications
-              <div class="tooltip-arrow" data-popper-arrow />
-            </div>
-          </>
+          <a
+            href="#"
+            id="notification-bell"
+            class={`${globalIconButtonClasses}`}
+            data-modal-target="notificationsModal"
+            data-modal-toggle="notificationsModal"
+            type="button"
+          >
+            <Tooltip text="View notifications" position="bottom">
+              <SimpleIcon name="bell" size="md" class="cursor-pointer" />
+            </Tooltip>
+            <span class="sr-only">View notifications</span>
+          </a>
         )
       }
 
       <AuthIcon {currentUser} {session} {isBackend} {projects} {globalIconButtonClasses} />
     </div>
   </div>
+  <!-- Top Banner Alerts (if any) -->
+  <BannerAlertsLoader position="top" width="auto" />
 </nav>
 
 <script>

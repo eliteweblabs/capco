@@ -615,29 +615,16 @@ if (!currentUser || currentRole === "Client") {
   // console.log("🔔 [NOTIFICATIONS] Setting up notification bell click handler");
 
   function setupNotificationBell() {
-    // console.log("🔔 [NOTIFICATIONS] setupNotificationBell called");
     const notificationBell = document.getElementById("notification-bell");
+    if (!notificationBell) return;
 
-    // console.log("🔔 [NOTIFICATIONS] Bell element:", notificationBell);
-
-    if (notificationBell) {
-      // console.log("✅ [NOTIFICATIONS] Bell button found, adding click listener");
-
-      // Remove any existing click listeners by cloning the element
-      const newBell = notificationBell.cloneNode(true) as HTMLElement;
-      notificationBell.parentNode?.replaceChild(newBell, notificationBell);
-
-      newBell.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        // console.log("🔔 [NOTIFICATIONS] Bell clicked!");
-        notificationManager.openDropdown();
-      });
-
-      // console.log("✅ [NOTIFICATIONS] Click listener added successfully");
-    } else {
-      console.error("❌ [NOTIFICATIONS] Bell button NOT found!");
-    }
+    // Add click listener on the existing element. Do not clone/replace: that would remove
+    // the element that TooltipFloating initialized, so the tooltip would stop working.
+    notificationBell.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      notificationManager.openDropdown();
+    });
   }
 
   // Try multiple times to ensure DOM is ready

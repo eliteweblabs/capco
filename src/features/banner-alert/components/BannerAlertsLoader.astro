@@ -10,9 +10,10 @@ import BannerAlert from "./BannerAlert.astro";
 
 interface Props {
   position?: "top" | "bottom" | "all";
+  width?: "full" | "auto";
 }
 
-const { position = "all" } = Astro.props;
+const { position = "all", width = "full" } = Astro.props;
 
 // Fetch active banner alerts
 let banners: any[] = [];
@@ -88,7 +89,7 @@ const allBannerIds = banners.map((b) => String(b.id));
 
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
-    <div class="banner-alerts-top w-full flex flex-col" id="top-banner-container">
+    <div class={`banner-alerts-top flex flex-col ${width === "full" ? "w-full" : "inline-flex"} gap-1`} id="top-banner-container">
       {topBanners.map((banner) => (
         <BannerAlert
           id={banner.id}
@@ -98,6 +99,7 @@ const allBannerIds = banners.map((b) => String(b.id));
           position="top"
           expireMs={banner.expireMs}
           dismissible={banner.dismissible}
+          width={width}
         />
       ))}
     </div>

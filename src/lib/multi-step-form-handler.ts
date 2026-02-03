@@ -107,9 +107,8 @@ export function createMultiStepFormHandler(
     });
   }
 
-  // Show specific step with animation
+  // Show specific step with animation (continuous scroll: previous steps stay visible, scroll to active)
   async function showStep(stepNumber: number, direction: "forward" | "backward" = "forward") {
-    const steps = document.querySelectorAll(`#${formId} .step-content`);
     const currentActiveStep = document.querySelector(`#${formId} .step-content.active`) as HTMLElement;
     const targetStep = document.querySelector(
       `#${formId} .step-content[data-step="${stepNumber}"]`
@@ -117,18 +116,10 @@ export function createMultiStepFormHandler(
 
     if (!targetStep) return;
 
-    // Animate out the current step if it exists
+    // Remove active from current step (no slide-out; step stays visible for scroll-up review)
     if (currentActiveStep && currentActiveStep !== targetStep) {
-      // Slide direction based on forward/backward
-      const slideOutClass = direction === "forward" ? "sliding-out-up" : "sliding-out-down";
-      currentActiveStep.classList.add(slideOutClass);
-      
-      // Wait for animation to complete before hiding
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
       currentActiveStep.classList.remove("active", "sliding-out-up", "sliding-out-down");
-      
-      // Remove focus classes from buttons
+
       const buttons = currentActiveStep.querySelectorAll("button");
       buttons.forEach((btn) => {
         btn.classList.remove(
@@ -141,7 +132,6 @@ export function createMultiStepFormHandler(
         );
       });
 
-      // Clear stored original data-next when leaving a step
       const nextButton = currentActiveStep.querySelector(
         "button.next-step, button.submit-step"
       ) as HTMLButtonElement;
@@ -151,19 +141,29 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Show and animate in the target step
+    // Activate target step: only first panel slides up on load; when switching steps we skip slide-in to avoid jump
+    const isFirstLoad = !currentActiveStep;
     targetStep.classList.add("active");
-    // Skip slide animation on initial load to prevent jitter (scroll + animation conflict)
-    const isInitialLoad = !currentActiveStep;
-    if (isInitialLoad) {
-      targetStep.classList.add("initial-load");
-    } else {
+    if (isFirstLoad) {
       targetStep.classList.remove("initial-load");
-      // Use reverse slide when going backward (panel comes from above)
-      if (direction === "backward") {
-        targetStep.classList.add("sliding-in-from-above");
-      }
+    } else {
+      targetStep.classList.add("initial-load");
     }
+    if (direction === "backward") {
+      targetStep.classList.add("sliding-in-from-above");
+    } else {
+      targetStep.classList.remove("sliding-in-from-above");
+    }
+
+    // Continuous scroll: scroll form so target step is at cursor line (40vh); user can scroll up to review
+    const formEl = document.getElementById(formId) as HTMLFormElement;
+    if (formEl && currentActiveStep !== targetStep) {
+      const cursorFraction = 0.4;
+      const scrollTop =
+        targetStep.offsetTop - formEl.clientHeight * cursorFraction;
+      formEl.scrollTo({ top: Math.max(0, scrollTop), behavior: "smooth" });
+    }
+
     currentStep = stepNumber;
     updateProgress();
 
@@ -241,38 +241,38 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Auto-focus handling with typewriter cursor line positioning (40vh from top)
+    // Auto-focus handling: scroll form so focused element is at cursor line (40vh from top of form viewport)
     setTimeout(() => {
-      // Check if this step has SMS choice buttons
+      const formEl = document.getElementById(formId) as HTMLFormElement;
+      const cursorFraction = 0.4;
+
+      const scrollFormToCursor = (element: HTMLElement) => {
+        if (!formEl) return;
+        const formRect = formEl.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
+        formEl.scrollBy({ top: delta, behavior: "smooth" });
+      };
+
       const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
       if (smsChoiceButtons.length > 0) {
-        // Focus the "yes" button
         const yesButton = targetStep.querySelector(
           'button[data-sms-value="true"]'
         ) as HTMLElement;
         if (yesButton) {
           yesButton.focus();
-          // Position at cursor line (40vh from top)
-          const elementRect = yesButton.getBoundingClientRect();
-          const absoluteElementTop = elementRect.top + window.pageYOffset;
-          const cursorLine = absoluteElementTop - (window.innerHeight * 0.4);
-          window.scrollTo({ top: cursorLine, behavior: 'smooth' });
+          scrollFormToCursor(yesButton);
         }
       } else {
-        // Auto-focus first input
         const firstInput = targetStep.querySelector(
           "input:not([type=hidden]):not([readonly]), textarea"
         ) as HTMLElement;
         if (firstInput) {
           firstInput.focus();
-          // Position at cursor line (40vh from top) - this keeps the typing position fixed
-          const elementRect = firstInput.getBoundingClientRect();
-          const absoluteElementTop = elementRect.top + window.pageYOffset;
-          const cursorLine = absoluteElementTop - (window.innerHeight * 0.4);
-          window.scrollTo({ top: cursorLine, behavior: 'smooth' });
+          scrollFormToCursor(firstInput);
         }
       }
-    }, 650); // Wait for animation to complete
+    }, 650);
   }
 
   // Validate current step

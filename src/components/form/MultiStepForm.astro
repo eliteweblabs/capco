@@ -43,7 +43,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     {
       config.steps.map((step) => (
         <div
-          class="step-content space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12"
+          class:list={[
+            "step-content space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12",
+            step.stepNumber === 1 ? "first-step" : "",
+          ]}
           data-step={step.stepNumber}
           data-hide-progress-bar={step.hideProgressBar ? "true" : "false"}
           tabindex="-1"
@@ -667,35 +670,36 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 </style>
 
 <style>
+  /* Continuous scroll: all steps visible and stacked (chat-history style); user can scroll up to review */
   .step-content {
-    display: none;
-    opacity: 0;
-    transform: translateY(60vh); /* Start below the cursor line */
+    display: block;
+    /* min-height: 40vh; */
+    /* margin-bottom: 4rem; */
+    /* opacity: 1; */
+    /* transform: translateY(0); */
   }
 
-  .step-content.active {
-    display: block;
+  /* First step starts below cursor so it can slide up into view on load */
+  .step-content.first-step {
+    /* opacity: 0; */
+    /* transform: translateY(60vh); */
+  }
+
+  /* First step on load: slides up into view; when switching steps, initial-load skips animation */
+  .step-content:not(.first-step).active {
     animation: slideToTypewriterPosition 600ms ease-out forwards;
     will-change: transform;
     backface-visibility: hidden;
   }
-  
-  /* Skip slide animation on initial load - prevents jitter */
+
+  /* When switching to a step (not first load), no slide-in so content doesn’t jump */
   .step-content.active.initial-load {
     animation: none;
     opacity: 1;
     transform: translateY(0);
     will-change: auto;
   }
-  
-  .step-content.sliding-out-up {
-    animation: slideOutUpTypewriter 600ms ease-out forwards;
-  }
-  
-  .step-content.sliding-out-down {
-    animation: slideOutDownTypewriter 600ms ease-out forwards;
-  }
-  
+
   /* Override default slide-in when going backward - panel comes from above */
   .step-content.active.sliding-in-from-above {
     animation: slideFromAboveTypewriter 600ms ease-out forwards;
@@ -724,7 +728,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       transform: translateY(-40vh); /* Slide up past the cursor line */
     }
   }
-  
+
   /* Slide content down and out when moving to previous step */
   @keyframes slideOutDownTypewriter {
     from {
@@ -736,7 +740,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       transform: translateY(60vh); /* Slide down past the cursor line */
     }
   }
-  
+
   /* Slide in from above when going back to previous step */
   @keyframes slideFromAboveTypewriter {
     from {
@@ -802,7 +806,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
   }
-  
+
   /* Responsive padding adjustments */
   @media (min-width: 640px) {
     [data-multi-step-form] {
@@ -810,14 +814,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       padding-right: max(2rem, env(safe-area-inset-right));
     }
   }
-  
+
   @media (min-width: 768px) {
     [data-multi-step-form] {
       padding-left: max(3rem, env(safe-area-inset-left));
       padding-right: max(3rem, env(safe-area-inset-right));
     }
   }
-  
+
   @media (min-width: 1024px) {
     [data-multi-step-form] {
       padding-left: max(4rem, env(safe-area-inset-left));
@@ -842,21 +846,21 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     pointer-events: none;
     z-index: 100;
   }
-  
+
   @media (min-width: 640px) {
     [data-multi-step-form]::before {
       left: max(2rem, env(safe-area-inset-left));
       right: max(2rem, env(safe-area-inset-right));
     }
   }
-  
+
   @media (min-width: 768px) {
     [data-multi-step-form]::before {
       left: max(3rem, env(safe-area-inset-left));
       right: max(3rem, env(safe-area-inset-right));
     }
   }
-  
+
   @media (min-width: 1024px) {
     [data-multi-step-form]::before {
       left: max(4rem, env(safe-area-inset-left));
@@ -1314,22 +1318,20 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           console.log("[FOCUS-SHADOW] Adding shadow to:", formElement.id || formElement.name);
           target.classList.add("shadow-focus");
 
-          // Scroll the focused element to the typewriter cursor line (40vh from top)
+          // Scroll the form so focused element is at cursor line (40vh from top of form viewport)
           setTimeout(() => {
-            const elementRect = target.getBoundingClientRect();
-            const absoluteElementTop = elementRect.top + window.pageYOffset;
-            const cursorLine = absoluteElementTop - window.innerHeight * 0.4;
-
-            window.scrollTo({
-              top: cursorLine,
-              behavior: "smooth",
-            });
-
+            const form = target.closest("form");
+            if (form) {
+              const formRect = form.getBoundingClientRect();
+              const elementRect = target.getBoundingClientRect();
+              const delta = elementRect.top - (formRect.top + form.clientHeight * 0.4);
+              form.scrollBy({ top: delta, behavior: "smooth" });
+            }
             console.log(
               "[SCROLL] Positioning input at cursor line (40vh):",
               formElement.id || formElement.name
             );
-          }, 100); // Small delay to ensure layout is stable
+          }, 100);
         }
       },
       true
