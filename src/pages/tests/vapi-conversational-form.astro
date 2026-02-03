@@ -1,0 +1,147 @@
+---
+/**
+ * Test Page: VAPI Conversational Form
+ * 
+ * Tests the form-like VAPI interface that mimics MultiStepForm's UX
+ */
+
+import App from "../../components/ui/App.astro";
+import VapiConversationalForm from "../../components/chat/VapiConversationalForm.astro";
+import { checkAuth } from "../../lib/auth";
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
+
+const { currentUser } = await checkAuth(Astro.cookies);
+const { globalCompanyName } = await globalCompanyData();
+---
+
+<App title="Conversational Form (VAPI)" {currentUser} mask="top-left">
+  <div class="container mx-auto px-4 py-8">
+    <!-- Info Banner -->
+    <div class="max-w-2xl mx-auto mb-8">
+      <div
+        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6"
+      >
+        <h2 class="font-semibold text-blue-900 dark:text-blue-200 mb-3">
+          🎯 Form-Style Conversation
+        </h2>
+        <p class="text-sm text-blue-800 dark:text-blue-300 mb-3">
+          This interface mimics the MultiStepForm UX but uses conversational AI instead of rigid
+          form fields. Each AI question appears as a new "panel" that you progress through.
+        </p>
+        <ul class="text-sm text-blue-800 dark:text-blue-300 space-y-2 list-disc list-inside">
+          <li>Click "Start" to begin the conversation</li>
+          <li>Each question appears as a new panel (like form steps)</li>
+          <li>Your responses are displayed in a formatted card</li>
+          <li>Automatically scrolls to the next question</li>
+          <li>Looks and feels like progressing through a form</li>
+          <li>But with the flexibility of natural conversation!</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Conversational Form -->
+    <VapiConversationalForm
+      title={`Hi, I'm Leah from ${globalCompanyName}.<br><br>Let's create your project together!`}
+      introMessage="I'll ask you a few questions, one at a time. Just speak naturally or type your responses."
+    />
+
+    <!-- Feature Comparison -->
+    <div class="max-w-2xl mx-auto mt-12">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
+            Traditional MultiStepForm
+          </h3>
+          <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400">✓</span>
+              <span>Visual form fields</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400">✓</span>
+              <span>Progress bar</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400">✓</span>
+              <span>Manual input</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-red-600 dark:text-red-400">✗</span>
+              <span>Rigid structure</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-red-600 dark:text-red-400">✗</span>
+              <span>Can't ask questions</span>
+            </li>
+          </ul>
+        </div>
+
+        <div
+          class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-6"
+        >
+          <h3 class="font-semibold text-primary-900 dark:text-primary-200 mb-3">
+            VAPI Conversational Form
+          </h3>
+          <ul class="text-sm text-primary-800 dark:text-primary-300 space-y-2">
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400">✓</span>
+              <span>Form-like panels</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400">✓</span>
+              <span>Visual progression</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400">✓</span>
+              <span>Voice OR text input</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400">✓</span>
+              <span>Natural conversation</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400">✓</span>
+              <span>Ask questions anytime</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technical Notes -->
+    <div class="max-w-2xl mx-auto mt-8">
+      <details class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <summary class="font-semibold text-gray-900 dark:text-white cursor-pointer">
+          🔧 How It Works
+        </summary>
+        <div class="mt-4 text-sm text-gray-600 dark:text-gray-400 space-y-3">
+          <p>
+            <strong>1. Each AI question = new panel:</strong> When the AI asks a question, a new
+            panel slides in from below (like progressing to the next form step).
+          </p>
+          <p>
+            <strong>2. Responses displayed in cards:</strong> Your voice/text responses appear in
+            formatted cards below each question, similar to filled-in form fields.
+          </p>
+          <p>
+            <strong>3. Auto-scroll progression:</strong> After each response, the page
+            automatically scrolls to the next panel, creating a natural progression feeling.
+          </p>
+          <p>
+            <strong>4. Typewriter effect:</strong> Questions use the same typewriter animation as
+            MultiStepForm titles for consistency.
+          </p>
+          <p>
+            <strong>5. Completion panel:</strong> When done, a success panel appears (like the
+            final review step in forms).
+          </p>
+        </div>
+      </details>
+    </div>
+  </div>
+</App>
+
+<style>
+  /* Import typewriter styles */
+  @import "../../scripts/typewriter-text.ts";
+</style>

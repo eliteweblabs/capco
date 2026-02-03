@@ -140,18 +140,30 @@ export class RefreshManager {
 
         // For date inputs with formatted display, update the data attribute
         if (element.hasAttribute("data-due-date")) {
-          element.setAttribute("data-due-date", String(newValue));
-          // Format the display value
-          try {
-            const date = new Date(newValue);
-            displayValue = date.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              hour12: true,
-            });
-          } catch (e) {
-            displayValue = String(newValue);
+          // Only update if newValue is valid
+          if (newValue && newValue !== "" && newValue !== "null") {
+            element.setAttribute("data-due-date", String(newValue));
+            // Format the display value
+            try {
+              const date = new Date(newValue);
+              // Validate the date is actually valid
+              if (!isNaN(date.getTime())) {
+                displayValue = date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  hour12: true,
+                });
+              } else {
+                displayValue = String(newValue);
+              }
+            } catch (e) {
+              displayValue = String(newValue);
+            }
+          } else {
+            // Handle null/empty dates - clear the field
+            element.setAttribute("data-due-date", "");
+            displayValue = "";
           }
         } else {
           displayValue = String(newValue);
@@ -170,11 +182,21 @@ export class RefreshManager {
       let displayValue: string;
 
       if (fieldName && (fieldName.includes("Date") || fieldName.includes("At"))) {
-        try {
-          const date = new Date(newValue);
-          displayValue = date.toLocaleString();
-        } catch (e) {
-          displayValue = String(newValue);
+        // Handle null/empty dates
+        if (!newValue || newValue === "" || newValue === "null") {
+          displayValue = "";
+        } else {
+          try {
+            const date = new Date(newValue);
+            // Validate the date is actually valid
+            if (!isNaN(date.getTime())) {
+              displayValue = date.toLocaleString();
+            } else {
+              displayValue = String(newValue);
+            }
+          } catch (e) {
+            displayValue = String(newValue);
+          }
         }
       } else {
         displayValue = String(newValue);
@@ -568,10 +590,24 @@ export class RefreshManager {
 
           if (fieldName.includes("Date") || fieldName.includes("At")) {
             try {
-              const currentDate = new Date(currentElementValue);
-              const newDate = new Date(newValueString);
-              // Compare timestamps (milliseconds since epoch)
-              valuesAreDifferent = currentDate.getTime() !== newDate.getTime();
+              // Handle null/empty dates
+              if (!currentElementValue || currentElementValue === "" || currentElementValue === "null") {
+                valuesAreDifferent = newValueString !== "" && newValueString !== "null";
+              } else if (!newValueString || newValueString === "" || newValueString === "null") {
+                valuesAreDifferent = currentElementValue !== "" && currentElementValue !== "null";
+              } else {
+                // Both have values, compare as dates
+                const currentDate = new Date(currentElementValue);
+                const newDate = new Date(newValueString);
+                // Validate both dates are valid before comparing
+                if (!isNaN(currentDate.getTime()) && !isNaN(newDate.getTime())) {
+                  // Compare timestamps (milliseconds since epoch)
+                  valuesAreDifferent = currentDate.getTime() !== newDate.getTime();
+                } else {
+                  // If date parsing fails, fall back to string comparison
+                  valuesAreDifferent = currentElementValue !== newValueString;
+                }
+              }
             } catch (e) {
               // If date parsing fails, fall back to string comparison
               valuesAreDifferent = currentElementValue !== newValueString;

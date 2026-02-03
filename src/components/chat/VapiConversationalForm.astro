@@ -1,0 +1,472 @@
+---
+/**
+ * VAPI Conversational Form
+ * 
+ * A form-like interface powered by VAPI that mimics MultiStepForm's UX
+ * - Each AI question becomes a "panel"
+ * - User responses appear as submitted data
+ * - Auto-scrolls to next panel after each response
+ * - Looks and feels like progressing through form steps
+ */
+
+import { checkAuth } from "../../lib/auth";
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
+
+interface Props {
+  assistantId?: string;
+  publicKey?: string;
+  title?: string;
+  introMessage?: string;
+  containerClass?: string;
+}
+
+const {
+  assistantId = import.meta.env.PUBLIC_VAPI_ASSISTANT_ID || "3ae002d5-fe9c-4870-8034-4c66a9b43b51",
+  publicKey = import.meta.env.PUBLIC_VAPI_KEY || "",
+  title = "Let's create your project...",
+  introMessage = "I'll guide you through this step by step.",
+  containerClass = "w-full max-w-2xl mx-auto",
+} = Astro.props;
+
+const { globalCompanyName } = await globalCompanyData();
+const { currentUser } = await checkAuth(Astro.cookies);
+---
+
+<div class={`vapi-conversational-form ${containerClass}`} data-vapi-form>
+  <!-- Hidden panels will be revealed as conversation progresses -->
+  <div id="conversation-panels" class="space-y-12">
+    <!-- Initial Panel (always visible) -->
+    <div class="conversation-panel active" data-panel="0">
+      <div class="title-scroll-container relative">
+        <div class="title-scroll-wrapper">
+          <h2
+            class="inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white typewriter-text"
+            data-text={title}
+          >
+            {title}
+          </h2>
+        </div>
+      </div>
+      
+      {introMessage && (
+        <p class="mt-4 text-base text-gray-600 dark:text-gray-400 max-w-md">
+          {introMessage}
+        </p>
+      )}
+
+      <div class="mt-8 flex justify-center">
+        <button
+          id="start-conversation-btn"
+          class="flex items-center gap-3 rounded-full bg-primary-600 px-8 py-4 text-white font-semibold shadow-lg transition-all hover:bg-primary-700 hover:shadow-xl active:scale-95"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+            ></path>
+          </svg>
+          <span>Start</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Dynamic panels will be added here by JavaScript -->
+  </div>
+
+  <!-- Hidden Voice Status (for internal use) -->
+  <div id="vapi-status" class="hidden">
+    <span id="vapi-status-text"></span>
+  </div>
+
+  <!-- Configuration Error -->
+  {
+    !publicKey && (
+      <div class="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <p class="text-red-800 dark:text-red-200">
+          ⚠️ <strong>Configuration Required:</strong> Please set <code>PUBLIC_VAPI_KEY</code> in
+          your environment variables.
+        </p>
+      </div>
+    )
+  }
+</div>
+
+<!-- Load VAPI SDK -->
+<script
+  src="https://cdn.jsdelivr.net/gh/balacodeio/Vapi-Web-UMD@latest/dist/latest/vapi-web-bundle.min.js"
+  is:inline></script>
+
+<script define:vars={{ assistantId, publicKey, currentUser }}>
+  // VAPI Conversational Form Handler
+  let vapi = null;
+  let isCallActive = false;
+  let panelIndex = 0;
+  let currentPanel = null;
+  let isWaitingForResponse = false;
+
+  // DOM Elements
+  const panelsContainer = document.getElementById("conversation-panels");
+  const startBtn = document.getElementById("start-conversation-btn");
+  const statusText = document.getElementById("vapi-status-text");
+
+  // Initialize VAPI
+  document.addEventListener("DOMContentLoaded", async () => {
+    if (!publicKey) {
+      console.error("[VAPI-FORM] Missing PUBLIC_VAPI_KEY");
+      startBtn.disabled = true;
+      startBtn.querySelector("span").textContent = "Configuration Error";
+      return;
+    }
+
+    try {
+      vapi = new window.Vapi(publicKey);
+      console.log("[VAPI-FORM] VAPI initialized");
+      setupVapiListeners();
+      setupUIListeners();
+    } catch (error) {
+      console.error("[VAPI-FORM] Failed to initialize:", error);
+      startBtn.disabled = true;
+      startBtn.querySelector("span").textContent = "Initialization Error";
+    }
+  });
+
+  // Setup VAPI event listeners
+  function setupVapiListeners() {
+    vapi.on("call-start", () => {
+      console.log("[VAPI-FORM] Call started");
+      isCallActive = true;
+      
+      // Hide start button, show listening indicator
+      const initialPanel = document.querySelector('[data-panel="0"]');
+      if (initialPanel) {
+        startBtn.style.display = "none";
+        
+        // Add listening indicator to initial panel
+        const indicator = document.createElement("div");
+        indicator.className = "mt-6 flex items-center justify-center gap-2 text-primary-600 dark:text-primary-400";
+        indicator.innerHTML = `
+          <div class="w-3 h-3 rounded-full bg-primary-600 dark:bg-primary-400 animate-pulse"></div>
+          <span class="text-sm font-medium">Listening...</span>
+        `;
+        indicator.id = "listening-indicator";
+        initialPanel.appendChild(indicator);
+      }
+    });
+
+    vapi.on("call-end", () => {
+      console.log("[VAPI-FORM] Call ended");
+      isCallActive = false;
+      
+      // Show completion panel
+      addCompletionPanel();
+    });
+
+    vapi.on("speech-start", () => {
+      console.log("[VAPI-FORM] Assistant speaking");
+      updateListeningIndicator("Speaking...", "bg-purple-600");
+    });
+
+    vapi.on("speech-end", () => {
+      console.log("[VAPI-FORM] Assistant stopped speaking");
+      updateListeningIndicator("Listening...", "bg-primary-600");
+      isWaitingForResponse = true;
+    });
+
+    vapi.on("message", (message) => {
+      console.log("[VAPI-FORM] Message:", message);
+
+      if (message.type === "transcript" && message.transcript) {
+        const role = message.transcript.role;
+        const text = message.transcript.message;
+
+        if (role === "assistant") {
+          // Assistant asks a question - create new panel
+          addAssistantPanel(text);
+        } else if (role === "user") {
+          // User responds - add to current panel and scroll to next
+          addUserResponse(text);
+        }
+      }
+
+      // Handle function calls (form submission complete)
+      if (message.type === "function-call") {
+        console.log("[VAPI-FORM] Function call:", message.functionCall);
+        // Form is being submitted via function call
+        isWaitingForResponse = false;
+      }
+    });
+
+    vapi.on("error", (error) => {
+      console.error("[VAPI-FORM] Error:", error);
+      addErrorPanel(`Error: ${error.message || "Something went wrong"}`);
+    });
+  }
+
+  // Setup UI listeners
+  function setupUIListeners() {
+    startBtn.addEventListener("click", async () => {
+      if (!vapi) return;
+
+      try {
+        // Pass user context to VAPI
+        const userMetadata = {
+          userId: currentUser?.id,
+          userEmail: currentUser?.email,
+          userName: currentUser?.profile?.name || currentUser?.user_metadata?.name,
+        };
+
+        await vapi.start(assistantId, {
+          metadata: userMetadata,
+        });
+      } catch (error) {
+        console.error("[VAPI-FORM] Failed to start:", error);
+        alert("Failed to start conversation. Please try again.");
+      }
+    });
+  }
+
+  // Add assistant question panel
+  function addAssistantPanel(text) {
+    panelIndex++;
+    
+    const panel = document.createElement("div");
+    panel.className = "conversation-panel opacity-0 transform translate-y-8 transition-all duration-500";
+    panel.setAttribute("data-panel", panelIndex);
+    panel.innerHTML = `
+      <div class="title-scroll-container relative">
+        <div class="title-scroll-wrapper">
+          <h2 class="inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white typewriter-text"
+              data-text="${escapeHtml(text)}">
+            ${escapeHtml(text)}
+          </h2>
+        </div>
+      </div>
+      
+      <div class="mt-6 user-response-container hidden">
+        <!-- User response will be added here -->
+      </div>
+    `;
+
+    panelsContainer.appendChild(panel);
+    currentPanel = panel;
+
+    // Trigger animation after brief delay
+    setTimeout(() => {
+      panel.classList.remove("opacity-0", "translate-y-8");
+      panel.classList.add("active");
+      scrollToPanel(panel);
+      
+      // Trigger typewriter effect
+      const h2 = panel.querySelector(".typewriter-text");
+      if (h2) {
+        triggerTypewriter(h2);
+      }
+    }, 100);
+  }
+
+  // Add user response to current panel
+  function addUserResponse(text) {
+    if (!currentPanel) return;
+
+    const responseContainer = currentPanel.querySelector(".user-response-container");
+    if (responseContainer) {
+      responseContainer.classList.remove("hidden");
+      responseContainer.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-xl border-2 border-primary-500 dark:border-primary-600 p-6 shadow-lg">
+          <div class="flex items-start gap-3">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                <svg class="w-6 h-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Your response</p>
+              <p class="text-lg text-gray-900 dark:text-white">${escapeHtml(text)}</p>
+            </div>
+            <div class="flex-shrink-0">
+              <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    isWaitingForResponse = false;
+  }
+
+  // Add completion panel
+  function addCompletionPanel() {
+    panelIndex++;
+    
+    const panel = document.createElement("div");
+    panel.className = "conversation-panel opacity-0 transform translate-y-8 transition-all duration-500";
+    panel.setAttribute("data-panel", panelIndex);
+    panel.innerHTML = `
+      <div class="bg-gradient-to-br from-green-50 to-primary-50 dark:from-green-900/20 dark:to-primary-900/20 rounded-2xl border-2 border-green-200 dark:border-green-800 p-8 text-center">
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          All set!
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400">
+          Your information has been submitted successfully.
+        </p>
+      </div>
+    `;
+
+    panelsContainer.appendChild(panel);
+
+    // Trigger animation
+    setTimeout(() => {
+      panel.classList.remove("opacity-0", "translate-y-8");
+      panel.classList.add("active");
+      scrollToPanel(panel);
+    }, 100);
+
+    // Remove listening indicator
+    const indicator = document.getElementById("listening-indicator");
+    if (indicator) {
+      indicator.remove();
+    }
+  }
+
+  // Add error panel
+  function addErrorPanel(message) {
+    const panel = document.createElement("div");
+    panel.className = "conversation-panel";
+    panel.innerHTML = `
+      <div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-6">
+        <div class="flex items-center gap-3">
+          <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <p class="text-red-800 dark:text-red-200">${escapeHtml(message)}</p>
+        </div>
+      </div>
+    `;
+    panelsContainer.appendChild(panel);
+    scrollToPanel(panel);
+  }
+
+  // Update listening indicator
+  function updateListeningIndicator(text, colorClass) {
+    const indicator = document.getElementById("listening-indicator");
+    if (indicator) {
+      const dot = indicator.querySelector("div");
+      const span = indicator.querySelector("span");
+      if (dot && span) {
+        dot.className = `w-3 h-3 rounded-full ${colorClass} dark:${colorClass} animate-pulse`;
+        span.textContent = text;
+      }
+    }
+  }
+
+  // Scroll to panel smoothly
+  function scrollToPanel(panel) {
+    setTimeout(() => {
+      panel.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  }
+
+  // Trigger typewriter effect
+  function triggerTypewriter(element) {
+    // Trigger the typewriter animation
+    // Your existing typewriter script should handle this
+    const event = new CustomEvent("typewriter-start", { detail: { element } });
+    document.dispatchEvent(event);
+  }
+
+  // Utility: Escape HTML
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>
+
+<style is:global>
+  /* Panel styles matching MultiStepForm */
+  .conversation-panel {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .conversation-panel.active {
+    animation: slideInUp 0.5s ease-out;
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Title scroll container (from MultiStepForm) */
+  .title-scroll-container {
+    position: relative;
+    max-height: 400px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .title-scroll-wrapper {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    flex: 1;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .title-scroll-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Spacing between panels */
+  .conversation-panel + .conversation-panel {
+    margin-top: 3rem;
+  }
+
+  /* User response animation */
+  .user-response-container {
+    animation: fadeInUp 0.4s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Typewriter text (from MultiStepForm) */
+  .typewriter-text {
+    display: inline-block;
+  }
+</style>

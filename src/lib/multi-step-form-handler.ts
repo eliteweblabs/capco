@@ -219,7 +219,7 @@ export function createMultiStepFormHandler(
         }
       }
 
-      // Auto-focus handling
+      // Auto-focus handling with continuous scroll centering
       setTimeout(() => {
         // Check if this step has SMS choice buttons
         const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
@@ -230,6 +230,11 @@ export function createMultiStepFormHandler(
           ) as HTMLElement;
           if (yesButton) {
             yesButton.focus();
+            // Center the button in viewport
+            const elementRect = yesButton.getBoundingClientRect();
+            const absoluteElementTop = elementRect.top + window.pageYOffset;
+            const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
+            window.scrollTo({ top: middle, behavior: 'smooth' });
           }
         } else {
           // Auto-focus first input
@@ -238,7 +243,11 @@ export function createMultiStepFormHandler(
           ) as HTMLElement;
           if (firstInput) {
             firstInput.focus();
-            firstInput.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Center the input in viewport
+            const elementRect = firstInput.getBoundingClientRect();
+            const absoluteElementTop = elementRect.top + window.pageYOffset;
+            const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
+            window.scrollTo({ top: middle, behavior: 'smooth' });
           }
         }
       }, 150);
@@ -1127,14 +1136,21 @@ export function createMultiStepFormHandler(
       }
     });
 
-    // Focus first input
+    // Focus first input with continuous scroll centering
     setTimeout(() => {
       const firstStep = form.querySelector('.step-content[data-step="1"]') as HTMLElement;
       if (firstStep) {
         const firstInput = firstStep.querySelector(
           "input:not([type=hidden]):not([readonly])"
         ) as HTMLElement;
-        if (firstInput) firstInput.focus();
+        if (firstInput) {
+          firstInput.focus();
+          // Center the input in viewport
+          const elementRect = firstInput.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
+          window.scrollTo({ top: middle, behavior: 'smooth' });
+        }
       }
     }, 150);
   }

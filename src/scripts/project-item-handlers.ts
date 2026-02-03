@@ -122,12 +122,18 @@
   }
 
   const currentDate = input.getAttribute("data-due-date");
-  if (!currentDate) {
+  if (!currentDate || currentDate === "") {
     console.error(`❌ [ADJUST] No current date for project ${projectId}`);
     return;
   }
 
+  // Validate the date before parsing
   const date = new Date(currentDate);
+  if (isNaN(date.getTime())) {
+    console.error(`❌ [ADJUST] Invalid date format for project ${projectId}:`, currentDate);
+    return;
+  }
+
   date.setHours(date.getHours() + hours);
   const newISO = date.toISOString();
 

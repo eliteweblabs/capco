@@ -497,7 +497,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   config.progressBar && (
     <div
       id={`${config.formId}-progress-bar`}
-      class="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-4 transition-opacity duration-300"
+      class="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 py-4 px-4 transition-opacity duration-300"
       tabindex="-1"
     >
       <div class="w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] max-w-6xl mx-auto" tabindex="-1">
@@ -702,10 +702,28 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     background-color: var(--color-success-600);
   }
 
-  /* #multi-step-contact-form {
-    width: 80dvw;
+  /* Continuous scroll layout - use full viewport */
+  [data-multi-step-form] {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Center the form content with padding to allow active field to sit mid-screen */
+  [data-multi-step-form] form {
+    width: 100%;
     max-width: 680px;
-  } */
+    margin: 0 auto;
+    /* Top padding = 50vh to center first field */
+    /* Bottom padding = 50vh + progress bar height to center last field and ensure it's not hidden */
+    padding: 50vh 1rem calc(50vh + 80px) 1rem;
+  }
+  
+  /* Smooth scroll to keep active element centered */
+  html {
+    scroll-behavior: smooth;
+  }
 
   /* Button icon state management for validation feedback */
   button.has-valid-state .icon-valid {
@@ -1012,6 +1030,20 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           const formElement = target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
           console.log("[FOCUS-SHADOW] Adding shadow to:", formElement.id || formElement.name);
           target.classList.add("shadow-focus");
+          
+          // Scroll the focused element to the center of the viewport
+          setTimeout(() => {
+            const elementRect = target.getBoundingClientRect();
+            const absoluteElementTop = elementRect.top + window.pageYOffset;
+            const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
+            
+            window.scrollTo({
+              top: middle,
+              behavior: 'smooth'
+            });
+            
+            console.log("[SCROLL] Centering input:", formElement.id || formElement.name);
+          }, 100); // Small delay to ensure layout is stable
         }
       },
       true

@@ -76,6 +76,53 @@ import { loginFormConfig } from "../../lib/forms/login-form-config";
     // Use singleton Supabase client to avoid multiple instances
     import { getSupabaseClient } from "../../lib/supabase-client";
 
+    // Check for error in URL params and show notification
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get("error");
+      const message = urlParams.get("message");
+
+      if (error && (window as any).showNotice) {
+        let errorTitle = "Authentication Error";
+        let errorMessage = message || "An error occurred during authentication";
+
+        // Custom messages for known error types
+        switch (error) {
+          case "oauth_failed":
+            errorMessage = "OAuth authentication failed. Please try again.";
+            break;
+          case "access_denied":
+            errorMessage = "Access was denied. You may have cancelled the authentication process.";
+            break;
+          case "no_code":
+            errorMessage = "No authorization code received from provider.";
+            break;
+          case "session_exchange_failed":
+            errorMessage = "Failed to complete authentication. Please try again.";
+            break;
+          case "session_expired":
+            errorMessage = message || "Your session has expired. Please sign in again.";
+            break;
+          case "cookie_set_failed":
+            errorMessage = "Failed to set authentication cookies. Please check your browser settings.";
+            break;
+          case "unexpected_error":
+            errorMessage = "An unexpected error occurred. Please try again.";
+            break;
+        }
+
+        (window as any).showNotice({
+          type: "error",
+          title: errorTitle,
+          message: errorMessage,
+          persist: true,
+        });
+
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    });
+
     // Extract OAuth initiation logic into a reusable function
     async function triggerGoogleOAuth(e?: Event) {
       if (e) {
