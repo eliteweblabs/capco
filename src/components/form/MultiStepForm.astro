@@ -702,10 +702,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     background-color: var(--color-success-600);
   }
 
-  #multi-step-contact-form {
+  /* #multi-step-contact-form {
     width: 80dvw;
     max-width: 680px;
-  }
+  } */
 
   /* Button icon state management for validation feedback */
   button.has-valid-state .icon-valid {
@@ -810,10 +810,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       if (placeholders) {
         try {
           const values = JSON.parse(placeholders);
-          
+
           // Note: Sync groups have been removed - all fields now use staggered delays
           // Previously firstName and lastName were synced, but this prevented the stagger effect
-          
+
           placeholderData.set(fieldId, { index: 0, values, syncGroup: undefined });
           console.log(
             `[ANIMATED-PLACEHOLDER] Initialized ${fieldId} with ${values.length} placeholders`
@@ -864,9 +864,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       // Find the active step to determine which inputs are visible
       const activeStep = document.querySelector(".step-content.active");
 
-      // Track which sync groups have been processed to keep them in sync
-      const processedSyncGroups = new Set<string>();
-
       animatedInputs.forEach((input, index) => {
         const span = document.querySelector(
           `.animated-placeholder[data-for="${input.id}"]`
@@ -886,66 +883,23 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           );
           const stepIndex = activeStepInputs.indexOf(input);
 
-          // If this field is part of a sync group, check if we've already processed it
-          if (data.syncGroup) {
-            if (processedSyncGroups.has(data.syncGroup)) {
-              // Already processed by another field in the group, skip individual processing
-              return;
-            }
-            // Mark this sync group as processed
-            processedSyncGroups.add(data.syncGroup);
+          // ⚠️ PROTECTED CODE - DO NOT REMOVE ⚠️
+          // This stagger delay creates a cascading animation effect for successive placeholders.
+          // See: .cursor/rules/multistep-form-placeholder-stagger.md
+          // See: markdowns/animated-placeholder-stagger-delay.md
+          // Stagger delay: 200ms per field for smooth cascade effect
+          const staggerDelay = stepIndex * 200;
 
-            // Find all fields in the same sync group
-            const syncedFields = Array.from(placeholderData.entries())
-              .filter(([_, d]) => d.syncGroup === data.syncGroup)
-              .map(([id, _]) => id);
-
-            // ⚠️ PROTECTED CODE - DO NOT ADD STAGGER DELAY HERE ⚠️
-            // Synced fields (like firstName/lastName) must animate together simultaneously
-            // See: .cursor/rules/multistep-form-placeholder-stagger.md
-            // Rotate all synced fields together with NO stagger (they happen simultaneously)
-            syncedFields.forEach((syncedFieldId) => {
-              const syncedInput = document.getElementById(syncedFieldId) as HTMLInputElement;
-              const syncedSpan = document.querySelector(
-                `.animated-placeholder[data-for="${syncedFieldId}"]`
-              ) as HTMLElement;
-              const syncedData = placeholderData.get(syncedFieldId);
-
-              if (
-                syncedSpan &&
-                syncedData &&
-                !syncedInput?.value &&
-                syncedSpan.style.display !== "none"
-              ) {
-                // No stagger delay - all synced fields animate together
-                syncedSpan.style.animation = "slideOutDown 400ms ease-out forwards";
-
-                setTimeout(() => {
-                  syncedData.index = (syncedData.index + 1) % syncedData.values.length;
-                  syncedSpan.textContent = syncedData.values[syncedData.index];
-                  syncedSpan.style.animation = "slideInDown 400ms ease-out forwards";
-                }, 400);
-              }
-            });
-          } else {
-            // ⚠️ PROTECTED CODE - DO NOT REMOVE ⚠️
-            // This stagger delay creates a cascading animation effect for successive placeholders.
-            // See: .cursor/rules/multistep-form-placeholder-stagger.md
-            // See: markdowns/animated-placeholder-stagger-delay.md
-            // Not part of a sync group, use normal staggered delay
-            const staggerDelay = stepIndex * 200;
+          setTimeout(() => {
+            // Only rotate if visible
+            span.style.animation = "slideOutDown 400ms ease-out forwards";
 
             setTimeout(() => {
-              // Only rotate if visible
-              span.style.animation = "slideOutDown 400ms ease-out forwards";
-
-              setTimeout(() => {
-                data.index = (data.index + 1) % data.values.length;
-                span.textContent = data.values[data.index];
-                span.style.animation = "slideInDown 400ms ease-out forwards";
-              }, 400);
-            }, staggerDelay);
-          }
+              data.index = (data.index + 1) % data.values.length;
+              span.textContent = data.values[data.index];
+              span.style.animation = "slideInDown 400ms ease-out forwards";
+            }, 400);
+          }, staggerDelay);
         }
       });
     }
@@ -954,7 +908,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     function resetPlaceholderAnimation() {
       // Find the active step to apply stagger delay correctly
       const activeStep = document.querySelector(".step-content.active");
-      
+
       animatedInputs.forEach((input) => {
         const span = document.querySelector(
           `.animated-placeholder[data-for="${input.id}"]`
@@ -965,23 +919,23 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         if (span && data && !input.value) {
           // Check if this input is in the active step
           const isInActiveStep = activeStep?.contains(input);
-          
+
           if (!isInActiveStep) {
             // Not in active step, just reset without animation
             data.index = 0;
             span.textContent = data.values[0];
             return;
           }
-          
+
           // Find the index of this input within the active step for stagger delay
           const activeStepInputs = Array.from(
             activeStep.querySelectorAll('input[data-has-animated-placeholder="true"]')
           );
           const stepIndex = activeStepInputs.indexOf(input);
-          
+
           // Apply stagger delay for reset animation too (200ms per field)
           const staggerDelay = stepIndex * 200;
-          
+
           setTimeout(() => {
             data.index = 0;
             span.textContent = data.values[0];

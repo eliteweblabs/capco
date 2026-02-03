@@ -12,6 +12,7 @@ import SearchForm from "../common/SearchForm.astro";
 import NotificationsModal from "../common/NotificationsModal.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
+import Tooltip from "../common/TooltipFloating.astro";
 
 interface Props {
   currentUser?: any;
@@ -85,17 +86,29 @@ const currentRole = currentUser?.profile?.role;
       }
       {
         currentUser && currentRole !== "Client" && (
-          <a
-            href="#"
-            id="notification-bell"
-            title="View notifications"
-            class="inline-flex items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
-            data-modal-target="notificationsModal"
-            data-modal-toggle="notificationsModal"
-          >
-            <SimpleIcon name="bell" size="md" class="" />
-            <span class="sr-only">View notifications</span>
-          </a>
+          <>
+            <a
+              href="#"
+              id="notification-bell"
+              title="View notifications"
+              class={globalIconButtonClasses}
+              data-modal-target="notificationsModal"
+              data-modal-toggle="notificationsModal"
+              data-tooltip-target="tooltip-notifications-navbar"
+              data-tooltip-placement="bottom"
+            >
+              <SimpleIcon name="bell" size="md" class="" />
+              <span class="sr-only">View notifications</span>
+            </a>
+            <div
+              id="tooltip-notifications-navbar"
+              role="tooltip"
+              class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700"
+            >
+              View notifications
+              <div class="tooltip-arrow" data-popper-arrow />
+            </div>
+          </>
         )
       }
 
