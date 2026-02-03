@@ -168,35 +168,10 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       collapseShowElements.forEach((el) => el.classList.add("flex"));
     };
 
-    const sidebarNavItemSelector = ".sticky ul#sidebar-menu > li, .sticky ul#sidebar-menu-1 > li";
-
-    // Prepare items at 0 then stagger in (so they "catch up" when opening)
-    const runSidebarItemStaggerIn = () => {
-      const items = sidebar.querySelectorAll<HTMLElement>(sidebarNavItemSelector);
-      items.forEach((el, i) => {
-        el.style.opacity = "0";
-        el.style.transform = "translateX(-12px)";
-        el.style.transition = "none";
-      });
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          items.forEach((el, i) => {
-            el.style.transition = "opacity 0.28s ease-out, transform 0.28s ease-out";
-            el.style.transitionDelay = `${i * 55}ms`;
-          });
-          sidebar.classList.add("sidebar-open");
-        });
-      });
-    };
-
-    const clearSidebarItemStyles = () => {
-      sidebar.querySelectorAll<HTMLElement>(sidebarNavItemSelector).forEach((el) => {
-        el.style.opacity = "";
-        el.style.transform = "";
-        el.style.transition = "";
-        el.style.transitionDelay = "";
-      });
-    };
+    // COMMENTED OUT: sidebar nav item stagger (broken)
+    // const sidebarNavItemSelector = ".sticky ul#sidebar-menu > li, .sticky ul#sidebar-menu-1 > li";
+    // const runSidebarItemStaggerIn = () => { ... };
+    // const clearSidebarItemStyles = () => { ... };
 
     // MOBILE: Show sidebar (slide in)
     const showSidebarMobile = () => {
@@ -211,13 +186,13 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       }
       toggleButton.setAttribute("aria-expanded", "true");
       updateIcons(true);
-      runSidebarItemStaggerIn();
+      // runSidebarItemStaggerIn();
     };
 
     // MOBILE: Hide sidebar (slide out)
     const hideSidebarMobile = () => {
-      sidebar.classList.remove("sidebar-open");
-      clearSidebarItemStyles();
+      // sidebar.classList.remove("sidebar-open");
+      // clearSidebarItemStyles();
       sidebar.classList.remove("translate-x-0");
       sidebar.classList.add("-translate-x-full");
       unlockBodyScroll();
@@ -239,15 +214,12 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
 
       toggleButton.setAttribute("aria-expanded", "true");
       updateIcons(true);
-      runSidebarItemStaggerIn();
+      // runSidebarItemStaggerIn();
     };
 
-    // DESKTOP: Collapse sidebar (icons only). No close effect on > sm (stagger only on open).
+    // DESKTOP: Collapse sidebar (icons only)
     const collapseSidebarDesktop = () => {
-      if (!isAboveSm()) {
-        sidebar.classList.remove("sidebar-open");
-        clearSidebarItemStyles();
-      }
+      // if (!isAboveSm()) { sidebar.classList.remove("sidebar-open"); clearSidebarItemStyles(); }
       sidebar.classList.remove("w-64");
       sidebar.classList.add("w-16");
       hideCollapseElements();
