@@ -221,7 +221,7 @@ export const contactFormConfig: MultiStepFormConfig = {
         {
           type: "next",
           label: "next",
-          dataNext: 6,
+          dataNext: 5,
           classes: "sms-next-btn",
         },
       ],
@@ -297,50 +297,51 @@ export const contactFormConfig: MultiStepFormConfig = {
     },
 
     // Step 7: Address
-    {
-      stepNumber: 7,
-      title: "project address?",
-      fields: [
-        {
-          id: "contact-address",
-          name: "address",
-          type: "component",
-          component: "InlineAddressSearch",
-          componentProps: {
-            placeholder: "Start typing your address...",
-            fetchApiEndpoint: "/api/google/places-autocomplete",
-            apiParams: {
-              types: "address",
-              components: "country:us",
-              locationBias: "circle:100@42.3601,-71.0589",
-            },
-            valueField: "description",
-            labelField: "description",
-            noResultsText: "Type to search addresses...",
-            currentLocation: true, // Enable geolocation button
-          },
-        },
-      ],
-      buttons: [
-        {
-          type: "prev",
-          label: "back",
-          dataPrev: 6,
-        },
-        {
-          type: "skip",
-          label: "next / skip",
-          dataNext: 8,
-          classes: "next-step-address",
-          variant: "secondary",
-          size: "lg",
-        },
-      ],
-    },
+    // {
+    //   stepNumber: 7,
+    //   title: "project address?",
+    //   fields: [
+    //     {
+    //       id: "contact-address",
+    //       name: "address",
+    //       type: "component",
+    //       component: "InlineAddressSearch",
+    //       componentProps: {
+    //         placeholder: "Start typing your address...",
+    //         fetchApiEndpoint: "/api/google/places-autocomplete",
+    //         apiParams: {
+    //           types: "address",
+    //           components: "country:us",
+    //           locationBias: "circle:100@42.3601,-71.0589",
+    //         },
+    //         valueField: "description",
+    //         labelField: "description",
+    //         noResultsText: "Type to search addresses...",
+    //         currentLocation: true, // Enable geolocation button
+    //       },
+    //     },
+    //   ],
+    //   buttons: [
+    //     {
+    //       type: "prev",
+    //       label: "back",
+    //       dataPrev: 6,
+    //     },
+    //     {
+    //       type: "skip",
+    //       label: "skip",
+    //       validLabel: "next",
+    //       dataNext: 8,
+    //       classes: "next-step-address",
+    //       variant: "secondary",
+    //       size: "lg",
+    //     },
+    //   ],
+    // },
 
     // Step 8: Message
     {
-      stepNumber: 8,
+      stepNumber: 7,
       title: "your message?",
       fields: [
         {
@@ -357,7 +358,7 @@ export const contactFormConfig: MultiStepFormConfig = {
         {
           type: "prev",
           label: "back",
-          dataPrev: 7,
+          dataPrev: 6,
         },
         {
           type: "submit",
