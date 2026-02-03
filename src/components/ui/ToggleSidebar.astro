@@ -10,9 +10,9 @@ const currentUrl = Astro.url.pathname;
 const responsiveClass = !currentUser ? "sm:hidden" : "";
 
 // don't show toggle button during auto and login pages
-if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login")) {
-  return null;
-}
+// if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login")) {
+//   return null;
+// }
 ---
 
 <!-- Toggle button - visible on mobile always, on desktop only when logged in -->
@@ -86,6 +86,8 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
 </button>
 
 <script>
+  import { BREAKPOINTS } from "../../lib/ux-utils";
+
   document.addEventListener("DOMContentLoaded", function () {
     const toggleButton = document.getElementById("sidebar-toggle-button");
     const sidebar = document.getElementById("sidebar");
@@ -103,8 +105,9 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
     // Check if user is authenticated
     const isAuth = toggleButton.getAttribute("data-is-auth") === "true";
 
-    // Check if mobile (< 640px)
-    const isMobile = () => window.innerWidth < 640;
+    // Use global breakpoint (Tailwind sm)
+    const isMobile = () => window.innerWidth < BREAKPOINTS.SM;
+    const isAboveSm = () => window.innerWidth >= BREAKPOINTS.SM;
 
     // Track if sidebar is expanded (for desktop hover behavior)
     let isHovering = false;
@@ -165,6 +168,36 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
       collapseShowElements.forEach((el) => el.classList.add("flex"));
     };
 
+    const sidebarNavItemSelector = ".sticky ul#sidebar-menu > li, .sticky ul#sidebar-menu-1 > li";
+
+    // Prepare items at 0 then stagger in (so they "catch up" when opening)
+    const runSidebarItemStaggerIn = () => {
+      const items = sidebar.querySelectorAll<HTMLElement>(sidebarNavItemSelector);
+      items.forEach((el, i) => {
+        el.style.opacity = "0";
+        el.style.transform = "translateX(-12px)";
+        el.style.transition = "none";
+      });
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          items.forEach((el, i) => {
+            el.style.transition = "opacity 0.28s ease-out, transform 0.28s ease-out";
+            el.style.transitionDelay = `${i * 55}ms`;
+          });
+          sidebar.classList.add("sidebar-open");
+        });
+      });
+    };
+
+    const clearSidebarItemStyles = () => {
+      sidebar.querySelectorAll<HTMLElement>(sidebarNavItemSelector).forEach((el) => {
+        el.style.opacity = "";
+        el.style.transform = "";
+        el.style.transition = "";
+        el.style.transitionDelay = "";
+      });
+    };
+
     // MOBILE: Show sidebar (slide in)
     const showSidebarMobile = () => {
       sidebar.classList.remove("-translate-x-full");
@@ -178,10 +211,13 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
       }
       toggleButton.setAttribute("aria-expanded", "true");
       updateIcons(true);
+      runSidebarItemStaggerIn();
     };
 
     // MOBILE: Hide sidebar (slide out)
     const hideSidebarMobile = () => {
+      sidebar.classList.remove("sidebar-open");
+      clearSidebarItemStyles();
       sidebar.classList.remove("translate-x-0");
       sidebar.classList.add("-translate-x-full");
       unlockBodyScroll();
@@ -203,10 +239,15 @@ if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login"))
 
       toggleButton.setAttribute("aria-expanded", "true");
       updateIcons(true);
+      runSidebarItemStaggerIn();
     };
 
-    // DESKTOP: Collapse sidebar (icons only)
+    // DESKTOP: Collapse sidebar (icons only). No close effect on > sm (stagger only on open).
     const collapseSidebarDesktop = () => {
+      if (!isAboveSm()) {
+        sidebar.classList.remove("sidebar-open");
+        clearSidebarItemStyles();
+      }
       sidebar.classList.remove("w-64");
       sidebar.classList.add("w-16");
       hideCollapseElements();

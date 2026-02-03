@@ -13,12 +13,17 @@ interface RippleOptions {
 
 /**
  * Finds the actual button element, traversing up from clicked element
- * @param target - The element that was clicked
+ * @param target - The element that was clicked (may be a child node; must be an Element)
  * @returns The button element or null
  */
-function findButtonElement(target: HTMLElement): HTMLElement | null {
-  // Traverse up to find the actual button element
-  let element: HTMLElement | null = target;
+function findButtonElement(target: EventTarget | null): HTMLElement | null {
+  // Guard: target may be a Text node, Document, or non-Element (no getAttribute)
+  const start =
+    target && typeof (target as Element).getAttribute === "function"
+      ? (target as HTMLElement)
+      : null;
+  if (!start) return null;
+  let element: HTMLElement | null = start;
   while (element) {
     if (
       element.tagName === "BUTTON" ||

@@ -110,11 +110,26 @@ export function createMultiStepFormHandler(
   // Show specific step with animation
   async function showStep(stepNumber: number, direction: "forward" | "backward" = "forward") {
     const steps = document.querySelectorAll(`#${formId} .step-content`);
+    const currentActiveStep = document.querySelector(`#${formId} .step-content.active`) as HTMLElement;
+    const targetStep = document.querySelector(
+      `#${formId} .step-content[data-step="${stepNumber}"]`
+    ) as HTMLElement;
 
-    steps.forEach((step) => {
-      step.classList.remove("active");
+    if (!targetStep) return;
+
+    // Animate out the current step if it exists
+    if (currentActiveStep && currentActiveStep !== targetStep) {
+      // Slide direction based on forward/backward
+      const slideOutClass = direction === "forward" ? "sliding-out-up" : "sliding-out-down";
+      currentActiveStep.classList.add(slideOutClass);
+      
+      // Wait for animation to complete before hiding
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      currentActiveStep.classList.remove("active", "sliding-out-up", "sliding-out-down");
+      
       // Remove focus classes from buttons
-      const buttons = step.querySelectorAll("button");
+      const buttons = currentActiveStep.querySelectorAll("button");
       buttons.forEach((btn) => {
         btn.classList.remove(
           "!outline",
@@ -127,131 +142,137 @@ export function createMultiStepFormHandler(
       });
 
       // Clear stored original data-next when leaving a step
-      const nextButton = step.querySelector(
+      const nextButton = currentActiveStep.querySelector(
         "button.next-step, button.submit-step"
       ) as HTMLButtonElement;
       if (nextButton && nextButton.hasAttribute("data-original-next")) {
         nextButton.removeAttribute("data-original-next");
         console.log(`[MULTISTEP-FORM] Cleared stored data-original-next when leaving step`);
       }
-    });
-
-    const targetStep = document.querySelector(
-      `#${formId} .step-content[data-step="${stepNumber}"]`
-    ) as HTMLElement;
-
-    if (targetStep) {
-      targetStep.classList.add("active");
-      currentStep = stepNumber;
-      updateProgress();
-
-      // Handle progress bar visibility based on step's hideProgressBar property
-      const progressBar = document.getElementById(`${formId}-progress-bar`);
-      const shouldHideProgressBar = targetStep.getAttribute("data-hide-progress-bar") === "true";
-
-      if (progressBar) {
-        if (shouldHideProgressBar) {
-          progressBar.style.opacity = "0";
-          progressBar.style.pointerEvents = "none";
-        } else {
-          progressBar.style.opacity = "1";
-          progressBar.style.pointerEvents = "auto";
-        }
-      }
-
-      // Inject form session data into spans with data-form-session-meta attribute
-      injectSessionMetaData(targetStep);
-
-      // Note: Typewriter animation is now handled by typewriter-text.ts script
-
-      // Hide title block when moving past step 1
-      const titleBlock = document.querySelector(".step-1-only");
-      if (titleBlock) {
-        if (stepNumber === 1) {
-          (titleBlock as HTMLElement).style.display = "block";
-        } else {
-          (titleBlock as HTMLElement).style.display = "none";
-        }
-      }
-
-      // Update review section if on final step
-      if (targetStep.querySelector(".edit-step")) {
-        updateReviewSection();
-      }
-
-      // Call custom step change handler
-      if (options.onStepChange) {
-        options.onStepChange(stepNumber);
-      }
-
-      // Handle conditional HVAC options based on fuel source (Step 6)
-      if (stepNumber === 6) {
-        const fuelInput = form.querySelector('input[name="fuelSource"]') as HTMLInputElement;
-        const fuelSource = fuelInput?.value || "";
-
-        console.log(`[MULTISTEP-FORM] Entering step 6 with fuelSource: ${fuelSource}`);
-
-        // Hide all HVAC options first
-        const allHvacButtons = targetStep.querySelectorAll("button.hvac-choice");
-        allHvacButtons.forEach((btn) => {
-          (btn as HTMLElement).style.display = "none";
-        });
-
-        // Show only the relevant options based on fuel source
-        if (fuelSource === "gas") {
-          const gasButtons = targetStep.querySelectorAll("button.hvac-gas");
-          gasButtons.forEach((btn) => {
-            (btn as HTMLElement).style.display = "inline-flex";
-          });
-          console.log(`[MULTISTEP-FORM] Showing ${gasButtons.length} gas HVAC options`);
-        } else if (fuelSource === "electric") {
-          const electricButtons = targetStep.querySelectorAll("button.hvac-electric");
-          electricButtons.forEach((btn) => {
-            (btn as HTMLElement).style.display = "inline-flex";
-          });
-          console.log(`[MULTISTEP-FORM] Showing ${electricButtons.length} electric HVAC options`);
-        }
-
-        // Update subtitle based on fuel source
-        const subtitle = targetStep.querySelector("p.text-base");
-        if (subtitle && fuelSource) {
-          subtitle.textContent = `Select your ${fuelSource === "gas" ? "Gas" : "Electric"} HVAC system:`;
-        }
-      }
-
-      // Auto-focus handling with continuous scroll centering
-      setTimeout(() => {
-        // Check if this step has SMS choice buttons
-        const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
-        if (smsChoiceButtons.length > 0) {
-          // Focus the "yes" button
-          const yesButton = targetStep.querySelector(
-            'button[data-sms-value="true"]'
-          ) as HTMLElement;
-          if (yesButton) {
-            yesButton.focus();
-            // Center the button in viewport
-            const elementRect = yesButton.getBoundingClientRect();
-            const absoluteElementTop = elementRect.top + window.pageYOffset;
-            const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
-            window.scrollTo({ top: middle, behavior: 'smooth' });
-          }
-        } else {
-          // Auto-focus first input
-          const firstInput = targetStep.querySelector(
-            "input:not([type=hidden]):not([readonly]), textarea"
-          ) as HTMLElement;
-          if (firstInput) {
-            firstInput.focus();
-            // Center the input in viewport
-            const elementRect = firstInput.getBoundingClientRect();
-            const absoluteElementTop = elementRect.top + window.pageYOffset;
-            const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
-            window.scrollTo({ top: middle, behavior: 'smooth' });
-          }
-        }
-      }, 150);
     }
+
+    // Show and animate in the target step
+    targetStep.classList.add("active");
+    // Skip slide animation on initial load to prevent jitter (scroll + animation conflict)
+    const isInitialLoad = !currentActiveStep;
+    if (isInitialLoad) {
+      targetStep.classList.add("initial-load");
+    } else {
+      targetStep.classList.remove("initial-load");
+      // Use reverse slide when going backward (panel comes from above)
+      if (direction === "backward") {
+        targetStep.classList.add("sliding-in-from-above");
+      }
+    }
+    currentStep = stepNumber;
+    updateProgress();
+
+    // Handle progress bar visibility based on step's hideProgressBar property
+    const progressBar = document.getElementById(`${formId}-progress-bar`);
+    const shouldHideProgressBar = targetStep.getAttribute("data-hide-progress-bar") === "true";
+
+    if (progressBar) {
+      if (shouldHideProgressBar) {
+        progressBar.style.opacity = "0";
+        progressBar.style.pointerEvents = "none";
+      } else {
+        progressBar.style.opacity = "1";
+        progressBar.style.pointerEvents = "auto";
+      }
+    }
+
+    // Inject form session data into spans with data-form-session-meta attribute
+    injectSessionMetaData(targetStep);
+
+    // Note: Typewriter animation is now handled by typewriter-text.ts script
+
+    // Hide title block when moving past step 1
+    const titleBlock = document.querySelector(".step-1-only");
+    if (titleBlock) {
+      if (stepNumber === 1) {
+        (titleBlock as HTMLElement).style.display = "block";
+      } else {
+        (titleBlock as HTMLElement).style.display = "none";
+      }
+    }
+
+    // Update review section if on final step
+    if (targetStep.querySelector(".edit-step")) {
+      updateReviewSection();
+    }
+
+    // Call custom step change handler
+    if (options.onStepChange) {
+      options.onStepChange(stepNumber);
+    }
+
+    // Handle conditional HVAC options based on fuel source (Step 6)
+    if (stepNumber === 6) {
+      const fuelInput = form.querySelector('input[name="fuelSource"]') as HTMLInputElement;
+      const fuelSource = fuelInput?.value || "";
+
+      console.log(`[MULTISTEP-FORM] Entering step 6 with fuelSource: ${fuelSource}`);
+
+      // Hide all HVAC options first
+      const allHvacButtons = targetStep.querySelectorAll("button.hvac-choice");
+      allHvacButtons.forEach((btn) => {
+        (btn as HTMLElement).style.display = "none";
+      });
+
+      // Show only the relevant options based on fuel source
+      if (fuelSource === "gas") {
+        const gasButtons = targetStep.querySelectorAll("button.hvac-gas");
+        gasButtons.forEach((btn) => {
+          (btn as HTMLElement).style.display = "inline-flex";
+        });
+        console.log(`[MULTISTEP-FORM] Showing ${gasButtons.length} gas HVAC options`);
+      } else if (fuelSource === "electric") {
+        const electricButtons = targetStep.querySelectorAll("button.hvac-electric");
+        electricButtons.forEach((btn) => {
+          (btn as HTMLElement).style.display = "inline-flex";
+        });
+        console.log(`[MULTISTEP-FORM] Showing ${electricButtons.length} electric HVAC options`);
+      }
+
+      // Update subtitle based on fuel source
+      const subtitle = targetStep.querySelector("p.text-base");
+      if (subtitle && fuelSource) {
+        subtitle.textContent = `Select your ${fuelSource === "gas" ? "Gas" : "Electric"} HVAC system:`;
+      }
+    }
+
+    // Auto-focus handling with typewriter cursor line positioning (40vh from top)
+    setTimeout(() => {
+      // Check if this step has SMS choice buttons
+      const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
+      if (smsChoiceButtons.length > 0) {
+        // Focus the "yes" button
+        const yesButton = targetStep.querySelector(
+          'button[data-sms-value="true"]'
+        ) as HTMLElement;
+        if (yesButton) {
+          yesButton.focus();
+          // Position at cursor line (40vh from top)
+          const elementRect = yesButton.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          const cursorLine = absoluteElementTop - (window.innerHeight * 0.4);
+          window.scrollTo({ top: cursorLine, behavior: 'smooth' });
+        }
+      } else {
+        // Auto-focus first input
+        const firstInput = targetStep.querySelector(
+          "input:not([type=hidden]):not([readonly]), textarea"
+        ) as HTMLElement;
+        if (firstInput) {
+          firstInput.focus();
+          // Position at cursor line (40vh from top) - this keeps the typing position fixed
+          const elementRect = firstInput.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          const cursorLine = absoluteElementTop - (window.innerHeight * 0.4);
+          window.scrollTo({ top: cursorLine, behavior: 'smooth' });
+        }
+      }
+    }, 650); // Wait for animation to complete
   }
 
   // Validate current step
@@ -1136,23 +1157,24 @@ export function createMultiStepFormHandler(
       }
     });
 
-    // Focus first input with continuous scroll centering
+    // Focus first input with typewriter cursor line positioning
+    // Use short delay on init (no animation); showStep uses 650ms for step transitions
     setTimeout(() => {
-      const firstStep = form.querySelector('.step-content[data-step="1"]') as HTMLElement;
+      const firstStep = form.querySelector('.step-content.active') as HTMLElement;
       if (firstStep) {
         const firstInput = firstStep.querySelector(
-          "input:not([type=hidden]):not([readonly])"
+          "input:not([type=hidden]):not([readonly]), textarea"
         ) as HTMLElement;
         if (firstInput) {
           firstInput.focus();
-          // Center the input in viewport
+          // Position at cursor line (40vh from top)
           const elementRect = firstInput.getBoundingClientRect();
           const absoluteElementTop = elementRect.top + window.pageYOffset;
-          const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
-          window.scrollTo({ top: middle, behavior: 'smooth' });
+          const cursorLine = absoluteElementTop - (window.innerHeight * 0.4);
+          window.scrollTo({ top: cursorLine, behavior: 'smooth' });
         }
       }
-    }, 150);
+    }, 80); // Brief delay for layout to settle - no animation on initial load
   }
 
   return {
