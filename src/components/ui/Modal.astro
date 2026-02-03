@@ -1,14 +1,22 @@
 ---
 /**
  * Modal Component
- * Reusable backdrop/overlay for modals, dialogs, and other UI elements
+ * Reusable modal with backdrop/overlay and slotted content
+ *
+ * Usage:
+ * <Modal id="my-modal">
+ *   <div class="bg-white dark:bg-gray-900 rounded-lg p-6">
+ *     Your modal content here
+ *   </div>
+ * </Modal>
  *
  * @param id - Unique identifier for the modal
  * @param zIndex - Z-index value (default: 9999)
  * @param blurAmount - Backdrop blur amount (default: "sm")
  * @param opacity - Background opacity (default: "20")
  * @param mobileOnly - Only show on mobile devices (default: false)
- * @param additionalClasses - Additional CSS classes
+ * @param backdropClasses - Additional CSS classes for backdrop
+ * @param contentClasses - Additional CSS classes for content wrapper
  */
 
 interface Props {
@@ -17,7 +25,8 @@ interface Props {
   blurAmount?: "none" | "sm" | "md" | "lg" | "xl";
   opacity?: string;
   mobileOnly?: boolean;
-  additionalClasses?: string;
+  backdropClasses?: string;
+  contentClasses?: string;
 }
 
 const {
@@ -26,7 +35,8 @@ const {
   blurAmount = "sm",
   opacity = "20",
   mobileOnly = false,
-  additionalClasses = "",
+  backdropClasses = "",
+  contentClasses = "",
 } = Astro.props;
 
 // Map blur amount to Tailwind classes
@@ -40,19 +50,34 @@ const blurClasses = {
 
 const blurClass = blurClasses[blurAmount];
 const mobileOnlyClass = mobileOnly ? "md:hidden" : "";
+const contentZIndex = typeof zIndex === "number" ? zIndex + 1 : parseInt(String(zIndex)) + 1;
 ---
 
+<!-- Backdrop -->
 <div
   {id}
   class:list={[
     "fixed inset-0 hidden bg-black height-100dvh",
     blurClass,
     mobileOnlyClass,
-    additionalClasses,
+    backdropClasses,
   ]}
   style={`background-color: rgba(0, 0, 0, 0.${opacity}); z-index: ${zIndex};`}
-  data-modal
+  data-modal-backdrop
 >
+</div>
+
+<!-- Content wrapper -->
+<div
+  id={`${id}-content`}
+  class:list={[
+    "hidden fixed inset-0 overflow-y-auto h-full w-full pointer-events-none",
+    contentClasses,
+  ]}
+  style={`z-index: ${contentZIndex};`}
+  data-modal-content
+>
+  <slot />
 </div>
 
 <style>

@@ -1,20 +1,20 @@
 ---
 /**
  * StatsBlock - Statistics/Metrics Display
- * 
+ *
  * Display key metrics and statistics in various layouts.
  * Great for showcasing company achievements, project numbers, etc.
- * 
+ *
  * @example With flat props:
- * <StatsBlock 
- *   stat1Value="500+" 
+ * <StatsBlock
+ *   stat1Value="500+"
  *   stat1Label="Projects Completed"
- *   stat2Value="99%" 
+ *   stat2Value="99%"
  *   stat2Label="Client Satisfaction"
  * />
- * 
+ *
  * @example With JSON:
- * <StatsBlock 
+ * <StatsBlock
  *   stats={[
  *     { value: "500+", label: "Projects", icon: "folder" },
  *     { value: "99%", label: "Satisfaction", icon: "heart" }
@@ -37,14 +37,14 @@ interface Props {
   // Section content
   title?: string;
   description?: string;
-  
+
   // Layout
-  variant?: 'simple' | 'cards' | 'gradient' | 'bordered' | 'minimal' | 'dark';
+  variant?: "simple" | "cards" | "gradient" | "bordered" | "minimal" | "dark";
   columns?: number | string;
-  
+
   // Stats as JSON
   stats?: string | Stat[];
-  
+
   // Flat props for up to 6 stats
   stat1Value?: string;
   stat1Label?: string;
@@ -82,17 +82,26 @@ interface Props {
   stat6Prefix?: string;
   stat6Icon?: string;
   stat6Description?: string;
-  
+
   // Background
   backgroundColor?: string;
   backgroundImage?: string;
-  
+
   // Styling
   className?: string;
   id?: string;
-  
+
   // Animation
-  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animate?:
+    | boolean
+    | string
+    | "fade-blur-scale"
+    | "fade-blur"
+    | "fade-scale"
+    | "fade-up"
+    | "fade-up-blur"
+    | "zoom-blur"
+    | "fade";
   animateDelay?: string;
   animateStagger?: boolean | string;
 }
@@ -101,26 +110,26 @@ const props = Astro.props;
 const {
   title,
   description,
-  variant = 'simple',
+  variant = "simple",
   backgroundColor,
   backgroundImage,
-  className = '',
+  className = "",
   id,
 } = props;
 
-const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 4);
+const columns = typeof props.columns === "string" ? parseInt(props.columns) : (props.columns ?? 4);
 
 // Handle animation prop - enabled by default with stagger for grids
 const getAnimationType = () => {
-  if (props.animate === 'false' || props.animate === false) return null;
-  if (props.animate === 'true' || props.animate === true) return 'fade-up-blur';
-  if (typeof props.animate === 'string') return props.animate;
-  return 'fade-up-blur'; // Default animation for stats
+  if (props.animate === "false" || props.animate === false) return null;
+  if (props.animate === "true" || props.animate === true) return "fade-up-blur";
+  if (typeof props.animate === "string") return props.animate;
+  return "fade-up-blur"; // Default animation for stats
 };
 const animationType = getAnimationType();
 const animateDelay = props.animateDelay;
 // Enable stagger by default for grids, unless explicitly disabled
-const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
+const animateStagger = props.animateStagger !== "false" && props.animateStagger !== false;
 
 // Default demo stats
 const defaultStats: Stat[] = [
@@ -138,8 +147,8 @@ if (props.stats) {
 } else {
   statItems = buildArrayFromFlatProps<Stat>(
     props,
-    'stat',
-    ['value', 'label', 'suffix', 'prefix', 'icon', 'description'],
+    "stat",
+    ["value", "label", "suffix", "prefix", "icon", "description"],
     6
   );
 }
@@ -151,37 +160,41 @@ if (statItems.length === 0) {
 
 // Column classes
 const columnClasses: Record<number, string> = {
-  2: 'grid-cols-1 sm:grid-cols-2',
-  3: 'grid-cols-1 sm:grid-cols-3',
-  4: 'grid-cols-2 sm:grid-cols-4',
-  5: 'grid-cols-2 sm:grid-cols-5',
-  6: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6',
+  2: "grid-cols-1 sm:grid-cols-2",
+  3: "grid-cols-1 sm:grid-cols-3",
+  4: "grid-cols-2 sm:grid-cols-4",
+  5: "grid-cols-2 sm:grid-cols-5",
+  6: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
 };
 
 const gridClass = columnClasses[columns] || columnClasses[4];
 
 // Variant styles
 const variantBg = {
-  simple: 'bg-white dark:bg-gray-900',
-  cards: 'bg-gray-50 dark:bg-gray-900',
-  gradient: 'bg-gradient-to-r from-primary-600 to-secondary-600',
-  bordered: 'bg-white dark:bg-gray-900',
-  minimal: '',
-  dark: 'bg-gray-900 dark:bg-gray-950',
+  simple: "bg-white dark:bg-gray-900",
+  cards: "bg-gray-50 dark:bg-gray-900",
+  gradient: "bg-gradient-to-r from-primary-600 to-secondary-600",
+  bordered: "bg-white dark:bg-gray-900",
+  minimal: "",
+  dark: "bg-gray-900 dark:bg-gray-950",
 };
 
-const textColor = variant === 'gradient' || variant === 'dark' ? 'text-white' : 'text-gray-900 dark:text-white';
-const subTextColor = variant === 'gradient' || variant === 'dark' ? 'text-gray-200' : 'text-gray-600 dark:text-gray-400';
+const textColor =
+  variant === "gradient" || variant === "dark" ? "text-white" : "text-gray-900 dark:text-white";
+const subTextColor =
+  variant === "gradient" || variant === "dark"
+    ? "text-gray-200"
+    : "text-gray-600 dark:text-gray-400";
 
-const bgStyle = backgroundImage 
+const bgStyle = backgroundImage
   ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
-  : '';
+  : "";
 ---
 
-<section 
-  id={id} 
+<section
+  {id}
   class:list={[
-    'stats-block py-16 md:py-24 relative',
+    "stats-block py-16 md:py-24 relative",
     backgroundColor || variantBg[variant],
     className,
   ]}
@@ -189,65 +202,74 @@ const bgStyle = backgroundImage
   data-animate={animationType || undefined}
   data-animate-delay={animateDelay || undefined}
 >
-  {backgroundImage && (
-    <div class="absolute inset-0 bg-black/60" />
-  )}
-  
+  {backgroundImage && <div class="absolute inset-0 bg-black/60" />}
+
   <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    {(title || description) && (
-      <div class="mb-12 text-center">
-        {title && (
-          <h2 class={`text-3xl font-bold tracking-tight sm:text-4xl ${backgroundImage ? 'text-white' : textColor}`}>
-            {title}
-          </h2>
-        )}
-        {description && (
-          <p class={`mt-4 text-lg ${backgroundImage ? 'text-gray-200' : subTextColor}`}>
-            {description}
-          </p>
-        )}
-      </div>
-    )}
-    
-    <div 
-      class={`grid gap-8 ${gridClass}`}
-      data-animate-stagger={animateStagger || undefined}
-    >
-      {statItems.map((stat) => (
-        <div 
-          class:list={[
-            'stat-item text-center',
-            variant === 'cards' && 'rounded-xl bg-white dark:bg-gray-800 p-6 shadow-sm',
-            variant === 'bordered' && 'border-l-4 border-primary-500 pl-6 text-left',
-            variant === 'minimal' && 'p-4',
-          ]}
-        >
-          {stat.icon && variant !== 'minimal' && (
-            <div class={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full ${variant === 'gradient' || variant === 'dark' || backgroundImage ? 'bg-white/10' : 'bg-primary-100 dark:bg-primary-900/30'}`}>
-              <SimpleIcon 
-                name={stat.icon} 
-                class={`h-6 w-6 ${variant === 'gradient' || variant === 'dark' || backgroundImage ? 'text-white' : 'text-primary-600 dark:text-primary-400'}`} 
-              />
-            </div>
+    {
+      (title || description) && (
+        <div class="mb-12 text-center">
+          {title && (
+            <h2
+              class={`text-3xl font-bold tracking-tight sm:text-4xl ${backgroundImage ? "text-white" : textColor}`}
+            >
+              {title}
+            </h2>
           )}
-          
-          <div class={`text-4xl md:text-5xl font-bold ${backgroundImage ? 'text-white' : textColor}`}>
-            {stat.prefix && <span class="text-3xl">{stat.prefix}</span>}
-            {stat.value}
-            {stat.suffix && <span class="text-3xl">{stat.suffix}</span>}
-          </div>
-          
-          <div class={`mt-2 text-lg font-medium ${backgroundImage ? 'text-gray-200' : subTextColor}`}>
-            {stat.label}
-          </div>
-          
-          {stat.description && (
-            <p class={`mt-2 text-sm ${backgroundImage ? 'text-gray-300' : 'text-gray-500 dark:text-gray-500'}`}>
-              {stat.description}
+          {description && (
+            <p class={`mt-4 text-lg ${backgroundImage ? "text-gray-200" : subTextColor}`}>
+              {description}
             </p>
           )}
         </div>
-      ))}
+      )
+    }
+
+    <div class={`grid gap-8 ${gridClass}`} data-animate-stagger={animateStagger || undefined}>
+      {
+        statItems.map((stat) => (
+          <div
+            class:list={[
+              "stat-item text-center",
+              variant === "cards" && "rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm",
+              variant === "bordered" && "border-l-4 border-primary-500 pl-6 text-left",
+              variant === "minimal" && "p-4",
+            ]}
+          >
+            {stat.icon && variant !== "minimal" && (
+              <div
+                class={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full ${variant === "gradient" || variant === "dark" || backgroundImage ? "bg-white/10" : "bg-primary-100 dark:bg-primary-900/30"}`}
+              >
+                <SimpleIcon
+                  name={stat.icon}
+                  class={`h-6 w-6 ${variant === "gradient" || variant === "dark" || backgroundImage ? "text-white" : "text-primary-600 dark:text-primary-400"}`}
+                />
+              </div>
+            )}
+
+            <div
+              class={`text-4xl md:text-5xl font-bold ${backgroundImage ? "text-white" : textColor}`}
+            >
+              {stat.prefix && <span class="text-3xl">{stat.prefix}</span>}
+              {stat.value}
+              {stat.suffix && <span class="text-3xl">{stat.suffix}</span>}
+            </div>
+
+            <div
+              class={`mt-2 text-lg font-medium ${backgroundImage ? "text-gray-200" : subTextColor}`}
+            >
+              {stat.label}
+            </div>
+
+            {stat.description && (
+              <p
+                class={`mt-2 text-sm ${backgroundImage ? "text-gray-300" : "text-gray-500 dark:text-gray-500"}`}
+              >
+                {stat.description}
+              </p>
+            )}
+          </div>
+        ))
+      }
     </div>
   </div>
 </section>

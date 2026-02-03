@@ -16,6 +16,7 @@ Validation errors: logoClasses must be valid SVG markup starting with <svg>
 ```
 
 ### User Input
+
 - Field: Logo CSS Classes
 - Value: `w-36 sm:w-40`
 - Expected: Should save as CSS classes
@@ -69,6 +70,7 @@ if ((dbKey.includes("logo") || dbKey.includes("icon")) && trimmedValue && dbKey 
 ## What This Fixes
 
 ### Now Works ✅
+
 - `w-36 sm:w-40` - Responsive width sizing
 - `h-8 w-auto` - Standard sizing
 - `h-12 w-auto text-primary-600` - Size with color
@@ -76,6 +78,7 @@ if ((dbKey.includes("logo") || dbKey.includes("icon")) && trimmedValue && dbKey 
 - Any valid Tailwind CSS classes
 
 ### Still Validated ✅
+
 - `logo` field - Still requires SVG markup
 - `logoInverted` field - Still requires SVG markup
 - `icon*` fields - Still require SVG markup
@@ -86,6 +89,7 @@ if ((dbKey.includes("logo") || dbKey.includes("icon")) && trimmedValue && dbKey 
 ## Testing
 
 ### Test Case 1: Valid CSS Classes
+
 1. Go to `/admin/settings`
 2. Find "Logo CSS Classes" field
 3. Enter: `w-36 sm:w-40`
@@ -93,12 +97,14 @@ if ((dbKey.includes("logo") || dbKey.includes("icon")) && trimmedValue && dbKey 
 5. **Expected**: ✅ Saves successfully without validation error
 
 ### Test Case 2: Other Logo Fields Still Validated
+
 1. Find "Logo SVG" field (the textarea)
 2. Enter: `w-36 sm:w-40` (not SVG markup)
 3. Click "Save Settings"
 4. **Expected**: ✅ Shows validation error (correct behavior)
 
 ### Test Case 3: Empty logoClasses
+
 1. Clear the "Logo CSS Classes" field
 2. Click "Save Settings"
 3. **Expected**: ✅ Saves successfully

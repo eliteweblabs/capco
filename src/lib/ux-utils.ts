@@ -791,7 +791,8 @@ export function validateEmail(email: string): string | null {
  *   body: "<form>...</form>",
  *   primaryButtonText: "Save",
  *   onConfirm: () => console.log("Confirmed!"),
- *   size: "large"
+ *   size: "large",
+ *   zIndex: 10010 // Optional: Set custom z-index for overlay
  * });
  */
 export function showModal(options: {
@@ -806,6 +807,7 @@ export function showModal(options: {
   size?: "small" | "medium" | "large" | "xlarge";
   closeOnBackdrop?: boolean;
   closeOnEscape?: boolean;
+  zIndex?: number;
 }): void {
   const {
     id = "dynamic-modal",
@@ -819,13 +821,21 @@ export function showModal(options: {
     size = "large",
     closeOnBackdrop = true,
     closeOnEscape = true,
+    zIndex,
   } = options;
 
   // Check if modal already exists
   let modal = document.getElementById(id);
   // Use global overlay if it exists, otherwise check for specific overlay
-  let overlay = document.getElementById("global-modal-overlay") || document.getElementById(`${id}-overlay`);
+  let overlay =
+    document.getElementById("global-modal-overlay") || document.getElementById(`${id}-overlay`);
   const isNewModal = !modal;
+
+  // Apply custom z-index to overlay if specified
+  if (overlay && zIndex !== undefined) {
+    overlay.style.zIndex = String(zIndex);
+    console.log(`🎨 [UX-UTILS] Setting overlay z-index to ${zIndex} for modal ${id}`);
+  }
 
   // Create overlay if it doesn't exist (fallback for cases where global overlay isn't available)
   if (!overlay) {
@@ -833,7 +843,7 @@ export function showModal(options: {
     overlay.id = `${id}-overlay`;
     overlay.className = "fixed inset-0 hidden bg-black";
     overlay.style.cssText = `
-      z-index: 49;
+      z-index: ${zIndex || 49};
       background-color: rgba(0, 0, 0, 0.5);
       height: 100dvh;
     `;
@@ -995,13 +1005,42 @@ export function showModal(options: {
 }
 
 /**
+ * Sets the z-index of the global modal overlay
+ * Useful for adjusting overlay z-index before opening a modal
+ * @param zIndex - The z-index value to set
+ */
+export function setModalOverlayZIndex(zIndex: number): void {
+  const overlay = document.getElementById("global-modal-overlay");
+  if (overlay) {
+    overlay.style.zIndex = String(zIndex);
+    console.log(`🎨 [UX-UTILS] Set global overlay z-index to ${zIndex}`);
+  } else {
+    console.warn("🎨 [UX-UTILS] Global modal overlay not found");
+  }
+}
+
+/**
+ * Resets the z-index of the global modal overlay to default (1000)
+ */
+export function resetModalOverlayZIndex(): void {
+  const overlay = document.getElementById("global-modal-overlay");
+  if (overlay) {
+    overlay.style.zIndex = "1000";
+    console.log("🎨 [UX-UTILS] Reset global overlay z-index to default (1000)");
+  }
+}
+
+/**
  * Hides a modal by ID
  * @param modalId - ID of the modal to hide
+ * @param resetZIndex - Whether to reset the overlay z-index to default (default: true)
  */
-export function hideModal(modalId: string): void {
+export function hideModal(modalId: string, resetZIndex: boolean = true): void {
   const modal = document.getElementById(modalId);
   // Use global overlay if it exists, otherwise check for specific overlay
-  const overlay = document.getElementById("global-modal-overlay") || document.getElementById(`${modalId}-overlay`);
+  const overlay =
+    document.getElementById("global-modal-overlay") ||
+    document.getElementById(`${modalId}-overlay`);
 
   if (!modal) return;
 
@@ -1013,6 +1052,12 @@ export function hideModal(modalId: string): void {
   if (overlay) {
     overlay.classList.add("hidden");
     overlay.classList.remove("flex");
+    
+    // Reset z-index to default if requested (useful for global overlay)
+    if (resetZIndex && overlay.id === "global-modal-overlay") {
+      overlay.style.zIndex = "1000";
+      console.log(`🎨 [UX-UTILS] Reset overlay z-index to default (1000) for modal ${modalId}`);
+    }
   }
 
   // Unlock body scroll

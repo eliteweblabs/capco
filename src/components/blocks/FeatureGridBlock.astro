@@ -1,19 +1,19 @@
 ---
 /**
  * FeatureGridBlock - Feature/Service Grid
- * 
+ *
  * Displays features in a responsive grid with icons.
  * Supports both JSON array and flat props for CMS compatibility.
- * 
+ *
  * @example Direct usage with array:
- * <FeatureGridBlock 
- *   title="Our Services" 
+ * <FeatureGridBlock
+ *   title="Our Services"
  *   features={[
  *     { icon: "shield", title: "Fire Safety", description: "..." },
  *     { icon: "check", title: "Compliance", description: "..." }
  *   ]}
  * />
- * 
+ *
  * @example CMS with flat props:
  * {{FeatureGridBlock title="Features" feature1Icon="shield" feature1Title="Safety" feature1Description="..."}}
  */
@@ -33,14 +33,14 @@ interface Props {
   title?: string;
   description?: string;
   eyebrow?: string;
-  
+
   // Layout
   columns?: number | string;
-  variant?: 'cards' | 'icons' | 'minimal' | 'bordered' | 'centered';
-  
+  variant?: "cards" | "icons" | "minimal" | "bordered" | "centered";
+
   // Features as JSON string or array
   features?: string | Feature[];
-  
+
   // Flat props for up to 8 features (CMS shortcode support)
   feature1Icon?: string;
   feature1Title?: string;
@@ -82,41 +82,43 @@ interface Props {
   feature8Description?: string;
   feature8Href?: string;
   feature8Color?: string;
-  
+
   // Styling
   className?: string;
   id?: string;
-  
+
   // Animation
-  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animate?:
+    | boolean
+    | string
+    | "fade-blur-scale"
+    | "fade-blur"
+    | "fade-scale"
+    | "fade-up"
+    | "fade-up-blur"
+    | "zoom-blur"
+    | "fade";
   animateDelay?: string;
   animateStagger?: boolean | string;
 }
 
 const props = Astro.props;
-const {
-  title,
-  description,
-  eyebrow,
-  variant = 'cards',
-  className = '',
-  id,
-} = props;
+const { title, description, eyebrow, variant = "cards", className = "", id } = props;
 
 // Parse columns (handle string from CMS)
-const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 3);
+const columns = typeof props.columns === "string" ? parseInt(props.columns) : (props.columns ?? 3);
 
 // Handle animation prop - enabled by default with stagger for grids
 const getAnimationType = () => {
-  if (props.animate === 'false' || props.animate === false) return null;
-  if (props.animate === 'true' || props.animate === true) return 'fade-up';
-  if (typeof props.animate === 'string') return props.animate;
-  return 'fade-up'; // Default animation for grids
+  if (props.animate === "false" || props.animate === false) return null;
+  if (props.animate === "true" || props.animate === true) return "fade-up";
+  if (typeof props.animate === "string") return props.animate;
+  return "fade-up"; // Default animation for grids
 };
 const animationType = getAnimationType();
 const animateDelay = props.animateDelay;
 // Enable stagger by default for grids, unless explicitly disabled
-const animateStagger = props.animateStagger !== 'false' && props.animateStagger !== false;
+const animateStagger = props.animateStagger !== "false" && props.animateStagger !== false;
 
 // Build features array from either JSON string, array, or flat props
 let featureItems: Feature[] = [];
@@ -127,32 +129,32 @@ if (props.features) {
   // Build from flat props
   featureItems = buildArrayFromFlatProps<Feature>(
     props,
-    'feature',
-    ['icon', 'title', 'description', 'href', 'color'],
+    "feature",
+    ["icon", "title", "description", "href", "color"],
     8
   );
 }
 
 // Column class mapping
 const columnClasses: Record<number, string> = {
-  1: 'grid-cols-1',
-  2: 'grid-cols-1 md:grid-cols-2',
-  3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-  4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+  1: "grid-cols-1",
+  2: "grid-cols-1 md:grid-cols-2",
+  3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+  4: "grid-cols-1 md:grid-cols-2 lg:grid-cols-4",
 };
 
 const gridClass = columnClasses[columns] || columnClasses[3];
 
 // Default icon colors for variety
 const defaultColors = [
-  'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400',
-  'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-  'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-  'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
-  'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-  'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-  'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
-  'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
+  "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400",
+  "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
+  "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
+  "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400",
+  "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
+  "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+  "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400",
+  "bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400",
 ];
 
 const getColorClass = (color: string | undefined, index: number): string => {
@@ -161,83 +163,84 @@ const getColorClass = (color: string | undefined, index: number): string => {
 };
 ---
 
-<section 
-  id={id} 
-  class:list={['feature-grid-block py-16 md:py-24', className]}
+<section
+  {id}
+  class:list={["feature-grid-block py-16 md:py-24", className]}
   data-animate={animationType || undefined}
   data-animate-delay={animateDelay || undefined}
 >
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    {(title || description || eyebrow) && (
-      <div class={`mb-12 md:mb-16 ${variant === 'centered' ? 'text-center' : ''}`}>
-        {eyebrow && (
-          <p class="text-sm font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400 mb-3">
-            {eyebrow}
-          </p>
-        )}
-        {title && (
-          <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-            {title}
-          </h2>
-        )}
-        {description && (
-          <p class="mt-4 max-w-3xl text-lg text-gray-600 dark:text-gray-300 mx-auto">
-            {description}
-          </p>
-        )}
-      </div>
-    )}
-    
-    <div 
-      class={`grid gap-8 ${gridClass}`}
-      data-animate-stagger={animateStagger || undefined}
-    >
-      {featureItems.map((feature, index) => (
-        <div 
-          class:list={[
-            'feature-item group',
-            variant === 'cards' && 'rounded-xl bg-white dark:bg-gray-800 p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700',
-            variant === 'bordered' && 'rounded-lg border-2 border-gray-200 dark:border-gray-700 p-6 hover:border-primary-500 dark:hover:border-primary-400 transition-colors',
-            variant === 'minimal' && 'p-4',
-            variant === 'icons' && 'text-center p-6',
-            variant === 'centered' && 'text-center p-6',
-          ]}
-        >
-          {feature.href ? (
-            <a href={feature.href} class="block">
-              {feature.icon && (
-                <div class={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg ${getColorClass(feature.color, index)} ${variant === 'icons' || variant === 'centered' ? 'mx-auto' : ''}`}>
-                  <SimpleIcon name={feature.icon} class="h-6 w-6" />
-                </div>
-              )}
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                {feature.title}
-              </h3>
-              {feature.description && (
-                <p class="mt-2 text-gray-600 dark:text-gray-300">
-                  {feature.description}
-                </p>
-              )}
-            </a>
-          ) : (
-            <>
-              {feature.icon && (
-                <div class={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg ${getColorClass(feature.color, index)} ${variant === 'icons' || variant === 'centered' ? 'mx-auto' : ''}`}>
-                  <SimpleIcon name={feature.icon} class="h-6 w-6" />
-                </div>
-              )}
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {feature.title}
-              </h3>
-              {feature.description && (
-                <p class="mt-2 text-gray-600 dark:text-gray-300">
-                  {feature.description}
-                </p>
-              )}
-            </>
+    {
+      (title || description || eyebrow) && (
+        <div class={`mb-12 md:mb-16 ${variant === "centered" ? "text-center" : ""}`}>
+          {eyebrow && (
+            <p class="text-sm font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400 mb-3">
+              {eyebrow}
+            </p>
+          )}
+          {title && (
+            <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+              {title}
+            </h2>
+          )}
+          {description && (
+            <p class="mt-4 max-w-3xl text-lg text-gray-600 dark:text-gray-300 mx-auto">
+              {description}
+            </p>
           )}
         </div>
-      ))}
+      )
+    }
+
+    <div class={`grid gap-8 ${gridClass}`} data-animate-stagger={animateStagger || undefined}>
+      {
+        featureItems.map((feature, index) => (
+          <div
+            class:list={[
+              "feature-item group",
+              variant === "cards" &&
+                "rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700",
+              variant === "bordered" &&
+                "rounded-lg border-2 border-gray-200 dark:border-gray-700 p-6 hover:border-primary-500 dark:hover:border-primary-400 transition-colors",
+              variant === "minimal" && "p-4",
+              variant === "icons" && "text-center p-6",
+              variant === "centered" && "text-center p-6",
+            ]}
+          >
+            {feature.href ? (
+              <a href={feature.href} class="block">
+                {feature.icon && (
+                  <div
+                    class={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg ${getColorClass(feature.color, index)} ${variant === "icons" || variant === "centered" ? "mx-auto" : ""}`}
+                  >
+                    <SimpleIcon name={feature.icon} class="h-6 w-6" />
+                  </div>
+                )}
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                  {feature.title}
+                </h3>
+                {feature.description && (
+                  <p class="mt-2 text-gray-600 dark:text-gray-300">{feature.description}</p>
+                )}
+              </a>
+            ) : (
+              <>
+                {feature.icon && (
+                  <div
+                    class={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg ${getColorClass(feature.color, index)} ${variant === "icons" || variant === "centered" ? "mx-auto" : ""}`}
+                  >
+                    <SimpleIcon name={feature.icon} class="h-6 w-6" />
+                  </div>
+                )}
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{feature.title}</h3>
+                {feature.description && (
+                  <p class="mt-2 text-gray-600 dark:text-gray-300">{feature.description}</p>
+                )}
+              </>
+            )}
+          </div>
+        ))
+      }
     </div>
   </div>
 </section>

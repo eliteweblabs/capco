@@ -291,6 +291,72 @@ async function handleToolCalls(
 
         // Skip the cal-integration fetch for createProject
         continue;
+      } else if (functionName === "submitContactForm") {
+        // Handle contact form submission via VAPI chat
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+
+        console.log(`[---VAPI-WEBHOOK] Submitting contact form:`, args);
+
+        // Get base URL - fallback to environment variable if request not available
+        let baseUrl: string;
+        try {
+          baseUrl = request
+            ? getApiBaseUrl(request)
+            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
+              process.env.RAILWAY_PUBLIC_DOMAIN ||
+              "https://capcofire.com";
+        } catch (error) {
+          console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
+          baseUrl =
+            process.env.PUBLIC_RAILWAY_STATIC_URL ||
+            process.env.RAILWAY_PUBLIC_DOMAIN ||
+            "https://capcofire.com";
+        }
+
+        // Call existing contact API endpoint
+        const contactResponse = await fetch(`${baseUrl}/api/contact/submit`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Pass user metadata from VAPI call for authentication
+            ...(callMetadata?.userId && { "X-User-Id": callMetadata.userId }),
+            ...(callMetadata?.userEmail && { "X-User-Email": callMetadata.userEmail }),
+          },
+          body: JSON.stringify({
+            firstName: args.firstName || "",
+            lastName: args.lastName || "",
+            email: args.email || "",
+            phone: args.phone || "",
+            company: args.company || "",
+            address: args.address || "",
+            message: args.message || "",
+            source: "vapi_chat", // Track that this came from VAPI chat
+          }),
+        });
+
+        const contactData = await contactResponse.json();
+
+        if (!contactResponse.ok || !contactData.success) {
+          const errorMsg = contactData.error || "Failed to submit contact form";
+          console.error(`❌ [VAPI-WEBHOOK] Contact form submission failed:`, errorMsg);
+          results.push({
+            toolCallId: toolCall.id,
+            result: `I'm sorry, I couldn't submit your information. ${errorMsg}`,
+          });
+        } else {
+          console.log(`✅ [VAPI-WEBHOOK] Contact form submitted successfully`);
+          const name = `${args.firstName} ${args.lastName}`.trim();
+          results.push({
+            toolCallId: toolCall.id,
+            result: `Perfect${name ? `, ${args.firstName}` : ""}! I've submitted your contact information. Someone from our team will reach out to ${args.email}${args.phone ? ` or ${args.phone}` : ""} within 24 hours. Is there anything else I can help you with?`,
+          });
+        }
+
+        // Skip the cal-integration fetch for submitContactForm
+        continue;
       } else if (functionName === "rememberConversation") {
         // Handle saving conversation to knowledge base
         const args =

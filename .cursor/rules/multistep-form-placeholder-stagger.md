@@ -23,12 +23,14 @@ const staggerDelay = stepIndex * 100;
 This code creates a staggered animation effect for successive animated placeholders within a form step. Without this delay, all placeholder animations would trigger simultaneously, creating a jarring user experience.
 
 **IMPORTANT**: The stagger delay must be applied in BOTH functions:
+
 1. `rotatePlaceholders()` - For ongoing rotation cycles
 2. `resetPlaceholderAnimation()` - For initial display when step becomes active
 
 ## Problem History
 
 This code has been accidentally removed multiple times during refactoring/optimization:
+
 1. Initial implementation included stagger delay
 2. Bug: Stagger delay was only in `rotatePlaceholders()`, not in `resetPlaceholderAnimation()`
 3. Result: First appearance was simultaneous, subsequent rotations were staggered
@@ -46,6 +48,7 @@ This code has been accidentally removed multiple times during refactoring/optimi
 ## Related Protected Logic
 
 The entire placeholder animation system should be treated carefully:
+
 - `rotatePlaceholders()` function (lines ~871-959) - handles rotation cycles
 - `resetPlaceholderAnimation()` function (lines ~961-1000) - handles initial display
 - Sync group logic (no stagger) - lines ~897-937
@@ -54,6 +57,7 @@ The entire placeholder animation system should be treated carefully:
 ## Verification
 
 After any changes to MultiStepForm.astro, verify that:
+
 1. The `staggerDelay` variable exists in `rotatePlaceholders()`
 2. The `staggerDelay` variable exists in `resetPlaceholderAnimation()`
 3. Both are calculated as `stepIndex * 100`
@@ -62,6 +66,7 @@ After any changes to MultiStepForm.astro, verify that:
 ## Exception
 
 This rule can be overridden ONLY if the user explicitly requests:
+
 - Changing the stagger delay duration
 - Removing the stagger effect entirely
 - Modifying the placeholder animation system

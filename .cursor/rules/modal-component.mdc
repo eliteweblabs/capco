@@ -1,0 +1,66 @@
+---
+description: Always use Modal component for modal overlays
+globs: **/*.astro
+alwaysApply: false
+---
+
+# Modal Component Usage
+
+**ALWAYS** use the standardized `Modal.astro` component for modal/dialog overlays instead of creating custom implementations.
+
+## Correct Pattern
+
+```astro
+import Modal from "../components/ui/Modal.astro";
+
+<Modal id="my-modal" zIndex={10000} blurAmount="md" opacity="50">
+  <div class="relative mx-auto mt-20 p-5 w-11/12 max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow-lg pointer-events-auto">
+    <!-- Your modal content here -->
+    <h2>Modal Title</h2>
+    <p>Modal content...</p>
+  </div>
+</Modal>
+
+<script>
+  const modalBackdrop = document.getElementById("my-modal");
+  const modalContent = document.getElementById("my-modal-content");
+  
+  function showModal() {
+    modalBackdrop.classList.remove("hidden");
+    modalContent.classList.remove("hidden");
+  }
+  
+  function hideModal() {
+    modalBackdrop.classList.add("hidden");
+    modalContent.classList.add("hidden");
+  }
+</script>
+```
+
+## ❌ Wrong Pattern
+
+```astro
+<!-- Don't create custom modal overlays -->
+<div id="my-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+  <div class="...">Content</div>
+</div>
+```
+
+## Modal Props
+
+- `id`: Unique identifier (auto-generates `{id}-content` for content wrapper)
+- `zIndex`: Z-index for backdrop (content gets zIndex + 1)
+- `blurAmount`: "none" | "sm" | "md" | "lg" | "xl"
+- `opacity`: String like "50" for 0.50 opacity
+- `mobileOnly`: Boolean for mobile-only display
+- `backdropClasses`: Additional classes for backdrop
+- `contentClasses`: Additional classes for content wrapper
+
+## Benefits
+
+- Consistent appearance across app
+- Centralized backdrop styling
+- Automatic z-index management
+- Blur and opacity control
+- Slot-based content (clean and intuitive)
+- Easier maintenance

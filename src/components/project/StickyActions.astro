@@ -1,40 +1,44 @@
 ---
-// Reusable Accordion component following Flowbite design
+// Reusable StickyActions component - now works with portal system in App.astro
+// This component marks itself for teleportation to avoid z-index stacking context issues
 export const partial = true;
 
 // Detect if this is being used as a partial
-const isPartial = Astro.request.headers.has("x-accordion-id");
-import SimpleIcon from "../common/SimpleIcon.astro";
-let id, title, description, content, open, className, headerClass, contentClass, columns;
+const isPartial = Astro.request.headers.has("x-sticky-actions-id");
+let id, columns, className;
 
 if (isPartial) {
   // Extract props from headers when used as partial
-  id = Astro.request.headers.get("x-accordion-id") || "";
-  title = Astro.request.headers.get("x-accordion-title") || "";
-  description = Astro.request.headers.get("x-accordion-description") || "";
-  content = Astro.request.headers.get("x-accordion-content") || "";
-  open = Astro.request.headers.get("x-accordion-open") === "true";
-  className = Astro.request.headers.get("x-accordion-class") || "";
-  headerClass = Astro.request.headers.get("x-accordion-header-class") || "";
-  contentClass = Astro.request.headers.get("x-accordion-content-class") || "";
+  id = Astro.request.headers.get("x-sticky-actions-id") || "";
+  columns = Astro.request.headers.get("x-sticky-actions-columns") || "4";
+  className = Astro.request.headers.get("x-sticky-actions-class") || "";
 } else {
   // Use regular props when used as a component
   const props = Astro.props;
-  id = props.id;
-  title = props.title;
-  description = props.description;
-  content = props.content;
-  open = props.open || false;
-  className = props.class || "";
-  headerClass = props.headerClass || "";
-  contentClass = props.contentClass || "";
+  id = props.id || `sticky-actions-${Math.random().toString(36).substr(2, 9)}`;
   columns = props.columns || "4";
-  id = props.id || "";
+  className = props.class || "";
 }
 ---
 
-<div {id} class="fixed bottom-0 left-0 z-100 p-6 w-full flex justify-end" style="z-index: 10005;">
-  <div class={`grid h-full max-w-4xl grid-cols-${columns} font-medium gap-2`}>
-    <slot />
-  </div>
+<!-- This div will be teleported to the portal in App.astro via JavaScript -->
+<!-- It's hidden here and only shown in the portal to avoid z-index issues -->
+<div
+  {id}
+  class={`sticky-actions ${className}`}
+  data-sticky-actions
+  data-columns={columns}
+  style="display: none;"
+>
+  <slot />
 </div>
+
+<script>
+  // Auto-initialize when this component loads
+  document.addEventListener("DOMContentLoaded", () => {
+    // Trigger portal re-initialization in case this component loaded after initial page load
+    if ((window as any).initializeStickyActionsPortal) {
+      (window as any).initializeStickyActionsPortal();
+    }
+  });
+</script>

@@ -8,7 +8,8 @@ The MultiStepForm component includes a **staggered delay** for successive animat
 
 File: `src/components/form/MultiStepForm.astro`
 
-Functions: 
+Functions:
+
 - `rotatePlaceholders()` (around line 871)
 - `resetPlaceholderAnimation()` (around line 961)
 
@@ -31,6 +32,7 @@ const staggerDelay = stepIndex * 100;
 ```
 
 The stagger delay is calculated as:
+
 - **Formula**: `stepIndex * 100` milliseconds
 - **stepIndex**: The index of the input within the active step (0, 1, 2, etc.)
 - **Result**: 0ms, 100ms, 200ms, 300ms, etc. for successive fields
@@ -60,6 +62,7 @@ The stagger delay is calculated as:
 ## Example
 
 If a step has 3 input fields with animated placeholders:
+
 - **Initial display (resetPlaceholderAnimation):**
   - Field 1: Animates at 0ms (instantly)
   - Field 2: Animates at 100ms (after Field 1)
@@ -75,6 +78,7 @@ This creates a smooth, cascading effect on both initial display AND during rotat
 ## History
 
 This feature has been:
+
 - ✅ Initially implemented in `rotatePlaceholders()`
 - ❌ Missing from `resetPlaceholderAnimation()` causing first appearance to be simultaneous
 - ✅ **Fixed (Feb 2, 2026)**: Added stagger delay to `resetPlaceholderAnimation()`
@@ -93,7 +97,6 @@ A workspace rule has been created to prevent this from being touched during refa
 - **rotatePlaceholders()** (lines ~871-959):
   - Sync group logic (lines ~897-937): Fields like firstName/lastName animate together
   - Normal stagger logic (lines ~938-958): Other fields use the stagger delay
-  
 - **resetPlaceholderAnimation()** (lines ~961-1000):
   - Applies stagger delay for initial display when step becomes active
   - Same 100ms delay as rotation cycles
@@ -101,6 +104,7 @@ A workspace rule has been created to prevent this from being touched during refa
 ## Testing
 
 To verify the stagger delay is working:
+
 1. Navigate to a multi-step form with multiple animated placeholder fields
 2. **Test initial display**: When the step first appears, verify placeholders don't all appear at once
 3. **Test rotation cycles**: Observe the placeholders cycling through values
@@ -111,15 +115,18 @@ To verify the stagger delay is working:
 ## Bug Fix (Feb 2, 2026)
 
 ### Problem
+
 The stagger delay was only implemented in `rotatePlaceholders()`, not in `resetPlaceholderAnimation()`.
 
-**Result**: 
+**Result**:
+
 - Initial display: All placeholders appeared simultaneously (no stagger)
 - Rotation cycles: Placeholders rotated with proper stagger delay
 
 **User complaint**: "im not seeing the delay"
 
 ### Root Cause
+
 The `resetPlaceholderAnimation()` function was resetting all placeholders to their first value and triggering the `slideInDown` animation on ALL fields at once with NO stagger delay:
 
 ```typescript
@@ -128,6 +135,7 @@ span.style.animation = "slideInDown 400ms ease-out forwards"; // All at once!
 ```
 
 ### Solution
+
 Added the same stagger delay logic to `resetPlaceholderAnimation()`:
 
 ```typescript

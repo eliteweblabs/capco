@@ -138,7 +138,7 @@ import FeedbackPanel from "../common/FeedbackPanel.astro";
 import NotificationsModal from "../common/NotificationsModal.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 import VapiChatWidget from "@/features/vapi-chat-widget/VapiChatWidget.astro";
-import PunchlistDrawer from "../project/PunchlistDrawer.astro";
+import StickyActionButton from "../project/StickyActions.astro";
 
 // Notification count loader will be loaded via script tag
 
@@ -474,7 +474,7 @@ const debugData = {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <title>
-      {globalCompanyName + " → " + (title || Astro.url.pathname.replace(/\//g, " ").trim())}
+      {(title || Astro.url.pathname.replace(/\//g, " ").trim()) + " → " + globalCompanyName}
     </title>
     <meta name="description" content={description} />
     <link rel="manifest" href="/manifest.json" />
@@ -608,7 +608,7 @@ const debugData = {
 
   <body class={`antialiased mask-${mask.trim()}`}>
     <!-- Global Modal Overlay - Single instance used by all modals -->
-    <Modal id="global-modal-overlay" zIndex={10010} blurAmount="lg" opacity="50" />
+    <Modal id="global-modal-overlay" zIndex={1000} blurAmount="lg" opacity="50" />
 
     <!-- Global Modals - Must be siblings of overlay for z-index to work -->
     {currentUser && <NotificationsModal currentUser={currentUser} />}
@@ -651,22 +651,13 @@ const debugData = {
         <!-- <div class="relative w-full flex items-center justify-center px-4 py-8 max-w-lg">
         <div class="w-full max-w-3xl"> -->
         <main
-          class={`flex-1 relative min-h-[calc(100dvh-8rem)] md:min-h-[calc(100dvh-8rem)] lg:min-h-[calc(100dvh-8.5rem)] ${centerContent ? "flex items-center justify-center px-8 overscroll-y-contain" : "flex p-4"}`}
+          class={`flex-1 relative min-h-[calc(100dvh-8rem)] md:min-h-[calc(100dvh-8rem)] lg:min-h-[calc(100dvh-8.5rem)] ${centerContent ? "flex items-center justify-center px-8 overscroll-y-contain" : "p-4"}`}
         >
           <slot />
         </main>
         <!-- Bottom Banner Alerts (above footer) -->
         <BannerAlertsLoader position="bottom" />
-        <!-- Footer -->
-        <Footer
-          {globalIconButtonClasses}
-          {globalCompanyName}
-          {isBackend}
-          {globalCompanyPhone}
-          {primaryTextClasses}
-          {secondaryTextClasses}
-          {globalInputClasses}
-        />
+
         <!-- </div>
         </div> -->
 
@@ -675,6 +666,32 @@ const debugData = {
         <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
         <DebugPanel {debugData} {currentRole} />
         <FeedbackPanel {currentUser} />
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <Footer
+      {globalIconButtonClasses}
+      {globalCompanyName}
+      {isBackend}
+      {globalCompanyPhone}
+      {primaryTextClasses}
+      {secondaryTextClasses}
+      {globalInputClasses}
+    />
+
+    <!-- Global Sticky Actions Portal Container -->
+    <!-- All StickyActions buttons will be teleported here to avoid z-index stacking context issues -->
+    <div
+      id="sticky-actions-portal"
+      class="fixed bottom-0 left-0 z-[10015] p-6 w-full flex justify-end pointer-events-none"
+      style="display: none;"
+    >
+      <div
+        id="sticky-actions-container"
+        class="grid h-full max-w-4xl font-medium gap-2 pointer-events-auto"
+      >
+        <!-- Buttons will be teleported here via JavaScript -->
       </div>
     </div>
 
@@ -760,6 +777,7 @@ const debugData = {
       )
     }
 
+    <StickyActionButton />
     <CookieBanner />
 
     <!-- Prevent Flowbite from initializing modals that don't exist -->
@@ -836,6 +854,25 @@ const debugData = {
           ensureViewportBounds?: (minHeight?: number, maxHeight?: number) => void;
           lockBodyScroll?: () => void;
           unlockBodyScroll?: () => void;
+          // Modal system
+          showModal?: (options: {
+            id?: string;
+            title: string;
+            body: string | HTMLElement;
+            primaryButtonText?: string;
+            secondaryButtonText?: string;
+            onConfirm?: () => void | Promise<void>;
+            onCancel?: () => void;
+            showFooter?: boolean;
+            size?: "small" | "medium" | "large" | "xlarge";
+            closeOnBackdrop?: boolean;
+            closeOnEscape?: boolean;
+            zIndex?: number;
+          }) => void;
+          hideModal?: (modalId: string, resetZIndex?: boolean) => void;
+          removeModal?: (modalId: string) => void;
+          setModalOverlayZIndex?: (zIndex: number) => void;
+          resetModalOverlayZIndex?: () => void;
           initializeSubjectEditing?: () => void;
           proposalHelper?: any;
           proposalManager?: any;
@@ -850,6 +887,10 @@ const debugData = {
           toggleCommentForm?: () => void;
           trimText?: (text: string, maxLength?: number, suffix?: string) => string;
           trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
+          // Sticky Actions Portal System
+          initializeStickyActionsPortal?: () => void;
+          showStickyActions?: (instanceIdOrElement: string | HTMLElement) => void;
+          hideStickyActions?: (instanceIdOrElement?: string | HTMLElement) => void;
           updateCountBubble?: (
             parentElement: HTMLElement,
             count: number,
@@ -1189,7 +1230,7 @@ const debugData = {
         });
 
         // Also handle dynamically added inputs
-        const observer = new MutationObserver((mutations) => {
+        const inputObserver = new MutationObserver((mutations) => {
           mutations.forEach((mutation) => {
             mutation.addedNodes.forEach((node) => {
               if (node.nodeType === Node.ELEMENT_NODE) {
@@ -1206,7 +1247,70 @@ const debugData = {
           });
         });
 
-        observer.observe(document.body, { childList: true, subtree: true });
+        inputObserver.observe(document.body, { childList: true, subtree: true });
+
+        // Watch for modal visibility changes
+        const modalObserver = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.type === "attributes" && mutation.attributeName === "class") {
+              const target = mutation.target as HTMLElement;
+              // Check if element has modal-related attributes or classes
+              if (
+                target.hasAttribute("data-modal") ||
+                target.id.includes("Modal") ||
+                target.id.includes("modal") ||
+                target.classList.contains("modal")
+              ) {
+                const isVisible =
+                  target.classList.contains("flex") && !target.classList.contains("hidden");
+                if (isVisible) {
+                  hideOnFocus();
+                } else {
+                  showOnBlur();
+                }
+              }
+            }
+          });
+        });
+
+        // Observe all existing modals and drawers for class changes
+        const modals = document.querySelectorAll(
+          '[data-modal], [id*="modal" i], [id*="Modal" i], [id*="drawer" i], .modal'
+        );
+        modals.forEach((modal) => {
+          modalObserver.observe(modal, { attributes: true, attributeFilter: ["class"] });
+        });
+
+        // Also watch for new modals being added to the DOM
+        const newModalObserver = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node as Element;
+                // Check if the added node itself is a modal
+                if (
+                  element.hasAttribute("data-modal") ||
+                  element.id.includes("Modal") ||
+                  element.id.includes("modal") ||
+                  element.classList.contains("modal")
+                ) {
+                  modalObserver.observe(element, { attributes: true, attributeFilter: ["class"] });
+                }
+                // Also check for modals within the added node
+                const innerModals = element.querySelectorAll
+                  ? element.querySelectorAll(
+                      '[data-modal], [id*="modal" i], [id*="Modal" i], .modal'
+                    )
+                  : [];
+                innerModals.forEach((modal) => {
+                  modalObserver.observe(modal, { attributes: true, attributeFilter: ["class"] });
+                });
+              }
+            });
+          });
+        });
+
+        newModalObserver.observe(document.body, { childList: true, subtree: true });
       };
 
       (window as any).sendEmail = async function (emailData: any, currentUser: any) {
@@ -1929,9 +2033,196 @@ const debugData = {
         return words.slice(0, wordLimit).join(" ") + suffix;
       };
 
+      /**
+       * Initialize Sticky Actions Portal System
+       * Teleports all StickyActions buttons to a global portal container in App.astro
+       * This solves z-index stacking context issues while maintaining form functionality
+       */
+      (window as any).initializeStickyActionsPortal = function () {
+        const portal = document.getElementById("sticky-actions-portal");
+        const container = document.getElementById("sticky-actions-container");
+
+        if (!portal || !container) {
+          console.warn("🎯 [STICKY-ACTIONS] Portal container not found in App.astro");
+          return;
+        }
+
+        console.log("🎯 [STICKY-ACTIONS] Initializing portal system...");
+
+        // Find all StickyActions instances
+        const stickyActionsInstances = document.querySelectorAll(
+          '[class*="sticky-actions"], [data-sticky-actions]'
+        );
+
+        if (stickyActionsInstances.length === 0) {
+          console.log("🎯 [STICKY-ACTIONS] No instances found on this page");
+          return;
+        }
+
+        // Track active instance for showing/hiding
+        let activeInstance: HTMLElement | null = null;
+
+        stickyActionsInstances.forEach((instance, index) => {
+          const instanceEl = instance as HTMLElement;
+          const instanceId = instanceEl.id || `sticky-actions-${index}`;
+          instanceEl.setAttribute("data-sticky-actions-id", instanceId);
+
+          // Get the columns attribute for grid layout
+          const columns = instanceEl.getAttribute("data-columns") || "4";
+
+          // Store original parent for restoration if needed
+          const originalParent = instanceEl.parentElement;
+          instanceEl.setAttribute("data-original-parent", "true");
+
+          // Get all buttons from this instance
+          const buttons = instanceEl.querySelectorAll("button, a[role='button'], [type='submit']");
+
+          if (buttons.length === 0) {
+            console.log(`🎯 [STICKY-ACTIONS] Instance ${instanceId} has no buttons to teleport`);
+            return;
+          }
+
+          console.log(
+            `🎯 [STICKY-ACTIONS] Found instance ${instanceId} with ${buttons.length} button(s), columns: ${columns}`
+          );
+
+          // Function to show this instance in the portal
+          const showInPortal = () => {
+            // Hide portal first
+            portal.style.display = "none";
+            container.innerHTML = "";
+
+            // Set grid columns based on button count
+            container.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+
+            // Clone buttons and add them to portal
+            buttons.forEach((button) => {
+              const buttonEl = button as HTMLElement;
+              const buttonClone = buttonEl.cloneNode(true) as HTMLElement;
+
+              // If button is in a form, add form attribute to maintain submission
+              const form = buttonEl.closest("form");
+              if (form && form.id) {
+                buttonClone.setAttribute("form", form.id);
+                console.log(`🎯 [STICKY-ACTIONS] Linked button to form: ${form.id}`, buttonClone);
+              } else if (form && !form.id) {
+                // Generate form ID if it doesn't have one
+                const formId = `form-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                form.id = formId;
+                buttonClone.setAttribute("form", formId);
+                console.log(`🎯 [STICKY-ACTIONS] Generated form ID and linked button: ${formId}`);
+              }
+
+              // Copy all event listeners by re-executing inline handlers
+              const onclickAttr = buttonEl.getAttribute("onclick");
+              if (onclickAttr) {
+                buttonClone.setAttribute("onclick", onclickAttr);
+              }
+
+              // Copy data attributes
+              Array.from(buttonEl.attributes).forEach((attr) => {
+                if (attr.name.startsWith("data-")) {
+                  buttonClone.setAttribute(attr.name, attr.value);
+                }
+              });
+
+              container.appendChild(buttonClone);
+            });
+
+            // Show portal
+            portal.style.display = "flex";
+            activeInstance = instanceEl;
+
+            console.log(`🎯 [STICKY-ACTIONS] Showing instance ${instanceId} in portal`);
+          };
+
+          // Function to hide this instance from portal
+          const hideFromPortal = () => {
+            if (activeInstance === instanceEl) {
+              portal.style.display = "none";
+              container.innerHTML = "";
+              activeInstance = null;
+              console.log(`🎯 [STICKY-ACTIONS] Hiding instance ${instanceId} from portal`);
+            }
+          };
+
+          // Store functions on the element for external control
+          (instanceEl as any).__showInPortal = showInPortal;
+          (instanceEl as any).__hideFromPortal = hideFromPortal;
+
+          // Auto-show if instance is visible on page load
+          // Use Intersection Observer to detect visibility
+          const observer = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  // Element is visible, show in portal
+                  showInPortal();
+                } else {
+                  // Element is not visible, hide from portal
+                  hideFromPortal();
+                }
+              });
+            },
+            {
+              threshold: 0.1, // Trigger when 10% visible
+              rootMargin: "0px 0px -100px 0px", // Don't trigger if too close to bottom
+            }
+          );
+
+          observer.observe(instanceEl);
+
+          // Hide the original instance (it's now in the portal)
+          instanceEl.style.display = "none";
+        });
+
+        // Make portal controls globally available
+        (window as any).showStickyActions = function (instanceIdOrElement: string | HTMLElement) {
+          const instance =
+            typeof instanceIdOrElement === "string"
+              ? (document.querySelector(
+                  `[data-sticky-actions-id="${instanceIdOrElement}"]`
+                ) as HTMLElement)
+              : instanceIdOrElement;
+
+          if (instance && (instance as any).__showInPortal) {
+            (instance as any).__showInPortal();
+          } else {
+            console.warn("🎯 [STICKY-ACTIONS] Instance not found:", instanceIdOrElement);
+          }
+        };
+
+        (window as any).hideStickyActions = function (instanceIdOrElement?: string | HTMLElement) {
+          if (!instanceIdOrElement) {
+            // Hide all
+            portal.style.display = "none";
+            container.innerHTML = "";
+            return;
+          }
+
+          const instance =
+            typeof instanceIdOrElement === "string"
+              ? (document.querySelector(
+                  `[data-sticky-actions-id="${instanceIdOrElement}"]`
+                ) as HTMLElement)
+              : instanceIdOrElement;
+
+          if (instance && (instance as any).__hideFromPortal) {
+            (instance as any).__hideFromPortal();
+          }
+        };
+
+        console.log(
+          `🎯 [STICKY-ACTIONS] Portal initialized with ${stickyActionsInstances.length} instance(s)`
+        );
+      };
+
       document.addEventListener("DOMContentLoaded", () => {
         // Initialize autofill navigation - COMMENTED OUT
         // (window as any).setupAutofillNavigation();
+
+        // Initialize Sticky Actions Portal System
+        (window as any).initializeStickyActionsPortal();
 
         // Global theme sync utility - updates theme attribute on elements with data-theme-sync
         (window as any).updateThemeSync = () => {

@@ -4,22 +4,23 @@
  * Similar to showNotice() functionality
  */
 
-import { showModal, hideModal, removeModal } from "./ux-utils";
+import {
+  showModal,
+  hideModal,
+  removeModal,
+  setModalOverlayZIndex,
+  resetModalOverlayZIndex,
+} from "./ux-utils";
 
-// Extend Window interface for TypeScript
-declare global {
-  interface Window {
-    showModal: typeof showModal;
-    hideModal: typeof hideModal;
-    removeModal: typeof removeModal;
-  }
-}
+// Note: Window interface is declared in App.astro to avoid duplicate declarations
 
 // Make functions globally available
 if (typeof window !== "undefined") {
   window.showModal = showModal;
   window.hideModal = hideModal;
   window.removeModal = removeModal;
+  window.setModalOverlayZIndex = setModalOverlayZIndex;
+  window.resetModalOverlayZIndex = resetModalOverlayZIndex;
 }
 
-export { showModal, hideModal, removeModal };
+export { showModal, hideModal, removeModal, setModalOverlayZIndex, resetModalOverlayZIndex };

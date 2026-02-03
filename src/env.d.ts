@@ -185,9 +185,12 @@ declare global {
       size?: "small" | "medium" | "large" | "xlarge";
       closeOnBackdrop?: boolean;
       closeOnEscape?: boolean;
+      zIndex?: number;
     }) => void;
-    hideModal?: (modalId: string) => void;
+    hideModal?: (modalId: string, resetZIndex?: boolean) => void;
     removeModal?: (modalId: string) => void;
+    setModalOverlayZIndex?: (zIndex: number) => void;
+    resetModalOverlayZIndex?: () => void;
 
     // Partials
     createButtonPartial?: (config: any) => Promise<HTMLElement | null>;
