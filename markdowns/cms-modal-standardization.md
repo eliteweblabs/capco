@@ -17,6 +17,7 @@ The CMS page had a custom modal implementation with manual overlay management:
 ```
 
 This approach:
+
 - Created inconsistency across the codebase
 - Made modal management harder to maintain
 - Duplicated backdrop/overlay logic
@@ -25,14 +26,18 @@ This approach:
 ## Solution Evolution
 
 ### Phase 1: Separated Backdrop and Content
+
 Initially migrated to use Modal component as backdrop only, with separate content container.
 
 ### Phase 2: Slot-Based Approach (Current)
+
 Refactored Modal component to accept content via `<slot>`, making it more intuitive and self-contained:
 
 ```html
-<Modal id="page-editor-modal" zIndex={10050} blurAmount="md" opacity="50">
-  <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800 pointer-events-auto">
+<Modal id="page-editor-modal" zIndex="{10050}" blurAmount="md" opacity="50">
+  <div
+    class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800 pointer-events-auto"
+  >
     <!-- Modal content -->
   </div>
 </Modal>
@@ -41,6 +46,7 @@ Refactored Modal component to accept content via `<slot>`, making it more intuit
 ### Modal Component Structure
 
 The Modal component now renders:
+
 1. **Backdrop element** with id={id} (e.g., `page-editor-modal`)
 2. **Content wrapper** with id={id}-content (e.g., `page-editor-modal-content`)
 3. **Automatic z-index layering** (content gets backdrop zIndex + 1)

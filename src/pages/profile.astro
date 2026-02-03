@@ -243,20 +243,20 @@ const storedCarrierKey = userProfile?.mobileCarrier
     // Handle profile form submission
     profileForm?.addEventListener("submit", async (e) => {
       // Check form validity before preventing default
-      if (!(profileForm as HTMLFormElement).checkValidity()) {
+      if (!profileForm.checkValidity()) {
         // Let the browser show validation messages
-        (profileForm as HTMLFormElement).reportValidity();
+        profileForm.reportValidity();
         return;
       }
 
       e.preventDefault();
 
-      const formData = new FormData(profileForm as HTMLFormElement);
+      const formData = new FormData(profileForm);
       const companyName = formData.get("companyName");
-      const firstName = formData.get("firstName") as string;
-      const lastName = formData.get("lastName") as string;
+      const firstName = formData.get("firstName");
+      const lastName = formData.get("lastName");
       const phone = formData.get("phone");
-      const smsAlertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;
+      const smsAlertsCheckbox = document.getElementById("sms-alerts-phone");
       const smsAlerts = smsAlertsCheckbox?.checked || false;
       const mobileCarrier = formData.get("mobileCarrier");
 
@@ -277,7 +277,7 @@ const storedCarrierKey = userProfile?.mobileCarrier
 
       // Disable button and show loading state
       if (saveProfileBtn) {
-        (saveProfileBtn as HTMLButtonElement).disabled = true;
+        saveProfileBtn.disabled = true;
         saveProfileBtn.textContent = "Saving...";
       }
 
@@ -352,7 +352,7 @@ const storedCarrierKey = userProfile?.mobileCarrier
       } finally {
         // Re-enable button
         if (saveProfileBtn) {
-          (saveProfileBtn as HTMLButtonElement).disabled = false;
+          saveProfileBtn.disabled = false;
           saveProfileBtn.textContent = saveProfileBtnText || "Save Changes";
         }
       }
@@ -364,7 +364,7 @@ const storedCarrierKey = userProfile?.mobileCarrier
     });
 
     avatarInput?.addEventListener("change", async (e) => {
-      const file = (e.target as HTMLInputElement)?.files?.[0];
+      const file = e.target?.files?.[0];
       if (!file) return;
 
       // TODO: Implement avatar upload functionality

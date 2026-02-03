@@ -1,0 +1,223 @@
+---
+/**
+ * Delete Confirm Button - Test Page
+ * Quick test page to verify the DeleteConfirmButton component works correctly
+ */
+import App from "../components/ui/App.astro";
+import DeleteConfirmButton from "../components/common/DeleteConfirmButton.astro";
+import { checkAuth } from "../lib/auth";
+
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+
+import { globalCompanyData } from "./api/global/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+} = await globalCompanyData();
+
+import { globalClasses } from "./api/global/global-classes";
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<App
+  title="Delete Button Test"
+  description="Test page for DeleteConfirmButton component"
+  {currentUser}
+  {session}
+  {supabase}
+  {globalInputClasses}
+  {primaryTextClasses}
+  {secondaryTextClasses}
+  {globalCompanyName}
+  {globalCompanyAddress}
+  {globalCompanyPhone}
+  {globalCompanyEmail}
+  {globalCompanyWebsite}
+  {globalCompanyLogo}
+>
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">DeleteConfirmButton Test Page</h1>
+
+    <div class="space-y-8">
+      <!-- Icon Variants -->
+      <section class="bg-white dark:bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Icon Variants (All Sizes)</h2>
+        <div class="flex gap-4 items-center">
+          <div>
+            <p class="text-sm mb-2">Extra Small</p>
+            <DeleteConfirmButton id="icon-xs" size="xs" />
+          </div>
+          <div>
+            <p class="text-sm mb-2">Small (default)</p>
+            <DeleteConfirmButton id="icon-sm" size="sm" />
+          </div>
+          <div>
+            <p class="text-sm mb-2">Medium</p>
+            <DeleteConfirmButton id="icon-md" size="md" />
+          </div>
+          <div>
+            <p class="text-sm mb-2">Large</p>
+            <DeleteConfirmButton id="icon-lg" size="lg" />
+          </div>
+          <div>
+            <p class="text-sm mb-2">Extra Large</p>
+            <DeleteConfirmButton id="icon-xl" size="xl" />
+          </div>
+        </div>
+        <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+          Icon sizes match Button.astro and SimpleIcon.astro standards
+        </p>
+      </section>
+
+      <!-- Button Variants -->
+      <section class="bg-white dark:bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Button Variants (With Labels)</h2>
+        <div class="flex gap-4 items-start flex-wrap">
+          <DeleteConfirmButton id="button-xs" variant="button" size="xs" label="Delete (XS)" />
+          <DeleteConfirmButton id="button-sm" variant="button" size="sm" label="Delete (Small)" />
+          <DeleteConfirmButton id="button-md" variant="button" size="md" label="Delete (Medium)" />
+          <DeleteConfirmButton id="button-lg" variant="button" size="lg" label="Delete (Large)" />
+          <DeleteConfirmButton id="button-xl" variant="button" size="xl" label="Delete (XL)" />
+        </div>
+        <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+          Button styling matches Button.astro danger variant
+        </p>
+      </section>
+
+      <!-- Custom Timeout -->
+      <section class="bg-white dark:bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Custom Timeout</h2>
+        <div class="flex gap-4 items-center">
+          <DeleteConfirmButton
+            id="timeout-1s"
+            variant="button"
+            timeout={1000}
+            label="1 Second Timeout"
+          />
+          <DeleteConfirmButton
+            id="timeout-5s"
+            variant="button"
+            timeout={5000}
+            label="5 Second Timeout"
+          />
+        </div>
+      </section>
+
+      <!-- Simulated List Items -->
+      <section class="bg-white dark:bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Simulated Item List</h2>
+        <div id="items-list" class="space-y-3">
+          {
+            [1, 2, 3, 4, 5].map((num) => (
+              <div
+                class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                data-item-id={num}
+              >
+                <div>
+                  <h3 class="font-medium">Item #{num}</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">
+                    This is a test item in the list
+                  </p>
+                </div>
+                <div class="flex gap-2">
+                  <button class="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    Edit
+                  </button>
+                  <DeleteConfirmButton
+                    id={`delete-item-${num}`}
+                    variant="button"
+                    size="sm"
+                    label="Delete"
+                  />
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <!-- Event Log -->
+      <section class="bg-white dark:bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Event Log</h2>
+        <div
+          id="event-log"
+          class="bg-gray-100 dark:bg-gray-900 rounded p-4 h-48 overflow-y-auto font-mono text-sm"
+        >
+          <div class="text-gray-500">Click any delete button to see events...</div>
+        </div>
+        <button
+          id="clear-log"
+          class="mt-3 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+        >
+          Clear Log
+        </button>
+      </section>
+    </div>
+  </div>
+</App>
+
+<script>
+  const eventLog = document.getElementById("event-log");
+  const itemsList = document.getElementById("items-list");
+  const clearLogBtn = document.getElementById("clear-log");
+
+  function logEvent(message: string, type: "info" | "success" | "error" = "info") {
+    const timestamp = new Date().toLocaleTimeString();
+    const colors = {
+      info: "text-blue-600 dark:text-blue-400",
+      success: "text-green-600 dark:text-green-400",
+      error: "text-red-600 dark:text-red-400",
+    };
+
+    const entry = document.createElement("div");
+    entry.className = colors[type];
+    entry.textContent = `[${timestamp}] ${message}`;
+
+    eventLog?.appendChild(entry);
+    eventLog!.scrollTop = eventLog!.scrollHeight;
+  }
+
+  // Listen for delete confirmations globally
+  document.addEventListener("deleteConfirmed", (e: Event) => {
+    const customEvent = e as CustomEvent;
+    const buttonId = customEvent.detail.buttonId;
+
+    logEvent(`Delete confirmed: ${buttonId}`, "success");
+
+    // Handle item list deletions
+    const match = buttonId.match(/delete-item-(\d+)/);
+    if (match) {
+      const itemId = match[1];
+      const item = document.querySelector(`[data-item-id="${itemId}"]`);
+      if (item) {
+        logEvent(`Removing item #${itemId} from list...`, "info");
+
+        // Animate removal
+        (item as HTMLElement).style.transition = "opacity 0.3s, transform 0.3s";
+        (item as HTMLElement).style.opacity = "0";
+        (item as HTMLElement).style.transform = "scale(0.9)";
+
+        setTimeout(() => {
+          item.remove();
+          logEvent(`Item #${itemId} removed`, "success");
+        }, 300);
+      }
+    }
+  });
+
+  // Clear log button
+  clearLogBtn?.addEventListener("click", () => {
+    if (eventLog) {
+      eventLog.innerHTML =
+        '<div class="text-gray-500">Click any delete button to see events...</div>';
+    }
+  });
+
+  // Log initial load
+  logEvent("Test page loaded successfully", "info");
+</script>
