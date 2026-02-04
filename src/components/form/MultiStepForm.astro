@@ -1042,6 +1042,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     requestAnimationFrame(() => requestAnimationFrame(updateSpacerHeight));
 
     // Expand steps panel 1:1 with scroll: as first panel moves up, decrease bottom until 120px
+    // Kept running on scroll, resize, typewriter/cascade end, step change, and when panel content size changes
+    let updateStepsPanelBottomRef: (() => void) | null = null;
     const stepsEl = document.querySelector(".multi-step-form-steps") as HTMLElement | null;
     if (stepsEl) {
       const BOTTOM_MIN_PX = 120;
@@ -1079,12 +1081,19 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           scrollParent: scrollParent?.tagName ?? "window",
         });
       }
+      updateStepsPanelBottomRef = updateStepsPanelBottom;
 
       updateStepsPanelBottom();
       (scrollParent ?? window).addEventListener("scroll", updateStepsPanelBottom, {
         passive: true,
       });
       window.addEventListener("resize", updateStepsPanelBottom);
+
+      // Run when panel content size changes (typewriter/cascade/inputs/buttons reveal)
+      const resizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(updateStepsPanelBottom);
+      });
+      resizeObserver.observe(stepsEl);
     }
 
     // Listen for typewriter completion to trigger content animations
@@ -1109,6 +1118,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
         // Cascade delay per element (200ms = doubled from 100ms for slower reveal)
         const CASCADE_DELAY_MS = 200;
+        const OPACITY_DURATION_MS = 350;
         elements.forEach((element, index) => {
           element.style.transitionDelay = `${index * CASCADE_DELAY_MS}ms`;
         });
@@ -1118,7 +1128,22 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
         // Spacer may need to grow after content reveals
         requestAnimationFrame(() => requestAnimationFrame(updateSpacerHeight));
+
+        // Panel bottom: update as soon as typewriter completes, then again after cascade + action-buttons finish
+        requestAnimationFrame(() => requestAnimationFrame(updateStepsPanelBottomRef ?? (() => {})));
+        const cascadeEndMs =
+          elements.length > 0
+            ? (elements.length - 1) * CASCADE_DELAY_MS + OPACITY_DURATION_MS
+            : 0;
+        if (cascadeEndMs > 0) {
+          setTimeout(() => updateStepsPanelBottomRef?.(), cascadeEndMs);
+        }
       }
+    });
+
+    // Panel bottom: run on step change (next/prev) so it updates for each panel
+    document.addEventListener("multistep-step-change", () => {
+      requestAnimationFrame(() => requestAnimationFrame(updateStepsPanelBottomRef ?? (() => {})));
     });
 
     // Mark steps with typewriter effect
