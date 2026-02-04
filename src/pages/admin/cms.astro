@@ -7,8 +7,6 @@ import { checkAuth } from "../../lib/auth";
 import App from "../../components/ui/App.astro";
 import Button from "../../components/common/Button.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
-import PageEditorModal from "../../components/ui/PageEditorModal.astro";
-import Modal from "../../components/ui/Modal.astro";
 import DeleteConfirmButton from "../../components/common/DeleteConfirmButton.astro";
 import StickyActions from "../../components/project/StickyActions.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
@@ -494,7 +492,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12"
               >
-                {/* Drag handle column */}
+                {/* Drag handle */}
               </th>
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
@@ -521,91 +519,115 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               >
                 Actions
               </th>
+              <th class="w-12 px-2 py-3" aria-label="Expand" />
             </tr>
           </thead>
-          <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody id="cms-pages-tbody" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+            <!-- Create new page: trigger row -->
+            <tr
+              class="cms-accordion-trigger hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
+              data-editor-slot="create"
+              role="button"
+              tabindex="0"
+              aria-expanded="false"
+              aria-controls="cms-detail-create"
+            >
+              <td class="px-2 py-3 text-center text-gray-400 dark:text-gray-500 w-12">—</td>
+              <td class="px-6 py-3 text-sm font-medium text-primary-600 dark:text-primary-400" colspan="5">
+                + Create new page
+              </td>
+              <td class="px-2 py-3 w-12 align-middle">
+                <svg class="cms-chevron w-5 h-5 text-gray-500 rotate-0 transition-transform" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </td>
+            </tr>
+            <!-- Create new page: detail row (accordion body) -->
+            <tr id="cms-detail-create" class="cms-accordion-detail hidden" data-editor-slot="create" aria-hidden="true">
+              <td colspan="7" class="p-0 bg-gray-50 dark:bg-gray-800/50">
+                <div id="editor-slot-create" class="editor-slot min-h-[200px]"></div>
+              </td>
+            </tr>
             {
               cmsPages.length === 0 ? (
                 <tr>
-                  <td
-                    colspan="6"
-                    class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
-                  >
+                  <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                     No pages in database.{" "}
                     {markdownOnlyPages.length > 0
-                      ? "Import markdown files above or create a new page."
-                      : "Create your first page above."}
+                      ? "Import markdown files above or create a new page above."
+                      : "Use “Create new page” above to add your first page."}
                   </td>
                 </tr>
               ) : (
-                cmsPages.map((page, index) => (
+                cmsPages.flatMap((page, index) => [
                   <tr
-                    class="cursor-move hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    draggable="true"
-                    data-page-id={page.id}
-                    data-page-slug={page.slug}
-                    data-display-order={page.display_order ?? index}
-                  >
-                    <td class="px-2 py-4 text-center text-gray-400 dark:text-gray-500 cursor-grab active:cursor-grabbing">
-                      <svg
-                        class="w-5 h-5 mx-auto"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M4 8h16M4 16h16"
-                        />
-                      </svg>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {page.slug}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate max-w-48">
-                      {page.title || "—"}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {page.template || "default"}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      {page.isActive ? (
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          Active
-                        </span>
-                      ) : (
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                          Inactive
-                        </span>
-                      )}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div class="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          icon="edit"
-                          class="edit-page-btn"
-                          dataAttributes={{ "data-slug": page.slug }}
-                          title="Edit page"
-                        />
-                        <DeleteConfirmButton
-                          id={`delete-cms-page-${page.id}`}
-                          itemType="cms-page"
-                          apiEndpoint="/api/cms/pages"
-                          onDeleteCallback="handleCmsPageDeleted"
-                          tooltipText={`Delete ${page.slug}`}
-                          size="sm"
-                          variant="icon"
-                          dataAttributes={{ slug: page.slug }}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      class="cms-accordion-trigger cursor-move hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
+                      draggable="true"
+                      data-page-id={page.id}
+                      data-page-slug={page.slug}
+                      data-display-order={page.display_order ?? index}
+                      data-editor-slot={page.slug}
+                      role="button"
+                      tabindex="0"
+                      aria-expanded="false"
+                      aria-controls={`cms-detail-${page.slug}`}
+                    >
+                      <td class="px-2 py-3 text-center text-gray-400 dark:text-gray-500 cursor-grab active:cursor-grabbing w-12">
+                        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                        </svg>
+                      </td>
+                      <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {page.slug}
+                      </td>
+                      <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate max-w-48">
+                        {page.title || "—"}
+                      </td>
+                      <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {page.template || "default"}
+                      </td>
+                      <td class="px-6 py-3 whitespace-nowrap">
+                        {page.isActive ? (
+                          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>
+                        ) : (
+                          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Inactive</span>
+                        )}
+                      </td>
+                      <td class="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                        <div class="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon="edit"
+                            class="edit-page-btn"
+                            dataAttributes={{ "data-slug": page.slug }}
+                            title="Edit page"
+                            iconClasses="mr-0"
+                          />
+                          <DeleteConfirmButton
+                            id={`delete-cms-page-${page.id}`}
+                            itemType="cms-page"
+                            apiEndpoint="/api/cms/pages"
+                            onDeleteCallback="handleCmsPageDeleted"
+                            tooltipText={`Delete ${page.slug}`}
+                            size="sm"
+                            variant="icon"
+                            dataAttributes={{ slug: page.slug }}
+                          />
+                        </div>
+                      </td>
+                      <td class="px-2 py-3 w-12 align-middle">
+                        <svg class="cms-chevron w-5 h-5 text-gray-500 rotate-0 transition-transform" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                      </td>
+                    </tr>,
+                    <tr id={`cms-detail-${page.slug}`} class="cms-accordion-detail hidden" data-editor-slot={page.slug} aria-hidden="true">
+                      <td colspan="7" class="p-0 bg-gray-50 dark:bg-gray-800/50">
+                        <div id={`editor-slot-${page.slug}`} class="editor-slot min-h-[200px]"></div>
+                      </td>
+                    </tr>,
+                ])
               )
             }
           </tbody>
@@ -614,17 +636,15 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
     </div>
   </div>
 
-  <!-- Page Editor Modal -->
-  <Modal id="page-editor-modal" zIndex={10050} blurAmount="md" opacity="50">
-    <div
-      class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-900 pointer-events-auto"
-    >
-      <div class="mt-3">
+  <!-- Page editor form: moved into row slots by script (pool hidden) -->
+  <div id="page-editor-form-pool" class="hidden">
+    <div id="page-editor-form-container">
+      <div class="p-5">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="modal-title">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="page-editor-title">
             Create New Page
           </h3>
-          <CloseButton id="close-modal-btn" tooltipText="Close modal" position="top" />
+          <CloseButton id="close-editor-btn" tooltipText="Close editor" position="top" />
         </div>
         <form id="page-form" class="space-y-4">
           <div>
@@ -1111,34 +1131,85 @@ You can embed components:
         </form>
       </div>
     </div>
-  </Modal>
+  </div>
 
-  <script define:vars={{ markdownOnlyPages, markdownPages }}>
+  <script lang="ts" define:vars={{ markdownOnlyPages, markdownPages, cmsPages }}>
     let editingSlug = null;
     const markdownPagesList = markdownPages || [];
     const markdownOnlyPagesList = markdownOnlyPages || [];
 
-    function initCMS() {
-      const modalBackdrop = document.getElementById("page-editor-modal");
-      const modalContent = document.getElementById("page-editor-modal-content");
+    function initCMS(retry = false) {
+      // Only run on the CMS page (avoids errors when script runs in unexpected contexts)
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin/cms")) {
+        return;
+      }
+      const formContainer = document.getElementById("page-editor-form-container");
+      const formPool = document.getElementById("page-editor-form-pool");
       const form = document.getElementById("page-form");
       const createBtn = document.getElementById("create-page-btn");
       const cancelBtn = document.getElementById("cancel-btn");
-      const closeBtn = document.getElementById("close-modal-btn");
-      // Error and success divs removed - using global toast system instead
-      const modalTitle = document.getElementById("modal-title");
+      const closeBtn = document.getElementById("close-editor-btn");
+      const pageEditorTitle = document.getElementById("page-editor-title");
       const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
       const navPropertiesSection = document.getElementById("navigation-properties");
       const slugInput = document.getElementById("page-slug");
 
-      if (!modalBackdrop || !modalContent || !form || !createBtn) {
-        console.error("[CMS] Required elements not found:", {
-          modalBackdrop,
-          modalContent,
-          form,
-          createBtn,
-        });
+      if (!formContainer || !form || !formPool) {
+        if (!retry) {
+          requestAnimationFrame(() => setTimeout(() => initCMS(true), 50));
+        }
         return;
+      }
+
+      let openSlotId = null;
+
+      function getDetailRow(slotId) {
+        return document.getElementById(`cms-detail-${slotId}`) || document.querySelector(`tr.cms-accordion-detail[data-editor-slot="${slotId}"]`);
+      }
+
+      function getTriggerRow(slotId) {
+        return document.querySelector(`tr.cms-accordion-trigger[data-editor-slot="${slotId}"]`);
+      }
+
+      function closeEditor() {
+        if (!openSlotId) return;
+        const detailRow = getDetailRow(openSlotId);
+        const triggerRow = getTriggerRow(openSlotId);
+        if (detailRow) {
+          detailRow.classList.add("hidden");
+          detailRow.setAttribute("aria-hidden", "true");
+        }
+        if (triggerRow) {
+          triggerRow.setAttribute("aria-expanded", "false");
+          const chevron = triggerRow.querySelector(".cms-chevron");
+          if (chevron) chevron.classList.remove("rotate-180");
+        }
+        if (formContainer && formPool) {
+          formPool.appendChild(formContainer);
+        }
+        openSlotId = null;
+      }
+
+      function openEditor(slotId, slugForEdit) {
+        const slotEl = document.getElementById(`editor-slot-${slotId}`);
+        if (!slotEl) return;
+        closeEditor();
+        if (formContainer) {
+          slotEl.appendChild(formContainer);
+        }
+        const detailRow = getDetailRow(slotId);
+        const triggerRow = getTriggerRow(slotId);
+        if (detailRow) {
+          detailRow.classList.remove("hidden");
+          detailRow.setAttribute("aria-hidden", "false");
+        }
+        if (triggerRow) {
+          triggerRow.setAttribute("aria-expanded", "true");
+          const chevron = triggerRow.querySelector(".cms-chevron");
+          if (chevron) chevron.classList.add("rotate-180");
+        }
+        openSlotId = slotId;
+        detailRow?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
 
       // Real-time slug sanitization
@@ -1168,95 +1239,131 @@ You can embed components:
         toggleNavProperties(); // Initial state
       }
 
-      // Open modal for creating new page
-      createBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log("[CMS] Create button clicked");
-        editingSlug = null;
-        form.reset();
-        const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
-        if (includeInNavCheckbox && includeInNavCheckbox instanceof HTMLInputElement) {
-          includeInNavCheckbox.checked = false;
-        }
-        if (modalTitle) modalTitle.textContent = "Create New Page";
+      // Create button: open create row and reset form
+      if (createBtn) {
+        createBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          editingSlug = null;
+          form.reset();
+          const incNav = document.getElementById("page-include-in-navigation");
+          if (incNav && incNav instanceof HTMLInputElement) incNav.checked = false;
+          if (pageEditorTitle) pageEditorTitle.textContent = "Create New Page";
+          openEditor("create");
+        });
+      }
 
-        // Show modal and overlay
-        modalBackdrop.classList.remove("hidden");
-        modalContent.classList.remove("hidden");
-      });
-
-      // Open modal for editing existing page
+      // Edit button: open that row and load page data
       document.querySelectorAll(".edit-page-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
+        btn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           const slug = btn.getAttribute("data-slug");
           if (!slug) return;
-
           editingSlug = slug;
-          if (modalTitle) modalTitle.textContent = `Edit Page: ${slug}`;
-
+          if (pageEditorTitle) pageEditorTitle.textContent = `Edit Page: ${slug}`;
           try {
             const response = await fetch(`/api/cms/pages?slug=${slug}`);
             const data = await response.json();
             const page = data.page;
-
             if (page) {
-              const slugInput = document.getElementById("page-slug");
-              const titleInput = document.getElementById("page-title");
-              const descInput = document.getElementById("page-description");
-              const templateSelect = document.getElementById("page-template");
-              const contentTextarea = document.getElementById("page-content");
-              const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
-              const navPageTypeSelect = document.getElementById("page-nav-page-type");
-              const navButtonStyleSelect = document.getElementById("page-nav-button-style");
-              const navDesktopOnlyCheckbox = document.getElementById("page-nav-desktop-only");
-              const navHideWhenAuthCheckbox = document.getElementById("page-nav-hide-when-auth");
-
-              if (slugInput) slugInput.value = page.slug || "";
-              if (titleInput) titleInput.value = page.title || "";
-              if (descInput) descInput.value = page.description || "";
-              if (templateSelect) templateSelect.value = page.template || "default";
-              if (contentTextarea) contentTextarea.value = page.content || "";
-              if (includeInNavCheckbox && includeInNavCheckbox instanceof HTMLInputElement) {
-                includeInNavCheckbox.checked = page.includeInNavigation || false;
-                // Trigger change event to show/hide navigation properties
-                includeInNavCheckbox.dispatchEvent(new Event("change"));
+              const s = document.getElementById("page-slug");
+              const t = document.getElementById("page-title");
+              const d = document.getElementById("page-description");
+              const tmpl = document.getElementById("page-template");
+              const content = document.getElementById("page-content");
+              const incNav = document.getElementById("page-include-in-navigation");
+              const navType = document.getElementById("page-nav-page-type");
+              const navStyle = document.getElementById("page-nav-button-style");
+              const navDesktop = document.getElementById("page-nav-desktop-only");
+              const navHideAuth = document.getElementById("page-nav-hide-when-auth");
+              if (s && s instanceof HTMLInputElement) s.value = page.slug || "";
+              if (t && t instanceof HTMLInputElement) t.value = page.title || "";
+              if (d && d instanceof HTMLInputElement) d.value = page.description || "";
+              if (tmpl && tmpl instanceof HTMLSelectElement) tmpl.value = page.template || "default";
+              if (content && content instanceof HTMLTextAreaElement) content.value = page.content || "";
+              if (incNav && incNav instanceof HTMLInputElement) {
+                incNav.checked = page.includeInNavigation || false;
+                incNav.dispatchEvent(new Event("change"));
               }
-
-              // Set navigation properties (read camelCase from database)
-              if (navPageTypeSelect && navPageTypeSelect instanceof HTMLSelectElement) {
-                navPageTypeSelect.value = page.navPageType || page.nav_page_type || "frontend";
-              }
-              if (navButtonStyleSelect && navButtonStyleSelect instanceof HTMLSelectElement) {
-                navButtonStyleSelect.value = page.navButtonStyle || page.nav_button_style || "";
-              }
-              if (navDesktopOnlyCheckbox && navDesktopOnlyCheckbox instanceof HTMLInputElement) {
-                navDesktopOnlyCheckbox.checked =
-                  page.navDesktopOnly ?? page.nav_desktop_only ?? false;
-              }
-              if (navHideWhenAuthCheckbox && navHideWhenAuthCheckbox instanceof HTMLInputElement) {
-                navHideWhenAuthCheckbox.checked =
-                  page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
-              }
-
-              // Set nav roles checkboxes (read camelCase from database)
+              if (navType && navType instanceof HTMLSelectElement) navType.value = page.navPageType || page.nav_page_type || "frontend";
+              if (navStyle && navStyle instanceof HTMLSelectElement) navStyle.value = page.navButtonStyle || page.nav_button_style || "";
+              if (navDesktop && navDesktop instanceof HTMLInputElement) navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
+              if (navHideAuth && navHideAuth instanceof HTMLInputElement) navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
               const navRoles = page.navRoles || page.nav_roles || ["any"];
               document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
-                if (cb instanceof HTMLInputElement) {
-                  cb.checked = navRoles.includes(cb.value);
-                }
+                if (cb instanceof HTMLInputElement) cb.checked = navRoles.includes(cb.value);
               });
             }
-
-            // Show modal and overlay
-            modalBackdrop.classList.remove("hidden");
-            modalContent.classList.remove("hidden");
-          } catch (error) {
-            console.error("Error loading page:", error);
-            if (window.showError) {
-              window.showError("Load Failed", "Failed to load page data", 0);
-            }
+            openEditor(slug, slug);
+          } catch (err) {
+            console.error("Error loading page:", err);
+            if (window.showError) window.showError("Load Failed", "Failed to load page data", 0);
           }
+        });
+      });
+
+      // Accordion trigger rows: click to toggle (except on Edit/Delete)
+      document.querySelectorAll("tr.cms-accordion-trigger").forEach((triggerRow) => {
+        triggerRow.addEventListener("click", (e) => {
+          const tgt = e.target instanceof Element ? e.target : null;
+          if (tgt?.closest(".edit-page-btn, .delete-confirm-btn, .delete-confirm-wrapper")) return;
+          const slotId = triggerRow.getAttribute("data-editor-slot");
+          if (!slotId) return;
+          if (openSlotId === slotId) {
+            closeEditor();
+            return;
+          }
+          if (slotId === "create") {
+            editingSlug = null;
+            form.reset();
+            const incNav = document.getElementById("page-include-in-navigation");
+            if (incNav && incNav instanceof HTMLInputElement) incNav.checked = false;
+            if (pageEditorTitle) pageEditorTitle.textContent = "Create New Page";
+            openEditor("create");
+            return;
+          }
+          editingSlug = slotId;
+          if (pageEditorTitle) pageEditorTitle.textContent = `Edit Page: ${slotId}`;
+          fetch(`/api/cms/pages?slug=${slotId}`)
+            .then((r) => r.json())
+            .then((data) => {
+              const page = data.page;
+              if (page) {
+                const s = document.getElementById("page-slug");
+                const t = document.getElementById("page-title");
+                const d = document.getElementById("page-description");
+                const tmpl = document.getElementById("page-template");
+                const content = document.getElementById("page-content");
+                const incNav = document.getElementById("page-include-in-navigation");
+                const navType = document.getElementById("page-nav-page-type");
+                const navStyle = document.getElementById("page-nav-button-style");
+                const navDesktop = document.getElementById("page-nav-desktop-only");
+                const navHideAuth = document.getElementById("page-nav-hide-when-auth");
+                if (s && s instanceof HTMLInputElement) s.value = page.slug || "";
+                if (t && t instanceof HTMLInputElement) t.value = page.title || "";
+                if (d && d instanceof HTMLInputElement) d.value = page.description || "";
+                if (tmpl && tmpl instanceof HTMLSelectElement) tmpl.value = page.template || "default";
+                if (content && content instanceof HTMLTextAreaElement) content.value = page.content || "";
+                if (incNav && incNav instanceof HTMLInputElement) {
+                  incNav.checked = page.includeInNavigation || false;
+                  incNav.dispatchEvent(new Event("change"));
+                }
+                if (navType && navType instanceof HTMLSelectElement) navType.value = page.navPageType || page.nav_page_type || "frontend";
+                if (navStyle && navStyle instanceof HTMLSelectElement) navStyle.value = page.navButtonStyle || page.nav_button_style || "";
+                if (navDesktop && navDesktop instanceof HTMLInputElement) navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
+                if (navHideAuth && navHideAuth instanceof HTMLInputElement) navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
+                const navRoles = page.navRoles || page.nav_roles || ["any"];
+                document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
+                  if (cb instanceof HTMLInputElement) cb.checked = navRoles.includes(cb.value);
+                });
+              }
+              openEditor(slotId, slotId);
+            })
+            .catch((err) => {
+              console.error("Error loading page:", err);
+              if (window.showError) window.showError("Load Failed", "Failed to load page data", 0);
+            });
         });
       });
 
@@ -1386,108 +1493,71 @@ You can embed components:
         }
       }
 
-      // Close modal function
-      const closeModal = () => {
-        modalBackdrop.classList.add("hidden");
-        modalContent.classList.add("hidden");
-      };
+      if (cancelBtn) cancelBtn.addEventListener("click", closeEditor);
+      if (closeBtn) closeBtn.addEventListener("click", closeEditor);
 
-      // Close modal - via cancel button or close X button
-      if (cancelBtn) {
-        cancelBtn.addEventListener("click", closeModal);
-      }
-
-      if (closeBtn) {
-        closeBtn.addEventListener("click", closeModal);
-      }
-
-      // Close modal on backdrop click
-      if (modalBackdrop) {
-        modalBackdrop.addEventListener("click", closeModal);
-      }
-
-      // Drag and drop functionality for reordering pages (with touch support)
-      let draggedElement = null;
+      // Drag and drop: move trigger + detail row pairs (pages only)
+      let draggedTrigger = null;
+      let draggedDetailRow = null;
       let draggedIndex = -1;
       let touchStartY = 0;
       let touchCurrentY = 0;
-      let placeholder = null;
 
-      const tbody = document.querySelector("tbody");
+      const tbody = document.getElementById("cms-pages-tbody");
       if (tbody) {
-        // Function to update page order in database
+        const triggerRows = () => Array.from(tbody.querySelectorAll("tr.cms-accordion-trigger[data-page-id]"));
+
         async function updatePageOrder() {
-          const newRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
-          const orderUpdates = [];
+          const rows = triggerRows();
+          const orderUpdates = rows
+            .map((r) => r.getAttribute("data-page-id"))
+            .filter(Boolean)
+            .map((id, idx) => ({ id, display_order: idx }));
 
-          newRows.forEach((r, idx) => {
-            const pageId = r.getAttribute("data-page-id");
-            if (pageId) {
-              orderUpdates.push({
-                id: pageId,
-                display_order: idx,
-              });
-            }
-          });
-
-          // Save new order to database
           try {
             const response = await fetch("/api/cms/pages", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ orders: orderUpdates }),
             });
-
             if (!response.ok) {
               const error = await response.json();
               throw new Error(error.error || "Failed to update order");
             }
-
-            // Update data attributes
-            newRows.forEach((r, idx) => {
-              r.setAttribute("data-display-order", idx.toString());
-            });
+            rows.forEach((r, idx) => r.setAttribute("data-display-order", String(idx)));
           } catch (error) {
             console.error("Error updating page order:", error);
-            if (window.showError) {
-              window.showError("Save Failed", "Failed to save new order. Reloading page...", 3000);
-            }
+            if (window.showError) window.showError("Save Failed", "Failed to save new order. Reloading page...", 3000);
             setTimeout(() => location.reload(), 1000);
           }
         }
 
-        // Make rows draggable
-        const rows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
+        triggerRows().forEach((row, index) => {
+          const detailRow = row.nextElementSibling;
+          const isDetailRow = detailRow?.classList.contains("cms-accordion-detail");
 
-        rows.forEach((row, index) => {
-          // Mouse drag events
           row.addEventListener("dragstart", (e) => {
-            draggedElement = row;
+            draggedTrigger = row;
+            draggedDetailRow = isDetailRow ? detailRow : null;
             draggedIndex = index;
             row.classList.add("opacity-50");
             if (e.dataTransfer) {
               e.dataTransfer.effectAllowed = "move";
-              e.dataTransfer.setData("text/html", row.innerHTML);
+              e.dataTransfer.setData("text/plain", row.getAttribute("data-page-id") || "");
             }
           });
 
           row.addEventListener("dragend", () => {
-            if (draggedElement) {
-              draggedElement.classList.remove("opacity-50");
-            }
-            rows.forEach((r) => {
-              r.classList.remove("border-t-2", "border-primary-500");
-            });
+            if (draggedTrigger) draggedTrigger.classList.remove("opacity-50");
+            triggerRows().forEach((r) => r.classList.remove("border-t-2", "border-primary-500"));
+            draggedTrigger = null;
+            draggedDetailRow = null;
           });
 
           row.addEventListener("dragover", (e) => {
             e.preventDefault();
-            if (e.dataTransfer) {
-              e.dataTransfer.dropEffect = "move";
-            }
-            if (draggedElement && row !== draggedElement) {
-              row.classList.add("border-t-2", "border-primary-500");
-            }
+            if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+            if (draggedTrigger && row !== draggedTrigger) row.classList.add("border-t-2", "border-primary-500");
           });
 
           row.addEventListener("dragleave", () => {
@@ -1497,40 +1567,28 @@ You can embed components:
           row.addEventListener("drop", async (e) => {
             e.preventDefault();
             row.classList.remove("border-t-2", "border-primary-500");
+            if (!draggedTrigger || draggedTrigger === row) return;
+            const targetIndex = triggerRows().indexOf(row);
+            if (draggedIndex === targetIndex) return;
 
-            if (draggedElement && draggedElement !== row) {
-              const dropIndex = rows.indexOf(row);
-
-              // Reorder DOM
-              if (draggedIndex < dropIndex) {
-                tbody.insertBefore(draggedElement, row.nextSibling);
-              } else {
-                tbody.insertBefore(draggedElement, row);
-              }
-
-              await updatePageOrder();
-            }
+            // Move pair: insert detail then trigger before target so order is trigger, detail, target...
+            if (draggedDetailRow) tbody.insertBefore(draggedDetailRow, row);
+            tbody.insertBefore(draggedTrigger, draggedDetailRow || row);
+            await updatePageOrder();
           });
 
-          // Touch events for mobile
+          // Touch events for mobile (move trigger + detail pair)
           row.addEventListener(
             "touchstart",
             (e) => {
-              // Only handle single touch
               if (e.touches.length !== 1) return;
-
-              draggedElement = row;
-              draggedIndex = Array.from(tbody.querySelectorAll("tr[draggable='true']")).indexOf(
-                row
-              );
+              draggedTrigger = row;
+              draggedDetailRow = isDetailRow ? detailRow : null;
+              draggedIndex = triggerRows().indexOf(row);
               touchStartY = e.touches[0].clientY;
               touchCurrentY = touchStartY;
-
-              // Add visual feedback
               row.classList.add("opacity-50", "scale-105", "z-50", "shadow-lg");
               row.style.position = "relative";
-
-              // Prevent text selection
               e.preventDefault();
             },
             { passive: false }
@@ -1539,31 +1597,18 @@ You can embed components:
           row.addEventListener(
             "touchmove",
             (e) => {
-              if (!draggedElement || e.touches.length !== 1) return;
-
+              if (!draggedTrigger || e.touches.length !== 1) return;
               e.preventDefault();
               touchCurrentY = e.touches[0].clientY;
               const deltaY = touchCurrentY - touchStartY;
-
-              // Move the element
-              draggedElement.style.transform = `translateY(${deltaY}px)`;
-
-              // Find the element we're hovering over
+              draggedTrigger.style.transform = `translateY(${deltaY}px)`;
               const afterElement = getDragAfterElement(tbody, touchCurrentY);
-              const currentRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
-
-              // Remove all border highlights
-              currentRows.forEach((r) => {
-                r.classList.remove("border-t-2", "border-primary-500");
-              });
-
-              // Add border to target row
+              const currentRows = triggerRows();
+              currentRows.forEach((r) => r.classList.remove("border-t-2", "border-primary-500"));
               if (afterElement == null) {
                 const lastRow = currentRows[currentRows.length - 1];
-                if (lastRow !== draggedElement) {
-                  lastRow.classList.add("border-t-2", "border-primary-500");
-                }
-              } else if (afterElement !== draggedElement) {
+                if (lastRow !== draggedTrigger) lastRow.classList.add("border-t-2", "border-primary-500");
+              } else if (afterElement !== draggedTrigger) {
                 afterElement.classList.add("border-t-2", "border-primary-500");
               }
             },
@@ -1573,60 +1618,44 @@ You can embed components:
           row.addEventListener(
             "touchend",
             async (e) => {
-              if (!draggedElement) return;
-
+              if (!draggedTrigger) return;
               e.preventDefault();
-
-              // Get the current position
               const afterElement = getDragAfterElement(tbody, touchCurrentY);
-              const currentRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
-
-              // Reorder DOM
-              if (afterElement == null) {
-                tbody.appendChild(draggedElement);
-              } else {
-                tbody.insertBefore(draggedElement, afterElement);
+              const currentRows = triggerRows();
+              if (afterElement && afterElement !== draggedTrigger) {
+                if (draggedDetailRow) tbody.insertBefore(draggedDetailRow, afterElement);
+                tbody.insertBefore(draggedTrigger, draggedDetailRow || afterElement);
+              } else if (afterElement == null) {
+                tbody.appendChild(draggedTrigger);
+                if (draggedDetailRow) tbody.appendChild(draggedDetailRow);
               }
-
-              // Reset styles
-              draggedElement.classList.remove("opacity-50", "scale-105", "z-50", "shadow-lg");
-              draggedElement.style.transform = "";
-              draggedElement.style.position = "";
-
-              // Remove all border highlights
-              currentRows.forEach((r) => {
-                r.classList.remove("border-t-2", "border-primary-500");
-              });
-
-              // Update database
+              draggedTrigger.classList.remove("opacity-50", "scale-105", "z-50", "shadow-lg");
+              draggedTrigger.style.transform = "";
+              draggedTrigger.style.position = "";
+              currentRows.forEach((r) => r.classList.remove("border-t-2", "border-primary-500"));
               await updatePageOrder();
-
-              draggedElement = null;
-              draggedIndex = -1;
+              draggedTrigger = null;
+              draggedDetailRow = null;
             },
             { passive: false }
           );
 
           row.addEventListener("touchcancel", () => {
-            if (draggedElement) {
-              draggedElement.classList.remove("opacity-50", "scale-105", "z-50", "shadow-lg");
-              draggedElement.style.transform = "";
-              draggedElement.style.position = "";
-              const currentRows = Array.from(tbody.querySelectorAll("tr[draggable='true']"));
-              currentRows.forEach((r) => {
-                r.classList.remove("border-t-2", "border-primary-500");
-              });
+            if (draggedTrigger) {
+              draggedTrigger.classList.remove("opacity-50", "scale-105", "z-50", "shadow-lg");
+              draggedTrigger.style.transform = "";
+              draggedTrigger.style.position = "";
+              triggerRows().forEach((r) => r.classList.remove("border-t-2", "border-primary-500"));
             }
-            draggedElement = null;
-            draggedIndex = -1;
+            draggedTrigger = null;
+            draggedDetailRow = null;
           });
         });
       }
 
-      // Helper function to determine which element is after the current position
       function getDragAfterElement(container, y) {
         const draggableElements = [
-          ...container.querySelectorAll("tr[draggable='true']:not(.opacity-50)"),
+          ...container.querySelectorAll("tr.cms-accordion-trigger[data-page-id]:not(.opacity-50)"),
         ];
 
         return draggableElements.reduce(
@@ -1916,17 +1945,15 @@ You can embed components:
     });
   </script>
 
-  <StickyActions columns="3">
-    <Button id="create-page-btn" variant="primary" icon="plus"> Create New Page </Button>
-    <a href="/admin/settings">
-      <Button variant="secondary" icon="cog"> Global Settings </Button>
-    </a>
-    {
-      markdownPages.length > 0 && (
-        <Button id="import-all-markdown-btn" variant="success" icon="download">
-          📥 Import All Markdown ({markdownPages.length})
-        </Button>
-      )
-    }
-  </StickyActions>
+  <Button id="create-page-btn" variant="primary" icon="plus"> Create New Page </Button>
+  <a href="/admin/settings">
+    <Button variant="secondary" icon="cog"> Global Settings </Button>
+  </a>
+  {
+    markdownPages.length > 0 && (
+      <Button id="import-all-markdown-btn" variant="success" icon="download">
+        📥 Import All Markdown ({markdownPages.length})
+      </Button>
+    )
+  }
 </App>

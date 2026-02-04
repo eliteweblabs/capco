@@ -7,6 +7,7 @@ import { getSectionNavigation } from "../../lib/feature-navigation";
 import HttpChatWidget from "../../features/chat/components/HttpChatWidget.astro";
 // import CampfireChatWidget from "../../features/chat/components/CampfireChatWidget.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
+import Tooltip from "../common/TooltipFloating.astro";
 import Socials from "./Socials.astro";
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
@@ -19,8 +20,14 @@ interface Props {
   globalIconButtonClasses?: string;
 }
 
-const { currentUser, globalInputClasses, primaryTextClasses, projects, mobileNavigationHTML, globalIconButtonClasses } =
-  Astro.props;
+const {
+  currentUser,
+  globalInputClasses,
+  primaryTextClasses,
+  projects,
+  mobileNavigationHTML,
+  globalIconButtonClasses,
+} = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 
@@ -53,7 +60,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
 
 <aside
   id="sidebar"
-  class="fixed shadow-primary-md top-[100px] left-0 z-40 w-64 h-[calc(85dvh)] transition-all duration-300 ease-in-out -translate-x-full color-background-80 backdrop-blur-sm shadow-md shadow-black/10 font-secondary flex flex-col rounded-xl"
+  class="hide-for-modal fixed shadow-primary-md top-[100px] left-0 z-40 w-64 h-[calc(85dvh)] transition-all duration-300 ease-in-out -translate-x-full color-background-80 backdrop-blur-md shadow-md shadow-black/10 font-secondary flex flex-col rounded-xl"
   style="transition-property: width, transform, opacity; transition-duration: 300ms; transition-timing-function: ease-in-out;"
   aria-label="Sidebar"
 >
@@ -70,19 +77,14 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
       class={`space-y-2 text-xs font-medium uppercase tracking-wider ${primaryTextClasses}`}
       id="sidebar-menu"
     >
-      <!-- {currentUser && currentUser.id && currentRole !== "Client"  && (
-
-<li class="pt-4 pb-2 text-xs text-gray-500 dark:text-gray-400 uppercase">Pages</li>
-
-       
-  )} -->
-
-      <!-- Dashboard (Always shown) -->
-
       {
         currentUser && currentUser.id && (
           <li>
-            <a href="/dashboard" type="button" class={`${anchorClasses} ${isActive("/dashboard") ? activeClasses : ""}`}>
+            <a
+              href="/dashboard"
+              type="button"
+              class={`${anchorClasses} ${isActive("/dashboard") ? activeClasses : ""}`}
+            >
               <SimpleIcon name="dashboard" class={svgClasses} />
               <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                 Dashboard
@@ -96,7 +98,11 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
         currentUser && currentUser.id && currentRole === "Admin" && (
           <>
             <li>
-              <a href="/admin/settings" type="button" class={`${anchorClasses} ${isActive("/admin/settings") ? activeClasses : ""}`}>
+              <a
+                href="/admin/settings"
+                type="button"
+                class={`${anchorClasses} ${isActive("/admin/settings") ? activeClasses : ""}`}
+              >
                 <SimpleIcon name="settings" class={svgClasses} />
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   Settings
@@ -119,32 +125,38 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
                 </span>
                 <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
               </a>
-              <ul id="dropdown-design" class="hidden space-y-2 py-2 pl-8" data-sidebar-collapse-hide="">
-                <li>
-                  <a
-                    href="/admin/design"
-                    class={`${anchorClasses} ${isActive("/admin/design") && currentPath === "/admin/design" ? activeClasses : ""}`}
-                    data-sidebar-collapse-subitem=""
-                    data-sidebar-collapse-hide=""
-                  >
-                    Components
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/admin/design/placeholders"
-                    class={`${anchorClasses} ${isActive("/admin/design/placeholders") ? activeClasses : ""}`}
-                    data-sidebar-collapse-subitem=""
-                    data-sidebar-collapse-hide=""
-                  >
-                    Placeholders
-                  </a>
-                </li>
-              </ul>
+              <div data-sidebar-collapse-hide="">
+                <ul id="dropdown-design" class="hidden space-y-2 py-2 pl-8">
+                  <li>
+                    <a
+                      href="/admin/design"
+                      class={`${anchorClasses} ${isActive("/admin/design") && currentPath === "/admin/design" ? activeClasses : ""}`}
+                      data-sidebar-collapse-subitem=""
+                      data-sidebar-collapse-hide=""
+                    >
+                      Components
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/admin/design/placeholders"
+                      class={`${anchorClasses} ${isActive("/admin/design/placeholders") ? activeClasses : ""}`}
+                      data-sidebar-collapse-subitem=""
+                      data-sidebar-collapse-hide=""
+                    >
+                      Placeholders
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </li>
 
             <li>
-              <a href="/admin/cms" type="button" class={`${anchorClasses} ${isActive("/admin/cms") ? activeClasses : ""}`}>
+              <a
+                href="/admin/cms"
+                type="button"
+                class={`${anchorClasses} ${isActive("/admin/cms") ? activeClasses : ""}`}
+              >
                 <SimpleIcon name="dashboard" class={svgClasses} />
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   Content
@@ -153,7 +165,11 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
             </li>
 
             <li>
-              <a href="/admin/media" type="button" class={`${anchorClasses} ${isActive("/admin/media") ? activeClasses : ""}`}>
+              <a
+                href="/admin/media"
+                type="button"
+                class={`${anchorClasses} ${isActive("/admin/media") ? activeClasses : ""}`}
+              >
                 <SimpleIcon name="image" class={svgClasses} />
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   Media
@@ -162,7 +178,11 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
             </li>
 
             <li>
-              <a href="/admin/banner-alerts" type="button" class={`${anchorClasses} ${isActive("/admin/banner-alerts") ? activeClasses : ""}`}>
+              <a
+                href="/admin/banner-alerts"
+                type="button"
+                class={`${anchorClasses} ${isActive("/admin/banner-alerts") ? activeClasses : ""}`}
+              >
                 <SimpleIcon name="alert" class={svgClasses} />
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   Alerts
@@ -182,6 +202,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               aria-controls="dropdown-projects"
               data-collapse-toggle="dropdown-projects"
               data-sidebar-collapse-item=""
+              aria-expanded="false"
               href="#"
             >
               <SimpleIcon
@@ -194,46 +215,54 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               </span>
               <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
             </a>
-
-            <ul id="dropdown-projects" class="hidden space-y-2 py-2 pl-8" data-sidebar-collapse-hide="">
-              <li>
-                <a
-                  href="/project/dashboard/"
-                  class={`${anchorClasses} ${isActive("/project/dashboard") ? activeClasses : ""}`}
-                  data-sidebar-collapse-subitem=""
-                  data-sidebar-collapse-hide
-                >
-                  Dashboard
-                </a>
-              </li>
-              <li>
-                <a href="/project/new" class={`${anchorClasses} ${isActive("/project/new") ? activeClasses : ""}`} data-sidebar-collapse-subitem="" data-sidebar-collapse-hide>
-                  New
-                </a>
-              </li>
-              {currentUser && currentRole === "Admin" && (
+            <div data-sidebar-collapse-hide="">
+              <ul id="dropdown-projects" class="hidden space-y-2 py-2 pl-8">
                 <li>
                   <a
-                    href="/project/proposals"
-                    class={`${anchorClasses} ${isActive("/project/proposals") ? activeClasses : ""}`}
+                    href="/project/dashboard/"
+                    class={`${anchorClasses} ${isActive("/project/dashboard") ? activeClasses : ""}`}
                     data-sidebar-collapse-subitem=""
                     data-sidebar-collapse-hide
                   >
-                    Proposals
+                    Dashboard
                   </a>
                 </li>
-                 <li>
+                <li>
                   <a
-                    href="/project/settings"
-                    class={`${anchorClasses} ${isActive("/project/settings") ? activeClasses : ""}`}
+                    href="/project/new"
+                    class={`${anchorClasses} ${isActive("/project/new") ? activeClasses : ""}`}
                     data-sidebar-collapse-subitem=""
                     data-sidebar-collapse-hide
                   >
-                    Settings
+                    New
                   </a>
                 </li>
-              )}
-            </ul>
+                {currentUser && currentRole === "Admin" && (
+                  <>
+                    <li>
+                      <a
+                        href="/project/proposals"
+                        class={`${anchorClasses} ${isActive("/project/proposals") ? activeClasses : ""}`}
+                        data-sidebar-collapse-subitem=""
+                        data-sidebar-collapse-hide
+                      >
+                        Proposals
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/project/settings"
+                        class={`${anchorClasses} ${isActive("/project/settings") ? activeClasses : ""}`}
+                        data-sidebar-collapse-subitem=""
+                        data-sidebar-collapse-hide
+                      >
+                        Settings
+                      </a>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
           </li>
         )
       }
@@ -244,7 +273,11 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           currentRole === "Admin" &&
           adminNavItems.map((item) => (
             <li>
-              <a href={item.href} class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`} data-sidebar-collapse-item="">
+              <a
+                href={item.href}
+                class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`}
+                data-sidebar-collapse-item=""
+              >
                 {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   {item.label}
@@ -254,44 +287,15 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           ))
       }
 
-      <!-- Notification Bell -->
-      {
-        currentUser && currentUser.id && currentRole !== "Client" && (
-          <li>
-            <a
-              id="notification-bell"
-              href="#"
-              class={`${anchorClasses}`}
-              data-sidebar-collapse-item=""
-              data-modal-target="notificationsModal"
-              data-modal-toggle="notificationsModal"
-              data-user-id={currentUser.id}
-              title="View notifications"
-              data-tooltip-target="tooltip-notifications"
-              data-tooltip-placement="right"
-            >
-              <SimpleIcon name="bell" class={svgClasses} />
-              <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                View notifications
-              </span>
-            </a>
-            <div
-              id="tooltip-notifications"
-              role="tooltip"
-              class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700"
-            >
-              View notifications
-              <div class="tooltip-arrow" data-popper-arrow />
-            </div>
-          </li>
-        )
-      }
-
       <!-- Admin-Only: Send Notifications -->
       {
         currentRole === "Admin" && (
           <li>
-            <a href="/admin/notifications" class={`${anchorClasses} ${isActive("/admin/notifications") ? activeClasses : ""}`} data-sidebar-collapse-item="">
+            <a
+              href="/admin/notifications"
+              class={`${anchorClasses} ${isActive("/admin/notifications") ? activeClasses : ""}`}
+              data-sidebar-collapse-item=""
+            >
               <SimpleIcon name="zap" class={svgClasses} />
               <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide="">
                 Send Notifications
@@ -305,7 +309,11 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
       {
         currentRole === "Admin" && currentUser.email === "tom@tomsens.com" && (
           <li>
-            <a href="/admin/update-test" class={`${anchorClasses} ${isActive("/admin/update-test") ? activeClasses : ""}`} data-sidebar-collapse-item="">
+            <a
+              href="/admin/update-test"
+              class={`${anchorClasses} ${isActive("/admin/update-test") ? activeClasses : ""}`}
+              data-sidebar-collapse-item=""
+            >
               <SimpleIcon name="alert" class={svgClasses} />
               <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                 Update Msg Test
@@ -328,7 +336,11 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           currentRole === "Admin" &&
           toolsNavItems.map((item) => (
             <li>
-              <a href={item.href} class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`} data-sidebar-collapse-item="">
+              <a
+                href={item.href}
+                class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`}
+                data-sidebar-collapse-item=""
+              >
                 {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
                 <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
                   {item.label}
@@ -359,7 +371,7 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
               <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
             </button>
 
-            <ul id="dropdown-tests" class="hidden space-y-2 py-2 pl-8" data-sidebar-collapse-hide="">
+            <ul id="dropdown-tests" class="hidden space-y-2 py-2 pl-8">
               <li>
                 <a
                   href="/tests/cal-booking/"
@@ -452,59 +464,3 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
     </div>
   </div>
 </aside>
-
-<!-- {chatEnabled && <CampfireChatWidget {currentUser} />}
- 
- <div data-sidebar-collapse-hide="">
-      <span data-sidebar-collapse-hide="" id="online-count">0 online</span>
-      {chatEnabled && <HttpChatWidget {currentUser} {currentRole} {globalInputClasses} />}
-    </div>
-    
-    -->
-
-<script define:vars={{ shouldCheckBell: currentUser?.id && currentRole !== "Client" }}>
-  // Debug notification bell rendering (only runs when bell should be present)
-  if (shouldCheckBell) {
-    console.log("🔔 [ASIDE DEBUG] Aside component script loaded");
-
-    function checkNotificationBell() {
-      const bell = document.getElementById("notification-bell");
-      console.log("🔔 [ASIDE DEBUG] Checking for notification bell...");
-      console.log("🔔 [ASIDE DEBUG] Bell element:", bell);
-
-      if (bell) {
-        // console.log("✅ [ASIDE DEBUG] Notification bell found!");
-        // console.log("🔔 [ASIDE DEBUG] Bell classes:", bell.className);
-        // console.log("🔔 [ASIDE DEBUG] Bell href:", bell.getAttribute("href"));
-        // console.log(
-        //   "🔔 [ASIDE DEBUG] Bell data-modal-target:",
-        //   bell.getAttribute("data-modal-target")
-        // );
-        // console.log("🔔 [ASIDE DEBUG] Bell parent:", bell.parentElement);
-        // console.log(
-        //   "🔔 [ASIDE DEBUG] Bell visible:",
-        //   window.getComputedStyle(bell).display !== "none"
-        // );
-      } else {
-        console.error("❌ [ASIDE DEBUG] Notification bell NOT found in DOM!");
-        console.log(
-          "🔔 [ASIDE DEBUG] All sidebar links:",
-          Array.from(document.querySelectorAll("#sidebar a")).map((a) => ({
-            id: a.id,
-            text: a.textContent?.trim(),
-            href: a.getAttribute("href"),
-          }))
-        );
-      }
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", checkNotificationBell);
-    } else {
-      checkNotificationBell();
-    }
-
-    // Check again after delay
-    setTimeout(checkNotificationBell, 500);
-  }
-</script>

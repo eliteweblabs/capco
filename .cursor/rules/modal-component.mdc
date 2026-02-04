@@ -1,66 +1,61 @@
 ---
-description: Always use Modal component for modal overlays
+description: Prefer accordions and tooltips over modals; use Modal only when overlay is required
 globs: **/*.astro
 alwaysApply: false
 ---
 
-# Modal Component Usage
+# Modals vs Accordions & Tooltips
 
-**ALWAYS** use the standardized `Modal.astro` component for modal/dialog overlays instead of creating custom implementations.
+**Prefer accordions and tooltips over modals.** Use the `Modal.astro` component only when you truly need a full-page overlay (e.g. drawer backdrop). Avoid modal dialogs for forms, preferences, and panels.
 
-## Correct Pattern
+## Preferred patterns
+
+- **Forms / edit UI** → Inline **accordion** or collapsible section on the same page (e.g. CMS page editor, cookie preferences in banner).
+- **Short hints / actions** → **Tooltips** or small **dropdown panels** (e.g. notifications panel as a floating card, no overlay).
+- **Confirmations** → Use existing toast/notice system or inline confirmation (e.g. `DeleteConfirmButton`).
+
+## When to use Modal.astro
+
+Use only when you need a **backdrop overlay** (e.g. punchlist drawer). Do not use for dialog-style content that can be replaced by an accordion or dropdown panel.
 
 ```astro
 import Modal from "../components/ui/Modal.astro";
 
-<Modal id="my-modal" zIndex={10000} blurAmount="md" opacity="50">
-  <div class="relative mx-auto mt-20 p-5 w-11/12 max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow-lg pointer-events-auto">
-    <!-- Your modal content here -->
-    <h2>Modal Title</h2>
-    <p>Modal content...</p>
-  </div>
-</Modal>
-
-<script>
-  const modalBackdrop = document.getElementById("my-modal");
-  const modalContent = document.getElementById("my-modal-content");
-  
-  function showModal() {
-    modalBackdrop.classList.remove("hidden");
-    modalContent.classList.remove("hidden");
-  }
-  
-  function hideModal() {
-    modalBackdrop.classList.add("hidden");
-    modalContent.classList.add("hidden");
-  }
-</script>
+<Modal id="my-backdrop" zIndex={40} opacity="50" blurAmount="sm" />
 ```
 
-## ❌ Wrong Pattern
+## Accordion pattern (instead of modal)
 
 ```astro
-<!-- Don't create custom modal overlays -->
-<div id="my-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
-  <div class="...">Content</div>
+<div data-accordion="collapse">
+  <h2>
+    <button
+      type="button"
+      data-accordion-target="#section-body"
+      aria-expanded="false"
+      aria-controls="section-body"
+    >
+      Section title
+    </button>
+  </h2>
+  <div id="section-body" class="hidden" aria-labelledby="...">
+    <!-- Content that would have been in a modal -->
+  </div>
 </div>
 ```
 
-## Modal Props
+Toggle via script: remove/add `hidden` on the body, set `aria-expanded` on the trigger, and use `scrollIntoView({ behavior: "smooth" })` when opening.
 
-- `id`: Unique identifier (auto-generates `{id}-content` for content wrapper)
-- `zIndex`: Z-index for backdrop (content gets zIndex + 1)
-- `blurAmount`: "none" | "sm" | "md" | "lg" | "xl"
-- `opacity`: String like "50" for 0.50 opacity
-- `mobileOnly`: Boolean for mobile-only display
-- `backdropClasses`: Additional classes for backdrop
-- `contentClasses`: Additional classes for content wrapper
+## Modal.astro props (when used)
 
-## Benefits
+- `id`: Unique identifier (content wrapper gets `{id}-content`)
+- `zIndex`, `blurAmount`, `opacity`: Backdrop styling
+- `useGlobalOverlay`: Use `global-modal-overlay` from App.astro (for rare cases)
+- `backdropClasses`, `contentClasses`: Optional overrides
 
-- Consistent appearance across app
-- Centralized backdrop styling
-- Automatic z-index management
-- Blur and opacity control
-- Slot-based content (clean and intuitive)
-- Easier maintenance
+## Benefits of reducing modals
+
+- No z-index or overlay stacking issues
+- No `body.modal-open` or `.hide-for-modal` coupling
+- Content stays in page flow (better for accessibility and small screens)
+- Simpler mental model: expand/collapse and tooltips instead of layers

@@ -38,7 +38,7 @@ export const mepFormConfig: MultiStepFormConfig = {
   formAction: "/api/mep/submit",
   formMethod: "post",
   totalSteps: 6,
-  progressBar: true,
+  progressBar: false,
   registerUser: true, // Allow existing users to proceed (backend will handle user lookup)
   // Global button defaults - change here to update ALL buttons of that type
 
@@ -69,8 +69,7 @@ export const mepFormConfig: MultiStepFormConfig = {
 
     {
       stepNumber: 2,
-      title: `What's your name?`,
-      subtitle: "",
+      title: `Let's start with your name!`,
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fieldLayout: "grid", // Enable grid layout for side-by-side fields
       fields: [

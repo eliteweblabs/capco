@@ -181,8 +181,8 @@ const allBannerIds = banners.map((b) => String(b.id));
           setTimeout(adjustMainContentForTopBanners, 10);
         }
         
-        // Also run on Astro page transitions
-        document.addEventListener("astro:page-load", adjustMainContentForTopBanners);
+        // Also run on Astro page transitions (defer so swap paints first)
+        document.addEventListener("astro:page-load", () => requestAnimationFrame(adjustMainContentForTopBanners));
       })();
     </script>
   )
@@ -209,22 +209,12 @@ const allBannerIds = banners.map((b) => String(b.id));
 {
   bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
     <script is:inline>
-      {/* // Debug: Check if bottom banner container exists */}
       (function() {
-        console.log("[BannerAlertsLoader] Bottom banner script loaded");
-        
         function checkBottomBanner() {
           const container = document.getElementById("bottom-banner-container");
-          console.log("[BannerAlertsLoader] Bottom container found:", !!container);
-          if (container) {
-            console.log("[BannerAlertsLoader] Container offsetHeight:", container.offsetHeight);
-            console.log("[BannerAlertsLoader] Container computed style:", window.getComputedStyle(container).position);
-            console.log("[BannerAlertsLoader] Container z-index:", window.getComputedStyle(container).zIndex);
-            console.log("[BannerAlertsLoader] Container display:", window.getComputedStyle(container).display);
-            console.log("[BannerAlertsLoader] Container visibility:", window.getComputedStyle(container).visibility);
-          }
+          if (!container) return;
+          container.offsetHeight; // force reflow if needed for layout
         }
-        
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", checkBottomBanner);
         } else {
@@ -309,8 +299,8 @@ const allBannerIds = banners.map((b) => String(b.id));
           setTimeout(adjustFooterForBanners, 10);
         }
         
-        // Also run on Astro page transitions
-        document.addEventListener("astro:page-load", adjustFooterForBanners);
+        // Also run on Astro page transitions (defer so swap paints first)
+        document.addEventListener("astro:page-load", () => requestAnimationFrame(adjustFooterForBanners));
       })();
     </script>
   )

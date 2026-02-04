@@ -75,6 +75,242 @@ body.dark select::placeholder {
   color: var(--color-text-muted-dark);
 }
 
+/* Enhanced input styling: focus glow, pulse, validation states (email, password, text, tel) */
+input[type="email"],
+input[type="password"],
+input[type="text"],
+input[type="tel"] {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input[type="email"]:focus::before,
+input[type="password"]:focus::before,
+input[type="text"]:focus::before,
+input[type="tel"]:focus::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 75px;
+  height: 75px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.2) 0%, transparent 70%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  animation: pulse-circle 1s ease-in-out infinite;
+  z-index: -1;
+}
+
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="text"]:focus,
+input[type="tel"]:focus {
+  box-shadow:
+    0 3px 9px -1.5px rgba(14, 165, 233, 0.15),
+    0 6px 15px -3px rgba(14, 165, 233, 0.1);
+}
+
+.dark input[type="email"]:focus::before,
+.dark input[type="password"]:focus::before,
+.dark input[type="text"]:focus::before,
+.dark input[type="tel"]:focus::before {
+  background: radial-gradient(circle, rgba(55, 185, 243, 0.25) 0%, transparent 70%);
+}
+
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark input[type="text"]:focus,
+.dark input[type="tel"]:focus {
+  box-shadow:
+    0 3px 9px -1.5px rgba(55, 185, 243, 0.2),
+    0 6px 15px -3px rgba(55, 185, 243, 0.125);
+}
+
+input[type="email"]:focus.is-valid::before,
+input[type="password"]:focus.is-valid::before,
+input[type="text"]:focus.is-valid::before,
+input[type="tel"]:focus.is-valid::before,
+input[type="email"].is-valid::before,
+input[type="password"].is-valid::before,
+input[type="text"].is-valid::before,
+input[type="tel"].is-valid::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 75px;
+  height: 75px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  animation: pulse-circle-green 1s ease-in-out infinite;
+  z-index: -1;
+}
+
+input[type="email"]:focus.is-valid,
+input[type="password"]:focus.is-valid,
+input[type="text"]:focus.is-valid,
+input[type="tel"]:focus.is-valid,
+input[type="email"].is-valid,
+input[type="password"].is-valid,
+input[type="text"].is-valid,
+input[type="tel"].is-valid {
+  box-shadow:
+    0 3px 9px -1.5px rgba(34, 197, 94, 0.15),
+    0 6px 15px -3px rgba(34, 197, 94, 0.1) !important;
+}
+
+.dark input[type="email"]:focus.is-valid::before,
+.dark input[type="password"]:focus.is-valid::before,
+.dark input[type="text"]:focus.is-valid::before,
+.dark input[type="tel"]:focus.is-valid::before,
+.dark input[type="email"].is-valid::before,
+.dark input[type="password"].is-valid::before,
+.dark input[type="text"].is-valid::before,
+.dark input[type="tel"].is-valid::before {
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.25) 0%, transparent 70%);
+}
+
+.dark input[type="email"]:focus.is-valid,
+.dark input[type="password"]:focus.is-valid,
+.dark input[type="text"]:focus.is-valid,
+.dark input[type="tel"]:focus.is-valid,
+.dark input[type="email"].is-valid,
+.dark input[type="password"].is-valid,
+.dark input[type="text"].is-valid,
+.dark input[type="tel"].is-valid {
+  box-shadow:
+    0 3px 9px -1.5px rgba(74, 222, 128, 0.2),
+    0 6px 15px -3px rgba(74, 222, 128, 0.15) !important;
+}
+
+input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
+input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
+input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
+input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
+input.is-invalid:not(:focus) {
+  box-shadow:
+    0 3px 9px -1.5px rgba(239, 68, 68, 0.1),
+    0 6px 15px -3px rgba(239, 68, 68, 0.075);
+}
+
+.dark input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
+.dark input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
+.dark input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
+.dark input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
+.dark input.is-invalid:not(:focus) {
+  box-shadow:
+    0 3px 9px -1.5px rgba(251, 113, 133, 0.15),
+    0 6px 15px -3px rgba(251, 113, 133, 0.1);
+}
+
+/* First-pass autofill override: inset overlay + delay so Chrome’s blue never visibly applies */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  background-color: rgba(var(--color-background), 0.5) !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(var(--color-background), 0.5) inset !important;
+  box-shadow: 0 0 0 1000px rgba(var(--color-background), 0.5) inset !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  background-color: rgba(var(--color-background-dark), 0.5) !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset !important;
+  box-shadow: 0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+}
+
+:root {
+  --text-color: #111827;
+}
+
+.dark {
+  --text-color: #f9fafb;
+}
+
+@keyframes pulse-circle {
+  0%,
+  100% {
+    width: 100px;
+    height: 100px;
+    opacity: 0.3;
+  }
+  50% {
+    width: 140px;
+    height: 140px;
+    opacity: 0.4;
+  }
+}
+
+@keyframes pulse-circle-green {
+  0%,
+  100% {
+    width: 100px;
+    height: 100px;
+    opacity: 0.3;
+  }
+  50% {
+    width: 140px;
+    height: 140px;
+    opacity: 0.4;
+  }
+}
+
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon.icon-left::before {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.5;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.input-with-icon.icon-right::after {
+  content: "";
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.5;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.input-with-icon:focus-within::before,
+.input-with-icon:focus-within::after {
+  opacity: 0.7;
+}
+
+.dark .input-with-icon::before,
+.dark .input-with-icon::after {
+  filter: brightness(0.8);
+}
+
+.dark .input-with-icon:focus-within::before,
+.dark .input-with-icon:focus-within::after {
+  filter: brightness(1);
+}
+
 /* Fix for toggle button hover state overriding deselected state */
 .toggle-button.deselected {
   background-color: transparent !important;
@@ -119,10 +355,12 @@ input:-webkit-autofill:active {
   animation-name: onAutoFillStart;
   animation-duration: 0.001s;
   border-color: var(--color-primary-400);
-  /* Match global input: use large inset box-shadow so iOS Safari overrides yellow/blue autofill bg */
+  /* Match global input: large inset -webkit-box-shadow + box-shadow override Chrome/Safari blue/yellow autofill bg */
   background-color: rgba(var(--color-background), 0.5) !important;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background), 0.5) inset !important;
   box-shadow:
     0 0 0 1000px rgba(var(--color-background), 0.5) inset,
     inset 0 0 8px 0 color-mix(in srgb, var(--color-primary-500) 13%, transparent) !important;
@@ -142,10 +380,14 @@ input:-webkit-autofill:focus {
 
   border-color: var(--color-primary-400);
 
-  /* On focus: same bg as global input + outer shadow */
+  /* On focus: same bg as global input + outer shadow; keep inset so Chrome autofill blue stays overridden */
   background-color: rgba(var(--color-background), 0.5) !important;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
   box-shadow:
     0 0 0 1000px rgba(var(--color-background), 0.5) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
@@ -164,10 +406,12 @@ input:-webkit-autofill:focus {
 .dark input:-webkit-autofill:active {
   border-color: var(--color-primary-400);
 
-  /* Match global input dark (bg-black/50) - large inset shadow overrides iOS yellow */
+  /* Match global input dark (bg-black/50) - large inset overrides Chrome blue / iOS yellow */
   background-color: rgba(var(--color-background-dark), 0.5) !important;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset !important;
   box-shadow:
     0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
     inset 0 0 8px 0 color-mix(in srgb, var(--color-primary-500) 13%, transparent) !important;
@@ -176,10 +420,14 @@ input:-webkit-autofill:focus {
 .dark input:-webkit-autofill:focus {
   border-color: var(--color-primary-400);
 
-  /* On focus (dark): same bg as global input + outer shadow */
+  /* On focus (dark): same bg as global input + outer shadow; keep inset to override autofill bg */
   background-color: rgba(var(--color-background-dark), 0.5) !important;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
   box-shadow:
     0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
@@ -262,7 +510,7 @@ select {
   transition: box-shadow 250ms ease-in-out;
 }
 
-/* Primary focus shadow - applies to all inputs globally */
+/* Primary focus shadow - applies to all inputs globally (validation states below override when applicable) */
 input:not([type="hidden"]):focus,
 textarea:focus,
 select:focus {
@@ -271,20 +519,110 @@ select:focus {
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
-/* Auto-filled fields get same shadow as focused fields */
+/* Invalid: red glow when not focused */
+input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
+textarea:invalid:not(:placeholder-shown):not(:focus),
+select:invalid:not(:placeholder-shown):not(:focus) {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
+}
+
+/* Auto-filled fields: keep inset overlay (no blue bg) + same outer shadow as focused */
 input:not([type="hidden"]):-webkit-autofill,
 textarea:-webkit-autofill,
 select:-webkit-autofill {
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
   box-shadow:
+    0 0 0 1000px rgba(var(--color-background), 0.5) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
-/* Valid fields get GREEN shadow when not focused */
+.dark input:not([type="hidden"]):-webkit-autofill,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+  box-shadow:
+    0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+
+/* Valid fields get GREEN shadow when not focused (:valid from browser) */
 input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
 textarea:valid:not(:placeholder-shown):not(:focus),
 select:valid:not(:placeholder-shown):not(:focus) {
   box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+
+/* Valid fields get GREEN when form adds .is-valid (covers email/text/password/tel from MultiStepForm etc.) */
+input:not([type="hidden"]).is-valid:not(:focus),
+textarea.is-valid:not(:focus),
+select.is-valid:not(:focus) {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+
+/* .is-valid + autofilled: green glow but keep inset (no blue bg) */
+input:not([type="hidden"]).is-valid:-webkit-autofill:not(:focus),
+textarea.is-valid:-webkit-autofill:not(:focus),
+select.is-valid:-webkit-autofill:not(:focus) {
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  box-shadow:
+    0 0 0 1000px rgba(var(--color-background), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+
+.dark input:not([type="hidden"]).is-valid:-webkit-autofill:not(:focus),
+.dark textarea.is-valid:-webkit-autofill:not(:focus),
+.dark select.is-valid:-webkit-autofill:not(:focus) {
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  box-shadow:
+    0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+
+/* Valid + autofilled, not focused: green glow but keep inset (no blue bg) */
+input:not([type="hidden"]):valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+textarea:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+select:valid:-webkit-autofill:not(:placeholder-shown):not(:focus) {
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  box-shadow:
+    0 0 0 1000px rgba(var(--color-background), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+
+.dark input:not([type="hidden"]):valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+.dark textarea:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+.dark select:valid:-webkit-autofill:not(:placeholder-shown):not(:focus) {
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  box-shadow:
+    0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }

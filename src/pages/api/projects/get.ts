@@ -45,7 +45,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       // console.log("🏗️ [PROJECTS-GET] Allowing public access to featured projects");
     }
 
-    console.log("🏗️ [PROJECTS-GET] Project ID:", projectId, "Count only:", countOnly);
+    // console.log("🏗️ [PROJECTS-GET] Project ID:", projectId, "Count only:", countOnly);
     if (!supabase || !supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,

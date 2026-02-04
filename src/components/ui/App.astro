@@ -28,6 +28,8 @@ interface Props {
   mainClasses?: string;
   centerContent?: boolean;
   mask?: string;
+  /** Fullscreen layout: 100% height, main content scrolls, footer always visible at bottom */
+  fullscreenScroll?: boolean;
 }
 
 const {
@@ -41,6 +43,7 @@ const {
   mainClasses = "",
   centerContent = false,
   mask = "center",
+  fullscreenScroll = false,
 } = Astro.props;
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
@@ -73,6 +76,7 @@ const { globalInputClasses, primaryTextClasses, secondaryTextClasses, globalIcon
 // Get theme from cookie (set by client-side script)
 // Note: Cookie is set client-side, so on first load it may not exist yet
 const themeCookie = Astro.cookies.get("theme");
+const serverTheme = themeCookie?.value || "light"; // Default to light
 
 // Debug logging
 
@@ -113,6 +117,8 @@ const navigationData = await navigation(
 );
 const { desktopNavigationHTML, mobileNavigationHTML, visibleNavItems } = navigationData;
 
+import { ClientRouter } from "astro:transitions";
+import { generateColorPalette } from "@/lib/color-utils";
 import "../../styles/global.css"; // Import Tailwind CSS
 // import "../../styles/app.css"; // Import Tailwind CSS
 
@@ -600,9 +606,31 @@ const debugData = {
     </script>
 
     <!-- Set global user data for client-side components -->
+
+    <!-- SPA client-side routing for project/* and admin/* (no full page reload) -->
+    {isBackend && <ClientRouter fallback="swap" />}
   </head>
 
-  <body class={`antialiased mask-${mask.trim()}`}>
+  <body
+    class:list={[
+      `antialiased mask-${mask.trim()}`,
+      fullscreenScroll && "fullscreen-scroll-layout",
+    ]}
+    transition:animate={isBackend ? "none" : undefined}
+  >
+    {
+      fullscreenScroll && (
+        <style is:global>
+          {`
+            body.fullscreen-scroll-layout {
+              min-height: 100dvh;
+              display: flex;
+              flex-direction: column;
+            }
+          `}
+        </style>
+      )
+    }
     <!-- Global Modal Overlay - Single instance used by all modals -->
     <Modal id="global-modal-overlay" zIndex={1000} blurAmount="lg" opacity="50" />
 
@@ -611,6 +639,25 @@ const debugData = {
 
     <!-- Preloader -->
     <Preloader />
+
+    <!-- SPA: re-apply theme and re-init after client-side navigation (backend only) -->
+    {isBackend && (
+      <script is:inline>
+        (function () {
+          function applyTheme() {
+            if (!document.documentElement) return;
+            var theme = localStorage.getItem("color-theme");
+            var dark =
+              theme === "dark" ||
+              (!theme && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            document.documentElement.classList.toggle("dark", dark);
+            document.documentElement.classList.toggle("zD1iTsv7EQco3GO_szee", dark);
+          }
+          applyTheme();
+          document.addEventListener("astro:page-load", applyTheme);
+        })();
+      </script>
+    )}
 
     <ScrollProgressIndicator />
 
@@ -638,15 +685,28 @@ const debugData = {
       {mobileNavigationHTML}
     />
 
+    <!-- Edge fade: content fades/blurs gradually into the dotted (green) area at top and bottom -->
+    <div class="content-edge-fade-top" aria-hidden="true" />
+    <div class="content-edge-fade-bottom" aria-hidden="true" />
+
     <div
       id="main-content"
-      class=`flex-1 ${currentUser ? "sm:ml-16" : ""} ${mainClasses}`
+      class:list={[
+        "flex-1",
+        currentUser ? "sm:ml-16" : "",
+        mainClasses,
+        fullscreenScroll && "flex flex-col min-h-0",
+      ]}
       style=`transition: all 300ms ease-in-out; overflow-x: hidden; ${centerContent ? "overscroll-behavior-y: contain; touch-action: pan-x;" : ""}`
     >
-      <!-- <div class="relative w-full flex items-center justify-center px-4 py-8 max-w-lg">
-        <div class="w-full max-w-3xl"> -->
       <main
-        class={`pt-32 flex-1 relative min-h-[calc(100dvh)] md:min-h-[calc(100dvh)] lg:min-h-[calc(100dvh)] ${centerContent ? "flex items-center justify-center px-8 overscroll-y-contain" : "p-4"}`}
+        class:list={[
+          "pt-32 flex-1 relative",
+          fullscreenScroll
+            ? "min-h-0 overflow-y-auto overscroll-contain"
+            : "min-h-[calc(100dvh)] md:min-h-[calc(100dvh)] lg:min-h-[calc(100dvh)]",
+          centerContent ? "flex items-center justify-center px-8 overscroll-y-contain" : "p-4",
+        ]}
       >
         <slot />
       </main>
@@ -663,22 +723,38 @@ const debugData = {
       <FeedbackPanel {currentUser} />
     </div>
 
-    <!-- Footer -->
-    <Footer
-      {globalIconButtonClasses}
-      {globalCompanyName}
-      {isBackend}
-      {globalCompanyPhone}
-      {primaryTextClasses}
-      {secondaryTextClasses}
-      {globalInputClasses}
-    />
+    <!-- Footer (wrapped in shrink-0 when fullscreenScroll so it stays visible at bottom) -->
+    {
+      fullscreenScroll ? (
+        <div class="shrink-0">
+          <Footer
+            {globalIconButtonClasses}
+            {globalCompanyName}
+            {isBackend}
+            {globalCompanyPhone}
+            {primaryTextClasses}
+            {secondaryTextClasses}
+            {globalInputClasses}
+          />
+        </div>
+      ) : (
+        <Footer
+          {globalIconButtonClasses}
+          {globalCompanyName}
+          {isBackend}
+          {globalCompanyPhone}
+          {primaryTextClasses}
+          {secondaryTextClasses}
+          {globalInputClasses}
+        />
+      )
+    }
 
     <!-- Global Sticky Actions Portal Container -->
     <!-- All StickyActions buttons will be teleported here to avoid z-index stacking context issues -->
     <div
       id="sticky-actions-portal"
-      class="fixed bottom-0 left-0 z-[10015] p-6 w-full flex justify-end pointer-events-none"
+      class="hide-for-modal fixed bottom-0 left-0 z-[10015] p-6 w-full flex justify-end pointer-events-none"
       style="display: none;"
     >
       <div
@@ -696,29 +772,17 @@ const debugData = {
       )
     }
 
-    {
-      !isAuthPageResult && !isContactPageResult && (
-        <SpeedDial
-          {globalCompanyPhone}
-          currentUser={currentUser || undefined}
-          {isBackend}
-          {primaryTextClasses}
-          {secondaryTextClasses}
-          {globalInputClasses}
-          {globalCompanyName}
-        />
-      )
-    }
+
 
     {
       currentUser && currentUser.id && currentRole !== "Client" && project && (
         <>
           {/* Backdrop overlay */}
-          <Modal id="punchlist-drawer-backdrop" zIndex={40} opacity="50" blurAmount="none" />
+          <Modal id="punchlist-drawer-backdrop" zIndex={40} opacity="50" blurAmount="sm" />
 
           <div
             id="punchlist-drawer"
-            class="fixed top-0 right-0 h-screen overflow-y-auto transition-transform translate-x-full bg-neutral-primary-soft w-full sm:w-96"
+            class="hide-for-modal fixed top-0 right-0 h-screen overflow-y-auto transition-transform translate-x-full bg-neutral-primary-soft w-full sm:w-96"
             style="will-change: transform; z-index: 10002;"
           >
             <div class="flex flex-col h-full">
@@ -771,40 +835,20 @@ const debugData = {
       )
     }
 
-    <StickyActionButton />
+    <StickyActionButton 
+    {isAuthPageResult}
+    {isContactPageResult}
+    {currentUser}
+    {isBackend}
+    {primaryTextClasses}
+    {secondaryTextClasses}
+    {globalInputClasses}
+    {globalCompanyName}
+    {globalCompanyPhone}
+    />
     <CookieBanner />
 
     <!-- Prevent Flowbite from initializing modals that don't exist -->
-    <script is:inline>
-      // Check if notificationsModal exists before Flowbite initializes
-      // This prevents errors when the modal is conditionally rendered (e.g., for Client users)
-      // Run immediately (script is at end of body, so DOM should be ready)
-      (function () {
-        function checkAndRemoveModalAttributes() {
-          const notificationsModal = document.getElementById("notificationsModal");
-          if (!notificationsModal) {
-            // Remove data-modal-target and data-modal-toggle attributes from buttons
-            // that reference the non-existent modal to prevent Flowbite initialization errors
-            const buttons = document.querySelectorAll(
-              '[data-modal-target="notificationsModal"], [data-modal-toggle="notificationsModal"]'
-            );
-            buttons.forEach(function (button) {
-              button.removeAttribute("data-modal-target");
-              button.removeAttribute("data-modal-toggle");
-            });
-          }
-        }
-
-        // Check immediately (DOM should be ready since script is at end of body)
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", checkAndRemoveModalAttributes);
-        } else {
-          // DOM is already ready
-          checkAndRemoveModalAttributes();
-        }
-      })();
-    </script>
-
     <!-- Flowbite JavaScript -->
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
 

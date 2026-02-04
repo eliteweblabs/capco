@@ -193,8 +193,8 @@ export const contactFormConfig: MultiStepFormConfig = {
     // Step 4: SMS Consent
     {
       stepNumber: 4,
-      title: "contact via SMS?",
-      subtitle: "Not for marketing. Communication and project updates only.",
+      title:
+        "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, do you wish to opt in to SMS?<br><br>No marketing messages, communication and project updates only.",
       skipCondition: "noValidPhone", // Skip if phone is invalid or empty
       fields: [
         {
@@ -231,7 +231,8 @@ export const contactFormConfig: MultiStepFormConfig = {
     {
       stepNumber: 5,
       title: "your mobile carrier?",
-      subtitle: "This helps us deliver SMS messages to your phone.",
+      subtitle:
+        "This helps us deliver SMS messages to <span data-form-session-meta='phone' data-default='your phone'></span>.",
       skipCondition: "noValidPhone", // Skip if phone is invalid or empty
       fields: [
         {
@@ -266,7 +267,8 @@ export const contactFormConfig: MultiStepFormConfig = {
     // Step 6: Company
     {
       stepNumber: 6,
-      title: "your company?",
+      title:
+        "What's the company's name, <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
       fields: [
         {
           id: "contact-company",
@@ -342,7 +344,8 @@ export const contactFormConfig: MultiStepFormConfig = {
     // Step 8: Message
     {
       stepNumber: 7,
-      title: "your message?",
+      title:
+        "What can you tell me about <span data-form-session-meta='company' data-default='your company'>your company</span>'s project or concerns?",
       fields: [
         {
           id: "contact-message",

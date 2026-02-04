@@ -67,7 +67,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     danger:
       "rounded-full bg-danger-500 text-white [@media(hover:hover)]:hover:bg-danger-600 dark:bg-danger-500 dark:[@media(hover:hover)]:hover:bg-danger-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl",
     outline:
-      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-sm",
+      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-md",
     ghost:
       "rounded-full text-primary-500 [@media(hover:hover)]:hover:bg-primary-50 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-900/20",
     link: "link text-primary-500 [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:text-primary-600 dark:text-primary-400 dark:[@media(hover:hover)]:hover:text-primary-300",

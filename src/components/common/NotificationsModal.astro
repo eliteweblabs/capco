@@ -18,29 +18,26 @@ if (!currentUser || currentRole === "Client") {
 }
 ---
 
-<!-- Notifications Modal -->
+<!-- Notifications dropdown: Flowbite data-dropdown-toggle="notification-dropdown" on trigger(s) -->
 <div
-  id="notificationsModal"
-  tabindex="-1"
-  aria-hidden="true"
-  class="fixed inset-0 hidden max-h-full w-full items-center justify-center overflow-y-auto overflow-x-hidden"
-  style="z-index: 10040;"
+  id="notification-dropdown"
+  class="z-10 hidden w-full max-w-md rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
+  data-popper-placement="bottom"
+  aria-labelledby="notification-bell"
 >
-  <div class="relative max-h-full w-full max-w-2xl p-4">
-    <!-- Modal content -->
-    <div
-      class="relative rounded-lg bg-white shadow outer-shadow outer-shadow-white/10 dark:bg-black"
-    >
-      <!-- Modal header -->
+  <div class="max-h-[85vh] overflow-hidden flex flex-col">
+    <!-- Panel content -->
+    <div class="relative flex flex-col flex-1 min-h-0">
+      <!-- Panel header -->
       <div
-        class="flex items-center justify-between border-b border-gray-200 p-3 md:p-4 lg:p-6 dark:border-gray-700"
+        class="flex items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700 shrink-0"
       >
-        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Notifications</h3>
-        <CloseButton data-modal-hide="notificationsModal" tooltipText="Close modal" />
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
+        <CloseButton data-dropdown-toggle="notification-dropdown" tooltipText="Close" />
       </div>
 
-      <!-- Modal body -->
-      <div class="p-3 md:p-4 lg:p-6 pb-16">
+      <!-- Panel body -->
+      <div class="p-3 overflow-y-auto flex-1 min-h-0">
         <!-- Header with Mark all read button -->
         <div
           class="align-center flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -91,7 +88,7 @@ if (!currentUser || currentRole === "Client") {
         </div>
 
         <!-- Footer with auto-loading indicator -->
-        <div class="border-t border-gray-200 px-4 py-3 dark:border-gray-700">
+        <div class="border-t border-gray-200 px-4 py-2 dark:border-gray-700 shrink-0">
           <div
             id="loading-indicator"
             class="text-center text-sm text-gray-500 dark:text-gray-400 hidden"
@@ -105,8 +102,6 @@ if (!currentUser || currentRole === "Client") {
 </div>
 
 <script>
-  import { hideModal, lockBodyScroll, unlockBodyScroll } from "../../lib/ux-utils";
-
   class NotificationManager {
     isOpen: boolean = false;
     notifications: any[] = [];
@@ -125,34 +120,31 @@ if (!currentUser || currentRole === "Client") {
     }
 
     bindEvents() {
-      const modal = document.getElementById("notificationsModal");
-      const overlay = document.getElementById("global-modal-overlay");
+      const panel = document.getElementById("notification-dropdown");
       const markAllRead = document.getElementById("mark-all-read");
-      const closeButtons = document.querySelectorAll('[data-modal-hide="notificationsModal"]');
 
-      // Handle close button clicks
-      closeButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          this.closeDropdown();
+      // Flowbite handles close (outside click, Escape). Close button uses data-dropdown-toggle so it toggles closed.
+      // When dropdown is opened via data-dropdown-toggle, load notifications
+      document.querySelectorAll('[data-dropdown-toggle="notification-dropdown"]').forEach((el) => {
+        el.addEventListener("click", () => {
+          setTimeout(() => {
+            if (panel && !panel.classList.contains("hidden")) {
+              this.isOpen = true;
+              this.loadNotifications();
+            } else {
+              this.isOpen = false;
+              this.markViewedNotificationsAsRead();
+            }
+          }, 10);
         });
       });
 
-      // Handle backdrop click to close (on modal)
-      modal?.addEventListener("click", (e) => {
-        if (e.target === modal) {
-          this.closeDropdown();
-        }
-      });
-
-      // Handle backdrop click to close (on overlay)
-      overlay?.addEventListener("click", () => {
-        this.closeDropdown();
-      });
-
-      // Handle ESC key
+      // ESC key: close dropdown (Flowbite may handle; ensure we sync state)
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && !modal?.classList.contains("hidden")) {
-          this.closeDropdown();
+        if (e.key === "Escape" && panel && !panel.classList.contains("hidden")) {
+          panel.classList.add("hidden");
+          this.isOpen = false;
+          this.markViewedNotificationsAsRead();
         }
       });
 
@@ -168,44 +160,13 @@ if (!currentUser || currentRole === "Client") {
       });
     }
 
-    openDropdown() {
-      const modal = document.getElementById("notificationsModal");
-      const overlay = document.getElementById("global-modal-overlay");
-
-      // console.log("✅ [NOTIFICATIONS] Opening modal with new system");
-
-      if (modal && overlay) {
-        // Show overlay
-        overlay.classList.remove("hidden");
-        overlay.classList.add("flex");
-
-        // Show modal
-        modal.classList.remove("hidden");
-        modal.classList.add("flex");
-        modal.setAttribute("aria-hidden", "false");
-
-        this.isOpen = true;
-        this.loadNotifications(); // Refresh notifications when opening
-
-        // Lock body scroll
-        if (typeof lockBodyScroll === "function") {
-          lockBodyScroll();
-        }
-
-        // console.log("✅ [NOTIFICATIONS] Modal opened successfully");
-      } else {
-        console.error("❌ [NOTIFICATIONS] Modal or overlay element not found!");
-      }
-    }
-
     closeDropdown() {
-      // console.log("🔍 [NOTIFICATIONS] Closing modal");
-
-      hideModal("notificationsModal");
-      this.isOpen = false;
-      this.markViewedNotificationsAsRead();
-
-      // console.log("✅ [NOTIFICATIONS] Modal closed");
+      const panel = document.getElementById("notification-dropdown");
+      if (panel) {
+        panel.classList.add("hidden");
+        this.isOpen = false;
+        this.markViewedNotificationsAsRead();
+      }
     }
 
     async loadNotifications() {
@@ -611,36 +572,7 @@ if (!currentUser || currentRole === "Client") {
     await notificationManager.deleteNotification(notificationId);
   };
 
-  // Setup notification bell click handler
-  // console.log("🔔 [NOTIFICATIONS] Setting up notification bell click handler");
-
-  function setupNotificationBell() {
-    const notificationBell = document.getElementById("notification-bell");
-    if (!notificationBell) return;
-
-    // Add click listener on the existing element. Do not clone/replace: that would remove
-    // the element that TooltipFloating initialized, so the tooltip would stop working.
-    notificationBell.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      notificationManager.openDropdown();
-    });
-  }
-
-  // Try multiple times to ensure DOM is ready
-  if (document.readyState === "loading") {
-    // console.log("🔔 [NOTIFICATIONS] DOM still loading, waiting for DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", setupNotificationBell);
-  } else {
-    console.log("🔔 [NOTIFICATIONS] DOM already loaded, setting up immediately");
-    setupNotificationBell();
-  }
-
-  // Also try after a short delay in case elements are added dynamically
-  setTimeout(() => {
-    // console.log("🔔 [NOTIFICATIONS] Delayed setup attempt");
-    setupNotificationBell();
-  }, 1000);
+  // Flowbite handles open/close via data-dropdown-toggle; we only need to load on open (done in bindEvents)
 </script>
 
 <style>

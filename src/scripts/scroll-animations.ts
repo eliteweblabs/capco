@@ -1,15 +1,15 @@
 /**
  * Scroll Animations Utility
- * 
+ *
  * Uses Intersection Observer to add blur/scale/fade animations
  * when elements scroll into view.
- * 
+ *
  * Usage:
  * - Add data-animate="fade-blur-scale" to elements
  * - Add data-animate-stagger to parent for staggered child animations
  * - Add data-animate-delay="200" for custom delays
  * - Add data-animate-duration="slow" for slower animations
- * 
+ *
  * Animation types:
  * - fade-blur-scale (default): Blur + scale + fade
  * - fade-blur: Blur + fade
@@ -39,7 +39,7 @@ class ScrollAnimations {
   constructor(options: ScrollAnimationOptions = {}) {
     this.options = {
       threshold: options.threshold ?? 0.1,
-      rootMargin: options.rootMargin ?? '0px 0px -50px 0px',
+      rootMargin: options.rootMargin ?? "0px 0px -50px 0px",
       once: options.once ?? true,
     };
   }
@@ -49,9 +49,9 @@ class ScrollAnimations {
    */
   init(): void {
     if (this.initialized) return;
-    
+
     // Check for reduced motion preference
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       this.showAllElements();
       return;
     }
@@ -70,15 +70,15 @@ class ScrollAnimations {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const element = entry.target as HTMLElement;
-            
+
             // Add visible class with optional delay
             const delay = element.dataset.animateDelay;
             if (delay) {
               setTimeout(() => {
-                element.classList.add('is-visible');
+                element.classList.add("is-visible");
               }, parseInt(delay));
             } else {
-              element.classList.add('is-visible');
+              element.classList.add("is-visible");
             }
 
             // Stop observing if once is true
@@ -87,7 +87,7 @@ class ScrollAnimations {
             }
           } else if (!this.options.once) {
             // Remove visible class if not once-only
-            entry.target.classList.remove('is-visible');
+            entry.target.classList.remove("is-visible");
           }
         });
       },
@@ -105,13 +105,13 @@ class ScrollAnimations {
     if (!this.observer) return;
 
     // Observe elements with data-animate
-    const animatedElements = document.querySelectorAll('[data-animate]');
+    const animatedElements = document.querySelectorAll("[data-animate]");
     animatedElements.forEach((el) => {
       this.observer!.observe(el);
     });
 
     // Observe stagger containers
-    const staggerContainers = document.querySelectorAll('[data-animate-stagger]');
+    const staggerContainers = document.querySelectorAll("[data-animate-stagger]");
     staggerContainers.forEach((el) => {
       this.observer!.observe(el);
     });
@@ -121,9 +121,9 @@ class ScrollAnimations {
    * Show all elements immediately (for reduced motion)
    */
   private showAllElements(): void {
-    const elements = document.querySelectorAll('[data-animate], [data-animate-stagger]');
+    const elements = document.querySelectorAll("[data-animate], [data-animate-stagger]");
     elements.forEach((el) => {
-      el.classList.add('is-visible');
+      el.classList.add("is-visible");
     });
   }
 
@@ -160,21 +160,23 @@ function initScrollAnimations(options?: ScrollAnimationOptions): ScrollAnimation
 }
 
 // Initialize when DOM is ready
-if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => initScrollAnimations());
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => initScrollAnimations());
   } else {
     initScrollAnimations();
   }
 }
 
-// Re-initialize on Astro page transitions
-document.addEventListener('astro:page-load', () => {
-  if (scrollAnimationsInstance) {
-    scrollAnimationsInstance.refresh();
-  } else {
-    initScrollAnimations();
-  }
+// Re-initialize on Astro page transitions (defer so swap paints first)
+document.addEventListener("astro:page-load", () => {
+  requestAnimationFrame(() => {
+    if (scrollAnimationsInstance) {
+      scrollAnimationsInstance.refresh();
+    } else {
+      initScrollAnimations();
+    }
+  });
 });
 
 // Export for manual usage

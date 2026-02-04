@@ -1,19 +1,26 @@
 ---
 /**
  * Modal Component
- * Reusable modal with backdrop/overlay and slotted content
+ * Reusable modal with backdrop/overlay and slotted content.
+ *
+ * Use useGlobalOverlay={true} to use the single global blur (App.astro's global-modal-overlay)
+ * instead of a per-modal backdrop; blur/opacity are then configured once in App.
  *
  * Usage:
  * <Modal id="my-modal">
- *   <div class="bg-white dark:bg-gray-900 rounded-lg p-6">
- *     Your modal content here
- *   </div>
+ *   <div class="bg-white dark:bg-gray-900 rounded-lg p-6">Content</div>
+ * </Modal>
+ *
+ * With universal blur:
+ * <Modal id="my-modal" useGlobalOverlay zIndex={10050}>
+ *   <div class="...">Content</div>
  * </Modal>
  *
  * @param id - Unique identifier for the modal
  * @param zIndex - Z-index value (default: 9999)
- * @param blurAmount - Backdrop blur amount (default: "sm")
- * @param opacity - Background opacity (default: "20")
+ * @param useGlobalOverlay - Use global-modal-overlay for backdrop (default: false)
+ * @param blurAmount - Backdrop blur amount when not using global overlay (default: "sm")
+ * @param opacity - Background opacity when not using global overlay (default: "20")
  * @param mobileOnly - Only show on mobile devices (default: false)
  * @param backdropClasses - Additional CSS classes for backdrop
  * @param contentClasses - Additional CSS classes for content wrapper
@@ -22,6 +29,7 @@
 interface Props {
   id?: string;
   zIndex?: number | string;
+  useGlobalOverlay?: boolean;
   blurAmount?: "none" | "sm" | "md" | "lg" | "xl";
   opacity?: string;
   mobileOnly?: boolean;
@@ -32,6 +40,7 @@ interface Props {
 const {
   id = "modal",
   zIndex = 9999,
+  useGlobalOverlay = false,
   blurAmount = "sm",
   opacity = "20",
   mobileOnly = false,
@@ -39,10 +48,10 @@ const {
   contentClasses = "",
 } = Astro.props;
 
-// Map blur amount to Tailwind classes
+// Map blur amount to Tailwind classes (only used when useGlobalOverlay is false)
 const blurClasses = {
   none: "",
-  sm: "backdrop-blur-sm",
+  sm: "backdrop-blur-md",
   md: "backdrop-blur-md",
   lg: "backdrop-blur-lg",
   xl: "backdrop-blur-xl",
@@ -53,19 +62,21 @@ const mobileOnlyClass = mobileOnly ? "md:hidden" : "";
 const contentZIndex = typeof zIndex === "number" ? zIndex + 1 : parseInt(String(zIndex)) + 1;
 ---
 
-<!-- Backdrop -->
-<div
-  {id}
-  class:list={[
-    "fixed inset-0 hidden bg-black height-100dvh",
-    blurClass,
-    mobileOnlyClass,
-    backdropClasses,
-  ]}
-  style={`background-color: rgba(0, 0, 0, 0.${opacity}); z-index: ${zIndex};`}
-  data-modal-backdrop
->
-</div>
+{!useGlobalOverlay && (
+  <!-- Backdrop (only when not using global overlay) -->
+  <div
+    {id}
+    class:list={[
+      "fixed inset-0 hidden bg-black height-100dvh",
+      blurClass,
+      mobileOnlyClass,
+      backdropClasses,
+    ]}
+    style={`background-color: rgba(0, 0, 0, 0.${opacity}); z-index: ${zIndex};`}
+    data-modal-backdrop
+  >
+  </div>
+)}
 
 <!-- Content wrapper -->
 <div

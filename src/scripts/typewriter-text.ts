@@ -543,10 +543,8 @@ observer.observe(document.body, {
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[TYPEWRITER] DOM Content Loaded");
 
-  // Initial trigger
-  setTimeout(() => {
-    triggerActiveStepTypewriter();
-  }, 100);
+  // Initial trigger (no delay)
+  triggerActiveStepTypewriter();
 
   // Watch for step changes using MutationObserver
   const stepObserver = new MutationObserver(() => {

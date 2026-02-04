@@ -292,7 +292,7 @@ export const navigation = async (
           secondary:
             "hover:scale-101 hover:shadow-xl rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600 shadow-lg",
           outline:
-            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-sm",
+            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-md",
           ghost:
             "rounded-full text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
         };

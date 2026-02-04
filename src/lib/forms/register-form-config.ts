@@ -105,7 +105,7 @@ export const registerFormConfig: MultiStepFormConfig = {
     // Step 2: Name
     {
       stepNumber: 2,
-      title: "Your name?",
+      title: "What's your name?",
       fieldLayout: "grid",
       fields: [
         {
@@ -152,7 +152,8 @@ export const registerFormConfig: MultiStepFormConfig = {
     // Step 3: Company
     {
       stepNumber: 3,
-      title: "Your company?",
+      title:
+        "What's the company's name, <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
       fields: [
         {
           id: "step-company-name",
@@ -248,8 +249,8 @@ export const registerFormConfig: MultiStepFormConfig = {
     // Step 6: SMS Consent
     {
       stepNumber: 6,
-      title: "Opt-in to SMS alerts?",
-      subtitle: "Not for marketing. Communication and project updates only.",
+      title:
+        "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, do you wish to opt in to SMS?<br><br>No marketing messages, communication and project updates only.",
       fields: [
         {
           id: "step-sms-alerts",
@@ -285,7 +286,8 @@ export const registerFormConfig: MultiStepFormConfig = {
     {
       stepNumber: 7,
       title: "your mobile carrier?",
-      subtitle: "This helps us deliver SMS messages to your phone.",
+      subtitle:
+        "This helps us deliver SMS messages to <span data-form-session-meta='phone' data-default='your phone'></span>.",
       fields: [
         {
           id: "step-carrier",

@@ -40,19 +40,25 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     method={config.formMethod || "post"}
     class={config.progressBar ? "" : ""}
   >
-    {
-      config.steps.map((step) => (
-        <div
-          class:list={[
-            "step-content space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12",
-            step.stepNumber === 1 ? "first-step" : "",
-          ]}
-          data-step={step.stepNumber}
-          data-hide-progress-bar={step.hideProgressBar ? "true" : "false"}
-          tabindex="-1"
-        >
-          {/* Step Header */}
-          {/* {step.showIcon && step.icon && (
+    <div class="multi-step-form-spacer" aria-hidden="true"></div>
+    <div
+      class:list={[containerClass, "multi-step-form-steps"]}
+      id={`${config.formId}-steps`}
+      tabindex="-1"
+    >
+      {
+        config.steps.map((step) => (
+          <div
+            class:list={[
+              "step-content space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 mt-8",
+              step.stepNumber === 1 ? "first-step" : "",
+            ]}
+            data-step={step.stepNumber}
+            data-hide-progress-bar={step.hideProgressBar ? "true" : "false"}
+            tabindex="-1"
+          >
+            {/* Step Header */}
+            {/* {step.showIcon && step.icon && (
                 <div
                   class="mx-auto mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30"
                   tabindex="-1"
@@ -64,269 +70,291 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                   />
                 </div>
               )} */}
-          {step.title && (
-            <div class="title-scroll-container relative" tabindex="-1">
-              <div class="title-scroll-fade-top" />
-              <div class="title-scroll-wrapper" tabindex="-1">
-                <h2
-                  class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
-                    step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
-                  }`}
-                  data-text={step.title}
-                  set:html={step.title}
-                  tabindex="-1"
-                />
-              </div>
-            </div>
-          )}
-          {step.subtitle && (
-            <p
-              class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md"
-              tabindex="-1"
-            >
-              {step.subtitle}
-            </p>
-          )}
-
-          {/* Auth Providers (for registration and login forms) - at top */}
-          {(step.additionalContent === "google-oauth" ||
-            step.additionalContent === "auth-providers") && (
-            <>
-              <div class="" tabindex="-1">
-                <AuthProviders
-                  mode={step.additionalContent === "auth-providers" ? "login" : "register"}
-                />
-              </div>
-              <div class="flex items-center gap-4 pb-4" tabindex="-1">
-                <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
-                <span class="text-xs text-zinc-500 dark:text-zinc-400 uppercase">
-                  {step.additionalContent === "auth-providers"
-                    ? "or login with email"
-                    : "or register with email"}
-                </span>
-                <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
-              </div>
-            </>
-          )}
-
-          {/* Step Fields */}
-          {step.isReview ? (
-            // Review step - show summary
-            <div
-              class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background"
-              tabindex="-1"
-            >
-              {step.reviewFields?.map((fieldName) => (
-                <div
-                  class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700 last:border-b-0"
-                  tabindex="-1"
-                >
-                  <div tabindex="-1">
-                    <p class="text-sm text-gray-600 dark:text-gray-400 capitalize" tabindex="-1">
-                      {fieldName.replace(/([A-Z])/g, " $1").trim()}
-                    </p>
-                    <p
-                      id={`review-${fieldName}`}
-                      class="text-lg font-medium text-gray-900 dark:text-white"
-                      tabindex="-1"
-                    >
-                      {fieldName === "password" ? "••••••" : "-"}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-                    data-edit={
-                      config.steps.findIndex((s) => s.fields.some((f) => f.name === fieldName)) + 1
-                    }
-                  >
-                    Edit
-                  </button>
+            {step.title && (
+              <div class="title-scroll-container relative" tabindex="-1">
+                <div class="title-scroll-fade-top" />
+                <div class="title-scroll-wrapper" tabindex="-1">
+                  <h2
+                    class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
+                      step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
+                    }`}
+                    data-text={step.title}
+                    set:html={step.title}
+                    tabindex="-1"
+                  />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div
-              class:list={[
-                step.fieldLayout === "grid" ? "grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6" : "",
-              ]}
-              tabindex="-1"
-            >
-              {step.fields.map((field) => (
-                <div
-                  class:list={[
-                    field.type === "hidden" ? "" : "input-wrapper",
-                    field.columns === 1 ? "md:col-span-2" : "",
-                  ]}
-                  data-conditional-field={field.conditional ? field.conditional.field : undefined}
-                  data-conditional-value={
-                    field.conditional
-                      ? Array.isArray(field.conditional.value)
-                        ? field.conditional.value.join(",")
-                        : field.conditional.value
-                      : undefined
-                  }
-                  style={field.conditional ? "display: none;" : undefined}
-                  tabindex="-1"
-                >
-                  {field.type === "component" && field.component === "SlotMachineModalStaff" ? (
-                    <SlotMachineModalStaff
-                      id={field.id}
-                      name={field.name}
-                      title={field.label || "Select an option"}
-                      options={mobileCarrierOptions}
-                      selectedValue=""
-                      globalInputClasses={appendedGlobalInputClasses}
-                      {...field.componentProps}
-                    />
-                  ) : field.type === "component" && field.component === "SlideToggle" ? (
-                    <div class="flex items-center justify-center py-8" tabindex="-1">
-                      <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
-                    </div>
-                  ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
-                    <InlineAddressSearch
-                      id={field.id}
-                      name={field.name}
-                      globalInputClasses={appendedGlobalInputClasses}
-                      {...field.componentProps}
-                    />
-                  ) : field.type === "component" && field.component === "UnitSlider" ? (
-                    <UnitSlider
-                      name={field.name}
-                      label={field.label || field.name}
-                      value={Number(field.value) || 1}
-                      required={field.required}
-                      min={field.min}
-                      max={field.max}
-                      step={field.step}
-                      {...field.componentProps}
-                    />
-                  ) : field.type === "component" && field.component === "ToggleButton" ? (
-                    <div class="flex flex-wrap gap-3" tabindex="-1">
-                      {field.options?.map((option) => (
-                        <ToggleButton
-                          value={option.value}
-                          group={field.name}
-                          type={field.toggleType || "radio"}
-                          class={field.classes}
-                        >
-                          {option.label}
-                        </ToggleButton>
-                      ))}
-                    </div>
-                  ) : field.type === "component" && field.component === "FileUpload" ? (
-                    <FileUpload
-                      name={field.name}
-                      label={field.label}
-                      required={field.required}
-                      accept={field.accept}
-                      multiple={field.multiple}
-                      maxFiles={field.maxFiles}
-                      maxSize={field.maxSize}
-                      {...field.componentProps}
-                    />
-                  ) : field.type === "range" ? (
-                    <UnitSlider
-                      name={field.name}
-                      label={field.label || field.name}
-                      value={Number(field.value) || Number(field.min) || 0}
-                      required={field.required}
-                      min={field.min || 0}
-                      max={field.max || 100}
-                      step={field.step || 1}
-                    />
-                  ) : field.type === "textarea" ? (
-                    <textarea
-                      id={field.id}
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      rows={field.rows || 4}
-                      autocomplete={field.autocomplete}
-                      class={appendedGlobalInputClasses}
-                      data-error={field.errorMessage}
-                    />
-                  ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 ? (
-                    <div
-                      class:list={[
-                        "relative overflow-hidden rounded-lg",
-                        field.icon ? "input-with-icon" : "",
-                        field.iconPosition === "right" ? "icon-right" : "icon-left",
-                      ]}
-                      data-icon={field.icon}
-                      tabindex="-1"
-                    >
-                      <input
-                        type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
-                        id={field.id}
-                        name={field.name}
-                        placeholder=""
-                        required={field.required}
-                        autocomplete={field.autocomplete}
-                        minlength={field.minlength}
-                        autofocus={field.autofocus}
-                        class:list={[
-                          appendedGlobalInputClasses,
-                          field.icon && field.iconPosition === "right" ? "pr-12" : "",
-                          field.icon && field.iconPosition !== "right" ? "pl-12" : "",
-                        ]}
-                        data-error={field.errorMessage}
-                        data-has-animated-placeholder="true"
-                        data-original-placeholder={field.placeholder}
-                        data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
-                      />
-                      <span
-                        class:list={[
-                          "animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500",
-                          field.icon && field.iconPosition === "right" ? "pr-7 mr-1.25" : "",
-                          field.icon && field.iconPosition !== "right" ? "pl-7 ml-1.25" : "",
-                        ]}
-                        data-for={field.id}
+              </div>
+            )}
+            {step.subtitle && (
+              <p
+                class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md"
+                tabindex="-1"
+              >
+                {step.subtitle}
+              </p>
+            )}
+
+            {/* Auth Providers (for registration and login forms) - at top */}
+            {(step.additionalContent === "google-oauth" ||
+              step.additionalContent === "auth-providers") && (
+              <>
+                <div class="" tabindex="-1">
+                  <AuthProviders
+                    mode={step.additionalContent === "auth-providers" ? "login" : "register"}
+                  />
+                </div>
+                <div class="flex items-center gap-4 pb-4" tabindex="-1">
+                  <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
+                  <span class="text-xs text-zinc-500 dark:text-zinc-400 uppercase">
+                    {step.additionalContent === "auth-providers"
+                      ? "or login with email"
+                      : "or register with email"}
+                  </span>
+                  <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
+                </div>
+              </>
+            )}
+
+            {/* Step Fields */}
+            {step.isReview ? (
+              // Review step - show summary
+              <div
+                class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background"
+                tabindex="-1"
+              >
+                {step.reviewFields?.map((fieldName) => (
+                  <div
+                    class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700 last:border-b-0"
+                    tabindex="-1"
+                  >
+                    <div tabindex="-1">
+                      <p class="text-sm text-gray-600 dark:text-gray-400 capitalize" tabindex="-1">
+                        {fieldName.replace(/([A-Z])/g, " $1").trim()}
+                      </p>
+                      <p
+                        id={`review-${fieldName}`}
+                        class="text-lg font-medium text-gray-900 dark:text-white"
                         tabindex="-1"
                       >
-                        {field.placeholder}
-                      </span>
+                        {fieldName === "password" ? "••••••" : "-"}
+                      </p>
                     </div>
-                  ) : field.type === "button-group" ? (
-                    <div class="flex flex-wrap gap-3" tabindex="-1">
-                      {field.buttons?.map((button) => {
-                        const btnConfig = getButtonConfig(
-                          button,
-                          config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
-                        );
-                        return (
-                          <Button
-                            id={button.id}
-                            variant={btnConfig.variant}
-                            size="sm"
-                            icon={btnConfig.icon}
-                            iconPosition={btnConfig.iconPosition}
-                            class={btnConfig.classes}
-                            dataAttributes={{
-                              ...(button.dataValue && { "data-value": button.dataValue }),
-                              ...(button.dataNext !== undefined && {
-                                "data-next": button.dataNext.toString(),
-                              }),
-                            }}
-                          >
-                            {btnConfig.label && (
-                              <span class="button-text">
-                                <Fragment set:html={btnConfig.label} />
-                              </span>
-                            )}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  ) : field.icon ? (
-                    <div
-                      class:list={[
-                        "relative input-with-icon",
-                        field.iconPosition === "right" ? "icon-right" : "icon-left",
-                      ]}
-                      data-icon={field.icon}
-                      tabindex="-1"
+                    <button
+                      type="button"
+                      class="edit-step text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                      data-edit={
+                        config.steps.findIndex((s) => s.fields.some((f) => f.name === fieldName)) +
+                        1
+                      }
                     >
+                      Edit
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                class:list={[
+                  step.fieldLayout === "grid"
+                    ? "grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6"
+                    : "",
+                ]}
+                tabindex="-1"
+              >
+                {step.fields.map((field) => (
+                  <div
+                    class:list={[
+                      field.type === "hidden" ? "" : "input-wrapper",
+                      field.columns === 1 ? "md:col-span-2" : "",
+                    ]}
+                    data-conditional-field={field.conditional ? field.conditional.field : undefined}
+                    data-conditional-value={
+                      field.conditional
+                        ? Array.isArray(field.conditional.value)
+                          ? field.conditional.value.join(",")
+                          : field.conditional.value
+                        : undefined
+                    }
+                    style={field.conditional ? "display: none;" : undefined}
+                    tabindex="-1"
+                  >
+                    {field.type === "component" && field.component === "SlotMachineModalStaff" ? (
+                      <SlotMachineModalStaff
+                        id={field.id}
+                        name={field.name}
+                        title={field.label || "Select an option"}
+                        options={mobileCarrierOptions}
+                        selectedValue=""
+                        globalInputClasses={appendedGlobalInputClasses}
+                        {...field.componentProps}
+                      />
+                    ) : field.type === "component" && field.component === "SlideToggle" ? (
+                      <div class="flex items-center justify-center py-8" tabindex="-1">
+                        <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
+                      </div>
+                    ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
+                      <InlineAddressSearch
+                        id={field.id}
+                        name={field.name}
+                        globalInputClasses={appendedGlobalInputClasses}
+                        {...field.componentProps}
+                      />
+                    ) : field.type === "component" && field.component === "UnitSlider" ? (
+                      <UnitSlider
+                        name={field.name}
+                        label={field.label || field.name}
+                        value={Number(field.value) || 1}
+                        required={field.required}
+                        min={field.min}
+                        max={field.max}
+                        step={field.step}
+                        {...field.componentProps}
+                      />
+                    ) : field.type === "component" && field.component === "ToggleButton" ? (
+                      <div class="flex flex-wrap gap-3" tabindex="-1">
+                        {field.options?.map((option) => (
+                          <ToggleButton
+                            value={option.value}
+                            group={field.name}
+                            type={field.toggleType || "radio"}
+                            class={field.classes}
+                          >
+                            {option.label}
+                          </ToggleButton>
+                        ))}
+                      </div>
+                    ) : field.type === "component" && field.component === "FileUpload" ? (
+                      <FileUpload
+                        name={field.name}
+                        label={field.label}
+                        required={field.required}
+                        accept={field.accept}
+                        multiple={field.multiple}
+                        maxFiles={field.maxFiles}
+                        maxSize={field.maxSize}
+                        {...field.componentProps}
+                      />
+                    ) : field.type === "range" ? (
+                      <UnitSlider
+                        name={field.name}
+                        label={field.label || field.name}
+                        value={Number(field.value) || Number(field.min) || 0}
+                        required={field.required}
+                        min={field.min || 0}
+                        max={field.max || 100}
+                        step={field.step || 1}
+                      />
+                    ) : field.type === "textarea" ? (
+                      <textarea
+                        id={field.id}
+                        name={field.name}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                        rows={field.rows || 4}
+                        autocomplete={field.autocomplete}
+                        class={appendedGlobalInputClasses}
+                        data-error={field.errorMessage}
+                      />
+                    ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 ? (
+                      <div
+                        class:list={[
+                          "relative overflow-hidden rounded-lg",
+                          field.icon ? "input-with-icon" : "",
+                          field.iconPosition === "right" ? "icon-right" : "icon-left",
+                        ]}
+                        data-icon={field.icon}
+                        tabindex="-1"
+                      >
+                        <input
+                          type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
+                          id={field.id}
+                          name={field.name}
+                          placeholder=""
+                          required={field.required}
+                          autocomplete={field.autocomplete}
+                          minlength={field.minlength}
+                          autofocus={field.autofocus}
+                          class:list={[
+                            appendedGlobalInputClasses,
+                            field.icon && field.iconPosition === "right" ? "pr-12" : "",
+                            field.icon && field.iconPosition !== "right" ? "pl-12" : "",
+                          ]}
+                          data-error={field.errorMessage}
+                          data-has-animated-placeholder="true"
+                          data-original-placeholder={field.placeholder}
+                          data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
+                        />
+                        <span
+                          class:list={[
+                            "animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500",
+                            field.icon && field.iconPosition === "right" ? "pr-7 mr-1.25" : "",
+                            field.icon && field.iconPosition !== "right" ? "pl-7 ml-1.25" : "",
+                          ]}
+                          data-for={field.id}
+                          tabindex="-1"
+                        >
+                          {field.placeholder}
+                        </span>
+                      </div>
+                    ) : field.type === "button-group" ? (
+                      <div class="flex flex-wrap gap-3" tabindex="-1">
+                        {field.buttons?.map((button) => {
+                          const btnConfig = getButtonConfig(
+                            button,
+                            config.buttonDefaults?.[
+                              button.type as keyof typeof config.buttonDefaults
+                            ]
+                          );
+                          return (
+                            <Button
+                              id={button.id}
+                              variant={btnConfig.variant}
+                              size="sm"
+                              icon={btnConfig.icon}
+                              iconPosition={btnConfig.iconPosition}
+                              class={btnConfig.classes}
+                              dataAttributes={{
+                                ...(button.dataValue && { "data-value": button.dataValue }),
+                                ...(button.dataNext !== undefined && {
+                                  "data-next": button.dataNext.toString(),
+                                }),
+                              }}
+                            >
+                              {btnConfig.label && (
+                                <span class="button-text">
+                                  <Fragment set:html={btnConfig.label} />
+                                </span>
+                              )}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    ) : field.icon ? (
+                      <div
+                        class:list={[
+                          "relative input-with-icon",
+                          field.iconPosition === "right" ? "icon-right" : "icon-left",
+                        ]}
+                        data-icon={field.icon}
+                        tabindex="-1"
+                      >
+                        <input
+                          type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
+                          id={field.id}
+                          name={field.name}
+                          placeholder={field.placeholder}
+                          required={field.required}
+                          autocomplete={field.autocomplete}
+                          minlength={field.minlength}
+                          autofocus={field.autofocus}
+                          class:list={[
+                            appendedGlobalInputClasses,
+                            field.iconPosition === "right" ? "pr-12 pl-12" : "pl-12 pr-12",
+                          ]}
+                          data-error={field.errorMessage}
+                        />
+                      </div>
+                    ) : (
                       <input
                         type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
                         id={field.id}
@@ -336,155 +364,140 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         autocomplete={field.autocomplete}
                         minlength={field.minlength}
                         autofocus={field.autofocus}
-                        class:list={[
-                          appendedGlobalInputClasses,
-                          field.iconPosition === "right" ? "pr-12 pl-12" : "pl-12 pr-12",
-                        ]}
+                        class={appendedGlobalInputClasses}
                         data-error={field.errorMessage}
                       />
-                    </div>
-                  ) : (
-                    <input
-                      type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
-                      id={field.id}
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      autocomplete={field.autocomplete}
-                      minlength={field.minlength}
-                      autofocus={field.autofocus}
-                      class={appendedGlobalInputClasses}
-                      data-error={field.errorMessage}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
-          {/* Step Buttons */}
-          {/* Choice buttons (radio-style options) */}
-          {step.buttons.some((b) => b.type === "choice") && (
+            {/* Step Buttons */}
+            {/* Choice buttons (radio-style options) */}
+            {step.buttons.some((b) => b.type === "choice") && (
+              <div
+                class={`flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-center flex-wrap"} gap-3 mb-6`}
+                tabindex="-1"
+              >
+                {step.buttons
+                  .filter((button) => button.type === "choice")
+                  .map((button) => {
+                    const btnConfig = getButtonConfig(
+                      button,
+                      config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
+                    );
+
+                    return (
+                      <Button
+                        id={button.id}
+                        type="button"
+                        variant={btnConfig.variant || "outline"}
+                        size={"sm"}
+                        class={`${button.type}-step sms-choice ${button.classes || ""}`}
+                        disabled={button.disabled}
+                        dataAttributes={{
+                          ...(button.dataNext !== undefined && {
+                            "data-next": button.dataNext.toString(),
+                          }),
+                          ...(button.dataValue !== undefined && { "data-value": button.dataValue }),
+                          ...(button.dataValue !== undefined && {
+                            "data-sms-value": button.dataValue,
+                          }), // Keep for backward compatibility with SMS
+                        }}
+                      >
+                        {btnConfig.label && <Fragment set:html={btnConfig.label} />}
+                      </Button>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Navigation buttons (prev, next, submit, skip) */}
             <div
-              class={`flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-center flex-wrap"} gap-3 mb-6`}
-              tabindex="-1"
+              class:list={[
+                "action-buttons-wrapper",
+                "flex",
+                "gap-3",
+                step.buttons.filter((b) => b.type !== "choice").length === 1
+                  ? "justify-end"
+                  : "justify-between",
+              ]}
             >
               {step.buttons
-                .filter((button) => button.type === "choice")
+                .filter((button) => button.type !== "choice")
                 .map((button) => {
                   const btnConfig = getButtonConfig(
                     button,
                     config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
                   );
 
-                  return (
+                  return button.href ? (
                     <Button
                       id={button.id}
+                      variant={btnConfig.variant}
+                      size="sm"
+                      icon={btnConfig.icon}
+                      iconPosition={btnConfig.iconPosition}
+                      href={button.href}
+                      class={`${button.type}-step ${button.classes || ""}`}
+                      disabled={button.disabled}
+                    >
+                      {btnConfig.label && <Fragment set:html={btnConfig.label} />}
+                    </Button>
+                  ) : (
+                    <Button
+                      id={button.id}
+                      variant={btnConfig.variant}
+                      size="sm"
+                      icon={btnConfig.icon}
+                      iconPosition={btnConfig.iconPosition}
                       type="button"
-                      variant={btnConfig.variant || "outline"}
-                      size={"sm"}
-                      class={`${button.type}-step sms-choice ${button.classes || ""}`}
+                      class={`${button.type}-step ${button.classes || ""} ${button.validLabel ? "has-valid-state" : ""}`}
                       disabled={button.disabled}
                       dataAttributes={{
                         ...(button.dataNext !== undefined && {
                           "data-next": button.dataNext.toString(),
                         }),
-                        ...(button.dataValue !== undefined && { "data-value": button.dataValue }),
-                        ...(button.dataValue !== undefined && {
-                          "data-sms-value": button.dataValue,
-                        }), // Keep for backward compatibility with SMS
+                        ...(button.dataPrev !== undefined && {
+                          "data-prev": button.dataPrev.toString(),
+                        }),
+                        ...(button.label && {
+                          "data-default-label": button.label,
+                        }),
+                        ...(button.validLabel && {
+                          "data-valid-label": button.validLabel,
+                        }),
                       }}
                     >
-                      {btnConfig.label && <Fragment set:html={btnConfig.label} />}
+                      {btnConfig.label &&
+                        (btnConfig.label === "back" ? (
+                          <span class="hidden sm:inline">
+                            <Fragment set:html={btnConfig.label} />
+                          </span>
+                        ) : (
+                          <span class="button-text">
+                            <Fragment set:html={btnConfig.label} />
+                          </span>
+                        ))}
+                      {/* Valid state checkmark icon (hidden by default, shown when valid) */}
+                      {btnConfig.iconPosition === "right" && (
+                        <SimpleIcon
+                          name="check"
+                          size={
+                            btnConfig.size === "lg" ? "lg" : btnConfig.size === "xl" ? "xl" : "md"
+                          }
+                          class="ml-2 icon-valid hidden"
+                        />
+                      )}
                     </Button>
                   );
                 })}
             </div>
-          )}
-
-          {/* Navigation buttons (prev, next, submit, skip) */}
-          <div
-            class:list={[
-              "flex",
-              "gap-3",
-              step.buttons.filter((b) => b.type !== "choice").length === 1
-                ? "justify-end"
-                : "justify-between",
-            ]}
-          >
-            {step.buttons
-              .filter((button) => button.type !== "choice")
-              .map((button) => {
-                const btnConfig = getButtonConfig(
-                  button,
-                  config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
-                );
-
-                return button.href ? (
-                  <Button
-                    id={button.id}
-                    variant={btnConfig.variant}
-                    size="sm"
-                    icon={btnConfig.icon}
-                    iconPosition={btnConfig.iconPosition}
-                    href={button.href}
-                    class={`${button.type}-step ${button.classes || ""}`}
-                    disabled={button.disabled}
-                  >
-                    {btnConfig.label && <Fragment set:html={btnConfig.label} />}
-                  </Button>
-                ) : (
-                  <Button
-                    id={button.id}
-                    variant={btnConfig.variant}
-                    size="sm"
-                    icon={btnConfig.icon}
-                    iconPosition={btnConfig.iconPosition}
-                    type="button"
-                    class={`${button.type}-step ${button.classes || ""} ${button.validLabel ? "has-valid-state" : ""}`}
-                    disabled={button.disabled}
-                    dataAttributes={{
-                      ...(button.dataNext !== undefined && {
-                        "data-next": button.dataNext.toString(),
-                      }),
-                      ...(button.dataPrev !== undefined && {
-                        "data-prev": button.dataPrev.toString(),
-                      }),
-                      ...(button.label && {
-                        "data-default-label": button.label,
-                      }),
-                      ...(button.validLabel && {
-                        "data-valid-label": button.validLabel,
-                      }),
-                    }}
-                  >
-                    {btnConfig.label &&
-                      (btnConfig.label === "back" ? (
-                        <span class="hidden sm:inline">
-                          <Fragment set:html={btnConfig.label} />
-                        </span>
-                      ) : (
-                        <span class="button-text">
-                          <Fragment set:html={btnConfig.label} />
-                        </span>
-                      ))}
-                    {/* Valid state checkmark icon (hidden by default, shown when valid) */}
-                    {button.validLabel && btnConfig.iconPosition === "right" && (
-                      <SimpleIcon
-                        name="check"
-                        size={
-                          btnConfig.size === "lg" ? "lg" : btnConfig.size === "xl" ? "xl" : "md"
-                        }
-                        class="ml-2 icon-valid hidden"
-                      />
-                    )}
-                  </Button>
-                );
-              })}
           </div>
-        </div>
-      ))
-    }
+        ))
+      }
+    </div>
 
     {/* Hidden Fields */}
     {
@@ -500,7 +513,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   config.progressBar && (
     <div
       id={`${config.formId}-progress-bar`}
-      class="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 py-4 px-4 transition-opacity duration-300"
+      class="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 py-4 px-4 transition-opacity duration-300"
       tabindex="-1"
     >
       <div class="w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] max-w-6xl mx-auto" tabindex="-1">
@@ -605,16 +618,13 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     --scroll-fade-color: rgba(17, 24, 39, 0.95);
   }
 
-  /* Content reveal animation after typewriter completes */
+  /* Content reveal after typewriter completes — opacity only to avoid panel "sinking" from translateY reflow */
   .step-content .input-wrapper,
   .step-content .inline-address-search-wrapper,
   .step-content button,
   .step-content a {
     opacity: 0;
-    transform: translateY(20px);
-    transition:
-      opacity 0.4s ease-out,
-      transform 0.4s ease-out;
+    transition: opacity 0.35s ease-out;
   }
 
   /* When typewriter completes, reveal content */
@@ -623,7 +633,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content.typewriter-complete button,
   .step-content.typewriter-complete a {
     opacity: 1;
-    transform: translateY(0);
   }
 
   /* For steps without typewriter effect, show content immediately */
@@ -650,33 +659,109 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
   }
 
-  /* Auto-filled fields get same shadow as focused fields */
+  /* Auto-filled fields: keep inset overlay (no Chrome blue) + same outer shadow as focused */
   input:not([type="hidden"]):-webkit-autofill,
   textarea:-webkit-autofill,
   select:-webkit-autofill {
+    -webkit-box-shadow:
+      0 0 0 1000px rgba(var(--color-background), 0.5) inset,
+      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+    box-shadow:
+      0 0 0 1000px rgba(var(--color-background), 0.5) inset,
+      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+  }
+
+  .dark input:not([type="hidden"]):-webkit-autofill,
+  .dark textarea:-webkit-autofill,
+  .dark select:-webkit-autofill {
+    -webkit-box-shadow:
+      0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
+      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+    box-shadow:
+      0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
+      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+  }
+
+  /* Valid, not focused: green glow (:valid and .is-valid so email/text/password/tel all get it) */
+  input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
+  textarea:valid:not(:placeholder-shown):not(:focus),
+  select:valid:not(:placeholder-shown):not(:focus),
+  input:not([type="hidden"]).is-valid:not(:focus),
+  textarea.is-valid:not(:focus),
+  select.is-valid:not(:focus) {
+    box-shadow:
+      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  }
+
+  /* Valid + focused: primary glow (focus state wins) */
+  input:not([type="hidden"]):valid:focus,
+  textarea:valid:focus,
+  select:valid:focus {
     box-shadow:
       0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
       0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
   }
 
-  /* Valid fields get same shadow as focused fields */
-  input:not([type="hidden"]):valid:not(:placeholder-shown),
-  textarea:valid:not(:placeholder-shown),
-  select:valid:not(:placeholder-shown) {
+  /* Invalid, not focused: red glow */
+  input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
+  textarea:invalid:not(:placeholder-shown):not(:focus),
+  select:invalid:not(:placeholder-shown):not(:focus) {
     box-shadow:
-      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+      0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
   }
 </style>
 
 <style>
-  /* Continuous scroll: all steps visible and stacked (chat-history style); user can scroll up to review */
-  .step-content {
+  /* Wrapper: fixed so bottom is always 40vh from viewport; content grows up only (flex-end). Sticky was unreliable when wrapper grew. */
+  .multi-step-form-steps {
+    position: fixed;
+    bottom: 40vh; /* bottom of wrapper always at 60% from top of viewport */
+    left: 50%;
+    transform: translateX(-50%);
+    min-height: 60vh;
+    max-height: 80vh; /* from viewport top down to wrapper bottom */
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .multi-step-form-steps::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Spacer grows/contracts with step content; height set by JS, clamped 60vh–80vh */
+  .multi-step-form-spacer {
+    min-height: 60vh;
+    max-height: 80vh;
+    height: 60vh;
+    pointer-events: none;
+    transition: height 0.35s ease-out;
+  }
+
+  /* Hide steps that are neither completed nor active so we don't scroll to blank content */
+  .multi-step-form-steps .step-content:not(.completed):not(.active) {
+    display: none;
+  }
+
+  /* Completed and active steps: block layout inside the wrapper */
+  .step-content.completed,
+  .step-content.active {
     display: block;
-    /* min-height: 40vh; */
-    /* margin-bottom: 4rem; */
-    /* opacity: 1; */
-    /* transform: translateY(0); */
+    opacity: 1;
   }
 
   /* First step starts below cursor so it can slide up into view on load */
@@ -686,17 +771,17 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   }
 
   /* First step on load: slides up into view; when switching steps, initial-load skips animation */
-  .step-content:not(.first-step).active {
+  /* .step-content.active {
     animation: slideToTypewriterPosition 600ms ease-out forwards;
     will-change: transform;
     backface-visibility: hidden;
-  }
+  } */
 
   /* When switching to a step (not first load), no slide-in so content doesn’t jump */
   .step-content.active.initial-load {
     animation: none;
     opacity: 1;
-    transform: translateY(0);
+    /* transform: translateY(0); */
     will-change: auto;
   }
 
@@ -787,24 +872,25 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    /* Add horizontal padding to respect container bounds */
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
   }
 
-  /* Form content container with fixed cursor line */
+  /* Form is the scroll container; .multi-step-form-steps is the single scrollable content block */
   [data-multi-step-form] form {
     position: relative;
     width: 100%;
-    max-width: 680px;
     margin: 0 auto;
     overflow-y: auto;
     overflow-x: hidden;
     scroll-behavior: smooth;
-    /* Padding to create space above the cursor line (40% from top) */
-    padding-top: 40vh;
+    /* padding-top: 40vh; */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  [data-multi-step-form] form .first-step {
+    padding-top: 40vh;
   }
 
   /* Responsive padding adjustments */
@@ -835,7 +921,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
   /* Visual cursor line indicator (optional, can be removed) */
   [data-multi-step-form]::before {
-    content: "";
+    /* content: ""; */
     position: fixed;
     left: max(1rem, env(safe-area-inset-left));
     right: max(1rem, env(safe-area-inset-right));
@@ -866,6 +952,20 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       left: max(4rem, env(safe-area-inset-left));
       right: max(4rem, env(safe-area-inset-right));
     }
+  }
+
+  .action-buttons-wrapper {
+    margin-top: 0 !important;
+
+    height: 0;
+    transition: height 0.3s ease-in-out;
+    overflow: hidden;
+  }
+
+  .active .action-buttons-wrapper {
+    margin-top: inherit !important;
+    visibility: visible;
+    height: auto;
   }
 
   /* Button icon state management for validation feedback */
@@ -912,6 +1012,29 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   import "../../scripts/typewriter-text";
 
   document.addEventListener("DOMContentLoaded", () => {
+    // Spacer grows/contracts with step content (min 60vh, max 80vh)
+    function updateSpacerHeight() {
+      const spacer = document.querySelector(".multi-step-form-spacer") as HTMLElement;
+      const steps = document.querySelector(".multi-step-form-steps") as HTMLElement;
+      if (!spacer || !steps) return;
+      const contentHeight = steps.scrollHeight;
+      const minVh = 60;
+      const maxVh = 80;
+      const minPx = (window.innerHeight * minVh) / 100;
+      const maxPx = (window.innerHeight * maxVh) / 100;
+      const heightPx = Math.min(maxPx, Math.max(minPx, contentHeight));
+      spacer.style.height = `${heightPx}px`;
+    }
+
+    const form = document.querySelector(".multi-step-form-steps")?.closest("form");
+    if (form) {
+      form.addEventListener("multistep-step-change", () => {
+        requestAnimationFrame(() => requestAnimationFrame(updateSpacerHeight));
+      });
+    }
+    window.addEventListener("resize", updateSpacerHeight);
+    requestAnimationFrame(() => requestAnimationFrame(updateSpacerHeight));
+
     // Listen for typewriter completion to trigger content animations
     document.addEventListener("typewriter-complete", (e) => {
       const target = e.target as HTMLElement;
@@ -932,15 +1055,17 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         const buttons = stepContent.querySelectorAll("button, a");
         buttons.forEach((el) => elements.push(el as HTMLElement));
 
-        // Apply staggered delays (100ms between each)
+        // Cascade delay per element (200ms = doubled from 100ms for slower reveal)
+        const CASCADE_DELAY_MS = 200;
         elements.forEach((element, index) => {
-          const delay = index * 0.1; // 100ms = 0.1s
-          element.style.transitionDelay = `${delay}s`;
-          console.log(`[ANIMATION] Element ${index + 1}: ${delay}s delay`);
+          element.style.transitionDelay = `${index * CASCADE_DELAY_MS}ms`;
         });
 
         // Add the class to trigger animations
         stepContent.classList.add("typewriter-complete");
+
+        // Spacer may need to grow after content reveals
+        requestAnimationFrame(() => requestAnimationFrame(updateSpacerHeight));
       }
     });
 
@@ -957,9 +1082,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       'input[data-has-animated-placeholder="true"]'
     ) as NodeListOf<HTMLInputElement>;
 
-    console.log(
-      `[ANIMATED-PLACEHOLDER] 🎯 Found ${animatedInputs.length} inputs with animated placeholders`
-    );
+    // console.log(
+    //   `[ANIMATED-PLACEHOLDER] 🎯 Found ${animatedInputs.length} inputs with animated placeholders`
+    // );
 
     // Store placeholder data for each field
     const placeholderData = new Map<
@@ -972,9 +1097,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       const placeholders = input.getAttribute("data-animated-placeholders");
       const fieldId = input.id;
 
-      console.log(
-        `[ANIMATED-PLACEHOLDER] 🔍 Checking input: ${fieldId}, has value: ${!!input.value}, value length: ${input.value?.length || 0}`
-      );
+      // console.log(
+      //   `[ANIMATED-PLACEHOLDER] 🔍 Checking input: ${fieldId}, has value: ${!!input.value}, value length: ${input.value?.length || 0}`
+      // );
 
       if (placeholders) {
         try {
@@ -984,9 +1109,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           // Previously firstName and lastName were synced, but this prevented the stagger effect
 
           placeholderData.set(fieldId, { index: 0, values, syncGroup: undefined });
-          console.log(
-            `[ANIMATED-PLACEHOLDER] ✅ Initialized ${fieldId} with ${values.length} placeholders`
-          );
+          // console.log(
+          //   `[ANIMATED-PLACEHOLDER] ✅ Initialized ${fieldId} with ${values.length} placeholders`
+          // );
         } catch (e) {
           console.error(
             `[ANIMATED-PLACEHOLDER] ❌ Failed to parse placeholders for ${fieldId}:`,
@@ -1002,7 +1127,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         `.animated-placeholder[data-for="${input.id}"]`
       ) as HTMLElement;
       if (span) {
-        console.log(`[ANIMATED-PLACEHOLDER] 🎬 Setting up detection for ${input.id}`);
+        // console.log(`[ANIMATED-PLACEHOLDER] 🎬 Setting up detection for ${input.id}`);
 
         // Helper function to check and hide/show placeholder
         const checkAndHidePlaceholder = () => {
@@ -1019,38 +1144,38 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             );
           }
 
-          console.log(
-            `[ANIMATED-PLACEHOLDER] 🔎 Check ${input.id}: value="${input.value}", hasValue=${hasValue}, isAutofilled=${isAutofilled}, span.display=${span.style.display}`
-          );
+          // console.log(
+          //   `[ANIMATED-PLACEHOLDER] 🔎 Check ${input.id}: value="${input.value}", hasValue=${hasValue}, isAutofilled=${isAutofilled}, span.display=${span.style.display}`
+          // );
 
           if (hasValue || isAutofilled) {
             span.style.display = "none";
-            console.log(
-              `[ANIMATED-PLACEHOLDER] ✅ HIDING placeholder for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
-            );
+            // console.log(
+            //   `[ANIMATED-PLACEHOLDER] ✅ HIDING placeholder for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
+            // );
           } else {
             span.style.display = "flex";
-            console.log(`[ANIMATED-PLACEHOLDER] 👁️ SHOWING placeholder for ${input.id}`);
+            // console.log(`[ANIMATED-PLACEHOLDER] 👁️ SHOWING placeholder for ${input.id}`);
           }
         };
 
         // Listen for manual input changes
         input.addEventListener("input", () => {
-          console.log(`[ANIMATED-PLACEHOLDER] 📝 Input event fired for ${input.id}`);
+          // console.log(`[ANIMATED-PLACEHOLDER] 📝 Input event fired for ${input.id}`);
           checkAndHidePlaceholder();
         });
 
         // Listen for change events (fired by browser autofill in some cases)
         input.addEventListener("change", () => {
-          console.log(`[ANIMATED-PLACEHOLDER] 🔄 Change event fired for ${input.id}`);
+          // console.log(`[ANIMATED-PLACEHOLDER] 🔄 Change event fired for ${input.id}`);
           checkAndHidePlaceholder();
         });
 
         // Listen for autofill detection via CSS animation
         input.addEventListener("animationstart", (e: AnimationEvent) => {
-          console.log(
-            `[ANIMATED-PLACEHOLDER] 🎨 Animation started: ${e.animationName} for ${input.id}`
-          );
+          // console.log(
+          //   `[ANIMATED-PLACEHOLDER] 🎨 Animation started: ${e.animationName} for ${input.id}`
+          // );
           if (e.animationName === "onAutoFillStart") {
             console.log(
               `[ANIMATED-PLACEHOLDER] 🎯 Autofill CSS animation detected for ${input.id}`
@@ -1061,7 +1186,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
         // Watch for attribute changes (some browsers add data attributes on autofill)
         const observer = new MutationObserver(() => {
-          console.log(`[ANIMATED-PLACEHOLDER] 🔬 Mutation observed for ${input.id}`);
+          // console.log(`[ANIMATED-PLACEHOLDER] 🔬 Mutation observed for ${input.id}`);
           checkAndHidePlaceholder();
         });
         observer.observe(input, {
@@ -1076,23 +1201,23 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         // Delayed checks for autofill (fallback for browsers that don't support animation detection)
         // Browser autofill can happen at various times, so we check multiple times
         setTimeout(() => {
-          console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (100ms) for ${input.id}`);
+          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (100ms) for ${input.id}`);
           checkAndHidePlaceholder();
         }, 100);
         setTimeout(() => {
-          console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (500ms) for ${input.id}`);
+          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (500ms) for ${input.id}`);
           checkAndHidePlaceholder();
         }, 500);
         setTimeout(() => {
-          console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (1000ms) for ${input.id}`);
+          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (1000ms) for ${input.id}`);
           checkAndHidePlaceholder();
         }, 1000);
         setTimeout(() => {
-          console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (1500ms) for ${input.id}`);
+          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (1500ms) for ${input.id}`);
           checkAndHidePlaceholder();
         }, 1500);
         setTimeout(() => {
-          console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (2500ms) for ${input.id}`);
+          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (2500ms) for ${input.id}`);
           checkAndHidePlaceholder();
         }, 2500);
       }
@@ -1119,9 +1244,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           // Ignore
         }
 
-        console.log(
-          `[ANIMATED-PLACEHOLDER] 🔄 Rotate check ${input.id}: hasValue=${hasValue}, isAutofilled=${isAutofilled}, span.display=${span?.style.display}`
-        );
+        // console.log(
+        //   `[ANIMATED-PLACEHOLDER] 🔄 Rotate check ${input.id}: hasValue=${hasValue}, isAutofilled=${isAutofilled}, span.display=${span?.style.display}`
+        // );
 
         if (span && data && !hasValue && !isAutofilled && span.style.display !== "none") {
           // Check if this input is in the active step
@@ -1158,7 +1283,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
     // Reset and restart placeholder animation
     function resetPlaceholderAnimation() {
-      console.log(`[ANIMATED-PLACEHOLDER] 🔄 Resetting placeholder animation`);
+      // console.log(`[ANIMATED-PLACEHOLDER] 🔄 Resetting placeholder animation`);
 
       // Find the active step to apply stagger delay correctly
       const activeStep = document.querySelector(".step-content.active");
@@ -1185,9 +1310,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           if (span) {
             span.style.display = "none";
           }
-          console.log(
-            `[ANIMATED-PLACEHOLDER] ⏭️ Skipping reset for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
-          );
+          // console.log(
+          //   `[ANIMATED-PLACEHOLDER] ⏭️ Skipping reset for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
+          // );
           return;
         }
 
@@ -1225,7 +1350,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
     // Start placeholder rotation
     function startPlaceholderRotation() {
-      console.log(`[ANIMATED-PLACEHOLDER] 🚀 Starting placeholder rotation`);
+      // console.log(`[ANIMATED-PLACEHOLDER] 🚀 Starting placeholder rotation`);
 
       // Clear any existing interval
       if (placeholderInterval) {
@@ -1247,15 +1372,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           // Ignore
         }
 
-        console.log(
-          `[ANIMATED-PLACEHOLDER] 🎬 Pre-animation check for ${input.id}: hasValue=${hasValue}, isAutofilled=${isAutofilled}`
-        );
+        // console.log(
+        //   `[ANIMATED-PLACEHOLDER] 🎬 Pre-animation check for ${input.id}: hasValue=${hasValue}, isAutofilled=${isAutofilled}`
+        // );
 
         if (span && (hasValue || isAutofilled)) {
           span.style.display = "none";
-          console.log(
-            `[ANIMATED-PLACEHOLDER] ✅ Pre-animation: hiding placeholder for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
-          );
+          // console.log(
+          //   `[ANIMATED-PLACEHOLDER] ✅ Pre-animation: hiding placeholder for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
+          // );
         }
       });
 
@@ -1264,7 +1389,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
       // Start new interval
       placeholderInterval = setInterval(rotatePlaceholders, 2000);
-      console.log(`[ANIMATED-PLACEHOLDER] ⏰ Rotation interval started (2000ms)`);
+      // console.log(`[ANIMATED-PLACEHOLDER] ⏰ Rotation interval started (2000ms)`);
     }
 
     // Rotate placeholders every 2 seconds
@@ -1282,7 +1407,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 '[data-has-animated-placeholder="true"]'
               );
               if (hasPlaceholders) {
-                console.log("[PLACEHOLDER] Restarting placeholder animation for active step");
+                // console.log("[PLACEHOLDER] Restarting placeholder animation for active step");
                 startPlaceholderRotation();
               }
             }
@@ -1303,35 +1428,70 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     // Add focus/blur shadow animation to all form inputs using event delegation
     // This works for both existing and dynamically added inputs
     // Run immediately, not waiting for DOMContentLoaded
+    // document.addEventListener(
+    //   "focus",
+    //   (e) => {
+    //     const target = e.target as HTMLElement;
+    //     if (
+    //       target &&
+    //       (target.tagName === "INPUT" ||
+    //         target.tagName === "TEXTAREA" ||
+    //         target.tagName === "SELECT") &&
+    //       (target as HTMLInputElement).type !== "hidden"
+    //     ) {
+    //       const formElement = target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+    //       // console.log("[FOCUS-SHADOW] Adding shadow to:", formElement.id || formElement.name);
+    //       target.classList.add("shadow-focus");
+
+    //       // Scroll the form so focused element is at cursor line (40vh from top of form viewport)
+    //       setTimeout(() => {
+    //         const form = target.closest("form");
+    //         if (form) {
+    //           const formRect = form.getBoundingClientRect();
+    //           const elementRect = target.getBoundingClientRect();
+    //           const delta = elementRect.top - (formRect.top + form.clientHeight * 0.4);
+    //           form.scrollBy({ top: delta, behavior: "smooth" });
+    //           console.log("[MULTISTEP-SCROLL] Form scrollBy (focus):", {
+    //             element: formElement.id || formElement.name,
+    //             delta,
+    //             formScrollTopBefore: form.scrollTop,
+    //             reason: "position input at cursor line (40vh)",
+    //           });
+    //         }
+    //       }, 100);
+    //     }
+    //   },
+    //   true
+    // );
+
+    // When user focuses an input (e.g. after scrolling up to edit), set that step's panel as .active
     document.addEventListener(
       "focus",
       (e) => {
         const target = e.target as HTMLElement;
         if (
-          target &&
-          (target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.tagName === "SELECT") &&
-          (target as HTMLInputElement).type !== "hidden"
+          !target ||
+          (target.tagName !== "INPUT" &&
+            target.tagName !== "TEXTAREA" &&
+            target.tagName !== "SELECT") ||
+          (target as HTMLInputElement).type === "hidden"
         ) {
-          const formElement = target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-          console.log("[FOCUS-SHADOW] Adding shadow to:", formElement.id || formElement.name);
-          target.classList.add("shadow-focus");
+          return;
+        }
+        const form = target.closest("form");
+        if (!form?.closest("[data-multi-step-form]")) return;
 
-          // Scroll the form so focused element is at cursor line (40vh from top of form viewport)
-          setTimeout(() => {
-            const form = target.closest("form");
-            if (form) {
-              const formRect = form.getBoundingClientRect();
-              const elementRect = target.getBoundingClientRect();
-              const delta = elementRect.top - (formRect.top + form.clientHeight * 0.4);
-              form.scrollBy({ top: delta, behavior: "smooth" });
-            }
-            console.log(
-              "[SCROLL] Positioning input at cursor line (40vh):",
-              formElement.id || formElement.name
-            );
-          }, 100);
+        const stepContent = target.closest(".step-content");
+        const stepNumber = parseInt(stepContent?.getAttribute("data-step") || "0", 10);
+        if (!stepNumber) return;
+
+        const handler = (
+          form as HTMLFormElement & {
+            multiStepHandler?: { setActiveStepByFocus: (n: number) => void };
+          }
+        ).multiStepHandler;
+        if (handler?.setActiveStepByFocus) {
+          handler.setActiveStepByFocus(stepNumber);
         }
       },
       true
@@ -1348,7 +1508,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             target.tagName === "SELECT")
         ) {
           const formElement = target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-          console.log("[FOCUS-SHADOW] Removing shadow from:", formElement.id || formElement.name);
+          // console.log("[FOCUS-SHADOW] Removing shadow from:", formElement.id || formElement.name);
           target.classList.remove("shadow-focus");
         }
       },
@@ -1396,11 +1556,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           setTimeout(() => {
             focusedElement.focus();
           }, 0);
-          console.log(
-            "[FOCUS-LOCK] Prevented focus loss. Target:",
-            target.tagName,
-            target.className
-          );
+          // console.log(
+          //   "[FOCUS-LOCK] Prevented focus loss. Target:",
+          //   target.tagName,
+          //   target.className
+          // );
         }
       },
       true
@@ -1417,7 +1577,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           return;
         }
 
-        console.log("[MULTISTEP-FORM] Initializing with data:", initialData);
+        // console.log("[MULTISTEP-FORM] Initializing with data:", initialData);
 
         // Pre-fill form fields with initial data
         Object.entries(initialData).forEach(([key, value]) => {
@@ -1604,33 +1764,76 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       return false;
     }
 
-    // Get all required inputs in the active step (not hidden)
+    const allInputsSelector =
+      'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]), textarea, select';
     const requiredInputs = activeStep.querySelectorAll(
-      'input[required]:not([type="hidden"]), textarea[required]'
+      `input[required]:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]), textarea[required], select[required]`
     );
+    // Include optional fields that have value (e.g. phone with required: false) so valid icon updates
+    const inputsToCheck =
+      requiredInputs.length > 0 ? requiredInputs : activeStep.querySelectorAll(allInputsSelector);
 
-    if (requiredInputs.length === 0) {
-      console.log("[FIELD-VALIDATION] No required fields in active step");
-      return false;
+    function hasValue(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): boolean {
+      if (el instanceof HTMLSelectElement) return el.value !== "";
+      const input = el as HTMLInputElement;
+      if (input.type === "checkbox") return input.checked;
+      if (input.type === "radio") {
+        const name = input.name;
+        if (!name) return input.checked;
+        const group = activeStep.querySelectorAll<HTMLInputElement>(
+          `input[type="radio"][name="${name}"]`
+        );
+        return Array.from(group).some((r) => r.checked);
+      }
+      return (el.value ?? "").length > 0;
     }
 
     let allValid = true;
     const fieldStates: { name: string; value: string; valid: boolean }[] = [];
+    const seenRadioGroups = new Set<string>();
 
-    requiredInputs.forEach((input) => {
-      const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
-      const isValid = inputEl.validity.valid && inputEl.value.length > 0;
+    inputsToCheck.forEach((input) => {
+      const inputEl = input as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+      const inputAsInput = inputEl as HTMLInputElement;
+      // When step has no required fields, only validate inputs that have value (e.g. optional phone)
+      if (requiredInputs.length === 0 && !hasValue(inputEl as HTMLInputElement)) return;
+      if (inputAsInput.type === "radio" && inputAsInput.name) {
+        if (seenRadioGroups.has(inputAsInput.name)) return;
+        seenRadioGroups.add(inputAsInput.name);
+      }
+      const hasVal = hasValue(inputEl as HTMLInputElement);
+      const validByValidity = inputEl.validity?.valid !== false && hasVal;
+      const validByClass = inputEl.classList?.contains("is-valid") && hasVal;
+      const valid = inputAsInput.type === "radio" ? hasVal : validByValidity || validByClass;
+
+      let displayValue: string;
+      if (inputEl instanceof HTMLSelectElement) {
+        displayValue = inputEl.value;
+      } else if (inputAsInput.type === "checkbox") {
+        displayValue = inputAsInput.checked ? "checked" : "";
+      } else if (inputAsInput.type === "radio") {
+        const checkedRadio =
+          inputAsInput.name &&
+          activeStep.querySelector<HTMLInputElement>(
+            `input[type="radio"][name="${inputAsInput.name}"]:checked`
+          );
+        displayValue = checkedRadio?.value ?? "";
+      } else {
+        const v = (inputEl as HTMLInputElement | HTMLTextAreaElement).value ?? "";
+        displayValue = v.substring(0, 20) + (v.length > 20 ? "..." : "");
+      }
 
       fieldStates.push({
-        name: inputEl.name || inputEl.id,
-        value: inputEl.value.substring(0, 20) + (inputEl.value.length > 20 ? "..." : ""),
-        valid: isValid,
+        name: inputEl.name || inputEl.id || "",
+        value: displayValue,
+        valid,
       });
 
-      if (!isValid) {
-        allValid = false;
-      }
+      if (!valid) allValid = false;
     });
+
+    // Step with no required fields and nothing filled: show default icon (e.g. "skip"), not valid
+    if (requiredInputs.length === 0 && fieldStates.length === 0) allValid = false;
 
     console.log("[FIELD-VALIDATION] Current step field states:", fieldStates);
 
@@ -1640,313 +1843,90 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       console.log("❌ [FIELD-VALIDATION] Some fields are invalid or empty");
     }
 
+    // When panel is valid: show check icon, hide default icon (and vice versa). Applies to any button with both icons, regardless of validLabel.
+    activeStep.querySelectorAll("button").forEach((btn) => {
+      const iconValid = btn.querySelector(".icon-valid");
+      const iconDefault = btn.querySelector(".icon-default");
+      if (!iconValid || !iconDefault) return;
+      if (allValid) {
+        iconValid.classList.remove("hidden");
+        iconDefault.classList.add("hidden");
+        const buttonText = btn.querySelector(".button-text");
+        const validLabel = btn.getAttribute("data-valid-label");
+        const defaultLabel = btn.getAttribute("data-default-label");
+        if (buttonText && validLabel && defaultLabel) buttonText.textContent = validLabel;
+      } else {
+        iconValid.classList.add("hidden");
+        iconDefault.classList.remove("hidden");
+        const buttonText = btn.querySelector(".button-text");
+        const defaultLabel = btn.getAttribute("data-default-label");
+        if (buttonText && defaultLabel) buttonText.textContent = defaultLabel;
+      }
+    });
+
     return allValid;
   }
 
-  // Add validation state classes for visual feedback
+  // Add validation state classes for visual feedback (all input types, textarea, select)
   document.addEventListener("DOMContentLoaded", () => {
-    const inputs = document.querySelectorAll(
-      'input[type="email"], input[type="password"], input[type="text"], input[type="tel"]'
+    const form =
+      document.querySelector(".multi-step-form-steps")?.closest("form") ??
+      document.querySelector("form");
+    const scope = form ?? document;
+    const fields = scope.querySelectorAll<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >(
+      'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]), textarea, select'
     );
 
-    inputs.forEach((input) => {
-      // Check validity on input
-      input.addEventListener("input", (e) => {
-        const target = e.target as HTMLInputElement;
+    function hasValue(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): boolean {
+      if (el instanceof HTMLSelectElement) return el.value !== "";
+      const input = el as HTMLInputElement;
+      if (input.type === "checkbox" || input.type === "radio") return input.checked;
+      return (el.value ?? "").length > 0;
+    }
 
-        if (target.value.length > 0) {
-          if (target.validity.valid) {
-            target.classList.add("is-valid");
-            target.classList.remove("is-invalid");
-          } else {
-            target.classList.add("is-invalid");
-            target.classList.remove("is-valid");
-          }
+    function updateValidityState(
+      target: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    ) {
+      const hasVal = hasValue(target as HTMLInputElement);
+      const valid = target.validity?.valid !== false;
+      if (hasVal) {
+        if (valid) {
+          target.classList.add("is-valid");
+          target.classList.remove("is-invalid");
         } else {
-          target.classList.remove("is-valid", "is-invalid");
+          target.classList.add("is-invalid");
+          target.classList.remove("is-valid");
         }
+      } else {
+        target.classList.remove("is-valid", "is-invalid");
+      }
+      checkAllFieldsValid();
+    }
 
-        // Check if all fields in panel are valid after each input
-        checkAllFieldsValid();
+    fields.forEach((field) => {
+      const isCheckboxOrRadio =
+        field instanceof HTMLInputElement && (field.type === "checkbox" || field.type === "radio");
+      const isSelect = field instanceof HTMLSelectElement;
+
+      if (isCheckboxOrRadio || isSelect) {
+        field.addEventListener("change", () => updateValidityState(field));
+        field.addEventListener("blur", () => updateValidityState(field));
+      } else {
+        field.addEventListener("input", () => updateValidityState(field));
+        field.addEventListener("blur", () => updateValidityState(field));
+      }
+
+      field.addEventListener("focus", () => {
+        field.classList.remove("is-invalid");
       });
 
-      // Check validity on blur
-      input.addEventListener("blur", (e) => {
-        const target = e.target as HTMLInputElement;
-
-        if (target.value.length > 0) {
-          if (target.validity.valid) {
-            target.classList.add("is-valid");
-            target.classList.remove("is-invalid");
-          } else {
-            target.classList.add("is-invalid");
-            target.classList.remove("is-valid");
-          }
-        }
-
-        // Check if all fields in panel are valid after blur
-        checkAllFieldsValid();
-      });
-
-      // Remove invalid state on focus
-      input.addEventListener("focus", (e) => {
-        const target = e.target as HTMLInputElement;
-        target.classList.remove("is-invalid");
-      });
+      // Initial state in case of pre-filled or server state
+      updateValidityState(field);
     });
   });
 </script>
-
-<style>
-  /* Enhanced input styling with focus glow, pulse, and validation states */
-
-  /* Base input styles with stronger focus glow */
-  input[type="email"],
-  input[type="password"],
-  input[type="text"],
-  input[type="tel"] {
-    position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Create circular focus glow with pseudo-element */
-  input[type="email"]:focus::before,
-  input[type="password"]:focus::before,
-  input[type="text"]:focus::before,
-  input[type="tel"]:focus::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 75px;
-    height: 75px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(14, 165, 233, 0.2) 0%, transparent 70%);
-    mix-blend-mode: multiply;
-    pointer-events: none;
-    animation: pulse-circle 1s ease-in-out infinite;
-    z-index: -1;
-  }
-
-  /* Focus state - subtle bottom glow + circular overlay */
-  input[type="email"]:focus,
-  input[type="password"]:focus,
-  input[type="text"]:focus,
-  input[type="tel"]:focus {
-    box-shadow:
-      0 3px 9px -1.5px rgba(14, 165, 233, 0.15),
-      0 6px 15px -3px rgba(14, 165, 233, 0.1);
-  }
-
-  :global(.dark) input[type="email"]:focus::before,
-  :global(.dark) input[type="password"]:focus::before,
-  :global(.dark) input[type="text"]:focus::before,
-  :global(.dark) input[type="tel"]:focus::before {
-    background: radial-gradient(circle, rgba(55, 185, 243, 0.25) 0%, transparent 70%);
-  }
-
-  :global(.dark) input[type="email"]:focus,
-  :global(.dark) input[type="password"]:focus,
-  :global(.dark) input[type="text"]:focus,
-  :global(.dark) input[type="tel"]:focus {
-    box-shadow:
-      0 3px 9px -1.5px rgba(55, 185, 243, 0.2),
-      0 6px 15px -3px rgba(55, 185, 243, 0.125);
-  }
-
-  /* Valid state - green glow from bottom with circular overlay */
-  input[type="email"]:focus.is-valid::before,
-  input[type="password"]:focus.is-valid::before,
-  input[type="text"]:focus.is-valid::before,
-  input[type="tel"]:focus.is-valid::before,
-  input[type="email"].is-valid::before,
-  input[type="password"].is-valid::before,
-  input[type="text"].is-valid::before,
-  input[type="tel"].is-valid::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 75px;
-    height: 75px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
-    mix-blend-mode: multiply;
-    pointer-events: none;
-    animation: pulse-circle-green 1s ease-in-out infinite;
-    z-index: -1;
-  }
-
-  input[type="email"]:focus.is-valid,
-  input[type="password"]:focus.is-valid,
-  input[type="text"]:focus.is-valid,
-  input[type="tel"]:focus.is-valid,
-  input[type="email"].is-valid,
-  input[type="password"].is-valid,
-  input[type="text"].is-valid,
-  input[type="tel"].is-valid {
-    box-shadow:
-      0 3px 9px -1.5px rgba(34, 197, 94, 0.15),
-      0 6px 15px -3px rgba(34, 197, 94, 0.1) !important;
-  }
-
-  :global(.dark) input[type="email"]:focus.is-valid::before,
-  :global(.dark) input[type="password"]:focus.is-valid::before,
-  :global(.dark) input[type="text"]:focus.is-valid::before,
-  :global(.dark) input[type="tel"]:focus.is-valid::before,
-  :global(.dark) input[type="email"].is-valid::before,
-  :global(.dark) input[type="password"].is-valid::before,
-  :global(.dark) input[type="text"].is-valid::before,
-  :global(.dark) input[type="tel"].is-valid::before {
-    background: radial-gradient(circle, rgba(74, 222, 128, 0.25) 0%, transparent 70%);
-  }
-
-  :global(.dark) input[type="email"]:focus.is-valid,
-  :global(.dark) input[type="password"]:focus.is-valid,
-  :global(.dark) input[type="text"]:focus.is-valid,
-  :global(.dark) input[type="tel"]:focus.is-valid,
-  :global(.dark) input[type="email"].is-valid,
-  :global(.dark) input[type="password"].is-valid,
-  :global(.dark) input[type="text"].is-valid,
-  :global(.dark) input[type="tel"].is-valid {
-    box-shadow:
-      0 3px 9px -1.5px rgba(74, 222, 128, 0.2),
-      0 6px 15px -3px rgba(74, 222, 128, 0.15) !important;
-  }
-
-  /* Invalid state - red/pink glow from bottom */
-  input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
-  input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
-  input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
-  input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
-  input.is-invalid:not(:focus) {
-    box-shadow:
-      0 3px 9px -1.5px rgba(239, 68, 68, 0.1),
-      0 6px 15px -3px rgba(239, 68, 68, 0.075);
-  }
-
-  :global(.dark) input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
-  :global(.dark) input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
-  :global(.dark) input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
-  :global(.dark) input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
-  :global(.dark) input.is-invalid:not(:focus) {
-    box-shadow:
-      0 3px 9px -1.5px rgba(251, 113, 133, 0.15),
-      0 6px 15px -3px rgba(251, 113, 133, 0.1);
-  }
-
-  /* Autofill state - purple glow from bottom */
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus {
-    -webkit-box-shadow:
-      0 3px 9px -1.5px rgba(139, 92, 246, 0.15),
-      0 6px 15px -3px rgba(139, 92, 246, 0.1),
-      0 0 0 1000px var(--autofill-bg) inset !important;
-    box-shadow:
-      0 3px 9px -1.5px rgba(139, 92, 246, 0.15),
-      0 6px 15px -3px rgba(139, 92, 246, 0.1);
-    -webkit-text-fill-color: var(--text-color) !important;
-    transition: background-color 5000s ease-in-out 0s;
-  }
-
-  /* CSS Variables for autofill */
-  :root {
-    --autofill-bg: rgba(249, 250, 251, 0.9);
-    --text-color: #111827;
-  }
-
-  :global(.dark) {
-    --autofill-bg: rgba(17, 24, 39, 0.9);
-    --text-color: #f9fafb;
-  }
-
-  /* Circular pulse animation for focus */
-  @keyframes pulse-circle {
-    0%,
-    100% {
-      width: 100px;
-      height: 100px;
-      opacity: 0.3;
-    }
-    50% {
-      width: 140px;
-      height: 140px;
-      opacity: 0.4;
-    }
-  }
-
-  /* Circular pulse animation for valid state */
-  @keyframes pulse-circle-green {
-    0%,
-    100% {
-      width: 100px;
-      height: 100px;
-      opacity: 0.3;
-    }
-    50% {
-      width: 140px;
-      height: 140px;
-      opacity: 0.4;
-    }
-  }
-
-  /* Input icon styling using ::before and ::after */
-  .input-with-icon {
-    position: relative;
-  }
-
-  /* Icon positioned on the left */
-  .input-with-icon.icon-left::before {
-    content: "";
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1.25rem;
-    height: 1.25rem;
-    opacity: 0.5;
-    z-index: 1;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    /* Icon SVG will be injected via JavaScript */
-  }
-
-  /* Icon positioned on the right */
-  .input-with-icon.icon-right::after {
-    content: "";
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1.25rem;
-    height: 1.25rem;
-    opacity: 0.5;
-    z-index: 1;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    /* Icon SVG will be injected via JavaScript */
-  }
-
-  /* Increase icon opacity on input focus */
-  .input-with-icon:focus-within::before,
-  .input-with-icon:focus-within::after {
-    opacity: 0.7;
-  }
-
-  /* Dark mode icon color */
-  :global(.dark) .input-with-icon::before,
-  :global(.dark) .input-with-icon::after {
-    filter: brightness(0.8);
-  }
-
-  :global(.dark) .input-with-icon:focus-within::before,
-  :global(.dark) .input-with-icon:focus-within::after {
-    filter: brightness(1);
-  }
-</style>
 
 <script>
   // Inject icons into input wrappers using SimpleIcons

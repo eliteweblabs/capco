@@ -8,6 +8,7 @@ export interface MultiStepFormHandler {
   init: () => void;
   showStep: (stepNumber: number) => void;
   getCurrentStep: () => number;
+  setActiveStepByFocus: (stepNumber: number) => void;
 }
 
 // Helper function to update button validation state with icon swap
@@ -17,6 +18,17 @@ function updateButtonIcon(button: HTMLElement, isValid: boolean) {
   } else {
     button.classList.remove("is-valid");
   }
+}
+
+// Offset of element from the scroll container (works when steps are wrapped in .multi-step-form-steps)
+function getOffsetTopFromScrollParent(element: HTMLElement, scrollParent: HTMLElement): number {
+  let top = 0;
+  let el: HTMLElement | null = element;
+  while (el && el !== scrollParent) {
+    top += el.offsetTop;
+    el = el.offsetParent as HTMLElement | null;
+  }
+  return top;
 }
 
 export function createMultiStepFormHandler(
@@ -107,6 +119,42 @@ export function createMultiStepFormHandler(
     });
   }
 
+  // Set active step when user focuses an input (e.g. after scrolling up to edit). No scroll or animation.
+  function setActiveStepByFocus(stepNumber: number) {
+    const formEl = document.getElementById(formId) as HTMLFormElement;
+    if (!formEl) return;
+
+    const targetStep = formEl.querySelector(
+      `.step-content[data-step="${stepNumber}"]`
+    ) as HTMLElement;
+    if (!targetStep) return;
+
+    const currentActiveStep = formEl.querySelector(".step-content.active") as HTMLElement;
+    if (currentActiveStep === targetStep) return;
+
+    formEl.querySelectorAll(".step-content").forEach((el) => {
+      el.classList.remove("active", "sliding-out-up", "sliding-out-down", "sliding-in-from-above", "initial-load");
+    });
+    targetStep.classList.add("active");
+
+    currentStep = stepNumber;
+    updateProgress();
+
+    const progressBar = document.getElementById(`${formId}-progress-bar`);
+    const shouldHideProgressBar = targetStep.getAttribute("data-hide-progress-bar") === "true";
+    if (progressBar) {
+      progressBar.style.opacity = shouldHideProgressBar ? "0" : "1";
+      progressBar.style.pointerEvents = shouldHideProgressBar ? "none" : "auto";
+    }
+
+    if (options.onStepChange) {
+      options.onStepChange(stepNumber);
+    }
+    form.dispatchEvent(
+      new CustomEvent("multistep-step-change", { detail: { stepNumber }, bubbles: true })
+    );
+  }
+
   // Show specific step with animation (continuous scroll: previous steps stay visible, scroll to active)
   async function showStep(stepNumber: number, direction: "forward" | "backward" = "forward") {
     const currentActiveStep = document.querySelector(`#${formId} .step-content.active`) as HTMLElement;
@@ -116,9 +164,14 @@ export function createMultiStepFormHandler(
 
     if (!targetStep) return;
 
-    // Remove active from current step (no slide-out; step stays visible for scroll-up review)
+    // Remove active from current step; when going forward mark as completed (stays visible), when going back remove completed (hide again)
     if (currentActiveStep && currentActiveStep !== targetStep) {
-      currentActiveStep.classList.remove("active", "sliding-out-up", "sliding-out-down");
+      if (direction === "backward") {
+        currentActiveStep.classList.remove("active", "completed", "sliding-out-up", "sliding-out-down");
+      } else {
+        currentActiveStep.classList.add("completed");
+        currentActiveStep.classList.remove("active", "sliding-out-up", "sliding-out-down");
+      }
 
       const buttons = currentActiveStep.querySelectorAll("button");
       buttons.forEach((btn) => {
@@ -149,19 +202,33 @@ export function createMultiStepFormHandler(
     } else {
       targetStep.classList.add("initial-load");
     }
-    if (direction === "backward") {
-      targetStep.classList.add("sliding-in-from-above");
-    } else {
-      targetStep.classList.remove("sliding-in-from-above");
-    }
+    // No slide animation on backward — wrapper scroll alone positions the step; slide + scroll caused bounce
+    targetStep.classList.remove("sliding-in-from-above");
 
-    // Continuous scroll: scroll form so target step is at cursor line (40vh); user can scroll up to review
-    const formEl = document.getElementById(formId) as HTMLFormElement;
-    if (formEl && currentActiveStep !== targetStep) {
-      const cursorFraction = 0.4;
-      const scrollTop =
-        targetStep.offsetTop - formEl.clientHeight * cursorFraction;
-      formEl.scrollTo({ top: Math.max(0, scrollTop), behavior: "smooth" });
+    // Steps wrapper is fixed with overflow-y: auto — scroll it so target step's bottom is at wrapper bottom (same spot active was)
+    const stepsWrapper = document.getElementById(`${formId}-steps`);
+    if (stepsWrapper && currentActiveStep !== targetStep) {
+      const runScroll = () => {
+        if (direction === "backward") {
+          const targetBottom = targetStep.offsetTop + targetStep.offsetHeight;
+          const scrollTop = targetBottom - stepsWrapper.clientHeight;
+          const clamped = Math.max(0, Math.min(scrollTop, stepsWrapper.scrollHeight - stepsWrapper.clientHeight));
+          stepsWrapper.scrollTo({ top: clamped, behavior: "smooth" });
+          console.log("[MULTISTEP-SCROLL] Wrapper scrollTo (back):", {
+            stepNumber,
+            targetBottom,
+            scrollTop: clamped,
+            reason: "previous step bottom at wrapper bottom",
+          });
+        } else {
+          stepsWrapper.scrollTo({ top: stepsWrapper.scrollHeight - stepsWrapper.clientHeight, behavior: "smooth" });
+          console.log("[MULTISTEP-SCROLL] Wrapper scrollTo (forward):", {
+            stepNumber,
+            reason: "new active step at wrapper bottom",
+          });
+        }
+      };
+      requestAnimationFrame(() => requestAnimationFrame(runScroll));
     }
 
     currentStep = stepNumber;
@@ -204,6 +271,12 @@ export function createMultiStepFormHandler(
     // Call custom step change handler
     if (options.onStepChange) {
       options.onStepChange(stepNumber);
+    }
+    const formEl = document.getElementById(formId);
+    if (formEl) {
+      formEl.dispatchEvent(
+        new CustomEvent("multistep-step-change", { detail: { stepNumber }, bubbles: true })
+      );
     }
 
     // Handle conditional HVAC options based on fuel source (Step 6)
@@ -252,6 +325,12 @@ export function createMultiStepFormHandler(
         const elementRect = element.getBoundingClientRect();
         const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
         formEl.scrollBy({ top: delta, behavior: "smooth" });
+        console.log("[MULTISTEP-SCROLL] Form scrollBy (auto-focus after step):", {
+          element: element.id || element.getAttribute("name") || element.tagName,
+          delta,
+          formScrollTop: formEl.scrollTop,
+          reason: "position focused element at cursor line (40vh)",
+        });
       };
 
       const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
@@ -1172,6 +1251,11 @@ export function createMultiStepFormHandler(
           const absoluteElementTop = elementRect.top + window.pageYOffset;
           const cursorLine = absoluteElementTop - (window.innerHeight * 0.4);
           window.scrollTo({ top: cursorLine, behavior: 'smooth' });
+          console.log("[MULTISTEP-SCROLL] window.scrollTo (initial focus):", {
+            element: firstInput.id || (firstInput as HTMLInputElement).name || "firstInput",
+            cursorLine,
+            reason: "position first input at cursor line (40vh) on load",
+          });
         }
       }
     }, 80); // Brief delay for layout to settle - no animation on initial load
@@ -1181,6 +1265,7 @@ export function createMultiStepFormHandler(
     init,
     showStep,
     getCurrentStep: () => currentStep,
+    setActiveStepByFocus,
   };
 }
 
@@ -1305,6 +1390,9 @@ export function initializeMultiStepForm(
   if (firstStep !== 1) {
     handler.showStep(firstStep);
   }
+
+  // Expose handler on form so focus listener can call setActiveStepByFocus when user scrolls up to edit
+  (form as HTMLFormElement & { multiStepHandler?: MultiStepFormHandler }).multiStepHandler = handler;
 
   return handler;
 }
