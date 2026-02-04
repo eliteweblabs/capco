@@ -659,31 +659,37 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
   }
 
-  /* Auto-filled fields: keep inset overlay (no Chrome blue) + same outer shadow as focused */
+  /* Auto-filled fields: solid inset (iOS Safari yellow fix) + green shadow to match valid state */
   input:not([type="hidden"]):-webkit-autofill,
   textarea:-webkit-autofill,
-  select:-webkit-autofill {
+  select:-webkit-autofill,
+  input:not([type="hidden"]):autofill,
+  textarea:autofill,
+  select:autofill {
     -webkit-box-shadow:
-      0 0 0 1000px rgba(var(--color-background), 0.5) inset,
-      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+      0 0 0 100vmax #ffffff inset,
+      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
     box-shadow:
-      0 0 0 1000px rgba(var(--color-background), 0.5) inset,
-      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+      0 0 0 100vmax #ffffff inset,
+      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
   }
 
   .dark input:not([type="hidden"]):-webkit-autofill,
   .dark textarea:-webkit-autofill,
-  .dark select:-webkit-autofill {
+  .dark select:-webkit-autofill,
+  .dark input:not([type="hidden"]):autofill,
+  .dark textarea:autofill,
+  .dark select:autofill {
     -webkit-box-shadow:
-      0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
-      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+      0 0 0 100vmax #0a0a0a inset,
+      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
     box-shadow:
-      0 0 0 1000px rgba(var(--color-background-dark), 0.5) inset,
-      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+      0 0 0 100vmax #0a0a0a inset,
+      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
   }
 
   /* Valid, not focused: green glow (:valid and .is-valid so email/text/password/tel all get it) */
@@ -1034,6 +1040,52 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
     window.addEventListener("resize", updateSpacerHeight);
     requestAnimationFrame(() => requestAnimationFrame(updateSpacerHeight));
+
+    // Expand steps panel 1:1 with scroll: as first panel moves up, decrease bottom until 120px
+    const stepsEl = document.querySelector(".multi-step-form-steps") as HTMLElement | null;
+    if (stepsEl) {
+      const BOTTOM_MIN_PX = 120;
+      const BOTTOM_INITIAL_VH = 40;
+
+      let scrollParent: HTMLElement | null = null;
+      let el: HTMLElement | null = stepsEl.parentElement;
+      while (el) {
+        const style = getComputedStyle(el);
+        const overflowY = style.overflowY;
+        if (
+          (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") &&
+          el.scrollHeight > el.clientHeight
+        ) {
+          scrollParent = el;
+          break;
+        }
+        el = el.parentElement;
+      }
+
+      function getScrollPx(): number {
+        if (scrollParent) return scrollParent.scrollTop;
+        return window.scrollY ?? document.documentElement.scrollTop ?? 0;
+      }
+
+      function updateStepsPanelBottom() {
+        const scrollPx = getScrollPx();
+        const initialBottomPx = (window.innerHeight * BOTTOM_INITIAL_VH) / 100;
+        const bottomPx = Math.max(BOTTOM_MIN_PX, initialBottomPx - scrollPx);
+        stepsEl.style.bottom = `${bottomPx}px`;
+        console.log("[MULTISTEP-PANEL]", {
+          scrollPx,
+          initialBottomPx: Math.round(initialBottomPx),
+          bottomPx: Math.round(bottomPx),
+          scrollParent: scrollParent?.tagName ?? "window",
+        });
+      }
+
+      updateStepsPanelBottom();
+      (scrollParent ?? window).addEventListener("scroll", updateStepsPanelBottom, {
+        passive: true,
+      });
+      window.addEventListener("resize", updateStepsPanelBottom);
+    }
 
     // Listen for typewriter completion to trigger content animations
     document.addEventListener("typewriter-complete", (e) => {
