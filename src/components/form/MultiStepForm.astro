@@ -215,7 +215,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         {...field.componentProps}
                       />
                     ) : field.type === "component" && field.component === "ToggleButton" ? (
-                      <div class="flex flex-wrap gap-3" tabindex="-1">
+                      <div class="multi-step-toggle-group flex flex-wrap gap-3" tabindex="-1">
                         {field.options?.map((option) => (
                           <ToggleButton
                             value={option.value}
@@ -301,7 +301,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         </span>
                       </div>
                     ) : field.type === "button-group" ? (
-                      <div class="flex flex-wrap gap-3" tabindex="-1">
+                      <div class="multi-step-button-group flex flex-wrap gap-3" tabindex="-1">
                         {field.buttons?.map((button) => {
                           const btnConfig = getButtonConfig(
                             button,
@@ -381,7 +381,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {/* Choice buttons (radio-style options) */}
             {step.buttons.some((b) => b.type === "choice") && (
               <div
-                class={`flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-center flex-wrap"} gap-3 mb-6`}
+                class={`multi-step-choice-buttons flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-center flex-wrap"} gap-3 mb-6`}
                 tabindex="-1"
               >
                 {step.buttons
@@ -846,6 +846,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       opacity: 1;
     }
   }
+
+  /* Touch-friendly button groups on mobile: 44px min touch target, no tap delay */
+  [data-multi-step-form] .multi-step-button-group button,
+  [data-multi-step-form] .multi-step-choice-buttons button,
+  [data-multi-step-form] .multi-step-toggle-group button {
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
 </style>
 
 <script define:vars={{ formId: config.formId, formConfig: config, initialData }}>
@@ -1078,34 +1087,34 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         // console.log(`[ANIMATED-PLACEHOLDER] 🎬 Setting up detection for ${input.id}`);
 
         // Helper function to check and hide/show placeholder
+        // Hide when: has value, autofilled, or input is focused (avoids double-cursor on mobile)
         const checkAndHidePlaceholder = () => {
-          // Check both value and autofill state
           const hasValue = input.value && input.value.length > 0;
+          const isFocused = document.activeElement === input;
 
           let isAutofilled = false;
           try {
             isAutofilled = input.matches(":-webkit-autofill") || input.matches(":autofill");
           } catch (e) {
-            // Fallback if matches() not supported or pseudo-class not recognized
             console.log(
               `[ANIMATED-PLACEHOLDER] ⚠️ Could not check autofill pseudo-class for ${input.id}`
             );
           }
 
-          // console.log(
-          //   `[ANIMATED-PLACEHOLDER] 🔎 Check ${input.id}: value="${input.value}", hasValue=${hasValue}, isAutofilled=${isAutofilled}, span.display=${span.style.display}`
-          // );
-
-          if (hasValue || isAutofilled) {
+          if (hasValue || isAutofilled || isFocused) {
             span.style.display = "none";
-            // console.log(
-            //   `[ANIMATED-PLACEHOLDER] ✅ HIDING placeholder for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
-            // );
           } else {
             span.style.display = "flex";
-            // console.log(`[ANIMATED-PLACEHOLDER] 👁️ SHOWING placeholder for ${input.id}`);
           }
         };
+
+        // Hide placeholder on focus so only the real caret shows (fixes double-cursor on mobile)
+        input.addEventListener("focus", () => {
+          span.style.display = "none";
+        });
+        input.addEventListener("blur", () => {
+          checkAndHidePlaceholder();
+        });
 
         // Listen for manual input changes
         input.addEventListener("input", () => {
