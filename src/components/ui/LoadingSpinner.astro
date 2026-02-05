@@ -12,7 +12,7 @@ const {
   size: sizeProp = "md",
   borderColor: borderColorProp,
   color,
-  loadingText = "loading...",
+  loadingText = "loading<span class='hop-1'>.</span><span class='hop-2'>.</span><span class='hop-3'>.</span>",
   className = "",
   id,
 } = Astro.props;
@@ -59,6 +59,23 @@ const borderColorClass =
     <div class={`animate-spin rounded-full ${sizeClass} ${borderColorClass}`}></div>
   </div>
 
-  <!-- Loading text -->
-  <p class="text-sm text-gray-600 dark:text-gray-400">{loadingText}</p>
+  <!-- Loading text (set:html so hop spans render) -->
+  <p class="loading-spinner-text text-sm text-gray-600 dark:text-gray-400" set:html={loadingText} />
 </div>
+
+<style>
+  @keyframes hop {
+    0%, 100% { transform: translateY(0); }
+    15% { transform: translateY(-0.35em); }
+    30% { transform: translateY(0); }
+  }
+  .loading-spinner-text .hop-1,
+  .loading-spinner-text .hop-2,
+  .loading-spinner-text .hop-3 {
+    display: inline-block;
+    animation: hop 333ms ease-in-out infinite;
+  }
+  .loading-spinner-text .hop-1 { animation-delay: 0ms; }
+  .loading-spinner-text .hop-2 { animation-delay: 50ms; }
+  .loading-spinner-text .hop-3 { animation-delay: 100ms; }
+</style>
