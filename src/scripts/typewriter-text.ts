@@ -341,211 +341,30 @@ function triggerActiveStepTypewriter(): void {
   });
 }
 
-/**
- * Reset typewriter for an element (for re-triggering)
- */
-function resetTypewriter(element: HTMLElement): void {
-  const instance = (element as any).__typeItInstance;
-  if (instance) {
-    instance.reset();
-    element.removeAttribute("data-typewriter-triggered");
-  }
-}
-
 // Initialize immediately
 initTypewriterTexts();
+
+/** Initialize a single typewriter element (used by observer for dynamically added nodes). */
+function initOneTypewriterElement(element: HTMLElement): void {
+  const text = element.getAttribute("data-text");
+  if (!text || element.getAttribute("data-typewriter-ready")) return;
+  if (text.includes("data-form-session-meta")) {
+    element.setAttribute("data-typewriter-deferred", "true");
+    return;
+  }
+  initializeTypewriterInstance(element, text);
+}
 
 // Set up mutation observer for dynamically added elements
 const observer = new MutationObserver((mutations) => {
   mutations.forEach((mutation) => {
     mutation.addedNodes.forEach((node) => {
       if (node instanceof HTMLElement) {
-        // Check if the node itself has the class
         if (node.classList.contains("typewriter-text")) {
-          let text = node.getAttribute("data-text");
-          if (text && !node.getAttribute("data-typewriter-ready")) {
-            // Decode HTML entities
-            const textarea = document.createElement("textarea");
-            textarea.innerHTML = text;
-            text = textarea.value;
-
-            node.innerHTML = "";
-            node.setAttribute("data-typewriter-ready", "true");
-
-            // Parse text for custom pause spans
-            const segments = parseTextWithPauses(text);
-
-            const instance = new TypeIt(node, {
-              speed: 20,
-              cursor: true,
-              waitUntilVisible: true,
-              html: true,
-              lifeLike: true,
-              afterStep: () => {
-                // Auto-scroll to keep cursor at fixed vertical position
-                const scrollWrapper = node.closest('.title-scroll-wrapper');
-                const scrollContainer = node.closest('.title-scroll-container');
-                if (scrollWrapper) {
-                  // Check if content overflows
-                  const hasOverflow = scrollWrapper.scrollHeight > scrollWrapper.clientHeight;
-                  
-                  if (hasOverflow) {
-                    // Add class to switch to top alignment when overflowing
-                    scrollWrapper.classList.add('has-overflow');
-                    
-                    // Find the cursor element
-                    const cursor = node.querySelector('.ti-cursor');
-                    if (cursor) {
-                      // Get cursor position relative to the scrollable container
-                      const cursorRect = cursor.getBoundingClientRect();
-                      const wrapperRect = scrollWrapper.getBoundingClientRect();
-                      
-                      // Target position: keep cursor at 75% down the visible area
-                      const targetPosition = wrapperRect.height * 0.75;
-                      const currentCursorPosition = cursorRect.top - wrapperRect.top;
-                      
-                      // Calculate how much to scroll to keep cursor at target position
-                      const scrollAdjustment = currentCursorPosition - targetPosition;
-                      
-                      // Apply scroll with smooth settling
-                      if (scrollAdjustment > 5) {
-                        scrollWrapper.scrollTop += scrollAdjustment;
-                      }
-                    } else {
-                      scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
-                    }
-                    
-                    // Check if scrolled and add class for fade effect
-                    if (scrollContainer && scrollWrapper.scrollTop > 10) {
-                      scrollContainer.classList.add('is-scrolled');
-                    }
-                  }
-                }
-              },
-            });
-
-            // Build the typing sequence with pauses and natural variations
-            segments.forEach((segment) => {
-              if (segment.type === "text") {
-                const text = segment.content!;
-                const words = text.split(/(<br>|[.,!?;:])/gi);
-
-                words.forEach((word, wordIndex) => {
-                  if (!word) return;
-                  instance.type(word);
-
-                  if (word.match(/[.,!?;:]/)) {
-                    instance.pause(200 + Math.random() * 300);
-                  } else if (word === "<br>") {
-                    instance.pause(300 + Math.random() * 400);
-                  } else if (wordIndex < words.length - 1 && words[wordIndex + 1] !== "<br>") {
-                    if (Math.random() > 0.5) {
-                      instance.pause(50 + Math.random() * 100);
-                    }
-                  }
-                });
-              } else if (segment.type === "pause") {
-                instance.pause(segment.duration!);
-              }
-            });
-
-            (node as any).__typeItInstance = instance;
-          }
+          initOneTypewriterElement(node);
         }
-
-        // Check if any children have the class
         const children = node.querySelectorAll(".typewriter-text") as NodeListOf<HTMLElement>;
-        children.forEach((child) => {
-          let text = child.getAttribute("data-text");
-          if (text && !child.getAttribute("data-typewriter-ready")) {
-            // Decode HTML entities
-            const textarea = document.createElement("textarea");
-            textarea.innerHTML = text;
-            text = textarea.value;
-
-            child.innerHTML = "";
-            child.setAttribute("data-typewriter-ready", "true");
-
-            // Parse text for custom pause spans
-            const segments = parseTextWithPauses(text);
-
-            const instance = new TypeIt(child, {
-              speed: 20,
-              cursor: true,
-              waitUntilVisible: true,
-              html: true,
-              lifeLike: true,
-              afterStep: () => {
-                // Auto-scroll to keep cursor at fixed vertical position
-                const scrollWrapper = child.closest('.title-scroll-wrapper');
-                const scrollContainer = child.closest('.title-scroll-container');
-                if (scrollWrapper) {
-                  // Check if content overflows
-                  const hasOverflow = scrollWrapper.scrollHeight > scrollWrapper.clientHeight;
-                  
-                  if (hasOverflow) {
-                    // Add class to switch to top alignment when overflowing
-                    scrollWrapper.classList.add('has-overflow');
-                    
-                    // Find the cursor element
-                    const cursor = child.querySelector('.ti-cursor');
-                    if (cursor) {
-                      // Get cursor position relative to the scrollable container
-                      const cursorRect = cursor.getBoundingClientRect();
-                      const wrapperRect = scrollWrapper.getBoundingClientRect();
-                      
-                      // Target position: keep cursor at 75% down the visible area
-                      const targetPosition = wrapperRect.height * 0.75;
-                      const currentCursorPosition = cursorRect.top - wrapperRect.top;
-                      
-                      // Calculate how much to scroll to keep cursor at target position
-                      const scrollAdjustment = currentCursorPosition - targetPosition;
-                      
-                      // Apply scroll with smooth settling
-                      if (scrollAdjustment > 5) {
-                        scrollWrapper.scrollTop += scrollAdjustment;
-                      }
-                    } else {
-                      scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
-                    }
-                    
-                    // Check if scrolled and add class for fade effect
-                    if (scrollContainer && scrollWrapper.scrollTop > 10) {
-                      scrollContainer.classList.add('is-scrolled');
-                    }
-                  }
-                }
-              },
-            });
-
-            // Build the typing sequence with pauses and natural variations
-            segments.forEach((segment) => {
-              if (segment.type === "text") {
-                const text = segment.content!;
-                const words = text.split(/(<br>|[.,!?;:])/gi);
-
-                words.forEach((word, wordIndex) => {
-                  if (!word) return;
-                  instance.type(word);
-
-                  if (word.match(/[.,!?;:]/)) {
-                    instance.pause(200 + Math.random() * 300);
-                  } else if (word === "<br>") {
-                    instance.pause(300 + Math.random() * 400);
-                  } else if (wordIndex < words.length - 1 && words[wordIndex + 1] !== "<br>") {
-                    if (Math.random() > 0.5) {
-                      instance.pause(50 + Math.random() * 100);
-                    }
-                  }
-                });
-              } else if (segment.type === "pause") {
-                instance.pause(segment.duration!);
-              }
-            });
-
-            (child as any).__typeItInstance = instance;
-          }
-        });
+        children.forEach(initOneTypewriterElement);
       }
     });
   });
@@ -567,4 +386,4 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-export { initTypewriterTexts, triggerActiveStepTypewriter, resetTypewriter };
+export { initTypewriterTexts, triggerActiveStepTypewriter };

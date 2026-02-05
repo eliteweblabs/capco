@@ -1089,10 +1089,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         // console.log(`[ANIMATED-PLACEHOLDER] 🎬 Setting up detection for ${input.id}`);
 
         // Helper function to check and hide/show placeholder
-        // Hide when: has value, autofilled, or input is focused (avoids double-cursor on mobile)
+        // Hide only when: has value or autofilled. Show when empty so animation plays until data is entered.
         const checkAndHidePlaceholder = () => {
           const hasValue = input.value && input.value.length > 0;
-          const isFocused = document.activeElement === input;
 
           let isAutofilled = false;
           try {
@@ -1103,16 +1102,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             );
           }
 
-          if (hasValue || isAutofilled || isFocused) {
+          if (hasValue || isAutofilled) {
             span.style.display = "none";
           } else {
             span.style.display = "flex";
           }
         };
 
-        // Hide placeholder on focus so only the real caret shows (fixes double-cursor on mobile)
         input.addEventListener("focus", () => {
-          span.style.display = "none";
+          checkAndHidePlaceholder();
         });
         input.addEventListener("blur", () => {
           checkAndHidePlaceholder();
@@ -1351,9 +1349,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       // console.log(`[ANIMATED-PLACEHOLDER] ⏰ Rotation interval started (2000ms)`);
     }
 
-    // Rotate placeholders every 2 seconds
+    // Rotate placeholders every 2 seconds. Defer start so it runs after form handler
+    // has set .step-content.active (initializeMultiStepForm runs later in this same callback).
     if (animatedInputs.length > 0) {
-      startPlaceholderRotation();
+      setTimeout(() => startPlaceholderRotation(), 0);
 
       // Watch for step changes and restart animation
       const stepObserver = new MutationObserver((mutations) => {
