@@ -478,8 +478,8 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
               {file.source === "global" ? "Global" : `P#${file.projectId || "?"}`}
             </span>
             
-            <!-- Hover Actions Overlay -->
-            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-3 p-4">
+            <!-- Hover Actions Overlay (visible on hover; forced visible on touchscreens) -->
+            <div class="media-card-overlay absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-3 p-4">
               <div class="flex gap-2">
                 <button 
                   class="copy-url-btn p-3 bg-white rounded-full hover:bg-gray-100 text-gray-700 shadow-lg transform hover:scale-110 transition-transform"
@@ -610,6 +610,13 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
       grid-template-columns: repeat(6, 1fr) !important;
     }
     .col-span-4 { grid-column: span 3 !important; }
+  }
+
+  /* Touchscreens: always show overlay (no hover), so icons are visible */
+  @media (hover: none) {
+    .media-card-overlay {
+      opacity: 1;
+    }
   }
 
   /* Smooth transitions and hover effects */
