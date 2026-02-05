@@ -49,6 +49,10 @@ export const GLOBAL_BUTTON_DEFAULTS = {
     variant: "outline" as const,
     size: "md" as const,
   },
+  slider: {
+    variant: "outline" as const,
+    size: "md" as const,
+  },
 };
 
 export interface FormFieldConfig {
@@ -105,7 +109,7 @@ export interface FormFieldConfig {
 }
 
 export interface FormButtonConfig {
-  type: "next" | "prev" | "skip" | "submit" | "choice";
+  type: "next" | "prev" | "skip" | "submit" | "choice" | "slider";
   label?: string; // Optional button label
   validLabel?: string; // Label to show when field is valid (for dynamic labels based on validation)
   id?: string; // Optional unique identifier for the button
@@ -120,6 +124,10 @@ export interface FormButtonConfig {
   href?: string; // For link buttons
   action?: string; // Custom action identifier
   disabled?: boolean; // Whether button is disabled initially
+  // Slider (for button-group items that render as a range/slider)
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
 export interface FormStepConfig {

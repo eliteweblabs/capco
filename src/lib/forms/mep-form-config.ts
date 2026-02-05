@@ -367,6 +367,8 @@ export const mepFormConfig: MultiStepFormConfig = {
         },
         {
           type: "next",
+          label: "unsure",
+          validLabel: "next",
           dataNext: 8,
         },
       ],
@@ -478,27 +480,14 @@ export const mepFormConfig: MultiStepFormConfig = {
           required: false,
         },
         {
-          type: "button-group",
-          id: "electric-service-group",
+          type: "range",
+          id: "ev-charging-service-slider",
           name: "evChargingService",
           required: false,
-          buttons: [
-            {
-              type: "choice",
-              label: "1 Charger",
-              dataValue: "1 Charger",
-            },
-            {
-              type: "choice",
-              label: "2-4 Chargers",
-              dataValue: "2-4 Chargers",
-            },
-            {
-              type: "choice",
-              label: "5+ Chargers",
-              dataValue: "5+ Chargers",
-            },
-          ],
+          min: 1,
+          max: 20,
+          step: 1,
+          label: "Number of EV Chargers",
         },
       ],
       buttons: [
