@@ -78,28 +78,37 @@ export const GET: APIRoute = async ({ url }) => {
       requestBody.includedPrimaryTypes = [types];
     }
 
-    // Add location bias if provided
-    if (locationBias) {
-      // Handle both old format (circle:100@42.3601,-71.0589) and new format (42.3601,-71.0589)
-      let lat, lng;
-      if (locationBias.includes("@")) {
+    // Add location bias: use client-provided, else env default (avoids server-IP bias e.g. DC/VA on Railway)
+    const defaultBias = import.meta.env.GOOGLE_PLACES_DEFAULT_BIAS; // "lat,lng" e.g. "42.3601,-71.0589"
+    const biasSource = locationBias || defaultBias;
+    if (defaultBias && !locationBias) {
+      console.log("🔍 [PLACES-PROXY] Using GOOGLE_PLACES_DEFAULT_BIAS (no client bias)");
+    }
+
+    if (biasSource) {
+      let lat: string, lng: string;
+      if (biasSource.includes("@")) {
         // Old format: circle:100@42.3601,-71.0589
-        const parts = locationBias.split("@");
+        const parts = biasSource.split("@");
         [lat, lng] = parts[1].split(",");
       } else {
         // New format: 42.3601,-71.0589
-        [lat, lng] = locationBias.split(",");
+        [lat, lng] = biasSource.split(",");
       }
 
-      requestBody.locationBias = {
-        circle: {
-          center: {
-            latitude: parseFloat(lat),
-            longitude: parseFloat(lng),
+      const latNum = parseFloat(lat?.trim());
+      const lngNum = parseFloat(lng?.trim());
+      if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) {
+        requestBody.locationBias = {
+          circle: {
+            center: {
+              latitude: latNum,
+              longitude: lngNum,
+            },
+            radius: 50000, // 50km radius
           },
-          radius: 50000, // 50km radius
-        },
-      };
+        };
+      }
     }
 
     console.log(

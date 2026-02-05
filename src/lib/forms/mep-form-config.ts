@@ -196,6 +196,12 @@ export const mepFormConfig: MultiStepFormConfig = {
             placeholder: "Start typing an address...",
             required: false,
             currentLocation: true,
+            fetchApiEndpoint: "/api/google/places-autocomplete",
+            apiParams: {
+              components: "country:us",
+              // Bias to US center so server (e.g. Railway in VA) doesn’t bias results to DC/VA
+              locationBias: "circle:100@39.8283,-98.5795",
+            },
           },
         },
       ],

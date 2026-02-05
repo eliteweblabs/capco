@@ -27,6 +27,8 @@ interface ImportMetaEnv {
 
   // Google Maps API
   readonly GOOGLE_MAPS_API_KEY?: string;
+  /** Default location bias for Places autocomplete when client doesn't send one (avoids server-IP bias e.g. DC/VA). Format: "lat,lng" e.g. "42.3601,-71.0589" */
+  readonly GOOGLE_PLACES_DEFAULT_BIAS?: string;
 
   // Stripe configuration
   readonly STRIPE_SECRET_KEY?: string;
