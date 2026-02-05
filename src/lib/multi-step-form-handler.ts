@@ -315,42 +315,45 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Auto-focus handling: scroll form so focused element is at cursor line (40vh from top of form viewport)
-    setTimeout(() => {
-      const formEl = document.getElementById(formId) as HTMLFormElement;
-      const cursorFraction = 0.4;
+    // Auto-focus when panel is done: skip if step has typewriter (typewriter-complete will focus)
+    const hasTypewriter = targetStep.classList.contains("has-typewriter");
+    if (!hasTypewriter) {
+      setTimeout(() => {
+        const formEl = document.getElementById(formId) as HTMLFormElement;
+        const cursorFraction = 0.4;
 
-      const scrollFormToCursor = (element: HTMLElement) => {
-        if (!formEl) return;
-        const formRect = formEl.getBoundingClientRect();
-        const elementRect = element.getBoundingClientRect();
-        const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
-        formEl.scrollBy({ top: delta, behavior: "smooth" });
-        console.log("[MULTISTEP-SCROLL] Form scrollBy (auto-focus after step):", {
-          element: element.id || element.getAttribute("name") || element.tagName,
-          delta,
-          formScrollTop: formEl.scrollTop,
-          reason: "position focused element at cursor line (40vh)",
-        });
-      };
+        const scrollFormToCursor = (element: HTMLElement) => {
+          if (!formEl) return;
+          const formRect = formEl.getBoundingClientRect();
+          const elementRect = element.getBoundingClientRect();
+          const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
+          formEl.scrollBy({ top: delta, behavior: "smooth" });
+          console.log("[MULTISTEP-SCROLL] Form scrollBy (auto-focus after step):", {
+            element: element.id || element.getAttribute("name") || element.tagName,
+            delta,
+            formScrollTop: formEl.scrollTop,
+            reason: "position focused element at cursor line (40vh)",
+          });
+        };
 
-      const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
-      if (smsChoiceButtons.length > 0) {
-        const yesButton = targetStep.querySelector('button[data-sms-value="true"]') as HTMLElement;
-        if (yesButton) {
-          yesButton.focus();
-          scrollFormToCursor(yesButton);
+        const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
+        if (smsChoiceButtons.length > 0) {
+          const yesButton = targetStep.querySelector('button[data-sms-value="true"]') as HTMLElement;
+          if (yesButton) {
+            yesButton.focus();
+            scrollFormToCursor(yesButton);
+          }
+        } else {
+          const firstInput = targetStep.querySelector(
+            "input:not([type=hidden]):not([readonly]), textarea, select"
+          ) as HTMLElement;
+          if (firstInput && typeof firstInput.focus === "function") {
+            firstInput.focus();
+            scrollFormToCursor(firstInput);
+          }
         }
-      } else {
-        const firstInput = targetStep.querySelector(
-          "input:not([type=hidden]):not([readonly]), textarea"
-        ) as HTMLElement;
-        if (firstInput) {
-          firstInput.focus();
-          scrollFormToCursor(firstInput);
-        }
-      }
-    }, 650);
+      }, 650);
+    }
   }
 
   // Validate current step
@@ -1235,29 +1238,30 @@ export function createMultiStepFormHandler(
       }
     });
 
-    // Focus first input with typewriter cursor line positioning
-    // Use short delay on init (no animation); showStep uses 650ms for step transitions
-    setTimeout(() => {
-      const firstStep = form.querySelector(".step-content.active") as HTMLElement;
-      if (firstStep) {
-        const firstInput = firstStep.querySelector(
-          "input:not([type=hidden]):not([readonly]), textarea"
-        ) as HTMLElement;
-        if (firstInput) {
-          firstInput.focus();
-          // Position at cursor line (40vh from top)
-          const elementRect = firstInput.getBoundingClientRect();
-          const absoluteElementTop = elementRect.top + window.pageYOffset;
-          const cursorLine = absoluteElementTop - window.innerHeight * 0.4;
-          window.scrollTo({ top: cursorLine, behavior: "smooth" });
-          console.log("[MULTISTEP-SCROLL] window.scrollTo (initial focus):", {
-            element: firstInput.id || (firstInput as HTMLInputElement).name || "firstInput",
-            cursorLine,
-            reason: "position first input at cursor line (40vh) on load",
-          });
+    // Focus first input when first step has no typewriter (otherwise typewriter-complete will focus)
+    const firstStep = form.querySelector(".step-content.active") as HTMLElement;
+    const firstStepHasTypewriter = firstStep?.classList.contains("has-typewriter");
+    if (!firstStepHasTypewriter) {
+      setTimeout(() => {
+        if (firstStep) {
+          const firstInput = firstStep.querySelector(
+            "input:not([type=hidden]):not([readonly]), textarea, select"
+          ) as HTMLElement;
+          if (firstInput && typeof firstInput.focus === "function") {
+            firstInput.focus();
+            const elementRect = firstInput.getBoundingClientRect();
+            const absoluteElementTop = elementRect.top + window.pageYOffset;
+            const cursorLine = absoluteElementTop - window.innerHeight * 0.4;
+            window.scrollTo({ top: cursorLine, behavior: "smooth" });
+            console.log("[MULTISTEP-SCROLL] window.scrollTo (initial focus):", {
+              element: firstInput.id || (firstInput as HTMLInputElement).name || "firstInput",
+              cursorLine,
+              reason: "position first input at cursor line (40vh) on load",
+            });
+          }
         }
-      }
-    }, 80); // Brief delay for layout to settle - no animation on initial load
+      }, 80);
+    }
   }
 
   return {

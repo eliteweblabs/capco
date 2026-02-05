@@ -1003,6 +1003,17 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         if (cascadeEndMs > 0) {
           runPanelBottomLoopRef?.(cascadeEndMs + 600);
         }
+
+        // Focus first input once panel is done animating (cascade first element has delay 0)
+        const focusFirstInput = () => {
+          const first = stepContent.querySelector(
+            "input:not([type=hidden]):not([readonly]), textarea, select"
+          ) as HTMLElement | null;
+          if (first && typeof first.focus === "function") {
+            first.focus();
+          }
+        };
+        setTimeout(focusFirstInput, 150);
       }
     });
 
