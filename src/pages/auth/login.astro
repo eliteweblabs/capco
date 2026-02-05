@@ -200,8 +200,24 @@ import { loginFormConfig } from "../../lib/forms/login-form-config";
       }
     }
 
-    // Make OAuth trigger available globally for AuthProviders
+    // Make OAuth trigger available globally for AuthProviders (in case this script runs first)
     (window as any).handleGoogleSignup = triggerGoogleOAuth;
+
+    // Fallback: listen for custom event so Google sign-in works even if script order is wrong
+    document.addEventListener("auth-google-request", () => triggerGoogleOAuth());
+
+    // Direct delegation: clicking the Google provider button always triggers OAuth from this page
+    document.addEventListener(
+      "click",
+      (e) => {
+        const btn = (e.target as HTMLElement).closest?.(".provider-btn[data-provider=\"google\"]");
+        if (btn && !(btn as HTMLButtonElement).disabled) {
+          e.stopImmediatePropagation();
+          triggerGoogleOAuth(e as Event);
+        }
+      },
+      true
+    );
   </script>
 </App>
 <!-- Multi-step Form -->

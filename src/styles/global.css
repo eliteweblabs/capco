@@ -209,29 +209,55 @@ input.is-invalid:not(:focus) {
 }
 
 /* First-pass autofill override: inset overlay + delay so Chrome’s blue never visibly applies */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:autofill,
-input:autofill:hover,
-input:autofill:focus {
-  background-color: #ffffff !important;
-  -webkit-box-shadow: 0 0 0 100vmax #ffffff inset !important;
-  box-shadow: 0 0 0 100vmax #ffffff inset !important;
+input:not([type="hidden"]):-webkit-autofill,
+input:not([type="hidden"]):-webkit-autofill:hover,
+input:not([type="hidden"]):-webkit-autofill:active,
+input:not([type="hidden"]):autofill,
+input:not([type="hidden"]):autofill:hover,
+input:not([type="hidden"]):autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:active,
+textarea:autofill,
+textarea:autofill:hover,
+textarea:autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:active,
+select:autofill,
+select:autofill:hover,
+select:autofill:active {
   -webkit-text-fill-color: var(--color-text-primary) !important;
-  transition: background-color 5000s ease-in-out 0s;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  transition: background-color 5000s ease-in-out 0s, box-shadow 200ms ease-in-out;
+  background-color: var(--color-background) !important;
+  -webkit-box-shadow:
+    0 0 0 100vmax var(--color-background) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  box-shadow:
+    0 0 0 100vmax var(--color-background) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }
 
-.dark input:-webkit-autofill,
-.dark input:-webkit-autofill:hover,
-.dark input:-webkit-autofill:focus,
-.dark input:autofill,
-.dark input:autofill:hover,
-.dark input:autofill:focus {
-  background-color: #0a0a0a !important;
-  -webkit-box-shadow: 0 0 0 100vmax #0a0a0a inset !important;
-  box-shadow: 0 0 0 100vmax #0a0a0a inset !important;
+input:not([type="hidden"]):-webkit-autofill:focus,
+input:not([type="hidden"]):autofill:focus,
+textarea:-webkit-autofill:focus,
+textarea:autofill:focus,
+select:-webkit-autofill:focus,
+select:autofill:focus {
   -webkit-text-fill-color: var(--color-text-primary) !important;
+  background-color: var(--color-background) !important;
+  -webkit-box-shadow:
+    0 0 0 100vmax var(--color-background) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+  box-shadow:
+    0 0 0 100vmax var(--color-background) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
 :root {
@@ -354,100 +380,7 @@ button:has(.bx) {
   }
 }
 
-/* Apply autofill detection - match valid state: solid bg (no yellow), green shadow, no backdrop-filter (avoids icon masking) */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:active,
-input:autofill,
-input:autofill:hover,
-input:autofill:active {
-  animation-name: onAutoFillStart;
-  animation-duration: 0.001s;
-  border-color: var(--color-success-500);
-
-  /* Solid colors + large inset override iOS Safari yellow; green shadow matches valid state */
-  background-color: #ffffff !important;
-  -webkit-box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-
-  -webkit-text-fill-color: var(--color-text-primary) !important;
-  font-size: inherit !important;
-  font-family: inherit !important;
-  transition:
-    background-color 5000s ease-in-out 0s,
-    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Autofill focus state - same as valid focus (primary shadow), keep solid inset to override yellow */
-input:-webkit-autofill:focus,
-input:autofill:focus {
-  animation-name: onAutoFillStart;
-  animation-duration: 0.001s;
-
-  border-color: var(--color-primary-400);
-
-  background-color: #ffffff !important;
-  -webkit-box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
-
-  -webkit-text-fill-color: var(--color-text-primary) !important;
-  font-size: inherit !important;
-  font-family: inherit !important;
-  transition:
-    background-color 5000s ease-in-out 0s,
-    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.dark input:-webkit-autofill,
-.dark input:-webkit-autofill:hover,
-.dark input:-webkit-autofill:active,
-.dark input:autofill,
-.dark input:autofill:hover,
-.dark input:autofill:active {
-  border-color: var(--color-success-500);
-
-  background-color: #0a0a0a !important;
-  -webkit-box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-}
-
-.dark input:-webkit-autofill:focus,
-.dark input:autofill:focus {
-  border-color: var(--color-primary-400);
-
-  background-color: #0a0a0a !important;
-  -webkit-box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
-}
-
-input:not(:-webkit-autofill) {
-  animation-name: onAutoFillCancel;
-  animation-duration: 0.001s;
-}
+/* (Autofill styles consolidated above — single block uses var(--color-background) for light/dark) */
 
 /* Safari sticky header fixes */
 /* .safari-sticky-fix {
@@ -547,39 +480,6 @@ select:invalid:not(:placeholder-shown):not(:focus) {
     0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
 }
 
-/* Auto-filled fields: solid inset (no yellow) + green shadow to match valid state */
-input:not([type="hidden"]):-webkit-autofill,
-textarea:-webkit-autofill,
-select:-webkit-autofill,
-input:not([type="hidden"]):autofill,
-textarea:autofill,
-select:autofill {
-  -webkit-box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-}
-
-.dark input:not([type="hidden"]):-webkit-autofill,
-.dark textarea:-webkit-autofill,
-.dark select:-webkit-autofill,
-.dark input:not([type="hidden"]):autofill,
-.dark textarea:autofill,
-.dark select:autofill {
-  -webkit-box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-}
-
 /* Valid (not focused): :valid from browser or .is-valid from form JS */
 input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
 textarea:valid:not(:placeholder-shown):not(:focus),
@@ -588,51 +488,6 @@ input:not([type="hidden"]).is-valid:not(:focus),
 textarea.is-valid:not(:focus),
 select.is-valid:not(:focus) {
   box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-}
-
-/* Valid + autofilled (not focused): solid inset + green glow — :valid and .is-valid combined */
-input:not([type="hidden"]):valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-textarea:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-select:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-input:not([type="hidden"]):valid:autofill:not(:placeholder-shown):not(:focus),
-textarea:valid:autofill:not(:placeholder-shown):not(:focus),
-select:valid:autofill:not(:placeholder-shown):not(:focus),
-input:not([type="hidden"]).is-valid:-webkit-autofill:not(:focus),
-textarea.is-valid:-webkit-autofill:not(:focus),
-select.is-valid:-webkit-autofill:not(:focus),
-input:not([type="hidden"]).is-valid:autofill:not(:focus),
-textarea.is-valid:autofill:not(:focus),
-select.is-valid:autofill:not(:focus) {
-  -webkit-box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-}
-
-.dark input:not([type="hidden"]):valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-.dark textarea:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-.dark select:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-.dark input:not([type="hidden"]):valid:autofill:not(:placeholder-shown):not(:focus),
-.dark textarea:valid:autofill:not(:placeholder-shown):not(:focus),
-.dark select:valid:autofill:not(:placeholder-shown):not(:focus),
-.dark input:not([type="hidden"]).is-valid:-webkit-autofill:not(:focus),
-.dark textarea.is-valid:-webkit-autofill:not(:focus),
-.dark select.is-valid:-webkit-autofill:not(:focus),
-.dark input:not([type="hidden"]).is-valid:autofill:not(:focus),
-.dark textarea.is-valid:autofill:not(:focus),
-.dark select.is-valid:autofill:not(:focus) {
-  -webkit-box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }
@@ -1846,39 +1701,6 @@ select:focus {
   box-shadow:
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
-}
-
-/* Auto-filled fields: solid inset (iOS Safari yellow fix) + green shadow to match valid state */
-input:not([type="hidden"]):-webkit-autofill,
-textarea:-webkit-autofill,
-select:-webkit-autofill,
-input:not([type="hidden"]):autofill,
-textarea:autofill,
-select:autofill {
-  -webkit-box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-}
-
-.dark input:not([type="hidden"]):-webkit-autofill,
-.dark textarea:-webkit-autofill,
-.dark select:-webkit-autofill,
-.dark input:not([type="hidden"]):autofill,
-.dark textarea:autofill,
-.dark select:autofill {
-  -webkit-box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }
 
 /* Valid, not focused: green glow (:valid and .is-valid so email/text/password/tel all get it) */

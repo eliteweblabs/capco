@@ -3,6 +3,9 @@
 # Initialize persistent content volume with default content
 # This script runs during Docker build to populate the volume on first deploy
 
+# Resolve script dir so we can find init-content.sh regardless of CWD (e.g. in Docker)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 echo "📦 [CONTENT-INIT] Initializing persistent content volume..."
 
 VOLUME_PATH="/data/content"
@@ -28,10 +31,10 @@ fi
 # If no git content, use init-content.sh to generate defaults
 if [ ! -f "$PAGES_PATH/home.md" ]; then
   echo "📝 [CONTENT-INIT] Generating default content..."
-  if [ -f "scripts/init-content.sh" ]; then
-    chmod +x scripts/init-content.sh
+  if [ -f "$SCRIPT_DIR/init-content.sh" ]; then
+    chmod +x "$SCRIPT_DIR/init-content.sh"
     # Redirect output to volume instead of content/
-    CONTENT_DIR="$VOLUME_PATH" scripts/init-content.sh default || true
+    CONTENT_DIR="$VOLUME_PATH" "$SCRIPT_DIR/init-content.sh" default || true
   else
     # Create minimal default home.md
     cat > "$PAGES_PATH/home.md" <<'EOF'

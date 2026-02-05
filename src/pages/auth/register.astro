@@ -47,7 +47,7 @@ import MultiStepForm from "../../components/form/MultiStepForm.astro";
 ---
 
 <App
-  title="Register YourNew Account"
+  title="Register A New Account"
   {currentUser}
   description="Create your account with our step-by-step registration"
   {globalCompanyName}
@@ -61,7 +61,6 @@ import MultiStepForm from "../../components/form/MultiStepForm.astro";
   {primaryTextClasses}
   {secondaryTextClasses}
   centerContent={true}
-  fullscreenScroll={true}
   mask="center"
 >
   <!-- Multi-step Form -->
@@ -70,4 +69,60 @@ import MultiStepForm from "../../components/form/MultiStepForm.astro";
     initialData={{ redirect: "/project/dashboard" }}
     containerClass="w-full max-w-xl mx-auto"
   />
+
+  <script>
+    import { getSupabaseClient } from "../../lib/supabase-client";
+
+    async function triggerGoogleOAuth(e?: Event) {
+      if (e) e.preventDefault();
+      const redirectDestination =
+        (document.querySelector('input[name="redirect"]') as HTMLInputElement)?.value ||
+        "/project/dashboard";
+      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+      if (supabaseUrl) {
+        const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+        Object.keys(localStorage)
+          .filter((k) => k.includes(`sb-${supabaseProjectRef}`) && !k.includes("code-verifier"))
+          .forEach((k) => localStorage.removeItem(k));
+      }
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        if ((window as any).showNotice) {
+          (window as any).showNotice("error", "Configuration Error", "Supabase is not configured.");
+        }
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 200));
+      const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectDestination)}`;
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: callbackUrl, queryParams: { access_type: "offline", prompt: "consent" } },
+        });
+        if (error && (window as any).showNotice) {
+          (window as any).showNotice("error", "Sign In Error", error.message);
+        }
+      } catch (err) {
+        console.error("[GOOGLE-SIGNIN]", err);
+        if ((window as any).showNotice) {
+          (window as any).showNotice("error", "Sign In Error", "An unexpected error occurred");
+        }
+      }
+    }
+
+    (window as any).handleGoogleSignup = triggerGoogleOAuth;
+    document.addEventListener("auth-google-request", () => triggerGoogleOAuth());
+
+    document.addEventListener(
+      "click",
+      (e) => {
+        const btn = (e.target as HTMLElement).closest?.(".provider-btn[data-provider=\"google\"]");
+        if (btn && !(btn as HTMLButtonElement).disabled) {
+          e.stopImmediatePropagation();
+          triggerGoogleOAuth(e as Event);
+        }
+      },
+      true
+    );
+  </script>
 </App>

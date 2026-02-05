@@ -62,12 +62,11 @@ const { mode = "login" } = Astro.props;
       <span class="provider-label hidden md:block">Email</span>
     </button>
 
-    <!-- Google -->
+    <!-- Google: OAuth started by .provider-btn click → handleGoogleSignup() (see login/register page script) -->
     <button
       type="button"
       class="provider-btn"
       data-provider="google"
-      id="google-signin-button"
       title="Sign in with Google"
       aria-label="Sign in with Google"
     >
@@ -358,9 +357,12 @@ const { mode = "login" } = Astro.props;
             window.location.href = "/auth/otp-login";
             break;
           case "google":
-            // Trigger existing Google OAuth flow
-            if ((window as any).handleGoogleSignup) {
-              (window as any).handleGoogleSignup();
+            // Trigger Google OAuth: use global if set (login/register page), else dispatch event
+            const handleGoogle = (window as any).handleGoogleSignup;
+            if (typeof handleGoogle === "function") {
+              handleGoogle();
+            } else {
+              document.dispatchEvent(new CustomEvent("auth-google-request"));
             }
             break;
           case "facebook":

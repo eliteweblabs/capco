@@ -1,200 +1,53 @@
 ---
 // Client-side OAuth callback handler for PKCE flow
 // This page runs in the browser where the code verifier is stored in localStorage
+import App from "../../components/ui/App.astro";
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
-import { globalCompanyData } from "../../pages/api/global/global-company-data";
-
-const companyData = await globalCompanyData();
 ---
 
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Signing you in... | {companyData.globalCompanyName}</title>
-    {companyData.globalCompanyFaviconSvg && (
-      <link rel="icon" type="image/svg+xml" href={companyData.globalCompanyFaviconSvg} />
-    )}
-    {companyData.globalCompanyFaviconPng && (
-      <link rel="icon" type="image/png" href={companyData.globalCompanyFaviconPng} />
-    )}
-    <style is:global>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
+<App
+  title="Signing you in..."
+  description="Please wait while we complete authentication"
+  centerContent={true}
+>
+  <div class="mb-6 flex flex-col items-center justify-center text-center">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Signing you in...</h1>
+    <p class="mt-2 text-gray-600 dark:text-gray-400">Please wait while we complete authentication</p>
+  </div>
+  <div class="my-8 flex content-center items-center justify-center">
+    <LoadingSpinner size="lg" color="primary" />
+  </div>
 
-      body {
-        font-family:
-          system-ui,
-          -apple-system,
-          BlinkMacSystemFont,
-          "Segoe UI",
-          Roboto,
-          sans-serif;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        margin: 0;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: #333;
-      }
-      
-      .auth-container {
-        text-align: center;
-        padding: 3rem 2rem;
-        max-width: 500px;
-        width: 90%;
-        background: white;
-        border-radius: 1.5rem;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      }
+  <div
+    id="error"
+    class="hidden mt-8 max-w-md rounded-lg border-2 border-red-200 bg-red-50 p-5 text-left dark:border-red-800 dark:bg-red-950/30"
+    role="alert"
+  >
+    <div class="mb-2 flex items-center gap-2 text-lg font-semibold text-red-800 dark:text-red-200">
+      <SimpleIcon name="alert-circle" class="h-6 w-6 shrink-0" />
+      Authentication Failed
+    </div>
+    <div id="error-message" class="text-red-700 dark:text-red-300 text-[0.9375rem] leading-relaxed"></div>
+    <div id="error-redirect" class="mt-2 text-sm italic text-gray-600 dark:text-gray-400">
+      Redirecting to login page...
+    </div>
+  </div>
 
-      .logo-container {
-        margin-bottom: 2rem;
-        display: flex;
-        justify-content: center;
-      }
-
-      .logo-container svg,
-      .logo-container img {
-        max-height: 80px;
-        max-width: 200px;
-        height: auto;
-        width: auto;
-      }
-
-      .auth-title {
-        font-size: 1.75rem;
-        font-weight: 600;
-        margin-bottom: 0.75rem;
-        color: #1a1a1a;
-      }
-
-      .auth-subtitle {
-        font-size: 1rem;
-        color: #666;
-        margin-bottom: 2.5rem;
-      }
-
-      .spinner-wrapper {
-        margin: 2rem 0;
-      }
-      
-      .error-container {
-        display: none;
-        margin-top: 2rem;
-        padding: 1.25rem;
-        background: #fef2f2;
-        border: 2px solid #fecaca;
-        border-radius: 0.75rem;
-        text-align: left;
-      }
-
-      .error-container.visible {
-        display: block;
-        animation: slideIn 0.3s ease-out;
-      }
-
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .error-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #991b1b;
-        margin-bottom: 0.5rem;
-      }
-
-      .error-icon {
-        width: 24px;
-        height: 24px;
-        flex-shrink: 0;
-      }
-
-      .error-message {
-        color: #7f1d1d;
-        font-size: 0.9375rem;
-        line-height: 1.5;
-        margin-bottom: 1rem;
-      }
-
-      .error-redirect {
-        color: #666;
-        font-size: 0.875rem;
-        font-style: italic;
-      }
-
-      .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-top: 1.5rem;
-        padding: 0.75rem 1.5rem;
-        background: #667eea;
-        color: white;
-        text-decoration: none;
-        border-radius: 0.5rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-      }
-
-      .back-link:hover {
-        background: #5568d3;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-      }
-    </style>
-  </head>
-  <body>
-    <div class="auth-container">
-      {companyData.globalCompanyLogo && (
-        <div class="logo-container" set:html={companyData.globalCompanyLogo} />
-      )}
-      
-      <h1 class="auth-title">Signing you in...</h1>
-      <p class="auth-subtitle">Please wait while we complete authentication</p>
-      
-      <div class="spinner-wrapper">
-        <LoadingSpinner size="lg" color="primary" />
-      </div>
-
-      <div id="error" class="error-container">
-        <div class="error-title">
-          <svg class="error-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          Authentication Failed
-        </div>
-        <div class="error-message" id="error-message"></div>
-        <div class="error-redirect" id="error-redirect">Redirecting to login page...</div>
-      </div>
-
-      <a href="/auth/login" class="back-link" id="back-link" style="display: none;">
-        <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
+  <div id="back-link" class="mt-8 hidden">
+    <div class="flex content-center items-center justify-center">
+      <a
+        href="/auth/login"
+        class="inline-flex items-center gap-2 rounded-full bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
+      >
+        <SimpleIcon name="arrow-left" />
         Back to Login
       </a>
     </div>
+  </div>
+</App>
 
-    <script>
+<script>
       // CRITICAL: Capture and restore code IMMEDIATELY before ANY imports or client initialization
       // Supabase's detectSessionInUrl checks the URL when the client is created, so the code MUST be present
       const initialUrl = window.location.href;
@@ -683,12 +536,12 @@ const companyData = await globalCompanyData();
         
         if (errorContainer && errorMessage) {
           errorMessage.textContent = message;
-          errorContainer.classList.add("visible");
+          errorContainer.classList.remove("hidden");
           
           // Show back link after a delay
           setTimeout(() => {
             if (backLink) {
-              backLink.style.display = "inline-flex";
+              backLink.classList.remove("hidden");
             }
           }, 2000);
         }
@@ -697,5 +550,3 @@ const companyData = await globalCompanyData();
       // Handle callback when page loads
       handleCallback();
     </script>
-  </body>
-</html>

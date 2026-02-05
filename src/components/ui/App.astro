@@ -119,6 +119,19 @@ const { desktopNavigationHTML, mobileNavigationHTML, visibleNavItems } = navigat
 
 import { ClientRouter } from "astro:transitions";
 import { generateColorPalette } from "@/lib/color-utils";
+
+// Server-rendered critical CMS colors so preloader and first paint use DB colors before any script runs
+const primaryPalette = generateColorPalette(primaryColor || "#825BDD");
+const secondaryPalette = generateColorPalette(secondaryColor || "#0ea5e9");
+const criticalColorVars = [
+  ...Object.entries(primaryPalette)
+    .filter(([k]) => k !== "DEFAULT" && !Number.isNaN(Number(k)))
+    .map(([shade, color]) => `--color-primary-${shade}: ${color};`),
+  ...Object.entries(secondaryPalette)
+    .filter(([k]) => k !== "DEFAULT" && !Number.isNaN(Number(k)))
+    .map(([shade, color]) => `--color-secondary-${shade}: ${color};`),
+].join("\n");
+const criticalColorsCss = `:root {\n  ${criticalColorVars}\n}`;
 import "../../styles/global.css"; // Import Tailwind CSS
 // import "../../styles/app.css"; // Import Tailwind CSS
 
@@ -262,6 +275,9 @@ const debugData = {
       window.currentTheme = window.isDarkMode() ? "dark" : "light";
       // console.log("[THEME] window.currentTheme set to:", window.currentTheme);
     </script>
+
+    <!-- Critical CMS colors (server-rendered) so preloader and first paint use DB colors before any script -->
+    <style is:global set:html={criticalColorsCss} />
 
     <!-- Dynamic Color & Font Injection - MUST run BEFORE CSS is parsed to prevent flash -->
     <script
@@ -606,6 +622,58 @@ const debugData = {
     </script>
 
     <!-- Set global user data for client-side components -->
+
+    <!-- SPA: persist CMS colors for re-apply after client navigation (avoids wrong preloader color on swap) -->
+    {isBackend && (
+      <>
+        <script id="cms-colors" type="application/json" set:html={JSON.stringify({
+          primaryColor: primaryColor || "#825BDD",
+          secondaryColor: secondaryColor || "#0ea5e9",
+          fontFamily: fontFamily || "Outfit Variable",
+          secondaryFontFamily: secondaryFontFamily || "sans-serif",
+        })} />
+        <script is:inline data-astro-rerun>
+          document.addEventListener("astro:after-swap", function reapplyCmsColors() {
+            const el = document.getElementById("cms-colors");
+            if (!el || !el.textContent) return;
+            try {
+              const cms = JSON.parse(el.textContent);
+              const primary = cms.primaryColor || "#825BDD";
+              const secondary = cms.secondaryColor || "#0ea5e9";
+              const root = document.documentElement;
+              function hexToHsl(hex) {
+                hex = hex.replace("#", "");
+                var r = parseInt(hex.substr(0, 2), 16) / 255, g = parseInt(hex.substr(2, 2), 16) / 255, b = parseInt(hex.substr(4, 2), 16) / 255;
+                var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, s = 0, h = 0;
+                if (max !== min) {
+                  var d = max - min;
+                  s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                  switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; }
+                  h /= 6;
+                }
+                return [h * 360, s * 100, l * 100];
+              }
+              function hslToHex(h, s, l) {
+                h /= 360; s /= 100; l /= 100;
+                var a = s * Math.min(l, 1 - l) / 100;
+                var f = function(n) { var k = (n + h / 30) % 12; return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1); };
+                return "#" + [0, 8, 4].map(function(n) { return Math.round(255 * f(n)).toString(16).padStart(2, "0"); }).join("");
+              }
+              function palette(base) {
+                if (!base || !base.match(/^#[0-9A-F]{6}$/i)) base = "#825BDD";
+                var _a = hexToHsl(base), h = _a[0], s = _a[1], l = _a[2];
+                return { 50: hslToHex(h, Math.max(s - 20, 10), Math.min(l + 45, 95)), 100: hslToHex(h, Math.max(s - 15, 15), Math.min(l + 40, 90)), 200: hslToHex(h, Math.max(s - 10, 20), Math.min(l + 30, 85)), 300: hslToHex(h, Math.max(s - 5, 25), Math.min(l + 20, 75)), 400: hslToHex(h, s, Math.min(l + 10, 65)), 500: base, 600: hslToHex(h, Math.min(s + 5, 90), Math.max(l - 10, 25)), 700: hslToHex(h, Math.min(s + 10, 95), Math.max(l - 20, 20)), 800: hslToHex(h, Math.min(s + 15, 100), Math.max(l - 30, 15)), 900: hslToHex(h, Math.min(s + 20, 100), Math.max(l - 40, 10)), 950: hslToHex(h, Math.min(s + 25, 100), Math.max(l - 50, 5)) };
+              }
+              var p = palette(primary), s = palette(secondary);
+              Object.keys(p).forEach(function(k) { root.style.setProperty("--color-primary-" + k, p[k]); });
+              Object.keys(s).forEach(function(k) { root.style.setProperty("--color-secondary-" + k, s[k]); });
+              root.style.setProperty("--font-family", cms.fontFamily || "Outfit Variable");
+              root.style.setProperty("--font-family-secondary", cms.secondaryFontFamily || "sans-serif");
+            } catch (e) { console.warn("[App] astro:after-swap reapplyCmsColors:", e); }
+          });
+        </script>
+      </>
+    )}
 
     <!-- SPA client-side routing for project/* and admin/* (no full page reload) -->
     {isBackend && <ClientRouter fallback="swap" />}

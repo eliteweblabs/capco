@@ -827,6 +827,18 @@ export function createMultiStepFormHandler(
     // Handle button clicks
     form.addEventListener("click", async (e) => {
       const target = e.target as HTMLElement;
+
+      // Never treat clicks on form controls or inside input wrappers as navigation
+      // (fixes login: clicking input or icon advanced step)
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.closest(".input-wrapper, .inline-address-search-wrapper")
+      ) {
+        return;
+      }
+
       const nextBtn = target.closest("button.next-step, a.next-step, button.submit-step");
       const prevBtn = target.closest("button.prev-step, a.prev-step");
       const smsChoiceBtn = target.closest("button.sms-choice, a.sms-choice");
@@ -1193,18 +1205,24 @@ export function createMultiStepFormHandler(
 
           const currentIndex = inputs.indexOf(target as HTMLInputElement);
 
-          // If there's a next input, focus it
+          // If there's a next input in this step, focus it (don't advance to next step)
           if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
             const nextInput = inputs[currentIndex + 1];
             nextInput.focus();
             console.log("[ENTER-KEY] Moving to next input");
             return;
           }
+
+          // Single visible input in step: do not auto-click Next (avoids advancing when
+          // Enter is fired on focus/click, e.g. login email field)
+          if (inputs.length <= 1) {
+            return;
+          }
         }
 
-        // If we're on the last input or not on an input, click next button
+        // Multiple inputs and on last, or target not an input: click next button
         const nextBtn = currentStepEl?.querySelector(
-          ".next-step, .submit-registration, .submit-contact"
+          ".next-step, .submit-registration, .submit-contact, .submit-step"
         ) as HTMLElement;
         if (nextBtn) {
           console.log("[ENTER-KEY] Clicking next button");

@@ -268,7 +268,7 @@ export const contactFormConfig: MultiStepFormConfig = {
     {
       stepNumber: 6,
       title:
-        "What's the company's name, <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
+        "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, what is the name of the company this project is for?",
       fields: [
         {
           id: "contact-company",

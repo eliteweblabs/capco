@@ -153,7 +153,7 @@ export const registerFormConfig: MultiStepFormConfig = {
     {
       stepNumber: 3,
       title:
-        "What's the company's name, <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
+        "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, what is the name of the company?",
       fields: [
         {
           id: "step-company-name",

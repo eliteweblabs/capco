@@ -24,7 +24,7 @@ async function getAllSettings(): Promise<Record<string, string>> {
   try {
     const { data, error } = await supabaseAdmin.from("globalSettings").select("key, value");
 
-    if (!error && data) {
+    if (!error && data && data.length > 0) {
       settingsCache = data.reduce(
         (acc, item) => {
           acc[item.key] = item.value || "";
@@ -34,6 +34,10 @@ async function getAllSettings(): Promise<Record<string, string>> {
       );
       cacheTimestamp = now;
       return settingsCache;
+    }
+    // Do not cache empty or failed response so next request retries and can get DB colors
+    if (error) {
+      console.warn("[global-company-data] DB fetch error, not caching:", error.message);
     }
   } catch (error) {
     console.warn("[global-company-data] Failed to fetch settings:", error);
