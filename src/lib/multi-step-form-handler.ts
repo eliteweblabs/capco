@@ -122,13 +122,7 @@ export function createMultiStepFormHandler(
     if (currentActiveStep === targetStep) return;
 
     formEl.querySelectorAll(".step-content").forEach((el) => {
-      el.classList.remove(
-        "active",
-        "sliding-out-up",
-        "sliding-out-down",
-        "sliding-in-from-above",
-        "initial-load"
-      );
+      el.classList.remove("active", "initial-load");
     });
     targetStep.classList.add("active");
 
@@ -205,7 +199,6 @@ export function createMultiStepFormHandler(
       targetStep.classList.add("initial-load");
     }
     // No slide animation on backward — wrapper scroll alone positions the step; slide + scroll caused bounce
-    targetStep.classList.remove("sliding-in-from-above");
 
     // Steps wrapper is fixed with overflow-y: auto — scroll it so target step's bottom is at wrapper bottom (same spot active was)
     const stepsWrapper = document.getElementById(`${formId}-steps`);

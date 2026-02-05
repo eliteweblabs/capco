@@ -42,7 +42,8 @@ export default {
     "translate-x-0",
     "-translate-x-full",
     "transition-transform",
-    // Layout classes
+    // Layout classes (including conditional centerContent in App.astro)
+    "overscroll-y-contain",
     "flex",
     "overflow-hidden",
     "bg-gray-50",

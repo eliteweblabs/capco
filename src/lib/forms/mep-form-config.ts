@@ -37,7 +37,7 @@ export const mepFormConfig: MultiStepFormConfig = {
   formId: "multi-step-mep-form",
   formAction: "/api/mep/submit",
   formMethod: "post",
-  totalSteps: 6,
+  totalSteps: 11,
   progressBar: false,
   registerUser: true, // Allow existing users to proceed (backend will handle user lookup)
   // Global button defaults - change here to update ALL buttons of that type
@@ -46,7 +46,7 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 1: Name (skip if authenticated)
     {
       stepNumber: 1,
-      title: `<span data-typewriter-pause="1360"></span>Hi, I'm Leah...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's get you started with the mechanical, engineering & plumbing intake process.<br><br>Ready to begin?`,
+      title: `<span data-typewriter-pause="1360"></span>Hi, I'm Leah...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's get started with the mechanical, engineering & plumbing intake process.<br><br>Ready to begin?`,
       // subtitle:
       //   "It takes about 2 minutes to complete. We typically respond within 1 business day EDT. ready to get started?",
       skipCondition: "isAuthenticated", // Skip for logged-in users
@@ -250,7 +250,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          dataPrev: 6,
+          dataPrev: 5,
         },
         {
           type: "next",
@@ -302,8 +302,8 @@ export const mepFormConfig: MultiStepFormConfig = {
             },
             {
               type: "choice",
-              label: "High velocity deducted system",
-              dataValue: "High velocity deducted system",
+              label: "High velocity ducted system",
+              dataValue: "High velocity ducted system",
             },
             {
               type: "choice",
@@ -435,7 +435,7 @@ export const mepFormConfig: MultiStepFormConfig = {
         },
         {
           type: "button-group",
-          id: "electric-service-group",
+          id: "transformer-group",
           name: "transformer",
           required: false,
           buttons: [

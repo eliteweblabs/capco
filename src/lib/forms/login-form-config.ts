@@ -42,6 +42,7 @@ export const loginFormConfig: MultiStepFormConfig = {
       stepNumber: 1,
       title: "",
       showIcon: false,
+      expandDown: false,
       fields: [
         {
           id: "login-email",

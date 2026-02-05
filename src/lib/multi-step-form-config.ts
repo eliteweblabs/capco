@@ -155,6 +155,8 @@ export interface FormStepConfig {
   hideProgressBar?: boolean; // Hide progress bar for this specific step (useful for intro/welcome steps)
   // Animation effects
   effect?: "reveal-text" | "typewriter" | "none"; // Text animation effect for title (defaults to "typewriter")
+  // Panel positioning: when false, keep the step panel vertically centered (no expand-down/expand-up)
+  expandDown?: boolean; // default true; set false to keep panel centered (e.g. login form)
 }
 
 export interface MultiStepFormConfig {
