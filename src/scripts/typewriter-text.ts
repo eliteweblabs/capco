@@ -137,6 +137,15 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
     },
   });
 
+  // Escape HTML so a single character can be wrapped in a span safely
+  const escapeHtml = (c: string): string =>
+    c
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
   // Build the typing sequence with pauses and natural variations
   segments.forEach((segment, index) => {
     if (segment.type === "text") {
@@ -148,8 +157,16 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
       words.forEach((word, wordIndex) => {
         if (!word) return;
 
-        // Type the word
-        instance.type(word);
+        // Type each character in a span so we can animate opacity (100% -> 40% over 300ms)
+        if (/^<[^>]+>$/i.test(word)) {
+          instance.type(word);
+        } else {
+          for (const char of word) {
+            instance.type(
+              `<span class="typewriter-char">${escapeHtml(char)}</span>`
+            );
+          }
+        }
 
         // Add natural pauses after punctuation
         if (word.match(/[.,!?;:]/)) {

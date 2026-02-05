@@ -511,6 +511,15 @@ input:focus {
 
 /* ============================================
    GLOBAL FOCUS STYLES - Input Focus Effects
+   ============================================
+   Cascade order (later wins when specificity ties):
+   1. Base transition
+   2. Focus → primary shadow
+   3. Invalid (not focused) → danger shadow; more specific than generic autofill so invalid+autofill stays red
+   4. Autofill (generic) → inset + success shadow
+   5. Valid (not focused) → success; :valid and .is-valid
+   6. Valid + autofill → inset + success (single combined block)
+   7. Valid + focused → primary (both :valid and .is-valid)
    ============================================ */
 
 /* Base transition for all inputs */
@@ -529,7 +538,7 @@ select:focus {
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
-/* Invalid: red glow when not focused */
+/* Invalid: red glow when not focused (higher specificity than generic autofill so invalid+autofill stays red) */
 input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
 textarea:invalid:not(:placeholder-shown):not(:focus),
 select:invalid:not(:placeholder-shown):not(:focus) {
@@ -571,16 +580,10 @@ select:autofill {
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }
 
-/* Valid fields get GREEN shadow when not focused (:valid from browser) */
+/* Valid (not focused): :valid from browser or .is-valid from form JS */
 input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
 textarea:valid:not(:placeholder-shown):not(:focus),
-select:valid:not(:placeholder-shown):not(:focus) {
-  box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-}
-
-/* Valid fields get GREEN when form adds .is-valid (covers email/text/password/tel from MultiStepForm etc.) */
+select:valid:not(:placeholder-shown):not(:focus),
 input:not([type="hidden"]).is-valid:not(:focus),
 textarea.is-valid:not(:focus),
 select.is-valid:not(:focus) {
@@ -589,7 +592,13 @@ select.is-valid:not(:focus) {
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }
 
-/* .is-valid + autofilled: solid inset (iOS Safari), green glow */
+/* Valid + autofilled (not focused): solid inset + green glow — :valid and .is-valid combined */
+input:not([type="hidden"]):valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+textarea:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+select:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+input:not([type="hidden"]):valid:autofill:not(:placeholder-shown):not(:focus),
+textarea:valid:autofill:not(:placeholder-shown):not(:focus),
+select:valid:autofill:not(:placeholder-shown):not(:focus),
 input:not([type="hidden"]).is-valid:-webkit-autofill:not(:focus),
 textarea.is-valid:-webkit-autofill:not(:focus),
 select.is-valid:-webkit-autofill:not(:focus),
@@ -606,6 +615,12 @@ select.is-valid:autofill:not(:focus) {
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }
 
+.dark input:not([type="hidden"]):valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+.dark textarea:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+.dark select:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
+.dark input:not([type="hidden"]):valid:autofill:not(:placeholder-shown):not(:focus),
+.dark textarea:valid:autofill:not(:placeholder-shown):not(:focus),
+.dark select:valid:autofill:not(:placeholder-shown):not(:focus),
 .dark input:not([type="hidden"]).is-valid:-webkit-autofill:not(:focus),
 .dark textarea.is-valid:-webkit-autofill:not(:focus),
 .dark select.is-valid:-webkit-autofill:not(:focus),
@@ -622,43 +637,13 @@ select.is-valid:autofill:not(:focus) {
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }
 
-/* Valid + autofilled, not focused: solid inset (iOS Safari), green glow */
-input:not([type="hidden"]):valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-textarea:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-select:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-input:not([type="hidden"]):valid:autofill:not(:placeholder-shown):not(:focus),
-textarea:valid:autofill:not(:placeholder-shown):not(:focus),
-select:valid:autofill:not(:placeholder-shown):not(:focus) {
-  -webkit-box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #ffffff inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-}
-
-.dark input:not([type="hidden"]):valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-.dark textarea:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-.dark select:valid:-webkit-autofill:not(:placeholder-shown):not(:focus),
-.dark input:not([type="hidden"]):valid:autofill:not(:placeholder-shown):not(:focus),
-.dark textarea:valid:autofill:not(:placeholder-shown):not(:focus),
-.dark select:valid:autofill:not(:placeholder-shown):not(:focus) {
-  -webkit-box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  box-shadow:
-    0 0 0 100vmax #0a0a0a inset,
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-}
-
-/* Valid fields keep PRIMARY shadow while focused (prioritize focus state) */
+/* Valid + focused: primary shadow (both :valid and .is-valid so JS-validated fields match) */
 input:not([type="hidden"]):valid:focus,
 textarea:valid:focus,
-select:valid:focus {
+select:valid:focus,
+input:not([type="hidden"]).is-valid:focus,
+textarea.is-valid:focus,
+select.is-valid:focus {
   box-shadow:
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
@@ -1765,6 +1750,21 @@ a[role="button"]:focus-visible,
   display: inline-block;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Each character starts at 100% opacity, fades to 40% over 300ms */
+.typewriter-text .typewriter-char {
+  opacity: 1;
+  animation: typewriter-char-fade 300ms ease-out forwards;
+}
+
+@keyframes typewriter-char-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.4;
+  }
 }
 
 /* TypeIt cursor styling */
