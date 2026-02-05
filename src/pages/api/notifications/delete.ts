@@ -5,14 +5,15 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 /**
  * Standardized Notifications DELETE API
  *
- * DELETE Body:
- * - id: number (notification ID to delete)
+ * DELETE or POST Body:
+ * - id / itemId / notificationId: number (notification ID to delete)
  *
  * Example:
  * - DELETE /api/notifications/delete { "id": 123 }
+ * - POST /api/notifications/delete { "id": 123 } (used by DeleteConfirmButton)
  */
 
-export const DELETE: APIRoute = async ({ request, cookies }) => {
+async function handleDelete(request: Request, cookies: any): Promise<Response> {
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
@@ -106,4 +107,12 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
+}
+
+export const DELETE: APIRoute = async ({ request, cookies }) => {
+  return handleDelete(request, cookies);
+};
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  return handleDelete(request, cookies);
 };

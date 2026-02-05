@@ -219,7 +219,35 @@ if (currentUser || isContactPage) {
           htmlEl.style.transition = `opacity ${transitionDuration}ms ease-in-out`;
           htmlEl.style.opacity = "0";
         });
+        // If page is already scrolled when banner appears, hide it
+        requestAnimationFrame(updateBannerVisibilityFromScroll);
       }, 1000);
+
+      // Hide banner when user scrolls down (railway.com-style); show again when back at top
+      const SCROLL_HIDE_THRESHOLD_PX = 120;
+      let scrollTicking = false;
+
+      function updateBannerVisibilityFromScroll() {
+        if (localStorage.getItem("cookie-consent")) return; // user already chose
+        const scrollY = window.scrollY;
+        const isVisible = !cookieBanner?.classList.contains("translate-y-full");
+        if (scrollY > SCROLL_HIDE_THRESHOLD_PX && isVisible) {
+          cookieBanner?.classList.add("translate-y-full");
+        } else if (scrollY <= SCROLL_HIDE_THRESHOLD_PX && !isVisible) {
+          cookieBanner?.classList.remove("translate-y-full");
+        }
+        scrollTicking = false;
+      }
+
+      window.addEventListener(
+        "scroll",
+        () => {
+          if (scrollTicking) return;
+          scrollTicking = true;
+          requestAnimationFrame(updateBannerVisibilityFromScroll);
+        },
+        { passive: true }
+      );
     } else {
       // cookieBanner?.remove();
     }
