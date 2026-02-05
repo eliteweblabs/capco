@@ -20,17 +20,6 @@ function updateButtonIcon(button: HTMLElement, isValid: boolean) {
   }
 }
 
-// Offset of element from the scroll container (works when steps are wrapped in .multi-step-form-steps)
-function getOffsetTopFromScrollParent(element: HTMLElement, scrollParent: HTMLElement): number {
-  let top = 0;
-  let el: HTMLElement | null = element;
-  while (el && el !== scrollParent) {
-    top += el.offsetTop;
-    el = el.offsetParent as HTMLElement | null;
-  }
-  return top;
-}
-
 export function createMultiStepFormHandler(
   formId: string,
   totalSteps: number,
@@ -133,7 +122,13 @@ export function createMultiStepFormHandler(
     if (currentActiveStep === targetStep) return;
 
     formEl.querySelectorAll(".step-content").forEach((el) => {
-      el.classList.remove("active", "sliding-out-up", "sliding-out-down", "sliding-in-from-above", "initial-load");
+      el.classList.remove(
+        "active",
+        "sliding-out-up",
+        "sliding-out-down",
+        "sliding-in-from-above",
+        "initial-load"
+      );
     });
     targetStep.classList.add("active");
 
@@ -157,7 +152,9 @@ export function createMultiStepFormHandler(
 
   // Show specific step with animation (continuous scroll: previous steps stay visible, scroll to active)
   async function showStep(stepNumber: number, direction: "forward" | "backward" = "forward") {
-    const currentActiveStep = document.querySelector(`#${formId} .step-content.active`) as HTMLElement;
+    const currentActiveStep = document.querySelector(
+      `#${formId} .step-content.active`
+    ) as HTMLElement;
     const targetStep = document.querySelector(
       `#${formId} .step-content[data-step="${stepNumber}"]`
     ) as HTMLElement;
@@ -167,7 +164,12 @@ export function createMultiStepFormHandler(
     // Remove active from current step; when going forward mark as completed (stays visible), when going back remove completed (hide again)
     if (currentActiveStep && currentActiveStep !== targetStep) {
       if (direction === "backward") {
-        currentActiveStep.classList.remove("active", "completed", "sliding-out-up", "sliding-out-down");
+        currentActiveStep.classList.remove(
+          "active",
+          "completed",
+          "sliding-out-up",
+          "sliding-out-down"
+        );
       } else {
         currentActiveStep.classList.add("completed");
         currentActiveStep.classList.remove("active", "sliding-out-up", "sliding-out-down");
@@ -212,7 +214,10 @@ export function createMultiStepFormHandler(
         if (direction === "backward") {
           const targetBottom = targetStep.offsetTop + targetStep.offsetHeight;
           const scrollTop = targetBottom - stepsWrapper.clientHeight;
-          const clamped = Math.max(0, Math.min(scrollTop, stepsWrapper.scrollHeight - stepsWrapper.clientHeight));
+          const clamped = Math.max(
+            0,
+            Math.min(scrollTop, stepsWrapper.scrollHeight - stepsWrapper.clientHeight)
+          );
           stepsWrapper.scrollTo({ top: clamped, behavior: "smooth" });
           console.log("[MULTISTEP-SCROLL] Wrapper scrollTo (back):", {
             stepNumber,
@@ -221,7 +226,10 @@ export function createMultiStepFormHandler(
             reason: "previous step bottom at wrapper bottom",
           });
         } else {
-          stepsWrapper.scrollTo({ top: stepsWrapper.scrollHeight - stepsWrapper.clientHeight, behavior: "smooth" });
+          stepsWrapper.scrollTo({
+            top: stepsWrapper.scrollHeight - stepsWrapper.clientHeight,
+            behavior: "smooth",
+          });
           console.log("[MULTISTEP-SCROLL] Wrapper scrollTo (forward):", {
             stepNumber,
             reason: "new active step at wrapper bottom",
@@ -335,9 +343,7 @@ export function createMultiStepFormHandler(
 
       const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
       if (smsChoiceButtons.length > 0) {
-        const yesButton = targetStep.querySelector(
-          'button[data-sms-value="true"]'
-        ) as HTMLElement;
+        const yesButton = targetStep.querySelector('button[data-sms-value="true"]') as HTMLElement;
         if (yesButton) {
           yesButton.focus();
           scrollFormToCursor(yesButton);
@@ -1239,7 +1245,7 @@ export function createMultiStepFormHandler(
     // Focus first input with typewriter cursor line positioning
     // Use short delay on init (no animation); showStep uses 650ms for step transitions
     setTimeout(() => {
-      const firstStep = form.querySelector('.step-content.active') as HTMLElement;
+      const firstStep = form.querySelector(".step-content.active") as HTMLElement;
       if (firstStep) {
         const firstInput = firstStep.querySelector(
           "input:not([type=hidden]):not([readonly]), textarea"
@@ -1249,8 +1255,8 @@ export function createMultiStepFormHandler(
           // Position at cursor line (40vh from top)
           const elementRect = firstInput.getBoundingClientRect();
           const absoluteElementTop = elementRect.top + window.pageYOffset;
-          const cursorLine = absoluteElementTop - (window.innerHeight * 0.4);
-          window.scrollTo({ top: cursorLine, behavior: 'smooth' });
+          const cursorLine = absoluteElementTop - window.innerHeight * 0.4;
+          window.scrollTo({ top: cursorLine, behavior: "smooth" });
           console.log("[MULTISTEP-SCROLL] window.scrollTo (initial focus):", {
             element: firstInput.id || (firstInput as HTMLInputElement).name || "firstInput",
             cursorLine,
@@ -1392,7 +1398,8 @@ export function initializeMultiStepForm(
   }
 
   // Expose handler on form so focus listener can call setActiveStepByFocus when user scrolls up to edit
-  (form as HTMLFormElement & { multiStepHandler?: MultiStepFormHandler }).multiStepHandler = handler;
+  (form as HTMLFormElement & { multiStepHandler?: MultiStepFormHandler }).multiStepHandler =
+    handler;
 
   return handler;
 }

@@ -40,9 +40,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     method={config.formMethod || "post"}
     class={config.progressBar ? "" : ""}
   >
-    <div class="multi-step-form-spacer" aria-hidden="true"></div>
+    <!-- <div class="multi-step-form-spacer" aria-hidden="true"></div> -->
     <div
-      class:list={[containerClass, "multi-step-form-steps"]}
+      class:list={[containerClass, "multi-step-form-steps", "expand-down"]}
       id={`${config.formId}-steps`}
       tabindex="-1"
     >
@@ -50,7 +50,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         config.steps.map((step) => (
           <div
             class:list={[
-              "step-content space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 mt-8",
+              "step-content space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12",
               step.stepNumber === 1 ? "first-step" : "",
             ]}
             data-step={step.stepNumber}
@@ -71,19 +71,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 </div>
               )} */}
             {step.title && (
-              <div class="title-scroll-container relative" tabindex="-1">
-                <div class="title-scroll-fade-top" />
-                <div class="title-scroll-wrapper" tabindex="-1">
-                  <h2
-                    class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
-                      step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
-                    }`}
-                    data-text={step.title}
-                    set:html={step.title}
-                    tabindex="-1"
-                  />
-                </div>
-              </div>
+              <h2
+                class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
+                  step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
+                }`}
+                data-text={step.title}
+                set:html={step.title}
+                tabindex="-1"
+              />
             )}
             {step.subtitle && (
               <p
@@ -152,7 +147,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : step.fields?.length ? (
               <div
                 class:list={[
                   step.fieldLayout === "grid"
@@ -371,7 +366,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                   </div>
                 ))}
               </div>
-            )}
+            ) : null}
 
             {/* Step Buttons */}
             {/* Choice buttons (radio-style options) */}
@@ -419,6 +414,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 "action-buttons-wrapper",
                 "flex",
                 "gap-3",
+                "mt-6",
                 step.buttons.filter((b) => b.type !== "choice").length === 1
                   ? "justify-end"
                   : "justify-between",
@@ -560,78 +556,27 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   /* Title scroll container with max height */
   .title-scroll-container {
     position: relative;
-    max-height: 400px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Cascade reveal: collapsed until typewriter completes, then each element expands with stagger so panel height grows per element */
+  .step-content.has-typewriter .input-wrapper,
+  .step-content.has-typewriter .inline-address-search-wrapper,
+  .step-content.has-typewriter button,
+  .step-content.has-typewriter a {
+    max-height: 0;
     overflow: hidden;
-    margin-bottom: 1rem;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .title-scroll-wrapper {
-    max-height: 400px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scroll-behavior: smooth;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    flex: 1;
-    /* Hide scrollbar but keep functionality */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
-  }
-
-  /* When content overflows, switch to normal alignment */
-  .title-scroll-wrapper.has-overflow {
-    justify-content: flex-start;
-  }
-
-  .title-scroll-wrapper::-webkit-scrollbar {
-    display: none; /* Chrome/Safari/Opera */
-  }
-
-  /* Fade out gradient at top */
-  .title-scroll-fade-top {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: linear-gradient(to bottom, var(--scroll-fade-color) 0%, transparent 100%);
-    pointer-events: none;
-    z-index: 10;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: max-height 0.4s ease-out, opacity 0.35s ease-out;
   }
 
-  /* Show fade when scrolled */
-  .title-scroll-container.is-scrolled .title-scroll-fade-top {
-    opacity: 1;
-  }
-
-  /* Color variables for fade gradient */
-  :root {
-    --scroll-fade-color: rgba(255, 255, 255, 0.95);
-  }
-
-  .dark {
-    --scroll-fade-color: rgba(17, 24, 39, 0.95);
-  }
-
-  /* Content reveal after typewriter completes — opacity only to avoid panel "sinking" from translateY reflow */
-  .step-content .input-wrapper,
-  .step-content .inline-address-search-wrapper,
-  .step-content button,
-  .step-content a {
-    opacity: 0;
-    transition: opacity 0.35s ease-out;
-  }
-
-  /* When typewriter completes, reveal content */
+  /* When typewriter completes, each reveals with its own transition-delay (set in JS) */
   .step-content.typewriter-complete .input-wrapper,
   .step-content.typewriter-complete .inline-address-search-wrapper,
   .step-content.typewriter-complete button,
   .step-content.typewriter-complete a {
+    max-height: 50rem;
     opacity: 1;
   }
 
@@ -643,95 +588,17 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     opacity: 1;
     transform: translateY(0);
   }
-
-  /* Focus shadow animation - global so it works across all components */
-  input:not([type="hidden"]),
-  textarea,
-  select {
-    transition: box-shadow 250ms ease-in-out;
-  }
-
-  input:not([type="hidden"]):focus,
-  textarea:focus,
-  select:focus {
-    box-shadow:
-      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
-  }
-
-  /* Auto-filled fields: solid inset (iOS Safari yellow fix) + green shadow to match valid state */
-  input:not([type="hidden"]):-webkit-autofill,
-  textarea:-webkit-autofill,
-  select:-webkit-autofill,
-  input:not([type="hidden"]):autofill,
-  textarea:autofill,
-  select:autofill {
-    -webkit-box-shadow:
-      0 0 0 100vmax #ffffff inset,
-      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-    box-shadow:
-      0 0 0 100vmax #ffffff inset,
-      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  }
-
-  .dark input:not([type="hidden"]):-webkit-autofill,
-  .dark textarea:-webkit-autofill,
-  .dark select:-webkit-autofill,
-  .dark input:not([type="hidden"]):autofill,
-  .dark textarea:autofill,
-  .dark select:autofill {
-    -webkit-box-shadow:
-      0 0 0 100vmax #0a0a0a inset,
-      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-    box-shadow:
-      0 0 0 100vmax #0a0a0a inset,
-      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  }
-
-  /* Valid, not focused: green glow (:valid and .is-valid so email/text/password/tel all get it) */
-  input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
-  textarea:valid:not(:placeholder-shown):not(:focus),
-  select:valid:not(:placeholder-shown):not(:focus),
-  input:not([type="hidden"]).is-valid:not(:focus),
-  textarea.is-valid:not(:focus),
-  select.is-valid:not(:focus) {
-    box-shadow:
-      0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
-  }
-
-  /* Valid + focused: primary glow (focus state wins) */
-  input:not([type="hidden"]):valid:focus,
-  textarea:valid:focus,
-  select:valid:focus {
-    box-shadow:
-      0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
-  }
-
-  /* Invalid, not focused: red glow */
-  input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
-  textarea:invalid:not(:placeholder-shown):not(:focus),
-  select:invalid:not(:placeholder-shown):not(:focus) {
-    box-shadow:
-      0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
-      0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
-  }
 </style>
 
 <style>
-  /* Wrapper: fixed so bottom is always 40vh from viewport; content grows up only (flex-end). Sticky was unreliable when wrapper grew. */
+  /* Wrapper: fixed. Initial top at 50dvh, expands down; when bottom would hit 4rem we switch to expand-up (class swap). */
   .multi-step-form-steps {
     position: fixed;
-    bottom: 40vh; /* bottom of wrapper always at 60% from top of viewport */
     left: 50%;
+    top: 0;
     transform: translateX(-50%);
-    min-height: 60vh;
-    max-height: 80vh; /* from viewport top down to wrapper bottom */
+    min-height: 0;
+    /* max-height: 80vh; */
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
     box-sizing: border-box;
@@ -740,9 +607,21 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     justify-content: flex-end;
     overflow-y: auto;
     overflow-x: hidden;
-    min-height: 0;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    /* transition: top 0.35s ease-out, bottom 0.35s ease-out; */
+  }
+
+  /* Expand down: top at 50dvh, panel grows downward until it would hit the limit */
+  .multi-step-form-steps.expand-down {
+    top: 50dvh;
+    bottom: auto;
+  }
+
+  /* Expand up: bottom at 4rem, panel grows upward after hitting the limit */
+  .multi-step-form-steps.expand-up {
+    top: auto;
+    bottom: 4rem;
   }
 
   .multi-step-form-steps::-webkit-scrollbar {
@@ -896,7 +775,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   }
 
   [data-multi-step-form] form .first-step {
-    padding-top: 40vh;
+    /* padding-top: 30vh; */
   }
 
   /* Responsive padding adjustments */
@@ -961,15 +840,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   }
 
   .action-buttons-wrapper {
-    margin-top: 0 !important;
-
-    height: 0;
-    transition: height 0.3s ease-in-out;
+    /* margin-top: 0 !important; */
+    /* height: 0;
+    transition: height 0.3s ease-in-out; */
     overflow: hidden;
+    visibility: hidden;
   }
 
   .active .action-buttons-wrapper {
-    margin-top: inherit !important;
     visibility: visible;
     height: auto;
   }
@@ -1018,82 +896,91 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   import "../../scripts/typewriter-text";
 
   document.addEventListener("DOMContentLoaded", () => {
-    // Spacer grows/contracts with step content (min 60vh, max 80vh)
-    function updateSpacerHeight() {
-      const spacer = document.querySelector(".multi-step-form-spacer") as HTMLElement;
-      const steps = document.querySelector(".multi-step-form-steps") as HTMLElement;
-      if (!spacer || !steps) return;
-      const contentHeight = steps.scrollHeight;
-      const minVh = 60;
-      const maxVh = 80;
-      const minPx = (window.innerHeight * minVh) / 100;
-      const maxPx = (window.innerHeight * maxVh) / 100;
-      const heightPx = Math.min(maxPx, Math.max(minPx, contentHeight));
-      spacer.style.height = `${heightPx}px`;
-    }
-
-    const form = document.querySelector(".multi-step-form-steps")?.closest("form");
-    if (form) {
-      form.addEventListener("multistep-step-change", () => {
-        requestAnimationFrame(() => requestAnimationFrame(updateSpacerHeight));
-      });
-    }
-    window.addEventListener("resize", updateSpacerHeight);
-    requestAnimationFrame(() => requestAnimationFrame(updateSpacerHeight));
-
-    // Expand steps panel 1:1 with scroll: as first panel moves up, decrease bottom until 120px
-    // Kept running on scroll, resize, typewriter/cascade end, step change, and when panel content size changes
+    // Panel position: only .multi-step-form-steps height matters (spacer removed)
     let updateStepsPanelBottomRef: (() => void) | null = null;
+    /** Run panel bottom update every frame for the given duration (e.g. during typewriter/cascade). */
+    let runPanelBottomLoopRef: ((durationMs: number) => void) | null = null;
     const stepsEl = document.querySelector(".multi-step-form-steps") as HTMLElement | null;
     if (stepsEl) {
-      const BOTTOM_MIN_PX = 120;
-      const BOTTOM_INITIAL_VH = 40;
+      console.log("[MULTISTEP-DEBUG] steps panel found, setting up");
+      const BOTTOM_MIN_PX = 4 * 16; // 4rem cutoff
+      const THROTTLE_MS = 80;
+      let lastPanelBottomRun = 0;
 
-      let scrollParent: HTMLElement | null = null;
-      let el: HTMLElement | null = stepsEl.parentElement;
-      while (el) {
-        const style = getComputedStyle(el);
-        const overflowY = style.overflowY;
-        if (
-          (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") &&
-          el.scrollHeight > el.clientHeight
-        ) {
-          scrollParent = el;
-          break;
+      function updateStepsPanelBottom(caller?: string) {
+        const stepsHeight = stepsEl.scrollHeight;
+        const clientHeight = stepsEl.clientHeight;
+        const offsetHeight = stepsEl.offsetHeight;
+        const viewportHeight = window.innerHeight;
+        const fiftyDvhPx = viewportHeight * 0.5;
+        // Switch when panel bottom would hit limit: 50dvh + height >= viewport - 4rem => height >= 50dvh - 4rem
+        const thresholdPx = fiftyDvhPx - BOTTOM_MIN_PX;
+        const expandUp = stepsHeight >= thresholdPx;
+        if (expandUp) {
+          stepsEl.classList.add("expand-up");
+          stepsEl.classList.remove("expand-down");
+        } else {
+          stepsEl.classList.add("expand-down");
+          stepsEl.classList.remove("expand-up");
         }
-        el = el.parentElement;
-      }
-
-      function getScrollPx(): number {
-        if (scrollParent) return scrollParent.scrollTop;
-        return window.scrollY ?? document.documentElement.scrollTop ?? 0;
-      }
-
-      function updateStepsPanelBottom() {
-        const scrollPx = getScrollPx();
-        const initialBottomPx = (window.innerHeight * BOTTOM_INITIAL_VH) / 100;
-        const bottomPx = Math.max(BOTTOM_MIN_PX, initialBottomPx - scrollPx);
-        stepsEl.style.bottom = `${bottomPx}px`;
-        console.log("[MULTISTEP-PANEL]", {
-          scrollPx,
-          initialBottomPx: Math.round(initialBottomPx),
-          bottomPx: Math.round(bottomPx),
-          scrollParent: scrollParent?.tagName ?? "window",
+        console.log("[MULTISTEP-DEBUG] updateStepsPanelBottom", {
+          caller: caller ?? "unknown",
+          scrollHeight: stepsHeight,
+          clientHeight,
+          offsetHeight,
+          fiftyDvhPx,
+          thresholdPx,
+          expandUp,
         });
       }
-      updateStepsPanelBottomRef = updateStepsPanelBottom;
 
-      updateStepsPanelBottom();
-      (scrollParent ?? window).addEventListener("scroll", updateStepsPanelBottom, {
-        passive: true,
+      function throttledUpdateStepsPanelBottom(caller?: string) {
+        const now = performance.now();
+        const allowed = now - lastPanelBottomRun >= THROTTLE_MS;
+        if (allowed) {
+          lastPanelBottomRun = now;
+          updateStepsPanelBottom(caller ?? "throttled");
+        } else {
+          console.log("[MULTISTEP-DEBUG] throttledUpdateStepsPanelBottom skipped (throttle)", {
+            caller: caller ?? "unknown",
+            elapsed: now - lastPanelBottomRun,
+            THROTTLE_MS,
+          });
+        }
+      }
+
+      updateStepsPanelBottomRef = () => throttledUpdateStepsPanelBottom("ref");
+
+      runPanelBottomLoopRef = (durationMs: number) => {
+        console.log("[MULTISTEP-DEBUG] runPanelBottomLoopRef started", { durationMs });
+        const start = performance.now();
+        const tick = () => {
+          throttledUpdateStepsPanelBottom("loop");
+          if (performance.now() - start < durationMs) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      };
+
+      updateStepsPanelBottom("DOMContentLoaded");
+
+      window.addEventListener("resize", () => {
+        console.log("[MULTISTEP-DEBUG] resize → throttledUpdateStepsPanelBottom");
+        throttledUpdateStepsPanelBottom("resize");
       });
-      window.addEventListener("resize", updateStepsPanelBottom);
 
-      // Run when panel content size changes (typewriter/cascade/inputs/buttons reveal)
       const resizeObserver = new ResizeObserver(() => {
-        requestAnimationFrame(updateStepsPanelBottom);
+        console.log("[MULTISTEP-DEBUG] ResizeObserver → requestAnimationFrame(throttled)");
+        requestAnimationFrame(() => throttledUpdateStepsPanelBottom("ResizeObserver"));
       });
       resizeObserver.observe(stepsEl);
+
+      document.addEventListener("multistep-step-change", () => {
+        console.log("[MULTISTEP-DEBUG] multistep-step-change → updateStepsPanelBottom + loop 15s");
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => updateStepsPanelBottom("multistep-step-change"))
+        );
+        runPanelBottomLoopRef?.(15000);
+      });
     }
 
     // Listen for typewriter completion to trigger content animations
@@ -1126,24 +1013,17 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         // Add the class to trigger animations
         stepContent.classList.add("typewriter-complete");
 
-        // Spacer may need to grow after content reveals
-        requestAnimationFrame(() => requestAnimationFrame(updateSpacerHeight));
-
-        // Panel bottom: update as soon as typewriter completes, then again after cascade + action-buttons finish
+        // Panel bottom: update every frame while content expands (cascade) so position tracks in real time
+        console.log(
+          "[MULTISTEP-DEBUG] typewriter-complete → updateStepsPanelBottomRef + runPanelBottomLoopRef"
+        );
         requestAnimationFrame(() => requestAnimationFrame(updateStepsPanelBottomRef ?? (() => {})));
         const cascadeEndMs =
-          elements.length > 0
-            ? (elements.length - 1) * CASCADE_DELAY_MS + OPACITY_DURATION_MS
-            : 0;
+          elements.length > 0 ? (elements.length - 1) * CASCADE_DELAY_MS + OPACITY_DURATION_MS : 0;
         if (cascadeEndMs > 0) {
-          setTimeout(() => updateStepsPanelBottomRef?.(), cascadeEndMs);
+          runPanelBottomLoopRef?.(cascadeEndMs + 600);
         }
       }
-    });
-
-    // Panel bottom: run on step change (next/prev) so it updates for each panel
-    document.addEventListener("multistep-step-change", () => {
-      requestAnimationFrame(() => requestAnimationFrame(updateStepsPanelBottomRef ?? (() => {})));
     });
 
     // Mark steps with typewriter effect
@@ -1948,6 +1828,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   document.addEventListener("DOMContentLoaded", () => {
     const form =
       document.querySelector(".multi-step-form-steps")?.closest("form") ??
+      document.querySelector("[data-multi-step-form] form") ??
       document.querySelector("form");
     const scope = form ?? document;
     const fields = scope.querySelectorAll<

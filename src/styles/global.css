@@ -1832,3 +1832,81 @@ a[aria-disabled="true"] {
     outline-offset: 2px;
   }
 }
+
+/* Focus shadow animation - global so it works across all components */
+input:not([type="hidden"]),
+textarea,
+select {
+  transition: box-shadow 250ms ease-in-out;
+}
+
+input:not([type="hidden"]):focus,
+textarea:focus,
+select:focus {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+
+/* Auto-filled fields: solid inset (iOS Safari yellow fix) + green shadow to match valid state */
+input:not([type="hidden"]):-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill,
+input:not([type="hidden"]):autofill,
+textarea:autofill,
+select:autofill {
+  -webkit-box-shadow:
+    0 0 0 100vmax #ffffff inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  box-shadow:
+    0 0 0 100vmax #ffffff inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+
+.dark input:not([type="hidden"]):-webkit-autofill,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill,
+.dark input:not([type="hidden"]):autofill,
+.dark textarea:autofill,
+.dark select:autofill {
+  -webkit-box-shadow:
+    0 0 0 100vmax #0a0a0a inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  box-shadow:
+    0 0 0 100vmax #0a0a0a inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+
+/* Valid, not focused: green glow (:valid and .is-valid so email/text/password/tel all get it) */
+input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
+textarea:valid:not(:placeholder-shown):not(:focus),
+select:valid:not(:placeholder-shown):not(:focus),
+input:not([type="hidden"]).is-valid:not(:focus),
+textarea.is-valid:not(:focus),
+select.is-valid:not(:focus) {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+
+/* Valid + focused: primary glow (focus state wins) */
+input:not([type="hidden"]):valid:focus,
+textarea:valid:focus,
+select:valid:focus {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+
+/* Invalid, not focused: red glow */
+input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
+textarea:invalid:not(:placeholder-shown):not(:focus),
+select:invalid:not(:placeholder-shown):not(:focus) {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
+}

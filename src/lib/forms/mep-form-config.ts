@@ -344,7 +344,7 @@ export const mepFormConfig: MultiStepFormConfig = {
             },
             {
               type: "choice",
-              label: "Electric mini split air handler and conventional ductwork",
+              label: "Electric mini split",
               dataValue: "Electric mini split air handler and conventional ductwork",
             },
             {

@@ -519,10 +519,13 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               >
                 Actions
               </th>
-              <th class="w-12 px-2 py-3" aria-label="Expand" />
+              <th class="w-12 px-2 py-3" aria-label="Expand"></th>
             </tr>
           </thead>
-          <tbody id="cms-pages-tbody" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody
+            id="cms-pages-tbody"
+            class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700"
+          >
             <!-- Create new page: trigger row -->
             <tr
               class="cms-accordion-trigger hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
@@ -533,17 +536,33 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               aria-controls="cms-detail-create"
             >
               <td class="px-2 py-3 text-center text-gray-400 dark:text-gray-500 w-12">—</td>
-              <td class="px-6 py-3 text-sm font-medium text-primary-600 dark:text-primary-400" colspan="5">
+              <td
+                class="px-6 py-3 text-sm font-medium text-primary-600 dark:text-primary-400"
+                colspan="5"
+              >
                 + Create new page
               </td>
               <td class="px-2 py-3 w-12 align-middle">
-                <svg class="cms-chevron w-5 h-5 text-gray-500 rotate-0 transition-transform" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                <svg
+                  class="cms-chevron w-5 h-5 text-gray-500 rotate-0 transition-transform"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clip-rule="evenodd"></path>
                 </svg>
               </td>
             </tr>
             <!-- Create new page: detail row (accordion body) -->
-            <tr id="cms-detail-create" class="cms-accordion-detail hidden" data-editor-slot="create" aria-hidden="true">
+            <tr
+              id="cms-detail-create"
+              class="cms-accordion-detail hidden"
+              data-editor-slot="create"
+              aria-hidden="true"
+            >
               <td colspan="7" class="p-0 bg-gray-50 dark:bg-gray-800/50">
                 <div id="editor-slot-create" class="editor-slot min-h-[200px]"></div>
               </td>
@@ -551,7 +570,10 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
             {
               cmsPages.length === 0 ? (
                 <tr>
-                  <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <td
+                    colspan="7"
+                    class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                  >
                     No pages in database.{" "}
                     {markdownOnlyPages.length > 0
                       ? "Import markdown files above or create a new page above."
@@ -561,72 +583,100 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
               ) : (
                 cmsPages.flatMap((page, index) => [
                   <tr
-                      class="cms-accordion-trigger cursor-move hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
-                      draggable="true"
-                      data-page-id={page.id}
-                      data-page-slug={page.slug}
-                      data-display-order={page.display_order ?? index}
-                      data-editor-slot={page.slug}
-                      role="button"
-                      tabindex="0"
-                      aria-expanded="false"
-                      aria-controls={`cms-detail-${page.slug}`}
-                    >
-                      <td class="px-2 py-3 text-center text-gray-400 dark:text-gray-500 cursor-grab active:cursor-grabbing w-12">
-                        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
-                        </svg>
-                      </td>
-                      <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {page.slug}
-                      </td>
-                      <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate max-w-48">
-                        {page.title || "—"}
-                      </td>
-                      <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {page.template || "default"}
-                      </td>
-                      <td class="px-6 py-3 whitespace-nowrap">
-                        {page.isActive ? (
-                          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>
-                        ) : (
-                          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Inactive</span>
-                        )}
-                      </td>
-                      <td class="px-6 py-3 whitespace-nowrap text-sm font-medium">
-                        <div class="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon="edit"
-                            class="edit-page-btn"
-                            dataAttributes={{ "data-slug": page.slug }}
-                            title="Edit page"
-                            iconClasses="mr-0"
-                          />
-                          <DeleteConfirmButton
-                            id={`delete-cms-page-${page.id}`}
-                            itemType="cms-page"
-                            apiEndpoint="/api/cms/pages"
-                            onDeleteCallback="handleCmsPageDeleted"
-                            tooltipText={`Delete ${page.slug}`}
-                            size="sm"
-                            variant="icon"
-                            dataAttributes={{ slug: page.slug }}
-                          />
-                        </div>
-                      </td>
-                      <td class="px-2 py-3 w-12 align-middle">
-                        <svg class="cms-chevron w-5 h-5 text-gray-500 rotate-0 transition-transform" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                      </td>
-                    </tr>,
-                    <tr id={`cms-detail-${page.slug}`} class="cms-accordion-detail hidden" data-editor-slot={page.slug} aria-hidden="true">
-                      <td colspan="7" class="p-0 bg-gray-50 dark:bg-gray-800/50">
-                        <div id={`editor-slot-${page.slug}`} class="editor-slot min-h-[200px]"></div>
-                      </td>
-                    </tr>,
+                    class="cms-accordion-trigger cursor-move hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
+                    draggable="true"
+                    data-page-id={page.id}
+                    data-page-slug={page.slug}
+                    data-display-order={page.display_order ?? index}
+                    data-editor-slot={page.slug}
+                    role="button"
+                    tabindex="0"
+                    aria-expanded="false"
+                    aria-controls={`cms-detail-${page.slug}`}
+                  >
+                    <td class="px-2 py-3 text-center text-gray-400 dark:text-gray-500 cursor-grab active:cursor-grabbing w-12">
+                      <svg
+                        class="w-5 h-5 mx-auto"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 8h16M4 16h16"
+                        />
+                      </svg>
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {page.slug}
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate max-w-48">
+                      {page.title || "—"}
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {page.template || "default"}
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap">
+                      {page.isActive ? (
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          Active
+                        </span>
+                      ) : (
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          Inactive
+                        </span>
+                      )}
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                      <div class="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon="edit"
+                          class="edit-page-btn"
+                          dataAttributes={{ "data-slug": page.slug }}
+                          title="Edit page"
+                          iconClasses="mr-0"
+                        />
+                        <DeleteConfirmButton
+                          id={`delete-cms-page-${page.id}`}
+                          itemType="cms-page"
+                          apiEndpoint="/api/cms/pages"
+                          onDeleteCallback="handleCmsPageDeleted"
+                          tooltipText={`Delete ${page.slug}`}
+                          size="sm"
+                          variant="icon"
+                          dataAttributes={{ slug: page.slug }}
+                        />
+                      </div>
+                    </td>
+                    <td class="px-2 py-3 w-12 align-middle">
+                      <svg
+                        class="cms-chevron w-5 h-5 text-gray-500 rotate-0 transition-transform"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                    </td>
+                  </tr>,
+                  <tr
+                    id={`cms-detail-${page.slug}`}
+                    class="cms-accordion-detail hidden"
+                    data-editor-slot={page.slug}
+                    aria-hidden="true"
+                  >
+                    <td colspan="7" class="p-0 bg-gray-50 dark:bg-gray-800/50">
+                      <div id={`editor-slot-${page.slug}`} class="editor-slot min-h-[200px]" />
+                    </td>
+                  </tr>,
                 ])
               )
             }
@@ -1164,7 +1214,10 @@ You can embed components:
       let openSlotId = null;
 
       function getDetailRow(slotId) {
-        return document.getElementById(`cms-detail-${slotId}`) || document.querySelector(`tr.cms-accordion-detail[data-editor-slot="${slotId}"]`);
+        return (
+          document.getElementById(`cms-detail-${slotId}`) ||
+          document.querySelector(`tr.cms-accordion-detail[data-editor-slot="${slotId}"]`)
+        );
       }
 
       function getTriggerRow(slotId) {
@@ -1280,16 +1333,22 @@ You can embed components:
               if (s && s instanceof HTMLInputElement) s.value = page.slug || "";
               if (t && t instanceof HTMLInputElement) t.value = page.title || "";
               if (d && d instanceof HTMLInputElement) d.value = page.description || "";
-              if (tmpl && tmpl instanceof HTMLSelectElement) tmpl.value = page.template || "default";
-              if (content && content instanceof HTMLTextAreaElement) content.value = page.content || "";
+              if (tmpl && tmpl instanceof HTMLSelectElement)
+                tmpl.value = page.template || "default";
+              if (content && content instanceof HTMLTextAreaElement)
+                content.value = page.content || "";
               if (incNav && incNav instanceof HTMLInputElement) {
                 incNav.checked = page.includeInNavigation || false;
                 incNav.dispatchEvent(new Event("change"));
               }
-              if (navType && navType instanceof HTMLSelectElement) navType.value = page.navPageType || page.nav_page_type || "frontend";
-              if (navStyle && navStyle instanceof HTMLSelectElement) navStyle.value = page.navButtonStyle || page.nav_button_style || "";
-              if (navDesktop && navDesktop instanceof HTMLInputElement) navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
-              if (navHideAuth && navHideAuth instanceof HTMLInputElement) navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
+              if (navType && navType instanceof HTMLSelectElement)
+                navType.value = page.navPageType || page.nav_page_type || "frontend";
+              if (navStyle && navStyle instanceof HTMLSelectElement)
+                navStyle.value = page.navButtonStyle || page.nav_button_style || "";
+              if (navDesktop && navDesktop instanceof HTMLInputElement)
+                navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
+              if (navHideAuth && navHideAuth instanceof HTMLInputElement)
+                navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
               const navRoles = page.navRoles || page.nav_roles || ["any"];
               document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
                 if (cb instanceof HTMLInputElement) cb.checked = navRoles.includes(cb.value);
@@ -1343,16 +1402,22 @@ You can embed components:
                 if (s && s instanceof HTMLInputElement) s.value = page.slug || "";
                 if (t && t instanceof HTMLInputElement) t.value = page.title || "";
                 if (d && d instanceof HTMLInputElement) d.value = page.description || "";
-                if (tmpl && tmpl instanceof HTMLSelectElement) tmpl.value = page.template || "default";
-                if (content && content instanceof HTMLTextAreaElement) content.value = page.content || "";
+                if (tmpl && tmpl instanceof HTMLSelectElement)
+                  tmpl.value = page.template || "default";
+                if (content && content instanceof HTMLTextAreaElement)
+                  content.value = page.content || "";
                 if (incNav && incNav instanceof HTMLInputElement) {
                   incNav.checked = page.includeInNavigation || false;
                   incNav.dispatchEvent(new Event("change"));
                 }
-                if (navType && navType instanceof HTMLSelectElement) navType.value = page.navPageType || page.nav_page_type || "frontend";
-                if (navStyle && navStyle instanceof HTMLSelectElement) navStyle.value = page.navButtonStyle || page.nav_button_style || "";
-                if (navDesktop && navDesktop instanceof HTMLInputElement) navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
-                if (navHideAuth && navHideAuth instanceof HTMLInputElement) navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
+                if (navType && navType instanceof HTMLSelectElement)
+                  navType.value = page.navPageType || page.nav_page_type || "frontend";
+                if (navStyle && navStyle instanceof HTMLSelectElement)
+                  navStyle.value = page.navButtonStyle || page.nav_button_style || "";
+                if (navDesktop && navDesktop instanceof HTMLInputElement)
+                  navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
+                if (navHideAuth && navHideAuth instanceof HTMLInputElement)
+                  navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
                 const navRoles = page.navRoles || page.nav_roles || ["any"];
                 document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
                   if (cb instanceof HTMLInputElement) cb.checked = navRoles.includes(cb.value);
@@ -1505,7 +1570,8 @@ You can embed components:
 
       const tbody = document.getElementById("cms-pages-tbody");
       if (tbody) {
-        const triggerRows = () => Array.from(tbody.querySelectorAll("tr.cms-accordion-trigger[data-page-id]"));
+        const triggerRows = () =>
+          Array.from(tbody.querySelectorAll("tr.cms-accordion-trigger[data-page-id]"));
 
         async function updatePageOrder() {
           const rows = triggerRows();
@@ -1527,7 +1593,8 @@ You can embed components:
             rows.forEach((r, idx) => r.setAttribute("data-display-order", String(idx)));
           } catch (error) {
             console.error("Error updating page order:", error);
-            if (window.showError) window.showError("Save Failed", "Failed to save new order. Reloading page...", 3000);
+            if (window.showError)
+              window.showError("Save Failed", "Failed to save new order. Reloading page...", 3000);
             setTimeout(() => location.reload(), 1000);
           }
         }
@@ -1557,7 +1624,8 @@ You can embed components:
           row.addEventListener("dragover", (e) => {
             e.preventDefault();
             if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-            if (draggedTrigger && row !== draggedTrigger) row.classList.add("border-t-2", "border-primary-500");
+            if (draggedTrigger && row !== draggedTrigger)
+              row.classList.add("border-t-2", "border-primary-500");
           });
 
           row.addEventListener("dragleave", () => {
@@ -1607,7 +1675,8 @@ You can embed components:
               currentRows.forEach((r) => r.classList.remove("border-t-2", "border-primary-500"));
               if (afterElement == null) {
                 const lastRow = currentRows[currentRows.length - 1];
-                if (lastRow !== draggedTrigger) lastRow.classList.add("border-t-2", "border-primary-500");
+                if (lastRow !== draggedTrigger)
+                  lastRow.classList.add("border-t-2", "border-primary-500");
               } else if (afterElement !== draggedTrigger) {
                 afterElement.classList.add("border-t-2", "border-primary-500");
               }

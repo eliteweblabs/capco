@@ -541,25 +541,12 @@ observer.observe(document.body, {
 
 // Trigger typewriter when step becomes active
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("[TYPEWRITER] DOM Content Loaded");
-
-  // Initial trigger (no delay)
+  // Initial trigger for .step-content.active
   triggerActiveStepTypewriter();
 
-  // Watch for step changes using MutationObserver
-  const stepObserver = new MutationObserver(() => {
+  // Only react when the active step changes (no need to observe all step elements)
+  document.addEventListener("multistep-step-change", () => {
     triggerActiveStepTypewriter();
-  });
-
-  // Observe all step-content elements for class changes
-  const steps = document.querySelectorAll(".step-content");
-  console.log("[TYPEWRITER] Observing", steps.length, "step elements for class changes");
-
-  steps.forEach((step) => {
-    stepObserver.observe(step, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
   });
 });
 
