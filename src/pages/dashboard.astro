@@ -79,7 +79,7 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
 });
 ---
 
-<App title={`Global Dashboard`} description="View all projects.">
+<App title={`Global Dashboard`} description="View all projects." horizontalScroll={true}>
   <DemoCharts />
 </App>
 
@@ -341,8 +341,16 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
     }
   }
 
-  // Initialize lazy loader when DOM is ready
-  document.addEventListener("DOMContentLoaded", () => {
+  // Run on both first load and SPA navigation (astro:page-load)
+  function runDashboardInit() {
+    if (window.location.pathname !== "/dashboard") return;
     new ProjectLazyLoader();
-  });
+  }
+  window["__initDashboard"] = runDashboardInit;
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runDashboardInit);
+  } else {
+    runDashboardInit();
+  }
+  document.addEventListener("astro:page-load", runDashboardInit);
 </script>

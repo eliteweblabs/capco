@@ -28,6 +28,7 @@ interface Props {
   mainClasses?: string;
   centerContent?: boolean;
   mask?: string;
+  horizontalScroll?: boolean;
   /** Fullscreen layout: 100% height, main content scrolls, footer always visible at bottom */
   fullscreenScroll?: boolean;
 }
@@ -44,6 +45,7 @@ const {
   centerContent = false,
   mask = "center",
   fullscreenScroll = false,
+  horizontalScroll = false,
 } = Astro.props;
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
@@ -94,7 +96,7 @@ if (
   (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
 ) {
   const encoded = Buffer.from(globalCompanyIcon).toString("base64");
-  iconSrc = `data:image/svg+xml;base64,${encoded}`;
+  iconSrc = "data:image/svg+xml;base64," + encoded;
 } else {
   iconSrc = globalCompanyIcon || "";
 }
@@ -126,12 +128,12 @@ const secondaryPalette = generateColorPalette(secondaryColor || "#0ea5e9");
 const criticalColorVars = [
   ...Object.entries(primaryPalette)
     .filter(([k]) => k !== "DEFAULT" && !Number.isNaN(Number(k)))
-    .map(([shade, color]) => `--color-primary-${shade}: ${color};`),
+    .map(([shade, color]) => "--color-primary-" + shade + ": " + color + ";"),
   ...Object.entries(secondaryPalette)
     .filter(([k]) => k !== "DEFAULT" && !Number.isNaN(Number(k)))
-    .map(([shade, color]) => `--color-secondary-${shade}: ${color};`),
+    .map(([shade, color]) => "--color-secondary-" + shade + ": " + color + ";"),
 ].join("\n");
-const criticalColorsCss = `:root {\n  ${criticalColorVars}\n}`;
+const criticalColorsCss = ":root {\n  " + criticalColorVars + "\n}";
 import "../../styles/global.css"; // Import Tailwind CSS
 // import "../../styles/app.css"; // Import Tailwind CSS
 
@@ -143,7 +145,6 @@ import Preloader from "../common/Preloader.astro";
 import Footer from "./Footer.astro";
 import UnifiedNotification from "./UnifiedNotification.astro";
 import CookieBanner from "../common/CookieBanner.astro";
-import SpeedDial from "./SpeedDial.astro";
 import Navbar from "./Navbar.astro";
 import Aside from "./Aside.astro";
 import ScrollProgressIndicator from "./ScrollProgressIndicator.astro";
@@ -151,8 +152,8 @@ import TutorialOverlay from "../common/TutorialOverlay.astro";
 import DebugPanel from "../common/DebugPanel.astro";
 import FeedbackPanel from "../common/FeedbackPanel.astro";
 import NotificationsModal from "../common/NotificationsModal.astro";
+// import VapiChatWidget from "@/features/vapi-chat-widget/VapiChatWidget.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
-import VapiChatWidget from "@/features/vapi-chat-widget/VapiChatWidget.astro";
 import StickyActionButton from "../project/StickyActions.astro";
 
 // Notification count loader will be loaded via script tag
@@ -619,6 +620,60 @@ const debugData = {
       (window as any).refreshNotificationCount = refreshNotificationCount;
     </script>
 
+    <!-- Global typewriter: simple (vanilla) + TypeIt-based -->
+    <script>
+      (function () {
+        const DONE_ATTR = "data-typewriter-done";
+
+        function runSimpleTypewriter(
+          el: HTMLElement,
+          options?: { speed?: number; doneClass?: string; dispatchEvent?: boolean }
+        ): void {
+          const text = el.getAttribute("data-text");
+          if (!text || el.hasAttribute(DONE_ATTR)) return;
+          el.setAttribute(DONE_ATTR, "true");
+          el.textContent = "";
+          const speed = options?.speed ?? 60;
+          const doneClass = options?.doneClass ?? "typewriter-complete";
+          const dispatchEvent = options?.dispatchEvent ?? false;
+
+          function type(i: number) {
+            if (i < text.length) {
+              el.textContent += text[i];
+              setTimeout(() => type(i + 1), speed);
+            } else {
+              el.classList.add(doneClass);
+              if (dispatchEvent) {
+                el.dispatchEvent(new CustomEvent("typewriter-complete", { bubbles: true }));
+              }
+            }
+          }
+          type(0);
+        }
+
+        function runSimpleTypewriterOnSelector(selector: string): void {
+          document.querySelectorAll<HTMLElement>(selector).forEach((el) => runSimpleTypewriter(el));
+        }
+
+        (window as any).runSimpleTypewriter = runSimpleTypewriter;
+        (window as any).runSimpleTypewriterOnSelector = runSimpleTypewriterOnSelector;
+
+        function initLoadingTypewriters() {
+          runSimpleTypewriterOnSelector("[data-loading-typewriter]");
+        }
+        document.addEventListener("DOMContentLoaded", initLoadingTypewriters);
+        document.addEventListener("astro:page-load", initLoadingTypewriters);
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+          initLoadingTypewriters();
+        }
+      })();
+    </script>
+    <script>
+      import { initTypewriterTexts, triggerActiveStepTypewriter } from "../../scripts/typewriter-text";
+      (window as any).initTypewriterTexts = initTypewriterTexts;
+      (window as any).triggerActiveStepTypewriter = triggerActiveStepTypewriter;
+    </script>
+
     <!-- Set global user data for client-side components -->
 
     <!-- SPA: persist CMS colors for re-apply after client navigation (avoids wrong preloader color on swap) -->
@@ -680,31 +735,22 @@ const debugData = {
   <body
     class:list={[
       `antialiased mask-${mask.trim()}`,
-      fullscreenScroll && "fullscreen-scroll-layout",
+      fullscreenScroll && "min-h-dvh flex flex-col",
     ]}
     transition:animate={isBackend ? "none" : undefined}
+    data-spa-enabled={isBackend ? "true" : undefined}
+    data-spa-path={isBackend ? currentUrl : undefined}
   >
-    {
-      fullscreenScroll && (
-        <style is:global>
-          {`
-            body.fullscreen-scroll-layout {
-              min-height: 100dvh;
-              display: flex;
-              flex-direction: column;
-            }
-          `}
-        </style>
-      )
-    }
+
+      <!-- Preloader -->
+      <Preloader />
+
     <!-- Global Modal Overlay - Single instance used by all modals -->
     <Modal id="global-modal-overlay" zIndex={1000} blurAmount="lg" opacity="50" />
 
     <!-- Global Modals - Must be siblings of overlay for z-index to work -->
     {currentUser && <NotificationsModal currentUser={currentUser} />}
 
-    <!-- Preloader -->
-    <Preloader />
 
     <!-- SPA: re-apply theme and re-init after client-side navigation (backend only) -->
     {isBackend && (
@@ -721,6 +767,51 @@ const debugData = {
           }
           applyTheme();
           document.addEventListener("astro:page-load", applyTheme);
+        })();
+      </script>
+    )}
+
+    <!-- SPA debug: log transition lifecycle (localhost or ?debug=spa). Open browser console to trace. -->
+    {isBackend && (
+      <script is:inline data-astro-rerun>
+        (function () {
+          var isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+          var qs = typeof window !== "undefined" && window.location.search;
+          var debugSpa = isLocal || (qs && qs.indexOf("debug=spa") !== -1);
+          if (!debugSpa) return;
+          var path = typeof window !== "undefined" ? window.location.pathname : "";
+          console.log("[SPA] Initial load pathname:", path);
+          ["astro:before-preparation", "astro:after-preparation", "astro:page-load", "astro:after-swap"].forEach(function (ev) {
+            document.addEventListener(ev, function (e) {
+              var d = e.detail || {};
+              console.log("[SPA] " + ev, {
+                from: d.from,
+                to: d.to || (ev === "astro:page-load" || ev === "astro:after-swap" ? window.location.pathname : undefined),
+                response: d.response ? (d.response.redirected ? "redirect:" + d.response.url : "status:" + d.response.status) : undefined,
+              });
+            });
+          });
+        })();
+      </script>
+    )}
+
+    <!-- SPA: run backend page inits on navigation (when swapped-in scripts may not run) -->
+    {isBackend && (
+      <script is:inline>
+        (function () {
+          function runPageInits() {
+            var path = window.location.pathname;
+            if (path === '/project/dashboard' && typeof window.__initProjectDashboard === 'function') {
+              window.__initProjectDashboard();
+            }
+            if (path === '/dashboard' && typeof window.__initDashboard === 'function') {
+              window.__initDashboard();
+            }
+            if (path === '/profile' && typeof window.__initProfile === 'function') {
+              window.__initProfile();
+            }
+          }
+          document.addEventListener('astro:page-load', runPageInits);
         })();
       </script>
     )}
@@ -760,11 +851,12 @@ const debugData = {
         mainClasses,
         fullscreenScroll && "flex flex-col min-h-0",
       ]}
-      style=`transition: all 300ms ease-in-out; overflow-x: hidden; ${centerContent ? "overscroll-behavior-y: contain; touch-action: pan-x;" : ""}`
+      style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain; touch-action: pan-x;' : ''}`}
     >
       <main
         class:list={[
           "pt-32 flex-1 relative",
+          horizontalScroll && "overflow-x-auto no-scrollbar",
           fullscreenScroll
             ? "min-h-0 overflow-y-auto overscroll-contain"
             : "min-h-[calc(100dvh-4rem)] md:min-h-[calc(100dvh-4rem)] lg:min-h-[calc(100dvh-4rem)]",
@@ -988,6 +1080,14 @@ const debugData = {
           toggleCommentForm?: () => void;
           trimText?: (text: string, maxLength?: number, suffix?: string) => string;
           trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
+          // Typewriter (simple + TypeIt)
+          runSimpleTypewriter?: (
+            el: HTMLElement,
+            options?: { speed?: number; doneClass?: string; dispatchEvent?: boolean }
+          ) => void;
+          runSimpleTypewriterOnSelector?: (selector: string) => void;
+          initTypewriterTexts?: () => void;
+          triggerActiveStepTypewriter?: () => void;
           // Sticky Actions Portal System
           initializeStickyActionsPortal?: () => void;
           showStickyActions?: (instanceIdOrElement: string | HTMLElement) => void;

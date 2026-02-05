@@ -11,7 +11,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
   description="Please wait while we complete authentication"
   centerContent={true}
 >
-  <div class="flex min-h-[100dvh] w-full items-center justify-center color-background">
+  <div class="flex min-h-[100dvh] w-full items-center justify-center">
     <LoadingSpinner size="lg" color="primary" loadingText="Signing you in..." />
   </div>
 
@@ -24,7 +24,8 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
       <SimpleIcon name="alert-circle" class="h-6 w-6 shrink-0" />
       Authentication Failed
     </div>
-    <div id="error-message" class="text-red-700 dark:text-red-300 text-[0.9375rem] leading-relaxed"></div>
+    <div id="error-message" class="text-red-700 dark:text-red-300 text-[0.9375rem] leading-relaxed">
+    </div>
     <div id="error-redirect" class="mt-2 text-sm italic text-gray-600 dark:text-gray-400">
       Redirecting to login page...
     </div>
@@ -44,505 +45,491 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
 </App>
 
 <script>
-      // CRITICAL: Capture and restore code IMMEDIATELY before ANY imports or client initialization
-      // Supabase's detectSessionInUrl checks the URL when the client is created, so the code MUST be present
-      const initialUrl = window.location.href;
-      const initialSearch = window.location.search;
-      const initialHash = window.location.hash;
+  // CRITICAL: Capture and restore code IMMEDIATELY before ANY imports or client initialization
+  // Supabase's detectSessionInUrl checks the URL when the client is created, so the code MUST be present
+  const initialUrl = window.location.href;
+  const initialSearch = window.location.search;
+  const initialHash = window.location.hash;
 
-      // Parse code and redirect parameter immediately
-      const initialUrlParams = new URLSearchParams(initialSearch);
-      const initialHashParams = new URLSearchParams(initialHash.substring(1));
-      const capturedCode = initialUrlParams.get("code") || initialHashParams.get("code");
-      const capturedError = initialUrlParams.get("error") || initialHashParams.get("error");
-      const capturedErrorDescription =
-        initialUrlParams.get("error_description") || initialHashParams.get("error_description");
-      const capturedRedirect =
-        initialUrlParams.get("redirect") || initialHashParams.get("redirect");
+  // Parse code and redirect parameter immediately
+  const initialUrlParams = new URLSearchParams(initialSearch);
+  const initialHashParams = new URLSearchParams(initialHash.substring(1));
+  const capturedCode = initialUrlParams.get("code") || initialHashParams.get("code");
+  const capturedError = initialUrlParams.get("error") || initialHashParams.get("error");
+  const capturedErrorDescription =
+    initialUrlParams.get("error_description") || initialHashParams.get("error_description");
+  const capturedRedirect = initialUrlParams.get("redirect") || initialHashParams.get("redirect");
 
-      console.log("[AUTH-CALLBACK] IMMEDIATE CAPTURE on page load:");
-      console.log("[AUTH-CALLBACK] Initial URL:", initialUrl);
-      console.log("[AUTH-CALLBACK] Initial search:", initialSearch);
-      console.log("[AUTH-CALLBACK] Initial hash:", initialHash);
-      console.log(
-        "[AUTH-CALLBACK] Captured code:",
-        capturedCode ? `${capturedCode.substring(0, 20)}...` : null
-      );
-      console.log("[AUTH-CALLBACK] Captured error:", capturedError);
-      console.log("[AUTH-CALLBACK] Captured redirect:", capturedRedirect);
+  console.log("[AUTH-CALLBACK] IMMEDIATE CAPTURE on page load:");
+  console.log("[AUTH-CALLBACK] Initial URL:", initialUrl);
+  console.log("[AUTH-CALLBACK] Initial search:", initialSearch);
+  console.log("[AUTH-CALLBACK] Initial hash:", initialHash);
+  console.log(
+    "[AUTH-CALLBACK] Captured code:",
+    capturedCode ? `${capturedCode.substring(0, 20)}...` : null
+  );
+  console.log("[AUTH-CALLBACK] Captured error:", capturedError);
+  console.log("[AUTH-CALLBACK] Captured redirect:", capturedRedirect);
 
-      // CRITICAL: Restore code to URL IMMEDIATELY if it was stripped
-      // This MUST happen before Supabase client is imported/initialized
-      // Supabase's detectSessionInUrl only checks the URL once during client creation
-      if (capturedCode && !initialSearch.includes("code=") && !initialHash.includes("code=")) {
+  // CRITICAL: Restore code to URL IMMEDIATELY if it was stripped
+  // This MUST happen before Supabase client is imported/initialized
+  // Supabase's detectSessionInUrl only checks the URL once during client creation
+  if (capturedCode && !initialSearch.includes("code=") && !initialHash.includes("code=")) {
+    console.log("[AUTH-CALLBACK] ⚠️ Code was stripped from URL, restoring BEFORE client init...");
+    const restoreUrl = new URL(window.location.href);
+    restoreUrl.searchParams.set("code", capturedCode);
+    window.history.replaceState({}, "", restoreUrl.toString());
+    console.log("[AUTH-CALLBACK] ✅ URL restored:", restoreUrl.toString());
+  }
+
+  // NOW import Supabase client - it will see the code in the URL
+  // Use singleton Supabase client to avoid multiple instances
+  // IMPORTANT: Import happens synchronously, but client creation happens when getSupabaseClient() is called
+  import { getSupabaseClient } from "../../lib/supabase-client";
+
+  // CRITICAL: Create Supabase client IMMEDIATELY (synchronously) to ensure detectSessionInUrl runs
+  // This must happen before any async operations
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    console.error("[AUTH-CALLBACK] Failed to create Supabase client");
+  } else {
+    console.log("[AUTH-CALLBACK] Supabase client created, detectSessionInUrl should process URL");
+  }
+
+  async function handleCallback() {
+    // Client-side logging (no prefix needed for browser console)
+    console.log("[AUTH-CALLBACK] Environment check:", {
+      hasPublicUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
+      hasPublishableKey: !!import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE,
+    });
+
+    // Supabase client was already created at top of script
+    // This ensures detectSessionInUrl runs immediately when client is created
+    if (!supabase) {
+      showError("Supabase configuration missing");
+      return;
+    }
+
+    console.log("[AUTH-CALLBACK] Using pre-initialized Supabase client");
+
+    // CRITICAL: Set up auth state change listener BEFORE doing anything else
+    // This will catch when Supabase automatically exchanges the code
+    let sessionReceived = false;
+    let authStateSubscription: any = null;
+
+    const authStatePromise = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        if (authStateSubscription) {
+          authStateSubscription.unsubscribe();
+        }
+        reject(new Error("Auth state change timeout"));
+      }, 15000); // Increased timeout to 15 seconds
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
         console.log(
-          "[AUTH-CALLBACK] ⚠️ Code was stripped from URL, restoring BEFORE client init..."
+          "[AUTH-CALLBACK] Auth state changed:",
+          event,
+          "INITIAL_SESSION",
+          session?.user?.email || "undefined"
         );
-        const restoreUrl = new URL(window.location.href);
-        restoreUrl.searchParams.set("code", capturedCode);
-        window.history.replaceState({}, "", restoreUrl.toString());
-        console.log("[AUTH-CALLBACK] ✅ URL restored:", restoreUrl.toString());
+        if (event === "SIGNED_IN" && session) {
+          clearTimeout(timeout);
+          sessionReceived = true;
+          if (authStateSubscription) {
+            authStateSubscription.unsubscribe();
+          }
+          resolve(session);
+        } else if (event === "TOKEN_REFRESHED" && session) {
+          // Also handle token refresh as a sign-in event
+          clearTimeout(timeout);
+          sessionReceived = true;
+          if (authStateSubscription) {
+            authStateSubscription.unsubscribe();
+          }
+          resolve(session);
+        }
+      });
+
+      authStateSubscription = subscription;
+    });
+
+    // Give Supabase client time to initialize and detect the code in URL
+    // Code should already be in URL (restored at top of script if needed)
+    // With detectSessionInUrl: true, Supabase should automatically handle the exchange
+    // Wait a bit longer to ensure Supabase has time to process the URL
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    // Manually trigger a session check to ensure Supabase processes the URL
+    // This helps if detectSessionInUrl didn't catch it on initialization
+    console.log("[AUTH-CALLBACK] Manually checking for session...");
+    const { data: initialSession } = await supabase.auth.getSession();
+    if (initialSession?.session) {
+      console.log("[AUTH-CALLBACK] ✅ Session already exists from automatic detection!");
+      // Session already exists, proceed to success flow
+      const response = await fetch("/api/auth/callback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          access_token: initialSession.session.access_token,
+          refresh_token: initialSession.session.refresh_token,
+          expires_in: initialSession.session.expires_in,
+          token_type: initialSession.session.token_type || "bearer",
+        }),
+      });
+
+      if (response.ok) {
+        console.log("[AUTH-CALLBACK] Authentication successful, redirecting...");
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const redirectUrl = capturedRedirect || "/project/dashboard";
+        console.log("[AUTH-CALLBACK] Redirecting to:", redirectUrl);
+        window.location.replace(redirectUrl);
+        return;
+      }
+    }
+
+    try {
+      console.log("[AUTH-CALLBACK] Starting PKCE flow...");
+      console.log("[AUTH-CALLBACK] Current URL:", window.location.href);
+      console.log("[AUTH-CALLBACK] Current search params:", window.location.search);
+      console.log("[AUTH-CALLBACK] Current hash:", window.location.hash);
+
+      // Use the captured code from initial page load, fallback to current URL if needed
+      // Get the code from URL parameters (check both query params and hash)
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove # from hash
+
+      // Prefer captured code from initial load, then check current URL as fallback
+      // This ensures we have the code even if something strips it from the URL later
+      let code = capturedCode || urlParams.get("code") || hashParams.get("code");
+      let error = capturedError || urlParams.get("error") || hashParams.get("error");
+      let errorDescription =
+        capturedErrorDescription ||
+        urlParams.get("error_description") ||
+        hashParams.get("error_description");
+
+      // Also check for Supabase-specific error formats (fallback check)
+      if (!error) {
+        const errorParam = urlParams.get("error") || hashParams.get("error");
+        if (errorParam) error = errorParam;
       }
 
-      // NOW import Supabase client - it will see the code in the URL
-      // Use singleton Supabase client to avoid multiple instances
-      // IMPORTANT: Import happens synchronously, but client creation happens when getSupabaseClient() is called
-      import { getSupabaseClient } from "../../lib/supabase-client";
+      console.log("[AUTH-CALLBACK] Extracted params:", {
+        code: code ? `${code.substring(0, 20)}...` : null,
+        error,
+        errorDescription,
+        hasQueryCode: !!urlParams.get("code"),
+        hasHashCode: !!hashParams.get("code"),
+      });
 
-      // CRITICAL: Create Supabase client IMMEDIATELY (synchronously) to ensure detectSessionInUrl runs
-      // This must happen before any async operations
-      const supabase = getSupabaseClient();
-
-      if (!supabase) {
-        console.error("[AUTH-CALLBACK] Failed to create Supabase client");
-      } else {
-        console.log(
-          "[AUTH-CALLBACK] Supabase client created, detectSessionInUrl should process URL"
-        );
+      if (error) {
+        console.error("[AUTH-CALLBACK] OAuth error:", error, errorDescription);
+        showError(`Authentication failed: ${errorDescription || error}`);
+        setTimeout(() => {
+          window.location.href = "/auth/login?error=oauth_failed";
+        }, 3000);
+        return;
       }
 
-      async function handleCallback() {
-        // Client-side logging (no prefix needed for browser console)
-        console.log("[AUTH-CALLBACK] Environment check:", {
-          hasPublicUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
-          hasPublishableKey: !!import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE,
+      if (!code) {
+        console.error("[AUTH-CALLBACK] No authorization code in URL");
+        console.error("[AUTH-CALLBACK] Debug info:", {
+          fullUrl: window.location.href,
+          search: window.location.search,
+          hash: window.location.hash,
+          allSearchParams: Object.fromEntries(urlParams.entries()),
+          allHashParams: Object.fromEntries(hashParams.entries()),
+        });
+        showError("No authorization code received. Please check the browser console for details.");
+        setTimeout(() => {
+          window.location.href = "/auth/login?error=no_code";
+        }, 5000);
+        return;
+      }
+
+      console.log("[AUTH-CALLBACK] Code found in URL, relying on Supabase automatic detection...");
+      console.log("[AUTH-CALLBACK] Current URL:", window.location.href);
+      console.log("[AUTH-CALLBACK] Code from URL:", code);
+
+      // With detectSessionInUrl: true, Supabase should automatically detect and exchange the code
+      // We don't need to manually check for code_verifier - Supabase handles it internally
+      // Just ensure the code is in the URL (which we've already done at the top of the script)
+
+      // CRITICAL: Restore the code to the URL for Supabase's automatic detection
+      // Supabase's detectSessionInUrl: true requires the code to be in the URL
+      // Since we captured it immediately, restore it if it was stripped
+      // Do this BEFORE Supabase client initialization to ensure it can detect it
+      if (
+        code &&
+        !window.location.search.includes("code=") &&
+        !window.location.hash.includes("code=")
+      ) {
+        console.log(
+          "[AUTH-CALLBACK] Code was stripped from URL, restoring for Supabase auto-detection..."
+        );
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set("code", code);
+        // Use replaceState to update URL without reloading - this is critical for Supabase's auto-detection
+        window.history.replaceState({}, "", newUrl.toString());
+        console.log("[AUTH-CALLBACK] URL restored with code:", newUrl.toString());
+
+        // Give Supabase a moment to detect the restored code
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+
+      // CRITICAL: Rely on Supabase's automatic detection
+      // With detectSessionInUrl: true, Supabase should automatically detect the code and exchange it
+      // We'll wait for the auth state change listener to fire, then check getSession() as fallback
+
+      let data, exchangeError;
+
+      // Wait for auth state change (Supabase's automatic detection)
+      // Increase timeout to give Supabase more time to process
+      try {
+        console.log(
+          "[AUTH-CALLBACK] Waiting for Supabase automatic session detection (up to 10 seconds)..."
+        );
+        const autoSession = await Promise.race([
+          authStatePromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000)),
+        ]).catch(() => null);
+
+        if (autoSession) {
+          console.log("[AUTH-CALLBACK] ✅ Session received via auth state change!");
+          data = { session: autoSession };
+          exchangeError = null;
+        } else {
+          console.log("[AUTH-CALLBACK] Auth state change didn't fire, checking getSession()...");
+        }
+      } catch (err) {
+        console.log("[AUTH-CALLBACK] Auth state change error:", err);
+      }
+
+      // Check if session was already set by automatic detection
+      if (!data?.session) {
+        console.log("[AUTH-CALLBACK] Checking getSession() for existing session...");
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionData?.session && !sessionError) {
+          console.log("[AUTH-CALLBACK] ✅ Session found via getSession()!");
+          data = sessionData;
+          exchangeError = null;
+        } else {
+          // If automatic detection failed, try manual exchange as last resort
+          console.warn("[AUTH-CALLBACK] Automatic detection failed, attempting manual exchange...");
+          console.warn("[AUTH-CALLBACK] This requires code_verifier to be stored by Supabase");
+
+          // Check if code verifier exists in localStorage before attempting exchange
+          const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+          if (supabaseUrl) {
+            const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+
+            // Try multiple possible key formats for the code verifier
+            const possibleKeys = [
+              `sb-${supabaseProjectRef}-auth-token-code-verifier`,
+              `sb-${supabaseProjectRef}-code-verifier`,
+              `supabase.auth.token.code_verifier`,
+              `supabase-auth-token-code-verifier`,
+            ];
+
+            let codeVerifier = null;
+            let foundKey = null;
+
+            for (const key of possibleKeys) {
+              const value = localStorage.getItem(key);
+              if (value) {
+                codeVerifier = value;
+                foundKey = key;
+                break;
+              }
+            }
+
+            console.log("[AUTH-CALLBACK] Code verifier check:", {
+              checkedKeys: possibleKeys,
+              foundKey: foundKey,
+              found: !!codeVerifier,
+              codeLength: code?.length || 0,
+            });
+
+            if (!codeVerifier) {
+              console.error("[AUTH-CALLBACK] ❌ Code verifier not found in localStorage!");
+              const allAuthKeys = Object.keys(localStorage).filter(
+                (k) => k.includes("supabase") || k.includes("sb-") || k.includes("auth")
+              );
+              console.error("[AUTH-CALLBACK] Available localStorage keys:", allAuthKeys);
+
+              // Don't set an error here - let Supabase try to handle it
+              // The verifier might be stored internally by Supabase
+              console.warn(
+                "[AUTH-CALLBACK] Proceeding anyway - Supabase may have stored verifier internally"
+              );
+            } else {
+              console.log("[AUTH-CALLBACK] ✅ Code verifier found at key:", foundKey);
+            }
+          }
+
+          if (!exchangeError) {
+            try {
+              // Supabase's exchangeCodeForSession should retrieve the code_verifier automatically
+              // from its internal storage (not necessarily localStorage)
+              // But we've verified it exists in localStorage above
+              console.log(
+                "[AUTH-CALLBACK] Calling exchangeCodeForSession with code:",
+                code?.substring(0, 20) + "..."
+              );
+              const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
+              data = exchangeResult.data;
+              exchangeError = exchangeResult.error;
+
+              if (exchangeError) {
+                console.error("[AUTH-CALLBACK] Manual exchange failed:", exchangeError);
+                console.error("[AUTH-CALLBACK] Error:", exchangeError.message);
+                console.error("[AUTH-CALLBACK] Error details:", {
+                  message: exchangeError.message,
+                  status: exchangeError.status,
+                  code: exchangeError.code,
+                });
+              } else if (data?.session) {
+                console.log("[AUTH-CALLBACK] ✅ Manual exchange succeeded!");
+                console.log("[AUTH-CALLBACK] User:", data.session.user?.email);
+              }
+            } catch (err) {
+              console.error("[AUTH-CALLBACK] Manual exchange exception:", err);
+              exchangeError = err instanceof Error ? err : new Error("Unknown error");
+            }
+          }
+        }
+      }
+
+      if (exchangeError) {
+        console.error("[AUTH-CALLBACK] Session exchange error:", exchangeError);
+        console.error("[AUTH-CALLBACK] Error details:", {
+          message: exchangeError.message,
+          status: exchangeError.status,
+          code: exchangeError.code,
         });
 
-        // Supabase client was already created at top of script
-        // This ensures detectSessionInUrl runs immediately when client is created
-        if (!supabase) {
-          showError("Supabase configuration missing");
+        // Handle specific error cases
+        const errorMsg = exchangeError.message || "";
+
+        if (errorMsg.includes("code verifier") || errorMsg.includes("Code verifier")) {
+          // Code verifier issue - user needs to sign in again from scratch
+          console.warn(
+            "[AUTH-CALLBACK] Code verifier missing - clearing auth state and redirecting"
+          );
+
+          // Clear any stale localStorage items
+          const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+          if (supabaseUrl) {
+            const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
+            const keysToRemove = Object.keys(localStorage).filter(
+              (k) => k.includes(`sb-${supabaseProjectRef}`) || k.includes("supabase")
+            );
+            keysToRemove.forEach((k) => localStorage.removeItem(k));
+            console.log("[AUTH-CALLBACK] Cleared stale localStorage keys:", keysToRemove);
+          }
+
+          showError("Session expired. Redirecting to sign in...");
+          setTimeout(() => {
+            window.location.href = "/auth/login?error=session_expired&message=Please+sign+in+again";
+          }, 1500);
           return;
         }
 
-        console.log("[AUTH-CALLBACK] Using pre-initialized Supabase client");
-
-        // CRITICAL: Set up auth state change listener BEFORE doing anything else
-        // This will catch when Supabase automatically exchanges the code
-        let sessionReceived = false;
-        let authStateSubscription: any = null;
-
-        const authStatePromise = new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            if (authStateSubscription) {
-              authStateSubscription.unsubscribe();
-            }
-            reject(new Error("Auth state change timeout"));
-          }, 15000); // Increased timeout to 15 seconds
-
-          const {
-            data: { subscription },
-          } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log(
-              "[AUTH-CALLBACK] Auth state changed:",
-              event,
-              "INITIAL_SESSION",
-              session?.user?.email || "undefined"
-            );
-            if (event === "SIGNED_IN" && session) {
-              clearTimeout(timeout);
-              sessionReceived = true;
-              if (authStateSubscription) {
-                authStateSubscription.unsubscribe();
-              }
-              resolve(session);
-            } else if (event === "TOKEN_REFRESHED" && session) {
-              // Also handle token refresh as a sign-in event
-              clearTimeout(timeout);
-              sessionReceived = true;
-              if (authStateSubscription) {
-                authStateSubscription.unsubscribe();
-              }
-              resolve(session);
-            }
-          });
-
-          authStateSubscription = subscription;
-        });
-
-        // Give Supabase client time to initialize and detect the code in URL
-        // Code should already be in URL (restored at top of script if needed)
-        // With detectSessionInUrl: true, Supabase should automatically handle the exchange
-        // Wait a bit longer to ensure Supabase has time to process the URL
-        await new Promise((resolve) => setTimeout(resolve, 800));
-
-        // Manually trigger a session check to ensure Supabase processes the URL
-        // This helps if detectSessionInUrl didn't catch it on initialization
-        console.log("[AUTH-CALLBACK] Manually checking for session...");
-        const { data: initialSession } = await supabase.auth.getSession();
-        if (initialSession?.session) {
-          console.log("[AUTH-CALLBACK] ✅ Session already exists from automatic detection!");
-          // Session already exists, proceed to success flow
-          const response = await fetch("/api/auth/callback", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              access_token: initialSession.session.access_token,
-              refresh_token: initialSession.session.refresh_token,
-              expires_in: initialSession.session.expires_in,
-              token_type: initialSession.session.token_type || "bearer",
-            }),
-          });
-
-          if (response.ok) {
-            console.log("[AUTH-CALLBACK] Authentication successful, redirecting...");
-            await new Promise((resolve) => setTimeout(resolve, 300));
-            const redirectUrl = capturedRedirect || "/project/dashboard";
-            console.log("[AUTH-CALLBACK] Redirecting to:", redirectUrl);
-            window.location.replace(redirectUrl);
-            return;
-          }
-        }
-
-        try {
-          console.log("[AUTH-CALLBACK] Starting PKCE flow...");
-          console.log("[AUTH-CALLBACK] Current URL:", window.location.href);
-          console.log("[AUTH-CALLBACK] Current search params:", window.location.search);
-          console.log("[AUTH-CALLBACK] Current hash:", window.location.hash);
-
-          // Use the captured code from initial page load, fallback to current URL if needed
-          // Get the code from URL parameters (check both query params and hash)
-          const urlParams = new URLSearchParams(window.location.search);
-          const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove # from hash
-
-          // Prefer captured code from initial load, then check current URL as fallback
-          // This ensures we have the code even if something strips it from the URL later
-          let code = capturedCode || urlParams.get("code") || hashParams.get("code");
-          let error = capturedError || urlParams.get("error") || hashParams.get("error");
-          let errorDescription =
-            capturedErrorDescription ||
-            urlParams.get("error_description") ||
-            hashParams.get("error_description");
-
-          // Also check for Supabase-specific error formats (fallback check)
-          if (!error) {
-            const errorParam = urlParams.get("error") || hashParams.get("error");
-            if (errorParam) error = errorParam;
-          }
-
-          console.log("[AUTH-CALLBACK] Extracted params:", {
-            code: code ? `${code.substring(0, 20)}...` : null,
-            error,
-            errorDescription,
-            hasQueryCode: !!urlParams.get("code"),
-            hasHashCode: !!hashParams.get("code"),
-          });
-
-          if (error) {
-            console.error("[AUTH-CALLBACK] OAuth error:", error, errorDescription);
-            showError(`Authentication failed: ${errorDescription || error}`);
-            setTimeout(() => {
-              window.location.href = "/auth/login?error=oauth_failed";
-            }, 3000);
-            return;
-          }
-
-          if (!code) {
-            console.error("[AUTH-CALLBACK] No authorization code in URL");
-            console.error("[AUTH-CALLBACK] Debug info:", {
-              fullUrl: window.location.href,
-              search: window.location.search,
-              hash: window.location.hash,
-              allSearchParams: Object.fromEntries(urlParams.entries()),
-              allHashParams: Object.fromEntries(hashParams.entries()),
-            });
-            showError(
-              "No authorization code received. Please check the browser console for details."
-            );
-            setTimeout(() => {
-              window.location.href = "/auth/login?error=no_code";
-            }, 5000);
-            return;
-          }
-
-          console.log(
-            "[AUTH-CALLBACK] Code found in URL, relying on Supabase automatic detection..."
-          );
-          console.log("[AUTH-CALLBACK] Current URL:", window.location.href);
-          console.log("[AUTH-CALLBACK] Code from URL:", code);
-
-          // With detectSessionInUrl: true, Supabase should automatically detect and exchange the code
-          // We don't need to manually check for code_verifier - Supabase handles it internally
-          // Just ensure the code is in the URL (which we've already done at the top of the script)
-
-          // CRITICAL: Restore the code to the URL for Supabase's automatic detection
-          // Supabase's detectSessionInUrl: true requires the code to be in the URL
-          // Since we captured it immediately, restore it if it was stripped
-          // Do this BEFORE Supabase client initialization to ensure it can detect it
-          if (
-            code &&
-            !window.location.search.includes("code=") &&
-            !window.location.hash.includes("code=")
-          ) {
-            console.log(
-              "[AUTH-CALLBACK] Code was stripped from URL, restoring for Supabase auto-detection..."
-            );
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set("code", code);
-            // Use replaceState to update URL without reloading - this is critical for Supabase's auto-detection
-            window.history.replaceState({}, "", newUrl.toString());
-            console.log("[AUTH-CALLBACK] URL restored with code:", newUrl.toString());
-
-            // Give Supabase a moment to detect the restored code
-            await new Promise((resolve) => setTimeout(resolve, 300));
-          }
-
-          // CRITICAL: Rely on Supabase's automatic detection
-          // With detectSessionInUrl: true, Supabase should automatically detect the code and exchange it
-          // We'll wait for the auth state change listener to fire, then check getSession() as fallback
-
-          let data, exchangeError;
-
-          // Wait for auth state change (Supabase's automatic detection)
-          // Increase timeout to give Supabase more time to process
-          try {
-            console.log(
-              "[AUTH-CALLBACK] Waiting for Supabase automatic session detection (up to 10 seconds)..."
-            );
-            const autoSession = await Promise.race([
-              authStatePromise,
-              new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000)),
-            ]).catch(() => null);
-
-            if (autoSession) {
-              console.log("[AUTH-CALLBACK] ✅ Session received via auth state change!");
-              data = { session: autoSession };
-              exchangeError = null;
-            } else {
-              console.log(
-                "[AUTH-CALLBACK] Auth state change didn't fire, checking getSession()..."
-              );
-            }
-          } catch (err) {
-            console.log("[AUTH-CALLBACK] Auth state change error:", err);
-          }
-
-          // Check if session was already set by automatic detection
-          if (!data?.session) {
-            console.log("[AUTH-CALLBACK] Checking getSession() for existing session...");
-            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-
-            if (sessionData?.session && !sessionError) {
-              console.log("[AUTH-CALLBACK] ✅ Session found via getSession()!");
-              data = sessionData;
-              exchangeError = null;
-            } else {
-              // If automatic detection failed, try manual exchange as last resort
-              console.warn(
-                "[AUTH-CALLBACK] Automatic detection failed, attempting manual exchange..."
-              );
-              console.warn("[AUTH-CALLBACK] This requires code_verifier to be stored by Supabase");
-
-              // Check if code verifier exists in localStorage before attempting exchange
-              const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-              if (supabaseUrl) {
-                const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-
-                // Try multiple possible key formats for the code verifier
-                const possibleKeys = [
-                  `sb-${supabaseProjectRef}-auth-token-code-verifier`,
-                  `sb-${supabaseProjectRef}-code-verifier`,
-                  `supabase.auth.token.code_verifier`,
-                  `supabase-auth-token-code-verifier`,
-                ];
-
-                let codeVerifier = null;
-                let foundKey = null;
-
-                for (const key of possibleKeys) {
-                  const value = localStorage.getItem(key);
-                  if (value) {
-                    codeVerifier = value;
-                    foundKey = key;
-                    break;
-                  }
-                }
-
-                console.log("[AUTH-CALLBACK] Code verifier check:", {
-                  checkedKeys: possibleKeys,
-                  foundKey: foundKey,
-                  found: !!codeVerifier,
-                  codeLength: code?.length || 0,
-                });
-
-                if (!codeVerifier) {
-                  console.error("[AUTH-CALLBACK] ❌ Code verifier not found in localStorage!");
-                  const allAuthKeys = Object.keys(localStorage).filter(
-                    (k) => k.includes("supabase") || k.includes("sb-") || k.includes("auth")
-                  );
-                  console.error("[AUTH-CALLBACK] Available localStorage keys:", allAuthKeys);
-
-                  // Don't set an error here - let Supabase try to handle it
-                  // The verifier might be stored internally by Supabase
-                  console.warn(
-                    "[AUTH-CALLBACK] Proceeding anyway - Supabase may have stored verifier internally"
-                  );
-                } else {
-                  console.log("[AUTH-CALLBACK] ✅ Code verifier found at key:", foundKey);
-                }
-              }
-
-              if (!exchangeError) {
-                try {
-                  // Supabase's exchangeCodeForSession should retrieve the code_verifier automatically
-                  // from its internal storage (not necessarily localStorage)
-                  // But we've verified it exists in localStorage above
-                  console.log(
-                    "[AUTH-CALLBACK] Calling exchangeCodeForSession with code:",
-                    code?.substring(0, 20) + "..."
-                  );
-                  const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
-                  data = exchangeResult.data;
-                  exchangeError = exchangeResult.error;
-
-                  if (exchangeError) {
-                    console.error("[AUTH-CALLBACK] Manual exchange failed:", exchangeError);
-                    console.error("[AUTH-CALLBACK] Error:", exchangeError.message);
-                    console.error("[AUTH-CALLBACK] Error details:", {
-                      message: exchangeError.message,
-                      status: exchangeError.status,
-                      code: exchangeError.code,
-                    });
-                  } else if (data?.session) {
-                    console.log("[AUTH-CALLBACK] ✅ Manual exchange succeeded!");
-                    console.log("[AUTH-CALLBACK] User:", data.session.user?.email);
-                  }
-                } catch (err) {
-                  console.error("[AUTH-CALLBACK] Manual exchange exception:", err);
-                  exchangeError = err instanceof Error ? err : new Error("Unknown error");
-                }
-              }
-            }
-          }
-
-          if (exchangeError) {
-            console.error("[AUTH-CALLBACK] Session exchange error:", exchangeError);
-            console.error("[AUTH-CALLBACK] Error details:", {
-              message: exchangeError.message,
-              status: exchangeError.status,
-              code: exchangeError.code,
-            });
-
-            // Handle specific error cases
-            const errorMsg = exchangeError.message || "";
-
-            if (errorMsg.includes("code verifier") || errorMsg.includes("Code verifier")) {
-              // Code verifier issue - user needs to sign in again from scratch
-              console.warn(
-                "[AUTH-CALLBACK] Code verifier missing - clearing auth state and redirecting"
-              );
-
-              // Clear any stale localStorage items
-              const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-              if (supabaseUrl) {
-                const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
-                const keysToRemove = Object.keys(localStorage).filter(
-                  (k) => k.includes(`sb-${supabaseProjectRef}`) || k.includes("supabase")
-                );
-                keysToRemove.forEach((k) => localStorage.removeItem(k));
-                console.log("[AUTH-CALLBACK] Cleared stale localStorage keys:", keysToRemove);
-              }
-
-              showError("Session expired. Redirecting to sign in...");
-              setTimeout(() => {
-                window.location.href =
-                  "/auth/login?error=session_expired&message=Please+sign+in+again";
-              }, 1500);
-              return;
-            }
-
-            showError(`Session exchange failed: ${exchangeError.message}`);
-            setTimeout(() => {
-              window.location.href = "/auth/login?error=session_exchange_failed";
-            }, 3000);
-            return;
-          }
-
-          if (!data?.session) {
-            console.error("[AUTH-CALLBACK] No session created");
-            showError("No session created");
-            setTimeout(() => {
-              window.location.href = "/auth/login?error=no_session";
-            }, 3000);
-            return;
-          }
-
-          console.log("[AUTH-CALLBACK] Session created successfully:", {
-            userId: data.session.user?.id,
-            email: data.session.user?.email,
-          });
-
-          // Send session tokens to server to set cookies
-          console.log("[AUTH-CALLBACK] Sending tokens to server...");
-          const response = await fetch("/api/auth/callback", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include", // Ensure cookies are sent and received
-            body: JSON.stringify({
-              access_token: data.session.access_token,
-              refresh_token: data.session.refresh_token,
-              expires_in: data.session.expires_in,
-              token_type: data.session.token_type || "bearer",
-            }),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("[AUTH-CALLBACK] Server callback error:", response.status, errorText);
-            showError("Failed to set authentication cookies");
-            setTimeout(() => {
-              window.location.href = "/auth/login?error=cookie_set_failed";
-            }, 3000);
-            return;
-          }
-
-          console.log("[AUTH-CALLBACK] Authentication successful, redirecting to dashboard...");
-          console.log("[AUTH-CALLBACK] Response status:", response.status);
-          console.log(
-            "[AUTH-CALLBACK] Response headers:",
-            Object.fromEntries(response.headers.entries())
-          );
-
-          // Small delay to ensure cookies are set before redirect
-          // This is especially important for localhost development
-          // Increased delay to ensure browser has time to process Set-Cookie headers
-          await new Promise((resolve) => setTimeout(resolve, 300));
-
-          // Use replace instead of href to ensure proper navigation with cookies
-          // This ensures the browser includes cookies in the redirect
-          const redirectUrl = capturedRedirect || "/project/dashboard";
-          console.log("[AUTH-CALLBACK] Final redirect to:", redirectUrl);
-          window.location.replace(redirectUrl);
-        } catch (err) {
-          console.error("[AUTH-CALLBACK] Unexpected error:", err);
-          showError(`Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`);
-          setTimeout(() => {
-            window.location.href = "/auth/login?error=unexpected_error";
-          }, 3000);
-        }
+        showError(`Session exchange failed: ${exchangeError.message}`);
+        setTimeout(() => {
+          window.location.href = "/auth/login?error=session_exchange_failed";
+        }, 3000);
+        return;
       }
 
-      function showError(message: string) {
-        const errorContainer = document.getElementById("error");
-        const errorMessage = document.getElementById("error-message");
-        const backLink = document.getElementById("back-link");
-        
-        if (errorContainer && errorMessage) {
-          errorMessage.textContent = message;
-          errorContainer.classList.remove("hidden");
-          
-          // Show back link after a delay
-          setTimeout(() => {
-            if (backLink) {
-              backLink.classList.remove("hidden");
-            }
-          }, 2000);
-        }
+      if (!data?.session) {
+        console.error("[AUTH-CALLBACK] No session created");
+        showError("No session created");
+        setTimeout(() => {
+          window.location.href = "/auth/login?error=no_session";
+        }, 3000);
+        return;
       }
 
-      // Handle callback when page loads
-      handleCallback();
-    </script>
+      console.log("[AUTH-CALLBACK] Session created successfully:", {
+        userId: data.session.user?.id,
+        email: data.session.user?.email,
+      });
+
+      // Send session tokens to server to set cookies
+      console.log("[AUTH-CALLBACK] Sending tokens to server...");
+      const response = await fetch("/api/auth/callback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Ensure cookies are sent and received
+        body: JSON.stringify({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_in: data.session.expires_in,
+          token_type: data.session.token_type || "bearer",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[AUTH-CALLBACK] Server callback error:", response.status, errorText);
+        showError("Failed to set authentication cookies");
+        setTimeout(() => {
+          window.location.href = "/auth/login?error=cookie_set_failed";
+        }, 3000);
+        return;
+      }
+
+      console.log("[AUTH-CALLBACK] Authentication successful, redirecting to dashboard...");
+      console.log("[AUTH-CALLBACK] Response status:", response.status);
+      console.log(
+        "[AUTH-CALLBACK] Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
+
+      // Small delay to ensure cookies are set before redirect
+      // This is especially important for localhost development
+      // Increased delay to ensure browser has time to process Set-Cookie headers
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Use replace instead of href to ensure proper navigation with cookies
+      // This ensures the browser includes cookies in the redirect
+      const redirectUrl = capturedRedirect || "/project/dashboard";
+      console.log("[AUTH-CALLBACK] Final redirect to:", redirectUrl);
+      window.location.replace(redirectUrl);
+    } catch (err) {
+      console.error("[AUTH-CALLBACK] Unexpected error:", err);
+      showError(`Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`);
+      setTimeout(() => {
+        window.location.href = "/auth/login?error=unexpected_error";
+      }, 3000);
+    }
+  }
+
+  function showError(message: string) {
+    const errorContainer = document.getElementById("error");
+    const errorMessage = document.getElementById("error-message");
+    const backLink = document.getElementById("back-link");
+
+    if (errorContainer && errorMessage) {
+      errorMessage.textContent = message;
+      errorContainer.classList.remove("hidden");
+
+      // Show back link after a delay
+      setTimeout(() => {
+        if (backLink) {
+          backLink.classList.remove("hidden");
+        }
+      }, 2000);
+    }
+  }
+
+  // Handle callback when page loads
+  handleCallback();
+</script>

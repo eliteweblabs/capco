@@ -156,6 +156,7 @@ const projects = projectsData;
   {globalCompanyWebsite}
   {globalCompanyLogo}
   {statusData}
+  horizontalScroll={false}
 >
   <!-- use the full width wrapper -->
 
@@ -174,6 +175,7 @@ const projects = projectsData;
 <script
   define:vars={{ currentUserId: currentUser?.id, currentUserRole: currentUser?.profile?.role }}
   is:inline
+  data-astro-rerun
 >
   console.log("🔄 [DASHBOARD-SCRIPT] ====== SCRIPT IS RUNNING ======");
   console.log("🔄 [DASHBOARD-SCRIPT] currentUserId:", currentUserId);
@@ -220,34 +222,35 @@ const projects = projectsData;
     });
   }
 
-  // Wait for DOM to be fully loaded
+  // Run init on both first load and SPA navigation (astro:page-load)
+  async function runDashboardInit() {
+    if (!window.location.pathname.startsWith("/project")) return;
+    console.log("🔄 [DASHBOARD] runDashboardInit (path:", window.location.pathname + ")");
+    try {
+      const refreshManager = await waitForRefreshManager();
+      await initializeRefreshSystem(refreshManager);
+    } catch (error) {
+      console.error("🔄 [DASHBOARD] ❌ Failed to initialize refresh system:", error);
+      console.error(
+        "🔄 [DASHBOARD] Polling will not work. Please check that refresh-manager.ts is loaded."
+      );
+    }
+  }
+
   if (document.readyState === "loading") {
     console.log("🔄 [DASHBOARD] Document is loading, adding DOMContentLoaded listener");
-    document.addEventListener("DOMContentLoaded", async () => {
-      console.log("🔄 [DASHBOARD] DOM loaded, waiting for refresh manager");
-      try {
-        const refreshManager = await waitForRefreshManager();
-        await initializeRefreshSystem(refreshManager);
-      } catch (error) {
-        console.error("🔄 [DASHBOARD] ❌ Failed to initialize refresh system:", error);
-        console.error(
-          "🔄 [DASHBOARD] Polling will not work. Please check that refresh-manager.ts is loaded."
-        );
-      }
-    });
+    document.addEventListener("DOMContentLoaded", runDashboardInit);
   } else {
-    console.log("🔄 [DASHBOARD] DOM already loaded, waiting for refresh manager");
-    waitForRefreshManager()
-      .then((refreshManager) => {
-        console.log("🔄 [DASHBOARD] Got refresh manager, calling initializeRefreshSystem");
-        return initializeRefreshSystem(refreshManager);
-      })
-      .catch((error) => {
-        console.error("🔄 [DASHBOARD] ❌ Failed to initialize refresh system:", error);
-        console.error(
-          "🔄 [DASHBOARD] Polling will not work. Please check that refresh-manager.ts is loaded."
-        );
-      });
+    console.log("🔄 [DASHBOARD] DOM already loaded or SPA nav, running init now");
+    runDashboardInit();
+  }
+  document.addEventListener("astro:page-load", runDashboardInit);
+  window["__initProjectDashboard"] = runDashboardInit;
+
+  // Clear any previous global count interval so SPA re-init doesn't stack
+  if (window.__projectDashboardPollInterval) {
+    clearInterval(window.__projectDashboardPollInterval);
+    window.__projectDashboardPollInterval = null;
   }
 
   async function initializeRefreshSystem(refreshManager) {
@@ -286,9 +289,9 @@ const projects = projectsData;
     console.log("🔄 [DASHBOARD] Refresh manager started:", refreshManager.getRefreshStats());
 
     // Start polling for global counts (check every 10 seconds)
-    const pollInterval = setInterval(async () => {
+    if (window.__projectDashboardPollInterval) clearInterval(window.__projectDashboardPollInterval);
+    window.__projectDashboardPollInterval = setInterval(async () => {
       console.log(`🌐 [DASHBOARD] ⏰ Polling for global counts... (every 10s)`);
-      // No userId needed - API uses session to determine access
       await refreshManager.refreshGlobalCounts();
     }, 10000);
 

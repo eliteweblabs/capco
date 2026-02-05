@@ -41,8 +41,8 @@ const storedCarrierKey = userProfile?.mobileCarrier
 ---
 
 <App
-  title=""
-  description=""
+  title="User Profile"
+  description="Manage your account information and preferences"
   {currentUser}
   session={session || undefined}
   project={undefined}
@@ -227,8 +227,11 @@ const storedCarrierKey = userProfile?.mobileCarrier
 </App>
 
 <script type="module">
-  document.addEventListener("DOMContentLoaded", () => {
+  function initProfile() {
+    if (window.location.pathname !== "/profile") return;
     const profileForm = document.getElementById("profile-form");
+    if (profileForm?.hasAttribute("data-profile-inited")) return;
+    if (profileForm) profileForm.setAttribute("data-profile-inited", "true");
     const saveProfileBtn = document.getElementById("save-profile-btn");
     const saveProfileBtnText = saveProfileBtn?.textContent;
     const uploadAvatarBtn = document.getElementById("upload-avatar-btn");
@@ -391,5 +394,12 @@ const storedCarrierKey = userProfile?.mobileCarrier
         window.location.href = "/dashboard";
       }
     });
-  });
+  }
+  window["__initProfile"] = initProfile;
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initProfile);
+  } else {
+    initProfile();
+  }
+  document.addEventListener("astro:page-load", initProfile);
 </script>

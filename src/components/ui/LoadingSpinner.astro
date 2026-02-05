@@ -6,16 +6,26 @@ interface Props {
   loadingText?: string;
   className?: string;
   id?: string;
+  typewriter?: boolean;
+  message?: string;
 }
 
 const {
   size: sizeProp = "md",
   borderColor: borderColorProp,
   color,
-  loadingText = "loading<span class='hop-1'>.</span><span class='hop-2'>.</span><span class='hop-3'>.</span>",
+  loadingText = "loading",
   className = "",
   id,
+  typewriter = true,
+  message = "loading...",
 } = Astro.props;
+
+// Plain text for typewriter (strip HTML; dots become "...")
+const typewriterText =
+  typeof loadingText === "string"
+    ? loadingText.replace(/<[^>]+>/g, "").trim() || "loading"
+    : "loading";
 
 // Normalize size - ensure it's a valid key
 // Note: Tailwind only has border-2, border-4, and border-8 (no border-6)
@@ -59,36 +69,31 @@ const borderColorClass =
     <div class={`animate-spin rounded-full ${sizeClass} ${borderColorClass}`}></div>
   </div>
 
-  <!-- Loading text (set:html so hop spans render) -->
-  <p class="loading-spinner-text text-sm text-gray-600 dark:text-gray-400" set:html={loadingText} />
+  <!-- Loading text with typewriter effect -->
+  <p
+    class="loading-spinner-text text-sm text-gray-600 dark:text-gray-400"
+    data-text={typewriterText}
+    data-loading-typewriter
+  >
+    <span class="">{loadingText}</span><span class="hop-1">.</span><span class="hop-2">.</span><span
+      class="hop-3">.</span
+    >
+  </p>
 </div>
 
 <style>
-  @keyframes hop {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    15% {
-      transform: translateY(-0.35em);
-    }
-    30% {
-      transform: translateY(0);
-    }
-  }
-  .loading-spinner-text .hop-1,
-  .loading-spinner-text .hop-2,
-  .loading-spinner-text .hop-3 {
+  .loading-spinner-text .typewriter-text {
+    min-height: 1.25rem;
     display: inline-block;
-    animation: hop 2000ms ease-in-out infinite;
   }
-  .loading-spinner-text .hop-1 {
-    animation-delay: 0ms;
+  .loading-spinner-text .typewriter-text:not(.typewriter-complete)::after {
+    content: "|";
+    margin-left: 1px;
+    animation: loading-spinner-cursor 0.8s step-end infinite;
   }
-  .loading-spinner-text .hop-2 {
-    animation-delay: 50ms;
-  }
-  .loading-spinner-text .hop-3 {
-    animation-delay: 100ms;
+  @keyframes loading-spinner-cursor {
+    50% {
+      opacity: 0;
+    }
   }
 </style>

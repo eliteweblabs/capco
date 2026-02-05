@@ -80,15 +80,15 @@ export class RefreshManager {
       return;
     }
 
-    console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} elements to update`);
+    // console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} elements to update`);
 
     elements.forEach((element, index) => {
       try {
         // CRITICAL: Skip elements that are actively being edited or saving
         if (element.hasAttribute("data-edited") || element.classList.contains("saving")) {
-          console.log(
-            `🔄 [REFRESH-MANAGER] ⏭️  Skipping element ${index + 1} - being edited/saved`
-          );
+          // console.log(
+          //   `🔄 [REFRESH-MANAGER] ⏭️  Skipping element ${index + 1} - being edited/saved`
+          // );
           return; // Skip this element
         }
 
@@ -357,19 +357,19 @@ export class RefreshManager {
    */
   public startAutoRefresh(): void {
     if (this.isActive) {
-      console.log(`🔄 [REFRESH-MANAGER] Auto-refresh is already active`);
+      // console.log(`🔄 [REFRESH-MANAGER] Auto-refresh is already active`);
       return;
     }
 
     this.isActive = true;
     const intervalSeconds = this.refreshIntervalMs / 1000;
     const startTime = new Date().toLocaleTimeString();
-    console.log(
-      `🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Starting auto-refresh cycle every ${intervalSeconds} seconds (${this.refreshIntervalMs}ms)`
-    );
+    // console.log(
+    //   `🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Starting auto-refresh cycle every ${intervalSeconds} seconds (${this.refreshIntervalMs}ms)`
+    // );
 
     // Run the first cycle immediately
-    console.log(`🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Running initial refresh cycle immediately`);
+    // console.log(`🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Running initial refresh cycle immediately`);
     this.cycleAndRefresh();
 
     // Then set up the interval for subsequent cycles
@@ -381,9 +381,9 @@ export class RefreshManager {
       this.cycleAndRefresh();
     }, this.refreshIntervalMs);
 
-    console.log(
-      `🔄 [REFRESH-MANAGER] ⏰ Interval ID: ${this.refreshInterval}, will fire every ${this.refreshIntervalMs}ms`
-    );
+    // console.log(
+    //   `🔄 [REFRESH-MANAGER] ⏰ Interval ID: ${this.refreshInterval}, will fire every ${this.refreshIntervalMs}ms`
+    // );
   }
 
   /**
@@ -429,13 +429,13 @@ export class RefreshManager {
    */
   private async cycleAndRefresh(): Promise<void> {
     const cycleStartTime = new Date().toLocaleTimeString();
-    console.log(`🔄 [REFRESH-MANAGER] 🟢 [${cycleStartTime}] cycleAndRefresh() called`);
+    // console.log(`🔄 [REFRESH-MANAGER] 🟢 [${cycleStartTime}] cycleAndRefresh() called`);
 
     // Prevent concurrent refresh cycles
     if (this.isRefreshing) {
-      console.log(
-        `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - already in progress`
-      );
+      // console.log(
+      //   `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - already in progress`
+      // );
       return;
     }
 
@@ -443,9 +443,9 @@ export class RefreshManager {
     const now = Date.now();
     const timeSinceLastRefresh = now - this.lastRefreshTime;
     if (timeSinceLastRefresh < this.minRefreshGap) {
-      console.log(
-        `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - too soon (${timeSinceLastRefresh}ms since last refresh, minimum ${this.minRefreshGap}ms)`
-      );
+      // console.log(
+      //   `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - too soon (${timeSinceLastRefresh}ms since last refresh, minimum ${this.minRefreshGap}ms)`
+      // );
       return;
     }
 
@@ -453,16 +453,16 @@ export class RefreshManager {
     this.lastRefreshTime = now;
 
     const timestamp = new Date().toLocaleTimeString();
-    console.log(`🔄 [REFRESH-MANAGER] ⏰ [${timestamp}] Starting refresh cycle...`);
+    // console.log(`🔄 [REFRESH-MANAGER] ⏰ [${timestamp}] Starting refresh cycle...`);
 
     const elements = this.getRefreshableElements();
     if (elements.length === 0) {
-      console.log(`🔄 [REFRESH-MANAGER] No refreshable elements found`);
+      // console.log(`🔄 [REFRESH-MANAGER] No refreshable elements found`);
       this.isRefreshing = false;
       return;
     }
 
-    console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements to check`);
+    // console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements to check`);
 
     // Group elements by project/user and field type for efficient API calls
     const groupedElements = this.groupElementsByContext(elements);
@@ -591,7 +591,11 @@ export class RefreshManager {
           if (fieldName.includes("Date") || fieldName.includes("At")) {
             try {
               // Handle null/empty dates
-              if (!currentElementValue || currentElementValue === "" || currentElementValue === "null") {
+              if (
+                !currentElementValue ||
+                currentElementValue === "" ||
+                currentElementValue === "null"
+              ) {
                 valuesAreDifferent = newValueString !== "" && newValueString !== "null";
               } else if (!newValueString || newValueString === "" || newValueString === "null") {
                 valuesAreDifferent = currentElementValue !== "" && currentElementValue !== "null";
@@ -632,7 +636,7 @@ export class RefreshManager {
             contextType === "project" ? contextId : undefined
           );
         } else {
-          console.log(`🔄 [REFRESH-MANAGER] ✓ Field ${fieldName} up to date`);
+          // console.log(`🔄 [REFRESH-MANAGER] ✓ Field ${fieldName} up to date`);
         }
       }
     } catch (error) {
@@ -657,7 +661,7 @@ export class RefreshManager {
         apiUrl = `/api/users/get?id=${contextId}`;
       } else {
         // For global context, we might need a different approach
-        console.log(`🔄 [REFRESH-MANAGER] Global context refresh not implemented yet`);
+        // console.log(`🔄 [REFRESH-MANAGER] Global context refresh not implemented yet`);
         return null;
       }
 
@@ -671,20 +675,20 @@ export class RefreshManager {
       }
 
       const data = await response.json();
-      console.log(`🔄 [REFRESH-MANAGER] 📦 API Response keys:`, Object.keys(data));
-      console.log(`🔄 [REFRESH-MANAGER] 🔍 Looking for fields:`, fieldNames);
+      // console.log(`🔄 [REFRESH-MANAGER] 📦 API Response keys:`, Object.keys(data));
+      // console.log(`🔄 [REFRESH-MANAGER] 🔍 Looking for fields:`, fieldNames);
 
       // The API might return { data: {...} } or { projects: [...] } or just the project directly
       let projectData = data;
       if (data.data) {
         projectData = data.data;
-        console.log(`🔄 [REFRESH-MANAGER] Using data.data`);
+        // console.log(`🔄 [REFRESH-MANAGER] Using data.data`);
       } else if (data.projects && data.projects[0]) {
         projectData = data.projects[0];
-        console.log(`🔄 [REFRESH-MANAGER] Using data.projects[0]`);
+        // console.log(`🔄 [REFRESH-MANAGER] Using data.projects[0]`);
       }
 
-      console.log(`🔄 [REFRESH-MANAGER] 📋 Project data keys:`, Object.keys(projectData));
+      // console.log(`🔄 [REFRESH-MANAGER] 📋 Project data keys:`, Object.keys(projectData));
       return projectData;
     } catch (error) {
       console.error(`🔄 [REFRESH-MANAGER] Error fetching data:`, error);
@@ -760,7 +764,7 @@ export class RefreshManager {
     const oldValue = this.globalState.get(key);
     this.globalState.set(key, value);
 
-    console.log(`🌐 [REFRESH-MANAGER] Global state updated: ${key} = ${value} (was ${oldValue})`);
+    // console.log(`🌐 [REFRESH-MANAGER] Global state updated: ${key} = ${value} (was ${oldValue})`);
 
     // Update any elements watching this global state
     this.updateField(key, value);
@@ -785,7 +789,7 @@ export class RefreshManager {
       // Clients see only their projects, Admins see all
       const projectCountUrl = `/api/projects/get?count=true`;
 
-      console.log(`🌐 [REFRESH-MANAGER] Fetching global counts from ${projectCountUrl}`);
+      // console.log(`🌐 [REFRESH-MANAGER] Fetching global counts from ${projectCountUrl}`);
 
       const response = await fetch(projectCountUrl);
       if (!response.ok) {
@@ -796,9 +800,9 @@ export class RefreshManager {
       const data = await response.json();
       const projectCount = data.count ?? data.projects?.length ?? 0;
 
-      console.log(
-        `🌐 [REFRESH-MANAGER] Fetched project count: ${projectCount} (was: ${this.globalState.get("projectCount")})`
-      );
+      // console.log(
+      //   `🌐 [REFRESH-MANAGER] Fetched project count: ${projectCount} (was: ${this.globalState.get("projectCount")})`
+      // );
 
       // Update global state
       this.setGlobalState("projectCount", projectCount);
@@ -829,15 +833,15 @@ export class RefreshManager {
 
     // Don't update if projectCount hasn't been set yet
     if (currentProjectCount === undefined) {
-      console.log(
-        `🔄 [REFRESH-MANAGER] updateConditionalVisibility() skipped - projectCount not set yet`
-      );
+      // console.log(
+      //   `🔄 [REFRESH-MANAGER] updateConditionalVisibility() skipped - projectCount not set yet`
+      // );
       return;
     }
 
-    console.log(
-      `🔄 [REFRESH-MANAGER] updateConditionalVisibility() called - projectCount=${currentProjectCount}, checking ${elements.length} elements`
-    );
+    // console.log(
+    //   `🔄 [REFRESH-MANAGER] updateConditionalVisibility() called - projectCount=${currentProjectCount}, checking ${elements.length} elements`
+    // );
 
     elements.forEach((element, index) => {
       const condition = element.getAttribute("data-condition");
@@ -855,9 +859,9 @@ export class RefreshManager {
         // If action is "hide", element hides when expression is true (so shows when false)
         shouldShow = action === "show" ? expressionResult : !expressionResult;
 
-        console.log(
-          `🔄 [REFRESH-MANAGER] [${index}] condition="${condition}", expression="${expression}"=${expressionResult}, action="${action}", shouldShow=${shouldShow}`
-        );
+        // console.log(
+        //   `🔄 [REFRESH-MANAGER] [${index}] condition="${condition}", expression="${expression}"=${expressionResult}, action="${action}", shouldShow=${shouldShow}`
+        // );
       } else {
         // Legacy support for old format
         if (condition === "show-if-empty") {
@@ -870,26 +874,26 @@ export class RefreshManager {
           // Try to evaluate as expression
           shouldShow = this.evaluateCondition(condition);
         }
-        console.log(
-          `🔄 [REFRESH-MANAGER] [${index}] legacy condition="${condition}", shouldShow=${shouldShow}`
-        );
+        // console.log(
+        //   `🔄 [REFRESH-MANAGER] [${index}] legacy condition="${condition}", shouldShow=${shouldShow}`
+        // );
       }
 
       // Update visibility with animation
       const currentlyHidden = element.classList.contains("hidden");
 
       if (shouldShow && currentlyHidden) {
-        console.log(
-          `🔄 [REFRESH-MANAGER] ✅ [${index}] SHOWING element with condition: ${condition}`
-        );
+        // console.log(
+        //   `🔄 [REFRESH-MANAGER] ✅ [${index}] SHOWING element with condition: ${condition}`
+        // );
         element.classList.remove("hidden");
         // Add fade-in animation
         element.classList.add("animate-fadeIn");
         setTimeout(() => element.classList.remove("animate-fadeIn"), 300);
       } else if (!shouldShow && !currentlyHidden) {
-        console.log(
-          `🔄 [REFRESH-MANAGER] ❌ [${index}] HIDING element with condition: ${condition}`
-        );
+        // console.log(
+        //   `🔄 [REFRESH-MANAGER] ❌ [${index}] HIDING element with condition: ${condition}`
+        // );
         // Add fade-out animation
         element.classList.add("animate-fadeOut");
         setTimeout(() => {
@@ -897,9 +901,9 @@ export class RefreshManager {
           element.classList.remove("animate-fadeOut");
         }, 300);
       } else {
-        console.log(
-          `🔄 [REFRESH-MANAGER] ⏭️  [${index}] NO CHANGE for condition: ${condition} (hidden=${currentlyHidden}, shouldShow=${shouldShow})`
-        );
+        // console.log(
+        //   `🔄 [REFRESH-MANAGER] ⏭️  [${index}] NO CHANGE for condition: ${condition} (hidden=${currentlyHidden}, shouldShow=${shouldShow})`
+        // );
       }
     });
   }
@@ -913,7 +917,7 @@ export class RefreshManager {
       let expression = condition;
 
       // Log the original expression
-      console.log(`🔄 [REFRESH-MANAGER] Evaluating expression: "${condition}"`);
+      // console.log(`🔄 [REFRESH-MANAGER] Evaluating expression: "${condition}"`);
 
       // Replace known state keys
       this.globalState.forEach((value, key) => {
@@ -921,9 +925,9 @@ export class RefreshManager {
         const before = expression;
         expression = expression.replace(regex, String(value));
         if (before !== expression) {
-          console.log(
-            `🔄 [REFRESH-MANAGER]   Replaced "${key}" with "${value}" -> "${expression}"`
-          );
+          // console.log(
+          //   `🔄 [REFRESH-MANAGER]   Replaced "${key}" with "${value}" -> "${expression}"`
+          // );
         }
       });
 
@@ -939,7 +943,7 @@ export class RefreshManager {
 
       // Use Function constructor for safe evaluation
       const result = new Function(`return ${expression}`)();
-      console.log(`🔄 [REFRESH-MANAGER]   Result: ${expression} = ${result}`);
+      // console.log(`🔄 [REFRESH-MANAGER]   Result: ${expression} = ${result}`);
       return result;
     } catch (error) {
       console.error(`🔄 [REFRESH-MANAGER] ❌ Error evaluating condition "${condition}":`, error);

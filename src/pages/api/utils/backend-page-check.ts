@@ -20,7 +20,7 @@ export const isAuthPage = (pathname: string) => {
     "/auth/verify-email",
     "/auth/verify-email-otp",
     "/auth/verify-email-otp-resend",
-    "/auth/verify-email-otp-resend",
+    "/auth/callback",
   ];
 
   return authPaths.some((path) => pathname.startsWith(path));
