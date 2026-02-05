@@ -110,6 +110,12 @@ export function createMultiStepFormHandler(
 
   // Set active step when user focuses an input (e.g. after scrolling up to edit). No scroll or animation.
   function setActiveStepByFocus(stepNumber: number) {
+    console.log("[MULTISTEP-CLICK-DEBUG] setActiveStepByFocus() called", {
+      stepNumber,
+      formId,
+      currentStep,
+      stack: new Error().stack,
+    });
     const formEl = document.getElementById(formId) as HTMLFormElement;
     if (!formEl) return;
 
@@ -120,6 +126,15 @@ export function createMultiStepFormHandler(
 
     const currentActiveStep = formEl.querySelector(".step-content.active") as HTMLElement;
     if (currentActiveStep === targetStep) return;
+
+    // Never advance the step via focus alone (errant click in a later step must not show that panel)
+    if (stepNumber > currentStep) {
+      console.log("[MULTISTEP-CLICK-DEBUG] setActiveStepByFocus ignored (would advance)", {
+        stepNumber,
+        currentStep,
+      });
+      return;
+    }
 
     formEl.querySelectorAll(".step-content").forEach((el) => {
       el.classList.remove("active", "initial-load");
@@ -146,6 +161,12 @@ export function createMultiStepFormHandler(
 
   // Show specific step with animation (continuous scroll: previous steps stay visible, scroll to active)
   async function showStep(stepNumber: number, direction: "forward" | "backward" = "forward") {
+    console.log("[MULTISTEP-CLICK-DEBUG] showStep() called", {
+      stepNumber,
+      direction,
+      formId,
+      stack: new Error().stack,
+    });
     const currentActiveStep = document.querySelector(
       `#${formId} .step-content.active`
     ) as HTMLElement;
@@ -827,6 +848,14 @@ export function createMultiStepFormHandler(
     // Handle button clicks
     form.addEventListener("click", async (e) => {
       const target = e.target as HTMLElement;
+      const targetInForm = form.contains(target);
+      console.log("[MULTISTEP-CLICK-DEBUG] form click", {
+        formId: form.id,
+        targetTag: target?.tagName,
+        targetId: target?.id,
+        targetClass: target?.className?.slice?.(0, 80),
+        targetInForm,
+      });
 
       // Never treat clicks on form controls or inside input wrappers as navigation
       // (fixes login: clicking input or icon advanced step)
@@ -836,6 +865,18 @@ export function createMultiStepFormHandler(
         target.tagName === "SELECT" ||
         target.closest(".input-wrapper, .inline-address-search-wrapper")
       ) {
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → early return (input/wrapper)");
+        e.stopPropagation();
+        return;
+      }
+
+      // Ignore clicks on non-interactive areas (step container, dividers, labels, empty space)
+      // so that clicking anywhere in the form doesn't advance the step
+      if (
+        target.closest(".step-content, .multi-step-form-steps") &&
+        !target.closest("button, a[href], input, textarea, select")
+      ) {
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → early return (non-interactive area)");
         return;
       }
 
@@ -851,6 +892,7 @@ export function createMultiStepFormHandler(
 
       // Generic choice button handler (for button-groups)
       if (choiceBtn && !smsChoiceBtn) {
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → choice button", { choiceValue: choiceBtn.getAttribute("data-value") });
         e.preventDefault();
         const choiceValue = choiceBtn.getAttribute("data-value");
 
@@ -985,6 +1027,7 @@ export function createMultiStepFormHandler(
 
       // SMS choice buttons
       if (smsChoiceBtn) {
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → SMS choice, will showStep");
         e.preventDefault();
         const smsValue = smsChoiceBtn.getAttribute("data-sms-value");
         const nextStep = parseInt(smsChoiceBtn.getAttribute("data-next") || "1");
@@ -1000,6 +1043,11 @@ export function createMultiStepFormHandler(
 
       // Next button
       if (nextBtn) {
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → next/submit button", {
+          nextBtnTag: nextBtn.tagName,
+          dataNext: nextBtn.getAttribute("data-next"),
+          isSubmit: nextBtn.classList.contains("submit-step") || nextBtn.classList.contains("submit-registration") || nextBtn.classList.contains("submit-contact"),
+        });
         e.preventDefault();
         let nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
 
@@ -1044,8 +1092,11 @@ export function createMultiStepFormHandler(
       // Previous button
       if (prevBtn) {
         const isLink = prevBtn.tagName === "A" || prevBtn.hasAttribute("href");
-        if (isLink) return;
-
+        if (isLink) {
+          console.log("[MULTISTEP-CLICK-DEBUG] form click → prev link (navigate away), no action");
+          return;
+        }
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → prev button, will showStep");
         e.preventDefault();
         let prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
 
@@ -1058,6 +1109,7 @@ export function createMultiStepFormHandler(
 
       // Edit button (for review step)
       if (editBtn) {
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → edit button, will showStep");
         e.preventDefault();
         const editStep = parseInt(editBtn.getAttribute("data-edit") || "1");
         await showStep(editStep);
@@ -1065,11 +1117,32 @@ export function createMultiStepFormHandler(
 
       // Skip button
       if (skipBtn) {
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → skip button, will showStep");
         e.preventDefault();
         const nextStep = parseInt(skipBtn.getAttribute("data-next") || "1");
         await showStep(nextStep);
       }
+
+      console.log("[MULTISTEP-CLICK-DEBUG] form click → no button matched, no action");
     });
+
+    // Debug: log every click on document to see if clicks outside form still advance
+    document.addEventListener(
+      "click",
+      (e) => {
+        const t = e.target as HTMLElement;
+        const insideForm = form.contains(t);
+        if (!insideForm) {
+          console.log("[MULTISTEP-CLICK-DEBUG] document click OUTSIDE form", {
+            formId: form.id,
+            targetTag: t?.tagName,
+            targetId: t?.id,
+            targetClass: t?.className?.slice?.(0, 60),
+          });
+        }
+      },
+      true
+    );
 
     // Add touched class to inputs
     const inputs = form.querySelectorAll("input[required], textarea[required]");
@@ -1189,8 +1262,15 @@ export function createMultiStepFormHandler(
     // Handle Enter key
     form.addEventListener("keypress", (e) => {
       if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
-        e.preventDefault();
         const target = e.target as HTMLElement;
+        const targetInForm = form.contains(target);
+        console.log("[MULTISTEP-CLICK-DEBUG] form keypress Enter", {
+          formId: form.id,
+          targetTag: target?.tagName,
+          targetId: target?.id,
+          targetInForm,
+        });
+        e.preventDefault();
         const currentStepEl = form.querySelector(`.step-content[data-step="${currentStep}"]`);
 
         // Check if target is an input field
@@ -1209,15 +1289,10 @@ export function createMultiStepFormHandler(
           if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
             const nextInput = inputs[currentIndex + 1];
             nextInput.focus();
-            console.log("[ENTER-KEY] Moving to next input");
+            console.log("[MULTISTEP-CLICK-DEBUG] Enter → moving to next input (not advancing step)");
             return;
           }
-
-          // Single visible input in step: do not auto-click Next (avoids advancing when
-          // Enter is fired on focus/click, e.g. login email field)
-          if (inputs.length <= 1) {
-            return;
-          }
+          // Single or last input: fall through to click next/submit button
         }
 
         // Multiple inputs and on last, or target not an input: click next button
@@ -1225,8 +1300,13 @@ export function createMultiStepFormHandler(
           ".next-step, .submit-registration, .submit-contact, .submit-step"
         ) as HTMLElement;
         if (nextBtn) {
-          console.log("[ENTER-KEY] Clicking next button");
+          console.log("[MULTISTEP-CLICK-DEBUG] Enter → programmatically clicking next button (will advance)", {
+            keypressTargetTag: target.tagName,
+            keypressTargetClass: target.className?.slice?.(0, 60),
+          });
           nextBtn.click();
+        } else {
+          console.log("[MULTISTEP-CLICK-DEBUG] Enter → no next button in current step");
         }
       }
     });
@@ -1300,7 +1380,7 @@ export function initializeMultiStepForm(
 ) {
   const { initialData = {}, formConfig } = options;
 
-  console.log("[MULTISTEP-FORM] Initializing form with skip logic");
+  console.log("[MULTISTEP-FORM] Initializing form with skip logic", { formId: form.id });
 
   // Helper function to check if a step should be skipped
   function shouldSkipStep(stepNumber: number): boolean {

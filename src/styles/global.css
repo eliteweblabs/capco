@@ -464,6 +464,16 @@ select {
   transition: box-shadow 250ms ease-in-out;
 }
 
+/* Caret: visible color (especially on mobile where native caret is thicker/blue) */
+input:not([type="hidden"]),
+textarea {
+  caret-color: var(--color-primary-500);
+}
+.dark input:not([type="hidden"]),
+.dark textarea {
+  caret-color: var(--color-primary-400);
+}
+
 /* Primary focus shadow - applies to all inputs globally (validation states below override when applicable) */
 input:not([type="hidden"]):focus,
 textarea:focus,
@@ -1609,10 +1619,10 @@ a[role="button"]:focus-visible,
   word-break: break-word;
 }
 
-/* Each character starts at 100% opacity, fades to 40% over 300ms */
+/* Each character starts at 100% opacity, fades to 40% over 600ms */
 .typewriter-text .typewriter-char {
   opacity: 1;
-  animation: typewriter-char-fade 300ms ease-out forwards;
+  animation: typewriter-char-fade 600ms ease-out forwards;
 }
 
 @keyframes typewriter-char-fade {
@@ -1705,7 +1715,16 @@ select:focus {
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
-/* Valid, not focused: green glow (:valid and .is-valid so email/text/password/tel all get it) */
+/* Invalid, not focused: red glow (must come before valid so valid can trump) */
+input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
+textarea:invalid:not(:placeholder-shown):not(:focus),
+select:invalid:not(:placeholder-shown):not(:focus) {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
+}
+
+/* Valid, not focused: green glow (:valid and .is-valid so email/text/password/tel all get it) — must come after invalid so valid trumps */
 input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
 textarea:valid:not(:placeholder-shown):not(:focus),
 select:valid:not(:placeholder-shown):not(:focus),
@@ -1720,17 +1739,11 @@ select.is-valid:not(:focus) {
 /* Valid + focused: primary glow (focus state wins) */
 input:not([type="hidden"]):valid:focus,
 textarea:valid:focus,
-select:valid:focus {
+select:valid:focus,
+input:not([type="hidden"]).is-valid:focus,
+textarea.is-valid:focus,
+select.is-valid:focus {
   box-shadow:
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
-}
-
-/* Invalid, not focused: red glow */
-input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
-textarea:invalid:not(:placeholder-shown):not(:focus),
-select:invalid:not(:placeholder-shown):not(:focus) {
-  box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
 }

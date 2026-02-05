@@ -262,7 +262,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                     ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 ? (
                       <div
                         class:list={[
-                          "relative overflow-hidden rounded-lg",
+                          "relative rounded-lg",
                           field.icon ? "input-with-icon" : "",
                           field.iconPosition === "right" ? "icon-right" : "icon-left",
                         ]}
@@ -574,11 +574,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content.has-typewriter button,
   .step-content.has-typewriter a {
     max-height: 0;
-    overflow: hidden;
     opacity: 0;
     transition:
       max-height 0.4s ease-out,
-      opacity 0.35s ease-out;
+      opacity 0.7s ease-out;
   }
 
   /* When typewriter completes, each reveals with its own transition-delay (set in JS) */
@@ -970,7 +969,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         requestAnimationFrame(() =>
           requestAnimationFrame(() => updateStepsPanelBottom("multistep-step-change"))
         );
-        runPanelBottomLoopRef?.(15000);
+        runPanelBottomLoopRef?.(5000);
       });
     }
 
@@ -1445,9 +1444,30 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
         const handler = (
           form as HTMLFormElement & {
-            multiStepHandler?: { setActiveStepByFocus: (n: number) => void };
+            multiStepHandler?: {
+              setActiveStepByFocus: (n: number) => void;
+              getCurrentStep?: () => number;
+            };
           }
         ).multiStepHandler;
+
+        // Don't allow focus to land on a step we haven't reached (errant click/tab on password etc.)
+        const currentStep = handler?.getCurrentStep?.() ?? 1;
+        if (stepNumber > currentStep) {
+          console.log("[MULTISTEP-CLICK-DEBUG] focus blocked (future step)", {
+            stepNumber,
+            currentStep,
+            targetId: target.id,
+          });
+          setTimeout(() => (target as HTMLInputElement).blur(), 0);
+          return;
+        }
+
+        console.log("[MULTISTEP-CLICK-DEBUG] focus on input → setActiveStepByFocus", {
+          stepNumber,
+          targetId: target.id,
+          targetName: (target as HTMLInputElement).name,
+        });
         if (handler?.setActiveStepByFocus) {
           handler.setActiveStepByFocus(stepNumber);
         }
@@ -1509,24 +1529,30 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         // If clicking on a non-interactive element while an input has focus,
         // prevent focus loss
         if (!isInteractiveElement) {
+          console.log("[MULTISTEP-CLICK-DEBUG] mousedown (MultiStepForm): prevented focus loss", {
+            targetTag: target.tagName,
+            targetClass: target.className?.slice?.(0, 60),
+            focusedTag: focusedElement?.tagName,
+          });
           e.preventDefault();
           // Ensure focus stays on the input
           setTimeout(() => {
             focusedElement.focus();
           }, 0);
-          // console.log(
-          //   "[FOCUS-LOCK] Prevented focus loss. Target:",
-          //   target.tagName,
-          //   target.className
-          // );
         }
       },
       true
     );
 
-    // Get all form configs from window
-    Object.keys(window).forEach((key) => {
-      if (key.endsWith("_config")) {
+    // Get all form configs from window and attach multi-step handler
+    function runMultiStepInit() {
+      const keys = Object.keys(window).filter((k) => k.endsWith("_config"));
+      if (keys.length === 0) {
+        console.log(
+          "[MULTISTEP-FORM] No form configs on window (define:vars may not have run yet)"
+        );
+      }
+      keys.forEach((key) => {
         const { formId, formConfig, initialData } = window[key];
         const form = document.getElementById(formId) as HTMLFormElement;
 
@@ -1535,10 +1561,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           return;
         }
 
-        // console.log("[MULTISTEP-FORM] Initializing with data:", initialData);
+        console.log("[MULTISTEP-FORM] Attaching handler for form:", formId);
 
         // Pre-fill form fields with initial data
-        Object.entries(initialData).forEach(([key, value]) => {
+        Object.entries(initialData || {}).forEach(([key, value]) => {
           const input = form.querySelector(`[name="${key}"]`) as HTMLInputElement;
           if (input && value) {
             (input as HTMLInputElement).value = value as string;
@@ -1559,11 +1585,18 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
         // Initialize the form with skip logic
         initializeMultiStepForm(form, {
-          initialData,
+          initialData: initialData || {},
           formConfig,
         });
-      }
-    });
+      });
+    }
+
+    // Run init when DOM is ready; if script loaded late (e.g. deferred), run immediately
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", runMultiStepInit);
+    } else {
+      runMultiStepInit();
+    }
   });
 
   // Forgot password modal handler (for login form)

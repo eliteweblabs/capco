@@ -74,7 +74,7 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
 
   // Create TypeIt instance
   const instance = new TypeIt(element, {
-    speed: 20, // Faster typing (20% faster than 50ms)
+    speed: 10, // 50% faster than previous 20ms
     cursor: true, // Show blinking cursor
     waitUntilVisible: true,
     html: true, // Enable HTML parsing for <br> tags
@@ -157,7 +157,7 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
       words.forEach((word, wordIndex) => {
         if (!word) return;
 
-        // Type each character in a span so we can animate opacity (100% -> 40% over 300ms)
+        // Type each character in a span so we can animate opacity (100% -> 40% over 600ms)
         if (/^<[^>]+>$/i.test(word)) {
           instance.type(word);
         } else {
