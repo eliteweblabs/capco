@@ -572,9 +572,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content.has-typewriter .input-wrapper,
   .step-content.has-typewriter .inline-address-search-wrapper,
   .step-content.has-typewriter button,
-  .step-content.has-typewriter a {
+  .step-content.has-typewriter a,
+  .step-content.has-typewriter textarea {
     max-height: 0;
     opacity: 0;
+    overflow: hidden;
     transition:
       max-height 0.4s ease-out,
       opacity 0.7s ease-out;
@@ -584,16 +586,19 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content.typewriter-complete .input-wrapper,
   .step-content.typewriter-complete .inline-address-search-wrapper,
   .step-content.typewriter-complete button,
-  .step-content.typewriter-complete a {
+  .step-content.typewriter-complete a,
+  .step-content.typewriter-complete textarea {
     max-height: 50rem;
     opacity: 1;
+    overflow: visible;
   }
 
   /* For steps without typewriter effect, show content immediately */
   .step-content:not(.has-typewriter) .input-wrapper,
   .step-content:not(.has-typewriter) .inline-address-search-wrapper,
   .step-content:not(.has-typewriter) button,
-  .step-content:not(.has-typewriter) a {
+  .step-content:not(.has-typewriter) a,
+  .step-content:not(.has-typewriter) textarea {
     opacity: 1;
     transform: translateY(0);
   }
@@ -625,14 +630,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
   /* Expand down: top at 50dvh, panel grows downward until it would hit the limit */
   .multi-step-form-steps.expand-down {
-    top: 50dvh;
+    top: 25dvh;
     bottom: auto;
   }
 
   /* Expand up: bottom at 4rem, panel grows upward after hitting the limit */
   .multi-step-form-steps.expand-up {
     top: auto;
-    bottom: 4rem;
+    bottom: 8.25rem;
   }
 
   /* Centered: when expandDown is false for current step, keep panel vertically centered */
@@ -980,12 +985,12 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       if (stepContent) {
         console.log("[MULTISTEP-FORM] Typewriter complete, revealing content");
 
-        // Collect all animatable elements in DOM order
+        // Collect all animatable elements in DOM order (include textarea so they cascade instead of jumping)
         const elements: HTMLElement[] = [];
 
-        // Get all input wrappers and address search wrappers
+        // Get all input wrappers, address search wrappers, and textareas
         const inputWrappers = stepContent.querySelectorAll(
-          ".input-wrapper, .inline-address-search-wrapper"
+          ".input-wrapper, .inline-address-search-wrapper, textarea"
         );
         inputWrappers.forEach((el) => elements.push(el as HTMLElement));
 

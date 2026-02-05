@@ -48,6 +48,16 @@ export default defineConfig({
   },
   // Ensure proper CI building
   vite: {
+    optimizeDeps: {
+      include: [
+        "@floating-ui/dom",
+        "@supabase/supabase-js",
+        "libphonenumber-js",
+        "typeit",
+      ],
+      // Avoid 504 Outdated Optimize Dep in dev by re-optimizing when deps change
+      ...(process.env.NODE_ENV === "development" && { force: true }),
+    },
     define: {
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "production"),
       // Environment variables in alphabetical order
