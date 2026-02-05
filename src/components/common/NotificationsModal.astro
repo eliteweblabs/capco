@@ -108,6 +108,7 @@ if (!currentUser || currentRole === "Client") {
     viewedNotifications: Set<number> = new Set();
     pollingInterval: NodeJS.Timeout | null = null;
     isLoadingMore: boolean = false;
+    hasMore: boolean = true;
 
     constructor() {
       this.init();
@@ -191,6 +192,7 @@ if (!currentUser || currentRole === "Client") {
 
         if (data.success) {
           this.notifications = data.notifications || [];
+          this.hasMore = (data.notifications?.length || 0) >= (data.limit ?? 5);
           this.updateBadge(data.unreadCount || 0);
           this.renderNotifications();
         } else if (data.migrationRequired) {
@@ -206,7 +208,7 @@ if (!currentUser || currentRole === "Client") {
       }
     }
 
-    renderNotifications() {
+    renderNotifications(saveScrollPosition = false) {
       const list = document.getElementById("notification-list");
       const empty = document.getElementById("notification-empty");
       const loading = document.getElementById("notification-loading");
@@ -215,6 +217,9 @@ if (!currentUser || currentRole === "Client") {
         console.error("❌ [NOTIFICATIONS] notification-list element not found");
         return;
       }
+
+      const scrollTop = saveScrollPosition ? list.scrollTop : undefined;
+      const scrollHeight = saveScrollPosition ? list.scrollHeight : undefined;
 
       // Hide loading and empty states
       loading?.classList.add("hidden");
@@ -234,6 +239,15 @@ if (!currentUser || currentRole === "Client") {
         const notificationElement = this.createNotificationElement(notification);
         list.appendChild(notificationElement);
       });
+
+      // Restore scroll position after append (e.g. load more) to avoid jump and re-trigger
+      if (saveScrollPosition && scrollTop !== undefined && scrollHeight !== undefined) {
+        list.scrollTop = scrollTop;
+        const newHeight = list.scrollHeight;
+        if (newHeight > scrollHeight) {
+          list.scrollTop = scrollTop + (newHeight - scrollHeight);
+        }
+      }
     }
 
     createNotificationElement(notification: any) {
@@ -414,7 +428,8 @@ if (!currentUser || currentRole === "Client") {
         }
       });
 
-      // Check if we're near the bottom for auto-loading
+      // Check if we're near the bottom for auto-loading (only when there may be more)
+      if (!this.hasMore || this.isLoadingMore) return;
       const scrollTop = list.scrollTop;
       const scrollHeight = list.scrollHeight;
       const clientHeight = list.clientHeight;
@@ -483,7 +498,7 @@ if (!currentUser || currentRole === "Client") {
     }
 
     async loadMoreNotifications() {
-      if (this.isLoadingMore) return;
+      if (this.isLoadingMore || !this.hasMore) return;
       this.isLoadingMore = true;
 
       const loadingIndicator = document.getElementById("loading-indicator");
@@ -491,12 +506,14 @@ if (!currentUser || currentRole === "Client") {
         loadingIndicator.classList.remove("hidden");
       }
 
-      try {
-        console.log("🔄 [NOTIFICATIONS] Auto-loading more notifications...");
+      const limit = 10;
+      const offset = this.notifications.length;
 
-        const response = await fetch("/api/notifications/get", {
-          credentials: "include",
-        });
+      try {
+        const response = await fetch(
+          `/api/notifications/get?limit=${limit}&offset=${offset}`,
+          { credentials: "include" }
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -505,11 +522,14 @@ if (!currentUser || currentRole === "Client") {
         const data = await response.json();
 
         if (data.success && data.notifications) {
-          this.notifications = [...this.notifications, ...data.notifications];
-          this.renderNotifications();
-          this.updateBadge(data.unreadCount || 0);
-
-          console.log(`🔄 [NOTIFICATIONS] Loaded ${data.notifications.length} more notifications`);
+          const existingIds = new Set(this.notifications.map((n: any) => n.id));
+          const newItems = data.notifications.filter((n: any) => !existingIds.has(n.id));
+          this.notifications = [...this.notifications, ...newItems];
+          this.hasMore = (data.notifications.length >= limit);
+          this.renderNotifications(true);
+          this.updateBadge(data.unreadCount ?? this.notifications.filter((n: any) => !n.viewed).length);
+        } else {
+          this.hasMore = false;
         }
       } catch (error) {
         console.error("❌ [NOTIFICATIONS] Error auto-loading notifications:", error);

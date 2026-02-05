@@ -7,7 +7,9 @@ import { checkAuth } from "../../lib/auth";
 // GDPR-Compliant Cookie Banner Component
 // Handles cookie consent and preferences management
 const { currentUser } = await checkAuth(Astro.cookies);
-if (currentUser) {
+import { isContactPage as isContactPageUtils } from "../../pages/api/utils/backend-page-check";
+const isContactPage = isContactPageUtils(Astro.url.pathname);
+if (currentUser || isContactPage) {
   return;
 }
 ---
