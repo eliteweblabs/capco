@@ -1,0 +1,117 @@
+---
+/**
+ * Dot Grid Theme – Demo
+ * Tests window.dotGrid: overscroll brake, hover, magnetic, equalizer.
+ */
+import App from "../../components/ui/App.astro";
+import Button from "../../components/common/Button.astro";
+import { checkAuth } from "../../lib/auth";
+import { globalCompanyData } from "../api/global/global-company-data";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+const { globalCompanyName, globalCompanyAddress, globalCompanyPhone, globalCompanyEmail, globalCompanyWebsite, globalCompanyLogo } = await globalCompanyData();
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<App
+  title="Dot Grid Demo"
+  description="Dot grid theme: brake, hover, magnetic, equalizer"
+  {currentUser}
+  {session}
+  {supabase}
+  {globalInputClasses}
+  {primaryTextClasses}
+  {secondaryTextClasses}
+  {globalCompanyName}
+  {globalCompanyAddress}
+  {globalCompanyPhone}
+  {globalCompanyEmail}
+  {globalCompanyWebsite}
+  {globalCompanyLogo}
+>
+  <div class="container mx-auto px-4 py-8 max-w-2xl">
+    <h1 class="text-3xl font-bold mb-2">Dot Grid Theme</h1>
+    <p class="text-gray-600 dark:text-gray-400 mb-8">
+      Background grid is controllable via <code class="rounded bg-gray-200 dark:bg-gray-700 px-1">window.dotGrid</code>. Try overscroll (pull down at top) for brake lights.
+    </p>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-semibold mb-4">Mode</h2>
+      <div class="flex flex-wrap gap-2">
+        <Button id="mode-idle" variant="outline" size="sm" data-mode="idle">Idle</Button>
+        <Button id="mode-hover" variant="outline" size="sm" data-mode="hover">Hover / Follow</Button>
+        <Button id="mode-magnetic" variant="outline" size="sm" data-mode="magnetic">Magnetic</Button>
+        <Button id="mode-equalizer" variant="outline" size="sm" data-mode="equalizer">Equalizer</Button>
+      </div>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-semibold mb-4">Brake (overscroll)</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        Pull down at the very top of the page (or scroll up when already at top) to light the bottom 10 rows in red.
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <Button id="brake-preview" variant="secondary" size="sm">Preview brake (1s)</Button>
+      </div>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-semibold mb-4">Equalizer (speaking)</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        Simulate “speaking” by driving levels. Switch to Equalizer mode first.
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <Button id="eq-speak" variant="primary" size="sm">Start speaking</Button>
+        <Button id="eq-stop" variant="outline" size="sm">Stop</Button>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50">
+      <h2 class="text-lg font-semibold mb-2">API</h2>
+      <pre class="text-xs overflow-x-auto text-gray-700 dark:text-gray-300"><code>window.dotGrid.setMode('idle' | 'hover' | 'magnetic' | 'equalizer')
+window.dotGrid.setBrake(0 .. 1)
+window.dotGrid.setEqualizerLevels([0.2, 0.5, 0.8, ...])  // one per row band</code></pre>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      const api = (window as any).dotGrid;
+      if (!api) return;
+
+      document.querySelectorAll("[data-mode]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const mode = (btn as HTMLElement).dataset.mode as "idle" | "hover" | "magnetic" | "equalizer";
+          api.setMode(mode);
+        });
+      });
+
+      const brakePreview = document.getElementById("brake-preview");
+      if (brakePreview) {
+        brakePreview.addEventListener("click", () => {
+          api.setBrake(1);
+          setTimeout(() => api.setBrake(0), 1000);
+        });
+      }
+
+      let eqInterval: ReturnType<typeof setInterval> | null = null;
+      const rows = 40;
+      function randomLevels() {
+        return Array.from({ length: rows }, () => 0.2 + Math.random() * 0.7);
+      }
+
+      document.getElementById("eq-speak")?.addEventListener("click", () => {
+        api.setMode("equalizer");
+        if (eqInterval) clearInterval(eqInterval);
+        eqInterval = setInterval(() => api.setEqualizerLevels(randomLevels()), 80);
+      });
+      document.getElementById("eq-stop")?.addEventListener("click", () => {
+        if (eqInterval) {
+          clearInterval(eqInterval);
+          eqInterval = null;
+        }
+      });
+    })();
+  </script>
+</App>

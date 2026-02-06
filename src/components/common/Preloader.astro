@@ -1,12 +1,14 @@
 ---
 // Preloader: dot grid (all black) with random dots turning primary, ease-in-out, each dot once.
 // #page stays hidden until ready.
+// Theme: overscroll = brake-light red on bottom rows; hookable via window.dotGrid (hover/magnetic/equalizer).
 ---
 
 <div id="preloader-dot-grid" class="preloader-dot-grid color-background" aria-hidden="true"></div>
 
 <script>
   const DOT_SIZE_PX = 20;
+  const BRAKE_ROWS = 10;
 
   function ready() {
     document.body?.classList.remove("preloading");
@@ -14,7 +16,6 @@
     if (page) page.removeAttribute("hidden");
     const grid = document.getElementById("preloader-dot-grid");
     if (grid) grid.style.pointerEvents = "none";
-    // Grid stays visible; animation runs to 100% and we do not hide or remove it
   }
 
   if (document.readyState === "complete") {
@@ -29,6 +30,10 @@
     if (!grid) return;
     const cols = Math.ceil((window.innerWidth || 800) / DOT_SIZE_PX);
     const rows = Math.ceil((window.innerHeight || 600) / DOT_SIZE_PX);
+    grid.dataset.cols = String(cols);
+    grid.dataset.rows = String(rows);
+    grid.style.gridTemplateColumns = `repeat(${cols}, ${DOT_SIZE_PX}px)`;
+
     const total = cols * rows;
     const indices = Array.from({ length: total }, (_, i) => i);
     for (let i = total - 1; i > 0; i--) {
@@ -36,13 +41,178 @@
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
     const maxDelayMs = 4000;
+    const brakeThreshold = rows - BRAKE_ROWS;
     for (let i = 0; i < total; i++) {
+      const row = Math.floor(i / cols);
+      const col = i % cols;
       const dot = document.createElement("span");
       dot.className = "preloader-dot";
       dot.style.setProperty("--delay", (indices[i] / total) * maxDelayMs + "ms");
+      dot.dataset.row = String(row);
+      dot.dataset.col = String(col);
+      if (row >= brakeThreshold) dot.dataset.brakeZone = "true";
       grid.appendChild(dot);
     }
+
+    DotGridController.init(grid, { cols, rows, dotSize: DOT_SIZE_PX });
   })();
+
+  const DotGridController = (function () {
+    let gridEl: HTMLElement | null = null;
+    let cols = 0;
+    let rows = 0;
+    let dotSize = 20;
+    let mode: "idle" | "hover" | "magnetic" | "equalizer" = "idle";
+    let brakeIntensity = 0;
+    let rafId = 0;
+    let equalizerLevels: number[] = [];
+    let mouseX = 0;
+    let mouseY = 0;
+    let touchStartY = 0;
+
+    function getDots(): HTMLElement[] {
+      if (!gridEl) return [];
+      return Array.from(gridEl.querySelectorAll<HTMLElement>(".preloader-dot"));
+    }
+
+    function setBrake(intensity) {
+      brakeIntensity = Math.max(0, Math.min(1, intensity));
+      if (!gridEl) return;
+      if (brakeIntensity <= 0) {
+        delete gridEl.dataset.brakeIntensity;
+        gridEl.style.removeProperty("--brake-intensity");
+      } else {
+        gridEl.dataset.brakeIntensity = String(brakeIntensity.toFixed(2));
+        gridEl.style.setProperty("--brake-intensity", String(brakeIntensity));
+      }
+    }
+
+    function setupOverscroll() {
+      document.addEventListener(
+        "touchstart",
+        (e) => {
+          if (e.touches.length) touchStartY = e.touches[0].clientY;
+        },
+        { passive: true }
+      );
+      document.addEventListener(
+        "touchmove",
+        (e) => {
+          if (e.touches.length && window.scrollY === 0) {
+            const pull = e.touches[0].clientY - touchStartY;
+            if (pull > 0) setBrake(Math.min(1, pull / 200));
+          }
+        },
+        { passive: true }
+      );
+      document.addEventListener("touchend", () => setBrake(0), { passive: true });
+      document.addEventListener(
+        "wheel",
+        (e) => {
+          if (window.scrollY === 0 && e.deltaY < 0) {
+            setBrake(Math.min(1, brakeIntensity + 0.15));
+            setTimeout(() => setBrake(Math.max(0, brakeIntensity - 0.2)), 150);
+          }
+        },
+        { passive: true }
+      );
+    }
+
+    function updateHover() {
+      const dots = getDots();
+      const radius = 120;
+      dots.forEach((dot) => {
+        const r = Number(dot.dataset.row ?? 0) * dotSize + dotSize / 2;
+        const c = Number(dot.dataset.col ?? 0) * dotSize + dotSize / 2;
+        const dist = Math.hypot(mouseX - c, mouseY - r);
+        const strength = dist < radius ? 1 - dist / radius : 0;
+        dot.style.setProperty("--hover", String(strength));
+      });
+    }
+
+    function updateMagnetic() {
+      const dots = getDots();
+      const pullRadius = 200;
+      const strength = 8;
+      dots.forEach((dot) => {
+        const r = Number(dot.dataset.row ?? 0) * dotSize + dotSize / 2;
+        const c = Number(dot.dataset.col ?? 0) * dotSize + dotSize / 2;
+        const dx = mouseX - c;
+        const dy = mouseY - r;
+        const dist = Math.hypot(dx, dy) || 1;
+        const pull = dist < pullRadius ? (1 - dist / pullRadius) * strength : 0;
+        const tx = (dx / dist) * pull;
+        const ty = (dy / dist) * pull;
+        dot.style.transform = `translate(${tx}px, ${ty}px)`;
+      });
+    }
+
+    function updateEqualizer() {
+      const dots = getDots();
+      dots.forEach((dot) => {
+        const row = Number(dot.dataset.row ?? 0);
+        const t = rows <= 1 ? 0 : row / (rows - 1);
+        const idx = Math.floor(t * (equalizerLevels.length - 1));
+        const level = equalizerLevels[Math.min(idx, equalizerLevels.length - 1)] ?? 0.5;
+        dot.style.setProperty("--eq", String(level));
+      });
+    }
+
+    function tick() {
+      if (mode === "hover") updateHover();
+      else if (mode === "magnetic") updateMagnetic();
+      else if (mode === "equalizer") updateEqualizer();
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function onMouseMove(e: MouseEvent) {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    }
+
+    function setMode(m) {
+      mode = m;
+      if (!gridEl) return;
+      gridEl.dataset.mode = m;
+      const dots = getDots();
+      dots.forEach((d) => {
+        d.style.removeProperty("transform");
+        d.style.removeProperty("--hover");
+        d.style.removeProperty("--eq");
+      });
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+      document.removeEventListener("mousemove", onMouseMove);
+      if (mode === "idle") return;
+      if (mode === "hover" || mode === "magnetic") document.addEventListener("mousemove", onMouseMove);
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function setEqualizerLevels(levels: number[]) {
+      equalizerLevels = levels.length ? levels : Array.from({ length: rows }, () => 0.3 + Math.random() * 0.5);
+    }
+
+    function init(grid: HTMLElement, opts: { cols: number; rows: number; dotSize: number }) {
+      gridEl = grid;
+      cols = opts.cols;
+      rows = opts.rows;
+      dotSize = opts.dotSize;
+      setupOverscroll();
+      setEqualizerLevels([]);
+    }
+
+    return {
+      init,
+      setMode,
+      setBrake,
+      setEqualizerLevels,
+      get mode() {
+        return mode;
+      },
+    };
+  })();
+
+  (window as any).dotGrid = DotGridController;
 </script>
 
 <style is:global>
@@ -66,6 +236,7 @@
     justify-self: center;
     align-self: center;
     animation: preloader-dot-to-primary 0.5s ease-in-out var(--delay, 0) forwards;
+    transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
   }
   .preloader-dot-grid.preloader-completing .preloader-dot {
     animation: preloader-dot-to-primary 0.2s cubic-bezier(0.4, 0, 1, 1) 0s forwards;
@@ -77,5 +248,23 @@
     to {
       background-color: var(--preloader-dot-primary, var(--color-primary-500));
     }
+  }
+
+  /* Brake light: bottom 10 rows red gradient when overscroll (only when data-brake-intensity is set) */
+  .preloader-dot-grid[data-brake-intensity] .preloader-dot[data-brake-zone="true"] {
+    background: linear-gradient(180deg, #1a0505 0%, #8b0000 30%, #dc2626 60%, #f87171 100%) !important;
+    opacity: var(--brake-intensity, 0);
+    box-shadow: 0 0 6px rgba(220, 38, 38, 0.6);
+  }
+
+  /* Hover: brighten near cursor */
+  .preloader-dot-grid[data-mode="hover"] .preloader-dot {
+    box-shadow: 0 0 calc(4px + 6 * var(--hover, 0)) var(--preloader-dot-primary, var(--color-primary-500));
+    opacity: calc(0.6 + 0.4 * var(--hover, 0));
+  }
+
+  /* Equalizer: scale by level */
+  .preloader-dot-grid[data-mode="equalizer"] .preloader-dot {
+    transform: scale(0.4 + 0.8 * var(--eq, 0.5));
   }
 </style>

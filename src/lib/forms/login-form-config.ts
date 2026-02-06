@@ -61,9 +61,9 @@ export const loginFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "new?",
+          label: "create account?",
           variant: "anchor",
-          size: "sm",
+          size: "xs",
           href: "/auth/register",
           icon: "user-plus",
           iconPosition: "left",
@@ -73,10 +73,12 @@ export const loginFormConfig: MultiStepFormConfig = {
           id: "forgot-password-btn",
           label: "forgot?",
           variant: "anchor",
-          size: "sm",
+          size: "xs",
           href: "/auth/forgot-password",
           icon: "",
           iconPosition: "left",
+          tooltipText: "Forgot your password?",
+          tooltipPosition: "top",
         },
         {
           type: "next",
