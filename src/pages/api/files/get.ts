@@ -148,7 +148,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     if (filters.targetLocation) {
       query = query.eq("targetLocation", filters.targetLocation);
-        // console.log("📁 [FILES-GET] Added targetLocation filter:", filters.targetLocation);
+      // console.log("📁 [FILES-GET] Added targetLocation filter:", filters.targetLocation);
     }
 
     if (filters.bucketName) {
@@ -158,7 +158,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     if (filters.status) {
       query = query.eq("status", filters.status);
-        // console.log("📁 [FILES-GET] Added status filter:", filters.status);
+      // console.log("📁 [FILES-GET] Added status filter:", filters.status);
     }
 
     // Apply compound filters if provided
@@ -265,7 +265,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           .select("featuredImageId")
           .eq("id", parseInt(filters.projectId))
           .single();
-        
+
         featuredImageId = projectData?.featuredImageId;
         // console.log(`📁 [FILES-GET] Project ${filters.projectId} featuredImageId:`, featuredImageId);
       } catch (projectError) {
@@ -275,15 +275,15 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // Get checkout status from files table (it already has checkedOutBy columns)
     // Enrich with user names for checked out files
-    const fileIds = (files || []).map(f => f.id);
+    const fileIds = (files || []).map((f) => f.id);
     let checkoutMap = new Map();
-    
-    if (fileIds.length > 0 && files && files.some(f => f.checkedOutBy)) {
+
+    if (fileIds.length > 0 && files && files.some((f) => f.checkedOutBy)) {
       try {
         // Get unique user IDs who have files checked out
-        const checkedOutByIds = [...new Set((files || [])
-          .filter(f => f.checkedOutBy)
-          .map(f => f.checkedOutBy))];
+        const checkedOutByIds = [
+          ...new Set((files || []).filter((f) => f.checkedOutBy).map((f) => f.checkedOutBy)),
+        ];
 
         if (checkedOutByIds.length > 0) {
           const { data: profiles } = await supabaseAdmin!
@@ -292,9 +292,10 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             .in("id", checkedOutByIds);
 
           if (profiles) {
-            profiles.forEach(profile => {
-              const displayName = profile.companyName || 
-                `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 
+            profiles.forEach((profile) => {
+              const displayName =
+                profile.companyName ||
+                `${profile.firstName || ""} ${profile.lastName || ""}`.trim() ||
                 profile.email;
               checkoutMap.set(profile.id, displayName);
             });
@@ -307,19 +308,23 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     // Filter out any files with invalid IDs (safety check)
-    const validFiles = (files || []).filter(file => file.id && Number.isInteger(file.id) && file.id > 0);
+    const validFiles = (files || []).filter(
+      (file) => file.id && Number.isInteger(file.id) && file.id > 0
+    );
 
     if (validFiles.length < (files || []).length) {
-      console.warn(`⚠️ [FILES-GET] Filtered out ${(files || []).length - validFiles.length} files with invalid IDs`);
+      console.warn(
+        `⚠️ [FILES-GET] Filtered out ${(files || []).length - validFiles.length} files with invalid IDs`
+      );
     }
 
     // Generate signed URLs for each file and add checkout name + featured status
     const filesWithUrls = await Promise.all(
       validFiles.map(async (file) => {
-        const checked_out_by_name = file.checkedOutBy 
-          ? (checkoutMap.get(file.checkedOutBy) || 'Unknown')
+        const checked_out_by_name = file.checkedOutBy
+          ? checkoutMap.get(file.checkedOutBy) || "Unknown"
           : null;
-        
+
         // Check if this file is the featured image
         const isFeatured = featuredImageId && file.id === parseInt(featuredImageId);
 
@@ -660,10 +665,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // });
 
     // Filter out any files with invalid IDs (safety check)
-    const validFiles = (files || []).filter(file => file.id && Number.isInteger(file.id) && file.id > 0);
+    const validFiles = (files || []).filter(
+      (file) => file.id && Number.isInteger(file.id) && file.id > 0
+    );
 
     if (validFiles.length < (files || []).length) {
-      console.warn(`⚠️ [FILES-GET] Filtered out ${(files || []).length - validFiles.length} files with invalid IDs`);
+      console.warn(
+        `⚠️ [FILES-GET] Filtered out ${(files || []).length - validFiles.length} files with invalid IDs`
+      );
     }
 
     // Generate signed URLs for each file

@@ -97,7 +97,10 @@ import MultiStepForm from "../../components/form/MultiStepForm.astro";
       try {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
-          options: { redirectTo: callbackUrl, queryParams: { access_type: "offline", prompt: "consent" } },
+          options: {
+            redirectTo: callbackUrl,
+            queryParams: { access_type: "offline", prompt: "consent" },
+          },
         });
         if (error && (window as any).showNotice) {
           (window as any).showNotice("error", "Sign In Error", error.message);
@@ -116,7 +119,7 @@ import MultiStepForm from "../../components/form/MultiStepForm.astro";
     document.addEventListener(
       "click",
       (e) => {
-        const btn = (e.target as HTMLElement).closest?.(".provider-btn[data-provider=\"google\"]");
+        const btn = (e.target as HTMLElement).closest?.('.provider-btn[data-provider="google"]');
         if (btn && !(btn as HTMLButtonElement).disabled) {
           e.stopImmediatePropagation();
           triggerGoogleOAuth(e as Event);

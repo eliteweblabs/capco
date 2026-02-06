@@ -193,9 +193,7 @@ export async function getProjectsByAuthor(
 
     // Get unique author and assigned-to IDs
     const authorIds = [...new Set((projects || []).map((p) => p.authorId).filter(Boolean))];
-    const assignedToIds = [
-      ...new Set((projects || []).map((p) => p.assignedToId).filter(Boolean)),
-    ];
+    const assignedToIds = [...new Set((projects || []).map((p) => p.assignedToId).filter(Boolean))];
     const allProfileIds = [...new Set([...authorIds, ...assignedToIds])];
 
     // Fetch all relevant profiles in one query
@@ -268,9 +266,7 @@ export async function getProjectsByAssignedToId(
 
     // Get unique author and assigned-to IDs
     const authorIds = [...new Set((projects || []).map((p) => p.authorId).filter(Boolean))];
-    const assignedToIds = [
-      ...new Set((projects || []).map((p) => p.assignedToId).filter(Boolean)),
-    ];
+    const assignedToIds = [...new Set((projects || []).map((p) => p.assignedToId).filter(Boolean))];
     const allProfileIds = [...new Set([...authorIds, ...assignedToIds])];
 
     // Fetch all relevant profiles in one query

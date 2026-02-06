@@ -11,9 +11,11 @@ import BannerAlert from "./BannerAlert.astro";
 interface Props {
   position?: "top" | "bottom" | "all";
   width?: "full" | "auto";
+  /** Current pathname (e.g. from Astro.url.pathname). Used to filter banners by targetPages. */
+  pathname?: string;
 }
 
-const { position = "all", width = "full" } = Astro.props;
+const { position = "all", width = "full", pathname } = Astro.props;
 
 // Fetch active banner alerts
 let banners: any[] = [];
@@ -42,9 +44,21 @@ if (supabaseAdmin) {
   }
 }
 
+// Filter by target pages when pathname is provided
+const currentSlug = pathname ? pathname.replace(/^\//, "").split("/")[0] || "" : null;
+const filteredBanners =
+  pathname && currentSlug !== ""
+    ? banners.filter((b) => {
+        const target = (b.targetPages || "").trim();
+        if (!target) return true; // no targeting = show on all pages
+        const slugs = target.split(",").map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+        return slugs.includes(currentSlug.toLowerCase());
+      })
+    : banners;
+
 // Group banners by position
-const topBanners = banners.filter((b) => b.position === "top");
-const bottomBanners = banners.filter((b) => b.position === "bottom");
+const topBanners = filteredBanners.filter((b) => b.position === "top");
+const bottomBanners = filteredBanners.filter((b) => b.position === "bottom");
 
 // Debug logging
 // console.log("[BannerAlertsLoader] Total banners:", banners.length);
@@ -52,8 +66,8 @@ const bottomBanners = banners.filter((b) => b.position === "bottom");
 // console.log("[BannerAlertsLoader] Bottom banners:", bottomBanners.length);
 // console.log("[BannerAlertsLoader] Position filter:", position);
 
-// Get all banner IDs for early dismiss check
-const allBannerIds = banners.map((b) => String(b.id));
+// Get all banner IDs for early dismiss check (use filtered so hidden banners stay hidden)
+const allBannerIds = filteredBanners.map((b) => String(b.id));
 ---
 
 <!-- 

@@ -60,7 +60,7 @@ const avatarUrl =
           class={globalIconButtonClasses}
         >
           <span class="sr-only">Open user menu</span>
-          <SimpleIcon name="user" size="md" class="text-black dark:text-white" />
+          <SimpleIcon name="user" size="md" />
         </button>
       )}
 
@@ -115,13 +115,29 @@ const avatarUrl =
             </a>
           </li>
         </ul>
+
+        {/* Page size toggle: larger elements for mobile/accessibility */}
+        <ul class="p-2 text-sm font-medium text-gray-900 dark:text-white border-t color-border">
+          <li>
+            <button
+              type="button"
+              id="page-size-toggle"
+              title="Toggle larger page elements (better on mobile)"
+              class={`w-full text-left ${globalIconButtonClasses}`}
+              aria-pressed="false"
+            >
+              <SimpleIcon name="zoom-in" size="md" class="text-black dark:text-white mr-2" />
+              <span id="page-size-toggle-label">Larger page elements</span>
+            </button>
+          </li>
+        </ul>
       </div>
     </>
   ) : !isBackend ? (
     // <Button href="/auth/login" variant="anchor" size="xs">
     <a href={authLink} title="Sign In" class={globalIconButtonClasses}>
       <Tooltip text={authTooltipText} position="bottom">
-        <SimpleIcon name="user" size="md" class="text-black dark:text-white" />
+        <SimpleIcon name="user" size="md" />
         <span class="sr-only">Sign In</span>
       </Tooltip>
     </a>
@@ -130,8 +146,33 @@ const avatarUrl =
 }
 
 <script>
+  const PAGE_SIZE_KEY = "page-size";
+
+  function updatePageSizeUI() {
+    const isLarge = document.documentElement.getAttribute("data-page-size") === "large";
+    const label = document.getElementById("page-size-toggle-label");
+    const btn = document.getElementById("page-size-toggle");
+    if (label) label.textContent = isLarge ? "Normal page elements" : "Larger page elements";
+    if (btn) btn.setAttribute("aria-pressed", String(isLarge));
+  }
+
+  function initPageSizeToggle() {
+    const btn = document.getElementById("page-size-toggle");
+    if (!btn) return;
+    updatePageSizeUI();
+    btn.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-page-size") || "normal";
+      const next = current === "large" ? "normal" : "large";
+      document.documentElement.setAttribute("data-page-size", next);
+      localStorage.setItem(PAGE_SIZE_KEY, next);
+      updatePageSizeUI();
+    });
+  }
+
   // Handle Google avatar loading errors and rate limiting (429 errors)
   document.addEventListener("DOMContentLoaded", () => {
+    initPageSizeToggle();
+
     const avatarButton = document.querySelector(".avatar-button");
 
     if (avatarButton) {

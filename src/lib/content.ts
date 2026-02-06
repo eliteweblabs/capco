@@ -448,8 +448,39 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
   }
 
   // Return null if no content found (will trigger 404)
-  console.warn(`⚠️ [CONTENT] No content found for page: ${slug}`);
+  // Skip logging for obvious bot/scanner probes to avoid log noise (wp-*, .php, favicon, etc.)
+  if (!isLikelyBotProbe(slug)) {
+    console.warn(`⚠️ [CONTENT] No content found for page: ${slug}`);
+  }
   return null;
+}
+
+/**
+ * Heuristic: treat as bot/scanner probe so we don't log 404s for WordPress/PHP exploit scans.
+ * Still returns 404; this only suppresses the warning log.
+ */
+function isLikelyBotProbe(slug: string): boolean {
+  const s = slug.toLowerCase();
+  if (!s || s.length > 120) return true;
+  if (s.endsWith(".php") || s.includes(".php")) return true;
+  if (s === "favicon.ico" || s.endsWith("/favicon.ico")) return true;
+  if (s.startsWith("wp-") || s.includes("/wp-")) return true;
+  if (
+    s.includes("wp-admin") ||
+    s.includes("wp-includes") ||
+    s.includes("wp-content") ||
+    s.includes("wp-trackback")
+  )
+    return true;
+  if (s.startsWith(".well-known/")) return true;
+  if (
+    /^(install|admin|config|wp-conflg|manager|login|xmlrpc|readme|license)\.php$/i.test(
+      s.split("/").pop() || ""
+    )
+  )
+    return true;
+  if (/^\d{1,4}\.php$/.test(s.split("/").pop() || "")) return true; // e.g. 403.php, 404.php
+  return false;
 }
 
 /**

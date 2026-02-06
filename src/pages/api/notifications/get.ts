@@ -138,7 +138,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       // Check for column name issues
       if (
         error.message &&
-        (error.message.includes('column') && error.message.includes('does not exist'))
+        error.message.includes("column") &&
+        error.message.includes("does not exist")
       ) {
         return new Response(
           JSON.stringify({

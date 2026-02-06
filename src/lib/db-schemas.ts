@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS "bannerAlerts" (
   "isActive" BOOLEAN DEFAULT true,
   "startDate" TIMESTAMPTZ,
   "endDate" TIMESTAMPTZ,
+  "targetPages" TEXT,
   "createdBy" UUID REFERENCES auth.users(id),
   "createdAt" TIMESTAMPTZ DEFAULT now(),
   "updatedAt" TIMESTAMPTZ DEFAULT now()

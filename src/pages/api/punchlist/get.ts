@@ -138,8 +138,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
     // Manually join with profiles if punchlist items exist
     if (punchlistItems && punchlistItems.length > 0) {
-      const authorIds = [...new Set(punchlistItems.map((item: any) => item.authorId).filter(Boolean))];
-      
+      const authorIds = [
+        ...new Set(punchlistItems.map((item: any) => item.authorId).filter(Boolean)),
+      ];
+
       if (authorIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabaseAdmin
           .from("profiles")

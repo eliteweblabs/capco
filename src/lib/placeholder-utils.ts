@@ -134,10 +134,10 @@ export async function replacePlaceholders(
   // === LEGACY PLACEHOLDER REPLACEMENT ===
   // Extract data from project object and additional data
   const projectId = data?.project?.id;
-  
+
   // Get base URL from request first, then database, then fallback
   let baseUrl: string | undefined;
-  
+
   // First priority: Use request URL if available
   if (request) {
     try {
@@ -147,17 +147,17 @@ export async function replacePlaceholders(
       console.error("🚨 [PLACEHOLDER-UTILS] Failed to parse request URL:", e);
     }
   }
-  
+
   // Second priority: Get from database (companyData already fetched above)
   if (!baseUrl && companyData?.globalCompanyWebsite) {
     baseUrl = companyData.globalCompanyWebsite;
   }
-  
+
   // Final fallback: localhost for development
   if (!baseUrl) {
     baseUrl = "http://localhost:4321";
   }
-  
+
   // Ensure baseUrl has proper protocol
   if (baseUrl && !baseUrl.startsWith("http")) {
     baseUrl = `https://${baseUrl}`;

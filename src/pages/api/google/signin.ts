@@ -10,21 +10,24 @@ function getOrigin(url: URL, request: Request): string {
       console.log("🔐 [GOOGLE-OAUTH] Using production URL from env:", prodUrl.origin);
       return prodUrl.origin;
     } catch (e) {
-      console.warn("⚠️ [GOOGLE-OAUTH] Invalid production URL in env, falling back to header detection");
+      console.warn(
+        "⚠️ [GOOGLE-OAUTH] Invalid production URL in env, falling back to header detection"
+      );
     }
   }
 
   // In production, use forwarded headers if available (Railway/Cloudflare/etc)
   if (import.meta.env.PROD) {
-    const forwardedProto = request.headers.get("x-forwarded-proto") || request.headers.get("x-forwarded-protocol");
+    const forwardedProto =
+      request.headers.get("x-forwarded-proto") || request.headers.get("x-forwarded-protocol");
     const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
-    
+
     if (forwardedProto && forwardedHost) {
       const origin = `${forwardedProto}://${forwardedHost}`;
       console.log("🔐 [GOOGLE-OAUTH] Using forwarded headers origin:", origin);
       return origin;
     }
-    
+
     // Fallback: use host header with https in production
     const host = request.headers.get("host");
     if (host) {
@@ -67,7 +70,7 @@ export const GET: APIRoute = async ({ url, redirect, cookies, request }) => {
   // Use /api/auth/callback so the GET handler can process Google OAuth server-side
   const origin = getOrigin(url, request);
   const redirectUrl = `${origin}/api/auth/callback`;
-  
+
   console.log("🔐 [GOOGLE-OAUTH] Redirect URL:", redirectUrl);
   console.log("🔐 [GOOGLE-OAUTH] Request headers:", {
     host: request.headers.get("host"),

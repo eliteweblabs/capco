@@ -81,42 +81,43 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
     lifeLike: true, // Add natural typing variations
     afterStep: () => {
       // Auto-scroll to keep cursor at fixed vertical position
-      const scrollWrapper = element.closest('.title-scroll-wrapper');
-      const scrollContainer = element.closest('.title-scroll-container');
+      const scrollWrapper = element.closest(".title-scroll-wrapper");
+      const scrollContainer = element.closest(".title-scroll-container");
       if (scrollWrapper) {
         // Check if content overflows
         const hasOverflow = scrollWrapper.scrollHeight > scrollWrapper.clientHeight;
-        
+
         if (hasOverflow) {
           // Add class to switch to top alignment when overflowing
-          scrollWrapper.classList.add('has-overflow');
-          
+          scrollWrapper.classList.add("has-overflow");
+
           // Find the cursor element
-          const cursor = element.querySelector('.ti-cursor');
+          const cursor = element.querySelector(".ti-cursor");
           if (cursor) {
             // Get cursor position relative to the scrollable container
             const cursorRect = cursor.getBoundingClientRect();
             const wrapperRect = scrollWrapper.getBoundingClientRect();
-            
+
             // Target position: keep cursor at 75% down the visible area (with settling effect)
             const targetPosition = wrapperRect.height * 0.75;
             const currentCursorPosition = cursorRect.top - wrapperRect.top;
-            
+
             // Calculate how much to scroll to keep cursor at target position
             const scrollAdjustment = currentCursorPosition - targetPosition;
-            
+
             // Apply scroll with smooth settling (only scroll if needed)
-            if (scrollAdjustment > 5) { // 5px threshold to avoid jitter
+            if (scrollAdjustment > 5) {
+              // 5px threshold to avoid jitter
               scrollWrapper.scrollTop += scrollAdjustment;
             }
           } else {
             // Fallback: scroll to bottom if cursor not found
             scrollWrapper.scrollTop = scrollWrapper.scrollHeight;
           }
-          
+
           // Check if scrolled and add class for fade effect
           if (scrollContainer && scrollWrapper.scrollTop > 10) {
-            scrollContainer.classList.add('is-scrolled');
+            scrollContainer.classList.add("is-scrolled");
           }
         }
       }
@@ -125,10 +126,10 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
       console.log("[TYPEWRITER] Animation complete, triggering content animations");
       // Dispatch custom event when typewriter completes
       element.dispatchEvent(new CustomEvent("typewriter-complete", { bubbles: true }));
-      
+
       // Remove cursor after 2 seconds
       setTimeout(() => {
-        const cursor = element.querySelector('.ti-cursor');
+        const cursor = element.querySelector(".ti-cursor");
         if (cursor) {
           cursor.remove();
           console.log("[TYPEWRITER] Cursor removed");
@@ -162,9 +163,7 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
           instance.type(word);
         } else {
           for (const char of word) {
-            instance.type(
-              `<span class="typewriter-char">${escapeHtml(char)}</span>`
-            );
+            instance.type(`<span class="typewriter-char">${escapeHtml(char)}</span>`);
           }
         }
 

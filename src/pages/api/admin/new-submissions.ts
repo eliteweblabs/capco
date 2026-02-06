@@ -16,17 +16,17 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const currentRole = currentUser?.profile?.role;
 
     if (!isAuth || !currentUser || currentRole !== "Admin") {
-      return new Response(
-        JSON.stringify({ success: false, error: "Admin access required" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Admin access required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const sinceParam = url.searchParams.get("since");
@@ -78,7 +78,11 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }
 
     const contactSubmissions = contactResult.data || [];
-    console.log("[---ADMIN-NEW-SUBMISSIONS] GET", { since: sinceIso, contactCount: contactSubmissions.length, mepCount: mepWithNames.length });
+    console.log("[---ADMIN-NEW-SUBMISSIONS] GET", {
+      since: sinceIso,
+      contactCount: contactSubmissions.length,
+      mepCount: mepWithNames.length,
+    });
 
     return new Response(
       JSON.stringify({
@@ -94,9 +98,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     );
   } catch (error) {
     console.error("[---ADMIN-NEW-SUBMISSIONS] Error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: false, error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

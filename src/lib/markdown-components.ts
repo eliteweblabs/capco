@@ -13,25 +13,25 @@ export interface ComponentShortcode {
 
 /**
  * Parse component shortcodes from markdown content
- * Supports: 
+ * Supports:
  *   - Self-closing: <ComponentName prop="value"/>
  *   - With children: <ComponentName>...content...</ComponentName>
  *   - With slots: <ComponentName><div slot="left">...</div></ComponentName>
  */
 export function parseComponentShortcodes(content: string): ComponentShortcode[] {
   const components: ComponentShortcode[] = [];
-  const processedRanges: Array<{start: number; end: number}> = [];
+  const processedRanges: Array<{ start: number; end: number }> = [];
   let index = 0;
 
   // First pass: Match components with closing tags (may have children/slots)
   const componentWithChildrenRegex = /<([A-Z][a-zA-Z0-9]*)\s*([^>]*?)>([^]*?)<\/\1>/g;
-  
+
   let match;
   while ((match = componentWithChildrenRegex.exec(content)) !== null) {
     const [fullMatch, componentName, propsString, children] = match;
     const props = parseProps(propsString);
     const id = `__COMPONENT_${index}__`;
-    
+
     // Extract slot content from children
     const slotProps = extractSlotContent(children);
     Object.assign(props, slotProps);
@@ -50,16 +50,16 @@ export function parseComponentShortcodes(content: string): ComponentShortcode[] 
 
   // Second pass: Match self-closing tags that weren't part of a component with children
   const selfClosingRegex = /<([A-Z][a-zA-Z0-9]*)\s*([^>]*?)\/>/g;
-  
+
   while ((match = selfClosingRegex.exec(content)) !== null) {
     const matchStart = match.index;
     const matchEnd = match.index + match[0].length;
-    
+
     // Skip if this was already processed as part of a component with children
     const alreadyProcessed = processedRanges.some(
-      range => matchStart >= range.start && matchEnd <= range.end
+      (range) => matchStart >= range.start && matchEnd <= range.end
     );
-    
+
     if (alreadyProcessed) continue;
 
     const [fullMatch, componentName, propsString] = match;
@@ -89,20 +89,20 @@ export function parseComponentShortcodes(content: string): ComponentShortcode[] 
  */
 function extractSlotContent(children: string): Record<string, string> {
   const slotProps: Record<string, string> = {};
-  
+
   // Match slot divs: <div slot="slotName">...content...</div>
   const slotRegex = /<div\s+slot=["']([^"']+)["'][^>]*>([^]*?)<\/div>/gi;
-  
+
   let match;
   while ((match = slotRegex.exec(children)) !== null) {
     const [, slotName, slotContent] = match;
-    
+
     // Convert slot name to content prop name
     // "left" -> "leftContent", "col1" -> "col1Content", "content" -> "mainContent", "sidebar" -> "sidebarContent"
     const propName = slotNameToPropName(slotName);
     slotProps[propName] = slotContent.trim();
   }
-  
+
   return slotProps;
 }
 
@@ -111,15 +111,15 @@ function extractSlotContent(children: string): Record<string, string> {
  */
 function slotNameToPropName(slotName: string): string {
   const slotMapping: Record<string, string> = {
-    'left': 'leftContent',
-    'right': 'rightContent',
-    'col1': 'col1Content',
-    'col2': 'col2Content',
-    'col3': 'col3Content',
-    'content': 'mainContent',
-    'sidebar': 'sidebarContent',
+    left: "leftContent",
+    right: "rightContent",
+    col1: "col1Content",
+    col2: "col2Content",
+    col3: "col3Content",
+    content: "mainContent",
+    sidebar: "sidebarContent",
   };
-  
+
   return slotMapping[slotName] || `${slotName}Content`;
 }
 

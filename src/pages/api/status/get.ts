@@ -64,11 +64,14 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         // console.log("🔍 [PROJECT-STATUSES-API] Fetching project data for ID:", projectId);
 
         // Fetch project data using projects/get API
-        const projectResponse = await fetch(`${getApiBaseUrl(request)}/api/projects/get?id=${projectId}`, {
-          headers: {
-            Cookie: request.headers.get("Cookie") || "",
-          },
-        });
+        const projectResponse = await fetch(
+          `${getApiBaseUrl(request)}/api/projects/get?id=${projectId}`,
+          {
+            headers: {
+              Cookie: request.headers.get("Cookie") || "",
+            },
+          }
+        );
         if (projectResponse.ok) {
           const projectData = await projectResponse.json();
           // projects/get returns { data: {...} } for single project
@@ -77,7 +80,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             hasProject: !!project,
             hasAuthorProfile: !!project?.authorProfile,
             address: project?.address,
-            clientName: project?.authorProfile?.companyName
+            clientName: project?.authorProfile?.companyName,
           });
         } else {
           console.error(
@@ -166,7 +169,9 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     if (statusesData.length === 0) {
       console.warn("⚠️ [PROJECT-STATUSES-API] Database returned empty array - no statuses found");
-      console.warn("⚠️ [PROJECT-STATUSES-API] This means the projectStatuses table has no rows (or all have statusCode = 0)");
+      console.warn(
+        "⚠️ [PROJECT-STATUSES-API] This means the projectStatuses table has no rows (or all have statusCode = 0)"
+      );
     } else {
       console.log(`✅ [PROJECT-STATUSES-API] Found ${statusesData.length} statuses in database`);
     }

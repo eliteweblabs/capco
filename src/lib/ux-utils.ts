@@ -1052,7 +1052,7 @@ export function hideModal(modalId: string, resetZIndex: boolean = true): void {
   if (overlay) {
     overlay.classList.add("hidden");
     overlay.classList.remove("flex");
-    
+
     // Reset z-index to default if requested (useful for global overlay)
     if (resetZIndex && overlay.id === "global-modal-overlay") {
       overlay.style.zIndex = "1000";

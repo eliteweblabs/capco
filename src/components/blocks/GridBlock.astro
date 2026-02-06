@@ -1,10 +1,10 @@
 ---
 /**
  * GridBlock - Flexible Grid Layout
- * 
+ *
  * Wraps child elements in a responsive grid.
  * Children are automatically placed in the grid.
- * 
+ *
  * @example Basic usage:
  * <GridBlock columns={3}>
  *   <div>Item 1</div>
@@ -12,7 +12,7 @@
  *   <div>Item 3</div>
  *   <div>Item 4</div>
  * </GridBlock>
- * 
+ *
  * @example Responsive columns:
  * <GridBlock columns={4} mobileColumns={1} tabletColumns={2}>
  *   <!-- Items will show 1 col on mobile, 2 on tablet, 4 on desktop -->
@@ -22,36 +22,36 @@
 interface Props {
   // Number of columns
   columns?: number | string;
-  
+
   // Responsive column overrides
   mobileColumns?: number | string;
   tabletColumns?: number | string;
-  
+
   // Gap between items
-  gap?: 'none' | 'small' | 'medium' | 'large' | 'xl';
-  
+  gap?: "none" | "small" | "medium" | "large" | "xl";
+
   // Row gap (if different from column gap)
-  rowGap?: 'none' | 'small' | 'medium' | 'large' | 'xl';
-  
+  rowGap?: "none" | "small" | "medium" | "large" | "xl";
+
   // Vertical alignment
-  align?: 'start' | 'center' | 'end' | 'stretch';
-  
+  align?: "start" | "center" | "end" | "stretch";
+
   // Horizontal alignment
-  justify?: 'start' | 'center' | 'end' | 'stretch';
-  
+  justify?: "start" | "center" | "end" | "stretch";
+
   // Container settings
   contained?: boolean | string;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
-  
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+
   // Padding
-  padding?: 'none' | 'small' | 'medium' | 'large';
-  
+  padding?: "none" | "small" | "medium" | "large";
+
   // Background
   backgroundColor?: string;
-  
+
   // Props-based content (for CMS/dynamic rendering)
   content?: string;
-  
+
   // Styling
   className?: string;
   id?: string;
@@ -59,25 +59,31 @@ interface Props {
 
 const props = Astro.props;
 const {
-  gap = 'medium',
+  gap = "medium",
   rowGap,
-  align = 'stretch',
-  justify = 'stretch',
-  maxWidth = '2xl',
+  align = "stretch",
+  justify = "stretch",
+  maxWidth = "2xl",
   backgroundColor,
   content,
-  className = '',
+  className = "",
   id,
 } = props;
 
 // Parse column values
-const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 3);
-const mobileColumns = typeof props.mobileColumns === 'string' ? parseInt(props.mobileColumns) : (props.mobileColumns ?? 1);
-const tabletColumns = typeof props.tabletColumns === 'string' ? parseInt(props.tabletColumns) : (props.tabletColumns ?? 2);
+const columns = typeof props.columns === "string" ? parseInt(props.columns) : (props.columns ?? 3);
+const mobileColumns =
+  typeof props.mobileColumns === "string"
+    ? parseInt(props.mobileColumns)
+    : (props.mobileColumns ?? 1);
+const tabletColumns =
+  typeof props.tabletColumns === "string"
+    ? parseInt(props.tabletColumns)
+    : (props.tabletColumns ?? 2);
 
 // Handle boolean/string conversions
-const contained = props.contained !== 'false' && props.contained !== false;
-const padding = props.padding || 'medium';
+const contained = props.contained !== "false" && props.contained !== false;
+const padding = props.padding || "medium";
 
 // Column classes (1-6)
 const mobileColClass = `grid-cols-${Math.min(mobileColumns, 6)}`;
@@ -86,80 +92,79 @@ const desktopColClass = `lg:grid-cols-${Math.min(columns, 6)}`;
 
 // Gap classes
 const gapClasses = {
-  none: 'gap-0',
-  small: 'gap-4',
-  medium: 'gap-6',
-  large: 'gap-8',
-  xl: 'gap-12',
+  none: "gap-0",
+  small: "gap-4",
+  medium: "gap-6",
+  large: "gap-8",
+  xl: "gap-12",
 };
 
 // Row gap classes (if specified separately)
 const rowGapClasses = {
-  none: 'gap-y-0',
-  small: 'gap-y-4',
-  medium: 'gap-y-6',
-  large: 'gap-y-8',
-  xl: 'gap-y-12',
+  none: "gap-y-0",
+  small: "gap-y-4",
+  medium: "gap-y-6",
+  large: "gap-y-8",
+  xl: "gap-y-12",
 };
 
 // Alignment classes
 const alignClasses = {
-  start: 'items-start',
-  center: 'items-center',
-  end: 'items-end',
-  stretch: 'items-stretch',
+  start: "items-start",
+  center: "items-center",
+  end: "items-end",
+  stretch: "items-stretch",
 };
 
 // Justify classes
 const justifyClasses = {
-  start: 'justify-items-start',
-  center: 'justify-items-center',
-  end: 'justify-items-end',
-  stretch: 'justify-items-stretch',
+  start: "justify-items-start",
+  center: "justify-items-center",
+  end: "justify-items-end",
+  stretch: "justify-items-stretch",
 };
 
 // Max width classes
 const maxWidthClasses = {
-  sm: 'max-w-screen-sm',
-  md: 'max-w-screen-md',
-  lg: 'max-w-screen-lg',
-  xl: 'max-w-screen-xl',
-  '2xl': 'max-w-7xl',
-  full: 'max-w-full',
+  sm: "max-w-screen-sm",
+  md: "max-w-screen-md",
+  lg: "max-w-screen-lg",
+  xl: "max-w-screen-xl",
+  "2xl": "max-w-7xl",
+  full: "max-w-full",
 };
 
 // Padding classes
 const paddingClasses = {
-  none: '',
-  small: 'py-8',
-  medium: 'py-12 md:py-16',
-  large: 'py-16 md:py-24',
+  none: "",
+  small: "py-8",
+  medium: "py-12 md:py-16",
+  large: "py-16 md:py-24",
 };
 ---
 
-<section 
-  id={id}
-  class:list={[
-    'grid-block',
-    paddingClasses[padding],
-    backgroundColor || '',
-    className,
-  ]}
+<section
+  {id}
+  class:list={["grid-block", paddingClasses[padding], backgroundColor || "", className]}
 >
-  <div class:list={[
-    contained && 'mx-auto px-4 sm:px-6 lg:px-8',
-    contained && maxWidthClasses[maxWidth],
-  ]}>
-    <div class:list={[
-      'grid',
-      mobileColClass,
-      tabletColClass,
-      desktopColClass,
-      gapClasses[gap],
-      rowGap && rowGapClasses[rowGap],
-      alignClasses[align],
-      justifyClasses[justify],
-    ]}>
+  <div
+    class:list={[
+      contained && "mx-auto px-4 sm:px-6 lg:px-8",
+      contained && maxWidthClasses[maxWidth],
+    ]}
+  >
+    <div
+      class:list={[
+        "grid",
+        mobileColClass,
+        tabletColClass,
+        desktopColClass,
+        gapClasses[gap],
+        rowGap && rowGapClasses[rowGap],
+        alignClasses[align],
+        justifyClasses[justify],
+      ]}
+    >
       {content ? <Fragment set:html={content} /> : <slot />}
     </div>
   </div>

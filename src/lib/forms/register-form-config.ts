@@ -89,7 +89,8 @@ export const registerFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "login",
+          label: "have an account?",
+          icon: "",
           variant: "anchor",
           href: "/auth/login",
         },

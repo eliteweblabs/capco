@@ -71,7 +71,10 @@ async function handleDelete(request: Request, cookies: any): Promise<Response> {
     }
 
     // Delete the notification
-    const { error: deleteError } = await supabaseAdmin.from("notifications").delete().eq("id", notifId);
+    const { error: deleteError } = await supabaseAdmin
+      .from("notifications")
+      .delete()
+      .eq("id", notifId);
 
     if (deleteError) {
       console.error("❌ [NOTIFICATIONS-DELETE] Error deleting notification:", deleteError);

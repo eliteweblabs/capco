@@ -5,6 +5,7 @@
 ### Step 1: Add to Your Page
 
 **Option A - Direct Component:**
+
 ```astro
 ---
 import ContactForm from "@/features/contact-form/components/ContactForm.astro";
@@ -14,6 +15,7 @@ import ContactForm from "@/features/contact-form/components/ContactForm.astro";
 ```
 
 **Option B - CMS Shortcode:**
+
 ```markdown
 <ContactForm />
 ```
@@ -30,6 +32,7 @@ That's it! The form automatically detects if setup is needed.
 ## ⚡ WordPress-Style Experience
 
 While we can't auto-create tables like WordPress (Supabase security), we provide:
+
 - ✅ **Auto-detection** of missing table
 - ✅ **Exact SQL commands** in error message
 - ✅ **Server logs** with complete setup code
@@ -40,6 +43,7 @@ Best of both worlds: WordPress convenience + database security!
 ## 📋 That's It!
 
 The form includes:
+
 - ✅ 6-step wizard with progress bar
 - ✅ Name, Email, Phone, Company fields
 - ✅ **Google Places address search** (SlotMachine)
@@ -54,6 +58,7 @@ The form includes:
 Submissions are saved to `contact_submissions` table in Supabase.
 
 View them in:
+
 1. Supabase Dashboard → Table Editor
 2. Or query directly:
    ```sql
@@ -63,6 +68,7 @@ View them in:
 ## 🎨 Customize
 
 The form uses your site's existing design system:
+
 - Primary colors from your theme
 - Same styling as MultiStepRegisterForm
 - Fully customizable via Tailwind classes
@@ -70,6 +76,7 @@ The form uses your site's existing design system:
 ## 📱 Mobile First
 
 Already optimized for mobile with:
+
 - Touch-friendly buttons
 - Smooth swipe gestures for SlotMachine
 - Responsive text sizes

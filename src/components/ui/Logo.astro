@@ -80,7 +80,6 @@ export interface Props {
 
 const { link = "/" } = Astro.props;
 
-
 // Validate link
 let validLink = link;
 if (typeof validLink === "string") {
@@ -95,7 +94,9 @@ if (typeof validLink === "string") {
 const logoClassesFromDb = companyData.logoClasses || "";
 // Merge prop className with database classes (prop classes come first for specificity)
 const propClassName = Astro.props.className || "";
-const className = propClassName ? `${propClassName} ${logoClassesFromDb}`.trim() : logoClassesFromDb;
+const className = propClassName
+  ? `${propClassName} ${logoClassesFromDb}`.trim()
+  : logoClassesFromDb;
 
 // Debug logging (will only show in dev/server logs)
 if (import.meta.env.DEV) {
@@ -105,14 +106,16 @@ if (import.meta.env.DEV) {
 }
 ---
 
-{logoSvg && logoSvg.includes("<svg") && (
-  <a
-    href={validLink}
-    title="Go to home page"
-    class={`logo-svg-wrapper ${className}`.trim()}
-    set:html={logoSvg}
-  />
-)}
+{
+  logoSvg && logoSvg.includes("<svg") && (
+    <a
+      href={validLink}
+      title="Go to home page"
+      class={`logo-svg-wrapper ${className}`.trim()}
+      set:html={logoSvg}
+    />
+  )
+}
 
 <script>
   // COMMENTED OUT: Client-side SVG modifications were changing the logo from database

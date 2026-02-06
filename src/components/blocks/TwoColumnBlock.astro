@@ -1,22 +1,22 @@
 ---
 /**
  * TwoColumnBlock - Two Column Layout
- * 
+ *
  * Wraps content in a two-column layout with flexible column widths.
  * Supports both named slots (direct usage) and props-based content (CMS usage).
- * 
+ *
  * @example Basic usage with named slots:
  * <TwoColumnBlock>
  *   <div slot="left">Left column content</div>
  *   <div slot="right">Right column content</div>
  * </TwoColumnBlock>
- * 
+ *
  * @example CMS usage with props:
- * <TwoColumnBlock 
+ * <TwoColumnBlock
  *   leftContent="<h2>Left Title</h2><p>Content here</p>"
  *   rightContent="<img src='/image.jpg' />"
  * />
- * 
+ *
  * @example With different ratios:
  * <TwoColumnBlock ratio="2:1" gap="large">
  *   <div slot="left">Wider left column</div>
@@ -26,175 +26,182 @@
 
 interface Props {
   // Column ratio (left:right)
-  ratio?: '1:1' | '2:1' | '1:2' | '3:1' | '1:3' | '3:2' | '2:3' | '4:1' | '1:4';
-  
+  ratio?: "1:1" | "2:1" | "1:2" | "3:1" | "1:3" | "3:2" | "2:3" | "4:1" | "1:4";
+
   // Gap between columns
-  gap?: 'none' | 'small' | 'medium' | 'large' | 'xl';
-  
+  gap?: "none" | "small" | "medium" | "large" | "xl";
+
   // Vertical alignment
-  align?: 'start' | 'center' | 'end' | 'stretch';
-  
+  align?: "start" | "center" | "end" | "stretch";
+
   // Mobile stacking behavior
-  mobileStack?: 'left-first' | 'right-first' | 'none';
-  
+  mobileStack?: "left-first" | "right-first" | "none";
+
   // Reverse column order on desktop
   reversed?: boolean | string;
-  
+
   // Add divider between columns
   divider?: boolean | string;
-  
+
   // Container settings
   contained?: boolean | string;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
-  
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+
   // Padding
-  padding?: 'none' | 'small' | 'medium' | 'large';
-  
+  padding?: "none" | "small" | "medium" | "large";
+
   // Background
   backgroundColor?: string;
-  
+
   // Props-based content (for CMS/dynamic rendering)
   leftContent?: string;
   rightContent?: string;
-  
+
   // Styling
   className?: string;
   id?: string;
-  
+
   // Animation
-  animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
+  animate?:
+    | boolean
+    | string
+    | "fade-blur-scale"
+    | "fade-blur"
+    | "fade-scale"
+    | "fade-up"
+    | "fade-up-blur"
+    | "zoom-blur"
+    | "fade";
   animateDelay?: string;
 }
 
 const props = Astro.props;
 const {
-  ratio = '1:1',
-  gap = 'medium',
-  align = 'start',
-  mobileStack = 'left-first',
+  ratio = "1:1",
+  gap = "medium",
+  align = "start",
+  mobileStack = "left-first",
   divider,
-  maxWidth = '2xl',
+  maxWidth = "2xl",
   backgroundColor,
   leftContent,
   rightContent,
-  className = '',
+  className = "",
   id,
 } = props;
 
 // Handle boolean/string conversions
-const reversed = props.reversed === 'true' || props.reversed === true;
-const contained = props.contained !== 'false' && props.contained !== false;
-const showDivider = divider === 'true' || divider === true;
-const padding = props.padding || 'medium';
+const reversed = props.reversed === "true" || props.reversed === true;
+const contained = props.contained !== "false" && props.contained !== false;
+const showDivider = divider === "true" || divider === true;
+const padding = props.padding || "medium";
 
 // Handle animation prop - enabled by default
 const getAnimationType = () => {
-  if (props.animate === 'false' || props.animate === false) return null;
-  if (props.animate === 'true' || props.animate === true) return 'fade-blur-scale';
-  if (typeof props.animate === 'string') return props.animate;
-  return 'fade-blur-scale'; // Default animation
+  if (props.animate === "false" || props.animate === false) return null;
+  if (props.animate === "true" || props.animate === true) return "fade-blur-scale";
+  if (typeof props.animate === "string") return props.animate;
+  return "fade-blur-scale"; // Default animation
 };
 const animationType = getAnimationType();
 const animateDelay = props.animateDelay;
 
 // Ratio to grid column classes
 const ratioClasses: Record<string, { left: string; right: string }> = {
-  '1:1': { left: 'lg:col-span-6', right: 'lg:col-span-6' },
-  '2:1': { left: 'lg:col-span-8', right: 'lg:col-span-4' },
-  '1:2': { left: 'lg:col-span-4', right: 'lg:col-span-8' },
-  '3:1': { left: 'lg:col-span-9', right: 'lg:col-span-3' },
-  '1:3': { left: 'lg:col-span-3', right: 'lg:col-span-9' },
-  '3:2': { left: 'lg:col-span-7', right: 'lg:col-span-5' },
-  '2:3': { left: 'lg:col-span-5', right: 'lg:col-span-7' },
-  '4:1': { left: 'lg:col-span-10', right: 'lg:col-span-2' },
-  '1:4': { left: 'lg:col-span-2', right: 'lg:col-span-10' },
+  "1:1": { left: "lg:col-span-6", right: "lg:col-span-6" },
+  "2:1": { left: "lg:col-span-8", right: "lg:col-span-4" },
+  "1:2": { left: "lg:col-span-4", right: "lg:col-span-8" },
+  "3:1": { left: "lg:col-span-9", right: "lg:col-span-3" },
+  "1:3": { left: "lg:col-span-3", right: "lg:col-span-9" },
+  "3:2": { left: "lg:col-span-7", right: "lg:col-span-5" },
+  "2:3": { left: "lg:col-span-5", right: "lg:col-span-7" },
+  "4:1": { left: "lg:col-span-10", right: "lg:col-span-2" },
+  "1:4": { left: "lg:col-span-2", right: "lg:col-span-10" },
 };
 
-const columnRatio = ratioClasses[ratio] || ratioClasses['1:1'];
+const columnRatio = ratioClasses[ratio] || ratioClasses["1:1"];
 
 // Gap classes
 const gapClasses = {
-  none: 'gap-0',
-  small: 'gap-4',
-  medium: 'gap-8',
-  large: 'gap-12',
-  xl: 'gap-16',
+  none: "gap-0",
+  small: "gap-4",
+  medium: "gap-8",
+  large: "gap-12",
+  xl: "gap-16",
 };
 
 // Alignment classes
 const alignClasses = {
-  start: 'items-start',
-  center: 'items-center',
-  end: 'items-end',
-  stretch: 'items-stretch',
+  start: "items-start",
+  center: "items-center",
+  end: "items-end",
+  stretch: "items-stretch",
 };
 
 // Max width classes
 const maxWidthClasses = {
-  sm: 'max-w-screen-sm',
-  md: 'max-w-screen-md',
-  lg: 'max-w-screen-lg',
-  xl: 'max-w-screen-xl',
-  '2xl': 'max-w-7xl',
-  full: 'max-w-full',
+  sm: "max-w-screen-sm",
+  md: "max-w-screen-md",
+  lg: "max-w-screen-lg",
+  xl: "max-w-screen-xl",
+  "2xl": "max-w-7xl",
+  full: "max-w-full",
 };
 
 // Padding classes
 const paddingClasses = {
-  none: '',
-  small: 'py-8',
-  medium: 'py-12 md:py-16',
-  large: 'py-16 md:py-24',
+  none: "",
+  small: "py-8",
+  medium: "py-12 md:py-16",
+  large: "py-16 md:py-24",
 };
 
 // Mobile order classes
 const mobileOrderClasses = {
-  'left-first': { left: 'order-1', right: 'order-2' },
-  'right-first': { left: 'order-2 lg:order-1', right: 'order-1 lg:order-2' },
-  'none': { left: '', right: '' },
+  "left-first": { left: "order-1", right: "order-2" },
+  "right-first": { left: "order-2 lg:order-1", right: "order-1 lg:order-2" },
+  none: { left: "", right: "" },
 };
 
-const mobileOrder = mobileOrderClasses[mobileStack] || mobileOrderClasses['left-first'];
+const mobileOrder = mobileOrderClasses[mobileStack] || mobileOrderClasses["left-first"];
 ---
 
-<section 
-  id={id}
-  class:list={[
-    'two-column-block',
-    paddingClasses[padding],
-    backgroundColor || '',
-    className,
-  ]}
+<section
+  {id}
+  class:list={["two-column-block", paddingClasses[padding], backgroundColor || "", className]}
   data-animate={animationType || undefined}
   data-animate-delay={animateDelay || undefined}
 >
-  <div class:list={[
-    contained && 'mx-auto px-4 sm:px-6 lg:px-8',
-    contained && maxWidthClasses[maxWidth],
-  ]}>
-    <div class:list={[
-      'grid grid-cols-1 lg:grid-cols-12',
-      gapClasses[gap],
-      alignClasses[align],
-      reversed && 'lg:flex-row-reverse',
-    ]}>
+  <div
+    class:list={[
+      contained && "mx-auto px-4 sm:px-6 lg:px-8",
+      contained && maxWidthClasses[maxWidth],
+    ]}
+  >
+    <div
+      class:list={[
+        "grid grid-cols-1 lg:grid-cols-12",
+        gapClasses[gap],
+        alignClasses[align],
+        reversed && "lg:flex-row-reverse",
+      ]}
+    >
       <!-- Left Column -->
-      <div class:list={[
-        'col-span-1',
-        columnRatio.left,
-        mobileOrder.left,
-        showDivider && 'lg:border-r lg:border-gray-200 lg:dark:border-gray-700 lg:pr-8',
-      ]}>
+      <div
+        class:list={[
+          "col-span-1",
+          columnRatio.left,
+          mobileOrder.left,
+          showDivider && "lg:border-r lg:border-gray-200 lg:dark:border-gray-700 lg:pr-8",
+        ]}
+      >
         {leftContent ? <Fragment set:html={leftContent} /> : <slot name="left" />}
       </div>
-      
+
       <!-- Right Column -->
-      <div class:list={[
-        'col-span-1',
-        columnRatio.right,
-        mobileOrder.right,
-        showDivider && 'lg:pl-8',
-      ]}>
+      <div
+        class:list={["col-span-1", columnRatio.right, mobileOrder.right, showDivider && "lg:pl-8"]}
+      >
         {rightContent ? <Fragment set:html={rightContent} /> : <slot name="right" />}
       </div>
     </div>

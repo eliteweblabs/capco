@@ -1,15 +1,15 @@
 ---
 /**
  * ContainerBlock - Simple Container Wrapper
- * 
+ *
  * Wraps content in a centered, max-width container with optional padding and background.
- * 
+ *
  * @example Basic usage:
  * <ContainerBlock>
  *   <h1>My Content</h1>
  *   <p>This will be centered with proper padding</p>
  * </ContainerBlock>
- * 
+ *
  * @example With options:
  * <ContainerBlock maxWidth="lg" padding="large" backgroundColor="bg-gray-100">
  *   <div>Narrower container with more padding</div>
@@ -18,34 +18,47 @@
 
 interface Props {
   // Max width
-  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | 'full' | 'prose';
-  
+  maxWidth?:
+    | "xs"
+    | "sm"
+    | "md"
+    | "lg"
+    | "xl"
+    | "2xl"
+    | "3xl"
+    | "4xl"
+    | "5xl"
+    | "6xl"
+    | "7xl"
+    | "full"
+    | "prose";
+
   // Padding
-  padding?: 'none' | 'small' | 'medium' | 'large' | 'xl';
-  
+  padding?: "none" | "small" | "medium" | "large" | "xl";
+
   // Horizontal padding (sides)
-  paddingX?: 'none' | 'small' | 'medium' | 'large';
-  
+  paddingX?: "none" | "small" | "medium" | "large";
+
   // Text alignment
-  textAlign?: 'left' | 'center' | 'right';
-  
+  textAlign?: "left" | "center" | "right";
+
   // Background
   backgroundColor?: string;
   backgroundImage?: string;
   backgroundOverlay?: boolean | string;
   overlayOpacity?: number | string;
-  
+
   // Border/rounded
   rounded?: boolean | string;
   border?: boolean | string;
-  shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
-  
+  shadow?: "none" | "sm" | "md" | "lg" | "xl";
+
   // HTML element
-  as?: 'div' | 'section' | 'article' | 'main' | 'aside';
-  
+  as?: "div" | "section" | "article" | "main" | "aside";
+
   // Props-based content (for CMS/dynamic rendering)
   content?: string;
-  
+
   // Styling
   className?: string;
   id?: string;
@@ -53,108 +66,114 @@ interface Props {
 
 const props = Astro.props;
 const {
-  maxWidth = '7xl',
-  padding = 'medium',
-  paddingX = 'medium',
+  maxWidth = "7xl",
+  padding = "medium",
+  paddingX = "medium",
   textAlign,
   backgroundColor,
   backgroundImage,
-  shadow = 'none',
-  as: Element = 'section',
+  shadow = "none",
+  as: Element = "section",
   content,
-  className = '',
+  className = "",
   id,
 } = props;
 
 // Handle boolean/string conversions
-const rounded = props.rounded === 'true' || props.rounded === true;
-const border = props.border === 'true' || props.border === true;
-const backgroundOverlay = props.backgroundOverlay === 'false' ? false : (props.backgroundOverlay ?? !!backgroundImage);
-const overlayOpacity = typeof props.overlayOpacity === 'string' 
-  ? parseFloat(props.overlayOpacity) 
-  : (props.overlayOpacity ?? 0.5);
+const rounded = props.rounded === "true" || props.rounded === true;
+const border = props.border === "true" || props.border === true;
+const backgroundOverlay =
+  props.backgroundOverlay === "false" ? false : (props.backgroundOverlay ?? !!backgroundImage);
+const overlayOpacity =
+  typeof props.overlayOpacity === "string"
+    ? parseFloat(props.overlayOpacity)
+    : (props.overlayOpacity ?? 0.5);
 
 // Max width classes
 const maxWidthClasses: Record<string, string> = {
-  xs: 'max-w-xs',
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  '2xl': 'max-w-2xl',
-  '3xl': 'max-w-3xl',
-  '4xl': 'max-w-4xl',
-  '5xl': 'max-w-5xl',
-  '6xl': 'max-w-6xl',
-  '7xl': 'max-w-7xl',
-  full: 'max-w-full',
-  prose: 'max-w-prose',
+  xs: "max-w-xs",
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
+  "3xl": "max-w-3xl",
+  "4xl": "max-w-4xl",
+  "5xl": "max-w-5xl",
+  "6xl": "max-w-6xl",
+  "7xl": "max-w-7xl",
+  full: "max-w-full",
+  prose: "max-w-prose",
 };
 
 // Padding classes (vertical)
 const paddingClasses = {
-  none: '',
-  small: 'py-6 md:py-8',
-  medium: 'py-10 md:py-14',
-  large: 'py-14 md:py-20',
-  xl: 'py-20 md:py-28',
+  none: "",
+  small: "py-6 md:py-8",
+  medium: "py-10 md:py-14",
+  large: "py-14 md:py-20",
+  xl: "py-20 md:py-28",
 };
 
 // Padding X classes (horizontal)
 const paddingXClasses = {
-  none: '',
-  small: 'px-4',
-  medium: 'px-4 sm:px-6 lg:px-8',
-  large: 'px-6 sm:px-8 lg:px-12',
+  none: "",
+  small: "px-4",
+  medium: "px-4 sm:px-6 lg:px-8",
+  large: "px-6 sm:px-8 lg:px-12",
 };
 
 // Text alignment classes
 const textAlignClasses: Record<string, string> = {
-  left: 'text-left',
-  center: 'text-center',
-  right: 'text-right',
+  left: "text-left",
+  center: "text-center",
+  right: "text-right",
 };
 
 // Shadow classes
 const shadowClasses = {
-  none: '',
-  sm: 'shadow-sm',
-  md: 'shadow-md',
-  lg: 'shadow-lg',
-  xl: 'shadow-xl',
+  none: "",
+  sm: "shadow-sm",
+  md: "shadow-md",
+  lg: "shadow-lg",
+  xl: "shadow-xl",
 };
 
-const bgStyle = backgroundImage 
+const bgStyle = backgroundImage
   ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
-  : '';
+  : "";
 ---
 
 <Element
-  id={id}
+  {id}
   class:list={[
-    'container-block relative',
+    "container-block relative",
     paddingClasses[padding],
-    backgroundColor || '',
-    rounded && 'rounded-xl',
-    border && 'border border-gray-200 dark:border-gray-700',
+    backgroundColor || "",
+    rounded && "rounded-xl",
+    border && "border border-gray-200 dark:border-gray-700",
     shadowClasses[shadow],
     className,
   ]}
   style={bgStyle}
 >
-  {backgroundImage && backgroundOverlay && (
-    <div 
-      class:list={['absolute inset-0 bg-black', rounded && 'rounded-xl']}
-      style={`opacity: ${overlayOpacity};`}
-    />
-  )}
-  
-  <div class:list={[
-    'mx-auto relative z-10',
-    maxWidthClasses[maxWidth],
-    paddingXClasses[paddingX],
-    textAlign && textAlignClasses[textAlign],
-  ]}>
+  {
+    backgroundImage && backgroundOverlay && (
+      <div
+        class:list={["absolute inset-0 bg-black", rounded && "rounded-xl"]}
+        style={`opacity: ${overlayOpacity};`}
+      />
+    )
+  }
+
+  <div
+    class:list={[
+      "mx-auto relative z-10",
+      maxWidthClasses[maxWidth],
+      paddingXClasses[paddingX],
+      textAlign && textAlignClasses[textAlign],
+    ]}
+  >
     {content ? <Fragment set:html={content} /> : <slot />}
   </div>
 </Element>

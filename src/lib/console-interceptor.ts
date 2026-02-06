@@ -212,7 +212,11 @@ export function setupConsoleInterceptor(): void {
         return;
       }
       // Allow admin voice widget and API logs (server and client)
-      if (message.includes("[ADMIN-VOICE]") || message.includes("[ADMIN-NEW-SUBMISSIONS]") || message.includes("[ADMIN-CREATE-PROJECT")) {
+      if (
+        message.includes("[ADMIN-VOICE]") ||
+        message.includes("[ADMIN-NEW-SUBMISSIONS]") ||
+        message.includes("[ADMIN-CREATE-PROJECT")
+      ) {
         originalLog(...args);
         return;
       }

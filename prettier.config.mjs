@@ -1,6 +1,9 @@
 /** @type {import("prettier").Config} */
 export default {
-  plugins: ["prettier-plugin-astro", "prettier-plugin-tailwindcss"],
+  plugins: [
+    "prettier-plugin-astro",
+    "prettier-plugin-tailwindcss", // must be last
+  ],
   semi: true,
   singleQuote: false,
   tabWidth: 2,
@@ -8,7 +11,7 @@ export default {
   printWidth: 100,
   overrides: [
     {
-      files: "*.astro, *.css, *.js, *.ts, *.json, *.md, *.html",
+      files: "*.astro",
       options: {
         parser: "astro",
         plugins: ["prettier-plugin-astro"],
@@ -18,6 +21,18 @@ export default {
       files: "*.css",
       options: {
         plugins: ["prettier-plugin-tailwindcss"],
+      },
+    },
+    // Attribute alphabetical order only for standalone HTML (organize-attributes breaks Astro/MD)
+    {
+      files: "*.html",
+      options: {
+        plugins: [
+          "prettier-plugin-organize-attributes",
+          "prettier-plugin-tailwindcss",
+        ],
+        attributeGroups: ["$DEFAULT"],
+        attributeSort: "ASC",
       },
     },
   ],

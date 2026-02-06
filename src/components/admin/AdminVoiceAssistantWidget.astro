@@ -15,9 +15,7 @@ interface Props {
 const { currentUser, globalCompanyPhone } = Astro.props;
 
 const assistantId =
-  import.meta.env.PUBLIC_PUBLIC_VAPI_ASSISTANT_ID ||
-  import.meta.env.PUBLIC_VAPI_ASSISTANT_ID ||
-  "";
+  import.meta.env.PUBLIC_PUBLIC_VAPI_ASSISTANT_ID || import.meta.env.PUBLIC_VAPI_ASSISTANT_ID || "";
 const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
 const currentUserRole = currentUser?.profile?.role || "Client";
 ---
@@ -43,7 +41,8 @@ const currentUserRole = currentUser?.profile?.role || "Client";
         >
           Admin
         </span>
-        <div id="admin-voice-status-dot" class="w-2.5 h-2.5 shrink-0 rounded-full bg-gray-400"></div>
+        <div id="admin-voice-status-dot" class="w-2.5 h-2.5 shrink-0 rounded-full bg-gray-400">
+        </div>
         <span id="admin-voice-status-text" class="text-sm text-gray-700 dark:text-gray-300 truncate"
           >Ready</span
         >
@@ -56,41 +55,53 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       />
     </div>
     <div class="p-4 pt-3">
-    <button
-      id="admin-voice-start"
-      type="button"
-      class="w-full flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-white font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-    >
-      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-        />
-      </svg>
-      <span id="admin-voice-btn-label">Start Voice Assistant</span>
-    </button>
-    <button
-      id="admin-voice-stop"
-      type="button"
-      class="hidden w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-white font-medium hover:bg-red-700 transition-colors text-sm"
-    >
-      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
-      </svg>
-      Stop
-    </button>
-    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-      New form submissions will be announced when the assistant is active.
-    </p>
-    <p id="admin-voice-error-hint" class="mt-2 text-xs text-amber-600 dark:text-amber-400 hidden">
-      If connection fails, add this site’s URL to VAPI Dashboard → API Keys → Allowed origins.
-    </p>
-    <p id="admin-voice-localhost-hint" class="mt-2 text-xs text-blue-600 dark:text-blue-400 hidden">
-      VAPI only works with a public URL. Test voice on your deployed site, or use a tunnel (e.g. ngrok) and add that URL to VAPI allowed origins.
-    </p>
+      <button
+        id="admin-voice-start"
+        type="button"
+        class="w-full flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-white font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+          ></path>
+        </svg>
+        <span id="admin-voice-btn-label">Start Voice Assistant</span>
+      </button>
+      <button
+        id="admin-voice-stop"
+        type="button"
+        class="hidden w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-white font-medium hover:bg-red-700 transition-colors text-sm"
+      >
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+        </svg>
+        Stop
+      </button>
+      <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+        New form submissions will be announced when the assistant is active.
+      </p>
+      <p id="admin-voice-error-hint" class="mt-2 text-xs text-amber-600 dark:text-amber-400 hidden">
+        If connection fails, add this site’s URL to VAPI Dashboard → API Keys → Allowed origins.
+      </p>
+      <p
+        id="admin-voice-localhost-hint"
+        class="mt-2 text-xs text-blue-600 dark:text-blue-400 hidden"
+      >
+        VAPI only works with a public URL. Test voice on your deployed site, or use a tunnel (e.g.
+        ngrok) and add that URL to VAPI allowed origins.
+      </p>
     </div>
   </div>
 
@@ -107,12 +118,14 @@ const currentUserRole = currentUser?.profile?.role || "Client";
         stroke-linejoin="round"
         stroke-width="2"
         d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-      />
+      ></path>
     </svg>
   </button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/gh/balacodeio/Vapi-Web-UMD@latest/dist/latest/vapi-web-bundle.min.js" is:inline></script>
+<script
+  src="https://cdn.jsdelivr.net/gh/balacodeio/Vapi-Web-UMD@latest/dist/latest/vapi-web-bundle.min.js"
+  is:inline></script>
 
 <script define:vars={{ assistantId, publicKey, currentUser, currentUserRole }}>
   (function () {
@@ -152,7 +165,10 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
     function announceToAgent(text) {
       if (!vapi || !isCallActive) {
-        console.log(LOG, "announceToAgent skipped (no vapi or call inactive)", { hasVapi: !!vapi, isCallActive });
+        console.log(LOG, "announceToAgent skipped (no vapi or call inactive)", {
+          hasVapi: !!vapi,
+          isCallActive,
+        });
         return;
       }
       try {
@@ -176,7 +192,11 @@ const currentUserRole = currentUser?.profile?.role || "Client";
         console.log(LOG, "pollNewSubmissions response", { ok: res.ok, status: res.status });
         if (!res.ok) return;
         const data = await res.json();
-        console.log(LOG, "pollNewSubmissions data", { success: data.success, contactCount: data.contactSubmissions?.length ?? 0, mepCount: data.mepProjects?.length ?? 0 });
+        console.log(LOG, "pollNewSubmissions data", {
+          success: data.success,
+          contactCount: data.contactSubmissions?.length ?? 0,
+          mepCount: data.mepProjects?.length ?? 0,
+        });
         if (!data.success) return;
 
         const contact = data.contactSubmissions || [];
@@ -200,13 +220,22 @@ const currentUserRole = currentUser?.profile?.role || "Client";
           const clientName = p.clientName || "a client";
           const addr = p.address || "no address given";
           const msg = `Read aloud: New MEP project submitted by ${clientName}, address ${addr}.`;
-          console.log(LOG, "pollNewSubmissions new MEP", { id: p.id, clientName, address: p.address, msg });
+          console.log(LOG, "pollNewSubmissions new MEP", {
+            id: p.id,
+            clientName,
+            address: p.address,
+            msg,
+          });
           announceToAgent(msg);
         }
 
         if (contact.length > 0 || mep.length > 0) {
           lastPollTime = new Date().toISOString();
-          console.log(LOG, "pollNewSubmissions updated lastPollTime", { lastPollTime, contactCount: contact.length, mepCount: mep.length });
+          console.log(LOG, "pollNewSubmissions updated lastPollTime", {
+            lastPollTime,
+            contactCount: contact.length,
+            mepCount: mep.length,
+          });
         }
       } catch (e) {
         console.warn(LOG, "poll error", e);
@@ -233,7 +262,11 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     }
 
     function initVapi() {
-      console.log(LOG, "initVapi", { hasPublicKey: !!publicKey, hasAssistantId: !!assistantId, assistantIdLength: assistantId?.length });
+      console.log(LOG, "initVapi", {
+        hasPublicKey: !!publicKey,
+        hasAssistantId: !!assistantId,
+        assistantIdLength: assistantId?.length,
+      });
       if (!publicKey || !assistantId) {
         console.warn(LOG, "initVapi not configured, disabling start");
         setStatus("Not configured", "bg-red-400");
@@ -320,7 +353,10 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     function setupDraggable() {
       const dragHandle = document.getElementById("admin-voice-panel-drag");
       if (!dragHandle || !panel) {
-        console.log(LOG, "setupDraggable skipped", { hasDragHandle: !!dragHandle, hasPanel: !!panel });
+        console.log(LOG, "setupDraggable skipped", {
+          hasDragHandle: !!dragHandle,
+          hasPanel: !!panel,
+        });
         return;
       }
       console.log(LOG, "setupDraggable");
@@ -370,14 +406,27 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168."));
+      const isLocal =
+        typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1" ||
+          window.location.hostname.startsWith("192.168."));
       const localhostHint = document.getElementById("admin-voice-localhost-hint");
       if (isLocal && localhostHint) {
         localhostHint.classList.remove("hidden");
-        console.log(LOG, "localhost detected – VAPI only tests online; use deployed site or tunnel");
+        console.log(
+          LOG,
+          "localhost detected – VAPI only tests online; use deployed site or tunnel"
+        );
       }
 
-      console.log(LOG, "DOMContentLoaded", { hasFab: !!fab, hasPanel: !!panel, hasStartBtn: !!startBtn, hasStopBtn: !!stopBtn, isLocal });
+      console.log(LOG, "DOMContentLoaded", {
+        hasFab: !!fab,
+        hasPanel: !!panel,
+        hasStartBtn: !!startBtn,
+        hasStopBtn: !!stopBtn,
+        isLocal,
+      });
       if (!fab || !panel) {
         console.warn(LOG, "DOMContentLoaded missing elements, aborting");
         return;
@@ -411,7 +460,10 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       if (startBtn) {
         startBtn.addEventListener("click", async () => {
           if (!vapi) return;
-          console.log(LOG, "start button clicked", { assistantId: assistantId ? `${assistantId.slice(0, 8)}...` : "", metadata: { mode: "admin", userRole: currentUserRole } });
+          console.log(LOG, "start button clicked", {
+            assistantId: assistantId ? `${assistantId.slice(0, 8)}...` : "",
+            metadata: { mode: "admin", userRole: currentUserRole },
+          });
           if (errorHint) errorHint.classList.add("hidden");
           setStatus("Connecting...", "bg-yellow-400");
           if (btnLabel) btnLabel.textContent = "Connecting...";

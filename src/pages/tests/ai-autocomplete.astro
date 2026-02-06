@@ -1,0 +1,158 @@
+---
+/**
+ * Test Page: AI Autocomplete (Cotypist-like)
+ *
+ * Uses the same LLM (Anthropic) as the rest of the app. Type in the box,
+ * get inline completion suggestions, press Tab to accept.
+ */
+
+import App from "../../components/ui/App.astro";
+import { checkAuth } from "../../lib/auth";
+
+const { currentUser } = await checkAuth(Astro.cookies);
+---
+
+<App title="AI Autocomplete" {currentUser} mask="top-left">
+  <div class="container mx-auto px-4 py-8 max-w-2xl">
+    <h1 class="text-2xl font-bold mb-2 dark:text-white">AI Autocomplete</h1>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+      Same brain as your VAPI assistant—type below, then <kbd
+        class="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-xs">Tab</kbd
+      > to accept the suggestion.
+    </p>
+
+    <div class="relative">
+      <textarea
+        id="ai-autocomplete-input"
+        rows="8"
+        placeholder="Start typing..."
+        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 p-4 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-y min-h-[200px]"
+      ></textarea>
+
+      <div
+        id="ai-autocomplete-suggestion"
+        class="mt-2 rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/30 p-2 hidden"
+      >
+        <span class="text-xs text-primary-700 dark:text-primary-300">Tab to add:</span>
+        <span
+          id="ai-autocomplete-suggestion-text"
+          class="text-sm font-medium text-primary-900 dark:text-primary-100"></span>
+      </div>
+
+      <div
+        id="ai-autocomplete-loading"
+        class="hidden mt-2 text-xs text-gray-500 dark:text-gray-400"
+      >
+        Thinking...
+      </div>
+      <div id="ai-autocomplete-error" class="hidden mt-2 text-xs text-red-600 dark:text-red-400">
+      </div>
+    </div>
+
+    <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
+      Suggestions appear after you pause typing. Uses <code
+        class="bg-gray-100 dark:bg-gray-800 px-1 rounded">/api/ai/complete</code
+      > (Anthropic).
+    </p>
+  </div>
+</App>
+
+<script>
+  (function () {
+    const LOG = "[---AI-AUTOCOMPLETE]";
+    const input = document.getElementById("ai-autocomplete-input") as HTMLTextAreaElement;
+    const suggestionWrap = document.getElementById("ai-autocomplete-suggestion");
+    const suggestionText = document.getElementById("ai-autocomplete-suggestion-text");
+    const loadingEl = document.getElementById("ai-autocomplete-loading");
+    const errorEl = document.getElementById("ai-autocomplete-error");
+
+    if (!input || !suggestionWrap || !suggestionText || !loadingEl || !errorEl) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const DEBOUNCE_MS = 600;
+    const MIN_TEXT_LENGTH = 8;
+    let lastSuggestion = "";
+
+    function hideSuggestion() {
+      suggestionWrap?.classList.add("hidden");
+      loadingEl?.classList.add("hidden");
+      errorEl?.classList.add("hidden");
+      if (errorEl) errorEl.textContent = "";
+    }
+
+    function showError(msg: string) {
+      suggestionWrap?.classList.add("hidden");
+      loadingEl?.classList.add("hidden");
+      errorEl?.classList.remove("hidden");
+      if (errorEl) errorEl.textContent = msg;
+    }
+
+    function showLoading() {
+      suggestionWrap?.classList.add("hidden");
+      errorEl?.classList.add("hidden");
+      loadingEl?.classList.remove("hidden");
+    }
+
+    function showSuggestion(completion: string) {
+      lastSuggestion = completion;
+      loadingEl?.classList.add("hidden");
+      errorEl?.classList.add("hidden");
+      if (suggestionText) suggestionText.textContent = completion;
+      suggestionWrap?.classList.remove("hidden");
+      suggestionWrap?.classList.add("flex", "items-center", "gap-2", "flex-wrap");
+    }
+
+    async function fetchCompletion(text: string) {
+      if (text.length < MIN_TEXT_LENGTH) {
+        hideSuggestion();
+        return;
+      }
+      showLoading();
+      try {
+        const res = await fetch("/api/ai/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, maxTokens: 60 }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showError(data?.error || `Error ${res.status}`);
+          return;
+        }
+        const completion = typeof data?.completion === "string" ? data.completion.trim() : "";
+        if (completion) showSuggestion(completion);
+        else hideSuggestion();
+      } catch (e) {
+        showError(e instanceof Error ? e.message : "Request failed");
+      }
+    }
+
+    function onInput() {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      const text = input.value.trim();
+      if (!text) {
+        hideSuggestion();
+        return;
+      }
+      debounceTimer = setTimeout(() => fetchCompletion(text), DEBOUNCE_MS);
+    }
+
+    function acceptSuggestion() {
+      if (!lastSuggestion) return;
+      const start = input.value.length;
+      input.value += (input.value.endsWith(" ") ? "" : " ") + lastSuggestion;
+      input.setSelectionRange(start + 1 + lastSuggestion.length, start + 1 + lastSuggestion.length);
+      input.focus();
+      lastSuggestion = "";
+      hideSuggestion();
+    }
+
+    input.addEventListener("input", onInput);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Tab" && lastSuggestion) {
+        e.preventDefault();
+        acceptSuggestion();
+      }
+    });
+  })();
+</script>

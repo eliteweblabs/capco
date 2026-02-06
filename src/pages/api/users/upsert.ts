@@ -189,7 +189,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!userData.id) {
       // Use lowercase for case-insensitive comparison (auth stores emails lowercase)
       const normalizedEmail = userData.email.trim().toLowerCase();
-      
+
       const { data: existingUser } = await supabaseAdmin
         .from("profiles")
         .select("id, email")
@@ -331,20 +331,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       let userEmailContent = "";
       if (userTemplate?.value) {
-        userEmailContent = await replacePlaceholders(userTemplate.value, {
-          project: {
-            id: 0,
-            address: "",
-            title: "",
-            authorProfile: {
-              companyName: displayName,
-              email: userData.email,
-              firstName: userData.firstName,
-              lastName: userData.lastName,
-              phone: userData.phone || "Not provided",
+        userEmailContent = await replacePlaceholders(
+          userTemplate.value,
+          {
+            project: {
+              id: 0,
+              address: "",
+              title: "",
+              authorProfile: {
+                companyName: displayName,
+                email: userData.email,
+                firstName: userData.firstName,
+                lastName: userData.lastName,
+                phone: userData.phone || "Not provided",
+              },
             },
           },
-        }, false, request);
+          false,
+          request
+        );
       } else {
         // Get company name from database
         const { globalCompanyData } = await import("../global/global-company-data");

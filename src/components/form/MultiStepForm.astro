@@ -43,6 +43,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     action={config.formAction}
     method={config.formMethod || "post"}
     class={config.progressBar ? "" : ""}
+    data-form-config={JSON.stringify({ formId: config.formId, formConfig: config, initialData })}
   >
     <!-- <div class="multi-step-form-spacer" aria-hidden="true"></div> -->
     <div
@@ -109,7 +110,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 </div>
                 <div class="flex items-center gap-4 pb-4" tabindex="-1">
                   <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
-                  <span class="text-xs text-zinc-500 dark:text-zinc-400 uppercase">
+                  <span class="text-sm text-zinc-500 dark:text-zinc-400 uppercase">
                     {step.additionalContent === "auth-providers"
                       ? "or login with email"
                       : "or register with email"}
@@ -309,7 +310,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                               button.type as keyof typeof config.buttonDefaults
                             ]
                           );
-                          const groupBtn = (
+                          return (
                             <Button
                               id={button.id}
                               variant={btnConfig.variant}
@@ -330,16 +331,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                                 </span>
                               )}
                             </Button>
-                          );
-                          return button.tooltipText ? (
-                            <Tooltip
-                              text={button.tooltipText}
-                              position={button.tooltipPosition || "top"}
-                            >
-                              {groupBtn}
-                            </Tooltip>
-                          ) : (
-                            groupBtn
                           );
                         })}
                       </div>
@@ -402,7 +393,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       config.buttonDefaults?.[button.type as keyof typeof config.buttonDefaults]
                     );
 
-                    const choiceBtn = (
+                    return (
                       <Button
                         id={button.id}
                         type="button"
@@ -422,16 +413,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       >
                         {btnConfig.label && <Fragment set:html={btnConfig.label} />}
                       </Button>
-                    );
-                    return button.tooltipText ? (
-                      <Tooltip
-                        text={button.tooltipText}
-                        position={button.tooltipPosition || "top"}
-                      >
-                        {choiceBtn}
-                      </Tooltip>
-                    ) : (
-                      choiceBtn
                     );
                   })}
               </div>
@@ -517,10 +498,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                     </Button>
                   );
                   return button.tooltipText ? (
-                    <Tooltip
-                      text={button.tooltipText}
-                      position={button.tooltipPosition || "top"}
-                    >
+                    <Tooltip text={button.tooltipText} position={button.tooltipPosition || "top"}>
                       {buttonEl}
                     </Tooltip>
                   ) : (
@@ -858,15 +836,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     -webkit-tap-highlight-color: transparent;
   }
 </style>
-
-<script define:vars={{ formId: config.formId, formConfig: config, initialData }}>
-  // Store config in window for the module script to access
-  window[`${formId}_config`] = {
-    formId,
-    formConfig,
-    initialData,
-  };
-</script>
 
 <script>
   import { initializeMultiStepForm } from "../../lib/multi-step-form-handler";
@@ -1545,20 +1514,26 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       true
     );
 
-    // Get all form configs from window and attach multi-step handler
+    // Get all form configs from data-form-config attribute (avoids script-order / TDZ issues)
     function runMultiStepInit() {
-      const keys = Object.keys(window).filter((k) => k.endsWith("_config"));
-      if (keys.length === 0) {
-        console.log(
-          "[MULTISTEP-FORM] No form configs on window (define:vars may not have run yet)"
-        );
-      }
-      keys.forEach((key) => {
-        const { formId, formConfig, initialData } = window[key];
-        const form = document.getElementById(formId) as HTMLFormElement;
-
-        if (!form) {
-          console.error(`[MULTISTEP-FORM] Form not found: ${formId}`);
+      const forms = document.querySelectorAll("form[data-form-config]");
+      if (forms.length === 0) return;
+      forms.forEach((formEl) => {
+        const form = formEl as HTMLFormElement;
+        let formId: string;
+        let formConfig: any;
+        let initialData: Record<string, any> = {};
+        try {
+          const parsed = JSON.parse(form.getAttribute("data-form-config") ?? "{}");
+          formId = parsed.formId;
+          formConfig = parsed.formConfig;
+          initialData = parsed.initialData ?? {};
+        } catch (e) {
+          console.error("[MULTISTEP-FORM] Invalid data-form-config on form", form.id || formEl, e);
+          return;
+        }
+        if (!formId || !formConfig) {
+          console.error("[MULTISTEP-FORM] Missing formId or formConfig in data-form-config");
           return;
         }
 

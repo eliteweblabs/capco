@@ -79,13 +79,14 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     // Extract user metadata from VAPI call - check multiple possible locations
     let callMetadata = null;
-    
+
     // Try multiple extraction paths
-    callMetadata = (body as any).message?.call?.metadata ||
-                   (body as any).call?.metadata ||
-                   (body as any).metadata ||
-                   (body as any).message?.metadata ||
-                   null;
+    callMetadata =
+      (body as any).message?.call?.metadata ||
+      (body as any).call?.metadata ||
+      (body as any).metadata ||
+      (body as any).message?.metadata ||
+      null;
 
     // Debug: Log what we found
     console.log("[---VAPI-WEBHOOK] Metadata extraction attempts:", {
@@ -375,8 +376,7 @@ async function handleToolCalls(
         try {
           const { createClient } = await import("@supabase/supabase-js");
           const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-          const supabaseKey =
-            process.env.SUPABASE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+          const supabaseKey = process.env.SUPABASE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
           if (!supabaseUrl || !supabaseKey) throw new Error("Supabase not configured");
           const supabase = createClient(supabaseUrl, supabaseKey, {
             auth: { autoRefreshToken: false, persistSession: false },
@@ -420,8 +420,7 @@ async function handleToolCalls(
         try {
           const { createClient } = await import("@supabase/supabase-js");
           const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-          const supabaseKey =
-            process.env.SUPABASE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+          const supabaseKey = process.env.SUPABASE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
           if (!supabaseUrl || !supabaseKey) throw new Error("Supabase not configured");
           const supabase = createClient(supabaseUrl, supabaseKey, {
             auth: { autoRefreshToken: false, persistSession: false },

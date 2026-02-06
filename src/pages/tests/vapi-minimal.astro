@@ -8,192 +8,202 @@ const assistantId = "3ae002d5-fe9c-4870-8034-4c66a9b43b51";
 const publicKey = "77cb0a47-2427-44ac-996d-e6ed2ca03bbf";
 ---
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minimal VAPI Test</title>
-  <style>
-    body {
-      font-family: system-ui;
-      padding: 2rem;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    .info {
-      background: #f3f4f6;
-      padding: 1rem;
-      border-radius: 8px;
-      margin: 1rem 0;
-    }
-    .status {
-      padding: 1rem;
-      border-radius: 8px;
-      margin: 1rem 0;
-    }
-    .success { background: #d1fae5; border: 2px solid #10b981; }
-    .error { background: #fee2e2; border: 2px solid #ef4444; }
-    .warning { background: #fef3c7; border: 2px solid #f59e0b; }
-    pre {
-      background: #1f2937;
-      color: #f9fafb;
-      padding: 1rem;
-      border-radius: 4px;
-      overflow-x: auto;
-      font-size: 12px;
-    }
-  </style>
-</head>
-<body>
-  <h1>🔍 Minimal VAPI Widget Test</h1>
-  
-  <div class="info">
-    <h3>Configuration</h3>
-    <p><strong>Assistant ID:</strong> {assistantId}</p>
-    <p><strong>Public Key:</strong> {publicKey.substring(0, 20)}...</p>
-  </div>
-
-  <div id="status" class="status warning">
-    <p><strong>Status:</strong> Initializing...</p>
-  </div>
-
-  <div id="logs">
-    <h3>Event Log</h3>
-    <pre id="log-output">Waiting for events...</pre>
-  </div>
-
-  <!-- Minimal VAPI Widget -->
-  <vapi-widget
-    id="vapi-widget-minimal"
-    public-key={publicKey}
-    assistant-id={assistantId}
-  />
-
-  <script
-    src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js"
-    async
-    type="text/javascript"
-  />
-
-  <script define:vars={{ assistantId, publicKey }}>
-    const logs = [];
-    const logOutput = document.getElementById('log-output');
-    const statusDiv = document.getElementById('status');
-    
-    function addLog(type, message, data = null) {
-      const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-      const logEntry = {
-        time: timestamp,
-        type,
-        message,
-        data
-      };
-      logs.push(logEntry);
-      
-      // Update display
-      logOutput.textContent = logs
-        .map(log => `[${log.time}] ${log.type.toUpperCase()}: ${log.message}${log.data ? '\n  ' + JSON.stringify(log.data, null, 2) : ''}`)
-        .join('\n\n');
-      
-      // Auto-scroll
-      logOutput.scrollTop = logOutput.scrollHeight;
-    }
-    
-    function updateStatus(message, isError = false, isSuccess = false) {
-      statusDiv.className = 'status ' + (isError ? 'error' : isSuccess ? 'success' : 'warning');
-      statusDiv.innerHTML = `<p><strong>Status:</strong> ${message}</p>`;
-    }
-    
-    // Monitor script loading
-    let scriptCheckInterval;
-    let scriptCheckAttempts = 0;
-    const MAX_SCRIPT_ATTEMPTS = 60; // 30 seconds
-    
-    scriptCheckInterval = setInterval(() => {
-      scriptCheckAttempts++;
-      
-      if (typeof window.Vapi !== 'undefined' || typeof window.VapiWidget !== 'undefined') {
-        clearInterval(scriptCheckInterval);
-        addLog('success', 'VAPI SDK loaded');
-        updateStatus('VAPI SDK loaded successfully', false, true);
-        checkWidget();
-      } else if (scriptCheckAttempts >= MAX_SCRIPT_ATTEMPTS) {
-        clearInterval(scriptCheckInterval);
-        addLog('error', 'VAPI SDK failed to load after 30 seconds');
-        updateStatus('VAPI SDK failed to load', true);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minimal VAPI Test</title>
+    <style>
+      body {
+        font-family: system-ui;
+        padding: 2rem;
+        max-width: 800px;
+        margin: 0 auto;
       }
-    }, 500);
-    
-    function checkWidget() {
-      const widget = document.getElementById('vapi-widget-minimal');
-      if (widget) {
-        addLog('info', 'Widget element found');
-        
-        // Check shadow DOM
-        if (widget.shadowRoot) {
-          addLog('success', 'Widget shadow DOM initialized');
-          updateStatus('Widget ready', false, true);
-        } else {
-          addLog('warning', 'Widget element exists but no shadow DOM yet');
-          setTimeout(checkWidget, 1000);
+      .info {
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+      }
+      .status {
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+      }
+      .success {
+        background: #d1fae5;
+        border: 2px solid #10b981;
+      }
+      .error {
+        background: #fee2e2;
+        border: 2px solid #ef4444;
+      }
+      .warning {
+        background: #fef3c7;
+        border: 2px solid #f59e0b;
+      }
+      pre {
+        background: #1f2937;
+        color: #f9fafb;
+        padding: 1rem;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Minimal VAPI Widget Test</h1>
+
+    <div class="info">
+      <h3>Configuration</h3>
+      <p><strong>Assistant ID:</strong> {assistantId}</p>
+      <p><strong>Public Key:</strong> {publicKey.substring(0, 20)}...</p>
+    </div>
+
+    <div id="status" class="status warning">
+      <p><strong>Status:</strong> Initializing...</p>
+    </div>
+
+    <div id="logs">
+      <h3>Event Log</h3>
+      <pre id="log-output">Waiting for events...</pre>
+    </div>
+
+    <!-- Minimal VAPI Widget -->
+    <vapi-widget id="vapi-widget-minimal" public-key={publicKey} assistant-id={assistantId}
+    ></vapi-widget>
+
+    <script
+      src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js"
+      async
+      type="text/javascript"></script>
+
+    <script define:vars={{ assistantId, publicKey }}>
+      const logs = [];
+      const logOutput = document.getElementById("log-output");
+      const statusDiv = document.getElementById("status");
+
+      function addLog(type, message, data = null) {
+        const timestamp = new Date().toISOString().split("T")[1].split(".")[0];
+        const logEntry = {
+          time: timestamp,
+          type,
+          message,
+          data,
+        };
+        logs.push(logEntry);
+
+        // Update display
+        logOutput.textContent = logs
+          .map(
+            (log) =>
+              `[${log.time}] ${log.type.toUpperCase()}: ${log.message}${log.data ? "\n  " + JSON.stringify(log.data, null, 2) : ""}`
+          )
+          .join("\n\n");
+
+        // Auto-scroll
+        logOutput.scrollTop = logOutput.scrollHeight;
+      }
+
+      function updateStatus(message, isError = false, isSuccess = false) {
+        statusDiv.className = "status " + (isError ? "error" : isSuccess ? "success" : "warning");
+        statusDiv.innerHTML = `<p><strong>Status:</strong> ${message}</p>`;
+      }
+
+      // Monitor script loading
+      let scriptCheckInterval;
+      let scriptCheckAttempts = 0;
+      const MAX_SCRIPT_ATTEMPTS = 60; // 30 seconds
+
+      scriptCheckInterval = setInterval(() => {
+        scriptCheckAttempts++;
+
+        if (typeof window.Vapi !== "undefined" || typeof window.VapiWidget !== "undefined") {
+          clearInterval(scriptCheckInterval);
+          addLog("success", "VAPI SDK loaded");
+          updateStatus("VAPI SDK loaded successfully", false, true);
+          checkWidget();
+        } else if (scriptCheckAttempts >= MAX_SCRIPT_ATTEMPTS) {
+          clearInterval(scriptCheckInterval);
+          addLog("error", "VAPI SDK failed to load after 30 seconds");
+          updateStatus("VAPI SDK failed to load", true);
         }
-      } else {
-        addLog('error', 'Widget element not found');
-        updateStatus('Widget element not found', true);
-      }
-    }
-    
-    // Monitor network requests
-    const originalFetch = window.fetch;
-    let requestCount = 0;
-    let errorCount = 0;
-    
-    window.fetch = async function(...args) {
-      const url = args[0];
-      const isVapiRequest = typeof url === 'string' && 
-        (url.includes('vapi') || url.includes('api.vapi.ai'));
-      
-      if (isVapiRequest) {
-        requestCount++;
-        const requestId = requestCount;
-        addLog('request', `Request #${requestId}`, { url: typeof url === 'string' ? url.substring(0, 100) : 'complex' });
-      }
-      
-      try {
-        const response = await originalFetch.apply(this, args);
-        
-        if (isVapiRequest) {
-          if (response.ok) {
-            addLog('response', `Request #${requestCount} succeeded (${response.status})`);
+      }, 500);
+
+      function checkWidget() {
+        const widget = document.getElementById("vapi-widget-minimal");
+        if (widget) {
+          addLog("info", "Widget element found");
+
+          // Check shadow DOM
+          if (widget.shadowRoot) {
+            addLog("success", "Widget shadow DOM initialized");
+            updateStatus("Widget ready", false, true);
           } else {
+            addLog("warning", "Widget element exists but no shadow DOM yet");
+            setTimeout(checkWidget, 1000);
+          }
+        } else {
+          addLog("error", "Widget element not found");
+          updateStatus("Widget element not found", true);
+        }
+      }
+
+      // Monitor network requests
+      const originalFetch = window.fetch;
+      let requestCount = 0;
+      let errorCount = 0;
+
+      window.fetch = async function (...args) {
+        const url = args[0];
+        const isVapiRequest =
+          typeof url === "string" && (url.includes("vapi") || url.includes("api.vapi.ai"));
+
+        if (isVapiRequest) {
+          requestCount++;
+          const requestId = requestCount;
+          addLog("request", `Request #${requestId}`, {
+            url: typeof url === "string" ? url.substring(0, 100) : "complex",
+          });
+        }
+
+        try {
+          const response = await originalFetch.apply(this, args);
+
+          if (isVapiRequest) {
+            if (response.ok) {
+              addLog("response", `Request #${requestCount} succeeded (${response.status})`);
+            } else {
+              errorCount++;
+              addLog("error", `Request #${requestCount} failed (${response.status})`);
+              updateStatus(`${errorCount} failed requests`, errorCount > 10);
+            }
+          }
+
+          return response;
+        } catch (error) {
+          if (isVapiRequest) {
             errorCount++;
-            addLog('error', `Request #${requestCount} failed (${response.status})`);
+            addLog("error", `Request #${requestCount} error: ${error.message}`);
             updateStatus(`${errorCount} failed requests`, errorCount > 10);
           }
+          throw error;
         }
-        
-        return response;
-      } catch (error) {
-        if (isVapiRequest) {
-          errorCount++;
-          addLog('error', `Request #${requestCount} error: ${error.message}`);
-          updateStatus(`${errorCount} failed requests`, errorCount > 10);
-        }
-        throw error;
-      }
-    };
-    
-    // Monitor console errors
-    const originalError = console.error;
-    console.error = function(...args) {
-      addLog('console-error', args.join(' '));
-      originalError.apply(console, args);
-    };
-    
-    // Initial log
-    addLog('info', 'Test page initialized');
-    addLog('info', 'Waiting for VAPI SDK to load...');
-  </script>
-</body>
+      };
+
+      // Monitor console errors
+      const originalError = console.error;
+      console.error = function (...args) {
+        addLog("console-error", args.join(" "));
+        originalError.apply(console, args);
+      };
+
+      // Initial log
+      addLog("info", "Test page initialized");
+      addLog("info", "Waiting for VAPI SDK to load...");
+    </script>
+  </body>
 </html>

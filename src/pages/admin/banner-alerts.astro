@@ -202,6 +202,26 @@ const expireOptions = [
         </div>
       </div>
 
+      <!-- Target pages (optional) -->
+      <div>
+        <label
+          for="targetPages"
+          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Target pages (optional)
+        </label>
+        <input
+          type="text"
+          id="targetPages"
+          name="targetPages"
+          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          placeholder="Leave empty for all pages. Comma-separated slugs, e.g. cookie-preferences, privacy"
+        />
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Show this alert only on these page slugs. Empty = show on every page.
+        </p>
+      </div>
+
       <!-- Dismissible and Active toggles -->
       <div class="flex flex-wrap gap-6">
         <label class="inline-flex cursor-pointer items-center">
@@ -348,6 +368,14 @@ const expireOptions = [
                           Inactive
                         </span>
                       )}
+                      {banner.targetPages && (
+                        <span
+                          class="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-900/50 dark:text-sky-300"
+                          title="Only shown on these pages"
+                        >
+                          Pages: {banner.targetPages}
+                        </span>
+                      )}
                     </div>
                     {banner.title && (
                       <h3 class="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -373,6 +401,7 @@ const expireOptions = [
                       data-is-active={banner.isActive !== false}
                       data-start-date={banner.startDate || ""}
                       data-end-date={banner.endDate || ""}
+                      data-target-pages={banner.targetPages || ""}
                     >
                       <i class="bx bx-edit" />
                       Edit
@@ -462,6 +491,7 @@ const expireOptions = [
               isActive: editBtn.dataset.isActive === "true",
               startDate: editBtn.dataset.startDate || null,
               endDate: editBtn.dataset.endDate || null,
+              targetPages: editBtn.dataset.targetPages || "",
             };
             console.log("🔧 [BANNER-ADMIN] Banner data:", banner);
             editBanner(banner);
@@ -576,6 +606,7 @@ const expireOptions = [
       document.getElementById("expireMs").value = banner.expireMs ? banner.expireMs.toString() : "";
       document.getElementById("dismissible").checked = banner.dismissible !== false;
       document.getElementById("isActive").checked = banner.isActive !== false;
+      document.getElementById("targetPages").value = banner.targetPages || "";
 
       // Handle dates
       if (banner.startDate) {
@@ -620,6 +651,7 @@ const expireOptions = [
       document.getElementById("submit-btn").textContent = "Create Banner";
       document.getElementById("cancel-btn").classList.add("hidden");
       document.getElementById("shortcode-section").classList.add("hidden");
+      document.getElementById("targetPages").value = "";
       updatePreview();
     }
 
@@ -650,6 +682,10 @@ const expireOptions = [
           isActive: document.getElementById("isActive").checked,
           startDate: formData.get("startDate") || null,
           endDate: formData.get("endDate") || null,
+          targetPages: (function () {
+            const v = formData.get("targetPages");
+            return v != null ? String(v).trim() || null : null;
+          })(),
         };
 
         const response = await fetch("/api/banner-alerts/upsert", {

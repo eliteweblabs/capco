@@ -1,13 +1,13 @@
 ---
 /**
  * BlockRenderer - Dynamic Block Renderer
- * 
+ *
  * Renders blocks dynamically based on type and props.
  * Perfect for CMS integration where block type is determined at runtime.
- * 
+ *
  * @example Direct usage:
  * <BlockRenderer type="CTABlock" props={{ title: "Hello", buttonText: "Click" }} />
- * 
+ *
  * @example With JSON:
  * <BlockRenderer blocks={JSON.stringify([
  *   { type: "CTABlock", props: { title: "Hello" } },
@@ -61,32 +61,26 @@ interface Props {
   // Single block rendering
   type?: BlockType;
   props?: Record<string, any>;
-  
+
   // Multiple blocks rendering (JSON string or array)
   blocks?: string | BlockConfig[];
-  
+
   // Wrapper options
   wrapperClass?: string;
-  gap?: 'none' | 'small' | 'medium' | 'large';
+  gap?: "none" | "small" | "medium" | "large";
 }
 
-const { 
-  type, 
-  props: blockProps = {}, 
-  blocks,
-  wrapperClass = '',
-  gap = 'none',
-} = Astro.props;
+const { type, props: blockProps = {}, blocks, wrapperClass = "", gap = "none" } = Astro.props;
 
 // Parse blocks if JSON string
 let blockConfigs: BlockConfig[] = [];
 
 if (blocks) {
-  if (typeof blocks === 'string') {
+  if (typeof blocks === "string") {
     try {
       blockConfigs = JSON.parse(blocks);
     } catch (e) {
-      console.error('BlockRenderer: Failed to parse blocks JSON', e);
+      console.error("BlockRenderer: Failed to parse blocks JSON", e);
     }
   } else {
     blockConfigs = blocks;
@@ -97,10 +91,10 @@ if (blocks) {
 
 // Gap classes
 const gapClasses = {
-  none: '',
-  small: 'space-y-8',
-  medium: 'space-y-16',
-  large: 'space-y-24',
+  none: "",
+  small: "space-y-8",
+  medium: "space-y-16",
+  large: "space-y-24",
 };
 
 // Get component for block type
@@ -109,19 +103,21 @@ const getBlockComponent = (blockType: string) => {
 };
 ---
 
-<div class:list={['block-renderer', wrapperClass, gapClasses[gap]]}>
-  {blockConfigs.map((block) => {
-    const Component = getBlockComponent(block.type);
-    
-    if (!Component) {
-      console.warn(`BlockRenderer: Unknown block type "${block.type}"`);
-      return (
-        <div class="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
-          Unknown block type: {block.type}
-        </div>
-      );
-    }
-    
-    return <Component {...block.props} id={block.id} />;
-  })}
+<div class:list={["block-renderer", wrapperClass, gapClasses[gap]]}>
+  {
+    blockConfigs.map((block) => {
+      const Component = getBlockComponent(block.type);
+
+      if (!Component) {
+        console.warn(`BlockRenderer: Unknown block type "${block.type}"`);
+        return (
+          <div class="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
+            Unknown block type: {block.type}
+          </div>
+        );
+      }
+
+      return <Component {...block.props} id={block.id} />;
+    })
+  }
 </div>

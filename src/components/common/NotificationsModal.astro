@@ -342,7 +342,9 @@ if (!currentUser || currentRole === "Client") {
       list.addEventListener(
         "touchstart",
         (e: TouchEvent) => {
-          const item = (e.target as HTMLElement).closest("[data-notification-id]") as HTMLElement | null;
+          const item = (e.target as HTMLElement).closest(
+            "[data-notification-id]"
+          ) as HTMLElement | null;
           if (!item || item.dataset.viewed === "true") return;
           swipeItem = item;
           touchStartX = e.touches[0].clientX;
@@ -379,7 +381,11 @@ if (!currentUser || currentRole === "Client") {
         const deltaX = endX - touchStartX;
         const deltaY = endY - touchStartY;
 
-        if (deltaX > SWIPE_THRESHOLD && deltaX > Math.abs(deltaY) && swipeItem.dataset.viewed !== "true") {
+        if (
+          deltaX > SWIPE_THRESHOLD &&
+          deltaX > Math.abs(deltaY) &&
+          swipeItem.dataset.viewed !== "true"
+        ) {
           const id = parseInt(swipeItem.dataset.notificationId || "0", 10);
           this.viewedNotifications.add(id);
           this.markNotificationAsRead(id);
@@ -510,10 +516,9 @@ if (!currentUser || currentRole === "Client") {
       const offset = this.notifications.length;
 
       try {
-        const response = await fetch(
-          `/api/notifications/get?limit=${limit}&offset=${offset}`,
-          { credentials: "include" }
-        );
+        const response = await fetch(`/api/notifications/get?limit=${limit}&offset=${offset}`, {
+          credentials: "include",
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -525,9 +530,11 @@ if (!currentUser || currentRole === "Client") {
           const existingIds = new Set(this.notifications.map((n: any) => n.id));
           const newItems = data.notifications.filter((n: any) => !existingIds.has(n.id));
           this.notifications = [...this.notifications, ...newItems];
-          this.hasMore = (data.notifications.length >= limit);
+          this.hasMore = data.notifications.length >= limit;
           this.renderNotifications(true);
-          this.updateBadge(data.unreadCount ?? this.notifications.filter((n: any) => !n.viewed).length);
+          this.updateBadge(
+            data.unreadCount ?? this.notifications.filter((n: any) => !n.viewed).length
+          );
         } else {
           this.hasMore = false;
         }

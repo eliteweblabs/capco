@@ -1,12 +1,12 @@
 /**
  * Admin Components Index
- * 
+ *
  * Export all admin panel components for easy importing.
  * These components are designed to be embedded in pages or managed via CMS.
- * 
+ *
  * Usage:
  *   import { AdminDiscussions, AdminAnalytics } from "../../components/admin";
- * 
+ *
  * Or import individual components:
  *   import AdminDiscussions from "../../components/admin/AdminDiscussions.astro";
  */
@@ -17,7 +17,7 @@
 
 export const adminComponents = {
   AdminDiscussions: "AdminDiscussions.astro",
-  AdminAnalytics: "AdminAnalytics.astro", 
+  AdminAnalytics: "AdminAnalytics.astro",
   AdminGlobalActivity: "AdminGlobalActivity.astro",
   AdminMedia: "AdminMedia.astro",
   AdminUsers: "AdminUsers.astro",

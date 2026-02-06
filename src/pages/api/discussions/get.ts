@@ -276,37 +276,39 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
     };
 
     // Enrich discussions with author and project owner information
-    const enrichedDiscussions = await Promise.all((discussions || []).map(async (discussion: any) => {
-      const authorProfile = profilesMap.get(discussion.authorId);
-      const ownerProfile = ownerProfilesMap.get(discussion.projects?.authorId);
+    const enrichedDiscussions = await Promise.all(
+      (discussions || []).map(async (discussion: any) => {
+        const authorProfile = profilesMap.get(discussion.authorId);
+        const ownerProfile = ownerProfilesMap.get(discussion.projects?.authorId);
 
-      return {
-        id: discussion.id,
-        projectId: discussion.projectId,
-        address: discussion.projects?.address || "Unknown Address",
-        title: discussion.projects?.title || "Untitled",
-        projectOwner: ownerProfile?.companyName || "Unknown",
-        projectOwnerId: discussion.projects?.authorId,
-        authorId: discussion.authorId,
-        authorName: authorProfile?.companyName || "Unknown User",
-        authorRole: authorProfile?.role || "Unknown",
-        authorAvatar: authorProfile?.avatarUrl || null,
-        authorFirstName: authorProfile?.firstName || null,
-        authorLastName: authorProfile?.lastName || null,
-        message: filters.projectId
-          ? await replacePlaceholders(discussion.message, placeholderData, true, request)
-          : discussion.message,
-        internal: discussion.internal || false,
-        markCompleted: discussion.markCompleted || false,
-        parentId: discussion.parentId,
-        isReply: !!discussion.parentId,
-        imageUrls: discussion.imageUrls,
-        imagePaths: discussion.imagePaths,
-        companyName: discussion.companyName || "Unknown User",
-        createdAt: discussion.createdAt,
-        updatedAt: discussion.updatedAt,
-      };
-    }));
+        return {
+          id: discussion.id,
+          projectId: discussion.projectId,
+          address: discussion.projects?.address || "Unknown Address",
+          title: discussion.projects?.title || "Untitled",
+          projectOwner: ownerProfile?.companyName || "Unknown",
+          projectOwnerId: discussion.projects?.authorId,
+          authorId: discussion.authorId,
+          authorName: authorProfile?.companyName || "Unknown User",
+          authorRole: authorProfile?.role || "Unknown",
+          authorAvatar: authorProfile?.avatarUrl || null,
+          authorFirstName: authorProfile?.firstName || null,
+          authorLastName: authorProfile?.lastName || null,
+          message: filters.projectId
+            ? await replacePlaceholders(discussion.message, placeholderData, true, request)
+            : discussion.message,
+          internal: discussion.internal || false,
+          markCompleted: discussion.markCompleted || false,
+          parentId: discussion.parentId,
+          isReply: !!discussion.parentId,
+          imageUrls: discussion.imageUrls,
+          imagePaths: discussion.imagePaths,
+          companyName: discussion.companyName || "Unknown User",
+          createdAt: discussion.createdAt,
+          updatedAt: discussion.updatedAt,
+        };
+      })
+    );
 
     // Get total count if requested
     let totalCount = null;

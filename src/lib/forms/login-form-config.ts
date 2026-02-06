@@ -65,8 +65,8 @@ export const loginFormConfig: MultiStepFormConfig = {
           variant: "anchor",
           size: "xs",
           href: "/auth/register",
-          // icon: "user-plus",
-          // iconPosition: "left",
+          icon: "",
+          iconPosition: "left",
         },
         {
           type: "prev",

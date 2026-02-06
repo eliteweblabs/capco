@@ -31,6 +31,8 @@ interface Props {
   horizontalScroll?: boolean;
   /** Fullscreen layout: 100% height, main content scrolls, footer always visible at bottom */
   fullscreenScroll?: boolean;
+  /** Full-width page: no preloader mask position (default true for backend/project/admin pages) */
+  fullWidthPage?: boolean;
 }
 
 const {
@@ -46,6 +48,7 @@ const {
   mask = "center",
   fullscreenScroll = false,
   horizontalScroll = false,
+  fullWidthPage = undefined,
 } = Astro.props;
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
@@ -118,6 +121,7 @@ const navigationData = await navigation(
   isBackend || false
 );
 const { desktopNavigationHTML, mobileNavigationHTML, visibleNavItems } = navigationData;
+const usePreloaderMask = fullWidthPage === undefined ? !isBackend : !fullWidthPage;
 
 import { ClientRouter } from "astro:transitions";
 import { generateColorPalette } from "@/lib/color-utils";
@@ -275,6 +279,10 @@ const debugData = {
       // Set current theme immediately (available ASAP for all components)
       window.currentTheme = window.isDarkMode() ? "dark" : "light";
       // console.log("[THEME] window.currentTheme set to:", window.currentTheme);
+
+      // Page size preference (larger elements for mobile/accessibility)
+      const pageSize = localStorage.getItem("page-size") || "normal";
+      document.documentElement.setAttribute("data-page-size", pageSize);
     </script>
 
     <!-- Critical CMS colors (server-rendered) so preloader and first paint use DB colors before any script -->
@@ -735,7 +743,8 @@ const debugData = {
   <body
     class:list={[
       "preloading",
-      `antialiased mask-${mask.trim()}`,
+      "antialiased",
+      usePreloaderMask && `mask-${mask.trim()}`,
       fullscreenScroll && "min-h-dvh flex flex-col",
     ]}
     transition:animate={isBackend ? "none" : undefined}
@@ -835,9 +844,13 @@ const debugData = {
       {projects}
       {isBackend}
       {project}
+      pathname={Astro.url.pathname}
     />
 
-    <div id="page" class="pt-20" hidden>
+    <div id="page" class="pt-20" hidden
+    
+    style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain; touch-action: pan-x;' : ''}`}
+    >
       <Aside
         {globalIconButtonClasses}
         {currentUser}
@@ -854,8 +867,9 @@ const debugData = {
           currentUser ? "sm:ml-16" : "",
           mainClasses,
           fullscreenScroll && "flex flex-col min-h-0",
+          centerContent ? "px-4 md:px-6 lg:px-8" : "",
         ]}
-        style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain; touch-action: pan-x;' : 'px-4 md:px-6 lg:px-8'}`}
+        style={`overscroll-behavior-y: contain; touch-action: pan-x;`}
       >
         <main
           class:list={[
@@ -870,7 +884,7 @@ const debugData = {
           <slot />
         </main>
         <!-- Bottom Banner Alerts (above footer) -->
-        <BannerAlertsLoader position="bottom" />
+        <BannerAlertsLoader position="bottom" pathname={Astro.url.pathname} />
 
       
 

@@ -1,20 +1,20 @@
 /**
  * Banner Alert Feature
- * 
+ *
  * Site-wide banner alerts with position and expiration settings.
- * 
+ *
  * Components:
  * - BannerAlert.astro - Individual banner alert component
  * - BannerAlertsLoader.astro - Loads and displays all active banners
- * 
+ *
  * API Endpoints:
  * - GET /api/banner-alerts/get - Fetch active banners
  * - POST /api/banner-alerts/upsert - Create/update banners
  * - POST /api/banner-alerts/delete - Delete banners
- * 
+ *
  * Admin Page:
  * - /admin/banner-alerts - Manage banner alerts
- * 
+ *
  * Shortcode Usage:
  * - <BannerAlert id="123"/> - Display specific banner by ID
  * - <BannerAlertsLoader/> - Display all active banners

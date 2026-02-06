@@ -2,8 +2,8 @@ import type { APIRoute } from "astro";
 
 // Helper function to clean address by removing ", USA" suffix
 function cleanAddress(address: string | undefined): string {
-  if (!address) return '';
-  return address.replace(/, USA$/i, '').trim();
+  if (!address) return "";
+  return address.replace(/, USA$/i, "").trim();
 }
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint

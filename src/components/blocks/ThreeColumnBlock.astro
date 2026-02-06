@@ -1,17 +1,17 @@
 ---
 /**
  * ThreeColumnBlock - Three Column Layout
- * 
+ *
  * Wraps content in a three-column layout.
  * Uses named slots for explicit column placement.
- * 
+ *
  * @example Basic usage:
  * <ThreeColumnBlock>
  *   <div slot="col1">First column</div>
  *   <div slot="col2">Second column</div>
  *   <div slot="col3">Third column</div>
  * </ThreeColumnBlock>
- * 
+ *
  * @example With different ratios:
  * <ThreeColumnBlock ratio="1:2:1" gap="large">
  *   <div slot="col1">Narrow</div>
@@ -22,35 +22,35 @@
 
 interface Props {
   // Column ratio (col1:col2:col3)
-  ratio?: '1:1:1' | '1:2:1' | '2:1:1' | '1:1:2' | '2:2:1' | '1:2:2';
-  
+  ratio?: "1:1:1" | "1:2:1" | "2:1:1" | "1:1:2" | "2:2:1" | "1:2:2";
+
   // Gap between columns
-  gap?: 'none' | 'small' | 'medium' | 'large' | 'xl';
-  
+  gap?: "none" | "small" | "medium" | "large" | "xl";
+
   // Vertical alignment
-  align?: 'start' | 'center' | 'end' | 'stretch';
-  
+  align?: "start" | "center" | "end" | "stretch";
+
   // Collapse behavior on smaller screens
-  collapse?: 'md' | 'lg' | 'never';
-  
+  collapse?: "md" | "lg" | "never";
+
   // Container settings
   contained?: boolean | string;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
-  
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+
   // Padding
-  padding?: 'none' | 'small' | 'medium' | 'large';
-  
+  padding?: "none" | "small" | "medium" | "large";
+
   // Background
   backgroundColor?: string;
-  
+
   // Dividers between columns
   dividers?: boolean | string;
-  
+
   // Props-based content (for CMS/dynamic rendering)
   col1Content?: string;
   col2Content?: string;
   col3Content?: string;
-  
+
   // Styling
   className?: string;
   id?: string;
@@ -58,124 +58,131 @@ interface Props {
 
 const props = Astro.props;
 const {
-  ratio = '1:1:1',
-  gap = 'medium',
-  align = 'start',
-  collapse = 'lg',
-  maxWidth = '2xl',
+  ratio = "1:1:1",
+  gap = "medium",
+  align = "start",
+  collapse = "lg",
+  maxWidth = "2xl",
   backgroundColor,
   col1Content,
   col2Content,
   col3Content,
-  className = '',
+  className = "",
   id,
 } = props;
 
 // Handle boolean/string conversions
-const contained = props.contained !== 'false' && props.contained !== false;
-const showDividers = props.dividers === 'true' || props.dividers === true;
-const padding = props.padding || 'medium';
+const contained = props.contained !== "false" && props.contained !== false;
+const showDividers = props.dividers === "true" || props.dividers === true;
+const padding = props.padding || "medium";
 
 // Ratio to grid column classes (using 12-column grid)
 const ratioClasses: Record<string, { col1: string; col2: string; col3: string }> = {
-  '1:1:1': { col1: 'lg:col-span-4', col2: 'lg:col-span-4', col3: 'lg:col-span-4' },
-  '1:2:1': { col1: 'lg:col-span-3', col2: 'lg:col-span-6', col3: 'lg:col-span-3' },
-  '2:1:1': { col1: 'lg:col-span-6', col2: 'lg:col-span-3', col3: 'lg:col-span-3' },
-  '1:1:2': { col1: 'lg:col-span-3', col2: 'lg:col-span-3', col3: 'lg:col-span-6' },
-  '2:2:1': { col1: 'lg:col-span-5', col2: 'lg:col-span-5', col3: 'lg:col-span-2' },
-  '1:2:2': { col1: 'lg:col-span-2', col2: 'lg:col-span-5', col3: 'lg:col-span-5' },
+  "1:1:1": { col1: "lg:col-span-4", col2: "lg:col-span-4", col3: "lg:col-span-4" },
+  "1:2:1": { col1: "lg:col-span-3", col2: "lg:col-span-6", col3: "lg:col-span-3" },
+  "2:1:1": { col1: "lg:col-span-6", col2: "lg:col-span-3", col3: "lg:col-span-3" },
+  "1:1:2": { col1: "lg:col-span-3", col2: "lg:col-span-3", col3: "lg:col-span-6" },
+  "2:2:1": { col1: "lg:col-span-5", col2: "lg:col-span-5", col3: "lg:col-span-2" },
+  "1:2:2": { col1: "lg:col-span-2", col2: "lg:col-span-5", col3: "lg:col-span-5" },
 };
 
-const columnRatio = ratioClasses[ratio] || ratioClasses['1:1:1'];
+const columnRatio = ratioClasses[ratio] || ratioClasses["1:1:1"];
 
 // Gap classes
 const gapClasses = {
-  none: 'gap-0',
-  small: 'gap-4',
-  medium: 'gap-6 lg:gap-8',
-  large: 'gap-8 lg:gap-12',
-  xl: 'gap-12 lg:gap-16',
+  none: "gap-0",
+  small: "gap-4",
+  medium: "gap-6 lg:gap-8",
+  large: "gap-8 lg:gap-12",
+  xl: "gap-12 lg:gap-16",
 };
 
 // Alignment classes
 const alignClasses = {
-  start: 'items-start',
-  center: 'items-center',
-  end: 'items-end',
-  stretch: 'items-stretch',
+  start: "items-start",
+  center: "items-center",
+  end: "items-end",
+  stretch: "items-stretch",
 };
 
 // Max width classes
 const maxWidthClasses = {
-  sm: 'max-w-screen-sm',
-  md: 'max-w-screen-md',
-  lg: 'max-w-screen-lg',
-  xl: 'max-w-screen-xl',
-  '2xl': 'max-w-7xl',
-  full: 'max-w-full',
+  sm: "max-w-screen-sm",
+  md: "max-w-screen-md",
+  lg: "max-w-screen-lg",
+  xl: "max-w-screen-xl",
+  "2xl": "max-w-7xl",
+  full: "max-w-full",
 };
 
 // Padding classes
 const paddingClasses = {
-  none: '',
-  small: 'py-8',
-  medium: 'py-12 md:py-16',
-  large: 'py-16 md:py-24',
+  none: "",
+  small: "py-8",
+  medium: "py-12 md:py-16",
+  large: "py-16 md:py-24",
 };
 
 // Collapse breakpoint classes
 const collapseClasses = {
-  md: 'md:grid-cols-12',
-  lg: 'lg:grid-cols-12',
-  never: 'grid-cols-12',
+  md: "md:grid-cols-12",
+  lg: "lg:grid-cols-12",
+  never: "grid-cols-12",
 };
 
-const collapsePrefix = collapse === 'md' ? 'md' : collapse === 'lg' ? 'lg' : '';
+const collapsePrefix = collapse === "md" ? "md" : collapse === "lg" ? "lg" : "";
 ---
 
-<section 
-  id={id}
-  class:list={[
-    'three-column-block',
-    paddingClasses[padding],
-    backgroundColor || '',
-    className,
-  ]}
+<section
+  {id}
+  class:list={["three-column-block", paddingClasses[padding], backgroundColor || "", className]}
 >
-  <div class:list={[
-    contained && 'mx-auto px-4 sm:px-6 lg:px-8',
-    contained && maxWidthClasses[maxWidth],
-  ]}>
-    <div class:list={[
-      'grid grid-cols-1',
-      collapseClasses[collapse],
-      gapClasses[gap],
-      alignClasses[align],
-    ]}>
+  <div
+    class:list={[
+      contained && "mx-auto px-4 sm:px-6 lg:px-8",
+      contained && maxWidthClasses[maxWidth],
+    ]}
+  >
+    <div
+      class:list={[
+        "grid grid-cols-1",
+        collapseClasses[collapse],
+        gapClasses[gap],
+        alignClasses[align],
+      ]}
+    >
       <!-- Column 1 -->
-      <div class:list={[
-        'col-span-1',
-        columnRatio.col1.replace('lg:', `${collapsePrefix}:`),
-        showDividers && `${collapsePrefix}:border-r ${collapsePrefix}:border-gray-200 ${collapsePrefix}:dark:border-gray-700 ${collapsePrefix}:pr-6`,
-      ]}>
+      <div
+        class:list={[
+          "col-span-1",
+          columnRatio.col1.replace("lg:", `${collapsePrefix}:`),
+          showDividers &&
+            `${collapsePrefix}:border-r ${collapsePrefix}:border-gray-200 ${collapsePrefix}:dark:border-gray-700 ${collapsePrefix}:pr-6`,
+        ]}
+      >
         {col1Content ? <Fragment set:html={col1Content} /> : <slot name="col1" />}
       </div>
-      
+
       <!-- Column 2 -->
-      <div class:list={[
-        'col-span-1',
-        columnRatio.col2.replace('lg:', `${collapsePrefix}:`),
-        showDividers && `${collapsePrefix}:border-r ${collapsePrefix}:border-gray-200 ${collapsePrefix}:dark:border-gray-700 ${collapsePrefix}:px-6`,
-      ]}>
+      <div
+        class:list={[
+          "col-span-1",
+          columnRatio.col2.replace("lg:", `${collapsePrefix}:`),
+          showDividers &&
+            `${collapsePrefix}:border-r ${collapsePrefix}:border-gray-200 ${collapsePrefix}:dark:border-gray-700 ${collapsePrefix}:px-6`,
+        ]}
+      >
         {col2Content ? <Fragment set:html={col2Content} /> : <slot name="col2" />}
       </div>
-      
+
       <!-- Column 3 -->
-      <div class:list={[
-        'col-span-1',
-        columnRatio.col3.replace('lg:', `${collapsePrefix}:`),
-        showDividers && `${collapsePrefix}:pl-6`,
-      ]}>
+      <div
+        class:list={[
+          "col-span-1",
+          columnRatio.col3.replace("lg:", `${collapsePrefix}:`),
+          showDividers && `${collapsePrefix}:pl-6`,
+        ]}
+      >
         {col3Content ? <Fragment set:html={col3Content} /> : <slot name="col3" />}
       </div>
     </div>

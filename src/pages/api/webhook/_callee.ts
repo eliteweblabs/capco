@@ -297,7 +297,11 @@ export function extractNameFromEmail(email: string, headers?: Record<string, str
 }
 
 // Find existing user or create new one
-export async function findOrCreateUser(email: string, headers?: Record<string, string>, request?: Request) {
+export async function findOrCreateUser(
+  email: string,
+  headers?: Record<string, string>,
+  request?: Request
+) {
   try {
     console.log("🔍 [EMAIL-WEBHOOK] Looking for user with email:", email);
     console.log("🔍 [EMAIL-WEBHOOK] Raw email value:", JSON.stringify(email));
@@ -485,7 +489,12 @@ export function extractPlaceholders(text: string): Record<string, string> {
 }
 
 // Create new project using the create-project API (ensures proper notifications)
-export async function createProjectFromEmail(userId: string, projectInfo: any, userProfile: any, request?: Request) {
+export async function createProjectFromEmail(
+  userId: string,
+  projectInfo: any,
+  userProfile: any,
+  request?: Request
+) {
   try {
     console.log("🏗️ [EMAIL-WEBHOOK] Creating project via API for user:", userId);
 

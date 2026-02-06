@@ -4,7 +4,7 @@
  * Minimal layout with no app chrome (no header, footer, sidebar)
  */
 interface Props {
-  children: any;  
+  children: any;
   title: string;
   description: string;
   lastUpdated?: string;
@@ -19,20 +19,19 @@ import App from "../ui/App.astro";
 ---
 
 <App {title} {description} {currentUser} {session} {supabase}>
+  <div class="container mx-auto max-w-4xl px-4 py-8">
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      {
+        lastUpdated === "auto" && (
+          <div class="mb-8 rounded-lg border border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
+            <p class="my-0 text-gray-800 dark:text-gray-200">
+              <strong>Last Updated:</strong> {new Date().toLocaleDateString()}
+            </p>
+          </div>
+        )
+      }
 
-    <div class="container mx-auto max-w-4xl px-4 py-8">
-      <div class="prose prose-lg dark:prose-invert max-w-none">
-        {
-          lastUpdated === "auto" && (
-            <div class="mb-8 rounded-lg border border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
-              <p class="my-0 text-gray-800 dark:text-gray-200">
-                <strong>Last Updated:</strong> {new Date().toLocaleDateString()}
-              </p>
-            </div>
-          )
-        }
-
-        <slot />
-      </div>
+      <slot />
     </div>
+  </div>
 </App>

@@ -312,7 +312,7 @@ export function createAddressSearchHTML(config: {
   // Search container
   const searchContainer = document.createElement("div");
   searchContainer.className = "relative";
-  
+
   // Search input
   const searchInput = document.createElement("input");
   searchInput.type = "text";

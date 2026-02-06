@@ -21,18 +21,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!isInternalCall) {
       const { isAuth, currentUser } = await checkAuth(cookies);
       if (!isAuth || !currentUser || currentUser?.profile?.role !== "Admin") {
-        return new Response(
-          JSON.stringify({ success: false, error: "Admin access required" }),
-          { status: 403, headers: { "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ success: false, error: "Admin access required" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
       }
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const body = await request.json().catch(() => ({}));
@@ -101,10 +101,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       if (authError) {
         console.error("[---ADMIN-CREATE-PROJECT-CONTACT] createUser error:", authError);
-        return new Response(
-          JSON.stringify({ success: false, error: authError.message }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ success: false, error: authError.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       userId = authData.user.id;
@@ -133,13 +133,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (projectError) {
       console.error("[---ADMIN-CREATE-PROJECT-CONTACT] project insert error:", projectError);
-      return new Response(
-        JSON.stringify({ success: false, error: projectError.message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: projectError.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    console.log("[---ADMIN-CREATE-PROJECT-CONTACT] success", { projectId: project.id, title: project.title, createdNewUser: !existingProfile });
+    console.log("[---ADMIN-CREATE-PROJECT-CONTACT] success", {
+      projectId: project.id,
+      title: project.title,
+      createdNewUser: !existingProfile,
+    });
     return new Response(
       JSON.stringify({
         success: true,
@@ -151,9 +155,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   } catch (e) {
     console.error("[---ADMIN-CREATE-PROJECT-CONTACT] Error:", e);
-    return new Response(
-      JSON.stringify({ success: false, error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: false, error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

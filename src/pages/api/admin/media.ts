@@ -2,7 +2,7 @@
  * Admin Media API
  * Handles media operations for the admin media manager
  * Supports: GET (list all), POST (upload to global), DELETE (remove file)
- * 
+ *
  * NOTE: Uses unified 'files' table with targetLocation='global' for admin media
  * This eliminates the need for a separate filesGlobal table (camelCase compliance)
  */
@@ -17,17 +17,17 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const currentRole = currentUser?.profile?.role;
 
     if (!isAuth || !currentUser || currentRole !== "Admin") {
-      return new Response(
-        JSON.stringify({ success: false, error: "Admin access required" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Admin access required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const source = url.searchParams.get("source"); // "project", "global", or null for all
@@ -41,13 +41,13 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         .from("files")
         .select("*")
         .not("projectId", "is", null)
-        .not("id", "is", null)  // Filter out files with null IDs
+        .not("id", "is", null) // Filter out files with null IDs
         .order("uploadedAt", { ascending: false })
         .limit(200);
 
       if (!error && data) {
         // Additional validation: filter out any files with invalid IDs
-        projectFiles = data.filter(file => file.id && Number.isInteger(file.id) && file.id > 0);
+        projectFiles = data.filter((file) => file.id && Number.isInteger(file.id) && file.id > 0);
       }
     }
 
@@ -57,13 +57,13 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         .from("files")
         .select("*")
         .eq("targetLocation", "global")
-        .not("id", "is", null)  // Filter out files with null IDs
+        .not("id", "is", null) // Filter out files with null IDs
         .order("uploadedAt", { ascending: false })
         .limit(200);
 
       if (!error && data) {
         // Additional validation: filter out any files with invalid IDs
-        globalFiles = data.filter(file => file.id && Number.isInteger(file.id) && file.id > 0);
+        globalFiles = data.filter((file) => file.id && Number.isInteger(file.id) && file.id > 0);
       }
     }
 
@@ -78,10 +78,10 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     );
   } catch (error: any) {
     console.error("❌ [ADMIN-MEDIA] GET error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -91,17 +91,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const currentRole = currentUser?.profile?.role;
 
     if (!isAuth || !currentUser || currentRole !== "Admin") {
-      return new Response(
-        JSON.stringify({ success: false, error: "Admin access required" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Admin access required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const body = await request.json();
@@ -133,16 +133,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (uploadError) {
       console.error("❌ [ADMIN-MEDIA] Upload error:", uploadError);
-      return new Response(
-        JSON.stringify({ success: false, error: uploadError.message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: uploadError.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get public URL
-    const { data: urlData } = supabaseAdmin.storage
-      .from("project-media")
-      .getPublicUrl(filePath);
+    const { data: urlData } = supabaseAdmin.storage.from("project-media").getPublicUrl(filePath);
 
     // Save to unified files table with targetLocation='global'
     const { data: fileRecord, error: dbError } = await supabaseAdmin
@@ -165,15 +163,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (dbError) {
       console.error("❌ [ADMIN-MEDIA] DB insert error:", dbError);
       // Try to cleanup the uploaded file if DB insert fails
-      await supabaseAdmin.storage
-        .from("project-media")
-        .remove([filePath]);
-      
+      await supabaseAdmin.storage.from("project-media").remove([filePath]);
+
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: "Failed to save file record to database",
-          details: dbError.message 
+          details: dbError.message,
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
@@ -198,10 +194,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   } catch (error: any) {
     console.error("❌ [ADMIN-MEDIA] POST error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };
 
@@ -211,35 +207,35 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const currentRole = currentUser?.profile?.role;
 
     if (!isAuth || !currentUser || currentRole !== "Admin") {
-      return new Response(
-        JSON.stringify({ success: false, error: "Admin access required" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Admin access required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const body = await request.json();
     const { fileId, source } = body;
 
-    console.log("🗑️ [ADMIN-MEDIA] DELETE request received:", { 
-      fileId, 
+    console.log("🗑️ [ADMIN-MEDIA] DELETE request received:", {
+      fileId,
       fileIdType: typeof fileId,
       source,
-      body 
+      body,
     });
 
     if (!fileId) {
       console.error("❌ [ADMIN-MEDIA] No file ID provided in request");
-      return new Response(
-        JSON.stringify({ success: false, error: "File ID required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "File ID required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Check if this is a storage-only file (not in database)
@@ -247,9 +243,9 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       console.log("📦 [ADMIN-MEDIA] Detected storage-only file, extracting filename");
       const fileName = fileId.replace("storage-", "");
       const filePath = `global/${fileName}`;
-      
+
       console.log("🗑️ [ADMIN-MEDIA] Deleting storage-only file:", { fileName, filePath });
-      
+
       // Delete directly from storage (no database record exists)
       const { error: storageError } = await supabaseAdmin.storage
         .from("project-media")
@@ -264,26 +260,26 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       }
 
       console.log("✅ [ADMIN-MEDIA] Storage-only file deleted:", filePath);
-      return new Response(
-        JSON.stringify({ success: true, message: "File deleted successfully" }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: true, message: "File deleted successfully" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Parse fileId to integer for database query
     const fileIdInt = parseInt(fileId, 10);
-    console.log("🔢 [ADMIN-MEDIA] Parsed file ID:", { 
-      original: fileId, 
-      parsed: fileIdInt, 
-      isNaN: isNaN(fileIdInt) 
+    console.log("🔢 [ADMIN-MEDIA] Parsed file ID:", {
+      original: fileId,
+      parsed: fileIdInt,
+      isNaN: isNaN(fileIdInt),
     });
-    
+
     if (isNaN(fileIdInt)) {
       console.error("❌ [ADMIN-MEDIA] Invalid file ID - could not parse to integer:", fileId);
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid file ID" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Invalid file ID" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Get file info and delete from unified files table
@@ -293,30 +289,27 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       .select("filePath, bucketName")
       .eq("id", fileIdInt)
       .single();
-    
-    console.log("📄 [ADMIN-MEDIA] File fetch result:", { 
-      file, 
+
+    console.log("📄 [ADMIN-MEDIA] File fetch result:", {
+      file,
       fetchError,
-      fileExists: !!file 
+      fileExists: !!file,
     });
-    
+
     if (fetchError) {
       console.error("❌ [ADMIN-MEDIA] Error fetching file:", fetchError);
-      return new Response(
-        JSON.stringify({ success: false, error: "File not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "File not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
-    
+
     const filePath = file?.filePath;
     const bucketName = file?.bucketName || "project-media";
 
     // Delete from database
-    const { error: deleteError } = await supabaseAdmin
-      .from("files")
-      .delete()
-      .eq("id", fileIdInt);
-    
+    const { error: deleteError } = await supabaseAdmin.from("files").delete().eq("id", fileIdInt);
+
     if (deleteError) {
       console.error("❌ [ADMIN-MEDIA] Error deleting from files:", deleteError);
       return new Response(
@@ -339,15 +332,15 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     console.log("✅ [ADMIN-MEDIA] File deleted:", fileIdInt);
 
-    return new Response(
-      JSON.stringify({ success: true, message: "File deleted successfully" }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true, message: "File deleted successfully" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error: any) {
     console.error("❌ [ADMIN-MEDIA] DELETE error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

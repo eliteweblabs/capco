@@ -25,58 +25,6 @@
   }
   document.addEventListener("DOMContentLoaded", () => setTimeout(ready, 80));
 
-  (function initDotGrid() {
-    const grid = document.getElementById("preloader-dot-grid");
-    if (!grid) return;
-    const cols = Math.ceil((window.innerWidth || 800) / DOT_SIZE_PX);
-    const rows = Math.ceil((window.innerHeight || 600) / DOT_SIZE_PX);
-    grid.dataset.cols = String(cols);
-    grid.dataset.rows = String(rows);
-    grid.style.gridTemplateColumns = `repeat(${cols}, ${DOT_SIZE_PX}px)`;
-    grid.style.gridTemplateRows = `repeat(${rows}, ${DOT_SIZE_PX}px)`;
-
-    const total = cols * rows;
-    const indices = Array.from({ length: total }, (_, i) => i);
-    for (let i = total - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
-    const maxDelayMs = 4000;
-    const brakeThreshold = rows - BRAKE_ROWS;
-    for (let i = 0; i < total; i++) {
-      const row = Math.floor(i / cols);
-      const col = i % cols;
-      const dot = document.createElement("span");
-      dot.className = "preloader-dot";
-      dot.style.setProperty("--delay", (indices[i] / total) * maxDelayMs + "ms");
-      dot.dataset.row = String(row);
-      dot.dataset.col = String(col);
-      if (row >= brakeThreshold) dot.dataset.brakeZone = "true";
-      grid.appendChild(dot);
-    }
-
-    DotGridController.init(grid, { cols, rows, dotSize: DOT_SIZE_PX });
-
-    /* When body has mask-* class: after dot animation completes, expand gradient mask to 100% */
-    const maskExpandDelayMs = maxDelayMs + 600;
-    const maskExpandDurationMs = 600;
-    if (document.body?.classList.contains("mask-center") || document.body?.classList.contains("mask-top-left") || document.body?.classList.contains("mask-top-right")) {
-      setTimeout(() => {
-        const start = performance.now();
-        function tick(now: number) {
-          const elapsed = now - start;
-          const t = Math.min(1, elapsed / maskExpandDurationMs);
-          const easeOut = 1 - (1 - t) * (1 - t);
-          const pct = 70 + easeOut * 30;
-          grid.style.setProperty("--preloader-mask-radius", `${pct}%`);
-          if (t < 1) requestAnimationFrame(tick);
-          else grid.setAttribute("data-mask-full", "true");
-        }
-        requestAnimationFrame(tick);
-      }, maskExpandDelayMs);
-    }
-  })();
-
   const DotGridController = (function () {
     let gridEl: HTMLElement | null = null;
     let cols = 0;
@@ -204,12 +152,15 @@
       rafId = 0;
       document.removeEventListener("mousemove", onMouseMove);
       if (mode === "idle") return;
-      if (mode === "hover" || mode === "magnetic") document.addEventListener("mousemove", onMouseMove);
+      if (mode === "hover" || mode === "magnetic")
+        document.addEventListener("mousemove", onMouseMove);
       rafId = requestAnimationFrame(tick);
     }
 
     function setEqualizerLevels(levels: number[]) {
-      equalizerLevels = levels.length ? levels : Array.from({ length: rows }, () => 0.3 + Math.random() * 0.5);
+      equalizerLevels = levels.length
+        ? levels
+        : Array.from({ length: rows }, () => 0.3 + Math.random() * 0.5);
     }
 
     function init(grid: HTMLElement, opts: { cols: number; rows: number; dotSize: number }) {
@@ -232,10 +183,72 @@
     };
   })();
 
+  (function initDotGrid() {
+    const grid = document.getElementById("preloader-dot-grid");
+    if (!grid) return;
+    const cols = Math.ceil((window.innerWidth || 800) / DOT_SIZE_PX);
+    const rows = Math.ceil((window.innerHeight || 600) / DOT_SIZE_PX);
+    grid.dataset.cols = String(cols);
+    grid.dataset.rows = String(rows);
+    grid.style.gridTemplateColumns = `repeat(${cols}, ${DOT_SIZE_PX}px)`;
+    grid.style.gridTemplateRows = `repeat(${rows}, ${DOT_SIZE_PX}px)`;
+
+    const total = cols * rows;
+    const indices = Array.from({ length: total }, (_, i) => i);
+    for (let i = total - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const maxDelayMs = 4000;
+    const brakeThreshold = rows - BRAKE_ROWS;
+    for (let i = 0; i < total; i++) {
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      const dot = document.createElement("span");
+      dot.className = "preloader-dot";
+      dot.style.setProperty("--delay", (indices[i] / total) * maxDelayMs + "ms");
+      dot.dataset.row = String(row);
+      dot.dataset.col = String(col);
+      if (row >= brakeThreshold) dot.dataset.brakeZone = "true";
+      grid.appendChild(dot);
+    }
+
+    DotGridController.init(grid, { cols, rows, dotSize: DOT_SIZE_PX });
+
+    /* When body has mask-* class: after dot animation completes, expand gradient mask to 100% */
+    const maskExpandDelayMs = maxDelayMs + 600;
+    const maskExpandDurationMs = 600;
+    if (
+      document.body?.classList.contains("mask-center") ||
+      document.body?.classList.contains("mask-top-left") ||
+      document.body?.classList.contains("mask-top-right")
+    ) {
+      setTimeout(() => {
+        const start = performance.now();
+        function tick(now: number) {
+          const elapsed = now - start;
+          const t = Math.min(1, elapsed / maskExpandDurationMs);
+          const easeOut = 1 - (1 - t) * (1 - t);
+          const pct = 70 + easeOut * 30;
+          grid.style.setProperty("--preloader-mask-radius", `${pct}%`);
+          if (t < 1) requestAnimationFrame(tick);
+          else grid.setAttribute("data-mask-full", "true");
+        }
+        requestAnimationFrame(tick);
+      }, maskExpandDelayMs);
+    }
+  })();
+
   (window as any).dotGrid = DotGridController;
 </script>
 
 <style is:global>
+  /* Hide footer until preload completes */
+  body.preloading footer {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   .preloader-dot-grid {
     position: fixed;
     inset: 0;
@@ -256,7 +269,9 @@
     justify-self: center;
     align-self: center;
     animation: preloader-dot-to-primary 0.5s ease-in-out var(--delay, 0) forwards;
-    transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+    transition:
+      transform 0.12s ease-out,
+      box-shadow 0.12s ease-out;
   }
   .preloader-dot-grid.preloader-completing .preloader-dot {
     animation: preloader-dot-to-primary 0.2s cubic-bezier(0.4, 0, 1, 1) 0s forwards;
@@ -272,14 +287,21 @@
 
   /* Brake light: bottom 10 rows red gradient when overscroll (only when data-brake-intensity is set) */
   .preloader-dot-grid[data-brake-intensity] .preloader-dot[data-brake-zone="true"] {
-    background: linear-gradient(180deg, #1a0505 0%, #8b0000 30%, #dc2626 60%, #f87171 100%) !important;
+    background: linear-gradient(
+      180deg,
+      #1a0505 0%,
+      #8b0000 30%,
+      #dc2626 60%,
+      #f87171 100%
+    ) !important;
     opacity: var(--brake-intensity, 0);
     box-shadow: 0 0 6px rgba(220, 38, 38, 0.6);
   }
 
   /* Hover: brighten near cursor */
   .preloader-dot-grid[data-mode="hover"] .preloader-dot {
-    box-shadow: 0 0 calc(4px + 6 * var(--hover, 0)) var(--preloader-dot-primary, var(--color-primary-500));
+    box-shadow: 0 0 calc(4px + 6 * var(--hover, 0))
+      var(--preloader-dot-primary, var(--color-primary-500));
     opacity: calc(0.6 + 0.4 * var(--hover, 0));
   }
 

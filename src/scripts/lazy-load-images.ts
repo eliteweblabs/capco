@@ -7,32 +7,32 @@
  */
 
 export function initLazyLoading() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
 
-  const lazyImages = document.querySelectorAll('img.lazyload');
-  
+  const lazyImages = document.querySelectorAll("img.lazyload");
+
   if (!lazyImages.length) return;
 
-  if ('IntersectionObserver' in window) {
+  if ("IntersectionObserver" in window) {
     const imageObserver = new IntersectionObserver(
       (entries, observer) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const img = entry.target as HTMLImageElement;
-            const src = img.getAttribute('data-src');
+            const src = img.getAttribute("data-src");
 
             if (src) {
               img.src = src;
-              img.classList.add('lazyloading');
+              img.classList.add("lazyloading");
 
               img.onload = () => {
-                img.classList.remove('lazyload', 'lazyloading', 'blur-sm');
-                img.classList.add('lazyloaded');
+                img.classList.remove("lazyload", "lazyloading", "blur-sm");
+                img.classList.add("lazyloaded");
               };
 
               img.onerror = () => {
-                img.classList.remove('lazyload', 'lazyloading');
-                img.classList.add('lazyerror');
+                img.classList.remove("lazyload", "lazyloading");
+                img.classList.add("lazyerror");
               };
             }
 
@@ -41,7 +41,7 @@ export function initLazyLoading() {
         });
       },
       {
-        rootMargin: '50px 0px', // Start loading 50px before visible
+        rootMargin: "50px 0px", // Start loading 50px before visible
         threshold: 0.01,
       }
     );
@@ -50,16 +50,16 @@ export function initLazyLoading() {
   } else {
     // Fallback for older browsers - load all images immediately
     lazyImages.forEach((img) => {
-      const src = (img as HTMLImageElement).getAttribute('data-src');
+      const src = (img as HTMLImageElement).getAttribute("data-src");
       if (src) (img as HTMLImageElement).src = src;
     });
   }
 }
 
 // Auto-initialize on DOMContentLoaded
-if (typeof window !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLazyLoading);
+if (typeof window !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initLazyLoading);
   } else {
     // DOM already loaded
     initLazyLoading();

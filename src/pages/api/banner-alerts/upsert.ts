@@ -14,6 +14,8 @@ interface BannerAlertRequest {
   isActive?: boolean;
   startDate?: string | null;
   endDate?: string | null;
+  /** Comma-separated page slugs; alert only shows on these pages. Empty/null = all pages. */
+  targetPages?: string | null;
 }
 
 /**
@@ -98,9 +100,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       isActive = true,
       startDate = null,
       endDate = null,
+      targetPages = null,
     } = body;
 
-    const bannerData = {
+    const bannerData: Record<string, unknown> = {
       title,
       content,
       type,
@@ -112,6 +115,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       endDate: endDate,
       ...(id ? {} : { createdBy: currentUser.id }),
     };
+    if (body.targetPages !== undefined) {
+      bannerData.targetPages =
+        typeof body.targetPages === "string" ? body.targetPages.trim() || null : null;
+    }
 
     let data, error;
 

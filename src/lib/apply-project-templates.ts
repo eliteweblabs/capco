@@ -50,20 +50,26 @@ export async function applyProjectTemplates(
       .limit(1);
 
     if (existingPunchlist && existingPunchlist.length > 0) {
-      console.log(`⚠️ [apply-project-templates] Project ${projectId} already has punchlist items, skipping template application`);
+      console.log(
+        `⚠️ [apply-project-templates] Project ${projectId} already has punchlist items, skipping template application`
+      );
       result.success = true; // Not an error, just already applied
       result.errors.push("Templates already applied to this project");
       return result;
     }
 
     if (existingDiscussion && existingDiscussion.length > 0) {
-      console.log(`⚠️ [apply-project-templates] Project ${projectId} already has discussion items, skipping template application`);
+      console.log(
+        `⚠️ [apply-project-templates] Project ${projectId} already has discussion items, skipping template application`
+      );
       result.success = true; // Not an error, just already applied
       result.errors.push("Templates already applied to this project");
       return result;
     }
 
-    console.log(`✅ [apply-project-templates] Project ${projectId} has no existing items, applying templates`);
+    console.log(
+      `✅ [apply-project-templates] Project ${projectId} has no existing items, applying templates`
+    );
 
     // Fetch the full project if not provided
     let fullProject = project;
@@ -154,7 +160,9 @@ export async function applyProjectTemplates(
         });
 
         if (insertError) {
-          result.errors.push(`Failed to create punchlist item "${template.title}": ${insertError.message}`);
+          result.errors.push(
+            `Failed to create punchlist item "${template.title}": ${insertError.message}`
+          );
         } else {
           result.punchlistCount++;
         }
@@ -195,9 +203,12 @@ export async function applyProjectTemplates(
     }
 
     // Consider it a success if at least one template was applied without errors
-    result.success = result.errors.length === 0 || (result.punchlistCount + result.discussionCount) > 0;
+    result.success =
+      result.errors.length === 0 || result.punchlistCount + result.discussionCount > 0;
 
-    console.log(`[apply-project-templates] Applied ${result.punchlistCount} punchlist and ${result.discussionCount} discussion items to project ${projectId}`);
+    console.log(
+      `[apply-project-templates] Applied ${result.punchlistCount} punchlist and ${result.discussionCount} discussion items to project ${projectId}`
+    );
 
     return result;
   } catch (error) {
