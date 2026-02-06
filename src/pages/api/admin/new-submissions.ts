@@ -71,13 +71,14 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const mepError = mepResult.error;
 
     if (contactError) {
-      console.warn("[ADMIN-NEW-SUBMISSIONS] contactSubmissions error:", contactError.message);
+      console.warn("[---ADMIN-NEW-SUBMISSIONS] contactSubmissions error:", contactError.message);
     }
     if (mepError) {
-      console.warn("[ADMIN-NEW-SUBMISSIONS] projects (MEP) error:", mepError.message);
+      console.warn("[---ADMIN-NEW-SUBMISSIONS] projects (MEP) error:", mepError.message);
     }
 
     const contactSubmissions = contactResult.data || [];
+    console.log("[---ADMIN-NEW-SUBMISSIONS] GET", { since: sinceIso, contactCount: contactSubmissions.length, mepCount: mepWithNames.length });
 
     return new Response(
       JSON.stringify({
@@ -92,7 +93,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       }
     );
   } catch (error) {
-    console.error("[ADMIN-NEW-SUBMISSIONS] Error:", error);
+    console.error("[---ADMIN-NEW-SUBMISSIONS] Error:", error);
     return new Response(
       JSON.stringify({ success: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

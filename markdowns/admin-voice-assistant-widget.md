@@ -4,6 +4,8 @@
 
 The voice assistant (VAPI) is available as an **admin-only** floating widget. When an admin is logged in, the SpeedDial is replaced by this widget. New form submissions (contact and MEP) are polled and announced out loud by the agent.
 
+**Admin mode** keeps all assistant logic and learning in one place: the same VAPI assistant can serve both **customer** and **admin** contexts. The widget always passes `metadata.mode = "admin"` when starting a call, and shows an **Admin** badge in the panel header. In the VAPI dashboard, configure the assistant to branch on `metadata.mode` or `metadata.userRole` (e.g. when mode is `"admin"`, offer form alerts, create project, check client, welcome email; otherwise use customer-handling behavior). The webhook receives `callMetadata.mode` and can use it for admin-only tool behavior.
+
 ## Behavior
 
 - **Who sees it**: Only users with role `Admin`. Other users still see the SpeedDial.
@@ -11,10 +13,11 @@ The voice assistant (VAPI) is available as an **admin-only** floating widget. Wh
 - **Flow**:
   1. Admin clicks the mic FAB → panel opens with "Start Voice Assistant".
   2. On Start, VAPI call begins and **submission polling** starts (every 30s).
-  3. When a new **contact** or **MEP** submission is found, the agent is told out loud, e.g.:
-     - *"New MEP project submitted by Client Joe. Address: 123 Main St. Read it?"*
-     - *"New contact form submission from Jane Doe. Say 'read it' to hear details, or 'create project' to create a project from this submission."*
-  4. The assistant can then:
+  3. When polling finds new **contact** or **MEP** submissions, the widget sends a system message to the agent with the text to speak. The agent should **read that message out loud** (see prompt below).
+  4. Example announcements the agent will receive and should read aloud:
+     - *"Read aloud: New MEP project submitted by Client Joe, address 123 Main St."*
+     - *"Read aloud: New contact form submission from Jane Doe."*
+  5. After the agent reads them out, the assistant can then:
      - **Read it** → use tool `getContactSubmission(submissionId)` to get details.
      - **Create project** → use tool `createProjectFromContactSubmission(submissionId)` (creates user if needed, then project).
      - **Check client** → use tool `checkClientExists(email)` to see if an account exists.
@@ -27,6 +30,16 @@ The voice assistant (VAPI) is available as an **admin-only** floating widget. Wh
 
 - **POST /api/admin/create-project-from-contact**  
   Admin-only (or internal call with `X-Internal-Secret`). Body: `{ submissionId }`. Creates or finds user from contact submission, then creates a project. Used by VAPI webhook when the assistant says "create project".
+
+## Agent: read announcements out loud
+
+The widget sends system messages that start with **`Read aloud:`** when new submissions are detected. So the agent speaks them only if the assistant is instructed to.
+
+In the **VAPI dashboard** → your assistant → **System prompt** (or instructions), add:
+
+- *"When you receive a system message that starts with 'Read aloud:', say the rest of that message out loud to the admin in a clear, natural way. Do not add extra commentary before or after unless the user asks."*
+
+That way the polling layer (widget) only pushes the text; the agent (one place for logic and learning) handles how it’s read out.
 
 ## VAPI Webhook Tools (for assistant)
 
@@ -56,6 +69,10 @@ If not set, only cookie-authenticated admin requests can create projects from th
 ## Full-page voice assistant
 
 The full page at **/voice-assistant-vapi** is unchanged and still available (e.g. for Gmail, file upload, full UI). The widget is a compact, admin-only replacement for the SpeedDial on all other pages.
+
+## Local / offline development
+
+**VAPI only tests when the app is reachable at a public URL.** On localhost the widget shows a blue hint: *"VAPI only works with a public URL. Test voice on your deployed site, or use a tunnel (e.g. ngrok) and add that URL to VAPI allowed origins."* You can still try Start; if you use ngrok (or similar) and add the tunnel URL to VAPI Dashboard → API Keys → Allowed origins, voice will work from local.
 
 ## "Failed to fetch" / Connection errors
 

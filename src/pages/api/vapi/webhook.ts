@@ -98,6 +98,8 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     const metadataUserId = callMetadata?.userId;
     const metadataUserEmail = callMetadata?.userEmail;
+    // callMetadata.mode === "admin" when the admin voice widget started the call; use for admin-only
+    // tools and prompts so one assistant can handle both customer and admin flows.
 
     // Debug: Log the entire body structure to see where metadata is
     if (messageType === "tool-calls") {

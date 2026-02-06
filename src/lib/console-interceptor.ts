@@ -206,9 +206,15 @@ export function setupConsoleInterceptor(): void {
         return; // Don't log image fetch messages
       }
 
-      // Allow logs that contain [---] pattern (e.g., [---VAPI], [---DEBUG], etc.)
+      // Allow logs that contain [---] pattern (e.g., [---VAPI], [---DEBUG], [---ADMIN-VOICE], etc.)
       if (message.includes("[---")) {
         originalLog(...args);
+        return;
+      }
+      // Allow admin voice widget and API logs (server and client)
+      if (message.includes("[ADMIN-VOICE]") || message.includes("[ADMIN-NEW-SUBMISSIONS]") || message.includes("[ADMIN-CREATE-PROJECT")) {
+        originalLog(...args);
+        return;
       }
       // Otherwise, suppress the log
     };

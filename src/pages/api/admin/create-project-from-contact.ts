@@ -37,6 +37,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const body = await request.json().catch(() => ({}));
     const submissionId = body.submissionId != null ? Number(body.submissionId) : null;
+    console.log("[---ADMIN-CREATE-PROJECT-CONTACT] POST", { submissionId, isInternalCall });
 
     if (!submissionId || !Number.isInteger(submissionId)) {
       return new Response(
@@ -99,7 +100,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
       if (authError) {
-        console.error("[ADMIN-CREATE-PROJECT-CONTACT] createUser error:", authError);
+        console.error("[---ADMIN-CREATE-PROJECT-CONTACT] createUser error:", authError);
         return new Response(
           JSON.stringify({ success: false, error: authError.message }),
           { status: 500, headers: { "Content-Type": "application/json" } }
@@ -131,13 +132,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (projectError) {
-      console.error("[ADMIN-CREATE-PROJECT-CONTACT] project insert error:", projectError);
+      console.error("[---ADMIN-CREATE-PROJECT-CONTACT] project insert error:", projectError);
       return new Response(
         JSON.stringify({ success: false, error: projectError.message }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
+    console.log("[---ADMIN-CREATE-PROJECT-CONTACT] success", { projectId: project.id, title: project.title, createdNewUser: !existingProfile });
     return new Response(
       JSON.stringify({
         success: true,
@@ -148,7 +150,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (e) {
-    console.error("[ADMIN-CREATE-PROJECT-CONTACT] Error:", e);
+    console.error("[---ADMIN-CREATE-PROJECT-CONTACT] Error:", e);
     return new Response(
       JSON.stringify({ success: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

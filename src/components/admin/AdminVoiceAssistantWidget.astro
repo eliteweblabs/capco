@@ -37,6 +37,12 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       class="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 cursor-move select-none"
     >
       <div class="flex items-center gap-2 min-w-0 flex-1">
+        <span
+          class="shrink-0 rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary-700 dark:bg-primary-900/50 dark:text-primary-300"
+          title="Admin mode: form alerts, create project, welcome email"
+        >
+          Admin
+        </span>
         <div id="admin-voice-status-dot" class="w-2.5 h-2.5 shrink-0 rounded-full bg-gray-400"></div>
         <span id="admin-voice-status-text" class="text-sm text-gray-700 dark:text-gray-300 truncate"
           >Ready</span
@@ -82,6 +88,9 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     <p id="admin-voice-error-hint" class="mt-2 text-xs text-amber-600 dark:text-amber-400 hidden">
       If connection fails, add this site’s URL to VAPI Dashboard → API Keys → Allowed origins.
     </p>
+    <p id="admin-voice-localhost-hint" class="mt-2 text-xs text-blue-600 dark:text-blue-400 hidden">
+      VAPI only works with a public URL. Test voice on your deployed site, or use a tunnel (e.g. ngrok) and add that URL to VAPI allowed origins.
+    </p>
     </div>
   </div>
 
@@ -107,7 +116,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
 <script define:vars={{ assistantId, publicKey, currentUser, currentUserRole }}>
   (function () {
-    const LOG = "[ADMIN-VOICE]";
+    const LOG = "[---ADMIN-VOICE]";
     let vapi = null;
     let isCallActive = false;
     let submissionPollInterval = null;
@@ -129,6 +138,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     }
 
     function showConnectionError(showHint) {
+      console.log(LOG, "showConnectionError", { showHint });
       setStatus("Connection failed", "bg-red-400");
       if (btnLabel) btnLabel.textContent = "Retry";
       if (startBtn) startBtn.disabled = false;
@@ -141,12 +151,17 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     }
 
     function announceToAgent(text) {
-      if (!vapi || !isCallActive) return;
+      if (!vapi || !isCallActive) {
+        console.log(LOG, "announceToAgent skipped (no vapi or call inactive)", { hasVapi: !!vapi, isCallActive });
+        return;
+      }
       try {
+        console.log(LOG, "announceToAgent sending", { text });
         vapi.send({
           type: "add-message",
           message: { role: "system", content: text },
         });
+        console.log(LOG, "announceToAgent sent ok");
       } catch (e) {
         console.warn(LOG, "announce failed", e);
       }
@@ -154,11 +169,14 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
     async function pollNewSubmissions() {
       if (!lastPollTime) lastPollTime = new Date().toISOString();
+      const url = `/api/admin/new-submissions?since=${encodeURIComponent(lastPollTime)}`;
+      console.log(LOG, "pollNewSubmissions start", { since: lastPollTime, url });
       try {
-        const url = `/api/admin/new-submissions?since=${encodeURIComponent(lastPollTime)}`;
         const res = await fetch(url, { credentials: "include" });
+        console.log(LOG, "pollNewSubmissions response", { ok: res.ok, status: res.status });
         if (!res.ok) return;
         const data = await res.json();
+        console.log(LOG, "pollNewSubmissions data", { success: data.success, contactCount: data.contactSubmissions?.length ?? 0, mepCount: data.mepProjects?.length ?? 0 });
         if (!data.success) return;
 
         const contact = data.contactSubmissions || [];
@@ -170,9 +188,9 @@ const currentUserRole = currentUser?.profile?.role || "Client";
           if (seen.has(key)) continue;
           seen.add(key);
           const name = [c.firstName, c.lastName].filter(Boolean).join(" ") || "Someone";
-          announceToAgent(
-            `New contact form submission from ${name}. Say "read it" to hear details, or "create project" to create a project from this submission.`
-          );
+          const msg = `Read aloud: New contact form submission from ${name}.`;
+          console.log(LOG, "pollNewSubmissions new contact", { id: c.id, name, msg });
+          announceToAgent(msg);
         }
 
         for (const p of mep) {
@@ -180,13 +198,15 @@ const currentUserRole = currentUser?.profile?.role || "Client";
           if (seen.has(key)) continue;
           seen.add(key);
           const clientName = p.clientName || "a client";
-          announceToAgent(
-            `New MEP project submitted by ${clientName}. Address: ${p.address || "not provided"}. Read it?`
-          );
+          const addr = p.address || "no address given";
+          const msg = `Read aloud: New MEP project submitted by ${clientName}, address ${addr}.`;
+          console.log(LOG, "pollNewSubmissions new MEP", { id: p.id, clientName, address: p.address, msg });
+          announceToAgent(msg);
         }
 
         if (contact.length > 0 || mep.length > 0) {
           lastPollTime = new Date().toISOString();
+          console.log(LOG, "pollNewSubmissions updated lastPollTime", { lastPollTime, contactCount: contact.length, mepCount: mep.length });
         }
       } catch (e) {
         console.warn(LOG, "poll error", e);
@@ -194,9 +214,13 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     }
 
     function startSubmissionPolling() {
-      if (submissionPollInterval) return;
+      if (submissionPollInterval) {
+        console.log(LOG, "startSubmissionPolling already running");
+        return;
+      }
       lastPollTime = new Date(Date.now() - 60 * 1000).toISOString();
       submissionPollInterval = setInterval(pollNewSubmissions, POLL_INTERVAL_MS);
+      console.log(LOG, "startSubmissionPolling", { intervalMs: POLL_INTERVAL_MS, lastPollTime });
       pollNewSubmissions();
     }
 
@@ -204,11 +228,14 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       if (submissionPollInterval) {
         clearInterval(submissionPollInterval);
         submissionPollInterval = null;
+        console.log(LOG, "stopSubmissionPolling");
       }
     }
 
     function initVapi() {
+      console.log(LOG, "initVapi", { hasPublicKey: !!publicKey, hasAssistantId: !!assistantId, assistantIdLength: assistantId?.length });
       if (!publicKey || !assistantId) {
+        console.warn(LOG, "initVapi not configured, disabling start");
         setStatus("Not configured", "bg-red-400");
         if (startBtn) startBtn.disabled = true;
         if (btnLabel) btnLabel.textContent = "Missing VAPI config";
@@ -217,6 +244,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
       try {
         vapi = new window.Vapi(publicKey);
+        console.log(LOG, "initVapi VAPI instance created");
       } catch (e) {
         console.error(LOG, "VAPI init error", e);
         setStatus("Error", "bg-red-400");
@@ -225,6 +253,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       }
 
       vapi.on("call-start", () => {
+        console.log(LOG, "vapi event call-start");
         isCallActive = true;
         if (startBtn) startBtn.classList.add("hidden");
         if (stopBtn) {
@@ -236,6 +265,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       });
 
       vapi.on("call-end", () => {
+        console.log(LOG, "vapi event call-end");
         isCallActive = false;
         if (startBtn) startBtn.classList.remove("hidden");
         if (stopBtn) {
@@ -246,26 +276,35 @@ const currentUserRole = currentUser?.profile?.role || "Client";
         stopSubmissionPolling();
       });
 
-      vapi.on("speech-start", () => setStatus("Speaking...", "bg-purple-400"));
-      vapi.on("speech-end", () => setStatus("Listening...", "bg-green-400"));
+      vapi.on("speech-start", () => {
+        console.log(LOG, "vapi event speech-start");
+        setStatus("Speaking...", "bg-purple-400");
+      });
+      vapi.on("speech-end", () => {
+        console.log(LOG, "vapi event speech-end");
+        setStatus("Listening...", "bg-green-400");
+      });
       vapi.on("error", (err) => {
+        console.error(LOG, "vapi event error", err);
         setStatus("Error", "bg-red-400");
-        console.error(LOG, err);
         const isNetworkError =
           err?.message === "Failed to fetch" ||
           (err?.message && String(err.message).toLowerCase().includes("fetch"));
         if (errorHint) errorHint.classList.toggle("hidden", !isNetworkError);
       });
+      console.log(LOG, "initVapi event listeners attached");
     }
 
     function closePanel() {
       if (!panel || !fab) return;
+      console.log(LOG, "closePanel");
       panel.classList.add("hidden");
       fab.classList.remove("hidden");
     }
 
     function openPanel() {
       if (!panel || !fab) return;
+      console.log(LOG, "openPanel");
       panel.classList.remove("hidden");
       fab.classList.add("hidden");
     }
@@ -273,13 +312,18 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     function togglePanel() {
       if (!panel || !fab) return;
       const isHidden = panel.classList.contains("hidden");
+      console.log(LOG, "togglePanel", { isHidden, action: isHidden ? "open" : "close" });
       if (isHidden) openPanel();
       else closePanel();
     }
 
     function setupDraggable() {
       const dragHandle = document.getElementById("admin-voice-panel-drag");
-      if (!dragHandle || !panel) return;
+      if (!dragHandle || !panel) {
+        console.log(LOG, "setupDraggable skipped", { hasDragHandle: !!dragHandle, hasPanel: !!panel });
+        return;
+      }
+      console.log(LOG, "setupDraggable");
 
       let isDragging = false;
       let startX = 0;
@@ -305,6 +349,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
         panel.style.bottom = "auto";
         panel.style.left = startLeft + "px";
         panel.style.top = startTop + "px";
+        console.log(LOG, "drag start", { startLeft, startTop, startX, startY });
         e.preventDefault();
       });
 
@@ -319,12 +364,24 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       });
 
       document.addEventListener("mouseup", () => {
+        if (isDragging) console.log(LOG, "drag end");
         isDragging = false;
       });
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      if (!fab || !panel) return;
+      const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168."));
+      const localhostHint = document.getElementById("admin-voice-localhost-hint");
+      if (isLocal && localhostHint) {
+        localhostHint.classList.remove("hidden");
+        console.log(LOG, "localhost detected – VAPI only tests online; use deployed site or tunnel");
+      }
+
+      console.log(LOG, "DOMContentLoaded", { hasFab: !!fab, hasPanel: !!panel, hasStartBtn: !!startBtn, hasStopBtn: !!stopBtn, isLocal });
+      if (!fab || !panel) {
+        console.warn(LOG, "DOMContentLoaded missing elements, aborting");
+        return;
+      }
 
       setupDraggable();
 
@@ -333,6 +390,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
         closeBtn.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
+          console.log(LOG, "close button clicked");
           closePanel();
         });
       }
@@ -345,6 +403,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       document.addEventListener("click", (e) => {
         const el = e.target;
         if (panel && !panel.contains(el) && !fab.contains(el)) {
+          console.log(LOG, "outside click close");
           closePanel();
         }
       });
@@ -352,12 +411,14 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       if (startBtn) {
         startBtn.addEventListener("click", async () => {
           if (!vapi) return;
+          console.log(LOG, "start button clicked", { assistantId: assistantId ? `${assistantId.slice(0, 8)}...` : "", metadata: { mode: "admin", userRole: currentUserRole } });
           if (errorHint) errorHint.classList.add("hidden");
           setStatus("Connecting...", "bg-yellow-400");
           if (btnLabel) btnLabel.textContent = "Connecting...";
           try {
             await vapi.start(assistantId, {
               metadata: {
+                mode: "admin",
                 userId: currentUser?.id,
                 userEmail: currentUser?.email,
                 userName: currentUser?.profile?.name,
@@ -365,6 +426,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
                 sessionStarted: new Date().toISOString(),
               },
             });
+            console.log(LOG, "vapi.start resolved");
             if (btnLabel) btnLabel.textContent = "Start Voice Assistant";
           } catch (e) {
             const isNetworkError =
@@ -380,11 +442,13 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
       if (stopBtn) {
         stopBtn.addEventListener("click", () => {
+          console.log(LOG, "stop button clicked", { isCallActive });
           if (vapi && isCallActive) vapi.stop();
         });
       }
 
       initVapi();
+      console.log(LOG, "DOMContentLoaded setup complete");
     });
   })();
 </script>
