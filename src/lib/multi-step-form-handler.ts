@@ -359,7 +359,9 @@ export function createMultiStepFormHandler(
 
         const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
         if (smsChoiceButtons.length > 0) {
-          const yesButton = targetStep.querySelector('button[data-sms-value="true"]') as HTMLElement;
+          const yesButton = targetStep.querySelector(
+            'button[data-sms-value="true"]'
+          ) as HTMLElement;
           if (yesButton) {
             yesButton.focus();
             scrollFormToCursor(yesButton);
@@ -392,10 +394,10 @@ export function createMultiStepFormHandler(
         isValid = false;
         inputEl.classList.add("touched");
 
-        if (window.showNotice) {
+        if ((window as any).showNotice) {
           const errorMsg =
             inputEl.getAttribute("data-error") || "Please fill in this field correctly";
-          window.showNotice("error", "Validation Error", errorMsg, 3000);
+          (window as any).showNotice("error", "Validation Error", errorMsg, 3000);
         }
         return false;
       }
@@ -420,8 +422,13 @@ export function createMultiStepFormHandler(
 
       if (!phoneValue) {
         // Empty phone on required field
-        if (window.showNotice) {
-          window.showNotice("error", "Phone Number Required", "Please enter a phone number", 3000);
+        if ((window as any).showNotice) {
+          (window as any).showNotice(
+            "error",
+            "Phone Number Required",
+            "Please enter a phone number",
+            3000
+          );
         }
         phoneInput.classList.add("touched");
         return false;
@@ -432,8 +439,8 @@ export function createMultiStepFormHandler(
 
         // If it's a partial number (less than 10 digits), show error
         if (digitsOnly.length < 10) {
-          if (window.showNotice) {
-            window.showNotice(
+          if ((window as any).showNotice) {
+            (window as any).showNotice(
               "error",
               "Invalid Phone Number",
               "Please enter a complete 10-digit phone number",
@@ -445,8 +452,8 @@ export function createMultiStepFormHandler(
         }
 
         // If it's 10+ digits but invalid, show error
-        if (window.showNotice) {
-          window.showNotice(
+        if ((window as any).showNotice) {
+          (window as any).showNotice(
             "error",
             "Invalid Phone Number",
             "Please enter a valid US phone number",
@@ -465,8 +472,8 @@ export function createMultiStepFormHandler(
 
         // If user started entering a phone but it's incomplete, show gentle error
         if (digitsOnly.length > 0 && digitsOnly.length < 10) {
-          if (window.showNotice) {
-            window.showNotice(
+          if ((window as any).showNotice) {
+            (window as any).showNotice(
               "warning",
               "Incomplete Phone Number",
               "Phone number should be 10 digits, or leave blank to skip",
@@ -479,8 +486,8 @@ export function createMultiStepFormHandler(
 
         // If 10+ digits, validate it
         if (digitsOnly.length >= 10 && !validatePhone(phoneValue)) {
-          if (window.showNotice) {
-            window.showNotice(
+          if ((window as any).showNotice) {
+            (window as any).showNotice(
               "error",
               "Invalid Phone Number",
               "Please enter a valid US phone number",
@@ -508,8 +515,8 @@ export function createMultiStepFormHandler(
           const currentUrl = window.location.pathname;
           const loginUrl = `/auth/login?redirect=${encodeURIComponent(currentUrl)}`;
 
-          if (window.showNotice) {
-            window.showNotice(
+          if ((window as any).showNotice) {
+            (window as any).showNotice(
               "warning",
               "Email Already Registered",
               `This email is already registered. <br><br><a href="${loginUrl}" class="text-primary-600 hover:text-primary-500 underline">Click here to log in and continue</a>`,
@@ -892,7 +899,9 @@ export function createMultiStepFormHandler(
 
       // Generic choice button handler (for button-groups)
       if (choiceBtn && !smsChoiceBtn) {
-        console.log("[MULTISTEP-CLICK-DEBUG] form click → choice button", { choiceValue: choiceBtn.getAttribute("data-value") });
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → choice button", {
+          choiceValue: choiceBtn.getAttribute("data-value"),
+        });
         e.preventDefault();
         const choiceValue = choiceBtn.getAttribute("data-value");
 
@@ -1046,7 +1055,10 @@ export function createMultiStepFormHandler(
         console.log("[MULTISTEP-CLICK-DEBUG] form click → next/submit button", {
           nextBtnTag: nextBtn.tagName,
           dataNext: nextBtn.getAttribute("data-next"),
-          isSubmit: nextBtn.classList.contains("submit-step") || nextBtn.classList.contains("submit-registration") || nextBtn.classList.contains("submit-contact"),
+          isSubmit:
+            nextBtn.classList.contains("submit-step") ||
+            nextBtn.classList.contains("submit-registration") ||
+            nextBtn.classList.contains("submit-contact"),
         });
         e.preventDefault();
         let nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
@@ -1188,11 +1200,11 @@ export function createMultiStepFormHandler(
       const formData = new FormData(form);
       console.log("[MULTISTEP-FORM] Form data keys:", Array.from(formData.keys()));
 
-      if (window.showNotice) {
-        window.showNotice(
+      if ((window as any).showNotice) {
+        (window as any).showNotice(
           "info",
           "Submitting...",
-          "Please wait while we process your request.",
+          "Sending your information to the team.",
           10000
         );
       }
@@ -1225,8 +1237,8 @@ export function createMultiStepFormHandler(
             throw new Error(result.error || "Submission failed");
           }
 
-          if (window.showNotice) {
-            window.showNotice(
+          if ((window as any).showNotice) {
+            (window as any).showNotice(
               "success",
               "Success!",
               result.message || "Form submitted successfully",
@@ -1244,8 +1256,8 @@ export function createMultiStepFormHandler(
         }
       } catch (error) {
         console.error("[MULTISTEP-FORM] Submission error:", error);
-        if (window.showNotice) {
-          window.showNotice(
+        if ((window as any).showNotice) {
+          (window as any).showNotice(
             "error",
             "Submission Failed",
             error instanceof Error ? error.message : "An unexpected error occurred",
@@ -1289,7 +1301,9 @@ export function createMultiStepFormHandler(
           if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
             const nextInput = inputs[currentIndex + 1];
             nextInput.focus();
-            console.log("[MULTISTEP-CLICK-DEBUG] Enter → moving to next input (not advancing step)");
+            console.log(
+              "[MULTISTEP-CLICK-DEBUG] Enter → moving to next input (not advancing step)"
+            );
             return;
           }
           // Single or last input: fall through to click next/submit button
@@ -1300,10 +1314,13 @@ export function createMultiStepFormHandler(
           ".next-step, .submit-registration, .submit-contact, .submit-step"
         ) as HTMLElement;
         if (nextBtn) {
-          console.log("[MULTISTEP-CLICK-DEBUG] Enter → programmatically clicking next button (will advance)", {
-            keypressTargetTag: target.tagName,
-            keypressTargetClass: target.className?.slice?.(0, 60),
-          });
+          console.log(
+            "[MULTISTEP-CLICK-DEBUG] Enter → programmatically clicking next button (will advance)",
+            {
+              keypressTargetTag: target.tagName,
+              keypressTargetClass: target.className?.slice?.(0, 60),
+            }
+          );
           nextBtn.click();
         } else {
           console.log("[MULTISTEP-CLICK-DEBUG] Enter → no next button in current step");

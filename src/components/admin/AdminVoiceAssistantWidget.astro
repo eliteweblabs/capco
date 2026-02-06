@@ -1,0 +1,390 @@
+---
+/**
+ * Admin-only Voice Assistant Widget
+ * Replaces SpeedDial for admins. Polls for new form submissions and notifies
+ * out loud via VAPI (e.g. "New MEP project submitted by Client Joe, read it?").
+ */
+
+import CloseButton from "../ui/CloseButton.astro";
+
+interface Props {
+  currentUser?: any;
+  globalCompanyPhone?: string;
+}
+
+const { currentUser, globalCompanyPhone } = Astro.props;
+
+const assistantId =
+  import.meta.env.PUBLIC_PUBLIC_VAPI_ASSISTANT_ID ||
+  import.meta.env.PUBLIC_VAPI_ASSISTANT_ID ||
+  "";
+const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
+const currentUserRole = currentUser?.profile?.role || "Client";
+---
+
+<div
+  id="admin-voice-widget"
+  class="hide-on-form-focus group fixed"
+  style="bottom: 1.5rem; right: 1.5rem; z-index: 19999"
+>
+  <div
+    id="admin-voice-panel"
+    class="admin-voice-panel hidden fixed w-72 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl overflow-hidden"
+    style="bottom: 5rem; right: 1.5rem;"
+  >
+    <div
+      id="admin-voice-panel-drag"
+      class="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 cursor-move select-none"
+    >
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <div id="admin-voice-status-dot" class="w-2.5 h-2.5 shrink-0 rounded-full bg-gray-400"></div>
+        <span id="admin-voice-status-text" class="text-sm text-gray-700 dark:text-gray-300 truncate"
+          >Ready</span
+        >
+      </div>
+      <CloseButton
+        id="admin-voice-panel-close"
+        tooltipText="Close"
+        position="left"
+        class="shrink-0"
+      />
+    </div>
+    <div class="p-4 pt-3">
+    <button
+      id="admin-voice-start"
+      type="button"
+      class="w-full flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-white font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+    >
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+        />
+      </svg>
+      <span id="admin-voice-btn-label">Start Voice Assistant</span>
+    </button>
+    <button
+      id="admin-voice-stop"
+      type="button"
+      class="hidden w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-white font-medium hover:bg-red-700 transition-colors text-sm"
+    >
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+      </svg>
+      Stop
+    </button>
+    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      New form submissions will be announced when the assistant is active.
+    </p>
+    <p id="admin-voice-error-hint" class="mt-2 text-xs text-amber-600 dark:text-amber-400 hidden">
+      If connection fails, add this site’s URL to VAPI Dashboard → API Keys → Allowed origins.
+    </p>
+    </div>
+  </div>
+
+  <button
+    id="admin-voice-fab"
+    type="button"
+    aria-label="Voice Assistant"
+    title="Voice Assistant (Admin)"
+    class="flex h-14 w-14 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-primary-700 text-white shadow-lg hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+  >
+    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+      />
+    </svg>
+  </button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/balacodeio/Vapi-Web-UMD@latest/dist/latest/vapi-web-bundle.min.js" is:inline></script>
+
+<script define:vars={{ assistantId, publicKey, currentUser, currentUserRole }}>
+  (function () {
+    const LOG = "[ADMIN-VOICE]";
+    let vapi = null;
+    let isCallActive = false;
+    let submissionPollInterval = null;
+    let lastPollTime = null;
+    const POLL_INTERVAL_MS = 30000;
+
+    const fab = document.getElementById("admin-voice-fab");
+    const panel = document.getElementById("admin-voice-panel");
+    const startBtn = document.getElementById("admin-voice-start");
+    const stopBtn = document.getElementById("admin-voice-stop");
+    const statusDot = document.getElementById("admin-voice-status-dot");
+    const statusText = document.getElementById("admin-voice-status-text");
+    const btnLabel = document.getElementById("admin-voice-btn-label");
+    const errorHint = document.getElementById("admin-voice-error-hint");
+
+    function setStatus(text, colorClass) {
+      if (statusText) statusText.textContent = text;
+      if (statusDot) statusDot.className = `w-2.5 h-2.5 rounded-full ${colorClass}`;
+    }
+
+    function showConnectionError(showHint) {
+      setStatus("Connection failed", "bg-red-400");
+      if (btnLabel) btnLabel.textContent = "Retry";
+      if (startBtn) startBtn.disabled = false;
+      if (startBtn) startBtn.classList.remove("hidden");
+      if (stopBtn) {
+        stopBtn.classList.add("hidden");
+        stopBtn.classList.remove("flex");
+      }
+      if (errorHint) errorHint.classList.toggle("hidden", !showHint);
+    }
+
+    function announceToAgent(text) {
+      if (!vapi || !isCallActive) return;
+      try {
+        vapi.send({
+          type: "add-message",
+          message: { role: "system", content: text },
+        });
+      } catch (e) {
+        console.warn(LOG, "announce failed", e);
+      }
+    }
+
+    async function pollNewSubmissions() {
+      if (!lastPollTime) lastPollTime = new Date().toISOString();
+      try {
+        const url = `/api/admin/new-submissions?since=${encodeURIComponent(lastPollTime)}`;
+        const res = await fetch(url, { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success) return;
+
+        const contact = data.contactSubmissions || [];
+        const mep = data.mepProjects || [];
+        const seen = new Set();
+
+        for (const c of contact) {
+          const key = `contact-${c.id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const name = [c.firstName, c.lastName].filter(Boolean).join(" ") || "Someone";
+          announceToAgent(
+            `New contact form submission from ${name}. Say "read it" to hear details, or "create project" to create a project from this submission.`
+          );
+        }
+
+        for (const p of mep) {
+          const key = `mep-${p.id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const clientName = p.clientName || "a client";
+          announceToAgent(
+            `New MEP project submitted by ${clientName}. Address: ${p.address || "not provided"}. Read it?`
+          );
+        }
+
+        if (contact.length > 0 || mep.length > 0) {
+          lastPollTime = new Date().toISOString();
+        }
+      } catch (e) {
+        console.warn(LOG, "poll error", e);
+      }
+    }
+
+    function startSubmissionPolling() {
+      if (submissionPollInterval) return;
+      lastPollTime = new Date(Date.now() - 60 * 1000).toISOString();
+      submissionPollInterval = setInterval(pollNewSubmissions, POLL_INTERVAL_MS);
+      pollNewSubmissions();
+    }
+
+    function stopSubmissionPolling() {
+      if (submissionPollInterval) {
+        clearInterval(submissionPollInterval);
+        submissionPollInterval = null;
+      }
+    }
+
+    function initVapi() {
+      if (!publicKey || !assistantId) {
+        setStatus("Not configured", "bg-red-400");
+        if (startBtn) startBtn.disabled = true;
+        if (btnLabel) btnLabel.textContent = "Missing VAPI config";
+        return;
+      }
+
+      try {
+        vapi = new window.Vapi(publicKey);
+      } catch (e) {
+        console.error(LOG, "VAPI init error", e);
+        setStatus("Error", "bg-red-400");
+        if (startBtn) startBtn.disabled = true;
+        return;
+      }
+
+      vapi.on("call-start", () => {
+        isCallActive = true;
+        if (startBtn) startBtn.classList.add("hidden");
+        if (stopBtn) {
+          stopBtn.classList.remove("hidden");
+          stopBtn.classList.add("flex");
+        }
+        setStatus("Listening...", "bg-green-400");
+        startSubmissionPolling();
+      });
+
+      vapi.on("call-end", () => {
+        isCallActive = false;
+        if (startBtn) startBtn.classList.remove("hidden");
+        if (stopBtn) {
+          stopBtn.classList.add("hidden");
+          stopBtn.classList.remove("flex");
+        }
+        setStatus("Ready", "bg-gray-400");
+        stopSubmissionPolling();
+      });
+
+      vapi.on("speech-start", () => setStatus("Speaking...", "bg-purple-400"));
+      vapi.on("speech-end", () => setStatus("Listening...", "bg-green-400"));
+      vapi.on("error", (err) => {
+        setStatus("Error", "bg-red-400");
+        console.error(LOG, err);
+        const isNetworkError =
+          err?.message === "Failed to fetch" ||
+          (err?.message && String(err.message).toLowerCase().includes("fetch"));
+        if (errorHint) errorHint.classList.toggle("hidden", !isNetworkError);
+      });
+    }
+
+    function closePanel() {
+      if (!panel || !fab) return;
+      panel.classList.add("hidden");
+      fab.classList.remove("hidden");
+    }
+
+    function openPanel() {
+      if (!panel || !fab) return;
+      panel.classList.remove("hidden");
+      fab.classList.add("hidden");
+    }
+
+    function togglePanel() {
+      if (!panel || !fab) return;
+      const isHidden = panel.classList.contains("hidden");
+      if (isHidden) openPanel();
+      else closePanel();
+    }
+
+    function setupDraggable() {
+      const dragHandle = document.getElementById("admin-voice-panel-drag");
+      if (!dragHandle || !panel) return;
+
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+      let startLeft = 0;
+      let startTop = 0;
+
+      function getPanelRect() {
+        const r = panel.getBoundingClientRect();
+        return { left: r.left, top: r.top, width: r.width, height: r.height };
+      }
+
+      dragHandle.addEventListener("mousedown", (e) => {
+        if (e.button !== 0) return;
+        if (e.target.closest("#admin-voice-panel-close")) return;
+        const r = getPanelRect();
+        startLeft = r.left;
+        startTop = r.top;
+        startX = e.clientX;
+        startY = e.clientY;
+        isDragging = true;
+        panel.style.right = "auto";
+        panel.style.bottom = "auto";
+        panel.style.left = startLeft + "px";
+        panel.style.top = startTop + "px";
+        e.preventDefault();
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const newLeft = Math.max(0, Math.min(window.innerWidth - 50, startLeft + dx));
+        const newTop = Math.max(0, Math.min(window.innerHeight - 100, startTop + dy));
+        panel.style.left = newLeft + "px";
+        panel.style.top = newTop + "px";
+      });
+
+      document.addEventListener("mouseup", () => {
+        isDragging = false;
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (!fab || !panel) return;
+
+      setupDraggable();
+
+      const closeBtn = document.getElementById("admin-voice-panel-close");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closePanel();
+        });
+      }
+
+      fab.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePanel();
+      });
+
+      document.addEventListener("click", (e) => {
+        const el = e.target;
+        if (panel && !panel.contains(el) && !fab.contains(el)) {
+          closePanel();
+        }
+      });
+
+      if (startBtn) {
+        startBtn.addEventListener("click", async () => {
+          if (!vapi) return;
+          if (errorHint) errorHint.classList.add("hidden");
+          setStatus("Connecting...", "bg-yellow-400");
+          if (btnLabel) btnLabel.textContent = "Connecting...";
+          try {
+            await vapi.start(assistantId, {
+              metadata: {
+                userId: currentUser?.id,
+                userEmail: currentUser?.email,
+                userName: currentUser?.profile?.name,
+                userRole: currentUserRole,
+                sessionStarted: new Date().toISOString(),
+              },
+            });
+            if (btnLabel) btnLabel.textContent = "Start Voice Assistant";
+          } catch (e) {
+            const isNetworkError =
+              e?.message === "Failed to fetch" ||
+              e?.name === "TypeError" ||
+              (e?.message && String(e.message).toLowerCase().includes("fetch"));
+            console.error(LOG, "start error", e);
+            showConnectionError(isNetworkError);
+            if (btnLabel) btnLabel.textContent = "Retry";
+          }
+        });
+      }
+
+      if (stopBtn) {
+        stopBtn.addEventListener("click", () => {
+          if (vapi && isCallActive) vapi.stop();
+        });
+      }
+
+      initVapi();
+    });
+  })();
+</script>

@@ -771,6 +771,9 @@ const debugData = {
       </script>
     )}
 
+
+
+
     <!-- SPA debug: log transition lifecycle (localhost or ?debug=spa). Open browser console to trace. -->
     {isBackend && (
       <script is:inline data-astro-rerun>
@@ -834,52 +837,47 @@ const debugData = {
     />
 
     <div class="pt-20">
+      <Aside
+        {globalIconButtonClasses}
+        {currentUser}
+        {globalInputClasses}
+        {primaryTextClasses}
+        {projects}
+        {mobileNavigationHTML}
+      />
 
-    <Aside
-      {globalIconButtonClasses}
-      {currentUser}
-      {globalInputClasses}
-      {primaryTextClasses}
-      {projects}
-      {mobileNavigationHTML}
-    />
-
-
-    <div
-      id="main-content"
-      class:list={[
-        "flex-1",
-        currentUser ? "sm:ml-16" : "",
-        mainClasses,
-        fullscreenScroll && "flex flex-col min-h-0",
-      ]}
-      style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain; touch-action: pan-x;' : ''}`}
-    >
-      <main
+      <div
+        id="main-content"
         class:list={[
-          "flex-1 relative",
-          horizontalScroll && "overflow-x-auto no-scrollbar",
-          fullscreenScroll
-            ? "min-h-0 overflow-y-auto overscroll-contain"
-            : "min-h-[calc(100dvh-8.25rem)] md:min-h-[calc(100dvh-8.25rem)] lg:min-h-[calc(100dvh-8.25rem)]",
-          centerContent ? "flex items-center justify-center px-8 overscroll-y-contain" : "p-4",
+          "flex-1",
+          currentUser ? "sm:ml-16" : "",
+          mainClasses,
+          fullscreenScroll && "flex flex-col min-h-0",
         ]}
+        style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain; touch-action: pan-x;' : ''}`}
       >
-        <slot />
-      </main>
-      <!-- Bottom Banner Alerts (above footer) -->
-      <BannerAlertsLoader position="bottom" />
+        <main
+          class:list={[
+            "flex-1 relative",
+            horizontalScroll && "overflow-x-auto no-scrollbar",
+            fullscreenScroll
+              ? "min-h-0 overflow-y-auto overscroll-contain"
+              : "min-h-[calc(100dvh-8.25rem)] md:min-h-[calc(100dvh-8.25rem)] lg:min-h-[calc(100dvh-8.25rem)]",
+            centerContent ? "flex items-center justify-center px-8 overscroll-y-contain" : "",
+          ]}
+        >
+          <slot />
+        </main>
+        <!-- Bottom Banner Alerts (above footer) -->
+        <BannerAlertsLoader position="bottom" />
 
-      <!-- </div>
-        </div> -->
+      
 
-      <!-- Cookie Banner -->
-
-      <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
-      <DebugPanel {debugData} {currentRole} />
-      <FeedbackPanel {currentUser} />
+        <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
+        <DebugPanel {debugData} {currentRole} />
+        <FeedbackPanel {currentUser} />
+      </div>
     </div>
-  </div>
 
     <!-- Footer (wrapped in shrink-0 when fullscreenScroll so it stays visible at bottom) -->
     {
@@ -923,13 +921,6 @@ const debugData = {
       </div>
     </div>
 
-    <!-- Speed Dial -->
-    <!-- {
-      !isBackend && !isAuthPageResult && !isContactPageResult && (
-        <VapiChatWidget basic={true} currentUser={currentUser} />
-      )
-    } -->
-
 
 
     {
@@ -955,6 +946,8 @@ const debugData = {
                   position="left"
                 />
               </div>
+
+
 
               {/* Content */}
               <div class="flex-1 overflow-y-auto p-4 color-background">

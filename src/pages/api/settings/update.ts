@@ -63,7 +63,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         return { category: "logos", valueType: key === "logoClasses" ? "text" : "svg" };
       } else if (key.includes("icon")) {
         return { category: "icons", valueType: "svg" };
-      } else if (["companyName", "slogan", "address", "phone", "email", "website"].includes(key)) {
+      } else if (
+        [
+          "companyName",
+          "slogan",
+          "address",
+          "phone",
+          "email",
+          "website",
+          "virtualAssistantName",
+        ].includes(key)
+      ) {
         return { category: "company", valueType: "text" };
       }
       return { category: "general", valueType: "text" };

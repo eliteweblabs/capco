@@ -28,7 +28,8 @@ const LAST_NAME_PLACEHOLDERS = [
   "李", // Chinese (Li)
 ];
 
-const { globalCompanyName } = await globalCompanyData();
+const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
+const assistantName = virtualAssistantName || "Leah";
 /**
  * MEP Form Configuration
  * Multi-step form for MEP (Mechanical, Electrical, Plumbing) projects
@@ -46,7 +47,7 @@ export const mepFormConfig: MultiStepFormConfig = {
     // Step 1: Name (skip if authenticated)
     {
       stepNumber: 1,
-      title: `<span data-typewriter-pause="1360"></span>Hi, I'm Leah...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's get started with the mechanical, engineering & plumbing intake process.<br><br>Ready to begin?`,
+      title: `<span data-typewriter-pause="1360"></span>Hi, I'm ${assistantName}...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's get started with the mechanical, engineering & plumbing intake process.<br><br>Ready to begin?`,
       // subtitle:
       //   "It takes about 2 minutes to complete. We typically respond within 1 business day EDT. ready to get started?",
       skipCondition: "isAuthenticated", // Skip for logged-in users

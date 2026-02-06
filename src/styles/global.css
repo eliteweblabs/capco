@@ -230,6 +230,7 @@ select:autofill:active {
   -webkit-text-fill-color: var(--color-text-primary) !important;
   font-size: inherit !important;
   font-family: inherit !important;
+  line-height: inherit !important;
   transition:
     background-color 5000s ease-in-out 0s,
     box-shadow 200ms ease-in-out;
@@ -474,6 +475,16 @@ textarea {
   caret-color: var(--color-primary-400);
 }
 
+/* iOS Safari: align caret with text (avoids wrong line-height / double-cursor when autofill is used) */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea {
+    line-height: 1.5;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
 /* Primary focus shadow - applies to all inputs globally (validation states below override when applicable) */
 input:not([type="hidden"]):focus,
 textarea:focus,
@@ -514,6 +525,34 @@ select.is-valid:focus {
   box-shadow:
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+
+/* Button icon state: swap default/valid icon when .is-valid is set by form JS (multi-step etc.) */
+button:has(.icon-valid):has(.icon-default) .icon-valid {
+  display: none;
+}
+
+button:has(.icon-valid):has(.icon-default).is-valid .icon-default {
+  display: none;
+}
+
+button:has(.icon-valid):has(.icon-default).is-valid .icon-valid {
+  display: inline-block;
+  animation: iconSwapIn 300ms ease-out;
+}
+
+@keyframes iconSwapIn {
+  0% {
+    transform: scale(0) rotate(-90deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 /* Custom validation tooltip container */

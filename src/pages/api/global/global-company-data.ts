@@ -125,6 +125,9 @@ export const globalCompanyData = async () => {
 
     // Custom CSS (allows per-client CSS overrides and customization)
     customCss: get("customCss") || "",
+
+    // Virtual assistant name (contact form, voice, etc.)
+    virtualAssistantName: get("virtualAssistantName") || "",
   };
 };
 

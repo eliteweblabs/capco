@@ -41,7 +41,10 @@ if (isPartial) {
 }
 
 import SpeedDial from "../ui/SpeedDial.astro";
+import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro";
 import Tooltip from "../common/TooltipFloating.astro";
+
+const isAdmin = currentUser?.profile?.role === "Admin";
 ---
 
 <!-- Teleported to portal in App.astro to avoid z-index stacking issues -->{
@@ -205,15 +208,22 @@ import Tooltip from "../common/TooltipFloating.astro";
   )
 }
 
-<SpeedDial
-  {globalCompanyPhone}
-  currentUser={currentUser || undefined}
-  {isBackend}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalInputClasses}
-  {globalCompanyName}
-/>
+{isAdmin ? (
+  <AdminVoiceAssistantWidget
+    currentUser={currentUser}
+    globalCompanyPhone={globalCompanyPhone}
+  />
+) : (
+  <SpeedDial
+    {globalCompanyPhone}
+    currentUser={currentUser || undefined}
+    {isBackend}
+    {primaryTextClasses}
+    {secondaryTextClasses}
+    {globalInputClasses}
+    {globalCompanyName}
+  />
+)}
 
 <script>
   // Auto-initialize when this component loads

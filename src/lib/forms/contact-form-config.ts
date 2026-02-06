@@ -44,7 +44,8 @@ const COMPANY_NAME_PLACEHOLDERS = [
 ];
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
-const { globalCompanyName } = await globalCompanyData();
+const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
+const assistantName = virtualAssistantName || "Leah";
 
 export const contactFormConfig: MultiStepFormConfig = {
   formId: "multi-step-contact-form",
@@ -82,7 +83,7 @@ export const contactFormConfig: MultiStepFormConfig = {
     // Step 1: Name
     {
       stepNumber: 1,
-      title: `<span data-typewriter-pause="1360"></span>Hi, I'm Leah,<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!`,
+      title: `<span data-typewriter-pause="1360"></span>Hi, I'm ${assistantName},<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!`,
 
       effect: "typewriter",
       fieldLayout: "grid",

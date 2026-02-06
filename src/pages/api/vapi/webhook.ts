@@ -357,6 +357,215 @@ async function handleToolCalls(
 
         // Skip the cal-integration fetch for submitContactForm
         continue;
+      } else if (functionName === "checkClientExists") {
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+        const email = (args.email || "").trim().toLowerCase();
+        if (!email) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I need an email address to check if the client exists.",
+          });
+          continue;
+        }
+        try {
+          const { createClient } = await import("@supabase/supabase-js");
+          const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+          const supabaseKey =
+            process.env.SUPABASE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+          if (!supabaseUrl || !supabaseKey) throw new Error("Supabase not configured");
+          const supabase = createClient(supabaseUrl, supabaseKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          });
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("id, name, email")
+            .eq("email", email)
+            .single();
+          if (profile) {
+            results.push({
+              toolCallId: toolCall.id,
+              result: `Yes, there is an existing account for ${profile.name || email}. You can create the project and assign it to them.`,
+            });
+          } else {
+            results.push({
+              toolCallId: toolCall.id,
+              result: `No existing account for that email. I can create a new client account and then create the project. Would you like to send a welcome email after creating the account?`,
+            });
+          }
+        } catch (err: any) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: `I couldn't check the client. ${err.message || "Please try again."}`,
+          });
+        }
+        continue;
+      } else if (functionName === "getContactSubmission") {
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+        const submissionId = args.submissionId != null ? Number(args.submissionId) : null;
+        if (!submissionId || !Number.isInteger(submissionId)) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I need a valid submission ID to read the contact submission.",
+          });
+          continue;
+        }
+        try {
+          const { createClient } = await import("@supabase/supabase-js");
+          const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+          const supabaseKey =
+            process.env.SUPABASE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+          if (!supabaseUrl || !supabaseKey) throw new Error("Supabase not configured");
+          const supabase = createClient(supabaseUrl, supabaseKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          });
+          const { data: sub, error } = await supabase
+            .from("contactSubmissions")
+            .select("id, firstName, lastName, email, phone, company, address, message, submittedAt")
+            .eq("id", submissionId)
+            .single();
+          if (error || !sub) {
+            results.push({
+              toolCallId: toolCall.id,
+              result: "I couldn't find that contact submission.",
+            });
+          } else {
+            const name = [sub.firstName, sub.lastName].filter(Boolean).join(" ") || "Unknown";
+            const summary = `Contact submission #${sub.id}: ${name} (${sub.email}). ${sub.phone ? `Phone: ${sub.phone}. ` : ""}${sub.company ? `Company: ${sub.company}. ` : ""}${sub.address ? `Address: ${sub.address}. ` : ""}Message: ${(sub.message || "").slice(0, 200)}${(sub.message || "").length > 200 ? "..." : ""}. Submitted at ${sub.submittedAt || sub.createdAt}.`;
+            results.push({
+              toolCallId: toolCall.id,
+              result: summary,
+            });
+          }
+        } catch (err: any) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: `I couldn't load that submission. ${err.message || "Please try again."}`,
+          });
+        }
+        continue;
+      } else if (functionName === "createProjectFromContactSubmission") {
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+        const submissionId = args.submissionId != null ? Number(args.submissionId) : null;
+        if (!submissionId || !Number.isInteger(submissionId)) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I need a valid contact submission ID to create a project.",
+          });
+          continue;
+        }
+        let baseUrl: string;
+        try {
+          baseUrl = request
+            ? getApiBaseUrl(request)
+            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
+              process.env.RAILWAY_PUBLIC_DOMAIN ||
+              "https://capcofire.com";
+        } catch {
+          baseUrl =
+            process.env.PUBLIC_RAILWAY_STATIC_URL ||
+            process.env.RAILWAY_PUBLIC_DOMAIN ||
+            "https://capcofire.com";
+        }
+        try {
+          const internalSecret =
+            process.env.INTERNAL_WEBHOOK_SECRET || process.env.VAPI_WEBHOOK_SECRET;
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (internalSecret) headers["X-Internal-Secret"] = internalSecret;
+          const res = await fetch(`${baseUrl}/api/admin/create-project-from-contact`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ submissionId }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            results.push({
+              toolCallId: toolCall.id,
+              result: `I couldn't create the project. ${data.error || "Unknown error"}.`,
+            });
+          } else {
+            const created = data.createdNewUser ? " I created a new client account for them." : "";
+            results.push({
+              toolCallId: toolCall.id,
+              result: `I've created the project "${data.project?.title || "Contact"}" (ID ${data.project?.id}).${created} Would you like to send a welcome email to the client?`,
+            });
+          }
+        } catch (err: any) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: `I couldn't create the project. ${err.message || "Please try again."}`,
+          });
+        }
+        continue;
+      } else if (functionName === "sendWelcomeEmail") {
+        const args =
+          typeof toolCall.function?.arguments === "string"
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function?.arguments || {};
+        const email = (args.email || "").trim().toLowerCase();
+        const name = args.name || "there";
+        if (!email) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: "I need the client's email address to send a welcome email.",
+          });
+          continue;
+        }
+        let baseUrl: string;
+        try {
+          baseUrl = request
+            ? getApiBaseUrl(request)
+            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
+              process.env.RAILWAY_PUBLIC_DOMAIN ||
+              "https://capcofire.com";
+        } catch {
+          baseUrl =
+            process.env.PUBLIC_RAILWAY_STATIC_URL ||
+            process.env.RAILWAY_PUBLIC_DOMAIN ||
+            "https://capcofire.com";
+        }
+        try {
+          const emailPayload = {
+            method: "magicLink",
+            trackLinks: false,
+            usersToNotify: [email],
+            emailSubject: `Welcome – ${name}`,
+            emailContent: `<p>Hi ${name},</p><p>Welcome! Your account is set up. You can log in to the dashboard to view your project.</p><p>Best regards,<br/>The Team</p>`,
+            buttonText: "Go to Dashboard",
+            buttonLink: "/dashboard",
+          };
+          const res = await fetch(`${baseUrl}/api/delivery/update-delivery`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(emailPayload),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            results.push({
+              toolCallId: toolCall.id,
+              result: `I couldn't send the welcome email. ${data.error || "Please try again."}`,
+            });
+          } else {
+            results.push({
+              toolCallId: toolCall.id,
+              result: `I've sent a welcome email to ${email}.`,
+            });
+          }
+        } catch (err: any) {
+          results.push({
+            toolCallId: toolCall.id,
+            result: `I couldn't send the welcome email. ${err.message || "Please try again."}`,
+          });
+        }
+        continue;
       } else if (functionName === "rememberConversation") {
         // Handle saving conversation to knowledge base
         const args =
