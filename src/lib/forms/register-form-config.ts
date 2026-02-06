@@ -32,7 +32,7 @@ export const registerFormConfig: MultiStepFormConfig = {
   formAction: "/api/auth/register",
   formMethod: "post",
   totalSteps: 8,
-  progressBar: true,
+  progressBar: false,
   registerUser: true, // Require unique email and redirect to login if exists
 
   // Default button styles
@@ -344,7 +344,6 @@ export const registerFormConfig: MultiStepFormConfig = {
         },
         {
           type: "submit",
-          label: "create account",
           classes: "submit-registration",
         },
       ],

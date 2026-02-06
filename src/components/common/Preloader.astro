@@ -7,7 +7,7 @@
 <div id="preloader-dot-grid" class="preloader-dot-grid color-background" aria-hidden="true"></div>
 
 <script>
-  const DOT_SIZE_PX = 20;
+  const DOT_SIZE_PX = 13; /* 33% tighter than 20px */
   const BRAKE_ROWS = 10;
 
   function ready() {
@@ -33,6 +33,7 @@
     grid.dataset.cols = String(cols);
     grid.dataset.rows = String(rows);
     grid.style.gridTemplateColumns = `repeat(${cols}, ${DOT_SIZE_PX}px)`;
+    grid.style.gridTemplateRows = `repeat(${rows}, ${DOT_SIZE_PX}px)`;
 
     const total = cols * rows;
     const indices = Array.from({ length: total }, (_, i) => i);
@@ -55,13 +56,32 @@
     }
 
     DotGridController.init(grid, { cols, rows, dotSize: DOT_SIZE_PX });
+
+    /* When body has mask-* class: after dot animation completes, expand gradient mask to 100% */
+    const maskExpandDelayMs = maxDelayMs + 600;
+    const maskExpandDurationMs = 600;
+    if (document.body?.classList.contains("mask-center") || document.body?.classList.contains("mask-top-left") || document.body?.classList.contains("mask-top-right")) {
+      setTimeout(() => {
+        const start = performance.now();
+        function tick(now: number) {
+          const elapsed = now - start;
+          const t = Math.min(1, elapsed / maskExpandDurationMs);
+          const easeOut = 1 - (1 - t) * (1 - t);
+          const pct = 70 + easeOut * 30;
+          grid.style.setProperty("--preloader-mask-radius", `${pct}%`);
+          if (t < 1) requestAnimationFrame(tick);
+          else grid.setAttribute("data-mask-full", "true");
+        }
+        requestAnimationFrame(tick);
+      }, maskExpandDelayMs);
+    }
   })();
 
   const DotGridController = (function () {
     let gridEl: HTMLElement | null = null;
     let cols = 0;
     let rows = 0;
-    let dotSize = 20;
+    let dotSize = 13;
     let mode: "idle" | "hover" | "magnetic" | "equalizer" = "idle";
     let brakeIntensity = 0;
     let rafId = 0;
@@ -221,8 +241,8 @@
     inset: 0;
     z-index: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, 20px);
-    grid-auto-rows: 20px;
+    grid-template-columns: repeat(auto-fill, 13px);
+    grid-auto-rows: 13px;
     gap: 0;
     align-content: start;
     justify-content: start;

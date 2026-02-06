@@ -8,7 +8,7 @@ export const exampleFormConfig: MultiStepFormConfig = {
   formAction: "/api/example/submit",
   formMethod: "post",
   totalSteps: 7,
-  progressBar: true,
+  progressBar: false,
 
   buttonDefaults: {
     next: {

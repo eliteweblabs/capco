@@ -124,6 +124,8 @@ export interface FormButtonConfig {
   href?: string; // For link buttons
   action?: string; // Custom action identifier
   disabled?: boolean; // Whether button is disabled initially
+  tooltipText?: string; // Tooltip text on hover
+  tooltipPosition?: "top" | "bottom" | "left" | "right"; // Tooltip position (default: top)
   // Slider (for button-group items that render as a range/slider)
   min?: number;
   max?: number;
