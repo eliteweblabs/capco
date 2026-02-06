@@ -1,66 +1,81 @@
 ---
-// Simple preloader component
-import LoadingSpinner from "../ui/LoadingSpinner.astro";
-const { color = "primary", size = "lg", loadingText = "loading..." } = Astro.props;
+// Preloader: dot grid (all black) with random dots turning primary, ease-in-out, each dot once.
+// #page stays hidden until ready.
 ---
 
-<div
-  id="preloader"
-  class="fixed inset-0 flex min-h-[100dvh] w-screen items-center justify-center color-background touch-none overflow-hidden scrollbar-hide"
-  style="z-index:999999;"
->
-  <LoadingSpinner {color} {size} {loadingText} />
-</div>
+<div id="preloader-dot-grid" class="preloader-dot-grid color-background" aria-hidden="true"></div>
 
 <script>
-  // Hide preloader when page is loaded
-  function hidePreloader() {
-    const preloader = document.getElementById("preloader");
-    if (preloader) {
-      // console.log("✅ [PRELOADER] Hiding preloader");
-      preloader.style.opacity = "0";
-      preloader.style.pointerEvents = "none";
-      setTimeout(() => {
-        preloader.style.display = "none";
-      }, 300);
-    } else {
-      console.log("❌ [PRELOADER] Preloader element not found");
-    }
+  const DOT_SIZE_PX = 20;
+
+  function ready() {
+    document.body?.classList.remove("preloading");
+    const page = document.getElementById("page");
+    if (page) page.removeAttribute("hidden");
+    const grid = document.getElementById("preloader-dot-grid");
+    if (grid) grid.style.pointerEvents = "none";
+    // Grid stays visible; animation runs to 100% and we do not hide or remove it
   }
 
-  // Try to hide immediately (for cached pages)
   if (document.readyState === "complete") {
-    console.log("✅ [PRELOADER] Page already loaded, hiding immediately");
-    hidePreloader();
+    ready();
+  } else {
+    window.addEventListener("load", ready);
   }
+  document.addEventListener("DOMContentLoaded", () => setTimeout(ready, 80));
 
-  // Try multiple events to ensure preloader hides
-  window.addEventListener("load", () => {
-    console.log("✅ [PRELOADER] window.load event fired");
-    hidePreloader();
-  });
-
-  document.addEventListener("DOMContentLoaded", function () {
-    console.log("✅ [PRELOADER] DOMContentLoaded event fired");
-    // Add a small delay to ensure everything is ready
-    setTimeout(hidePreloader, 100);
-  });
-
-  // Fallback: hide after 1 second regardless
-  setTimeout(() => {
-    console.log("✅ [PRELOADER] Fallback timeout (1s) fired");
-    hidePreloader();
-  }, 1000);
-
-  // Immediate fallback for debugging
-  setTimeout(() => {
-    console.log("✅ [PRELOADER] Immediate fallback (100ms) fired");
-    hidePreloader();
-  }, 100);
+  (function initDotGrid() {
+    const grid = document.getElementById("preloader-dot-grid");
+    if (!grid) return;
+    const cols = Math.ceil((window.innerWidth || 800) / DOT_SIZE_PX);
+    const rows = Math.ceil((window.innerHeight || 600) / DOT_SIZE_PX);
+    const total = cols * rows;
+    const indices = Array.from({ length: total }, (_, i) => i);
+    for (let i = total - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const maxDelayMs = 4000;
+    for (let i = 0; i < total; i++) {
+      const dot = document.createElement("span");
+      dot.className = "preloader-dot";
+      dot.style.setProperty("--delay", (indices[i] / total) * maxDelayMs + "ms");
+      grid.appendChild(dot);
+    }
+  })();
 </script>
 
-<style>
-  #preloader {
-    transition: opacity 0.3s ease-out;
+<style is:global>
+  .preloader-dot-grid {
+    position: fixed;
+    inset: 0;
+    z-index: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 20px);
+    grid-auto-rows: 20px;
+    gap: 0;
+    align-content: start;
+    justify-content: start;
+    transition: opacity 0.4s ease-out;
+  }
+  .preloader-dot {
+    width: 1px;
+    height: 1px;
+    background: #000;
+    border-radius: 50%;
+    justify-self: center;
+    align-self: center;
+    animation: preloader-dot-to-primary 0.5s ease-in-out var(--delay, 0) forwards;
+  }
+  .preloader-dot-grid.preloader-completing .preloader-dot {
+    animation: preloader-dot-to-primary 0.2s cubic-bezier(0.4, 0, 1, 1) 0s forwards;
+  }
+  @keyframes preloader-dot-to-primary {
+    from {
+      background-color: #000;
+    }
+    to {
+      background-color: var(--preloader-dot-primary, var(--color-primary-500));
+    }
   }
 </style>

@@ -812,8 +812,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
   }
 
-  .step-content.completed .step-buttons-wrapper,
-  .step-content.active .step-buttons-wrapper {
+  .step-content.completed .step-buttons-wrapper {
     /* margin-top: 0 !important; */
     /* height: 0;
     transition: height 0.3s ease-in-out; */
@@ -1573,151 +1572,151 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
   // Forgot password modal handler (for login form)
   // Only initialize if we're on the login form
-  if (document.getElementById("multi-step-login-form")) {
-    const forgotPasswordBtn = document.getElementById("forgot-password-btn");
+  // if (document.getElementById("multi-step-login-form")) {
+  //   const forgotPasswordBtn = document.getElementById("forgot-password-btn");
 
-    // Modal open/close functionality
-    async function openForgotPasswordModal() {
-      try {
-        const headers = new Headers();
-        const globalInputClasses =
-          document.querySelector('input:not([type="hidden"])')?.className || "";
-        headers.set("x-global-input-classes", globalInputClasses);
+  //   // Modal open/close functionality
+  //   async function openForgotPasswordModal() {
+  //     try {
+  //       const headers = new Headers();
+  //       const globalInputClasses =
+  //         document.querySelector('input:not([type="hidden"])')?.className || "";
+  //       headers.set("x-global-input-classes", globalInputClasses);
 
-        const response = await fetch("/partials/forgot-password-form", {
-          headers: headers,
-        });
+  //       const response = await fetch("/partials/forgot-password-form", {
+  //         headers: headers,
+  //       });
 
-        if (!response.ok) {
-          console.error("Failed to fetch forgot password form partial:", response.status);
-          return;
-        }
+  //       if (!response.ok) {
+  //         console.error("Failed to fetch forgot password form partial:", response.status);
+  //         return;
+  //       }
 
-        const formHTML = await response.text();
+  //       const formHTML = await response.text();
 
-        const modalId = await (window as any).showNotice({
-          type: "",
-          title: "Forgot Password",
-          message: formHTML,
-          modal: true,
-        });
+  //       const modalId = await (window as any).showNotice({
+  //         type: "",
+  //         title: "Forgot Password",
+  //         message: formHTML,
+  //         modal: true,
+  //       });
 
-        // Set up cancel button handler and focus email input when modal opens
-        setTimeout(() => {
-          const emailInput = document.querySelector(
-            '#forgot-password-form input[name="email"]'
-          ) as HTMLInputElement;
-          emailInput?.focus();
+  //       // Set up cancel button handler and focus email input when modal opens
+  //       setTimeout(() => {
+  //         const emailInput = document.querySelector(
+  //           '#forgot-password-form input[name="email"]'
+  //         ) as HTMLInputElement;
+  //         emailInput?.focus();
 
-          // Add cancel button click handler
-          const cancelBtn = document.getElementById("cancel-forgot");
-          if (cancelBtn) {
-            cancelBtn.addEventListener("click", () => {
-              if ((window as any).toastNotificationManager && modalId) {
-                (window as any).toastNotificationManager.hide(modalId);
-              }
-            });
-          }
-        }, 100);
-      } catch (error) {
-        console.error("Failed to load forgot password form:", error);
-        alert("Failed to load password reset form. Please try again.");
-      }
-    }
+  //         // Add cancel button click handler
+  //         const cancelBtn = document.getElementById("cancel-forgot");
+  //         if (cancelBtn) {
+  //           cancelBtn.addEventListener("click", () => {
+  //             if ((window as any).toastNotificationManager && modalId) {
+  //               (window as any).toastNotificationManager.hide(modalId);
+  //             }
+  //           });
+  //         }
+  //       }, 100);
+  //     } catch (error) {
+  //       console.error("Failed to load forgot password form:", error);
+  //       alert("Failed to load password reset form. Please try again.");
+  //     }
+  //   }
 
-    // Event listeners for modal
-    forgotPasswordBtn?.addEventListener("click", (e) => {
-      e.preventDefault();
-      openForgotPasswordModal();
-    });
+  //   // Event listeners for modal
+  //   forgotPasswordBtn?.addEventListener("click", (e) => {
+  //     e.preventDefault();
+  //     openForgotPasswordModal();
+  //   });
 
-    // Handle form submission using event delegation (since form will be in modal)
-    document.addEventListener("submit", async (e) => {
-      const target = e.target as HTMLFormElement;
-      if (target.id === "forgot-password-form") {
-        e.preventDefault();
+  //   // Handle form submission using event delegation (since form will be in modal)
+  //   document.addEventListener("submit", async (e) => {
+  //     const target = e.target as HTMLFormElement;
+  //     if (target.id === "forgot-password-form") {
+  //       e.preventDefault();
 
-        const emailInput = target.querySelector('input[name="email"]') as HTMLInputElement;
-        const email = emailInput?.value.trim();
+  //       const emailInput = target.querySelector('input[name="email"]') as HTMLInputElement;
+  //       const email = emailInput?.value.trim();
 
-        if (!email) {
-          if ((window as any).showNotice) {
-            (window as any).showNotice({
-              type: "error",
-              title: "Validation Error",
-              message: "Please enter your email address.",
-              persist: true,
-              modal: true,
-            });
-          }
-          return;
-        }
+  //       if (!email) {
+  //         if ((window as any).showNotice) {
+  //           (window as any).showNotice({
+  //             type: "error",
+  //             title: "Validation Error",
+  //             message: "Please enter your email address.",
+  //             persist: true,
+  //             modal: true,
+  //           });
+  //         }
+  //         return;
+  //       }
 
-        const sendResetLinkBtn = target.querySelector('button[type="submit"]') as HTMLButtonElement;
+  //       const sendResetLinkBtn = target.querySelector('button[type="submit"]') as HTMLButtonElement;
 
-        if (sendResetLinkBtn) {
-          sendResetLinkBtn.disabled = true;
-          sendResetLinkBtn.textContent = "Sending...";
-        }
+  //       if (sendResetLinkBtn) {
+  //         sendResetLinkBtn.disabled = true;
+  //         sendResetLinkBtn.textContent = "Sending...";
+  //       }
 
-        try {
-          const response = await fetch("/api/auth/forgot-password", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email }),
-          });
+  //       try {
+  //         const response = await fetch("/api/auth/forgot-password", {
+  //           method: "POST",
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //           },
+  //           body: JSON.stringify({ email }),
+  //         });
 
-          const result = await response.json();
+  //         const result = await response.json();
 
-          if (response.ok) {
-            if ((window as any).showNotice) {
-              (window as any).showNotice({
-                type: "success",
-                title: "Reset Link Sent",
-                message:
-                  "If an account with that email exists, you will receive a password reset link shortly.",
-                redirect: { url: "/", delay: 3500, showCountdown: true },
-                modal: true,
-              });
-            }
+  //         if (response.ok) {
+  //           if ((window as any).showNotice) {
+  //             (window as any).showNotice({
+  //               type: "success",
+  //               title: "Reset Link Sent",
+  //               message:
+  //                 "If an account with that email exists, you will receive a password reset link shortly.",
+  //               redirect: { url: "/", delay: 3500, showCountdown: true },
+  //               modal: true,
+  //             });
+  //           }
 
-            const closeBtn = document.querySelector(
-              '[data-modal-hide="forgot-password-modal"]'
-            ) as HTMLElement;
-            if (closeBtn) closeBtn.click();
-          } else {
-            if ((window as any).showNotice) {
-              (window as any).showNotice({
-                type: "error",
-                title: "Error",
-                message: result.error || "Failed to send reset link. Please try again.",
-                persist: true,
-                modal: true,
-              });
-            }
-          }
-        } catch (error) {
-          console.error("Forgot password error:", error);
-          if ((window as any).showNotice) {
-            (window as any).showNotice({
-              type: "error",
-              title: "Network Error",
-              message: "Failed to send reset link. Please check your connection and try again.",
-              persist: true,
-              modal: true,
-            });
-          }
-        } finally {
-          if (sendResetLinkBtn) {
-            sendResetLinkBtn.disabled = false;
-            sendResetLinkBtn.textContent = "Send Reset Link";
-          }
-        }
-      }
-    });
-  }
+  //           const closeBtn = document.querySelector(
+  //             '[data-modal-hide="forgot-password-modal"]'
+  //           ) as HTMLElement;
+  //           if (closeBtn) closeBtn.click();
+  //         } else {
+  //           if ((window as any).showNotice) {
+  //             (window as any).showNotice({
+  //               type: "error",
+  //               title: "Error",
+  //               message: result.error || "Failed to send reset link. Please try again.",
+  //               persist: true,
+  //               modal: true,
+  //             });
+  //           }
+  //         }
+  //       } catch (error) {
+  //         console.error("Forgot password error:", error);
+  //         if ((window as any).showNotice) {
+  //           (window as any).showNotice({
+  //             type: "error",
+  //             title: "Network Error",
+  //             message: "Failed to send reset link. Please check your connection and try again.",
+  //             persist: true,
+  //             modal: true,
+  //           });
+  //         }
+  //       } finally {
+  //         if (sendResetLinkBtn) {
+  //           sendResetLinkBtn.disabled = false;
+  //           sendResetLinkBtn.textContent = "Send Reset Link";
+  //         }
+  //       }
+  //     }
+  //   });
+  // }
 
   // Helper function to check if all fields in current step are valid
   function checkAllFieldsValid() {

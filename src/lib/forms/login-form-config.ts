@@ -74,7 +74,7 @@ export const loginFormConfig: MultiStepFormConfig = {
           label: "forgot?",
           variant: "anchor",
           size: "sm",
-          href: "#",
+          href: "/auth/forgot-password",
           icon: "",
           iconPosition: "left",
         },

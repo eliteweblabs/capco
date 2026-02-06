@@ -35,20 +35,47 @@ const {
 ---
 
 <div
-  class={`banner-alert relative ${className} `}
+  class={`banner-alert relative overflow-hidden ${className} `}
   data-banner-id={id}
   data-expire-ms={expireMs}
   data-position={position}
 >
-  <Alert {type} {title} {description} />
+  <div
+    class="banner-alert-stripes pointer-events-none absolute inset-0 -z-0 rounded-r-full opacity-40"
+    aria-hidden="true"
+  />
+  <Alert {type} {title} {description} class="relative z-10" />
   {
     dismissible && (
-      <div class="banner-dismiss absolute right-0 top-1/2 -translate-y-1/2">
+      <div class="banner-dismiss absolute right-0 top-1/2 -translate-y-1/2 z-10">
         <CloseButton tooltipText="Dismiss" />
       </div>
     )
   }
 </div>
+
+<style>
+  .banner-alert-stripes {
+    --stripe-width: 12px;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0,
+      transparent var(--stripe-width),
+      rgba(255, 255, 255, 0.35) var(--stripe-width),
+      rgba(255, 255, 255, 0.35) calc(var(--stripe-width) * 2)
+    );
+    background-size: calc(var(--stripe-width) * 2 * 1.414) 100%;
+    animation: banner-stripes-loop 1.2s linear infinite;
+  }
+  @keyframes banner-stripes-loop {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: calc(var(--stripe-width) * 2 * 1.414) 0;
+    }
+  }
+</style>
 
 <script>
   class BannerAlertManager {
