@@ -1,4 +1,5 @@
 ---
+/** Layout modes (used by layout components and CMS template): default | fullwidth | minimal | centered | fullscreen */
 interface Props {
   title?: string;
   description?: string;
@@ -26,12 +27,15 @@ interface Props {
   statusData?: any;
   statusOptions?: Array<{ value: string; label: string }>;
   mainClasses?: string;
+  /** Unified layout: default | fullwidth | minimal | centered | fullscreen. Drives centerContent, fullscreenScroll, fullWidthPage when set. */
+  layout?: "default" | "fullwidth" | "minimal" | "centered" | "fullscreen";
+  /** @deprecated Prefer layout="centered" */
   centerContent?: boolean;
   mask?: string;
   horizontalScroll?: boolean;
-  /** Fullscreen layout: 100% height, main content scrolls, footer always visible at bottom */
+  /** @deprecated Prefer layout="fullscreen" */
   fullscreenScroll?: boolean;
-  /** Full-width page: no preloader mask position (default true for backend/project/admin pages) */
+  /** @deprecated Prefer layout="fullwidth" for no preloader mask */
   fullWidthPage?: boolean;
 }
 
@@ -44,12 +48,26 @@ const {
   id = undefined,
   statusData = undefined,
   mainClasses = "",
-  centerContent = false,
+  layout = undefined,
+  centerContent: centerContentProp = false,
   mask = "center",
-  fullscreenScroll = false,
+  fullscreenScroll: fullscreenScrollProp = false,
   horizontalScroll = false,
-  fullWidthPage = undefined,
+  fullWidthPage: fullWidthPageProp = undefined,
 } = Astro.props;
+
+// Derive layout behavior from unified layout prop or legacy booleans
+const centerContent = layout === "centered" || centerContentProp;
+const fullscreenScroll = layout === "fullscreen" || fullscreenScrollProp;
+const fullWidthPage =
+  layout === "fullwidth" || layout === "fullscreen" || layout === "centered"
+    ? true
+    : fullWidthPageProp;
+
+// Effective template for data-template (layout prop or inferred from booleans)
+const dataTemplate =
+  layout ??
+  (centerContent ? "centered" : fullscreenScroll ? "fullscreen" : fullWidthPage ? "fullwidth" : "default");
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
 const {
@@ -847,8 +865,7 @@ const debugData = {
       pathname={Astro.url.pathname}
     />
 
-    <div id="page" class="pt-20 min-w-0 overflow-x-hidden" hidden
-
+    <div id="page" class="min-w-0 overflow-x-hidden" hidden data-template={dataTemplate}
     style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain; touch-action: pan-x;' : ''}`}
     >
       <Aside
@@ -869,7 +886,7 @@ const debugData = {
           fullscreenScroll && "flex flex-col min-h-0",
           centerContent ? "px-8 md:px-12 lg:px-16 xl:px-20" : "",
         ]}
-        style={`overscroll-behavior-y: contain; touch-action: pan-x;`}
+        style={currentUser ? "transition: margin-left 300ms ease-in-out;" : undefined}
       >
         <main
           class:list={[
@@ -878,7 +895,7 @@ const debugData = {
             fullscreenScroll
               ? "min-h-0 overflow-y-auto overscroll-contain"
               : "min-h-[calc(100dvh)] md:min-h-[calc(100dvh)] lg:min-h-[calc(100dvh)]",
-            centerContent ? "flex items-center justify-center overscroll-y-contain" : "",
+            centerContent ? "flex items-center justify-center" : "",
           ]}
         >
           <slot />

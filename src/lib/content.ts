@@ -336,11 +336,15 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         .maybeSingle();
 
       if (!error && dbPage) {
-        // Normalize template value (e.g., "Full Width" -> "fullwidth")
-        let normalizedTemplate = (dbPage.template || "default").toLowerCase();
-        if (normalizedTemplate === "full width") {
-          normalizedTemplate = "fullwidth";
-        }
+        // Normalize template to layout mode: default | fullwidth | minimal | centered | fullscreen
+        let normalizedTemplate = (dbPage.template || "default").toLowerCase().trim();
+        const templateMap: Record<string, string> = {
+          "full width": "fullwidth",
+          "full screen": "fullscreen",
+          "fullscreen scroll": "fullscreen",
+          center: "centered",
+        };
+        normalizedTemplate = templateMap[normalizedTemplate] ?? normalizedTemplate;
 
         const pageContent: PageContent = {
           title: dbPage.title || slug,
