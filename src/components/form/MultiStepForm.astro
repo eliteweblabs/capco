@@ -21,14 +21,16 @@ interface Props {
   initialData?: Record<string, any>;
 }
 
-const { config, containerClass = "w-full max-w-2xl mx-auto", initialData = {} } = Astro.props;
+const { config, containerClass = "w-full max-w-2xl px-16", initialData = {} } = Astro.props;
 
 // When first step has expandDown: false, start with centered panel (no expand-down/expand-up)
 const firstStep = config.steps.find((s) => s.stepNumber === 1);
 const initialCentered = firstStep?.expandDown === false;
 
-const { globalInputClasses } = globalClasses();
+const { globalInputClasses, multiStepInputClasses } = globalClasses();
 const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
+/** Typewriter-agent style for all JSON config form inputs (no shadow, color-background overwrites dot pattern, blinking caret) */
+const appendedMultiStepInputClasses = multiStepInputClasses;
 
 // Get carrier options for mobile carrier component
 const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
@@ -59,7 +61,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         config.steps.map((step) => (
           <div
             class:list={[
-              "step-content space-y-8 sm:space-y-8 md:space-y-10 lg:space-y-12",
+              "step-content space-y-8 sm:space-y-8 md:space-y-10 lg:space-y-12 mt-20", // leave mt-20 for tooltips
               step.stepNumber === 1 ? "first-step" : "",
             ]}
             data-step={step.stepNumber}
@@ -68,18 +70,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             tabindex="-1"
           >
             {/* Step Header */}
-            {/* {step.showIcon && step.icon && (
-                <div
-                  class="mx-auto mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30"
-                  tabindex="-1"
-                >
-                  <SimpleIcon
-                    name={step.icon}
-                    size="xl"
-                    class="text-primary-600 dark:text-primary-400"
-                  />
-                </div>
-              )} */}
+
             {step.title && (
               <h2
                 class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
@@ -102,12 +93,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {/* Auth Providers (for registration and login forms) - at top */}
             {(step.additionalContent === "google-oauth" ||
               step.additionalContent === "auth-providers") && (
-              <>
-                <div class="" tabindex="-1">
-                  <AuthProviders
-                    mode={step.additionalContent === "auth-providers" ? "login" : "register"}
-                  />
-                </div>
+              <div class="" tabindex="-1">
+                <AuthProviders
+                  mode={step.additionalContent === "auth-providers" ? "login" : "register"}
+                />
                 <div class="flex items-center gap-4 pb-4" tabindex="-1">
                   <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
                   <span class="text-sm text-zinc-500 dark:text-zinc-400 uppercase">
@@ -117,7 +106,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                   </span>
                   <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
                 </div>
-              </>
+              </div>
             )}
 
             {/* Step Fields */}
@@ -160,9 +149,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             ) : step.fields?.length ? (
               <div
                 class:list={[
+                  "step-form-fields-wrapper",
                   step.fieldLayout === "grid"
                     ? "grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6"
                     : "",
+                  step.response ? "ml-8" : "",
                 ]}
                 tabindex="-1"
               >
@@ -190,7 +181,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         title={field.label || "Select an option"}
                         options={mobileCarrierOptions}
                         selectedValue=""
-                        globalInputClasses={appendedGlobalInputClasses}
+                        globalInputClasses={appendedMultiStepInputClasses}
                         {...field.componentProps}
                       />
                     ) : field.type === "component" && field.component === "SlideToggle" ? (
@@ -201,7 +192,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       <InlineAddressSearch
                         id={field.id}
                         name={field.name}
-                        globalInputClasses={appendedGlobalInputClasses}
+                        globalInputClasses={appendedMultiStepInputClasses}
                         {...field.componentProps}
                       />
                     ) : field.type === "component" && field.component === "UnitSlider" ? (
@@ -257,13 +248,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         required={field.required}
                         rows={field.rows || 4}
                         autocomplete={field.autocomplete}
-                        class={appendedGlobalInputClasses}
+                        class={appendedMultiStepInputClasses}
                         data-error={field.errorMessage}
+                        data-validate={field.validate}
+                        data-validate-message={field.validateMessage}
                       />
                     ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 ? (
                       <div
                         class:list={[
-                          "relative rounded-lg",
+                          "relative",
                           field.icon ? "input-with-icon" : "",
                           field.iconPosition === "right" ? "icon-right" : "icon-left",
                         ]}
@@ -280,20 +273,27 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           minlength={field.minlength}
                           autofocus={field.autofocus}
                           class:list={[
-                            appendedGlobalInputClasses,
+                            appendedMultiStepInputClasses,
                             field.icon && field.iconPosition === "right" ? "pr-12" : "",
                             field.icon && field.iconPosition !== "right" ? "pl-12" : "",
                           ]}
                           data-error={field.errorMessage}
+                          data-validate={field.validate}
+                          data-validate-message={field.validateMessage}
                           data-has-animated-placeholder="true"
                           data-original-placeholder={field.placeholder}
                           data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
                         />
                         <span
                           class:list={[
-                            "animated-placeholder absolute left-0 top-0 flex items-center justify-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500",
-                            field.icon && field.iconPosition === "right" ? "pr-7 mr-1.25" : "",
-                            field.icon && field.iconPosition !== "right" ? "pl-7 ml-1.25" : "",
+                            "animated-placeholder absolute left-0 top-0 flex items-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500",
+                            field.animatedPlaceholderAlignment === "left"
+                              ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : "pl-3"}`
+                              : field.animatedPlaceholderAlignment === "right"
+                                ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : "pr-3"}`
+                                : "justify-center",
+                            field.icon && field.iconPosition === "right" ? "pr-12 mr-1.25" : "",
+                            field.icon && field.iconPosition !== "right" ? "pl-12 ml-1.25" : "",
                           ]}
                           data-for={field.id}
                           tabindex="-1"
@@ -353,10 +353,12 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           minlength={field.minlength}
                           autofocus={field.autofocus}
                           class:list={[
-                            appendedGlobalInputClasses,
+                            appendedMultiStepInputClasses,
                             field.iconPosition === "right" ? "pr-12 pl-12" : "pl-12 pr-12",
                           ]}
                           data-error={field.errorMessage}
+                          data-validate={field.validate}
+                          data-validate-message={field.validateMessage}
                         />
                       </div>
                     ) : (
@@ -369,8 +371,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         autocomplete={field.autocomplete}
                         minlength={field.minlength}
                         autofocus={field.autofocus}
-                        class={appendedGlobalInputClasses}
+                        class={appendedMultiStepInputClasses}
                         data-error={field.errorMessage}
+                        data-validate={field.validate}
+                        data-validate-message={field.validateMessage}
                       />
                     )}
                   </div>
@@ -421,12 +425,13 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {/* Navigation buttons (prev, next, submit, skip) */}
             <div
               class:list={[
-                "step-buttons-wrapper",
+                "step-form-buttons-wrapper",
                 "flex",
                 "gap-3",
                 step.buttons.filter((b) => b.type !== "choice").length === 1
                   ? "justify-end"
                   : "justify-between",
+                step.response ? "ml-8" : "",
               ]}
             >
               {step.buttons
@@ -622,8 +627,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     transform: translateX(-50%);
     min-height: 0;
     /* max-height: 80vh; */
-    padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right));
+    /* padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right)); */
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -820,12 +825,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
   }
 
-  .step-content.completed .step-buttons-wrapper {
+  .step-content.completed .step-form-buttons-wrapper {
     /* margin-top: 0 !important; */
     /* height: 0;
     transition: height 0.3s ease-in-out; */
     display: none;
   }
+
+  /* ml-8 for response steps is applied via class in template (step.response) */
 
   /* Touch-friendly button groups on mobile: 44px min touch target, no tap delay */
   [data-multi-step-form] .multi-step-button-group button,
@@ -985,24 +992,27 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           runPanelBottomLoopRef?.(panelLoopDurationMs);
         }
 
-        // Focus first input after cascade AND after the panel-bottom throttle loop stops (so layout/scroll don't steal focus)
-        const focusDelayMs = cascadeEndMs > 0 ? panelLoopDurationMs + 120 : OPACITY_DURATION_MS + 200;
-        const focusFirstInput = () => {
-          const first = stepContent.querySelector(
-            "input:not([type=hidden]):not([readonly]), textarea, select"
-          ) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
-          if (!first || typeof first.focus !== "function") return;
-          first.focus();
-          // Retry once after a tick in case panel loop or typewriter cursor removal stole focus
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              if (document.activeElement !== first) {
-                first.focus();
-              }
-            });
+        // Focus first input once all animation is done (cascade + panel settle). Same delay on touch so keypad opens after content is visible.
+        const focusDelayMs =
+          cascadeEndMs > 0 ? panelLoopDurationMs + 120 : OPACITY_DURATION_MS + 200;
+        console.log("[AUTOFOCUS] scheduling focusFirstInputIn", {
+          focusDelayMs,
+          cascadeEndMs,
+          panelLoopDurationMs,
+          stepNumber: stepContent.getAttribute("data-step"),
+        });
+        setTimeout(() => {
+          const focusFirstIn = (window as any).focusFirstInputIn;
+          const hasFn = typeof focusFirstIn === "function";
+          console.log("[AUTOFOCUS] timeout fired", {
+            hasFn,
+            stepNumber: stepContent.getAttribute("data-step"),
           });
-        };
-        setTimeout(focusFirstInput, focusDelayMs);
+          if (hasFn) {
+            const ok = focusFirstIn(stepContent);
+            console.log("[AUTOFOCUS] focusFirstInputIn result", { ok });
+          }
+        }, focusDelayMs);
       }
     });
 

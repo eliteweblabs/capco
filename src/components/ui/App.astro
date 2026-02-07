@@ -764,6 +764,7 @@ const debugData = {
       "antialiased",
       usePreloaderMask && `mask-${mask.trim()}`,
       fullscreenScroll && "min-h-dvh flex flex-col",
+      centerContent && "layout-centered",
     ]}
     transition:animate={isBackend ? "none" : undefined}
     data-spa-enabled={isBackend ? "true" : undefined}
@@ -894,7 +895,7 @@ const debugData = {
             horizontalScroll && "overflow-x-auto no-scrollbar",
             fullscreenScroll
               ? "min-h-0 overflow-y-auto overscroll-contain"
-              : "min-h-[calc(100dvh)] md:min-h-[calc(100dvh)] lg:min-h-[calc(100dvh)]",
+              : "min-h-[calc(100dvh)]",
             centerContent ? "flex items-center justify-center" : "",
           ]}
         >
@@ -1387,6 +1388,56 @@ const debugData = {
         } else {
           console.warn(`WARNING [${context || "NOTIFICATION"}] No notification found in response`);
         }
+      };
+
+      /** Focus first focusable input in a container. Call at end of panel animations so mobile keypad opens. */
+      (window as any).focusFirstInputIn = function (container: HTMLElement): boolean {
+        console.log("[AUTOFOCUS] focusFirstInputIn called", {
+          hasContainer: !!container,
+          containerTag: container?.tagName,
+          containerStep: container?.getAttribute?.("data-step"),
+        });
+        if (!container || typeof container.querySelector !== "function") {
+          console.log("[AUTOFOCUS] early return: no container or no querySelector");
+          return false;
+        }
+        const first = container.querySelector(
+          "input:not([type=hidden]):not([readonly]), textarea, select"
+        ) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+        console.log("[AUTOFOCUS] first focusable", {
+          found: !!first,
+          tag: first?.tagName,
+          id: first?.id,
+          name: (first as HTMLInputElement)?.name,
+          type: (first as HTMLInputElement)?.type,
+        });
+        if (!first || typeof first.focus !== "function") {
+          console.log("[AUTOFOCUS] early return: no first element or no focus method");
+          return false;
+        }
+        const isTouch = "ontouchstart" in window;
+        console.log("[AUTOFOCUS] focusing", { isTouch, preventScroll: false });
+        first.focus({ preventScroll: false });
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const active = document.activeElement === first;
+            console.log("[AUTOFOCUS] after rAF x2", { activeElementIsFirst: active });
+            if (!active) first.focus({ preventScroll: false });
+          });
+        });
+        if (isTouch) {
+          console.log("[AUTOFOCUS] touch device: scheduling focus at 50ms and 300ms");
+          setTimeout(() => {
+            first.focus({ preventScroll: false });
+            console.log("[AUTOFOCUS] touch focus 50ms", { activeElementIsFirst: document.activeElement === first });
+          }, 50);
+          setTimeout(() => {
+            first.focus({ preventScroll: false });
+            console.log("[AUTOFOCUS] touch focus 300ms", { activeElementIsFirst: document.activeElement === first });
+          }, 300);
+        }
+        console.log("[AUTOFOCUS] done", { activeElement: document.activeElement?.tagName, activeId: (document.activeElement as HTMLElement)?.id });
+        return true;
       };
 
       (window as any).hideOnFormFocus = function () {

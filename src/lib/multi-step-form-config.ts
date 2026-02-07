@@ -95,9 +95,14 @@ export interface FormFieldConfig {
   label?: string;
   placeholder?: string;
   animatedPlaceholders?: string[]; // Array of rotating placeholder values
+  animatedPlaceholderAlignment?: "left" | "center" | "right"; // Horizontal alignment of animated placeholder text (default: center)
   required?: boolean;
   autocomplete?: string;
   errorMessage?: string;
+  /** Server-side validation rule, e.g. "exists:profiles,email" (value must exist in DB). Used with validateMessage when check fails. */
+  validate?: string;
+  /** Message (can include HTML e.g. link to register) shown when validate check fails. */
+  validateMessage?: string;
   minlength?: number;
   rows?: number;
   autofocus?: boolean;
@@ -183,6 +188,8 @@ export interface FormStepConfig {
   effect?: "reveal-text" | "typewriter" | "none"; // Text animation effect for title (defaults to "typewriter")
   // Panel positioning: when false, keep the step panel vertically centered (no expand-down/expand-up)
   expandDown?: boolean; // default true; set false to keep panel centered (e.g. login form)
+  // Chat-style layout: when true, indent fields and buttons (ml-8) like a user response in a chat
+  response?: boolean;
 }
 
 export interface MultiStepFormConfig {

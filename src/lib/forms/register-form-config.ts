@@ -46,6 +46,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       stepNumber: 1,
       title: "",
       hideProgressBar: true,
+      response: true,
       fields: [
         {
           id: "step-email",
@@ -82,6 +83,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       stepNumber: 2,
       title: "What's your name?",
       fieldLayout: "single",
+      response: true,
       fields: [
         {
           id: "step-full-name",
@@ -115,6 +117,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       stepNumber: 3,
       title:
         "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, what is the name of the company?",
+      response: true,
       fields: [
         {
           id: "step-company-name",
@@ -145,6 +148,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       stepNumber: 4,
       title: "Create a password",
       subtitle: "minimum 6 characters",
+      response: true,
       fields: [
         {
           id: "step-password",
@@ -175,6 +179,7 @@ export const registerFormConfig: MultiStepFormConfig = {
     {
       stepNumber: 5,
       title: "Your phone?",
+      response: true,
       fields: [
         {
           id: "step-phone",
@@ -208,6 +213,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       stepNumber: 6,
       title:
         "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, do you wish to opt in to SMS?<br><br>No marketing messages, communication and project updates only.",
+      response: true,
       fields: [
         {
           id: "step-sms-alerts",
@@ -245,6 +251,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       title: "your mobile carrier?",
       subtitle:
         "This helps us deliver SMS messages to <span data-form-session-meta='phone' data-default='your phone'></span>.",
+      response: true,
       fields: [
         {
           id: "step-carrier",
@@ -281,6 +288,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       title: "Almost there!",
       subtitle: "Review your information and create your account",
       isReview: true,
+      response: true,
       reviewFields: [
         "email",
         "firstName",

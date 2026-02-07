@@ -47,6 +47,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       title: `Let's start with your name!`,
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fieldLayout: "single",
+      response: true,
       fields: [
         {
           type: "text",
@@ -80,6 +81,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       title:
         "What's your email <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
       subtitle: "",
+      response: true,
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fields: [
         {
@@ -114,6 +116,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       title:
         "What's a good phone number to reach you <span data-form-session-meta='firstName' data-default='friend'>friend</span>?",
       subtitle: "",
+      response: true,
       skipCondition: "isAuthenticated", // Skip for logged-in users
       fields: [
         {
@@ -147,6 +150,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       stepNumber: 5,
       title: "Where is this MEP project located?",
       subtitle: "",
+      response: true,
       fields: [
         {
           type: "component",
@@ -187,6 +191,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       title:
         "What is the fuel source for <span data-form-session-meta='address' data-default='this project'>this project</span>?",
       // subtitle: "What type of fuel does the HVAC system use?",
+      response: true,
       fields: [
         {
           type: "hidden",
@@ -236,6 +241,7 @@ export const mepFormConfig: MultiStepFormConfig = {
         "What type of <span data-form-session-meta='fuelSource' data-default=''></span> HVAC system is at <span data-form-session-meta='address' data-default='this project'>this project</span>?",
       subtitle: "",
       fieldLayout: "single",
+      response: true,
       fields: [
         {
           type: "hidden",
@@ -348,6 +354,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       title:
         "What is the electric service at <span data-form-session-meta='address' data-default='this project'>this project</span>?",
       // subtitle: "What type of fuel does the HVAC system use?",
+      response: true,
       fields: [
         {
           type: "hidden",
@@ -394,6 +401,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       title:
         "Is there a transformer at <span data-form-session-meta='address' data-default='this project'>this project</span>?",
       // subtitle: "What type of fuel does the HVAC system use?",
+      response: true,
       fields: [
         {
           type: "hidden",
@@ -440,6 +448,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       title:
         "Is there EV charging service at <span data-form-session-meta='address' data-default='this project'>this project</span>?",
       // subtitle: "What type of fuel does the HVAC system use?",
+      response: true,
       fields: [
         {
           type: "hidden",
@@ -478,6 +487,7 @@ export const mepFormConfig: MultiStepFormConfig = {
       title:
         "Is there a smart home system installed at <span data-form-session-meta='address' data-default='this project'>this project</span> or planned for the future?",
       // subtitle: "What type of fuel does the HVAC system use?",
+      response: true,
       fields: [
         {
           type: "hidden",

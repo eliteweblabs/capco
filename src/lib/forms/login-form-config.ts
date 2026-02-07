@@ -50,12 +50,16 @@ export const loginFormConfig: MultiStepFormConfig = {
           type: "email",
           placeholder: DEFAULT_EMAIL_PLACEHOLDERS[0],
           animatedPlaceholders: DEFAULT_EMAIL_PLACEHOLDERS,
+          animatedPlaceholderAlignment: "left",
           required: true,
           autocomplete: "email",
           errorMessage: "Please enter a valid email address",
           autofocus: true,
           icon: "mail",
           iconPosition: "left",
+          validate: "exists:users,email",
+          validateMessage:
+            "Email does not exist. <br> Please <a href='/auth/register' class='underline'>create an account.</a>",
         },
       ],
       buttons: [
@@ -82,7 +86,7 @@ export const loginFormConfig: MultiStepFormConfig = {
         },
         {
           type: "next",
-          label: "next",
+          validLabel: "next ↵", // ↵ = Return/Enter (ASCII 13)
           dataNext: 2,
         },
       ],
@@ -92,7 +96,7 @@ export const loginFormConfig: MultiStepFormConfig = {
     // Step 2: Password
     {
       stepNumber: 2,
-      title: "Enter your password",
+      title: "",
       showIcon: false,
       fields: [
         {

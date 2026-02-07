@@ -23,6 +23,53 @@ body {
   max-width: 100%;
 }
 
+/* iOS: prevent overscroll rubber-band so fixed navbar stays in place */
+@supports (-webkit-touch-callout: none) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+  /* Keep main navbar in its own compositing layer so it doesn’t slide with over-scroll */
+  #main-navbar {
+    top: max(1rem, env(safe-area-inset-top, 0px));
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+  }
+}
+
+/* Center-content layout on mobile: no page scroll, only main/panels scroll */
+@media (max-width: 767px) {
+  body.layout-centered {
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  body.layout-centered #page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  body.layout-centered #main-content {
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  body.layout-centered #main-content main {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .dark {
   color: #ffffff;
   --preloader-dot-primary: var(--color-primary-400);
@@ -69,6 +116,10 @@ html[data-page-size="large"] {
   background-color: rgba(var(--color-background-dark), 0.8);
 }
 
+.bg-transparent {
+  background-color: transparent;
+}
+
 .color-border {
   border-color: rgb(var(--color-border));
 }
@@ -89,7 +140,8 @@ body.dark select::placeholder {
   color: var(--color-text-muted-dark);
 }
 
-/* Enhanced input styling: focus glow, pulse, validation states (email, password, text, tel) */
+/* [OVERHAUL] See INPUT OVERHAUL REFERENCE at end of file */
+/*
 input[type="email"],
 input[type="password"],
 input[type="text"],
@@ -199,27 +251,24 @@ input[type="tel"].is-valid {
 .dark input[type="tel"].is-valid {
   /* box-shadow:
     0 3px 9px -1.5px rgba(74, 222, 128, 0.2),
-    0 6px 15px -3px rgba(74, 222, 128, 0.15) !important; */
+    0 6px 15px -3px rgba(74, 222, 128, 0.15) !important; * /
 }
 
-input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
-input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
-input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
-input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
-input.is-invalid:not(:focus) {
-  /* box-shadow:
-    0 3px 9px -1.5px rgba(239, 68, 68, 0.1),
-    0 6px 15px -3px rgba(239, 68, 68, 0.075); */
+/* Input icon color when valid (wrapper contains input.is-valid) */
+.input-with-icon:has(input[type="email"].is-valid) svg,
+.input-with-icon:has(input[type="password"].is-valid) svg,
+.input-with-icon:has(input[type="text"].is-valid) svg,
+.input-with-icon:has(input[type="tel"].is-valid) svg {
+  color: var(--color-success-500);
+  opacity: 0.9;
 }
 
-.dark input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
-.dark input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
-.dark input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
-.dark input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
-.dark input.is-invalid:not(:focus) {
-  /* box-shadow:
-    0 3px 9px -1.5px rgba(251, 113, 133, 0.15),
-    0 6px 15px -3px rgba(251, 113, 133, 0.1); */
+.dark .input-with-icon:has(input[type="email"].is-valid) svg,
+.dark .input-with-icon:has(input[type="password"].is-valid) svg,
+.dark .input-with-icon:has(input[type="text"].is-valid) svg,
+.dark .input-with-icon:has(input[type="tel"].is-valid) svg {
+  color: var(--color-success-400);
+  opacity: 0.9;
 }
 
 /* First-pass autofill override: inset overlay + delay so Chrome’s blue never visibly applies */
@@ -248,6 +297,7 @@ select:autofill:active {
   transition:
     background-color 5000s ease-in-out 0s,
     box-shadow 200ms ease-in-out;
+
   /* -webkit-box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
@@ -255,7 +305,7 @@ select:autofill:active {
   box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important; */
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important; * /
 }
 
 input:not([type="hidden"]):-webkit-autofill:focus,
@@ -273,7 +323,10 @@ select:autofill:focus {
   box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important; */
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important; * /
+}
+
+*/
 }
 
 :root {
@@ -312,10 +365,10 @@ select:autofill:focus {
   }
 }
 
+/* [OVERHAUL] .input-with-icon – see INPUT OVERHAUL REFERENCE at end of file
 .input-with-icon {
   position: relative;
 }
-
 .input-with-icon.icon-left::before {
   content: "";
   position: absolute;
@@ -329,7 +382,6 @@ select:autofill:focus {
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
-
 .input-with-icon.icon-right::after {
   content: "";
   position: absolute;
@@ -343,21 +395,19 @@ select:autofill:focus {
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
-
 .input-with-icon:focus-within::before,
 .input-with-icon:focus-within::after {
   opacity: 0.7;
 }
-
 .dark .input-with-icon::before,
 .dark .input-with-icon::after {
   filter: brightness(0.8);
 }
-
 .dark .input-with-icon:focus-within::before,
 .dark .input-with-icon:focus-within::after {
   filter: brightness(1);
 }
+*/
 
 /* Fix for toggle button hover state overriding deselected state */
 .toggle-button.deselected {
@@ -447,16 +497,15 @@ input::-webkit-credit-card-auto-fill-button {
   position: absolute !important;
 }
 
-/* Remove native validation UI */
+/* [OVERHAUL] input:invalid, focus-visible – see INPUT OVERHAUL REFERENCE at end of file
 input:invalid {
-  /* box-shadow: none !important; */
+  box-shadow: none !important;
 }
-
-/* Remove any browser default focus/validation indicators */
 input:focus-visible,
 input:focus {
   outline: none;
 }
+*/
 
 /* ============================================
    GLOBAL FOCUS STYLES - Input Focus Effects
@@ -471,108 +520,12 @@ input:focus {
    7. Valid + focused → primary (both :valid and .is-valid)
    ============================================ */
 
-/* Base transition for all inputs */
-input:not([type="hidden"]),
-textarea,
-select {
-  transition: box-shadow 250ms ease-in-out;
-}
-
-/* Caret: visible color (especially on mobile where native caret is thicker/blue) */
-input:not([type="hidden"]),
-textarea {
-  caret-color: var(--color-primary-500);
-}
-.dark input:not([type="hidden"]),
-.dark textarea {
-  caret-color: var(--color-primary-400);
-}
-
-/* iOS Safari: align caret with text (avoids wrong line-height / double-cursor when autofill is used) */
-@supports (-webkit-touch-callout: none) {
-  input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-  textarea {
-    line-height: 1.5;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-}
-
-/* Primary focus shadow - applies to all inputs globally (validation states below override when applicable) */
-input:not([type="hidden"]):focus,
-textarea:focus,
-select:focus {
-  /* box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important; */
-}
-
-/* Invalid: red glow when not focused (higher specificity than generic autofill so invalid+autofill stays red) */
-input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
-textarea:invalid:not(:placeholder-shown):not(:focus),
-select:invalid:not(:placeholder-shown):not(:focus) {
-  /* box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important; */
-}
-
-/* Valid (not focused): :valid from browser or .is-valid from form JS */
-input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
-textarea:valid:not(:placeholder-shown):not(:focus),
-select:valid:not(:placeholder-shown):not(:focus),
-input:not([type="hidden"]).is-valid:not(:focus),
-textarea.is-valid:not(:focus),
-select.is-valid:not(:focus) {
-  /* box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important; */
-}
-
-/* Valid + focused: primary shadow (both :valid and .is-valid so JS-validated fields match) */
-input:not([type="hidden"]):valid:focus,
-textarea:valid:focus,
-select:valid:focus,
-input:not([type="hidden"]).is-valid:focus,
-textarea.is-valid:focus,
-select.is-valid:focus {
-  /* box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important; */
-}
-
-/* Button icon state: swap default/valid icon when .is-valid is set by form JS (multi-step etc.) */
-button:has(.icon-valid):has(.icon-default) .icon-valid {
-  display: none;
-}
-
-button:has(.icon-valid):has(.icon-default).is-valid .icon-default {
-  display: none;
-}
-
-button:has(.icon-valid):has(.icon-default).is-valid .icon-valid {
-  display: inline-block;
-  animation: iconSwapIn 300ms ease-out;
-}
-
-@keyframes iconSwapIn {
-  0% {
-    transform: scale(0) rotate(-90deg);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.2) rotate(0deg);
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
-  }
-}
+/* [OVERHAUL] Base transition, caret, multi-step-input, iOS, focus/invalid/valid – see INPUT OVERHAUL REFERENCE at end of file */
 
 /* Custom validation tooltip container */
 .input-wrapper {
   position: relative;
   display: inline-block;
-  width: 100%;
 }
 
 /* Custom validation tooltip - DISABLED */
@@ -1615,41 +1568,7 @@ a[aria-disabled="true"] {
   }
 }
 
-/* Focus shadow animation - global so it works across all components */
-input:not([type="hidden"]),
-textarea,
-select {
-  transition: box-shadow 250ms ease-in-out;
-}
-
-input:not([type="hidden"]):focus,
-textarea:focus,
-select:focus {
-  /* box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important; */
-}
-
-/* Invalid, not focused: red glow (must come before valid so valid can trump) */
-input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
-textarea:invalid:not(:placeholder-shown):not(:focus),
-select:invalid:not(:placeholder-shown):not(:focus) {
-  /* box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important; */
-}
-
-/* Valid + focused: primary glow (focus state wins) */
-input:not([type="hidden"]):valid:focus,
-textarea:valid:focus,
-select:valid:focus,
-input:not([type="hidden"]).is-valid:focus,
-textarea.is-valid:focus,
-select.is-valid:focus {
-  /* box-shadow:
-    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important; */
-}
+/* [OVERHAUL] Duplicate focus/invalid/valid block – see INPUT OVERHAUL REFERENCE at end of file */
 
 @keyframes hop {
   0%,
@@ -1686,6 +1605,7 @@ select.is-valid:focus {
   --preloader-mask-radius: 70%;
 }
 
+body.layout-centered #preloader-dot-grid,
 body.mask-center #preloader-dot-grid {
   -webkit-mask-image: radial-gradient(
     circle at 50% 50%,
@@ -1744,8 +1664,410 @@ body.mask-top-right #preloader-dot-grid {
 }
 
 /* When dot animation completes, expand mask to 100% (set via data-mask-full on grid) */
+body.layout-centered #preloader-dot-grid[data-mask-full],
 body.mask-center #preloader-dot-grid[data-mask-full],
 body.mask-top-left #preloader-dot-grid[data-mask-full],
 body.mask-top-right #preloader-dot-grid[data-mask-full] {
   --preloader-mask-radius: 100%;
 }
+
+/* =============================================================================
+   INPUT / WRAPPER / ICON / STATE SYSTEM - OVERHAUL REFERENCE (ALL COMMENTED OUT)
+   Isolated for overhaul. Uncomment sections in this block as you re-enable.
+   Also see: FeedbackPanel.astro #feedback-form :invalid/:valid (commented there).
+   =============================================================================
+
+--- 1. Enhanced input styling: focus glow, pulse (email, password, text, tel) ---
+input[type="email"],
+input[type="password"],
+input[type="text"],
+input[type="tel"] {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+input[type="email"]:focus::before,
+input[type="password"]:focus::before,
+input[type="text"]:focus::before,
+input[type="tel"]:focus::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 75px;
+  height: 75px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.2) 0%, transparent 70%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  animation: pulse-circle 1s ease-in-out infinite;
+  z-index: -1;
+}
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="text"]:focus,
+input[type="tel"]:focus {
+  box-shadow:
+    0 3px 9px -1.5px rgba(14, 165, 233, 0.15),
+    0 6px 15px -3px rgba(14, 165, 233, 0.1);
+}
+.dark input[type="email"]:focus::before,
+.dark input[type="password"]:focus::before,
+.dark input[type="text"]:focus::before,
+.dark input[type="tel"]:focus::before {
+  background: radial-gradient(circle, rgba(55, 185, 243, 0.25) 0%, transparent 70%);
+}
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark input[type="text"]:focus,
+.dark input[type="tel"]:focus {
+  box-shadow:
+    0 3px 9px -1.5px rgba(55, 185, 243, 0.2),
+    0 6px 15px -3px rgba(55, 185, 243, 0.125);
+}
+
+--- 2. .is-valid: pulse + box-shadow (light & dark) ---
+input[type="email"]:focus.is-valid::before,
+input[type="password"]:focus.is-valid::before,
+input[type="text"]:focus.is-valid::before,
+input[type="tel"]:focus.is-valid::before,
+input[type="email"].is-valid::before,
+input[type="password"].is-valid::before,
+input[type="text"].is-valid::before,
+input[type="tel"].is-valid::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 75px;
+  height: 75px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  animation: pulse-circle-green 1s ease-in-out infinite;
+  z-index: -1;
+}
+input[type="email"]:focus.is-valid,
+input[type="password"]:focus.is-valid,
+input[type="text"]:focus.is-valid,
+input[type="tel"]:focus.is-valid,
+input[type="email"].is-valid,
+input[type="password"].is-valid,
+input[type="text"].is-valid,
+input[type="tel"].is-valid {
+  box-shadow:
+    0 3px 9px -1.5px rgba(34, 197, 94, 0.15),
+    0 6px 15px -3px rgba(34, 197, 94, 0.1) !important;
+}
+.dark input[type="email"]:focus.is-valid::before,
+.dark input[type="password"]:focus.is-valid::before,
+.dark input[type="text"]:focus.is-valid::before,
+.dark input[type="tel"]:focus.is-valid::before,
+.dark input[type="email"].is-valid::before,
+.dark input[type="password"].is-valid::before,
+.dark input[type="text"].is-valid::before,
+.dark input[type="tel"].is-valid::before {
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.25) 0%, transparent 70%);
+}
+.dark input[type="email"]:focus.is-valid,
+.dark input[type="password"]:focus.is-valid,
+.dark input[type="text"]:focus.is-valid,
+.dark input[type="tel"]:focus.is-valid,
+.dark input[type="email"].is-valid,
+.dark input[type="password"].is-valid,
+.dark input[type="text"].is-valid,
+.dark input[type="tel"].is-valid {
+  box-shadow: 0 3px 9px -1.5px rgba(74, 222, 128, 0.2), 0 6px 15px -3px rgba(74, 222, 128, 0.15) !important;
+}
+
+--- 3. Input icon when valid (.input-with-icon:has(input.is-valid) svg) ---
+.input-with-icon:has(input[type="email"].is-valid) svg,
+.input-with-icon:has(input[type="password"].is-valid) svg,
+.input-with-icon:has(input[type="text"].is-valid) svg,
+.input-with-icon:has(input[type="tel"].is-valid) svg {
+  color: var(--color-success-500);
+  opacity: 0.9;
+}
+.dark .input-with-icon:has(input[type="email"].is-valid) svg,
+.dark .input-with-icon:has(input[type="password"].is-valid) svg,
+.dark .input-with-icon:has(input[type="text"].is-valid) svg,
+.dark .input-with-icon:has(input[type="tel"].is-valid) svg {
+  color: var(--color-success-400);
+  opacity: 0.9;
+}
+
+--- 4. :invalid / .is-invalid (not focused) ---
+input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
+input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
+input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
+input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
+input.is-invalid:not(:focus) {
+  box-shadow: 0 3px 9px -1.5px rgba(239, 68, 68, 0.1), 0 6px 15px -3px rgba(239, 68, 68, 0.075);
+}
+.dark input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
+.dark input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
+.dark input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
+.dark input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
+.dark input.is-invalid:not(:focus) {
+  box-shadow: 0 3px 9px -1.5px rgba(251, 113, 133, 0.15), 0 6px 15px -3px rgba(251, 113, 133, 0.1);
+}
+
+--- 5. Autofill overrides ---
+input:not([type="hidden"]):-webkit-autofill,
+input:not([type="hidden"]):-webkit-autofill:hover,
+input:not([type="hidden"]):-webkit-autofill:active,
+input:not([type="hidden"]):autofill,
+input:not([type="hidden"]):autofill:hover,
+input:not([type="hidden"]):autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:active,
+textarea:autofill,
+textarea:autofill:hover,
+textarea:autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:active,
+select:autofill,
+select:autofill:hover,
+select:autofill:active {
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  line-height: inherit !important;
+  transition: background-color 5000s ease-in-out 0s, box-shadow 200ms ease-in-out;
+  box-shadow: 0 0 0 100vmax var(--color-input-bg) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+input:not([type="hidden"]):-webkit-autofill:focus,
+input:not([type="hidden"]):autofill:focus,
+textarea:-webkit-autofill:focus,
+textarea:autofill:focus,
+select:-webkit-autofill:focus,
+select:autofill:focus {
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  background-color: var(--color-input-bg) !important;
+  box-shadow: 0 0 0 100vmax var(--color-input-bg) inset,
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+
+--- 6. .input-with-icon (wrapper, ::before, ::after, focus-within, dark) ---
+.input-with-icon {
+  position: relative;
+}
+.input-with-icon.icon-left::before {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.5;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.input-with-icon.icon-right::after {
+  content: "";
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.5;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.input-with-icon:focus-within::before,
+.input-with-icon:focus-within::after {
+  opacity: 0.7;
+}
+.dark .input-with-icon::before,
+.dark .input-with-icon::after {
+  filter: brightness(0.8);
+}
+.dark .input-with-icon:focus-within::before,
+.dark .input-with-icon:focus-within::after {
+  filter: brightness(1);
+}
+
+--- 7. input:invalid (remove native validation UI) + focus-visible/outline ---
+input:invalid {
+  box-shadow: none !important;
+}
+input:focus-visible,
+input:focus {
+  outline: none;
+}
+
+--- 8. GLOBAL FOCUS STYLES: base transition, caret, multi-step-input, iOS, invalid/valid/valid+focus ---
+input:not([type="hidden"]),
+textarea,
+select {
+  transition: box-shadow 250ms ease-in-out;
+}
+input:not([type="hidden"]),
+textarea {
+  caret-color: var(--color-primary-500);
+}
+.dark input:not([type="hidden"]),
+.dark textarea {
+  caret-color: var(--color-primary-400);
+}
+[data-multi-step-form] .multi-step-input,
+[data-multi-step-form] input.multi-step-input,
+[data-multi-step-form] textarea.multi-step-input {
+  box-shadow: none !important;
+  caret-color: #000;
+  caret-shape: line;
+}
+.dark [data-multi-step-form] .multi-step-input,
+.dark [data-multi-step-form] input.multi-step-input,
+.dark [data-multi-step-form] textarea.multi-step-input {
+  caret-color: #fff;
+}
+[data-multi-step-form] .input-with-icon .multi-step-input {
+  padding-left: 3rem;
+  padding-right: 3rem;
+}
+[data-multi-step-form] .input-with-icon.icon-right .multi-step-input {
+  padding-left: 1rem;
+  padding-right: 3rem;
+}
+[data-multi-step-form] .input-with-icon.icon-left .multi-step-input {
+  padding-left: 3rem;
+  padding-right: 1rem;
+}
+input:not([type="hidden"]):focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
+textarea:invalid:not(:placeholder-shown):not(:focus),
+select:invalid:not(:placeholder-shown):not(:focus) {
+  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
+}
+input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
+textarea:valid:not(:placeholder-shown):not(:focus),
+select:valid:not(:placeholder-shown):not(:focus),
+input:not([type="hidden"]).is-valid:not(:focus),
+textarea.is-valid:not(:focus),
+select.is-valid:not(:focus) {
+  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+}
+input:not([type="hidden"]):valid:focus,
+textarea:valid:focus,
+select:valid:focus,
+input:not([type="hidden"]).is-valid:focus,
+textarea.is-valid:focus,
+select.is-valid:focus {
+  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+
+--- 9. Button .is-valid icon swap ---
+button:has(.icon-valid):has(.icon-default) .icon-valid {
+  display: none;
+}
+button:has(.icon-valid):has(.icon-default).is-valid .icon-default {
+  display: none;
+}
+button:has(.icon-valid):has(.icon-default).is-valid .icon-valid {
+  display: inline-block;
+  animation: iconSwapIn 300ms ease-out;
+}
+@keyframes iconSwapIn {
+  0% { transform: scale(0) rotate(-90deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+--- 10. .input-wrapper + validation tooltip (disabled) ---
+.input-wrapper { position: relative; display: inline-block; }
+.input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown).touched)::after {
+  content: attr(data-error);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  right: 0;
+  background: #ef4444;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: tooltip-slide 0.2s ease-out;
+}
+.input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown).touched)::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% - 3px);
+  right: 10px;
+  border-width: 8px;
+  border-style: solid;
+  border-color: #ef4444 transparent transparent transparent;
+  z-index: 1000;
+  animation: tooltip-slide 0.2s ease-out;
+}
+input:invalid:not(:focus):not(:placeholder-shown).touched {
+  border-color: #8b5cf6 !important;
+}
+
+--- 11. Duplicate block (focus transition, invalid, valid+focus) ~line 1719 ---
+input:not([type="hidden"]),
+textarea,
+select {
+  transition: box-shadow 250ms ease-in-out;
+}
+input:not([type="hidden"]):focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
+textarea:invalid:not(:placeholder-shown):not(:focus),
+select:invalid:not(:placeholder-shown):not(:focus) {
+  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
+}
+input:not([type="hidden"]):valid:focus,
+textarea:valid:focus,
+select:valid:focus,
+input:not([type="hidden"]).is-valid:focus,
+textarea.is-valid:focus,
+select.is-valid:focus {
+  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+}
+
+--- 12. FeedbackPanel.astro #feedback-form :invalid/:valid (scoped) ---
+#feedback-form input:invalid,
+#feedback-form select:invalid,
+#feedback-form textarea:invalid {
+  border-color: #ef4444;
+}
+#feedback-form input:valid,
+#feedback-form select:valid,
+#feedback-form textarea:valid {
+  border-color: #10b981;
+}
+
+--- Keyframes used by above (pulse-circle, pulse-circle-green, iconSwapIn, tooltip-slide) ---
+@keyframes pulse-circle { 0%,100% { width: 100px; height: 100px; opacity: 0.3; } 50% { width: 140px; height: 140px; opacity: 0.4; } }
+@keyframes pulse-circle-green { 0%,100% { width: 100px; height: 100px; opacity: 0.3; } 50% { width: 140px; height: 140px; opacity: 0.4; } }
+@keyframes tooltip-slide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+============================================================================= */

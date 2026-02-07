@@ -350,9 +350,11 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Auto-focus when panel is done: skip if step has typewriter (typewriter-complete will focus)
+    // Auto-focus when panel is done. On touch use 0ms so focus runs in same gesture as tap (keypad may open).
     const hasTypewriter = targetStep.classList.contains("has-typewriter");
     if (!hasTypewriter) {
+      const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
+      const focusDelayMs = isTouch ? 0 : 400;
       setTimeout(() => {
         const formEl = document.getElementById(formId) as HTMLFormElement;
         const cursorFraction = 0.4;
@@ -381,15 +383,15 @@ export function createMultiStepFormHandler(
             scrollFormToCursor(yesButton);
           }
         } else {
-          const firstInput = targetStep.querySelector(
-            "input:not([type=hidden]):not([readonly]), textarea, select"
-          ) as HTMLElement;
-          if (firstInput && typeof firstInput.focus === "function") {
-            firstInput.focus();
-            scrollFormToCursor(firstInput);
+          const focusFirstIn = (window as any).focusFirstInputIn;
+          if (typeof focusFirstIn === "function" && focusFirstIn(targetStep)) {
+            const firstInput = targetStep.querySelector(
+              "input:not([type=hidden]):not([readonly]), textarea, select"
+            ) as HTMLElement;
+            if (firstInput) scrollFormToCursor(firstInput);
           }
         }
-      }, 650);
+      }, focusDelayMs);
     }
   }
 
@@ -548,10 +550,30 @@ export function createMultiStepFormHandler(
       }
     }
 
+    // Field-level validate rule (e.g. "exists:profiles,email" – value must exist in DB)
+    const validateInputs = stepEl.querySelectorAll("input[data-validate], textarea[data-validate]");
+    for (const input of validateInputs) {
+      const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
+      const rule = inputEl.getAttribute("data-validate")?.trim();
+      const validateMessage = inputEl.getAttribute("data-validate-message")?.trim();
+      if (!rule || !inputEl.value?.trim()) continue;
+
+      if (rule.startsWith("exists:")) {
+        const exists = await validateFieldExists(inputEl.value.trim(), rule, inputEl.type);
+        if (!exists) {
+          inputEl.classList.add("touched");
+          if ((window as any).showNotice && validateMessage) {
+            (window as any).showNotice("warning", "Not found", validateMessage, 10000);
+          }
+          return false;
+        }
+      }
+    }
+
     return isValid;
   }
 
-  // Validate email uniqueness
+  // Validate email uniqueness (for register: email must be available)
   async function validateEmailUniqueness(email: string): Promise<boolean> {
     try {
       const response = await fetch("/api/auth/check-email", {
@@ -571,6 +593,34 @@ export function createMultiStepFormHandler(
       return result.available !== false;
     } catch (error) {
       console.error("Email validation error:", error);
+      return true;
+    }
+  }
+
+  // Validate that a field value exists in DB (e.g. login: email must exist). Rule format: "exists:table,column".
+  async function validateFieldExists(
+    value: string,
+    rule: string,
+    inputType: string
+  ): Promise<boolean> {
+    const match = rule.match(/^exists:([^,]+),([^,]+)$/);
+    if (!match) return true;
+    const [, _table, column] = match;
+    if (column?.toLowerCase() !== "email" || inputType !== "email") {
+      return true; // Only support exists:*,email for email inputs for now
+    }
+    try {
+      const response = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: value }),
+      });
+      if (!response.ok) return true; // On API error, allow progression
+      const result = await response.json();
+      // available === false means email exists in DB; we need "exists" so return !available
+      return result.available === false;
+    } catch (error) {
+      console.error("Exists validation error:", error);
       return true;
     }
   }
@@ -1079,6 +1129,10 @@ export function createMultiStepFormHandler(
           smsInput.value = smsValue || "false";
         }
 
+        if ("ontouchstart" in window) {
+          const targetStep = form.querySelector(`.step-content[data-step="${nextStep}"]`) as HTMLElement;
+          if (targetStep && typeof (window as any).focusFirstInputIn === "function") (window as any).focusFirstInputIn(targetStep);
+        }
         await showStep(nextStep);
         return;
       }
@@ -1127,6 +1181,10 @@ export function createMultiStepFormHandler(
 
         (nextBtn as HTMLButtonElement).disabled = true;
 
+        if ("ontouchstart" in window) {
+          const targetStep = form.querySelector(`.step-content[data-step="${nextStep}"]`) as HTMLElement;
+          if (targetStep && typeof (window as any).focusFirstInputIn === "function") (window as any).focusFirstInputIn(targetStep);
+        }
         try {
           if (await validateStep(currentStep)) {
             await showStep(nextStep);
@@ -1167,6 +1225,10 @@ export function createMultiStepFormHandler(
         if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → skip button, will showStep");
         e.preventDefault();
         const nextStep = parseInt(skipBtn.getAttribute("data-next") || "1");
+        if ("ontouchstart" in window) {
+          const targetStep = form.querySelector(`.step-content[data-step="${nextStep}"]`) as HTMLElement;
+          if (targetStep && typeof (window as any).focusFirstInputIn === "function") (window as any).focusFirstInputIn(targetStep);
+        }
         await showStep(nextStep);
       }
 
