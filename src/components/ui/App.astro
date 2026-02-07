@@ -752,7 +752,7 @@ const debugData = {
     data-spa-path={isBackend ? currentUrl : undefined}
   >
 
-    <!-- Preloader: removes body.preloading and #page hidden when ready (dot grid animates until then) -->
+    <!-- Preloader: dot grid (optimized, low-dot count). Removes body.preloading and #page hidden when ready. -->
     <Preloader />
 
     <!-- Global Modal Overlay - Single instance used by all modals -->
@@ -847,8 +847,8 @@ const debugData = {
       pathname={Astro.url.pathname}
     />
 
-    <div id="page" class="pt-20" hidden
-    
+    <div id="page" class="pt-20 min-w-0 overflow-x-hidden" hidden
+
     style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain; touch-action: pan-x;' : ''}`}
     >
       <Aside
@@ -863,11 +863,11 @@ const debugData = {
       <div
         id="main-content"
         class:list={[
-          "flex-1",
+          "flex-1 min-w-0",
           currentUser ? "sm:ml-16" : "",
           mainClasses,
           fullscreenScroll && "flex flex-col min-h-0",
-          centerContent ? "px-4 md:px-6 lg:px-8" : "",
+          centerContent ? "px-8 md:px-12 lg:px-16 xl:px-20" : "",
         ]}
         style={`overscroll-behavior-y: contain; touch-action: pan-x;`}
       >
@@ -877,8 +877,8 @@ const debugData = {
             horizontalScroll && "overflow-x-auto no-scrollbar",
             fullscreenScroll
               ? "min-h-0 overflow-y-auto overscroll-contain"
-              : "min-h-[calc(100dvh-8.25rem)] md:min-h-[calc(100dvh-8.25rem)] lg:min-h-[calc(100dvh-8.25rem)]",
-            centerContent ? "flex items-center justify-center px-8 overscroll-y-contain" : "",
+              : "min-h-[calc(100dvh)] md:min-h-[calc(100dvh)] lg:min-h-[calc(100dvh)]",
+            centerContent ? "flex items-center justify-center overscroll-y-contain" : "",
           ]}
         >
           <slot />

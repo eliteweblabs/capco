@@ -189,9 +189,19 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
   (element as any).__typeItInstance = instance;
 }
 
+/** Parse full name string into first and last (matches multi-step-form-config logic) */
+function parseFullName(fullName: string): { firstName: string; lastName: string } {
+  const trimmed = (fullName || "").trim();
+  if (!trimmed) return { firstName: "", lastName: "" };
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ").trim() };
+}
+
 /**
  * Inject form session meta data into text by replacing spans with data-form-session-meta
  * Replaces with plain text (no HTML) since TypeIt will handle it as content
+ * Supports firstName/lastName from direct inputs or parsed from fullName
  */
 function injectSessionMetaIntoText(text: string): string {
   // Find all spans with data-form-session-meta attribute
@@ -206,15 +216,28 @@ function injectSessionMetaIntoText(text: string): string {
     const fieldName = match[1];
     const defaultValue = match[2];
 
-    // Try to get the value from the form
     const form = document.querySelector("form") as HTMLFormElement;
     if (form) {
-      const input = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
-      const value = input && input.value ? input.value.trim() : defaultValue;
+      let value = defaultValue;
+      if (fieldName === "firstName" || fieldName === "lastName") {
+        const fullInput = form.querySelector('[name="fullName"]') as HTMLInputElement;
+        const firstInput = form.querySelector('[name="firstName"]') as HTMLInputElement;
+        const lastInput = form.querySelector('[name="lastName"]') as HTMLInputElement;
+        if (fullInput?.value?.trim()) {
+          const { firstName, lastName } = parseFullName(fullInput.value);
+          value = fieldName === "firstName" ? firstName : lastName;
+        } else if (firstInput?.value?.trim() && fieldName === "firstName") {
+          value = firstInput.value.trim();
+        } else if (lastInput?.value?.trim() && fieldName === "lastName") {
+          value = lastInput.value.trim();
+        }
+        if (!value) value = defaultValue;
+      } else {
+        const input = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
+        value = input?.value?.trim() || defaultValue;
+      }
 
-      // Replace the entire span with just the plain text value (TypeIt handles styling via CSS)
       replacedText = replacedText.replace(fullMatch, value);
-
       console.log(`[SESSION-META] Replaced ${fieldName} with: ${value}`);
     }
   }

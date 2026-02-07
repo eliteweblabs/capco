@@ -3,6 +3,7 @@
 
 import { validatePhone, formatPhoneAsYouType } from "./phone-validation";
 import { getSupabaseClient } from "./supabase-client";
+import { parseFullNameToFirstAndLast } from "./multi-step-form-config";
 
 export interface MultiStepFormHandler {
   init: () => void;
@@ -74,6 +75,22 @@ export function createMultiStepFormHandler(
     });
   }
 
+  // Get firstName/lastName from form: either direct inputs or parsed from fullName
+  function getFirstNameLastName(): { firstName: string; lastName: string } {
+    const firstInput = form.querySelector('[name="firstName"]') as HTMLInputElement;
+    const lastInput = form.querySelector('[name="lastName"]') as HTMLInputElement;
+    const fullInput = form.querySelector('[name="fullName"]') as HTMLInputElement;
+    if (firstInput?.value?.trim() && lastInput?.value?.trim()) {
+      return { firstName: firstInput.value.trim(), lastName: lastInput.value.trim() };
+    }
+    if (fullInput?.value?.trim()) {
+      return parseFullNameToFirstAndLast(fullInput.value);
+    }
+    if (firstInput?.value?.trim()) return { firstName: firstInput.value.trim(), lastName: "" };
+    if (lastInput?.value?.trim()) return { firstName: "", lastName: lastInput.value.trim() };
+    return { firstName: "", lastName: "" };
+  }
+
   // Inject form session data into spans with data-form-session-meta attribute
   function injectSessionMetaData(stepElement: HTMLElement) {
     // Find all spans with data-form-session-meta in title and subtitle
@@ -83,26 +100,23 @@ export function createMultiStepFormHandler(
 
     if (metaSpans.length === 0) return;
 
-    console.log(`[SESSION-META] Found ${metaSpans.length} meta spans to populate`);
+    const { firstName, lastName } = getFirstNameLastName();
 
     metaSpans.forEach((span) => {
       const fieldName = span.getAttribute("data-form-session-meta");
       if (!fieldName) return;
 
-      // Get the input value from the form
-      const input = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
-      if (input && input.value) {
-        const value = input.value.trim();
-        if (value) {
-          console.log(`[SESSION-META] Injecting ${fieldName}: ${value}`);
-          span.textContent = value;
-          span.classList.add("text-primary-600", "dark:text-primary-400", "font-semibold");
-        } else {
-          // Reset to default if no value
-          span.textContent = span.getAttribute("data-default") || "friend";
-        }
+      let value: string;
+      if (fieldName === "firstName" || fieldName === "lastName") {
+        value = fieldName === "firstName" ? firstName : lastName;
       } else {
-        // Reset to default if input not found or empty
+        const input = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
+        value = input?.value?.trim() || "";
+      }
+      if (value) {
+        span.textContent = value;
+        span.classList.add("text-primary-600", "dark:text-primary-400", "font-semibold");
+      } else {
         span.textContent = span.getAttribute("data-default") || "friend";
       }
     });
@@ -564,9 +578,18 @@ export function createMultiStepFormHandler(
   // Update review section
   function updateReviewSection() {
     const reviewElements = form.querySelectorAll("[id^='review-']");
+    const { firstName, lastName } = getFirstNameLastName();
+
     reviewElements.forEach((reviewEl) => {
       const fieldName = reviewEl.id.replace("review-", "");
       const input = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
+
+      // firstName/lastName can come from fullName when form has single name input
+      if (fieldName === "firstName" || fieldName === "lastName") {
+        reviewEl.textContent =
+          fieldName === "firstName" ? firstName || "Not provided" : lastName || "Not provided";
+        return;
+      }
 
       if (input) {
         let displayValue = input.value || "Not provided";
@@ -582,14 +605,6 @@ export function createMultiStepFormHandler(
             `#${input.id.replace("-value", "")}`
           ) as HTMLElement;
           displayValue = carrierButton?.textContent?.trim() || "Not provided";
-        } else if (fieldName.includes("Name")) {
-          const firstName =
-            (form.querySelector('[name="firstName"]') as HTMLInputElement)?.value || "";
-          const lastName =
-            (form.querySelector('[name="lastName"]') as HTMLInputElement)?.value || "";
-          if (fieldName === "firstName" || fieldName === "lastName") {
-            displayValue = `${firstName} ${lastName}`.trim() || "Not provided";
-          }
         }
 
         reviewEl.textContent = displayValue;
@@ -606,6 +621,8 @@ export function createMultiStepFormHandler(
 
     // Phone input formatting
     const phoneInputs = form.querySelectorAll('input[type="tel"]');
+    let phoneButtonLabelRaf: number | null = null;
+
     phoneInputs.forEach((phoneInput) => {
       const input = phoneInput as HTMLInputElement;
       let lastValue = "";
@@ -650,23 +667,23 @@ export function createMultiStepFormHandler(
           target.setSelectionRange(newCursorPos, newCursorPos);
         }
 
-        // Update button text and icon for buttons with validLabel (dynamic skip/next based on validation)
-        const currentStepEl = form.querySelector(`#${formId} .step-content.active`);
-        if (currentStepEl) {
-          const digitsOnly = formatted.replace(/\D/g, "");
-          const isValid = digitsOnly.length >= 10 && validatePhone(formatted);
+        // Debounce button label updates to avoid DOM thrashing while typing
+        if (phoneButtonLabelRaf != null) cancelAnimationFrame(phoneButtonLabelRaf);
+        phoneButtonLabelRaf = requestAnimationFrame(() => {
+          phoneButtonLabelRaf = null;
+          const currentStepEl = form.querySelector(`#${formId} .step-content.active`);
+          if (!currentStepEl) return;
+          const digitsOnly = (target.value || "").replace(/\D/g, "");
+          const isValid = digitsOnly.length >= 10 && validatePhone(target.value || "");
 
-          // Find buttons in current step that might have dynamic labels
           const nextButtons = currentStepEl.querySelectorAll("button.next-step");
           nextButtons.forEach((btn) => {
             const buttonText = btn.querySelector(".button-text");
             if (buttonText) {
-              // Check if button has data attributes for label switching
               const defaultLabel = btn.getAttribute("data-default-label");
               const validLabel = btn.getAttribute("data-valid-label");
-
               if (defaultLabel && validLabel) {
-                if (!formatted || formatted.trim() === "") {
+                if (!target.value?.trim()) {
                   buttonText.textContent = defaultLabel;
                   updateButtonIcon(btn as HTMLElement, false);
                 } else if (isValid) {
@@ -679,14 +696,12 @@ export function createMultiStepFormHandler(
               }
             }
           });
-        }
+        });
       });
     });
 
     // Address input change listener - update button text and icon with validLabel
     window.addEventListener("inline-address-select", (e: any) => {
-      console.log("[ADDRESS-SELECT] Address selected:", e.detail);
-
       // Find the address input
       const addressInput = form.querySelector('input[name="address"]') as HTMLInputElement;
       if (!addressInput) return;
@@ -751,26 +766,31 @@ export function createMultiStepFormHandler(
         attributeFilter: ["value"],
       });
 
-      // Also listen for input events
+      // Debounce button label updates when address input value changes (e.g. paste/clear)
+      let addressLabelRaf: number | null = null;
       input.addEventListener("input", () => {
-        const activeStep = form.querySelector(".step-content.active");
-        if (!activeStep) return;
+        if (addressLabelRaf != null) cancelAnimationFrame(addressLabelRaf);
+        addressLabelRaf = requestAnimationFrame(() => {
+          addressLabelRaf = null;
+          const activeStep = form.querySelector(".step-content.active");
+          if (!activeStep) return;
 
-        const buttons = activeStep.querySelectorAll("button");
-        buttons.forEach((btn) => {
-          const validLabel = btn.getAttribute("data-valid-label");
-          const defaultLabel = btn.getAttribute("data-default-label");
-          const buttonText = btn.querySelector(".button-text");
+          const buttons = activeStep.querySelectorAll("button");
+          buttons.forEach((btn) => {
+            const validLabel = btn.getAttribute("data-valid-label");
+            const defaultLabel = btn.getAttribute("data-default-label");
+            const buttonText = btn.querySelector(".button-text");
 
-          if (buttonText && validLabel && defaultLabel) {
-            if (!input.value || input.value.trim() === "") {
-              buttonText.textContent = defaultLabel;
-              updateButtonIcon(btn as HTMLElement, false);
-            } else {
-              buttonText.textContent = validLabel;
-              updateButtonIcon(btn as HTMLElement, true);
+            if (buttonText && validLabel && defaultLabel) {
+              if (!input.value || input.value.trim() === "") {
+                buttonText.textContent = defaultLabel;
+                updateButtonIcon(btn as HTMLElement, false);
+              } else {
+                buttonText.textContent = validLabel;
+                updateButtonIcon(btn as HTMLElement, true);
+              }
             }
-          }
+          });
         });
       });
     });
@@ -822,6 +842,9 @@ export function createMultiStepFormHandler(
     });
 
     // === Conditional Field Visibility ===
+    let conditionalFieldsDebounce: ReturnType<typeof setTimeout> | null = null;
+    const CONDITIONAL_FIELDS_DEBOUNCE_MS = 120;
+
     function updateConditionalFields() {
       const conditionalWrappers = form.querySelectorAll("[data-conditional-field]");
 
@@ -848,21 +871,23 @@ export function createMultiStepFormHandler(
       });
     }
 
-    // Update conditional fields whenever form values change
-    form.addEventListener("input", updateConditionalFields);
+    function debouncedUpdateConditionalFields() {
+      if (conditionalFieldsDebounce) clearTimeout(conditionalFieldsDebounce);
+      conditionalFieldsDebounce = setTimeout(() => {
+        conditionalFieldsDebounce = null;
+        updateConditionalFields();
+      }, CONDITIONAL_FIELDS_DEBOUNCE_MS);
+    }
+
+    // Update conditional fields on change (immediate for selects/radios) and debounced on input (typing)
+    form.addEventListener("input", debouncedUpdateConditionalFields);
     form.addEventListener("change", updateConditionalFields);
 
     // Handle button clicks
+    const multistepDebug = typeof (window as any).__MULTISTEP_DEBUG !== "undefined" && (window as any).__MULTISTEP_DEBUG;
+
     form.addEventListener("click", async (e) => {
       const target = e.target as HTMLElement;
-      const targetInForm = form.contains(target);
-      console.log("[MULTISTEP-CLICK-DEBUG] form click", {
-        formId: form.id,
-        targetTag: target?.tagName,
-        targetId: target?.id,
-        targetClass: target?.className?.slice?.(0, 80),
-        targetInForm,
-      });
 
       // Never treat clicks on form controls or inside input wrappers as navigation
       // (fixes login: clicking input or icon advanced step)
@@ -872,7 +897,6 @@ export function createMultiStepFormHandler(
         target.tagName === "SELECT" ||
         target.closest(".input-wrapper, .inline-address-search-wrapper")
       ) {
-        console.log("[MULTISTEP-CLICK-DEBUG] form click → early return (input/wrapper)");
         e.stopPropagation();
         return;
       }
@@ -883,8 +907,15 @@ export function createMultiStepFormHandler(
         target.closest(".step-content, .multi-step-form-steps") &&
         !target.closest("button, a[href], input, textarea, select")
       ) {
-        console.log("[MULTISTEP-CLICK-DEBUG] form click → early return (non-interactive area)");
         return;
+      }
+
+      if (multistepDebug) {
+        console.log("[MULTISTEP-CLICK-DEBUG] form click", {
+          formId: form.id,
+          targetTag: target?.tagName,
+          targetId: target?.id,
+        });
       }
 
       const nextBtn = target.closest("button.next-step, a.next-step, button.submit-step");
@@ -899,9 +930,11 @@ export function createMultiStepFormHandler(
 
       // Generic choice button handler (for button-groups)
       if (choiceBtn && !smsChoiceBtn) {
-        console.log("[MULTISTEP-CLICK-DEBUG] form click → choice button", {
-          choiceValue: choiceBtn.getAttribute("data-value"),
-        });
+        if (multistepDebug) {
+          console.log("[MULTISTEP-CLICK-DEBUG] form click → choice button", {
+            choiceValue: choiceBtn.getAttribute("data-value"),
+          });
+        }
         e.preventDefault();
         const choiceValue = choiceBtn.getAttribute("data-value");
 
@@ -1036,7 +1069,7 @@ export function createMultiStepFormHandler(
 
       // SMS choice buttons
       if (smsChoiceBtn) {
-        console.log("[MULTISTEP-CLICK-DEBUG] form click → SMS choice, will showStep");
+        if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → SMS choice, will showStep");
         e.preventDefault();
         const smsValue = smsChoiceBtn.getAttribute("data-sms-value");
         const nextStep = parseInt(smsChoiceBtn.getAttribute("data-next") || "1");
@@ -1052,14 +1085,16 @@ export function createMultiStepFormHandler(
 
       // Next button
       if (nextBtn) {
-        console.log("[MULTISTEP-CLICK-DEBUG] form click → next/submit button", {
-          nextBtnTag: nextBtn.tagName,
-          dataNext: nextBtn.getAttribute("data-next"),
-          isSubmit:
-            nextBtn.classList.contains("submit-step") ||
-            nextBtn.classList.contains("submit-registration") ||
-            nextBtn.classList.contains("submit-contact"),
-        });
+        if (multistepDebug) {
+          console.log("[MULTISTEP-CLICK-DEBUG] form click → next/submit button", {
+            nextBtnTag: nextBtn.tagName,
+            dataNext: nextBtn.getAttribute("data-next"),
+            isSubmit:
+              nextBtn.classList.contains("submit-step") ||
+              nextBtn.classList.contains("submit-registration") ||
+              nextBtn.classList.contains("submit-contact"),
+          });
+        }
         e.preventDefault();
         let nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
 
@@ -1105,10 +1140,10 @@ export function createMultiStepFormHandler(
       if (prevBtn) {
         const isLink = prevBtn.tagName === "A" || prevBtn.hasAttribute("href");
         if (isLink) {
-          console.log("[MULTISTEP-CLICK-DEBUG] form click → prev link (navigate away), no action");
+          if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → prev link (navigate away), no action");
           return;
         }
-        console.log("[MULTISTEP-CLICK-DEBUG] form click → prev button, will showStep");
+        if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → prev button, will showStep");
         e.preventDefault();
         let prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
 
@@ -1121,7 +1156,7 @@ export function createMultiStepFormHandler(
 
       // Edit button (for review step)
       if (editBtn) {
-        console.log("[MULTISTEP-CLICK-DEBUG] form click → edit button, will showStep");
+        if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → edit button, will showStep");
         e.preventDefault();
         const editStep = parseInt(editBtn.getAttribute("data-edit") || "1");
         await showStep(editStep);
@@ -1129,32 +1164,32 @@ export function createMultiStepFormHandler(
 
       // Skip button
       if (skipBtn) {
-        console.log("[MULTISTEP-CLICK-DEBUG] form click → skip button, will showStep");
+        if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → skip button, will showStep");
         e.preventDefault();
         const nextStep = parseInt(skipBtn.getAttribute("data-next") || "1");
         await showStep(nextStep);
       }
 
-      console.log("[MULTISTEP-CLICK-DEBUG] form click → no button matched, no action");
+      if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → no button matched, no action");
     });
 
-    // Debug: log every click on document to see if clicks outside form still advance
-    document.addEventListener(
-      "click",
-      (e) => {
-        const t = e.target as HTMLElement;
-        const insideForm = form.contains(t);
-        if (!insideForm) {
-          console.log("[MULTISTEP-CLICK-DEBUG] document click OUTSIDE form", {
-            formId: form.id,
-            targetTag: t?.tagName,
-            targetId: t?.id,
-            targetClass: t?.className?.slice?.(0, 60),
-          });
-        }
-      },
-      true
-    );
+    // Debug: log clicks outside form only when __MULTISTEP_DEBUG is set
+    if (multistepDebug) {
+      document.addEventListener(
+        "click",
+        (e) => {
+          const t = e.target as HTMLElement;
+          if (!form.contains(t)) {
+            console.log("[MULTISTEP-CLICK-DEBUG] document click OUTSIDE form", {
+              formId: form.id,
+              targetTag: t?.tagName,
+              targetId: t?.id,
+            });
+          }
+        },
+        true
+      );
+    }
 
     // Add touched class to inputs
     const inputs = form.querySelectorAll("input[required], textarea[required]");
@@ -1197,7 +1232,14 @@ export function createMultiStepFormHandler(
         submitButton.disabled = true;
       }
 
-      const formData = new FormData(form);
+      let formData = new FormData(form);
+      // If form has fullName, parse to firstName/lastName so APIs and placeholders have both
+      const fullNameRaw = formData.get("fullName")?.toString()?.trim();
+      if (fullNameRaw) {
+        const { firstName, lastName } = parseFullNameToFirstAndLast(fullNameRaw);
+        formData.set("firstName", firstName);
+        formData.set("lastName", lastName);
+      }
       console.log("[MULTISTEP-FORM] Form data keys:", Array.from(formData.keys()));
 
       if ((window as any).showNotice) {
@@ -1275,13 +1317,13 @@ export function createMultiStepFormHandler(
     form.addEventListener("keypress", (e) => {
       if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
         const target = e.target as HTMLElement;
-        const targetInForm = form.contains(target);
-        console.log("[MULTISTEP-CLICK-DEBUG] form keypress Enter", {
-          formId: form.id,
-          targetTag: target?.tagName,
-          targetId: target?.id,
-          targetInForm,
-        });
+        if (multistepDebug) {
+          console.log("[MULTISTEP-CLICK-DEBUG] form keypress Enter", {
+            formId: form.id,
+            targetTag: target?.tagName,
+            targetId: target?.id,
+          });
+        }
         e.preventDefault();
         const currentStepEl = form.querySelector(`.step-content[data-step="${currentStep}"]`);
 
@@ -1301,9 +1343,7 @@ export function createMultiStepFormHandler(
           if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
             const nextInput = inputs[currentIndex + 1];
             nextInput.focus();
-            console.log(
-              "[MULTISTEP-CLICK-DEBUG] Enter → moving to next input (not advancing step)"
-            );
+            if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] Enter → moving to next input (not advancing step)");
             return;
           }
           // Single or last input: fall through to click next/submit button
@@ -1314,15 +1354,14 @@ export function createMultiStepFormHandler(
           ".next-step, .submit-registration, .submit-contact, .submit-step"
         ) as HTMLElement;
         if (nextBtn) {
-          console.log(
-            "[MULTISTEP-CLICK-DEBUG] Enter → programmatically clicking next button (will advance)",
-            {
+          if (multistepDebug) {
+            console.log("[MULTISTEP-CLICK-DEBUG] Enter → programmatically clicking next button (will advance)", {
               keypressTargetTag: target.tagName,
               keypressTargetClass: target.className?.slice?.(0, 60),
-            }
-          );
+            });
+          }
           nextBtn.click();
-        } else {
+        } else if (multistepDebug) {
           console.log("[MULTISTEP-CLICK-DEBUG] Enter → no next button in current step");
         }
       }
@@ -1354,9 +1393,11 @@ export function createMultiStepFormHandler(
     });
 
     // Focus first input when first step has no typewriter (otherwise typewriter-complete will focus)
+    // Use .typewriter-text in DOM so we don't depend on has-typewriter class being set before init
     const firstStep = form.querySelector(".step-content.active") as HTMLElement;
-    const firstStepHasTypewriter = firstStep?.classList.contains("has-typewriter");
+    const firstStepHasTypewriter = firstStep?.querySelector(".typewriter-text") != null;
     if (!firstStepHasTypewriter) {
+      // No typewriter: short delay so DOM is ready; no cascade to wait for
       setTimeout(() => {
         if (firstStep) {
           const firstInput = firstStep.querySelector(
@@ -1375,7 +1416,7 @@ export function createMultiStepFormHandler(
             });
           }
         }
-      }, 80);
+      }, 120);
     }
   }
 

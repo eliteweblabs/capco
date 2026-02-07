@@ -1,32 +1,6 @@
 import type { MultiStepFormConfig } from "../multi-step-form-config";
-import { DEFAULT_EMAIL_PLACEHOLDERS } from "../multi-step-form-config";
+import { DEFAULT_EMAIL_PLACEHOLDERS, FULL_NAME_PLACEHOLDERS } from "../multi-step-form-config";
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
-
-// First name placeholders in different languages
-const FIRST_NAME_PLACEHOLDERS = [
-  "John", // English
-  "Juan", // Spanish
-  "Jean", // French
-  "João", // Portuguese
-  "Giovanni", // Italian
-  "Hans", // German
-  "Иван", // Russian (Ivan)
-  "太郎", // Japanese (Taro)
-  "伟", // Chinese (Wei)
-];
-
-// Last name placeholders in different languages
-const LAST_NAME_PLACEHOLDERS = [
-  "Doe", // English
-  "García", // Spanish
-  "Dupont", // French
-  "Silva", // Portuguese
-  "Rossi", // Italian
-  "Müller", // German
-  "Иванов", // Russian (Ivanov)
-  "山田", // Japanese (Yamada)
-  "李", // Chinese (Li)
-];
 
 const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
 const assistantName = virtualAssistantName || "Leah";
@@ -72,30 +46,17 @@ export const mepFormConfig: MultiStepFormConfig = {
       stepNumber: 2,
       title: `Let's start with your name!`,
       skipCondition: "isAuthenticated", // Skip for logged-in users
-      fieldLayout: "grid", // Enable grid layout for side-by-side fields
+      fieldLayout: "single",
       fields: [
         {
           type: "text",
-          id: "step-first-name",
-          name: "firstName",
-          placeholder: FIRST_NAME_PLACEHOLDERS[0],
-          animatedPlaceholders: FIRST_NAME_PLACEHOLDERS,
+          id: "step-full-name",
+          name: "fullName",
+          placeholder: FULL_NAME_PLACEHOLDERS[0],
+          animatedPlaceholders: FULL_NAME_PLACEHOLDERS,
           required: true,
-          autocomplete: "given-name",
-          errorMessage: "Please enter your first name",
-          icon: "user",
-          iconPosition: "left",
-          classes: "text-center",
-        },
-        {
-          type: "text",
-          id: "step-last-name",
-          name: "lastName",
-          placeholder: LAST_NAME_PLACEHOLDERS[0],
-          animatedPlaceholders: LAST_NAME_PLACEHOLDERS,
-          required: true,
-          autocomplete: "family-name",
-          errorMessage: "Please enter your last name",
+          autocomplete: "name",
+          errorMessage: "Please enter your full name",
           icon: "user",
           iconPosition: "left",
           classes: "text-center",

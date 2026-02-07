@@ -28,7 +28,7 @@ export const exampleFormConfig: MultiStepFormConfig = {
   },
 
   steps: [
-    // Step 1: Basic Text Inputs
+    // Step 1: Basic Text Inputs (fullName parsed to firstName/lastName by handler)
     {
       stepNumber: 1,
       title: "Let's start with the basics",
@@ -36,24 +36,13 @@ export const exampleFormConfig: MultiStepFormConfig = {
       fieldLayout: "grid",
       fields: [
         {
-          id: "first-name",
-          name: "firstName",
+          id: "full-name",
+          name: "fullName",
           type: "text",
-          placeholder: "John",
+          placeholder: "John Doe",
           required: true,
           icon: "user",
           iconPosition: "left",
-          columns: 2,
-        },
-        {
-          id: "last-name",
-          name: "lastName",
-          type: "text",
-          placeholder: "Doe",
-          required: true,
-          icon: "user",
-          iconPosition: "left",
-          columns: 2,
         },
         {
           id: "email",

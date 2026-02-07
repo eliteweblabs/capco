@@ -4,6 +4,30 @@ import { globalClasses } from "../pages/api/global/global-classes";
 const { globalInputClasses } = globalClasses();
 const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
 
+// Parse a single "full name" input into firstName and lastName (for forms that use one name field)
+export function parseFullNameToFirstAndLast(fullName: string): {
+  firstName: string;
+  lastName: string;
+} {
+  const trimmed = (fullName || "").trim();
+  if (!trimmed) return { firstName: "", lastName: "" };
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ").trim() };
+}
+
+// GLOBAL FULL NAME PLACEHOLDER DEFAULTS - single input "First Last" for name step
+export const FULL_NAME_PLACEHOLDERS = [
+  "John Doe",
+  "Jane Smith",
+  "Juan García",
+  "Marie Dupont",
+  "Giovanni Rossi",
+  "Hans Müller",
+  "Alex Johnson",
+  "Sam Williams",
+];
+
 // GLOBAL EMAIL PLACEHOLDER DEFAULTS - funny/generic rotating placeholders for email fields
 export const DEFAULT_EMAIL_PLACEHOLDERS = [
   "hello@example.com",

@@ -1,31 +1,5 @@
 import type { MultiStepFormConfig } from "../multi-step-form-config";
-import { DEFAULT_EMAIL_PLACEHOLDERS } from "../multi-step-form-config";
-
-// First name placeholders in different languages
-const FIRST_NAME_PLACEHOLDERS = [
-  "John", // English
-  "Juan", // Spanish
-  "Jean", // French
-  "João", // Portuguese
-  "Giovanni", // Italian
-  "Hans", // German
-  "Иван", // Russian (Ivan)
-  "太郎", // Japanese (Taro)
-  "伟", // Chinese (Wei)
-];
-
-// Last name placeholders in different languages
-const LAST_NAME_PLACEHOLDERS = [
-  "Doe", // English
-  "García", // Spanish
-  "Dupont", // French
-  "Silva", // Portuguese
-  "Rossi", // Italian
-  "Müller", // German
-  "Иванов", // Russian (Ivanov)
-  "山田", // Japanese (Yamada)
-  "李", // Chinese (Li)
-];
+import { DEFAULT_EMAIL_PLACEHOLDERS, FULL_NAME_PLACEHOLDERS } from "../multi-step-form-config";
 
 export const registerFormConfig: MultiStepFormConfig = {
   formId: "multi-step-register-form",
@@ -103,35 +77,21 @@ export const registerFormConfig: MultiStepFormConfig = {
       additionalContent: "google-oauth",
     },
 
-    // Step 2: Name
+    // Step 2: Name (single full-name input; handler parses to firstName/lastName for placeholders & API)
     {
       stepNumber: 2,
       title: "What's your name?",
-      fieldLayout: "grid",
+      fieldLayout: "single",
       fields: [
         {
-          id: "step-first-name",
-          name: "firstName",
+          id: "step-full-name",
+          name: "fullName",
           type: "text",
-          placeholder: FIRST_NAME_PLACEHOLDERS[0],
-          animatedPlaceholders: FIRST_NAME_PLACEHOLDERS,
+          placeholder: FULL_NAME_PLACEHOLDERS[0],
+          animatedPlaceholders: FULL_NAME_PLACEHOLDERS,
           required: true,
-          autocomplete: "given-name",
-          errorMessage: "Please enter your first name",
-          columns: 2,
-          icon: "user",
-          iconPosition: "left",
-        },
-        {
-          id: "step-last-name",
-          name: "lastName",
-          type: "text",
-          placeholder: LAST_NAME_PLACEHOLDERS[0],
-          animatedPlaceholders: LAST_NAME_PLACEHOLDERS,
-          required: true,
-          autocomplete: "family-name",
-          errorMessage: "Please enter your last name",
-          columns: 2,
+          autocomplete: "name",
+          errorMessage: "Please enter your full name",
           icon: "user",
           iconPosition: "left",
         },
@@ -171,12 +131,10 @@ export const registerFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "back",
           dataPrev: 2,
         },
         {
           type: "next",
-          label: "next",
           dataNext: 4,
         },
       ],
@@ -204,12 +162,10 @@ export const registerFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "back",
           dataPrev: 3,
         },
         {
           type: "next",
-          label: "next",
           dataNext: 5,
         },
       ],
@@ -234,12 +190,12 @@ export const registerFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "back",
           dataPrev: 4,
         },
         {
           type: "next",
           label: "Skip",
+          validLabel: "Next",
           dataNext: 6,
           classes: "next-step-phone",
         },

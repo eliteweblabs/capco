@@ -1,31 +1,5 @@
 import type { MultiStepFormConfig } from "../multi-step-form-config";
-import { DEFAULT_EMAIL_PLACEHOLDERS } from "../multi-step-form-config";
-
-// First name placeholders in different languages
-const FIRST_NAME_PLACEHOLDERS = [
-  "John", // English
-  "Juan", // Spanish
-  "Jean", // French
-  "João", // Portuguese
-  "Giovanni", // Italian
-  "Hans", // German
-  "Иван", // Russian (Ivan)
-  "太郎", // Japanese (Taro)
-  "伟", // Chinese (Wei)
-];
-
-// Last name placeholders in different languages
-const LAST_NAME_PLACEHOLDERS = [
-  "Doe", // English
-  "García", // Spanish
-  "Dupont", // French
-  "Silva", // Portuguese
-  "Rossi", // Italian
-  "Müller", // German
-  "Иванов", // Russian (Ivanov)
-  "山田", // Japanese (Yamada)
-  "李", // Chinese (Li)
-];
+import { DEFAULT_EMAIL_PLACEHOLDERS, FULL_NAME_PLACEHOLDERS } from "../multi-step-form-config";
 
 // Funny fake company name placeholders (fire protection, architecture, real estate puns)
 const COMPANY_NAME_PLACEHOLDERS = [
@@ -80,38 +54,22 @@ export const contactFormConfig: MultiStepFormConfig = {
   },
 
   steps: [
-    // Step 1: Name
+    // Step 1: Name (single full-name input; handler parses to firstName/lastName for placeholders & API)
     {
       stepNumber: 1,
       title: `<span data-typewriter-pause="1360"></span>Hi, I'm ${assistantName},<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!`,
-
-      effect: "typewriter",
-      fieldLayout: "grid",
+      fieldLayout: "single",
       fields: [
         {
-          id: "contact-first-name",
-          name: "firstName",
+          id: "contact-full-name",
+          name: "fullName",
           type: "text",
-          placeholder: FIRST_NAME_PLACEHOLDERS[0],
-          animatedPlaceholders: FIRST_NAME_PLACEHOLDERS,
+          placeholder: FULL_NAME_PLACEHOLDERS[0],
+          animatedPlaceholders: FULL_NAME_PLACEHOLDERS,
           required: true,
-          autocomplete: "given-name",
-          errorMessage: "Please enter your first name",
+          autocomplete: "name",
+          errorMessage: "Please enter your full name",
           autofocus: true,
-          columns: 2,
-          icon: "user",
-          iconPosition: "left",
-        },
-        {
-          id: "contact-last-name",
-          name: "lastName",
-          type: "text",
-          placeholder: LAST_NAME_PLACEHOLDERS[0],
-          animatedPlaceholders: LAST_NAME_PLACEHOLDERS,
-          required: true,
-          autocomplete: "family-name",
-          errorMessage: "Please enter your last name",
-          columns: 2,
           icon: "user",
           iconPosition: "left",
         },
@@ -119,7 +77,6 @@ export const contactFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "next",
-          label: "next",
           dataNext: 2,
         },
       ],
@@ -152,7 +109,6 @@ export const contactFormConfig: MultiStepFormConfig = {
         },
         {
           type: "next",
-          label: "next",
           dataNext: 3,
         },
       ],

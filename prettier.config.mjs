@@ -1,9 +1,8 @@
 /** @type {import("prettier").Config} */
 export default {
-  plugins: [
-    "prettier-plugin-astro",
-    "prettier-plugin-tailwindcss", // must be last
-  ],
+  // Tailwind plugin must be last (https://tailwindcss.com/blog/automatic-class-sorting-with-prettier)
+  plugins: ["prettier-plugin-astro", "prettier-plugin-tailwindcss"],
+  tailwindConfig: "./tailwind.config.mjs",
   semi: true,
   singleQuote: false,
   tabWidth: 2,
@@ -12,21 +11,16 @@ export default {
   overrides: [
     {
       files: "*.astro",
-      options: {
-        parser: "astro",
-        plugins: ["prettier-plugin-astro"],
-      },
+      options: { parser: "astro" },
     },
     {
       files: "*.css",
-      options: {
-        plugins: ["prettier-plugin-tailwindcss"],
-      },
+      options: { parser: "css" },
     },
-    // Attribute alphabetical order only for standalone HTML (organize-attributes breaks Astro/MD)
     {
       files: "*.html",
       options: {
+        parser: "html",
         plugins: [
           "prettier-plugin-organize-attributes",
           "prettier-plugin-tailwindcss",

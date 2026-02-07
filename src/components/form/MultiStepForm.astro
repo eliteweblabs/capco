@@ -21,7 +21,7 @@ interface Props {
   initialData?: Record<string, any>;
 }
 
-const { config, containerClass = "", initialData = {} } = Astro.props;
+const { config, containerClass = "w-full max-w-2xl mx-auto", initialData = {} } = Astro.props;
 
 // When first step has expandDown: false, start with centered panel (no expand-down/expand-up)
 const firstStep = config.steps.find((s) => s.stepNumber === 1);
@@ -980,20 +980,29 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         requestAnimationFrame(() => requestAnimationFrame(updateStepsPanelBottomRef ?? (() => {})));
         const cascadeEndMs =
           elements.length > 0 ? (elements.length - 1) * CASCADE_DELAY_MS + OPACITY_DURATION_MS : 0;
+        const panelLoopDurationMs = cascadeEndMs + 600;
         if (cascadeEndMs > 0) {
-          runPanelBottomLoopRef?.(cascadeEndMs + 600);
+          runPanelBottomLoopRef?.(panelLoopDurationMs);
         }
 
-        // Focus first input once panel is done animating (cascade first element has delay 0)
+        // Focus first input after cascade AND after the panel-bottom throttle loop stops (so layout/scroll don't steal focus)
+        const focusDelayMs = cascadeEndMs > 0 ? panelLoopDurationMs + 120 : OPACITY_DURATION_MS + 200;
         const focusFirstInput = () => {
           const first = stepContent.querySelector(
             "input:not([type=hidden]):not([readonly]), textarea, select"
-          ) as HTMLElement | null;
-          if (first && typeof first.focus === "function") {
-            first.focus();
-          }
+          ) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+          if (!first || typeof first.focus !== "function") return;
+          first.focus();
+          // Retry once after a tick in case panel loop or typewriter cursor removal stole focus
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (document.activeElement !== first) {
+                first.focus();
+              }
+            });
+          });
         };
-        setTimeout(focusFirstInput, 150);
+        setTimeout(focusFirstInput, focusDelayMs);
       }
     });
 
