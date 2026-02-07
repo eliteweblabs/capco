@@ -46,7 +46,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       stepNumber: 1,
       title: "",
       hideProgressBar: true,
-      response: true,
+      response: false,
       fields: [
         {
           id: "step-email",
@@ -54,6 +54,8 @@ export const registerFormConfig: MultiStepFormConfig = {
           type: "email",
           placeholder: DEFAULT_EMAIL_PLACEHOLDERS[0],
           animatedPlaceholders: DEFAULT_EMAIL_PLACEHOLDERS,
+          animatedPlaceholderAlignment: "left",
+
           required: true,
           autocomplete: "email",
           errorMessage: "Please enter a valid email address",
@@ -64,8 +66,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "have an account?",
-          icon: "",
+          label: "to login",
           variant: "anchor",
           href: "/auth/login",
         },

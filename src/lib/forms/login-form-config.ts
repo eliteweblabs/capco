@@ -43,6 +43,7 @@ export const loginFormConfig: MultiStepFormConfig = {
       title: "",
       showIcon: false,
       expandDown: false,
+      response: false,
       fields: [
         {
           id: "login-email",
@@ -58,6 +59,7 @@ export const loginFormConfig: MultiStepFormConfig = {
           icon: "mail",
           iconPosition: "left",
           validate: "exists:users,email",
+          validIcon: "enter",
           validateMessage:
             "Email does not exist. <br> Please <a href='/auth/register' class='underline'>create an account.</a>",
         },

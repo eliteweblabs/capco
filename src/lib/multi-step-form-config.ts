@@ -130,6 +130,7 @@ export interface FormFieldConfig {
   multiple?: boolean; // Allow multiple file uploads
   maxFiles?: number; // Maximum number of files
   maxSize?: number; // Maximum file size in bytes
+  validIcon?: string; // Icon to show when valid (e.g. "enter" for next, default "check"). Must exist in SimpleIcon.
   // Conditional rendering
   conditional?: {
     field: string; // Field name to check (e.g., "fuelSource")
