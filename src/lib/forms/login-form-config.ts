@@ -86,7 +86,8 @@ export const loginFormConfig: MultiStepFormConfig = {
         },
         {
           type: "next",
-          validLabel: "next ↵", // ↵ = Return/Enter (ASCII 13)
+          validLabel: "next",
+          validIcon: "enter",
           dataNext: 2,
         },
       ],

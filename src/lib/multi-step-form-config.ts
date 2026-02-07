@@ -141,6 +141,7 @@ export interface FormButtonConfig {
   type: "next" | "prev" | "skip" | "submit" | "choice" | "slider";
   label?: string; // Optional button label
   validLabel?: string; // Label to show when field is valid (for dynamic labels based on validation)
+  validIcon?: string; // Icon to show when valid (e.g. "enter" for next, default "check"). Must exist in SimpleIcon.
   id?: string; // Optional unique identifier for the button
   variant?: "primary" | "secondary" | "anchor" | "outline" | "ghost";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
