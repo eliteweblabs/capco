@@ -8,6 +8,12 @@
   --color-background: 255, 255, 255;
   --color-border: 229, 231, 235;
   --color-border-dark: 52, 52, 52;
+  --input-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+  --input-shadow-dark:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent);
 }
 
 /* Custom base styles */
@@ -42,7 +48,7 @@ body {
   }
 }
 
-/* Mobile: single scroll container (body only) to avoid double scrollbar / fighting scroll on iOS */
+/* Mobile: #page is the scroll container (not body) so iOS has one bounded scroll area that works */
 @media (max-width: 767px) {
   html {
     overflow-y: hidden;
@@ -50,15 +56,21 @@ body {
     height: 100dvh;
   }
   body:not(.layout-centered) {
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+  /* #page is the flex child that scrolls; min-height: 0 is required for flex scroll */
+  body:not(.layout-centered) #page {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    min-height: 100vh;
-    min-height: 100dvh;
-    -webkit-overflow-scrolling: touch; /* iOS: momentum scroll, required for body scroll to work */
-    touch-action: pan-y; /* iOS: allow vertical touch-drag to scroll; prevents scroll lock */
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
-  /* Let touch-drag on page content scroll the body (fullwidth layout) */
-  body:not(.layout-centered) #page,
   body:not(.layout-centered) #main-content {
     touch-action: pan-y;
   }
@@ -236,7 +248,7 @@ input[type="tel"]:focus {
 }
 
 /* Multi-step form: no blue/teal focus shadow, no Tailwind forms ring – focus handled by border only */
-[data-multi-step-form] input[type="email"]:focus,
+/* [data-multi-step-form] input[type="email"]:focus,
 [data-multi-step-form] input[type="password"]:focus,
 [data-multi-step-form] input[type="text"]:focus,
 [data-multi-step-form] input[type="tel"]:focus,
@@ -255,9 +267,9 @@ input[type="tel"]:focus {
   outline: none !important;
   --tw-ring-shadow: none !important;
   --tw-ring-color: transparent !important;
-}
+} */
 
-input[type="email"]:focus.is-valid::before,
+/* input[type="email"]:focus.is-valid::before,
 input[type="password"]:focus.is-valid::before,
 input[type="text"]:focus.is-valid::before,
 input[type="tel"]:focus.is-valid::before,
@@ -291,9 +303,9 @@ input[type="tel"].is-valid {
   box-shadow:
     0 3px 9px -1.5px rgba(34, 197, 94, 0.15),
     0 6px 15px -3px rgba(34, 197, 94, 0.1) !important;
-}
+} */
 
-.dark input[type="email"]:focus.is-valid::before,
+/* .dark input[type="email"]:focus.is-valid::before,
 .dark input[type="password"]:focus.is-valid::before,
 .dark input[type="text"]:focus.is-valid::before,
 .dark input[type="tel"]:focus.is-valid::before,
@@ -312,10 +324,10 @@ input[type="tel"].is-valid {
 .dark input[type="password"].is-valid,
 .dark input[type="text"].is-valid,
 .dark input[type="tel"].is-valid {
-  /* box-shadow:
+  box-shadow:
     0 3px 9px -1.5px rgba(74, 222, 128, 0.2),
-    0 6px 15px -3px rgba(74, 222, 128, 0.15) !important; */
-}
+    0 6px 15px -3px rgba(74, 222, 128, 0.15) !important;
+} */
 
 /* Input icon color when valid (wrapper contains input.is-valid) */
 .input-with-icon:has(input[type="email"].is-valid) svg,
@@ -389,14 +401,6 @@ select:autofill:focus {
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
-:root {
-  --text-color: #111827;
-}
-
-.dark {
-  --text-color: #f9fafb;
-}
-
 @keyframes pulse-circle {
   0%,
   100% {
@@ -424,50 +428,6 @@ select:autofill:focus {
     opacity: 0.4;
   }
 }
-
-/* [OVERHAUL] .input-with-icon – see INPUT OVERHAUL REFERENCE at end of file
-.input-with-icon {
-  position: relative;
-}
-.input-with-icon.icon-left::before {
-  content: "";
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.25rem;
-  height: 1.25rem;
-  opacity: 0.5;
-  z-index: 1;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-.input-with-icon.icon-right::after {
-  content: "";
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.25rem;
-  height: 1.25rem;
-  opacity: 0.5;
-  z-index: 1;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-.input-with-icon:focus-within::before,
-.input-with-icon:focus-within::after {
-  opacity: 0.7;
-}
-.dark .input-with-icon::before,
-.dark .input-with-icon::after {
-  filter: brightness(0.8);
-}
-.dark .input-with-icon:focus-within::before,
-.dark .input-with-icon:focus-within::after {
-  filter: brightness(1);
-}
-*/
 
 /* Fix for toggle button hover state overriding deselected state */
 .toggle-button.deselected {
@@ -624,7 +584,7 @@ input:focus {
 } */
 
 /* Animation for tooltip */
-@keyframes tooltip-slide {
+/* @keyframes tooltip-slide {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -633,7 +593,7 @@ input:focus {
     opacity: 1;
     transform: translateY(0);
   }
-}
+} */
 
 /* Prevent tooltips from causing horizontal overflow on mobile (Safari overscroll) */
 .tooltip-content {
@@ -1920,18 +1880,7 @@ textarea {
 .dark textarea {
   caret-color: var(--color-primary-400);
 }
-[data-multi-step-form] .multi-step-input,
-[data-multi-step-form] input.multi-step-input,
-[data-multi-step-form] textarea.multi-step-input {
-  box-shadow: none !important;
-  caret-color: #000;
-  caret-shape: line;
-}
-.dark [data-multi-step-form] .multi-step-input,
-.dark [data-multi-step-form] input.multi-step-input,
-.dark [data-multi-step-form] textarea.multi-step-input {
-  caret-color: #fff;
-}
+
 [data-multi-step-form] .input-with-icon .multi-step-input {
   padding-left: 3rem;
   padding-right: 3rem;
@@ -2019,7 +1968,7 @@ button:has(.icon-valid):has(.icon-default).is-valid .icon-valid {
   position: relative;
   display: inline-block;
 }
-.input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown).touched)::after {
+/* .input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown).touched)::after {
   content: attr(data-error);
   position: absolute;
   bottom: calc(100% + 5px);
@@ -2033,8 +1982,8 @@ button:has(.icon-valid):has(.icon-default).is-valid .icon-valid {
   z-index: 1000;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   animation: tooltip-slide 0.2s ease-out;
-}
-.input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown).touched)::before {
+} */
+/* .input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown).touched)::before {
   content: "";
   position: absolute;
   bottom: calc(100% - 3px);
@@ -2044,24 +1993,27 @@ button:has(.icon-valid):has(.icon-default).is-valid .icon-valid {
   border-color: #ef4444 transparent transparent transparent;
   z-index: 1000;
   animation: tooltip-slide 0.2s ease-out;
-}
+} */
 input:invalid:not(:focus):not(:placeholder-shown).touched {
   border-color: #8b5cf6 !important;
 }
 
 /* --- 11. Duplicate block (focus transition, invalid, valid+focus) ~line 1719 --- */
-input:not([type="hidden"]),
+/* input:not([type="hidden"]),
 textarea,
 select {
   transition: box-shadow 250ms ease-in-out;
-}
-input:not([type="hidden"]):focus,
-textarea:focus,
-select:focus {
   box-shadow:
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+} */
+
+input:not([type="hidden"]):focus,
+textarea:focus,
+select:focus {
+  box-shadow: var(--input-shadow);
 }
+
 input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
 textarea:invalid:not(:placeholder-shown):not(:focus),
 select:invalid:not(:placeholder-shown):not(:focus) {
@@ -2119,7 +2071,7 @@ select.is-valid:focus {
     opacity: 0.4;
   }
 }
-@keyframes tooltip-slide {
+/* @keyframes tooltip-slide {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -2128,4 +2080,4 @@ select.is-valid:focus {
     opacity: 1;
     transform: translateY(0);
   }
-}
+} */

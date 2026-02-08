@@ -828,7 +828,7 @@ export function showModal(options: {
   let modal = document.getElementById(id);
   // Use global overlay if it exists, otherwise check for specific overlay
   let overlay =
-    document.getElementById("global-modal-overlay") || document.getElementById(`${id}-overlay`);
+    document.getElementById("global-backdrop") || document.getElementById(`${id}-overlay`);
   const isNewModal = !modal;
 
   // Apply custom z-index to overlay if specified
@@ -1010,7 +1010,7 @@ export function showModal(options: {
  * @param zIndex - The z-index value to set
  */
 export function setModalOverlayZIndex(zIndex: number): void {
-  const overlay = document.getElementById("global-modal-overlay");
+  const overlay = document.getElementById("global-backdrop");
   if (overlay) {
     overlay.style.zIndex = String(zIndex);
     console.log(`🎨 [UX-UTILS] Set global overlay z-index to ${zIndex}`);
@@ -1023,7 +1023,7 @@ export function setModalOverlayZIndex(zIndex: number): void {
  * Resets the z-index of the global modal overlay to default (1000)
  */
 export function resetModalOverlayZIndex(): void {
-  const overlay = document.getElementById("global-modal-overlay");
+  const overlay = document.getElementById("global-backdrop");
   if (overlay) {
     overlay.style.zIndex = "1000";
     console.log("🎨 [UX-UTILS] Reset global overlay z-index to default (1000)");
@@ -1039,7 +1039,7 @@ export function hideModal(modalId: string, resetZIndex: boolean = true): void {
   const modal = document.getElementById(modalId);
   // Use global overlay if it exists, otherwise check for specific overlay
   const overlay =
-    document.getElementById("global-modal-overlay") ||
+    document.getElementById("global-backdrop") ||
     document.getElementById(`${modalId}-overlay`);
 
   if (!modal) return;
@@ -1054,7 +1054,7 @@ export function hideModal(modalId: string, resetZIndex: boolean = true): void {
     overlay.classList.remove("flex");
 
     // Reset z-index to default if requested (useful for global overlay)
-    if (resetZIndex && overlay.id === "global-modal-overlay") {
+    if (resetZIndex && overlay.id === "global-backdrop") {
       overlay.style.zIndex = "1000";
       console.log(`🎨 [UX-UTILS] Reset overlay z-index to default (1000) for modal ${modalId}`);
     }

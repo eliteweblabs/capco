@@ -2,7 +2,7 @@
 
 ## Overview
 
-The global modal overlay (`#global-modal-overlay`) now supports dynamic z-index adjustment for cases where different modals need to appear at different z-index levels.
+The global modal overlay (`#global-backdrop`) now supports dynamic z-index adjustment for cases where different modals need to appear at different z-index levels.
 
 ## Problem Solved
 
@@ -105,7 +105,7 @@ The functions include helpful console logs for debugging:
 
 ## Notes
 
-- The z-index is only applied to the **global modal overlay** (`#global-modal-overlay`)
+- The z-index is only applied to the **global modal overlay** (`#global-backdrop`)
 - If a modal creates its own overlay, the z-index parameter is used when creating that overlay
 - Auto-reset behavior only applies to the global overlay, not modal-specific overlays
 - All functions are available globally via `window` object

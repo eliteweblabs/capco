@@ -205,6 +205,220 @@ const debugData = {
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Console suppression MUST run first so it catches all subsequent script output -->
+    <script is:inline>
+      // Aggressively suppress harmless console errors in development
+      (function () {
+        const isDev =
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1" ||
+          window.location.hostname.startsWith("192.168.");
+
+        if (!isDev) return;
+
+        // Suppress Cloudflare cookie warnings and errors
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        const originalLog = console.log;
+
+        // Override console.warn
+        console.warn = function (...args) {
+          const message = String(args[0] || "");
+          const fullMessage = args.join(" ");
+
+          // Suppress Cloudflare cookie warnings
+          if (
+            message.includes("_cf_bm") ||
+            message.includes("__cf_bm") ||
+            (fullMessage.includes("Cookie") && fullMessage.includes("rejected")) ||
+            fullMessage.includes("invalid domain") ||
+            fullMessage.includes("NS_BINDING_ABORTED") ||
+            fullMessage.includes("OpaqueResponseBlocking") ||
+            fullMessage.includes("Ignoring Event: localhost") ||
+            fullMessage.includes("Avatar failed to load") ||
+            fullMessage.includes("rate limit")
+          ) {
+            return; // Silent fail
+          }
+          originalWarn.apply(console, args);
+        };
+
+        // Override console.error
+        console.error = function (...args) {
+          const message = String(args[0] || "");
+          const fullMessage = args.join(" ");
+
+          // Suppress Cloudflare cookie errors
+          if (
+            message.includes("_cf_bm") ||
+            message.includes("__cf_bm") ||
+            (fullMessage.includes("Cookie") && fullMessage.includes("rejected")) ||
+            fullMessage.includes("invalid domain") ||
+            fullMessage.includes("NS_BINDING_ABORTED")
+          ) {
+            return; // Silent fail
+          }
+          originalError.apply(console, args);
+        };
+
+        // Override console.log to suppress network errors
+        console.log = function (...args) {
+          // const message = String(args[0] || ""); // Unused
+          const fullMessage = args.join(" ");
+
+          if (
+            fullMessage.includes("NS_BINDING_ABORTED") ||
+            fullMessage.includes("net::ERR_") ||
+            fullMessage.includes("_cf_bm") ||
+            fullMessage.includes("__cf_bm")
+          ) {
+            return; // Silent fail
+          }
+          originalLog.apply(console, args);
+        };
+
+        // Suppress unhandled promise rejections for aborted requests
+        window.addEventListener("unhandledrejection", function (event) {
+          const reason = event.reason;
+          const message = reason?.message || String(reason || "");
+
+          if (
+            message.includes("aborted") ||
+            message.includes("NS_BINDING_ABORTED") ||
+            message.includes("AbortError") ||
+            reason?.name === "AbortError"
+          ) {
+            event.preventDefault(); // Prevent console error
+            return;
+          }
+        });
+
+        // Suppress global error events for network errors
+        window.addEventListener(
+          "error",
+          function (event) {
+            const message = event.message || "";
+            const filename = event.filename || "";
+            const target = event.target;
+
+            // Suppress errors related to aborted requests, cookies, or failed image loads
+            if (
+              message.includes("NS_BINDING_ABORTED") ||
+              message.includes("_cf_bm") ||
+              message.includes("__cf_bm") ||
+              (message.includes("Cookie") && message.includes("rejected")) ||
+              (filename.includes("supabase.co") && message.includes("Failed")) ||
+              (target &&
+                target.tagName === "IMG" &&
+                target.src &&
+                target.src.includes("supabase.co/storage"))
+            ) {
+              event.preventDefault();
+              event.stopPropagation();
+              return false;
+            }
+          },
+          true
+        ); // Use capture phase to catch early
+
+        // Intercept fetch to suppress aborted request errors and failed avatar requests
+        const originalFetch = window.fetch;
+        window.fetch = function (...args) {
+          const url = typeof args[0] === "string" ? args[0] : args[0]?.url || "";
+          const method = args[1]?.method || "GET";
+
+          // Suppress HEAD requests to Supabase storage avatars (we know they'll fail)
+          if (
+            method === "HEAD" &&
+            url.includes("supabase.co/storage") &&
+            url.includes("/avatars/")
+          ) {
+            return Promise.resolve(new Response(null, { status: 404, statusText: "Not Found" }));
+          }
+
+          let fetchPromise = originalFetch.apply(this, args);
+
+          // Wrap to catch and suppress abort errors
+          fetchPromise = fetchPromise.catch(function (error) {
+            if (
+              error?.name === "AbortError" ||
+              error?.message?.includes("aborted") ||
+              error?.message?.includes("NS_BINDING_ABORTED")
+            ) {
+              // Return a silent rejection
+              return Promise.reject(new Error("Request aborted (suppressed)"));
+            }
+            throw error;
+          });
+
+          // Also suppress 400 responses for avatar images
+          fetchPromise = fetchPromise.then(function (response) {
+            if (
+              !response.ok &&
+              response.status === 400 &&
+              url.includes("supabase.co/storage") &&
+              url.includes("/avatars/")
+            ) {
+              // Return a silent failure - don't throw, just return a 404-like response
+              return new Response(null, { status: 404, statusText: "Not Found" });
+            }
+            return response;
+          });
+
+          return fetchPromise;
+        };
+
+        // Intercept XMLHttpRequest to suppress aborted errors and failed avatar requests
+        const originalXHROpen = XMLHttpRequest.prototype.open;
+        const originalXHRSend = XMLHttpRequest.prototype.send;
+
+        XMLHttpRequest.prototype.open = function (...args) {
+          this._suppressAbortError = false;
+          this._url = args[1]; // Store URL for later check
+          return originalXHROpen.apply(this, args);
+        };
+
+        XMLHttpRequest.prototype.send = function (...args) {
+          const xhr = this;
+          const url = xhr._url || "";
+
+          // Suppress 400 errors for avatar images
+          const originalOnLoad = xhr.onload;
+          xhr.onload = function (event) {
+            if (
+              xhr.status === 400 &&
+              url.includes("supabase.co/storage") &&
+              url.includes("/avatars/")
+            ) {
+              // Silently fail - don't trigger error handlers
+              return;
+            }
+            if (originalOnLoad) {
+              originalOnLoad.call(xhr, event);
+            }
+          };
+
+          const originalOnError = xhr.onerror;
+          xhr.onerror = function (event) {
+            // Suppress errors for avatar images
+            if (url.includes("supabase.co/storage") && url.includes("/avatars/")) {
+              return;
+            }
+            // Suppress aborted errors
+            if (xhr.status === 0 && xhr.readyState === 0) {
+              // Likely an aborted request
+              return;
+            }
+            if (originalOnError) {
+              originalOnError.call(xhr, event);
+            }
+          };
+
+          return originalXHRSend.apply(this, args);
+        };
+      })();
+    </script>
+
     <!-- Theme detection - MUST be first to be available for all components -->
     <script is:inline>
       (function() {
@@ -256,6 +470,7 @@ const debugData = {
 
         window.currentTheme = window.isDarkMode() ? "dark" : "light";
 
+        /* page-size-plugin: must run inline before CSS to avoid FOUC (see src/lib/page-size-plugin.ts) */
         var pageSize = localStorage.getItem("page-size") || "normal";
         document.documentElement.setAttribute("data-page-size", pageSize);
 
@@ -757,11 +972,24 @@ const debugData = {
           }
           applyTheme();
           document.addEventListener("astro:page-load", applyTheme);
+
+          // SPA: reset body scroll state after swap so new page can scroll (avoids stuck overflow:hidden from modals)
+          document.addEventListener("astro:after-swap", function resetBodyScrollAfterSwap() {
+            var body = document.body;
+            var html = document.documentElement;
+            body.style.overflow = "";
+            body.style.position = "";
+            body.style.top = "";
+            body.style.width = "";
+            html.style.overflow = "";
+            body.classList.remove("modal-open");
+            if (typeof window.forceUnlockBodyScroll === "function") {
+              window.forceUnlockBodyScroll();
+            }
+          });
         })();
       </script>
     )}
-
-
 
 
     <!-- SPA debug: log transition lifecycle (localhost or ?debug=spa). Open browser console to trace. -->
@@ -809,11 +1037,7 @@ const debugData = {
       </script>
     )}
 
-    <!-- <ScrollProgressIndicator /> -->
-
-    <!-- Unified Notification System -->
-    <UnifiedNotification />
-
+<UnifiedNotification />
     <Navbar
       {globalIconButtonClasses}
       {desktopNavigationHTML}
@@ -829,14 +1053,10 @@ const debugData = {
     />
 
     <div id="page" class="min-w-0 overflow-x-hidden" data-template={dataTemplate}
-    style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain;' : ''}`}
-    
+    style={`transition: all 300ms ease-in-out;`}
     >
-    
-    
-    
-    <!-- 'overscroll-behavior-y: contain; touch-action: pan-x;'  -->
-    
+    <!-- ${centerContent ? 'overscroll-behavior-y: contain;' : ''} -->
+    <!-- 'overscroll-behavior-y: contain; touch-action: pan-x;'  -->    
     <Aside
         {globalIconButtonClasses}
         {currentUser}
@@ -868,20 +1088,12 @@ const debugData = {
             centerContent ? "flex items-center justify-center" : "",
           ]}
         >
-          <slot />
         </main>
-        <!-- Bottom Banner Alerts (above footer) -->
-        <BannerAlertsLoader position="bottom" pathname={Astro.url.pathname} />
-
       
-
         <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
         <DebugPanel {debugData} {currentRole} />
         <FeedbackPanel {currentUser} />
-
-          <!-- Footer (wrapped in shrink-0 when fullscreenScroll so it stays visible at bottom) -->
  
-
       </div>
 
       {
@@ -932,9 +1144,6 @@ const debugData = {
     {
       currentUser && currentUser.id && currentRole !== "Client" && project && (
         <>
-          {/* Backdrop overlay */}
-          <Modal id="punchlist-drawer-backdrop" zIndex={40} opacity="50" blurAmount="sm" />
-
           <div
             id="punchlist-drawer"
             class="fixed top-0 right-0 h-screen overflow-y-auto transition-transform translate-x-full bg-neutral-primary-soft w-full sm:w-96"
@@ -2763,221 +2972,6 @@ const debugData = {
           console.error("🔔 [APP] Error initializing notification count:", error);
         }
       });
-    </script>
-
-    <!-- Global Console Error Suppression for Development -->
-    <!-- This MUST run early, before any other scripts -->
-    <script is:inline>
-      // Aggressively suppress harmless console errors in development
-      (function () {
-        const isDev =
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1" ||
-          window.location.hostname.startsWith("192.168.");
-
-        if (!isDev) return;
-
-        // Suppress Cloudflare cookie warnings and errors
-        const originalWarn = console.warn;
-        const originalError = console.error;
-        const originalLog = console.log;
-
-        // Override console.warn
-        console.warn = function (...args) {
-          const message = String(args[0] || "");
-          const fullMessage = args.join(" ");
-
-          // Suppress Cloudflare cookie warnings
-          if (
-            message.includes("_cf_bm") ||
-            message.includes("__cf_bm") ||
-            (fullMessage.includes("Cookie") && fullMessage.includes("rejected")) ||
-            fullMessage.includes("invalid domain") ||
-            fullMessage.includes("NS_BINDING_ABORTED") ||
-            fullMessage.includes("OpaqueResponseBlocking") ||
-            fullMessage.includes("Ignoring Event: localhost") ||
-            fullMessage.includes("Avatar failed to load") ||
-            fullMessage.includes("rate limit")
-          ) {
-            return; // Silent fail
-          }
-          originalWarn.apply(console, args);
-        };
-
-        // Override console.error
-        console.error = function (...args) {
-          const message = String(args[0] || "");
-          const fullMessage = args.join(" ");
-
-          // Suppress Cloudflare cookie errors
-          if (
-            message.includes("_cf_bm") ||
-            message.includes("__cf_bm") ||
-            (fullMessage.includes("Cookie") && fullMessage.includes("rejected")) ||
-            fullMessage.includes("invalid domain") ||
-            fullMessage.includes("NS_BINDING_ABORTED")
-          ) {
-            return; // Silent fail
-          }
-          originalError.apply(console, args);
-        };
-
-        // Override console.log to suppress network errors
-        console.log = function (...args) {
-          // const message = String(args[0] || ""); // Unused
-          const fullMessage = args.join(" ");
-
-          if (
-            fullMessage.includes("NS_BINDING_ABORTED") ||
-            fullMessage.includes("net::ERR_") ||
-            fullMessage.includes("_cf_bm") ||
-            fullMessage.includes("__cf_bm")
-          ) {
-            return; // Silent fail
-          }
-          originalLog.apply(console, args);
-        };
-
-        // Suppress unhandled promise rejections for aborted requests
-        window.addEventListener("unhandledrejection", function (event) {
-          const reason = event.reason;
-          const message = reason?.message || String(reason || "");
-
-          if (
-            message.includes("aborted") ||
-            message.includes("NS_BINDING_ABORTED") ||
-            message.includes("AbortError") ||
-            reason?.name === "AbortError"
-          ) {
-            event.preventDefault(); // Prevent console error
-            return;
-          }
-        });
-
-        // Suppress global error events for network errors
-        window.addEventListener(
-          "error",
-          function (event) {
-            const message = event.message || "";
-            const filename = event.filename || "";
-            const target = event.target;
-
-            // Suppress errors related to aborted requests, cookies, or failed image loads
-            if (
-              message.includes("NS_BINDING_ABORTED") ||
-              message.includes("_cf_bm") ||
-              message.includes("__cf_bm") ||
-              (message.includes("Cookie") && message.includes("rejected")) ||
-              (filename.includes("supabase.co") && message.includes("Failed")) ||
-              (target &&
-                target.tagName === "IMG" &&
-                target.src &&
-                target.src.includes("supabase.co/storage"))
-            ) {
-              event.preventDefault();
-              event.stopPropagation();
-              return false;
-            }
-          },
-          true
-        ); // Use capture phase to catch early
-
-        // Intercept fetch to suppress aborted request errors and failed avatar requests
-        const originalFetch = window.fetch;
-        window.fetch = function (...args) {
-          const url = typeof args[0] === "string" ? args[0] : args[0]?.url || "";
-          const method = args[1]?.method || "GET";
-
-          // Suppress HEAD requests to Supabase storage avatars (we know they'll fail)
-          if (
-            method === "HEAD" &&
-            url.includes("supabase.co/storage") &&
-            url.includes("/avatars/")
-          ) {
-            return Promise.resolve(new Response(null, { status: 404, statusText: "Not Found" }));
-          }
-
-          let fetchPromise = originalFetch.apply(this, args);
-
-          // Wrap to catch and suppress abort errors
-          fetchPromise = fetchPromise.catch(function (error) {
-            if (
-              error?.name === "AbortError" ||
-              error?.message?.includes("aborted") ||
-              error?.message?.includes("NS_BINDING_ABORTED")
-            ) {
-              // Return a silent rejection
-              return Promise.reject(new Error("Request aborted (suppressed)"));
-            }
-            throw error;
-          });
-
-          // Also suppress 400 responses for avatar images
-          fetchPromise = fetchPromise.then(function (response) {
-            if (
-              !response.ok &&
-              response.status === 400 &&
-              url.includes("supabase.co/storage") &&
-              url.includes("/avatars/")
-            ) {
-              // Return a silent failure - don't throw, just return a 404-like response
-              return new Response(null, { status: 404, statusText: "Not Found" });
-            }
-            return response;
-          });
-
-          return fetchPromise;
-        };
-
-        // Intercept XMLHttpRequest to suppress aborted errors and failed avatar requests
-        const originalXHROpen = XMLHttpRequest.prototype.open;
-        const originalXHRSend = XMLHttpRequest.prototype.send;
-
-        XMLHttpRequest.prototype.open = function (...args) {
-          this._suppressAbortError = false;
-          this._url = args[1]; // Store URL for later check
-          return originalXHROpen.apply(this, args);
-        };
-
-        XMLHttpRequest.prototype.send = function (...args) {
-          const xhr = this;
-          const url = xhr._url || "";
-
-          // Suppress 400 errors for avatar images
-          const originalOnLoad = xhr.onload;
-          xhr.onload = function (event) {
-            if (
-              xhr.status === 400 &&
-              url.includes("supabase.co/storage") &&
-              url.includes("/avatars/")
-            ) {
-              // Silently fail - don't trigger error handlers
-              return;
-            }
-            if (originalOnLoad) {
-              originalOnLoad.call(xhr, event);
-            }
-          };
-
-          const originalOnError = xhr.onerror;
-          xhr.onerror = function (event) {
-            // Suppress errors for avatar images
-            if (url.includes("supabase.co/storage") && url.includes("/avatars/")) {
-              return;
-            }
-            // Suppress aborted errors
-            if (xhr.status === 0 && xhr.readyState === 0) {
-              // Likely an aborted request
-              return;
-            }
-            if (originalOnError) {
-              originalOnError.call(xhr, event);
-            }
-          };
-
-          return originalXHRSend.apply(this, args);
-        };
-      })();
     </script>
 
     <!-- Global Image Error Handler -->

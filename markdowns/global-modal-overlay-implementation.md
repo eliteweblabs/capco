@@ -17,14 +17,14 @@ All fixed-position modal components must be direct children of `<body>`, making 
 
 ### 1. Global Overlay Added to App.astro
 - **Location**: Immediately after `<body>` tag in `src/components/ui/App.astro`
-- **ID**: `global-modal-overlay`
+- **ID**: `global-backdrop`
 - **Z-Index**: 10010
 - **Properties**: Large blur, 50% opacity
 
 ```astro
 <body class={`antialiased mask-${mask.trim()}`}>
   <!-- Global Modal Overlay - Single instance used by all modals -->
-  <Modal id="global-modal-overlay" zIndex={10010} blurAmount="lg" opacity="50" />
+  <Modal id="global-backdrop" zIndex={10010} blurAmount="lg" opacity="50" />
 
   <!-- Global Modals - Must be siblings of overlay for z-index to work -->
   {currentUser && <NotificationsModal currentUser={currentUser} />}
@@ -41,7 +41,7 @@ All fixed-position modal components must be direct children of `<body>`, making 
 **✅ CORRECT**: Modal components as direct children of `<body>`
 ```astro
 <body>
-  <Modal id="global-modal-overlay" zIndex={10010} />
+  <Modal id="global-backdrop" zIndex={10010} />
   <NotificationsModal />  <!-- Sibling of overlay -->
   <SpeedDial />           <!-- Sibling of overlay -->
   
@@ -54,7 +54,7 @@ All fixed-position modal components must be direct children of `<body>`, making 
 **❌ INCORRECT**: Modal components nested in layout
 ```astro
 <body>
-  <Modal id="global-modal-overlay" zIndex={10010} />
+  <Modal id="global-backdrop" zIndex={10010} />
   
   <div id="main-content">
     <NotificationsModal />  <!-- Different stacking context! -->
@@ -76,22 +76,22 @@ Moved all modal components to be direct siblings of the global overlay:
 #### NotificationsModal.astro
 - **Removed**: Local overlay component
 - **Modal Z-Index**: 10020 (above global overlay at 10010)
-- **Updated JavaScript**: References `global-modal-overlay` instead of `notificationsModal-overlay`
+- **Updated JavaScript**: References `global-backdrop` instead of `notificationsModal-overlay`
 - **Positioning**: Now direct child of `<body>`
 
 #### SpeedDial.astro
 - **Removed**: Local overlay component with `mobileOnly` property
-- **Updated JavaScript**: References `global-modal-overlay` instead of `speed-dial-overlay`
+- **Updated JavaScript**: References `global-backdrop` instead of `speed-dial-overlay`
 - **Positioning**: Now direct child of `<body>`
 
 #### PageEditorModal.astro
 - **Removed**: Dynamic overlay creation per instance
-- **Updated JavaScript**: References `global-modal-overlay` instead of `${id}-overlay`
+- **Updated JavaScript**: References `global-backdrop` instead of `${id}-overlay`
 
 #### cms.astro (Admin CMS Page)
 - **Removed**: Local `page-editor-modal-overlay` component
 - **Modal Z-Index**: 10050
-- **Updated JavaScript**: All 5 references now use `global-modal-overlay`
+- **Updated JavaScript**: All 5 references now use `global-backdrop`
 
 ### 3. Updated Utility Functions
 
@@ -100,15 +100,15 @@ Updated two key functions to prefer the global overlay:
 
 ```typescript
 // createModal() - Line ~827
-let overlay = document.getElementById("global-modal-overlay") || 
+let overlay = document.getElementById("global-backdrop") || 
               document.getElementById(`${id}-overlay`);
 
 // hideModal() - Line ~1004
-const overlay = document.getElementById("global-modal-overlay") || 
+const overlay = document.getElementById("global-backdrop") || 
                 document.getElementById(`${modalId}-overlay`);
 ```
 
-**Fallback Strategy**: If `global-modal-overlay` doesn't exist, falls back to creating/using component-specific overlays for backwards compatibility.
+**Fallback Strategy**: If `global-backdrop` doesn't exist, falls back to creating/using component-specific overlays for backwards compatibility.
 
 ## Z-Index Hierarchy
 
@@ -149,14 +149,14 @@ When creating a new modal component that uses the global overlay:
 1. **Add the modal component as a direct child of `<body>` in App.astro**:
    ```astro
    <body>
-     <Modal id="global-modal-overlay" zIndex={10010} />
+     <Modal id="global-backdrop" zIndex={10010} />
      <NotificationsModal />
      <YourNewModal />  <!-- Add here, not nested in layout -->
    ```
 
 2. **Reference the global overlay in your modal's JavaScript**:
    ```javascript
-   const overlay = document.getElementById("global-modal-overlay");
+   const overlay = document.getElementById("global-backdrop");
    ```
 
 3. **Set appropriate z-index** (above 10010):
