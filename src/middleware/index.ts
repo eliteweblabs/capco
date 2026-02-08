@@ -6,6 +6,7 @@ import { clearAuthCookies, setAuthCookies } from "../lib/auth-cookies";
 import { setupConsoleInterceptor } from "../lib/console-interceptor";
 import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
+import { globalCompanyData } from "../pages/api/global/global-company-data";
 
 // Setup console interceptor for server-side (disables console.log in production)
 try {
@@ -16,6 +17,8 @@ try {
 }
 
 const protectedRoutes = ["/dashboard(|/)", "/project/**"];
+/** Routes that get session restored from cookies (if present) but don't require auth */
+const sessionOptionalRoutes = ["/mep-form"];
 const devBypassRoutes = ["/analytics", "/dashboard"];
 const redirectRoutes = ["/signin(|/)", "/register(|/)"];
 const protectedAPIRoutes = [
@@ -69,6 +72,33 @@ export const onRequest = defineMiddleware(
     // Skip middleware for dev bypass routes (development only)
     if (micromatch.isMatch(url.pathname, devBypassRoutes)) {
       return next();
+    }
+
+    // Restore session and company data for optional-auth routes (e.g. /mep-form) so pages avoid top-level await
+    if (micromatch.isMatch(url.pathname, sessionOptionalRoutes)) {
+      const accessToken = cookies.get("sb-access-token");
+      const refreshToken = cookies.get("sb-refresh-token");
+      if (accessToken && refreshToken) {
+        const { data, error } = await supabase.auth.setSession({
+          refresh_token: refreshToken.value,
+          access_token: accessToken.value,
+        });
+        if (!error && data.user) {
+          let profile: { role?: string } | null = null;
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", data.user.id)
+            .single();
+          profile = profileData;
+          locals.user = data.user;
+          locals.email = data.user.email;
+          locals.role = profile?.role || "Client";
+        }
+      }
+      const companyData = await globalCompanyData();
+      (locals as any).globalCompanyName = companyData.globalCompanyName;
+      (locals as any).virtualAssistantName = companyData.virtualAssistantName;
     }
 
     if (micromatch.isMatch(url.pathname, protectedRoutes)) {

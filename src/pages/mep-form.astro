@@ -1,35 +1,18 @@
 ---
 import LayoutDefault from "../components/layouts/LayoutDefault.astro";
 import MultiStepForm from "../components/form/MultiStepForm.astro";
-import { mepFormConfig } from "../lib/forms/mep-form-config";
-import { supabase } from "../lib/supabase";
+import { getMepFormConfig } from "../lib/forms/mep-form-config";
 import App from "../components/ui/App.astro";
 
 const title = "MEP Project Submission";
 const description = "Submit your MEP (Mechanical, Electrical, Plumbing) project information";
 
-// Check authentication from cookies since middleware doesn't run on this route
-let user = Astro.locals.user; // Try middleware first
-let isAuthenticated = !!user;
-
-// If no user from middleware, check cookies directly
-if (!user) {
-  const accessToken = Astro.cookies.get("sb-access-token");
-  const refreshToken = Astro.cookies.get("sb-refresh-token");
-
-  if (accessToken && refreshToken && supabase) {
-    const { data, error } = await supabase.auth.setSession({
-      access_token: accessToken.value,
-      refresh_token: refreshToken.value,
-    });
-
-    if (!error && data.user) {
-      user = data.user;
-      isAuthenticated = true;
-      console.log("[MEP-FORM] User authenticated via cookies:", user.email);
-    }
-  }
-}
+// Session and company data are set in middleware for this route (sessionOptionalRoutes) to avoid top-level await
+const user = Astro.locals.user;
+const isAuthenticated = !!user;
+const globalCompanyName = (Astro.locals as any).globalCompanyName ?? "Company";
+const virtualAssistantName = (Astro.locals as any).virtualAssistantName;
+const mepFormConfig = getMepFormConfig(globalCompanyName, virtualAssistantName);
 
 // Pre-fill user data if authenticated
 const initialData =

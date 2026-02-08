@@ -17,11 +17,15 @@ const COMPANY_NAME_PLACEHOLDERS = [
   "Hot Property Fire Prevention",
 ];
 
-import { globalCompanyData } from "../../pages/api/global/global-company-data";
-const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
-const assistantName = virtualAssistantName || "Leah";
-
-export const contactFormConfig: MultiStepFormConfig = {
+/**
+ * Build contact form config with company and assistant names (no top-level await for es2018 build).
+ */
+export function getContactFormConfig(
+  globalCompanyName: string,
+  virtualAssistantName?: string | null
+): MultiStepFormConfig {
+  const assistantName = virtualAssistantName || "Leah";
+  return {
   formId: "multi-step-contact-form",
   formAction: "/api/contact/submit",
   formMethod: "post",
@@ -337,4 +341,5 @@ export const contactFormConfig: MultiStepFormConfig = {
       ],
     },
   ],
-};
+  };
+}

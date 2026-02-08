@@ -1,14 +1,15 @@
 import type { MultiStepFormConfig } from "../multi-step-form-config";
 import { DEFAULT_EMAIL_PLACEHOLDERS, FULL_NAME_PLACEHOLDERS } from "../multi-step-form-config";
-import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
-const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
-const assistantName = virtualAssistantName || "Leah";
 /**
- * MEP Form Configuration
- * Multi-step form for MEP (Mechanical, Electrical, Plumbing) projects
+ * Build MEP form config with company and assistant names (no top-level await for es2018 build).
  */
-export const mepFormConfig: MultiStepFormConfig = {
+export function getMepFormConfig(
+  globalCompanyName: string,
+  virtualAssistantName?: string | null
+): MultiStepFormConfig {
+  const assistantName = virtualAssistantName || "Leah";
+  return {
   formId: "multi-step-mep-form",
   formAction: "/api/mep/submit",
   formMethod: "post",
@@ -528,4 +529,5 @@ export const mepFormConfig: MultiStepFormConfig = {
       ],
     },
   ],
-};
+  };
+}
