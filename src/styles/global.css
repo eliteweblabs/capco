@@ -1,6 +1,8 @@
 /* stylelint-disable at-rule-no-unknown */
 @import "@fontsource-variable/outfit";
 @import "./colors.css";
+@import "./fonts.css";
+
 :root {
   --color-background-dark: 0, 0, 0;
   --color-background: 255, 255, 255;
@@ -20,6 +22,7 @@ html {
 body {
   overflow-x: hidden;
   max-width: 100%;
+  font-family: var(--font-family, "Outfit Variable"), var(--font-family-secondary, sans-serif);
 }
 
 /* iOS: contain overscroll so fixed navbar stays in place; use contain not none to avoid blocking normal scroll */
@@ -51,7 +54,13 @@ body {
     overflow-x: hidden;
     min-height: 100vh;
     min-height: 100dvh;
-    /* -webkit-overflow-scrolling: touch; */
+    -webkit-overflow-scrolling: touch; /* iOS: momentum scroll, required for body scroll to work */
+    touch-action: pan-y; /* iOS: allow vertical touch-drag to scroll; prevents scroll lock */
+  }
+  /* Let touch-drag on page content scroll the body (fullwidth layout) */
+  body:not(.layout-centered) #page,
+  body:not(.layout-centered) #main-content {
+    touch-action: pan-y;
   }
 }
 
@@ -98,7 +107,8 @@ body.layout-centered #main-content main {
   }
   body.layout-centered #main-content main {
     overflow-y: auto;
-    /* -webkit-overflow-scrolling: touch; */
+    -webkit-overflow-scrolling: touch; /* iOS: momentum scroll */
+    touch-action: pan-y; /* iOS: allow vertical touch-drag to scroll */
   }
 }
 
@@ -225,6 +235,28 @@ input[type="tel"]:focus {
     0 6px 15px -3px rgba(55, 185, 243, 0.125);
 }
 
+/* Multi-step form: no blue/teal focus shadow, no Tailwind forms ring – focus handled by border only */
+[data-multi-step-form] input[type="email"]:focus,
+[data-multi-step-form] input[type="password"]:focus,
+[data-multi-step-form] input[type="text"]:focus,
+[data-multi-step-form] input[type="tel"]:focus,
+[data-multi-step-form] textarea:focus {
+  box-shadow: none !important;
+  outline: none !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+}
+.dark [data-multi-step-form] input[type="email"]:focus,
+.dark [data-multi-step-form] input[type="password"]:focus,
+.dark [data-multi-step-form] input[type="text"]:focus,
+.dark [data-multi-step-form] input[type="tel"]:focus,
+.dark [data-multi-step-form] textarea:focus {
+  box-shadow: none !important;
+  outline: none !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+}
+
 input[type="email"]:focus.is-valid::before,
 input[type="password"]:focus.is-valid::before,
 input[type="text"]:focus.is-valid::before,
@@ -282,7 +314,7 @@ input[type="tel"].is-valid {
 .dark input[type="tel"].is-valid {
   /* box-shadow:
     0 3px 9px -1.5px rgba(74, 222, 128, 0.2),
-    0 6px 15px -3px rgba(74, 222, 128, 0.15) !important; * /
+    0 6px 15px -3px rgba(74, 222, 128, 0.15) !important; */
 }
 
 /* Input icon color when valid (wrapper contains input.is-valid) */
@@ -329,15 +361,14 @@ select:autofill:active {
   transition:
     background-color 5000s ease-in-out 0s,
     box-shadow 200ms ease-in-out;
-
-  /* -webkit-box-shadow:
+  -webkit-box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
   box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important; */
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }
 
 input:not([type="hidden"]):-webkit-autofill:focus,
@@ -348,14 +379,14 @@ select:-webkit-autofill:focus,
 select:autofill:focus {
   -webkit-text-fill-color: var(--color-text-primary) !important;
   background-color: var(--color-input-bg) !important;
-  /* -webkit-box-shadow:
+  -webkit-box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
   box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important; */
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
 :root {
@@ -1634,7 +1665,7 @@ a[aria-disabled="true"] {
    Also see: FeedbackPanel.astro #feedback-form :invalid/:valid (commented there).
    =============================================================================
 
---- 1. Enhanced input styling: focus glow, pulse (email, password, text, tel) ---
+/* --- 1. Enhanced input styling: focus glow, pulse (email, password, text, tel) --- */
 input[type="email"],
 input[type="password"],
 input[type="text"],
@@ -1683,7 +1714,7 @@ input[type="tel"]:focus {
     0 6px 15px -3px rgba(55, 185, 243, 0.125);
 }
 
---- 2. .is-valid: pulse + box-shadow (light & dark) ---
+/* --- 2. .is-valid: pulse + box-shadow (light & dark) --- */
 input[type="email"]:focus.is-valid::before,
 input[type="password"]:focus.is-valid::before,
 input[type="text"]:focus.is-valid::before,
@@ -1736,10 +1767,12 @@ input[type="tel"].is-valid {
 .dark input[type="password"].is-valid,
 .dark input[type="text"].is-valid,
 .dark input[type="tel"].is-valid {
-  box-shadow: 0 3px 9px -1.5px rgba(74, 222, 128, 0.2), 0 6px 15px -3px rgba(74, 222, 128, 0.15) !important;
+  box-shadow:
+    0 3px 9px -1.5px rgba(74, 222, 128, 0.2),
+    0 6px 15px -3px rgba(74, 222, 128, 0.15) !important;
 }
 
---- 3. Input icon when valid (.input-with-icon:has(input.is-valid) svg) ---
+/* --- 3. Input icon when valid (.input-with-icon:has(input.is-valid) svg) --- */
 .input-with-icon:has(input[type="email"].is-valid) svg,
 .input-with-icon:has(input[type="password"].is-valid) svg,
 .input-with-icon:has(input[type="text"].is-valid) svg,
@@ -1755,23 +1788,27 @@ input[type="tel"].is-valid {
   opacity: 0.9;
 }
 
---- 4. :invalid / .is-invalid (not focused) ---
+/* --- 4. :invalid / .is-invalid (not focused) --- */
 input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
 input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
 input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
 input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
 input.is-invalid:not(:focus) {
-  box-shadow: 0 3px 9px -1.5px rgba(239, 68, 68, 0.1), 0 6px 15px -3px rgba(239, 68, 68, 0.075);
+  box-shadow:
+    0 3px 9px -1.5px rgba(239, 68, 68, 0.1),
+    0 6px 15px -3px rgba(239, 68, 68, 0.075);
 }
 .dark input[type="email"]:invalid:not(:placeholder-shown):not(:focus),
 .dark input[type="password"]:invalid:not(:placeholder-shown):not(:focus),
 .dark input[type="text"]:invalid:not(:placeholder-shown):not(:focus),
 .dark input[type="tel"]:invalid:not(:placeholder-shown):not(:focus),
 .dark input.is-invalid:not(:focus) {
-  box-shadow: 0 3px 9px -1.5px rgba(251, 113, 133, 0.15), 0 6px 15px -3px rgba(251, 113, 133, 0.1);
+  box-shadow:
+    0 3px 9px -1.5px rgba(251, 113, 133, 0.15),
+    0 6px 15px -3px rgba(251, 113, 133, 0.1);
 }
 
---- 5. Autofill overrides ---
+/* --- 5. Autofill overrides --- */
 input:not([type="hidden"]):-webkit-autofill,
 input:not([type="hidden"]):-webkit-autofill:hover,
 input:not([type="hidden"]):-webkit-autofill:active,
@@ -1794,8 +1831,11 @@ select:autofill:active {
   font-size: inherit !important;
   font-family: inherit !important;
   line-height: inherit !important;
-  transition: background-color 5000s ease-in-out 0s, box-shadow 200ms ease-in-out;
-  box-shadow: 0 0 0 100vmax var(--color-input-bg) inset,
+  transition:
+    background-color 5000s ease-in-out 0s,
+    box-shadow 200ms ease-in-out;
+  box-shadow:
+    0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
 }
@@ -1807,12 +1847,13 @@ select:-webkit-autofill:focus,
 select:autofill:focus {
   -webkit-text-fill-color: var(--color-text-primary) !important;
   background-color: var(--color-input-bg) !important;
-  box-shadow: 0 0 0 100vmax var(--color-input-bg) inset,
+  box-shadow:
+    0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
---- 6. .input-with-icon (wrapper, ::before, ::after, focus-within, dark) ---
+/* --- 6. .input-with-icon (wrapper, ::before, ::after, focus-within, dark) --- */
 .input-with-icon {
   position: relative;
 }
@@ -1855,7 +1896,7 @@ select:autofill:focus {
   filter: brightness(1);
 }
 
---- 7. input:invalid (remove native validation UI) + focus-visible/outline ---
+/* --- 7. input:invalid (remove native validation UI) + focus-visible/outline --- */
 input:invalid {
   box-shadow: none !important;
 }
@@ -1864,10 +1905,11 @@ input:focus {
   outline: none;
 }
 
---- 8. GLOBAL FOCUS STYLES: base transition, caret, multi-step-input, iOS, invalid/valid/valid+focus ---
+/* --- 8. GLOBAL FOCUS STYLES: base transition, caret, multi-step-input, iOS, invalid/valid/valid+focus --- */
 input:not([type="hidden"]),
 textarea,
 select {
+  font-family: inherit;
   transition: box-shadow 250ms ease-in-out;
 }
 input:not([type="hidden"]),
@@ -1902,16 +1944,28 @@ textarea {
   padding-left: 3rem;
   padding-right: 1rem;
 }
+
+/* Auto-expand textarea with content (field-sizing: content — Chrome 123+, Safari 17.2+) */
+textarea.expanding-textarea {
+  field-sizing: content;
+  min-height: 2.5rem;
+  max-height: 20rem;
+  overflow-y: auto;
+  resize: none;
+}
+
 input:not([type="hidden"]):focus,
 textarea:focus,
 select:focus {
-  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
 textarea:invalid:not(:placeholder-shown):not(:focus),
 select:invalid:not(:placeholder-shown):not(:focus) {
-  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
 }
 input:not([type="hidden"]):valid:not(:placeholder-shown):not(:focus),
@@ -1920,8 +1974,9 @@ select:valid:not(:placeholder-shown):not(:focus),
 input:not([type="hidden"]).is-valid:not(:focus),
 textarea.is-valid:not(:focus),
 select.is-valid:not(:focus) {
-  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  /* box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important; */
 }
 input:not([type="hidden"]):valid:focus,
 textarea:valid:focus,
@@ -1929,11 +1984,12 @@ select:valid:focus,
 input:not([type="hidden"]).is-valid:focus,
 textarea.is-valid:focus,
 select.is-valid:focus {
-  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
---- 9. Button .is-valid icon swap ---
+/* --- 9. Button .is-valid icon swap --- */
 button:has(.icon-valid):has(.icon-default) .icon-valid {
   display: none;
 }
@@ -1945,13 +2001,24 @@ button:has(.icon-valid):has(.icon-default).is-valid .icon-valid {
   animation: iconSwapIn 300ms ease-out;
 }
 @keyframes iconSwapIn {
-  0% { transform: scale(0) rotate(-90deg); opacity: 0; }
-  50% { transform: scale(1.2) rotate(0deg); }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  0% {
+    transform: scale(0) rotate(-90deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
---- 10. .input-wrapper + validation tooltip (disabled) ---
-.input-wrapper { position: relative; display: inline-block; }
+/* --- 10. .input-wrapper + validation tooltip (disabled) --- */
+.input-wrapper {
+  position: relative;
+  display: inline-block;
+}
 .input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown).touched)::after {
   content: attr(data-error);
   position: absolute;
@@ -1982,7 +2049,7 @@ input:invalid:not(:focus):not(:placeholder-shown).touched {
   border-color: #8b5cf6 !important;
 }
 
---- 11. Duplicate block (focus transition, invalid, valid+focus) ~line 1719 ---
+/* --- 11. Duplicate block (focus transition, invalid, valid+focus) ~line 1719 --- */
 input:not([type="hidden"]),
 textarea,
 select {
@@ -1991,13 +2058,15 @@ select {
 input:not([type="hidden"]):focus,
 textarea:focus,
 select:focus {
-  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 input:not([type="hidden"]):invalid:not(:placeholder-shown):not(:focus),
 textarea:invalid:not(:placeholder-shown):not(:focus),
 select:invalid:not(:placeholder-shown):not(:focus) {
-  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-danger-500) 10%, transparent) !important;
 }
 input:not([type="hidden"]):valid:focus,
@@ -2006,11 +2075,12 @@ select:valid:focus,
 input:not([type="hidden"]).is-valid:focus,
 textarea.is-valid:focus,
 select.is-valid:focus {
-  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
 }
 
---- 12. FeedbackPanel.astro #feedback-form :invalid/:valid (scoped) ---
+/* --- 12. FeedbackPanel.astro #feedback-form :invalid/:valid (scoped) --- */
 #feedback-form input:invalid,
 #feedback-form select:invalid,
 #feedback-form textarea:invalid {
@@ -2022,9 +2092,40 @@ select.is-valid:focus {
   border-color: #10b981;
 }
 
---- Keyframes used by above (pulse-circle, pulse-circle-green, iconSwapIn, tooltip-slide) ---
-@keyframes pulse-circle { 0%,100% { width: 100px; height: 100px; opacity: 0.3; } 50% { width: 140px; height: 140px; opacity: 0.4; } }
-@keyframes pulse-circle-green { 0%,100% { width: 100px; height: 100px; opacity: 0.3; } 50% { width: 140px; height: 140px; opacity: 0.4; } }
-@keyframes tooltip-slide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-============================================================================= */
+/* --- Keyframes used by above (pulse-circle, pulse-circle-green, iconSwapIn, tooltip-slide) --- */
+@keyframes pulse-circle {
+  0%,
+  100% {
+    width: 100px;
+    height: 100px;
+    opacity: 0.3;
+  }
+  50% {
+    width: 140px;
+    height: 140px;
+    opacity: 0.4;
+  }
+}
+@keyframes pulse-circle-green {
+  0%,
+  100% {
+    width: 100px;
+    height: 100px;
+    opacity: 0.3;
+  }
+  50% {
+    width: 140px;
+    height: 140px;
+    opacity: 0.4;
+  }
+}
+@keyframes tooltip-slide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

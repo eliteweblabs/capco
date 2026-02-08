@@ -61,7 +61,7 @@ export function getContactFormConfig(
       // Step 1: Name (single full-name input; handler parses to firstName/lastName for placeholders & API)
       {
         stepNumber: 1,
-        title: `<span data-typewriter-pause="1360"></span>Hi, I'm ${assistantName},<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!`,
+        title: `<span data-typewriter-pause="1360"></span>Hi, I'm ${assistantName}...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!`,
         fieldLayout: "single",
         response: true,
         fields: [
@@ -320,11 +320,12 @@ export function getContactFormConfig(
         fields: [
           {
             id: "contact-message",
+            classes: "expanding-textarea",
             name: "message",
             type: "textarea",
-            placeholder: "Tell us how we can help you...",
+            placeholder: "How we can help?",
             required: true,
-            rows: 6,
+            rows: 1,
             errorMessage: "Please enter your message",
           },
         ],

@@ -124,14 +124,16 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
     <script is:inline>
-      {/* // Adjust main-content padding based on number of visible top banners */}
+      {/* // Adjust main-content padding + #sidebar top/height = full navbar base (navbar + top banners); all update when a banner is cleared */}
       (function() {
         function adjustMainContentForTopBanners() {
           const topBannerContainer = document.getElementById("top-banner-container");
+          const navbar = document.getElementById("main-navbar");
           const mainContent = document.getElementById("main-content");
+          const sidebar = document.getElementById("sidebar");
 
-          if (topBannerContainer && mainContent) {
-            const updateMainContentSpacing = function() {
+          if (topBannerContainer && navbar && mainContent) {
+            const applyNavbarBaseSpacing = function() {
               // Get dismissed banners from localStorage
               let dismissedSet = new Set();
               try {
@@ -157,28 +159,41 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
               // Hide container when no visible banners so it doesn't leave empty space
               topBannerContainer.style.display = bannerCount > 0 ? "" : "none";
 
-              // Add smooth transition if not already present
-              if (!mainContent.style.transition) {
-                mainContent.style.transition = 'transform 0.3s ease-in-out';
-              }
+              var baseHeight = navbar.offsetHeight;
 
-              // Calculate translateY based on banner count (40px per banner)
-              const translateValue = bannerCount * 0;
-              mainContent.style.transform = `translateY(${translateValue}px)`;
+              // #main-content padding = full navbar base
+              if (!mainContent.style.transition) {
+                mainContent.style.transition = "padding-top 0.3s ease-in-out";
+              }
+              mainContent.style.paddingTop = baseHeight + "px";
+
+              // #sidebar top + height to match navbar base (updates when banner is cleared)
+              if (sidebar) {
+                if (!sidebar.style.transition) {
+                  sidebar.style.transition = "top 0.3s ease-in-out, height 0.3s ease-in-out";
+                }
+                sidebar.style.top = baseHeight + "px";
+                sidebar.style.height = "calc(100dvh - " + baseHeight + "px)";
+              }
             };
 
             // Initial adjustment
-            updateMainContentSpacing();
+            applyNavbarBaseSpacing();
 
             // Update on resize for responsive changes
-            window.addEventListener("resize", updateMainContentSpacing);
+            window.addEventListener("resize", applyNavbarBaseSpacing);
 
-            // Watch for banner dismissals
-            const observer = new MutationObserver(function() {
-              setTimeout(updateMainContentSpacing, 350); // After animation
+            // When navbar height changes (e.g. banner container hidden when last banner cleared)
+            var resizeObserver = new ResizeObserver(function() {
+              requestAnimationFrame(applyNavbarBaseSpacing);
             });
+            resizeObserver.observe(navbar);
 
-            observer.observe(topBannerContainer, {
+            // Watch for banner dismissals (display toggle, etc.)
+            var mutationObserver = new MutationObserver(function() {
+              setTimeout(applyNavbarBaseSpacing, 350); // After animation
+            });
+            mutationObserver.observe(topBannerContainer, {
               childList: true,
               subtree: true,
               attributes: true,
@@ -191,11 +206,8 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", adjustMainContentForTopBanners);
         } else {
-          // Small delay to ensure banner is rendered
           setTimeout(adjustMainContentForTopBanners, 10);
         }
-        
-        // Also run on Astro page transitions (defer so swap paints first)
         document.addEventListener("astro:page-load", () => requestAnimationFrame(adjustMainContentForTopBanners));
       })();
     </script>

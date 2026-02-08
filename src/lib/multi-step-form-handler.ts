@@ -204,9 +204,7 @@ export function createMultiStepFormHandler(
         currentActiveStep.classList.remove("active", "sliding-out-up", "sliding-out-down");
         // Clear cascade transition delays from typewriter-complete so completed input-wrappers collapse together (not staggered by index)
         currentActiveStep
-          .querySelectorAll(
-            ".input-wrapper, .inline-address-search-wrapper, textarea, button, a"
-          )
+          .querySelectorAll(".input-wrapper, .inline-address-search-wrapper, textarea, button, a")
           .forEach((el) => {
             (el as HTMLElement).style.transitionDelay = "";
           });
@@ -397,10 +395,14 @@ export function createMultiStepFormHandler(
               "input:not([type=hidden]):not([readonly]), textarea, select"
             ) as HTMLElement;
             if (firstInput) scrollFormToCursor(firstInput);
+            if (typeof (window as any).openKeypad === "function") {
+              (window as any).openKeypad(targetStep);
+            }
           }
         }
       }, focusDelayMs);
     }
+    // Steps with typewriter: focus + keypad run from MultiStepForm typewriter-complete → cascade transitionend
   }
 
   // Validate current step
@@ -942,7 +944,8 @@ export function createMultiStepFormHandler(
     form.addEventListener("change", updateConditionalFields);
 
     // Handle button clicks
-    const multistepDebug = typeof (window as any).__MULTISTEP_DEBUG !== "undefined" && (window as any).__MULTISTEP_DEBUG;
+    const multistepDebug =
+      typeof (window as any).__MULTISTEP_DEBUG !== "undefined" && (window as any).__MULTISTEP_DEBUG;
 
     form.addEventListener("click", async (e) => {
       const target = e.target as HTMLElement;
@@ -1127,7 +1130,8 @@ export function createMultiStepFormHandler(
 
       // SMS choice buttons
       if (smsChoiceBtn) {
-        if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → SMS choice, will showStep");
+        if (multistepDebug)
+          console.log("[MULTISTEP-CLICK-DEBUG] form click → SMS choice, will showStep");
         e.preventDefault();
         const smsValue = smsChoiceBtn.getAttribute("data-sms-value");
         const nextStep = parseInt(smsChoiceBtn.getAttribute("data-next") || "1");
@@ -1138,8 +1142,11 @@ export function createMultiStepFormHandler(
         }
 
         if ("ontouchstart" in window) {
-          const targetStep = form.querySelector(`.step-content[data-step="${nextStep}"]`) as HTMLElement;
-          if (targetStep && typeof (window as any).focusFirstInputIn === "function") (window as any).focusFirstInputIn(targetStep);
+          const targetStep = form.querySelector(
+            `.step-content[data-step="${nextStep}"]`
+          ) as HTMLElement;
+          if (targetStep && typeof (window as any).focusFirstInputIn === "function")
+            (window as any).focusFirstInputIn(targetStep);
         }
         await showStep(nextStep);
         return;
@@ -1190,8 +1197,11 @@ export function createMultiStepFormHandler(
         (nextBtn as HTMLButtonElement).disabled = true;
 
         if ("ontouchstart" in window) {
-          const targetStep = form.querySelector(`.step-content[data-step="${nextStep}"]`) as HTMLElement;
-          if (targetStep && typeof (window as any).focusFirstInputIn === "function") (window as any).focusFirstInputIn(targetStep);
+          const targetStep = form.querySelector(
+            `.step-content[data-step="${nextStep}"]`
+          ) as HTMLElement;
+          if (targetStep && typeof (window as any).focusFirstInputIn === "function")
+            (window as any).focusFirstInputIn(targetStep);
         }
         try {
           if (await validateStep(currentStep)) {
@@ -1206,10 +1216,14 @@ export function createMultiStepFormHandler(
       if (prevBtn) {
         const isLink = prevBtn.tagName === "A" || prevBtn.hasAttribute("href");
         if (isLink) {
-          if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → prev link (navigate away), no action");
+          if (multistepDebug)
+            console.log(
+              "[MULTISTEP-CLICK-DEBUG] form click → prev link (navigate away), no action"
+            );
           return;
         }
-        if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → prev button, will showStep");
+        if (multistepDebug)
+          console.log("[MULTISTEP-CLICK-DEBUG] form click → prev button, will showStep");
         e.preventDefault();
         let prevStep = parseInt(prevBtn.getAttribute("data-prev") || "1");
 
@@ -1222,7 +1236,8 @@ export function createMultiStepFormHandler(
 
       // Edit button (for review step)
       if (editBtn) {
-        if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → edit button, will showStep");
+        if (multistepDebug)
+          console.log("[MULTISTEP-CLICK-DEBUG] form click → edit button, will showStep");
         e.preventDefault();
         const editStep = parseInt(editBtn.getAttribute("data-edit") || "1");
         await showStep(editStep);
@@ -1230,17 +1245,22 @@ export function createMultiStepFormHandler(
 
       // Skip button
       if (skipBtn) {
-        if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → skip button, will showStep");
+        if (multistepDebug)
+          console.log("[MULTISTEP-CLICK-DEBUG] form click → skip button, will showStep");
         e.preventDefault();
         const nextStep = parseInt(skipBtn.getAttribute("data-next") || "1");
         if ("ontouchstart" in window) {
-          const targetStep = form.querySelector(`.step-content[data-step="${nextStep}"]`) as HTMLElement;
-          if (targetStep && typeof (window as any).focusFirstInputIn === "function") (window as any).focusFirstInputIn(targetStep);
+          const targetStep = form.querySelector(
+            `.step-content[data-step="${nextStep}"]`
+          ) as HTMLElement;
+          if (targetStep && typeof (window as any).focusFirstInputIn === "function")
+            (window as any).focusFirstInputIn(targetStep);
         }
         await showStep(nextStep);
       }
 
-      if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] form click → no button matched, no action");
+      if (multistepDebug)
+        console.log("[MULTISTEP-CLICK-DEBUG] form click → no button matched, no action");
     });
 
     // Debug: log clicks outside form only when __MULTISTEP_DEBUG is set
@@ -1413,7 +1433,10 @@ export function createMultiStepFormHandler(
           if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
             const nextInput = inputs[currentIndex + 1];
             nextInput.focus();
-            if (multistepDebug) console.log("[MULTISTEP-CLICK-DEBUG] Enter → moving to next input (not advancing step)");
+            if (multistepDebug)
+              console.log(
+                "[MULTISTEP-CLICK-DEBUG] Enter → moving to next input (not advancing step)"
+              );
             return;
           }
           // Single or last input: fall through to click next/submit button
@@ -1425,10 +1448,13 @@ export function createMultiStepFormHandler(
         ) as HTMLElement;
         if (nextBtn) {
           if (multistepDebug) {
-            console.log("[MULTISTEP-CLICK-DEBUG] Enter → programmatically clicking next button (will advance)", {
-              keypressTargetTag: target.tagName,
-              keypressTargetClass: target.className?.slice?.(0, 60),
-            });
+            console.log(
+              "[MULTISTEP-CLICK-DEBUG] Enter → programmatically clicking next button (will advance)",
+              {
+                keypressTargetTag: target.tagName,
+                keypressTargetClass: target.className?.slice?.(0, 60),
+              }
+            );
           }
           nextBtn.click();
         } else if (multistepDebug) {
@@ -1484,10 +1510,14 @@ export function createMultiStepFormHandler(
               cursorLine,
               reason: "position first input at cursor line (40vh) on load",
             });
+            if ("ontouchstart" in window && typeof (window as any).openKeypad === "function") {
+              (window as any).openKeypad(firstStep);
+            }
           }
         }
       }, 120);
     }
+    // Step 1 with typewriter: focus + keypad run from MultiStepForm typewriter-complete → cascade transitionend
   }
 
   return {

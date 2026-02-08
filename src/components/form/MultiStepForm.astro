@@ -21,7 +21,11 @@ interface Props {
   initialData?: Record<string, any>;
 }
 
-const { config, containerClass = "", initialData = {} } = Astro.props;
+const {
+  config,
+  containerClass = "max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full",
+  initialData = {},
+} = Astro.props;
 
 // When first step has expandDown: false, start with centered panel (no expand-down/expand-up)
 const firstStep = config.steps.find((s) => s.stepNumber === 1);
@@ -50,7 +54,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     <!-- <div class="multi-step-form-spacer" aria-hidden="true"></div> -->
     <div
       class:list={[
-        "multi-step-form-steps overflow-y-visible",
+        "multi-step-form-steps overflow-y-visible p-8 md:p-16",
         initialCentered ? "centered" : "expand-down",
         containerClass,
       ]}
@@ -151,7 +155,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             ) : step.fields?.length ? (
               <div
                 class:list={[
-                  "step-form-fields-wrapper w-full",
+                  "step-form-fields-wrapper",
                   step.fieldLayout === "grid"
                     ? "grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6"
                     : "",
@@ -429,7 +433,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {/* Navigation buttons (prev, next, submit, skip) */}
             <div
               class:list={[
-                "step-form-buttons-wrapper pb-2",
+                "step-form-buttons-wrapper",
                 "flex",
                 "gap-3",
                 step.buttons.filter((b) => b.type !== "choice").length === 1
@@ -589,12 +593,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content.has-typewriter button,
   .step-content.has-typewriter a,
   .step-content.has-typewriter textarea {
-    max-height: 0;
+    /* max-height: 0; */
     opacity: 0;
     overflow: hidden;
     transition:
-      max-height 0.4s ease-out,
-      opacity 0.7s ease-out;
+      /* max-height 0.4s ease-out, */ opacity 0.7s ease-out;
   }
 
   /* When typewriter completes, each reveals with its own transition-delay (set in JS) */
@@ -734,10 +737,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     /* position: absolute;
     inset: 0;
     overflow: hidden; */
-    display: flex;
+    /* display: flex;
     flex-direction: column;
     padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-right: max(1rem, env(safe-area-inset-right)); */
   }
 
   /* Form is the scroll container; .multi-step-form-steps is the single scrollable content block */
@@ -864,7 +867,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     let runPanelBottomLoopRef: ((durationMs: number) => void) | null = null;
     const stepsEl = document.querySelector(".multi-step-form-steps") as HTMLElement | null;
     if (stepsEl) {
-      console.log("[MULTISTEP-DEBUG] steps panel found, setting up");
+      // console.log("[MULTISTEP-DEBUG] steps panel found, setting up");
       const BOTTOM_MIN_PX = 4 * 16; // 4rem cutoff
       const THROTTLE_MS = 80;
       let lastPanelBottomRun = 0;
@@ -876,10 +879,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         if (!expandDownForStep) {
           stepsEl.classList.add("centered");
           stepsEl.classList.remove("expand-down", "expand-up");
-          console.log("[MULTISTEP-DEBUG] updateStepsPanelBottom", {
-            caller: caller ?? "unknown",
-            mode: "centered",
-          });
+          // console.log("[MULTISTEP-DEBUG] updateStepsPanelBottom", {
+          //   caller: caller ?? "unknown",
+          //   mode: "centered",
+          // });
           return;
         }
 
@@ -899,15 +902,15 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           stepsEl.classList.add("expand-down");
           stepsEl.classList.remove("expand-up");
         }
-        console.log("[MULTISTEP-DEBUG] updateStepsPanelBottom", {
-          caller: caller ?? "unknown",
-          scrollHeight: stepsHeight,
-          clientHeight,
-          offsetHeight,
-          fiftyDvhPx,
-          thresholdPx,
-          expandUp,
-        });
+        // console.log("[MULTISTEP-DEBUG] updateStepsPanelBottom", {
+        //   caller: caller ?? "unknown",
+        //   scrollHeight: stepsHeight,
+        //   clientHeight,
+        //   offsetHeight,
+        //   fiftyDvhPx,
+        //   thresholdPx,
+        //   expandUp,
+        // });
       }
 
       function throttledUpdateStepsPanelBottom(caller?: string) {
@@ -917,18 +920,18 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           lastPanelBottomRun = now;
           updateStepsPanelBottom(caller ?? "throttled");
         } else {
-          console.log("[MULTISTEP-DEBUG] throttledUpdateStepsPanelBottom skipped (throttle)", {
-            caller: caller ?? "unknown",
-            elapsed: now - lastPanelBottomRun,
-            THROTTLE_MS,
-          });
+          // console.log("[MULTISTEP-DEBUG] throttledUpdateStepsPanelBottom skipped (throttle)", {
+          //   caller: caller ?? "unknown",
+          //   elapsed: now - lastPanelBottomRun,
+          //   THROTTLE_MS,
+          // });
         }
       }
 
       updateStepsPanelBottomRef = () => throttledUpdateStepsPanelBottom("ref");
 
       runPanelBottomLoopRef = (durationMs: number) => {
-        console.log("[MULTISTEP-DEBUG] runPanelBottomLoopRef started", { durationMs });
+        // console.log("[MULTISTEP-DEBUG] runPanelBottomLoopRef started", { durationMs });
         const start = performance.now();
         const tick = () => {
           throttledUpdateStepsPanelBottom("loop");
@@ -940,18 +943,18 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       updateStepsPanelBottom("DOMContentLoaded");
 
       window.addEventListener("resize", () => {
-        console.log("[MULTISTEP-DEBUG] resize → throttledUpdateStepsPanelBottom");
+        // console.log("[MULTISTEP-DEBUG] resize → throttledUpdateStepsPanelBottom");
         throttledUpdateStepsPanelBottom("resize");
       });
 
       const resizeObserver = new ResizeObserver(() => {
-        console.log("[MULTISTEP-DEBUG] ResizeObserver → requestAnimationFrame(throttled)");
+        // console.log("[MULTISTEP-DEBUG] ResizeObserver → requestAnimationFrame(throttled)");
         requestAnimationFrame(() => throttledUpdateStepsPanelBottom("ResizeObserver"));
       });
       resizeObserver.observe(stepsEl);
 
       document.addEventListener("multistep-step-change", () => {
-        console.log("[MULTISTEP-DEBUG] multistep-step-change → updateStepsPanelBottom + loop 15s");
+        // console.log("[MULTISTEP-DEBUG] multistep-step-change → updateStepsPanelBottom + loop 15s");
         requestAnimationFrame(() =>
           requestAnimationFrame(() => updateStepsPanelBottom("multistep-step-change"))
         );
@@ -964,7 +967,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       const target = e.target as HTMLElement;
       const stepContent = target.closest(".step-content");
       if (stepContent) {
-        console.log("[MULTISTEP-FORM] Typewriter complete, revealing content");
+        // console.log("[MULTISTEP-FORM] Typewriter complete, revealing content");
 
         // Collect all animatable elements in DOM order (include textarea so they cascade instead of jumping)
         const elements: HTMLElement[] = [];
@@ -990,9 +993,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         stepContent.classList.add("typewriter-complete");
 
         // Panel bottom: update every frame while content expands (cascade) so position tracks in real time
-        console.log(
-          "[MULTISTEP-DEBUG] typewriter-complete → updateStepsPanelBottomRef + runPanelBottomLoopRef"
-        );
+        // console.log(
+        //   "[MULTISTEP-DEBUG] typewriter-complete → updateStepsPanelBottomRef + runPanelBottomLoopRef"
+        // );
         requestAnimationFrame(() => requestAnimationFrame(updateStepsPanelBottomRef ?? (() => {})));
         const cascadeEndMs =
           elements.length > 0 ? (elements.length - 1) * CASCADE_DELAY_MS + OPACITY_DURATION_MS : 0;
@@ -1001,33 +1004,32 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           runPanelBottomLoopRef?.(panelLoopDurationMs);
         }
 
-        // Focus first input once all animation is done (cascade + panel settle). Same delay on touch so keypad opens after content is visible.
-        const focusDelayMs =
-          cascadeEndMs > 0 ? panelLoopDurationMs + 120 : OPACITY_DURATION_MS + 200;
-        console.log("[AUTOFOCUS] scheduling focusFirstInputIn", {
-          focusDelayMs,
-          cascadeEndMs,
-          panelLoopDurationMs,
-          stepNumber: stepContent.getAttribute("data-step"),
-        });
-        setTimeout(() => {
+        // Run focus + keypad when cascade animation completes (last element's transitionend), with setTimeout fallback
+        let focusKeypadDone = false;
+        const runFocusAndKeypad = () => {
+          if (focusKeypadDone) return;
+          focusKeypadDone = true;
           const focusFirstIn = (window as any).focusFirstInputIn;
-          const hasFn = typeof focusFirstIn === "function";
-          console.log("[AUTOFOCUS] timeout fired", {
-            hasFn,
-            stepNumber: stepContent.getAttribute("data-step"),
-          });
-          if (hasFn) {
-            console.log("[AUTOFOCUS] about to give first input focus (calling focusFirstInputIn)", {
-              stepNumber: stepContent.getAttribute("data-step"),
-              container: stepContent,
-            });
-            // eslint-disable-next-line no-debugger -- debug mobile keypad / first-input focus
-            debugger;
-            const ok = focusFirstIn(stepContent);
-            console.log("[AUTOFOCUS] focusFirstInputIn result", { ok });
+          if (typeof focusFirstIn !== "function") return;
+          const ok = focusFirstIn(stepContent);
+          if (ok && typeof (window as any).openKeypad === "function") {
+            (window as any).openKeypad(stepContent);
           }
-        }, focusDelayMs);
+        };
+
+        if (elements.length > 0) {
+          const lastEl = elements[elements.length - 1];
+          const onCascadeEnd = (e: TransitionEvent) => {
+            if (e.target !== lastEl || e.propertyName !== "opacity") return;
+            lastEl.removeEventListener("transitionend", onCascadeEnd as EventListener);
+            runFocusAndKeypad();
+          };
+          lastEl.addEventListener("transitionend", onCascadeEnd as EventListener);
+          const fallbackMs = cascadeEndMs + 200;
+          setTimeout(runFocusAndKeypad, fallbackMs);
+        } else {
+          setTimeout(runFocusAndKeypad, OPACITY_DURATION_MS + 100);
+        }
       }
     });
 

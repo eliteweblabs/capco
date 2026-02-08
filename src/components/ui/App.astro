@@ -207,86 +207,58 @@ const debugData = {
   <head>
     <!-- Theme detection - MUST be first to be available for all components -->
     <script is:inline>
-      // Initialize dark mode FIRST to prevent flash
-      const hasExplicitPreference = localStorage.getItem("color-theme") !== null;
+      (function() {
+        // Initialize dark mode FIRST to prevent flash (IIFE avoids duplicate-declaration if script is inlined twice)
+        var hasExplicitPreference = localStorage.getItem("color-theme") !== null;
 
-      function setThemeCookie(theme) {
-        document.cookie = `theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
-        console.log("[THEME-CLIENT] Cookie set to:", theme);
-        console.log("[THEME-CLIENT] All cookies:", document.cookie);
+        function setThemeCookie(theme) {
+          document.cookie = "theme=" + theme + "; path=/; max-age=31536000; SameSite=Lax";
+          console.log("[THEME-CLIENT] Cookie set to:", theme);
+          console.log("[THEME-CLIENT] All cookies:", document.cookie);
+          var cookies = document.cookie.split(";").reduce(function(acc, cookie) {
+            var parts = cookie.trim().split("=");
+            acc[parts[0]] = parts[1];
+            return acc;
+          }, {});
+          console.log("[THEME-CLIENT] Parsed cookies:", cookies);
+          console.log("[THEME-CLIENT] Theme cookie value:", cookies.theme);
+        }
 
-        // Verify cookie was set
-        const cookies = document.cookie.split(";").reduce((acc, cookie) => {
-          const [key, value] = cookie.trim().split("=");
-          acc[key] = value;
-          return acc;
-        }, {});
-        console.log("[THEME-CLIENT] Parsed cookies:", cookies);
-        console.log("[THEME-CLIENT] Theme cookie value:", cookies.theme);
-      }
-
-      if (hasExplicitPreference) {
-        // User has explicitly set a preference, apply it
-        const theme = localStorage.getItem("color-theme");
-        if (theme === "dark") {
-          document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
-          setThemeCookie("dark");
+        if (hasExplicitPreference) {
+          var theme = localStorage.getItem("color-theme");
+          if (theme === "dark") {
+            document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
+            setThemeCookie("dark");
+          } else {
+            document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
+            setThemeCookie("light");
+          }
         } else {
-          document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
-          setThemeCookie("light");
-        }
-      } else {
-        // No explicit preference, check system preference
-        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-          document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
-          localStorage.setItem("color-theme", "dark");
-          setThemeCookie("dark");
-        } else {
-          document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
-          localStorage.setItem("color-theme", "light");
-          setThemeCookie("light");
-        }
-      }
-
-      // Global theme detection utility
-      window.isDarkMode = () => {
-        const hasDarkClass = document.documentElement.classList.contains("dark");
-        const localStorageTheme = localStorage.getItem("color-theme");
-        const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-        // console.log("[THEME-DEBUG] hasDarkClass:", hasDarkClass);
-        // console.log("[THEME-DEBUG] localStorageTheme:", localStorageTheme);
-        // console.log("[THEME-DEBUG] systemPrefersDark:", systemPrefersDark);
-
-        // Priority 1: Check DOM class (most reliable)
-        if (hasDarkClass) {
-          // console.log("[THEME-DEBUG] Returning true (dark class found)");
-          return true;
+          if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
+            localStorage.setItem("color-theme", "dark");
+            setThemeCookie("dark");
+          } else {
+            document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
+            localStorage.setItem("color-theme", "light");
+            setThemeCookie("light");
+          }
         }
 
-        // Priority 2: Check localStorage (user's explicit preference)
-        if (localStorageTheme !== null) {
-          const isDark = localStorageTheme === "dark";
-          // console.log("[THEME-DEBUG] Returning localStorage preference:", isDark);
-          return isDark;
-        }
+        window.isDarkMode = function() {
+          var hasDarkClass = document.documentElement.classList.contains("dark");
+          var localStorageTheme = localStorage.getItem("color-theme");
+          var systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          if (hasDarkClass) return true;
+          if (localStorageTheme !== null) return localStorageTheme === "dark";
+          return systemPrefersDark;
+        };
 
-        // Priority 3: Fall back to system preference (only if no explicit preference)
-        const result = systemPrefersDark;
-        // console.log("[THEME-DEBUG] Returning system preference:", result);
-        return result;
-      };
+        window.currentTheme = window.isDarkMode() ? "dark" : "light";
 
-      // Set current theme immediately (available ASAP for all components)
-      window.currentTheme = window.isDarkMode() ? "dark" : "light";
-      // console.log("[THEME] window.currentTheme set to:", window.currentTheme);
+        var pageSize = localStorage.getItem("page-size") || "normal";
+        document.documentElement.setAttribute("data-page-size", pageSize);
 
-      // Page size preference (larger elements for mobile/accessibility)
-      const pageSize = localStorage.getItem("page-size") || "normal";
-      document.documentElement.setAttribute("data-page-size", pageSize);
-
-      // Legacy Safari/iPad: detect older iOS Safari (pre–13.4) for graceful degradation
-      (function () {
         var ua = navigator.userAgent;
         var isIOS = /iPad|iPhone|iPod/.test(ua);
         var versionMatch = ua.match(/Version\/(\d+)/);
@@ -879,7 +851,7 @@ const debugData = {
         class:list={[
           "flex-1 min-w-0",
           currentUser ? "sm:ml-16" : "",
-          dataTemplate === "default" ? "pt-20 min-h-[calc(100dvh-5rem)] max-sm:min-h-0" : "",
+          dataTemplate === "default" ? "pt-20 min-h-[calc(100dvh-5rem)]" : "",
           mainClasses,
           fullscreenScroll && "flex flex-col min-h-0",
           centerContent ? "" : "",
