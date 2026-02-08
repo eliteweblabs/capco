@@ -310,6 +310,12 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
     return cache.get(cacheKey);
   }
 
+  // Skip DB and all lookups for bot/scanner probes (wp-config.php, wp-admin, etc.) to avoid
+  // hitting Supabase on every probe and logging Cloudflare/block pages as "database errors"
+  if (isLikelyBotProbe(slug)) {
+    return null;
+  }
+
   // 0. Try database first (CMS - highest priority for per-deployment customization)
   if (supabaseAdmin) {
     try {
@@ -359,12 +365,36 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         });
         return pageContent;
       } else if (error) {
-        console.error(`❌ [CONTENT] Database error for ${slug}:`, error);
+        const msg = typeof error?.message === "string" ? error.message : String(error);
+        const isCloudflareBlock =
+          msg.includes("<!DOCTYPE") ||
+          msg.includes("cf-wrapper") ||
+          msg.includes("Cloudflare") ||
+          msg.includes("you have been blocked");
+        if (isCloudflareBlock) {
+          console.error(
+            `❌ [CONTENT] Database unreachable for ${slug} (likely Cloudflare/network block from this host). Check Supabase access from Railway.`
+          );
+        } else {
+          console.error(`❌ [CONTENT] Database error for ${slug}:`, error);
+        }
       } else {
         console.log(`ℹ️ [CONTENT] No database page found for ${slug}`);
       }
     } catch (error) {
-      console.warn(`⚠️ [CONTENT] Error loading ${slug} from database:`, error);
+      const msg = typeof (error as any)?.message === "string" ? (error as any).message : String(error);
+      const isCloudflareBlock =
+        msg.includes("<!DOCTYPE") ||
+        msg.includes("cf-wrapper") ||
+        msg.includes("Cloudflare") ||
+        msg.includes("you have been blocked");
+      if (isCloudflareBlock) {
+        console.warn(
+          `⚠️ [CONTENT] Database unreachable for ${slug} (likely Cloudflare/network block from this host). Check Supabase access from Railway.`
+        );
+      } else {
+        console.warn(`⚠️ [CONTENT] Error loading ${slug} from database:`, error);
+      }
     }
   }
 

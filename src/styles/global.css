@@ -22,16 +22,16 @@ body {
   max-width: 100%;
 }
 
-/* iOS: prevent overscroll rubber-band so fixed navbar stays in place */
+/* iOS: contain overscroll so fixed navbar stays in place; use contain not none to avoid blocking normal scroll */
 @supports (-webkit-touch-callout: none) {
   html,
   body {
-    overscroll-behavior-y: none;
+    overscroll-behavior-y: contain;
   }
   /* Keep main navbar in its own compositing layer so it doesn’t slide with over-scroll */
   #main-navbar {
-    top: 1rem; /* fallback for older Safari that don’t support max() */
-    top: max(1rem, env(safe-area-inset-top, 0px));
+    top: 0; /* fallback for older Safari that don’t support max() */
+    /* top: max(1rem, env(safe-area-inset-top, 0px)); */
     transform: translateZ(0);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
@@ -39,7 +39,7 @@ body {
   }
 }
 
-/* Mobile: single scroll container to avoid double scroll (html + body) in iOS/Chrome */
+/* Mobile: single scroll container (body only) to avoid double scrollbar / fighting scroll on iOS */
 @media (max-width: 767px) {
   html {
     overflow-y: hidden;
@@ -322,9 +322,10 @@ select:autofill,
 select:autofill:hover,
 select:autofill:active {
   -webkit-text-fill-color: var(--color-text-primary) !important;
-  font-size: inherit !important;
+  /* Do not set font-size here: let the input's own classes (e.g. text-xl sm:text-2xl) control size so Tailwind responsive sizing works */
   font-family: inherit !important;
   line-height: inherit !important;
+  background-color: transparent !important;
   transition:
     background-color 5000s ease-in-out 0s,
     box-shadow 200ms ease-in-out;
@@ -336,7 +337,7 @@ select:autofill:active {
   box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important; * /
+    0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important; */
 }
 
 input:not([type="hidden"]):-webkit-autofill:focus,
@@ -354,10 +355,7 @@ select:autofill:focus {
   box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important; * /
-}
-
-*/
+    0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important; */
 }
 
 :root {

@@ -100,7 +100,7 @@ const settings = {
   globalCompanySlogan={companyData.globalCompanySlogan}
   globalCompanyLogo={companyData.globalCompanyLogo}
 >
-  <div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="max-w-7xl mx-auto px-4 py-8">
     <div class="mb-6">
       <h1 class="text-3xl font-bold mb-2">Global Settings</h1>
       <p class="text-gray-600 dark:text-gray-400">
@@ -382,7 +382,7 @@ const settings = {
           id="add-social-btn"
           variant="ghost"
           size="sm"
-          icon="fa-solid-plus"
+          icon="plus"
           class="mt-4"
         >
           Add Social Network
@@ -1313,6 +1313,15 @@ const settings = {
     }
   }
 
+  /** Escape for use in HTML attribute values to prevent XSS */
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
   /**
    * Create a new social network item
    */
@@ -1320,14 +1329,17 @@ const settings = {
     const div = document.createElement("div");
     div.className = "social-network-item flex flex-col sm:flex-row sm:items-center gap-3";
     div.dataset.index = String(index);
+    const inputClasses =
+      (document.querySelector("input.color-background") as HTMLInputElement)?.className ||
+      "color-background shadow-secondary-inner-md w-full border-0 py-2.5 px-4 text-gray-900 transition-colors duration-200 text-grey-900 placeholder:text-gray-600 focus:outline-none dark:text-white dark:placeholder:text-gray-300 no-scrollbar";
 
     div.innerHTML = `
       <div class="flex-1 w-full min-w-0">
         <input
           type="url"
           name="social_url_${index}"
-          value="${url}"
-          class="${(document.querySelector('[class*="globalInputClasses"]') as HTMLInputElement)?.className || "block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"} social-url-input"
+          value="${escapeHtml(url)}"
+          class="${inputClasses} social-url-input"
           placeholder="https://facebook.com/yourpage"
         />
       </div>
@@ -1335,8 +1347,8 @@ const settings = {
         <input
           type="text"
           name="social_label_${index}"
-          value="${label}"
-          class="${(document.querySelector('[class*="globalInputClasses"]') as HTMLInputElement)?.className || "block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"} social-label-input"
+          value="${escapeHtml(label)}"
+          class="${inputClasses} social-label-input"
           placeholder="Label (optional)"
         />
       </div>
@@ -1438,11 +1450,33 @@ const settings = {
 
   ogImageInput?.addEventListener("input", (e) => {
     const value = (e.target as HTMLInputElement).value.trim();
+    ogImagePreview.textContent = "";
     if (value) {
-      ogImagePreview.innerHTML = `<img src="${value}" alt="OG Image Preview" class="max-w-full max-h-32 object-contain rounded" onerror="this.parentElement.innerHTML='<p class=\\'text-xs text-red-400 text-center\\'>Failed to load image</p>'" />`;
+      const allowed =
+        value.startsWith("/") || value.startsWith("https://") || value.startsWith("http://");
+      if (allowed) {
+        const img = document.createElement("img");
+        img.src = value;
+        img.alt = "OG Image Preview";
+        img.className = "max-w-full max-h-32 object-contain rounded";
+        img.onerror = () => {
+          const p = document.createElement("p");
+          p.className = "text-xs text-red-400 text-center";
+          p.textContent = "Failed to load image";
+          ogImagePreview.replaceChildren(p);
+        };
+        ogImagePreview.appendChild(img);
+      } else {
+        const p = document.createElement("p");
+        p.className = "text-xs text-gray-400 text-center";
+        p.textContent = "Enter a URL (e.g. /images/og.png or https://...)";
+        ogImagePreview.appendChild(p);
+      }
     } else {
-      ogImagePreview.innerHTML =
-        '<p class="text-xs text-gray-400 text-center">Preview will appear here</p>';
+      const p = document.createElement("p");
+      p.className = "text-xs text-gray-400 text-center";
+      p.textContent = "Preview will appear here";
+      ogImagePreview.appendChild(p);
     }
   });
 

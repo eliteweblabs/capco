@@ -45,6 +45,10 @@ export default defineConfig({
     ...(process.env.NODE_ENV === "development" && {
       allowedHosts: ["capco-fire-dev.loca.lt", ".loca.lt"],
     }),
+    // When using Browsersync (page at localhost:3000), HMR client must connect to Astro dev server (4321).
+    // Set DISABLE_HMR=1 when using dev:sync if you prefer Browsersync full-page reload only (no WebSocket).
+    hmr:
+      process.env.DISABLE_HMR === "1" ? false : { host: "localhost", port: 4321, clientPort: 4321 },
   },
   // Ensure proper CI building
   vite: {
@@ -54,12 +58,7 @@ export default defineConfig({
       target: "es2018",
     },
     optimizeDeps: {
-      include: [
-        "@floating-ui/dom",
-        "@supabase/supabase-js",
-        "libphonenumber-js",
-        "typeit",
-      ],
+      include: ["@floating-ui/dom", "@supabase/supabase-js", "libphonenumber-js", "typeit"],
       // Avoid 504 Outdated Optimize Dep in dev by re-optimizing when deps change
       ...(process.env.NODE_ENV === "development" && { force: true }),
     },

@@ -202,6 +202,14 @@ export function createMultiStepFormHandler(
       } else {
         currentActiveStep.classList.add("completed");
         currentActiveStep.classList.remove("active", "sliding-out-up", "sliding-out-down");
+        // Clear cascade transition delays from typewriter-complete so completed input-wrappers collapse together (not staggered by index)
+        currentActiveStep
+          .querySelectorAll(
+            ".input-wrapper, .inline-address-search-wrapper, textarea, button, a"
+          )
+          .forEach((el) => {
+            (el as HTMLElement).style.transitionDelay = "";
+          });
       }
 
       const buttons = currentActiveStep.querySelectorAll("button");

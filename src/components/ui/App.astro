@@ -153,7 +153,6 @@ import UnifiedNotification from "./UnifiedNotification.astro";
 import CookieBanner from "../common/CookieBanner.astro";
 import Navbar from "./Navbar.astro";
 import Aside from "./Aside.astro";
-import ScrollProgressIndicator from "./ScrollProgressIndicator.astro";
 import TutorialOverlay from "../common/TutorialOverlay.astro";
 import DebugPanel from "../common/DebugPanel.astro";
 import FeedbackPanel from "../common/FeedbackPanel.astro";
@@ -858,9 +857,15 @@ const debugData = {
     />
 
     <div id="page" class="min-w-0 overflow-x-hidden" data-template={dataTemplate}
-    style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain; touch-action: pan-x;' : ''}`}
+    style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain;' : ''}`}
+    
     >
-      <Aside
+    
+    
+    
+    <!-- 'overscroll-behavior-y: contain; touch-action: pan-x;'  -->
+    
+    <Aside
         {globalIconButtonClasses}
         {currentUser}
         {globalInputClasses}
@@ -877,7 +882,7 @@ const debugData = {
           dataTemplate === "default" ? "pt-20 min-h-[calc(100dvh-5rem)] max-sm:min-h-0" : "",
           mainClasses,
           fullscreenScroll && "flex flex-col min-h-0",
-          centerContent ? "px-8 md:px-12 lg:px-16 xl:px-20" : "",
+          centerContent ? "" : "",
         ]}
         style={currentUser ? "transition: margin-left 300ms ease-in-out;" : undefined}
       >
@@ -903,9 +908,24 @@ const debugData = {
         <FeedbackPanel {currentUser} />
 
           <!-- Footer (wrapped in shrink-0 when fullscreenScroll so it stays visible at bottom) -->
-    {
-      fullscreenScroll ? (
-        <div class="shrink-0">
+ 
+
+      </div>
+
+      {
+        fullscreenScroll ? (
+          <div class="shrink-0">
+            <Footer
+              {globalIconButtonClasses}
+              {globalCompanyName}
+              {isBackend}
+              {globalCompanyPhone}
+              {primaryTextClasses}
+              {secondaryTextClasses}
+              {globalInputClasses}
+            />
+          </div>
+        ) : (
           <Footer
             {globalIconButtonClasses}
             {globalCompanyName}
@@ -915,21 +935,8 @@ const debugData = {
             {secondaryTextClasses}
             {globalInputClasses}
           />
-        </div>
-      ) : (
-        <Footer
-          {globalIconButtonClasses}
-          {globalCompanyName}
-          {isBackend}
-          {globalCompanyPhone}
-          {primaryTextClasses}
-          {secondaryTextClasses}
-          {globalInputClasses}
-        />
-      )
-    }
-
-      </div>
+        )
+      }
     </div>
 
   
@@ -1413,6 +1420,10 @@ const debugData = {
         }
         const isTouch = "ontouchstart" in window;
         console.log("[AUTOFOCUS] focusing", { isTouch, preventScroll: false });
+        if (isTouch) {
+          first.scrollIntoView({ block: "center", behavior: "auto" });
+          console.log("[AUTOFOCUS] touch: scrolled input into view before focus");
+        }
         first.focus({ preventScroll: false });
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
@@ -1422,7 +1433,7 @@ const debugData = {
           });
         });
         if (isTouch) {
-          console.log("[AUTOFOCUS] touch device: scheduling focus at 50ms and 300ms");
+          console.log("[AUTOFOCUS] touch device: scheduling focus at 50ms, 300ms, 500ms (mobile keypad)");
           setTimeout(() => {
             first.focus({ preventScroll: false });
             console.log("[AUTOFOCUS] touch focus 50ms", { activeElementIsFirst: document.activeElement === first });
@@ -1431,6 +1442,10 @@ const debugData = {
             first.focus({ preventScroll: false });
             console.log("[AUTOFOCUS] touch focus 300ms", { activeElementIsFirst: document.activeElement === first });
           }, 300);
+          setTimeout(() => {
+            first.focus({ preventScroll: false });
+            console.log("[AUTOFOCUS] touch focus 500ms (iOS fallback)", { activeElementIsFirst: document.activeElement === first });
+          }, 500);
         }
         console.log("[AUTOFOCUS] done", { activeElement: document.activeElement?.tagName, activeId: (document.activeElement as HTMLElement)?.id });
         return true;
@@ -2635,16 +2650,14 @@ const debugData = {
             element.style.backfaceVisibility = "hidden";
           });
 
-          // Fix 2: Force repaint on scroll (lightweight - doesn't break scroll triggers)
+          // Fix 2: Force repaint on scroll without breaking fixed positioning (e.g. Flowbite dropdowns).
+          // Applying transform to body would create a new containing block and make Popper/fixed
+          // elements recalculate on scroll; use a reflow read instead.
           let scrollTimeout: number;
           const forceRepaint = () => {
             clearTimeout(scrollTimeout);
             scrollTimeout = window.setTimeout(() => {
-              // Trigger a minimal repaint without changing layout
-              document.body.style.transform = "translateZ(0)";
-              requestAnimationFrame(() => {
-                document.body.style.transform = "";
-              });
+              void document.body.offsetHeight; // Force reflow / repaint, no style change
             }, 100);
           };
 
@@ -2709,12 +2722,7 @@ const debugData = {
           const handleViewportChange = () => {
             const vh = window.innerHeight * 0.01;
             document.documentElement.style.setProperty("--vh", vh + "px");
-
-            // Force repaint on viewport change
-            document.body.style.transform = "translateZ(0)";
-            requestAnimationFrame(() => {
-              document.body.style.transform = "";
-            });
+            void document.body.offsetHeight; // Force reflow without breaking fixed positioning
           };
 
           window.addEventListener("resize", handleViewportChange);

@@ -56,9 +56,10 @@ const filteredBanners =
       })
     : banners;
 
-// Group banners by position
-const topBanners = filteredBanners.filter((b) => b.position === "top");
-const bottomBanners = filteredBanners.filter((b) => b.position === "bottom");
+// Group banners by position; only show banners that have content (avoid empty "space" from bad data)
+const hasContent = (b: { content?: string | null }) => (b.content ?? "").trim().length > 0;
+const topBanners = filteredBanners.filter((b) => b.position === "top" && hasContent(b));
+const bottomBanners = filteredBanners.filter((b) => b.position === "bottom" && hasContent(b));
 
 // Debug logging
 // console.log("[BannerAlertsLoader] Total banners:", banners.length);
@@ -103,13 +104,13 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
-    <div class={`banner-alerts-top flex flex-col ${width === "full" ? "w-full" : "inline-flex"} gap-1`} id="top-banner-container">
+    <div class={`z-50 banner-alerts-top flex flex-col ${width === "full" ? "w-full" : ""} gap-1`} id="top-banner-container">
       {topBanners.map((banner) => (
         <BannerAlert
           id={banner.id}
           type={banner.type}
           title=""
-          description={banner.content}
+          description={banner.content ?? ""}
           position="top"
           expireMs={banner.expireMs}
           dismissible={banner.dismissible}
@@ -153,7 +154,8 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
                 }
               });
 
-              console.log("[BannerAlertsLoader] Visible top banners:", bannerCount);
+              // Hide container when no visible banners so it doesn't leave empty space
+              topBannerContainer.style.display = bannerCount > 0 ? "" : "none";
 
               // Add smooth transition if not already present
               if (!mainContent.style.transition) {
@@ -163,8 +165,6 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
               // Calculate translateY based on banner count (40px per banner)
               const translateValue = bannerCount * 0;
               mainContent.style.transform = `translateY(${translateValue}px)`;
-              
-              console.log("[BannerAlertsLoader] Applied translateY:", translateValue + "px");
             };
 
             // Initial adjustment
@@ -210,7 +210,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
           id={banner.id}
           type={banner.type}
           title=""
-          description={banner.content}
+          description={banner.content ?? ""}
           position="bottom"
           expireMs={banner.expireMs}
           dismissible={banner.dismissible}
@@ -265,6 +265,9 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
                   visibleCount++;
                 }
               });
+
+              // Hide container when no visible banners so it doesn't leave empty space
+              bottomBannerContainer.style.display = visibleCount > 0 ? "" : "none";
 
               // Calculate height only if there are visible banners
               const bannerHeight = visibleCount > 0 ? bottomBannerContainer.offsetHeight : 0;

@@ -1,0 +1,240 @@
+---
+/**
+ * DotGrid – Canvas-based 1px dot grid for backgrounds and design.
+ * Each dot can be on, off, or any opacity (0–1) of the primary color.
+ * Use for: jumbotrons, preloaders, ripples, zoom effects.
+ *
+ * Optimized: single canvas, one Float32Array for opacities, no DOM per dot.
+ * API: setDot(col, row, opacity), setBaseOpacity(0–1), ripple(cx, cy, radius, intensity), setZoom(scale).
+ */
+interface Props {
+  /** Unique id for the canvas and for window[dotGridId] API (e.g. "dotGrid"). */
+  id?: string;
+  /** Grid spacing in px or CSS length (e.g. "32", "1rem"). Default 32. */
+  spacing?: string | number;
+  /** Dot diameter in px. Default 1. */
+  dotSize?: number;
+  /** Base opacity for all dots (0–1). Default 0.2. */
+  baseOpacity?: number;
+  /** CSS class for the wrapper (e.g. "absolute inset-0 -z-10"). */
+  class?: string;
+  /** Dot color: CSS variable name (e.g. "primary-500") or hex. Uses --color-{color} or raw. */
+  dotColor?: string;
+}
+
+const {
+  id = "dotGrid",
+  spacing = 32,
+  dotSize = 1,
+  baseOpacity = 0.2,
+  class: className = "",
+  dotColor = "primary-500",
+} = Astro.props;
+
+const spacingStr = typeof spacing === "number" ? String(spacing) : spacing;
+---
+
+<div
+  class={`dot-grid-wrapper ${className}`}
+  aria-hidden="true"
+  data-dot-grid-id={id}
+>
+  <canvas
+    id={id}
+    class="dot-grid-canvas block w-full h-full"
+    width="1"
+    height="1"
+    data-spacing={spacingStr}
+    data-dot-size={dotSize}
+    data-base-opacity={baseOpacity}
+    data-dot-color={dotColor}
+  />
+</div>
+
+<script define:vars={{ id, spacingStr, dotSize, baseOpacity, dotColor }}>
+  (function () {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+
+    let spacingPx = 32;
+    let baseOpacityValue = Math.max(0, Math.min(1, baseOpacity));
+    let colorHex = "";
+
+    function parseSpacing() {
+      const raw = canvas.getAttribute("data-spacing") || "32";
+      if (/^\d+(\.\d+)?$/.test(raw)) return Number(raw);
+      const rem = parseFloat(raw);
+      if (raw.endsWith("rem") && !Number.isNaN(rem)) {
+        const root = getComputedStyle(document.documentElement).fontSize;
+        const rootPx = parseFloat(root) || 16;
+        return rem * rootPx;
+      }
+      return 32;
+    }
+
+    function getColor() {
+      const key = canvas.getAttribute("data-dot-color") || "primary-500";
+      if (key.startsWith("#")) return key;
+      const varName = `--color-${key}`;
+      const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+      if (val) return val;
+      return getComputedStyle(document.documentElement).getPropertyValue("--color-primary-500").trim() || "#825BDD";
+    }
+
+    let cols = 0;
+    let rows = 0;
+    let opacities = null;
+    let zoom = 1;
+
+    function ensureBuffer() {
+      spacingPx = parseSpacing();
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      if (w <= 0 || h <= 0) return;
+      cols = Math.ceil(w / spacingPx) + 1;
+      rows = Math.ceil(h / spacingPx) + 1;
+      const len = cols * rows;
+      if (!opacities || opacities.length !== len) {
+        opacities = new Float32Array(len);
+        opacities.fill(baseOpacityValue);
+      }
+    }
+
+    function draw() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      if (w <= 0 || h <= 0) return;
+      ensureBuffer();
+      if (!opacities) return;
+
+      canvas.width = Math.ceil(w * dpr);
+      canvas.height = Math.ceil(h * dpr);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+
+      colorHex = getColor();
+      const size = Number(canvas.getAttribute("data-dot-size")) || 1;
+      const half = size / 2;
+
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+          const idx = j * cols + i;
+          const o = opacities[idx];
+          if (o <= 0) continue;
+          const x = i * spacingPx + spacingPx / 2;
+          const y = j * spacingPx + spacingPx / 2;
+          ctx.fillStyle = colorHex;
+          ctx.globalAlpha = o;
+          ctx.beginPath();
+          if (size <= 1) {
+            ctx.rect(x - 0.5, y - 0.5, 1, 1);
+          } else {
+            ctx.arc(x, y, half, 0, Math.PI * 2);
+          }
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function setDot(col, row, opacity) {
+      ensureBuffer();
+      if (!opacities) return;
+      if (col < 0 || col >= cols || row < 0 || row >= rows) return;
+      opacities[row * cols + col] = Math.max(0, Math.min(1, opacity));
+      draw();
+    }
+
+    function setBaseOpacity(o) {
+      baseOpacityValue = Math.max(0, Math.min(1, o));
+      ensureBuffer();
+      if (opacities) opacities.fill(baseOpacityValue);
+      draw();
+    }
+
+    function setAllOpacity(o) {
+      const v = Math.max(0, Math.min(1, o));
+      ensureBuffer();
+      if (opacities) opacities.fill(v);
+      draw();
+    }
+
+    function ripple(cx, cy, radius, intensity) {
+      ensureBuffer();
+      if (!opacities) return;
+      const sp = spacingPx;
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+          const x = i * sp + sp / 2;
+          const y = j * sp + sp / 2;
+          const d = Math.hypot(x - cx, y - cy);
+          if (d > radius) continue;
+          const falloff = 1 - d / radius;
+          const idx = j * cols + i;
+          const add = intensity * falloff * falloff;
+          opacities[idx] = Math.min(1, (opacities[idx] || baseOpacityValue) + add);
+        }
+      }
+      draw();
+    }
+
+    function decayRipples(amount) {
+      ensureBuffer();
+      if (!opacities) return;
+      for (let i = 0; i < opacities.length; i++) {
+        const o = opacities[i];
+        if (o <= baseOpacityValue) continue;
+        opacities[i] = Math.max(baseOpacityValue, o - amount);
+      }
+      draw();
+    }
+
+    function setZoom(scale) {
+      zoom = Math.max(0.1, scale);
+      draw();
+    }
+
+    const api = {
+      setDot,
+      setBaseOpacity,
+      setAllOpacity,
+      setDotOpacity: setDot,
+      ripple,
+      decayRipples,
+      setZoom,
+      draw,
+      get cols() {
+        ensureBuffer();
+        return cols;
+      },
+      get rows() {
+        ensureBuffer();
+        return rows;
+      },
+      get spacing() {
+        return spacingPx;
+      },
+    };
+
+    window[id] = api;
+
+    function resize() {
+      ensureBuffer();
+      draw();
+    }
+
+    new ResizeObserver(resize).observe(canvas);
+    if (typeof spacingStr === "string" && spacingStr.includes("rem")) {
+      setTimeout(resize, 0);
+    } else {
+      resize();
+    }
+
+    document.addEventListener("astro:page-load", resize);
+  })();
+</script>

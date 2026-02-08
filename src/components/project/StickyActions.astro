@@ -49,8 +49,8 @@ const isAdmin = currentUser?.profile?.role === "Admin";
 
 <!-- Teleported to portal in App.astro to avoid z-index stacking issues -->{
   !isAuthPageResult && !isContactPageResult && (
-    <>
-      <div class="fixed bottom-0 z-50 w-full -translate-x-1/2 left-1/2">
+    <div class="pb-[env(safe-area-inset-bottom)]">
+      <div class="fixed bottom-0 z-50 w-full -translate-x-1/2 left-1/2 pb-[env(safe-area-inset-bottom)]">
         <div class="grid h-full max-w-lg grid-cols-6 mx-auto">
           {/* <button
             data-tooltip-target="tooltip-document"
@@ -169,182 +169,26 @@ const isAdmin = currentUser?.profile?.role === "Admin";
             </button>
           </div> */}
           <slot />
+
+          {isAdmin ? (
+            <AdminVoiceAssistantWidget
+              currentUser={currentUser}
+              globalCompanyPhone={globalCompanyPhone}
+            />
+          ) : (
+            <SpeedDial
+              {globalCompanyPhone}
+              currentUser={currentUser || undefined}
+              {isBackend}
+              {primaryTextClasses}
+              {secondaryTextClasses}
+              {globalInputClasses}
+              {globalCompanyName}
+            />
+          )}
         </div>
       </div>
-
-      {/* <div class="hidden shadow-primary-md transition-opacity duration-200 rounded-l-full backdrop-blur-md fixed bottom-0 z-50 w-full h-16 -translate-x-1/2 left-1/2  pb-[env(safe-area-inset-bottom)]">
-        <div class="grid h-full max-w-lg grid-cols-6 mx-auto">
-          <Tooltip text="New document" position="top">
-            <button
-              type="button"
-              class="inline-flex flex-col items-center justify-center px-5 hover:bg-neutral-secondary-medium group"
-            >
-              <svg
-                class="w-6 h-6 mb-1 text-body group-hover:text-fg-brand"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M18 9V4a1 1 0 0 0-1-1H8.914a1 1 0 0 0-.707.293L4.293 7.207A1 1 0 0 0 4 7.914V20a1 1 0 0 0 1 1h4M9 3v4a1 1 0 0 1-1 1H4m11 6v4m-2-2h4m3 0a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z"
-                />
-              </svg>
-              <span class="sr-only">New document</span>
-            </button>
-          </Tooltip>
-          <Tooltip text="Bookmark" position="left">
-            <button
-              type="button"
-              class="inline-flex flex-col items-center justify-center px-5 hover:bg-neutral-secondary-medium group"
-            >
-              <svg
-                class="w-6 h-6 mb-1 text-body group-hover:text-fg-brand"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="m17 21-5-4-5 4V3.889a.92.92 0 0 1 .244-.629.808.808 0 0 1 .59-.26h8.333a.81.81 0 0 1 .589.26.92.92 0 0 1 .244.63V21Z"
-                />
-              </svg>
-              <span class="sr-only">Bookmark</span>
-            </button>
-          </Tooltip>
-          <div class="hidden sm:flex items-center justify-center col-span-2">
-            <div class="flex items-center justify-between w-full text-body bg-neutral-secondary-medium rounded-base border border-default-medium max-w-[128px] mx-2">
-              <button
-                type="button"
-                class="inline-flex items-center justify-center h-8 px-1 w-6 rounded-s-base hover:bg-neutral-tertiary-medium focus:outline-none focus:ring-2 focus:ring-neutral-quaternary"
-              >
-                <svg
-                  class="w-3.5 h-3.5 rtl:rotate-180"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="m15 19-7-7 7-7"
-                  />
-                </svg>
-                <span class="sr-only">Previous page</span>
-              </button>
-              <span class="shrink-0 mx-1 text-sm font-medium space-x-0.5 rtl:space-x-reverse">
-                1 of 34
-              </span>
-              <button
-                type="button"
-                class="inline-flex items-center justify-center h-8 px-1 w-6 rounded-e-base hover:bg-neutral-tertiary-medium focus:outline-none focus:ring-2 focus:ring-neutral-quaternary"
-              >
-                <svg
-                  class="w-3.5 h-3.5 rtl:rotate-180"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="m9 5 7 7-7 7"
-                  />
-                </svg>
-                <span class="sr-only">Next page</span>
-              </button>
-            </div>
-          </div>
-          <Tooltip text="Settings" position="top">
-            <button
-              type="button"
-              class="inline-flex flex-col items-center justify-center px-5 hover:bg-neutral-secondary-medium group"
-            >
-              <svg
-                class="w-6 h-6 mb-1 text-body group-hover:text-fg-brand"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-width="2"
-                  d="M6 4v10m0 0a2 2 0 1 0 0 4m0-4a2 2 0 1 1 0 4m0 0v2m6-16v2m0 0a2 2 0 1 0 0 4m0-4a2 2 0 1 1 0 4m0 0v10m6-16v10m0 0a2 2 0 1 0 0 4m0-4a2 2 0 1 1 0 4m0 0v2"
-                />
-              </svg>
-              <span class="sr-only">Settings</span>
-            </button>
-          </Tooltip>
-          <Tooltip text="Profile" position="top">
-            <button
-              type="button"
-              class="inline-flex flex-col items-center justify-center px-5 hover:bg-neutral-secondary-medium group"
-            >
-              <svg
-                class="w-6 h-6 mb-1 text-body group-hover:text-fg-brand"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0a8.949 8.949 0 0 0 4.951-1.488A3.987 3.987 0 0 0 13 16h-2a3.987 3.987 0 0 0-3.951 3.512A8.948 8.948 0 0 0 12 21Zm3-11a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                />
-              </svg>
-              <span class="sr-only">Profile</span>
-            </button>
-          </Tooltip>
-        </div> */}
-
-      {isAdmin ? (
-        <AdminVoiceAssistantWidget
-          currentUser={currentUser}
-          globalCompanyPhone={globalCompanyPhone}
-        />
-      ) : (
-        <SpeedDial
-          {globalCompanyPhone}
-          currentUser={currentUser || undefined}
-          {isBackend}
-          {primaryTextClasses}
-          {secondaryTextClasses}
-          {globalInputClasses}
-          {globalCompanyName}
-        />
-      )}
-    </>
+    </div>
   )
 }
 

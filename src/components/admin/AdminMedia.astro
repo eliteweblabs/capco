@@ -22,6 +22,7 @@ const { currentUser, supabase, globalInputClasses = "" } = Astro.props;
 let projectFiles: any[] = [];
 let globalFiles: any[] = [];
 let storageFiles: any[] = [];
+let rootFileList: any[] = [];
 let error: string | null = null;
 
 try {
@@ -119,7 +120,8 @@ try {
     if (rootError) {
       console.error("❌ [ADMIN-MEDIA] Error listing root files:", rootError);
     } else {
-      console.log(`📦 [ADMIN-MEDIA] Found ${rootFiles?.length || 0} items in storage root`);
+      rootFileList = rootFiles || [];
+      console.log(`📦 [ADMIN-MEDIA] Found ${rootFileList.length} items in storage root`);
     }
 
     // List global folder files
@@ -143,6 +145,89 @@ try {
 } catch (fetchError) {
   console.error("❌ [ADMIN-MEDIA] Error fetching media:", fetchError);
   error = "Failed to fetch media files";
+}
+
+// Screen media: delete DB records that point to missing storage files (orphans)
+if (supabaseAdmin && !error) {
+  try {
+    const bucket = "project-media";
+    const existingPaths = new Set<string>();
+
+    // Root-level files
+    const rootList = rootFileList || [];
+    for (const item of rootList) {
+      if (item.name && item.name !== ".emptyFolderPlaceholder") {
+        existingPaths.add(item.name);
+      }
+    }
+    // Global folder (we already have storageFiles)
+    for (const f of storageFiles) {
+      if (f.name) existingPaths.add(`global/${f.name}`);
+    }
+
+    // Fetch all project-media file paths from DB to find orphans and to list project folders
+    const { data: allFilesForScreen } = await supabaseAdmin
+      .from("files")
+      .select("id, filePath")
+      .eq("bucketName", bucket)
+      .limit(1000);
+
+    const dbPaths = (allFilesForScreen || []).map((r: any) => r.filePath || r.file_path).filter(Boolean) as string[];
+    const uniqueParents = new Set<string>();
+    for (const p of dbPaths) {
+      const parts = p.split("/");
+      if (parts.length > 1) {
+        uniqueParents.add(parts.slice(0, -1).join("/"));
+      }
+    }
+    const parents = Array.from(uniqueParents).slice(0, 80);
+    for (const parent of parents) {
+      const { data: folderList } = await supabaseAdmin.storage.from(bucket).list(parent, { limit: 500 });
+      const list = folderList || [];
+      for (const item of list) {
+        if (item.name && item.name !== ".emptyFolderPlaceholder") {
+          const fullPath = parent ? `${parent}/${item.name}` : item.name;
+          existingPaths.add(fullPath);
+        }
+      }
+    }
+
+    // Delete orphaned rows in files (project-media)
+    const orphanFileIds = (allFilesForScreen || [])
+      .filter((r: any) => {
+        const path = r.filePath || r.file_path;
+        return path && !existingPaths.has(path);
+      })
+      .map((r: any) => r.id);
+    if (orphanFileIds.length > 0) {
+      const { error: delErr } = await supabaseAdmin.from("files").delete().in("id", orphanFileIds);
+      if (delErr) console.error("❌ [ADMIN-MEDIA] Error deleting orphaned files:", delErr);
+      else console.log(`🗑️ [ADMIN-MEDIA] Deleted ${orphanFileIds.length} orphaned file record(s) from files`);
+      projectFiles = projectFiles.filter((f: any) => !orphanFileIds.includes(f.id));
+    }
+
+    // Delete orphaned rows in filesGlobal (path must exist in global/ in storage)
+    const globalPathSet = new Set(storageFiles.map((f: any) => (f.name ? `global/${f.name}` : "")).filter(Boolean));
+    const orphanGlobalIds = globalFiles
+      .filter((f: any) => {
+        const path = f.filePath || f.file_path || (f.fileName || f.file_name || f.name ? `global/${f.fileName || f.file_name || f.name}` : null);
+        return path && !globalPathSet.has(path);
+      })
+      .map((f: any) => f.id);
+    if (orphanGlobalIds.length > 0) {
+      const { error: delErr } = await supabaseAdmin.from("filesGlobal").delete().in("id", orphanGlobalIds);
+      if (delErr) {
+        const res2 = await supabaseAdmin.from("files_global").delete().in("id", orphanGlobalIds);
+        if (res2.error) console.error("❌ [ADMIN-MEDIA] Error deleting orphaned global file records:", delErr);
+        else console.log(`🗑️ [ADMIN-MEDIA] Deleted ${orphanGlobalIds.length} orphaned record(s) from files_global`);
+      } else {
+        console.log(`🗑️ [ADMIN-MEDIA] Deleted ${orphanGlobalIds.length} orphaned record(s) from filesGlobal`);
+      }
+      globalFiles = globalFiles.filter((f: any) => !orphanGlobalIds.includes(f.id));
+    }
+  } catch (screenErr) {
+    console.warn("⚠️ [ADMIN-MEDIA] Screening/orphan cleanup failed (non-fatal):", screenErr);
+  }
 }
 
 // Helper function to get filePath regardless of naming convention (camelCase or snake_case)

@@ -293,9 +293,9 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
         />
       )}
 
-      {/* Content Overlay - fills parent, vertically centered */}
+      {/* Content Overlay - fills parent, vertically centered. pointer-events: none on container so iOS Safari can scroll past hero; only buttons/links are clickable. */}
       {hasOverlayContent && (
-        <div class="absolute inset-0 z-10 flex items-center justify-center">
+        <div class="image-slider-overlay absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <div class="mx-auto max-w-4xl w-full px-4 sm:px-6 lg:px-8 text-center">
             {title && (
               <h1 class="md:text-6xl sm:text-4xl text-3xl font-bold text-white drop-shadow-lg">
@@ -359,13 +359,9 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
     height: 100%;
   }
 
-  /* Ensure overlay content is clickable */
-  .image-slider-container .z-10 {
-    pointer-events: auto;
-  }
-
-  .image-slider-container .z-10 a,
-  .image-slider-container .z-10 button {
+  /* Overlay is pointer-events: none so touch scroll passes through on iOS; only interactive elements receive clicks */
+  .image-slider-container .image-slider-overlay a,
+  .image-slider-container .image-slider-overlay button {
     pointer-events: auto;
   }
 
