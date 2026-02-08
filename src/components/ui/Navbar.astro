@@ -6,7 +6,7 @@ import ToggleSidebar from "./ToggleSidebar.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
-
+import Tooltip from "../common/TooltipFloating.astro";
 interface Props {
   currentUser?: any;
   session?: any;
@@ -19,6 +19,8 @@ interface Props {
   globalIconButtonClasses?: string;
   /** Current pathname for banner alert page targeting */
   pathname?: string;
+  /** Page template (layout) for tooltip: default | fullwidth | minimal | centered | fullscreen */
+  template?: string;
 }
 
 const {
@@ -31,14 +33,19 @@ const {
   project,
   globalIconButtonClasses,
   pathname,
+  template = "default",
 } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 ---
 
-<nav id="main-navbar" class="z-1 fixed left-0 right-4" style="top: max(1rem, env(safe-area-inset-top, 0px)); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden;">
+<nav
+  id="main-navbar"
+  class="z-1 fixed left-0 right-0"
+  style="top: max(0rem, env(safe-area-inset-top, 0px)); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden;"
+>
   <!-- Main Navbar Content -->
   <div
-    class="color-background flex gap-1 py-3 h-16 min-w-0 justify-between shadow-primary-md transition-opacity duration-200 rounded-r-full px-4"
+    class="color-background flex gap-1 py-3 h-16 min-w-0 justify-between shadow-primary-md transition-opacity duration-200 px-4"
   >
     <div class="flex items-center flex-shrink-0 gap-1 min-w-0">
       <ToggleSidebar {currentUser} />
@@ -58,6 +65,9 @@ const currentRole = currentUser?.profile?.role;
     }
 
     <div class="flex items-center gap-2 flex-shrink-0">
+      <Tooltip text={`Page template: ${template}`} position="top" mobileClickable={true}>
+        <SimpleIcon name="info-circle" size="sm" class="opacity-70" />
+      </Tooltip>
       <ThemeToggle {globalIconButtonClasses} />
 
       {

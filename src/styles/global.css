@@ -6,7 +6,6 @@
   --color-background: 255, 255, 255;
   --color-border: 229, 231, 235;
   --color-border-dark: 52, 52, 52;
-  --preloader-dot-primary: var(--color-primary-500);
 }
 
 /* Custom base styles */
@@ -31,6 +30,7 @@ body {
   }
   /* Keep main navbar in its own compositing layer so it doesn’t slide with over-scroll */
   #main-navbar {
+    top: 1rem; /* fallback for older Safari that don’t support max() */
     top: max(1rem, env(safe-area-inset-top, 0px));
     transform: translateZ(0);
     -webkit-backface-visibility: hidden;
@@ -39,32 +39,64 @@ body {
   }
 }
 
-/* Center-content layout on mobile: no page scroll, only main/panels scroll */
+/* Mobile: single scroll container to avoid double scroll (html + body) in iOS/Chrome */
+@media (max-width: 767px) {
+  html {
+    overflow-y: hidden;
+    height: 100vh;
+    height: 100dvh;
+  }
+  body:not(.layout-centered) {
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Center-content layout: fill viewport and center main content (all viewports).
+   Fallback 100vh for older Safari (e.g. iPad) that don't support dvh. */
+body.layout-centered {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+body.layout-centered #page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+body.layout-centered #main-content {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+body.layout-centered #main-content main {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Center-content on mobile: single scroll container (main scrolls, no body scroll) */
 @media (max-width: 767px) {
   body.layout-centered {
-    min-height: 100dvh;
+    height: 100vh;
     height: 100dvh;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
   }
   body.layout-centered #page {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
     overflow: hidden;
   }
   body.layout-centered #main-content {
-    min-height: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
   }
   body.layout-centered #main-content main {
-    min-height: 0;
-    flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -72,7 +104,6 @@ body {
 
 .dark {
   color: #ffffff;
-  --preloader-dot-primary: var(--color-primary-400);
 }
 
 html.dark {
@@ -577,6 +608,7 @@ input:focus {
 
 /* Prevent tooltips from causing horizontal overflow on mobile (Safari overscroll) */
 .tooltip-content {
+  max-width: 22rem; /* fallback for older Safari that don’t support min() */
   max-width: min(22rem, calc(100vw - 1rem));
 }
 @media (max-width: 480px) {
@@ -1596,79 +1628,6 @@ a[aria-disabled="true"] {
 }
 .loading-spinner-text .hop-3 {
   animation-delay: 300ms;
-}
-
-/* Dot grid gradient mask: soft edges so grid is less bright/interfering around content.
-   Uses radial-gradient mask on #preloader-dot-grid when body has mask-center etc.
-   --preloader-mask-radius: gradient fade end (default 70%); 100% = full viewport. */
-:root {
-  --preloader-mask-radius: 70%;
-}
-
-body.layout-centered #preloader-dot-grid,
-body.mask-center #preloader-dot-grid {
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 50%,
-    black 0%,
-    transparent var(--preloader-mask-radius, 70%)
-  );
-  mask-image: radial-gradient(
-    circle at 50% 50%,
-    black 0%,
-    transparent var(--preloader-mask-radius, 70%)
-  );
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
-
-body.mask-top-left #preloader-dot-grid {
-  -webkit-mask-image: radial-gradient(
-    circle at 30% 30%,
-    black 0%,
-    transparent var(--preloader-mask-radius, 85%)
-  );
-  mask-image: radial-gradient(
-    circle at 30% 30%,
-    black 0%,
-    transparent var(--preloader-mask-radius, 85%)
-  );
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
-
-body.mask-top-right #preloader-dot-grid {
-  -webkit-mask-image: radial-gradient(
-    circle at 70% 30%,
-    black 0%,
-    transparent var(--preloader-mask-radius, 85%)
-  );
-  mask-image: radial-gradient(
-    circle at 70% 30%,
-    black 0%,
-    transparent var(--preloader-mask-radius, 85%)
-  );
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
-
-/* When dot animation completes, expand mask to 100% (set via data-mask-full on grid) */
-body.layout-centered #preloader-dot-grid[data-mask-full],
-body.mask-center #preloader-dot-grid[data-mask-full],
-body.mask-top-left #preloader-dot-grid[data-mask-full],
-body.mask-top-right #preloader-dot-grid[data-mask-full] {
-  --preloader-mask-radius: 100%;
 }
 
 /* =============================================================================

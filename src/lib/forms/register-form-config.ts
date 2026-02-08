@@ -55,7 +55,6 @@ export const registerFormConfig: MultiStepFormConfig = {
           placeholder: DEFAULT_EMAIL_PLACEHOLDERS[0],
           animatedPlaceholders: DEFAULT_EMAIL_PLACEHOLDERS,
           animatedPlaceholderAlignment: "left",
-
           required: true,
           autocomplete: "email",
           errorMessage: "Please enter a valid email address",
@@ -66,7 +65,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "to login",
+          label: "login",
           variant: "anchor",
           href: "/auth/login",
         },
@@ -92,6 +91,7 @@ export const registerFormConfig: MultiStepFormConfig = {
           type: "text",
           placeholder: FULL_NAME_PLACEHOLDERS[0],
           animatedPlaceholders: FULL_NAME_PLACEHOLDERS,
+          animatedPlaceholderAlignment: "left",
           required: true,
           autocomplete: "name",
           errorMessage: "Please enter your full name",
@@ -125,6 +125,8 @@ export const registerFormConfig: MultiStepFormConfig = {
           name: "companyName",
           type: "text",
           placeholder: "Acme Corporation",
+          animatedPlaceholderAlignment: "left",
+
           required: true,
           autocomplete: "organization",
           errorMessage: "Please enter your company name",

@@ -31,15 +31,11 @@ export const FULL_NAME_PLACEHOLDERS = [
 // GLOBAL EMAIL PLACEHOLDER DEFAULTS - funny/generic rotating placeholders for email fields
 export const DEFAULT_EMAIL_PLACEHOLDERS = [
   "hello@example.com",
-  "definitely.not.spam@email.com",
-  "inbox.zero@impossible.com",
-  "reply.all@regrets.com",
-  "unsubscribe@never.works",
+  "spam@email.com",
+  "woops@replyall.com",
   "404@notfound.com",
   "no.reply@void.com",
   "you@company.com",
-  "professional.email@work.biz",
-  "sent.from.my.iphone@mobile.com",
 ];
 
 // GLOBAL BUTTON DEFAULTS - applies to ALL forms using MultiStepForm

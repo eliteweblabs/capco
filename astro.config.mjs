@@ -48,6 +48,11 @@ export default defineConfig({
   },
   // Ensure proper CI building
   vite: {
+    // Support older Safari (e.g. iPad Air on iOS 12) – transpile optional chaining (?.)
+    // and nullish coalescing (??) which require Safari 13.1+
+    build: {
+      target: "es2018",
+    },
     optimizeDeps: {
       include: [
         "@floating-ui/dom",

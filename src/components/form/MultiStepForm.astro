@@ -39,7 +39,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 }));
 ---
 
-<div data-multi-step-form class={containerClass} tabindex="-1">
+<div data-multi-step-form tabindex="-1">
   <form
     id={config.formId}
     action={config.formAction}
@@ -49,7 +49,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   >
     <!-- <div class="multi-step-form-spacer" aria-hidden="true"></div> -->
     <div
-      class:list={["multi-step-form-steps", initialCentered ? "centered" : "expand-down"]}
+      class:list={[
+        "multi-step-form-steps",
+        initialCentered ? "centered" : "expand-down",
+        containerClass,
+      ]}
       id={`${config.formId}-steps`}
       tabindex="-1"
     >
@@ -57,7 +61,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         config.steps.map((step) => (
           <div
             class:list={[
-              "step-content space-y-8 sm:space-y-8 md:space-y-10 lg:space-y-12", // leave mt-20 for tooltips
+              "step-content space-y-8 sm:space-y-8 md:space-y-10 lg:space-y-12 mb-6", // leave mt-20 for tooltips
               step.stepNumber === 1 ? "first-step" : "",
             ]}
             data-step={step.stepNumber}
@@ -68,14 +72,16 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {/* Step Header */}
 
             {step.title && (
-              <h2
-                class={`inline text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white ${
-                  step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
-                }`}
-                data-text={step.title}
-                set:html={step.title}
-                tabindex="-1"
-              />
+              <div class="step-title" tabindex="-1">
+                <h2
+                  class={`inline text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl ${
+                    step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
+                  }`}
+                  data-text={step.title}
+                  set:html={step.title}
+                  tabindex="-1"
+                />
+              </div>
             )}
             {step.subtitle && (
               <p
@@ -149,14 +155,16 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                   step.fieldLayout === "grid"
                     ? "grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6"
                     : "",
-                  step.response ? "ml-8" : "",
+                  step.response ? "sm:ml-8" : "",
                 ]}
                 tabindex="-1"
               >
                 {step.fields.map((field) => (
                   <div
                     class:list={[
-                      field.type === "hidden" ? "" : "input-wrapper w-full",
+                      field.type === "hidden"
+                        ? ""
+                        : "input-wrapper w-full text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl",
                       field.columns === 1 ? "md:col-span-2" : "",
                     ]}
                     data-conditional-field={field.conditional ? field.conditional.field : undefined}
@@ -282,7 +290,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         />
                         <span
                           class:list={[
-                            "animated-placeholder absolute left-0 top-0 flex items-center w-full h-full pointer-events-none text-gray-400 dark:text-gray-500",
+                            "animated-placeholder absolute left-0 top-0 flex items-center w-full h-full pointer-events-none text-black dark:text-white",
                             field.animatedPlaceholderAlignment === "left"
                               ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : "pl-3"}`
                               : field.animatedPlaceholderAlignment === "right"
@@ -427,7 +435,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 step.buttons.filter((b) => b.type !== "choice").length === 1
                   ? "justify-end"
                   : "justify-between",
-                step.response ? "ml-8" : "",
+                step.response ? "sm:ml-8" : "",
               ]}
             >
               {step.buttons
@@ -489,10 +497,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                       {/* Valid state icon (hidden by default, shown when valid; default check, override with button.validIcon e.g. "enter") */}
                       {btnConfig.iconPosition === "right" && (
                         <SimpleIcon
-                          name={button.validIcon ?? "check"}
-                          size={
-                            btnConfig.size === "lg" ? "lg" : btnConfig.size === "xl" ? "xl" : "md"
-                          }
+                          name={button.validIcon ?? "return"}
+                          size={btnConfig.size}
                           class="ml-2 icon-valid hidden"
                         />
                       )}
@@ -622,31 +628,28 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     top: 0;
     transform: translateX(-50%);
     min-height: 0;
-    /* max-height: 80vh; */
-    /* padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right)); */
+    /* max-height: calc(100vh - 5rem);
+    max-height: calc(100dvh - 5rem);
+    max-width: var(--multi-step-form-width, 42rem); */
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    overflow-y: scroll;
+
+    overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch;
-    /* transition: top 0.35s ease-out, bottom 0.35s ease-out; */
   }
 
   /* Expand down: top at 50dvh, panel grows downward until it would hit the limit */
   .multi-step-form-steps.expand-down {
-    top: 25dvh;
+    top: 26.5dvh;
     bottom: auto;
   }
 
   /* Expand up: bottom at 4rem, panel grows upward after hitting the limit */
   .multi-step-form-steps.expand-up {
     top: auto;
-    bottom: 8.25rem;
+    bottom: 26.5dvh;
   }
 
   /* Centered: when expandDown is false for current step, keep panel vertically centered */
@@ -662,13 +665,13 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   }
 
   /* Spacer grows/contracts with step content; height set by JS, clamped 60vh–80vh */
-  .multi-step-form-spacer {
+  /* .multi-step-form-spacer {
     min-height: 60vh;
     max-height: 80vh;
     height: 60vh;
     pointer-events: none;
     transition: height 0.35s ease-out;
-  }
+  } */
 
   /* Hide steps that are neither completed nor active so we don't scroll to blank content */
   .multi-step-form-steps .step-content:not(.completed):not(.active) {
@@ -676,11 +679,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   }
 
   /* Completed and active steps: block layout inside the wrapper */
-  .step-content.completed,
-  .step-content.active {
-    display: block;
-    opacity: 1;
-  }
 
   /* First step starts below cursor so it can slide up into view on load */
   .step-content.first-step {
@@ -826,6 +824,22 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     /* height: 0;
     transition: height 0.3s ease-in-out; */
     display: none;
+  }
+
+  /* When a panel is completed, collapse input wrapper width and align right */
+  .step-content.completed .input-wrapper,
+  .step-content.completed .inline-address-search-wrapper {
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    transition: width 0.3s ease-out, margin 0.3s ease-out;
+  }
+
+  .step-content.completed .input-wrapper input,
+  .step-content.completed .input-wrapper textarea,
+  .step-content.completed .inline-address-search-wrapper input {
+    width: auto;
+    min-width: 14ch;
   }
 
   /* ml-8 for response steps is applied via class in template (step.response) */
@@ -1911,55 +1925,4 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   });
 </script>
 
-<script>
-  // Inject icons into input wrappers using SimpleIcons
-  import { getIcon } from "../../lib/simple-icons";
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const inputWrappers = document.querySelectorAll(".input-with-icon[data-icon]");
-
-    inputWrappers.forEach((wrapper) => {
-      const iconName = wrapper.getAttribute("data-icon");
-      const isRightIcon = wrapper.classList.contains("icon-right");
-
-      if (iconName) {
-        // Get icon SVG with appropriate size and color
-        const iconSVG = getIcon(iconName, {
-          size: 20,
-          className: "text-gray-500 dark:text-gray-400",
-        });
-
-        // Create a temporary container to parse the SVG
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = iconSVG;
-        const svgElement = tempDiv.firstElementChild as SVGElement;
-
-        if (svgElement) {
-          // Position the SVG
-          svgElement.style.position = "absolute";
-          svgElement.style[isRightIcon ? "right" : "left"] = "1rem";
-          svgElement.style.top = "50%";
-          svgElement.style.transform = "translateY(-50%)";
-          svgElement.style.pointerEvents = "none";
-          svgElement.style.zIndex = "1";
-          svgElement.style.opacity = "0.5";
-          svgElement.style.transition = "opacity 0.3s ease";
-
-          // Add focus listener to increase opacity
-          const input = wrapper.querySelector("input");
-          if (input) {
-            input.addEventListener("focus", () => {
-              svgElement.style.opacity = "0.7";
-            });
-            input.addEventListener("blur", () => {
-              svgElement.style.opacity = "0.5";
-            });
-          }
-
-          // Insert the SVG into the wrapper
-          wrapper.appendChild(svgElement);
-        }
-      }
-    });
-  });
-</script>
+<!-- Input-with-icon icons are injected by global initInputWithIcon() in App.astro (DOMContentLoaded + astro:after-swap) -->

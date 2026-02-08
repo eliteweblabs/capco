@@ -27,16 +27,10 @@ interface Props {
   statusData?: any;
   statusOptions?: Array<{ value: string; label: string }>;
   mainClasses?: string;
-  /** Unified layout: default | fullwidth | minimal | centered | fullscreen. Drives centerContent, fullscreenScroll, fullWidthPage when set. */
+  /** Layout: default | fullwidth | minimal | centered | fullscreen. Drives centering and fullscreen scroll. */
   layout?: "default" | "fullwidth" | "minimal" | "centered" | "fullscreen";
-  /** @deprecated Prefer layout="centered" */
-  centerContent?: boolean;
   mask?: string;
   horizontalScroll?: boolean;
-  /** @deprecated Prefer layout="fullscreen" */
-  fullscreenScroll?: boolean;
-  /** @deprecated Prefer layout="fullwidth" for no preloader mask */
-  fullWidthPage?: boolean;
 }
 
 const {
@@ -49,25 +43,18 @@ const {
   statusData = undefined,
   mainClasses = "",
   layout = undefined,
-  centerContent: centerContentProp = false,
   mask = "center",
-  fullscreenScroll: fullscreenScrollProp = false,
   horizontalScroll = false,
-  fullWidthPage: fullWidthPageProp = undefined,
 } = Astro.props;
 
-// Derive layout behavior from unified layout prop or legacy booleans
-const centerContent = layout === "centered" || centerContentProp;
-const fullscreenScroll = layout === "fullscreen" || fullscreenScrollProp;
+// Derive layout behavior from layout prop only
+const centerContent = layout === "centered";
+const fullscreenScroll = layout === "fullscreen";
 const fullWidthPage =
-  layout === "fullwidth" || layout === "fullscreen" || layout === "centered"
-    ? true
-    : fullWidthPageProp;
+  layout === "fullwidth" || layout === "fullscreen" || layout === "centered";
 
-// Effective template for data-template (layout prop or inferred from booleans)
-const dataTemplate =
-  layout ??
-  (centerContent ? "centered" : fullscreenScroll ? "fullscreen" : fullWidthPage ? "fullwidth" : "default");
+// Effective template for data-template
+const dataTemplate = layout ?? "default";
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
 const {
@@ -139,12 +126,10 @@ const navigationData = await navigation(
   isBackend || false
 );
 const { desktopNavigationHTML, mobileNavigationHTML, visibleNavItems } = navigationData;
-const usePreloaderMask = fullWidthPage === undefined ? !isBackend : !fullWidthPage;
-
 import { ClientRouter } from "astro:transitions";
 import { generateColorPalette } from "@/lib/color-utils";
 
-// Server-rendered critical CMS colors so preloader and first paint use DB colors before any script runs
+// Server-rendered critical CMS colors so first paint uses DB colors before any script runs
 const primaryPalette = generateColorPalette(primaryColor || "#825BDD");
 const secondaryPalette = generateColorPalette(secondaryColor || "#0ea5e9");
 const criticalColorVars = [
@@ -163,7 +148,6 @@ import Modal from "../ui/Modal.astro";
 import CloseButton from "../ui/CloseButton.astro";
 import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
-import Preloader from "../common/Preloader.astro";
 import Footer from "./Footer.astro";
 import UnifiedNotification from "./UnifiedNotification.astro";
 import CookieBanner from "../common/CookieBanner.astro";
@@ -301,9 +285,20 @@ const debugData = {
       // Page size preference (larger elements for mobile/accessibility)
       const pageSize = localStorage.getItem("page-size") || "normal";
       document.documentElement.setAttribute("data-page-size", pageSize);
+
+      // Legacy Safari/iPad: detect older iOS Safari (pre–13.4) for graceful degradation
+      (function () {
+        var ua = navigator.userAgent;
+        var isIOS = /iPad|iPhone|iPod/.test(ua);
+        var versionMatch = ua.match(/Version\/(\d+)/);
+        var major = versionMatch ? parseInt(versionMatch[1], 10) : 0;
+        if (isIOS && major > 0 && major < 14) {
+          window.__legacySafari = true;
+        }
+      })();
     </script>
 
-    <!-- Critical CMS colors (server-rendered) so preloader and first paint use DB colors before any script -->
+    <!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
     <style is:global set:html={criticalColorsCss} />
 
     <!-- Dynamic Color & Font Injection - MUST run BEFORE CSS is parsed to prevent flash -->
@@ -702,7 +697,7 @@ const debugData = {
 
     <!-- Set global user data for client-side components -->
 
-    <!-- SPA: persist CMS colors for re-apply after client navigation (avoids wrong preloader color on swap) -->
+    <!-- SPA: persist CMS colors for re-apply after client navigation -->
     {isBackend && (
       <>
         <script id="cms-colors" type="application/json" set:html={JSON.stringify({
@@ -760,9 +755,7 @@ const debugData = {
 
   <body
     class:list={[
-      "preloading",
       "antialiased",
-      usePreloaderMask && `mask-${mask.trim()}`,
       fullscreenScroll && "min-h-dvh flex flex-col",
       centerContent && "layout-centered",
     ]}
@@ -770,9 +763,6 @@ const debugData = {
     data-spa-enabled={isBackend ? "true" : undefined}
     data-spa-path={isBackend ? currentUrl : undefined}
   >
-
-    <!-- Preloader: dot grid (optimized, low-dot count). Removes body.preloading and #page hidden when ready. -->
-    <Preloader />
 
     <!-- Global Modal Overlay - Single instance used by all modals -->
     <Modal id="global-backdrop" zIndex={1000} blurAmount="lg" opacity="50" />
@@ -848,7 +838,7 @@ const debugData = {
       </script>
     )}
 
-    <ScrollProgressIndicator />
+    <!-- <ScrollProgressIndicator /> -->
 
     <!-- Unified Notification System -->
     <UnifiedNotification />
@@ -864,9 +854,10 @@ const debugData = {
       {isBackend}
       {project}
       pathname={Astro.url.pathname}
+      template={dataTemplate}
     />
 
-    <div id="page" class="min-w-0 overflow-x-hidden" hidden data-template={dataTemplate}
+    <div id="page" class="min-w-0 overflow-x-hidden" data-template={dataTemplate}
     style={`transition: all 300ms ease-in-out; ${centerContent ? 'overscroll-behavior-y: contain; touch-action: pan-x;' : ''}`}
     >
       <Aside
@@ -883,6 +874,7 @@ const debugData = {
         class:list={[
           "flex-1 min-w-0",
           currentUser ? "sm:ml-16" : "",
+          dataTemplate === "default" ? "pt-20 min-h-[calc(100dvh-5rem)] max-sm:min-h-0" : "",
           mainClasses,
           fullscreenScroll && "flex flex-col min-h-0",
           centerContent ? "px-8 md:px-12 lg:px-16 xl:px-20" : "",
@@ -893,9 +885,9 @@ const debugData = {
           class:list={[
             "flex-1 relative",
             horizontalScroll && "overflow-x-auto no-scrollbar",
-            fullscreenScroll
-              ? "min-h-0 overflow-y-auto overscroll-contain"
-              : "min-h-[calc(100dvh)]",
+            // fullscreenScroll
+            //   ? "min-h-0 overflow-y-auto overscroll-contain"
+            //   : "min-h-[calc(100dvh)]",
             centerContent ? "flex items-center justify-center" : "",
           ]}
         >
@@ -909,10 +901,8 @@ const debugData = {
         <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
         <DebugPanel {debugData} {currentRole} />
         <FeedbackPanel {currentUser} />
-      </div>
-    </div>
 
-    <!-- Footer (wrapped in shrink-0 when fullscreenScroll so it stays visible at bottom) -->
+          <!-- Footer (wrapped in shrink-0 when fullscreenScroll so it stays visible at bottom) -->
     {
       fullscreenScroll ? (
         <div class="shrink-0">
@@ -939,6 +929,10 @@ const debugData = {
       )
     }
 
+      </div>
+    </div>
+
+  
     <!-- Global Sticky Actions Portal Container -->
     <!-- All StickyActions buttons will be teleported here to avoid z-index stacking context issues -->
     <div
@@ -1037,10 +1031,12 @@ const debugData = {
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
 
     <script>
+      import { getIcon } from "../../lib/simple-icons";
       declare global {
         interface Window {
           // Global functions and utilities (alphabetized)
           acceptProposal?: () => void;
+          initInputWithIcon?: (root?: Document | Element) => void;
           addNewLineItem?: () => void;
           camelToProper?: (str: string) => string;
           clipboardData?: any;
@@ -1438,6 +1434,46 @@ const debugData = {
         }
         console.log("[AUTOFOCUS] done", { activeElement: document.activeElement?.tagName, activeId: (document.activeElement as HTMLElement)?.id });
         return true;
+      };
+
+      /**
+       * Injects SimpleIcons into elements with class .input-with-icon and data-icon="name".
+       * Call with no args to run on the whole document, or pass a container to scope (e.g. after dynamic content).
+       */
+      (window as any).initInputWithIcon = function (root?: Document | Element) {
+        const scope = root || document;
+        const inputWrappers = scope.querySelectorAll(".input-with-icon[data-icon]");
+        inputWrappers.forEach((wrapper) => {
+          const iconName = wrapper.getAttribute("data-icon");
+          if (!iconName) return;
+          const iconSVG = getIcon(iconName, {
+            size: 28,
+            className: "text-black dark:text-white",
+          });
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = iconSVG;
+          const svgElement = tempDiv.firstElementChild as SVGElement;
+          if (!svgElement) return;
+          svgElement.style.position = "absolute";
+          svgElement.style.left = "calc(1rem - 5px)";
+          svgElement.style.right = "";
+          svgElement.style.top = "50%";
+          svgElement.style.transform = "translateY(-50%)";
+          svgElement.style.pointerEvents = "none";
+          svgElement.style.zIndex = "1";
+          svgElement.style.opacity = "0.5";
+          svgElement.style.transition = "opacity 0.3s ease";
+          const input = wrapper.querySelector("input");
+          if (input) {
+            input.addEventListener("focus", () => {
+              svgElement.style.opacity = "0.7";
+            });
+            input.addEventListener("blur", () => {
+              svgElement.style.opacity = "0.5";
+            });
+          }
+          wrapper.appendChild(svgElement);
+        });
       };
 
       (window as any).hideOnFormFocus = function () {
@@ -2135,6 +2171,14 @@ const debugData = {
               title: "SMS Error",
               message: "An unexpected error occurred while sending SMS.",
             },
+            bad_oauth_state: {
+              title: "Sign-in link expired",
+              message: "The sign-in link has expired. Please try again from the login page.",
+            },
+            invalid_request: {
+              title: "Request expired",
+              message: "The request has expired or is invalid. Please try again.",
+            },
             default: { title: "Error", message: "An error occurred. Please try again." },
           },
           // Success notifications
@@ -2200,17 +2244,25 @@ const debugData = {
       (window as any).processUrlNotifications = function () {
         const urlParams = new URLSearchParams(window.location.search);
         const errorParam = urlParams.get("error");
+        const errorCode = urlParams.get("error_code");
         const successParam = urlParams.get("success");
         const messageParam = urlParams.get("message");
 
         if (errorParam) {
-          console.log("🔔 [URL-NOTIFICATION] Processing error parameter:", errorParam);
-          (window as any).handleUrlNotification("error", errorParam);
+          // Map OAuth error=invalid_request&error_code=bad_oauth_state to toast
+          const errorKey =
+            errorParam === "invalid_request" && errorCode === "bad_oauth_state"
+              ? "bad_oauth_state"
+              : errorParam;
+          console.log("🔔 [URL-NOTIFICATION] Processing error parameter:", errorKey);
+          (window as any).handleUrlNotification("error", errorKey);
 
-          // Clean up URL by removing the error parameter - DELAYED to allow modal to render
+          // Clean up URL by removing error params - DELAYED to allow toast to render
           setTimeout(() => {
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.delete("error");
+            newUrl.searchParams.delete("error_code");
+            newUrl.searchParams.delete("error_description");
             window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
           }, 500);
         }
@@ -2268,6 +2320,10 @@ const debugData = {
         // DOM is already loaded, run immediately with retry
         processUrlNotificationsWithRetry();
       }
+
+      document.addEventListener("astro:after-swap", () => {
+        if ((window as any).initInputWithIcon) (window as any).initInputWithIcon();
+      });
 
       // Suppress ResizeObserver loop warnings (they're usually harmless)
       window.addEventListener("error", (e: any) => {
@@ -2499,13 +2555,17 @@ const debugData = {
       };
 
       document.addEventListener("DOMContentLoaded", () => {
-        // Initialize autofill navigation - COMMENTED OUT
-        // (window as any).setupAutofillNavigation();
+        try {
+          // Initialize autofill navigation - COMMENTED OUT
+          // (window as any).setupAutofillNavigation();
 
-        // Initialize Sticky Actions Portal System
-        (window as any).initializeStickyActionsPortal();
+          // Initialize Sticky Actions Portal System
+          (window as any).initializeStickyActionsPortal();
 
-        // Global theme sync utility - updates theme attribute on elements with data-theme-sync
+          // Inject icons into .input-with-icon[data-icon] (e.g. MultiStepForm)
+          if ((window as any).initInputWithIcon) (window as any).initInputWithIcon();
+
+          // Global theme sync utility - updates theme attribute on elements with data-theme-sync
         (window as any).updateThemeSync = () => {
           const isDark = (window as any).isDarkMode();
           const themeValue = isDark ? "dark" : "light";
@@ -2538,8 +2598,9 @@ const debugData = {
           attributeFilter: ["class"],
         });
 
-        // Call immediately
-        const isSafariBeta = (window as any).isSafariBeta();
+        // Call immediately (skip Safari 18 fixes on legacy iPad/Safari to avoid extra JS)
+        const isLegacySafari = (window as any).__legacySafari === true;
+        const isSafariBeta = !isLegacySafari && (window as any).isSafariBeta();
         console.log("🍎 [APP] isSafari18", isSafariBeta);
         if (isSafariBeta === true) {
           console.log(
@@ -2691,6 +2752,9 @@ const debugData = {
               console.log("🍎 [SAFARI-FIX] Re-applied navbar fixes");
             }
           }, 1000);
+        }
+        } catch (e) {
+          console.error("[APP] DOMContentLoaded error (older Safari/iPad?):", e);
         }
       });
     </script>

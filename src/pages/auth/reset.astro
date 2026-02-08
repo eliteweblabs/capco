@@ -1,0 +1,129 @@
+---
+// Password reset page (set new password after clicking email link)
+// Layout and structure similar to auth/login
+
+import { checkAuth } from "../../lib/auth";
+const authResult = await checkAuth(Astro.cookies);
+const { isAuth, currentUser } = authResult;
+
+// Allow page to render so user can set new password from recovery link
+// (recovery session is set when they land with hash, then we sync to cookies client-side)
+
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
+const {
+  globalCompanyName,
+  globalCompanySlogan,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+} = await globalCompanyData();
+
+import { globalClasses } from "../../pages/api/global/global-classes";
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+
+import App from "../../components/ui/App.astro";
+import MultiStepForm from "../../components/form/MultiStepForm.astro";
+import { resetFormConfig } from "../../lib/forms/reset-form-config";
+---
+
+<App
+  title="Reset Password"
+  description="Set a new password for your account"
+  {currentUser}
+  {globalCompanyName}
+  {globalCompanySlogan}
+  {globalCompanyAddress}
+  {globalCompanyPhone}
+  {globalCompanyEmail}
+  {globalCompanyWebsite}
+  {globalCompanyLogo}
+  {globalInputClasses}
+  {primaryTextClasses}
+  {secondaryTextClasses}
+  layout="centered"
+>
+  <MultiStepForm config={resetFormConfig} />
+
+  <script>
+    import { getSupabaseClient } from "../../lib/supabase-client";
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const form = document.getElementById("multi-step-reset-form") as HTMLFormElement;
+      if (!form) return;
+
+      const hash = window.location.hash;
+      const hasRecoveryParams =
+        hash && (hash.includes("access_token=") || hash.includes("type=recovery"));
+
+      // If user landed with recovery link, sync session to cookies so form POST has session
+      if (hasRecoveryParams) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await new Promise((r) => setTimeout(r, 500));
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session) {
+            const res = await fetch("/api/auth/callback", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                access_token: session.access_token,
+                refresh_token: session.refresh_token,
+                expires_in: session.expires_in,
+                token_type: session.token_type || "bearer",
+              }),
+            });
+            if (res.ok) {
+              console.log("[AUTH-RESET] Session synced to cookies");
+            }
+          }
+        }
+      }
+
+      // Client-side confirm password match before submit (API also validates)
+      form.addEventListener(
+        "submit",
+        (e) => {
+          const password = (form.querySelector('input[name="password"]') as HTMLInputElement)
+            ?.value;
+          const passwordConfirm = (
+            form.querySelector('input[name="passwordConfirm"]') as HTMLInputElement
+          )?.value;
+          if (password && passwordConfirm && password !== passwordConfirm) {
+            e.preventDefault();
+            e.stopPropagation();
+            if ((window as any).showNotice) {
+              (window as any).showNotice(
+                "error",
+                "Passwords don't match",
+                "Please make sure both password fields match.",
+                5000
+              );
+            }
+          }
+        },
+        true
+      );
+    });
+
+    // Handle error/message from URL
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get("error");
+      const message = urlParams.get("message");
+      if (error && (window as any).showNotice) {
+        (window as any).showNotice(
+          "error",
+          "Error",
+          message || error,
+          6000
+        );
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    });
+  </script>
+</App>

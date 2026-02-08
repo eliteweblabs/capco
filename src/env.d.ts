@@ -139,6 +139,7 @@ declare global {
 
     // UX Utility Functions
     hideOnFormFocus?: (elementSelector: string, mobileOnly?: boolean) => void;
+    initInputWithIcon?: (root?: Document | Element) => void;
     hideOnMobileInput?: (elementSelector: string) => void;
 
     // Scroll utilities

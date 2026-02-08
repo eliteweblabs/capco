@@ -7,6 +7,7 @@ export const loginFormConfig: MultiStepFormConfig = {
   formMethod: "post",
   totalSteps: 2,
   progressBar: false, // Simple 2-step, no need for progress bar
+  registerUser: false,
 
   // Default button styles
   buttonDefaults: {
@@ -67,11 +68,11 @@ export const loginFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "new here?",
+          label: "new",
           variant: "anchor",
           size: "xs",
           href: "/auth/register",
-          icon: "",
+          icon: "user-plus",
           iconPosition: "left",
         },
         {
@@ -81,7 +82,7 @@ export const loginFormConfig: MultiStepFormConfig = {
           variant: "anchor",
           size: "xs",
           href: "/auth/forgot-password",
-          // icon: "",
+          icon: "",
           // iconPosition: "left",
           tooltipText: "Forgot your password?",
           tooltipPosition: "top",

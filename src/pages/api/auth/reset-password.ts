@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
     const { getBaseUrl } = await import("../../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
     const { error } = await supabase.auth.resetPasswordForEmail(resetData.email.trim(), {
-      redirectTo: resetData.redirectTo || `${baseUrl}/auth/reset-password`,
+      redirectTo: resetData.redirectTo || `${baseUrl}/auth/reset`,
     });
 
     if (error) {

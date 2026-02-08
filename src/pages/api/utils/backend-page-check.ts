@@ -17,6 +17,7 @@ export const isAuthPage = (pathname: string) => {
     "/auth/register",
     "/auth/forgot-password",
     "/auth/reset-password",
+    "/auth/reset",
     "/auth/verify-email",
     "/auth/verify-email-otp",
     "/auth/verify-email-otp-resend",
