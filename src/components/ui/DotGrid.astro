@@ -1,11 +1,15 @@
 ---
 /**
  * DotGrid – Canvas-based 1px dot grid for backgrounds and design.
- * Each dot can be on, off, or any opacity (0–1) of the primary color.
- * Use for: jumbotrons, preloaders, ripples, zoom effects.
  *
- * Optimized: single canvas, one Float32Array for opacities, no DOM per dot.
- * API: setDot(col, row, opacity), setBaseOpacity(0–1), ripple(cx, cy, radius, intensity), setZoom(scale).
+ * What it does:
+ * - Draws a persistent grid of 1px dots (primary color) behind your content.
+ * - Dots stay visible as a static background; spacing and base opacity are configurable.
+ * - Optional: use window[id] (e.g. window.dotGrid) to add ripples on click or animate:
+ *   - setBaseOpacity(0..1), ripple(cx, cy, radius, intensity), decayRipples(amount), draw().
+ *
+ * Use for: hero/jumbotron backgrounds, section backgrounds, preloader style.
+ * No animation runs by default – it’s just a visible dot grid until you call the API.
  */
 interface Props {
   /** Unique id for the canvas and for window[dotGridId] API (e.g. "dotGrid"). */
@@ -34,21 +38,16 @@ const {
 const spacingStr = typeof spacing === "number" ? String(spacing) : spacing;
 ---
 
-<div
-  class={`dot-grid-wrapper ${className}`}
-  aria-hidden="true"
-  data-dot-grid-id={id}
->
+<div class={`dot-grid-wrapper ${className}`} aria-hidden="true" data-dot-grid-id={id}>
   <canvas
-    id={id}
-    class="dot-grid-canvas block w-full h-full"
+    {id}
+    class="dot-grid-canvas block w-full h-full min-h-[1px]"
     width="1"
     height="1"
     data-spacing={spacingStr}
     data-dot-size={dotSize}
     data-base-opacity={baseOpacity}
-    data-dot-color={dotColor}
-  />
+    data-dot-color={dotColor}></canvas>
 </div>
 
 <script define:vars={{ id, spacingStr, dotSize, baseOpacity, dotColor }}>
@@ -76,9 +75,13 @@ const spacingStr = typeof spacing === "number" ? String(spacing) : spacing;
       const key = canvas.getAttribute("data-dot-color") || "primary-500";
       if (key.startsWith("#")) return key;
       const varName = `--color-${key}`;
-      const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-      if (val) return val;
-      return getComputedStyle(document.documentElement).getPropertyValue("--color-primary-500").trim() || "#825BDD";
+      let val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+      if (val) {
+        if (val.startsWith("rgb") || val.startsWith("hsl") || val.startsWith("oklch")) return val;
+        return val;
+      }
+      val = getComputedStyle(document.documentElement).getPropertyValue("--color-primary-500").trim();
+      return val || "#825BDD";
     }
 
     let cols = 0;
@@ -100,11 +103,21 @@ const spacingStr = typeof spacing === "number" ? String(spacing) : spacing;
       }
     }
 
+    let drawRetries = 0;
+    const maxDrawRetries = 25;
+
     function draw() {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       const w = canvas.offsetWidth;
       const h = canvas.offsetHeight;
-      if (w <= 0 || h <= 0) return;
+      if (w <= 0 || h <= 0) {
+        if (drawRetries < maxDrawRetries) {
+          drawRetries += 1;
+          setTimeout(draw, 80);
+        }
+        return;
+      }
+      drawRetries = 0;
       ensureBuffer();
       if (!opacities) return;
 
@@ -229,12 +242,24 @@ const spacingStr = typeof spacing === "number" ? String(spacing) : spacing;
     }
 
     new ResizeObserver(resize).observe(canvas);
-    if (typeof spacingStr === "string" && spacingStr.includes("rem")) {
-      setTimeout(resize, 0);
-    } else {
-      resize();
-    }
 
-    document.addEventListener("astro:page-load", resize);
+    function runWhenReady() {
+      drawRetries = 0;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resize();
+        });
+      });
+    }
+    runWhenReady();
+    if (document.readyState === "complete") {
+      setTimeout(resize, 80);
+    } else {
+      window.addEventListener("load", () => setTimeout(resize, 80));
+    }
+    setTimeout(resize, 200);
+    setTimeout(resize, 500);
+
+    document.addEventListener("astro:page-load", runWhenReady);
   })();
 </script>
