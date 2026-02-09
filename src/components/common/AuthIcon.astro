@@ -35,142 +35,27 @@ const avatarUrl =
 
 {
   currentUser ? (
-    <>
+    <button
+      data-dropdown-toggle="account-dropdown"
+      aria-expanded="false"
+      data-dropdown-trigger="click"
+      data-avatar-url={avatarUrl}
+      class={globalIconButtonClasses}
+    >
+      <span class="sr-only">Open user menu</span>
+      {/* <!-- Fallback icon (visible initially, hidden if avatar loads) --> */}
       {avatarUrl && avatarUrl !== "" ? (
-        <button
-          data-dropdown-toggle="account-dropdown"
-          aria-expanded="false"
-          data-dropdown-trigger="hover"
-          data-avatar-url={avatarUrl}
-          class={globalIconButtonClasses}
-        >
-          <span class="sr-only">Open user menu</span>
-          {/* <!-- Fallback icon (visible initially, hidden if avatar loads) --> */}
-          <SimpleIcon
-            name="user"
-            class="avatar-fallback"
-            size="md"
-            class="text-black dark:text-white"
-          />
-        </button>
+        <SimpleIcon
+          name="user"
+          class="avatar-fallback"
+          size="md"
+          class="text-black dark:text-white"
+        />
       ) : (
-        <button
-          data-dropdown-toggle="account-dropdown"
-          aria-expanded="false"
-          data-dropdown-trigger="hover"
-          class={globalIconButtonClasses}
-        >
-          <span class="sr-only">Open user menu</span>
-          <SimpleIcon name="user" size="md" />
-        </button>
+        <SimpleIcon name="user" size="md" />
       )}
-
-      <div
-        id="account-dropdown"
-        class="z-10 hidden w-full max-w-md rounded-b-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
-        data-popper-placement="bottom"
-      >
-        <div class="max-h-[85vh] overflow-hidden flex flex-col">
-          <div class="relative flex flex-col flex-1 min-h-0">
-            <div class="flex items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700 shrink-0">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                <a
-                  class="align-center flex px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
-                  href="/profile"
-                >
-                  <SimpleIcon name="logo" size="md" class="m-0 sm:mr-2 w-12 h-12" />
-                  <span class="whitespace-nowrap">
-                    {currentUser?.profile?.companyName || "Add Company Name"} /
-                    {currentUser?.profile?.firstName} {currentUser?.profile?.lastName}
-                    <br />
-                    <span class="text-xs text-gray-500 whitespace-nowrap">
-                      {currentUser?.profile?.email}
-                    </span>
-                  </span>
-                </a>
-              </h3>
-              <CloseButton data-dropdown-toggle="account-dropdown" tooltipText="Close" />
-            </div>
-
-            <div class="p-3 overflow-y-auto flex-1 min-h-0">
-              <div class="align-center flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                <ul class="p-2 text-sm font-medium text-gray-900 dark:text-white">
-                  <li>
-                    <a href="/profile" title="Profile" class={globalIconButtonClasses}>
-                      <SimpleIcon
-                        name="user-edit"
-                        size="md"
-                        class="text-black dark:text-white mr-2"
-                      />
-                      Profile
-                    </a>
-                  </li>
-                  <li>
-                    <a href="/project/dashboard" title="Dashboard" class={globalIconButtonClasses}>
-                      <SimpleIcon
-                        name="dashboard"
-                        size="md"
-                        class="text-black dark:text-white mr-2"
-                      />
-                      Dashboard
-                    </a>
-                  </li>
-
-                  {/* Assigned Projects */}
-                  {currentRole !== "Client" && (
-                    <AssignedProjects currentUser={currentUser} projects={projects} />
-                  )}
-                </ul>
-
-                {/* new section for sign out */}
-                <ul class="p-2 text-sm font-medium text-gray-900 dark:text-white  border-t color-border">
-                  <li>
-                    <a id="logout-btn" href="#" title="logout" class={globalIconButtonClasses}>
-                      <SimpleIcon
-                        name="log-out"
-                        size="md"
-                        class="text-black dark:text-white mr-2"
-                      />
-                      Sign Out
-                    </a>
-                  </li>
-                </ul>
-
-                {/* Page size toggle: larger elements for mobile/accessibility */}
-                <ul class="p-2 text-sm font-medium text-gray-900 dark:text-white border-t color-border">
-                  <li>
-                    <button
-                      type="button"
-                      id="page-size-toggle"
-                      title="Toggle larger page elements (better on mobile)"
-                      class={`w-full text-left ${globalIconButtonClasses}`}
-                      aria-pressed="false"
-                    >
-                      <SimpleIcon
-                        name="zoom-in"
-                        size="md"
-                        class="text-black dark:text-white mr-2"
-                      />
-                      <span id="page-size-toggle-label">Larger page elements</span>
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="border-t border-gray-200 px-4 py-2 dark:border-gray-700 shrink-0">
-              <div
-                id="loading-indicator"
-                class="text-center text-sm text-gray-500 dark:text-gray-400 hidden"
-              >
-                Loading more notifications...
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  ) : !isBackend ? (
+    </button>
+  ) : (
     // <Button href="/auth/login" variant="anchor" size="xs">
     <a href={authLink} title="Sign In" class={globalIconButtonClasses}>
       <Tooltip text={authTooltipText} position="bottom">
@@ -178,17 +63,13 @@ const avatarUrl =
         <span class="sr-only">Sign In</span>
       </Tooltip>
     </a>
-  ) : // </Button>
-  null
+  )
 }
 
 <script>
-  import { initPageSizeToggle } from "../../lib/page-size-plugin";
-
   // Handle Google avatar loading errors and rate limiting (429 errors)
+  // Page size toggle is initialized in UserProfileDropdown.astro
   document.addEventListener("DOMContentLoaded", () => {
-    initPageSizeToggle();
-
     const avatarButton = document.querySelector(".avatar-button");
 
     if (avatarButton) {

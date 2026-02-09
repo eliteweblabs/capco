@@ -1,7 +1,7 @@
 ---
 /**
  * NotificationsModal Component
- * Flowbite dropdown: trigger uses data-dropdown-toggle="notification-dropdown", panel uses data-popper-placement="bottom".
+ * Flowbite: trigger uses data-dropdown-toggle="notification-dropdown"; close uses data-dismiss-target (no custom JS).
  */
 import CloseButton from "../ui/CloseButton.astro";
 
@@ -33,7 +33,7 @@ if (!currentUser || currentRole === "Client") {
         class="flex items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700 shrink-0"
       >
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
-        <CloseButton data-dropdown-toggle="notification-dropdown" tooltipText="Close" />
+        <CloseButton data-dismiss-target="#notification-dropdown" tooltipText="Close" />
       </div>
 
       <!-- Panel body -->
@@ -125,13 +125,14 @@ if (!currentUser || currentRole === "Client") {
       const panel = document.getElementById("notification-dropdown");
       const markAllRead = document.getElementById("mark-all-read");
 
-      // Flowbite handles close (outside click, Escape). Close button uses data-dropdown-toggle so it toggles closed.
-      // When dropdown is opened via data-dropdown-toggle, load notifications
+      // When dropdown is opened (bell trigger), load notifications; when closed, mark as viewed
+      // Also remove Dismiss-added classes (opacity-0, transition) so panel is visible again after closing once
       document.querySelectorAll('[data-dropdown-toggle="notification-dropdown"]').forEach((el) => {
         el.addEventListener("click", () => {
           setTimeout(() => {
             if (panel && !panel.classList.contains("hidden")) {
               this.isOpen = true;
+              panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out");
               this.loadNotifications();
             } else {
               this.isOpen = false;
@@ -141,7 +142,17 @@ if (!currentUser || currentRole === "Client") {
         });
       });
 
-      // ESC key: close dropdown (Flowbite may handle; ensure we sync state)
+      // Close button: Flowbite Dismiss (data-dismiss-target) handles hide; sync state and mark viewed
+      document.querySelectorAll('[data-dismiss-target="#notification-dropdown"]').forEach((el) => {
+        el.addEventListener("click", () => {
+          setTimeout(() => {
+            this.isOpen = false;
+            this.markViewedNotificationsAsRead();
+          }, 50);
+        });
+      });
+
+      // ESC key: close dropdown and sync state
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && panel && !panel.classList.contains("hidden")) {
           panel.classList.add("hidden");
@@ -159,15 +170,6 @@ if (!currentUser || currentRole === "Client") {
       const notificationList = document.getElementById("notification-list");
       notificationList?.addEventListener("scroll", () => {
         this.handleScroll();
-      });
-
-      // Close button inside dropdown: Flowbite may not bind toggles to elements inside the panel, so handle explicitly
-      panel?.addEventListener("click", (e: Event) => {
-        const target = e.target as HTMLElement;
-        const toggle = target.closest('[data-dropdown-toggle="notification-dropdown"]');
-        if (toggle && panel.contains(toggle)) {
-          this.closeDropdown();
-        }
       });
     }
 
@@ -687,7 +689,7 @@ if (!currentUser || currentRole === "Client") {
     await notificationManager.deleteNotification(notificationId);
   };
 
-  // Flowbite handles open/close via data-dropdown-toggle; we only need to load on open (done in bindEvents)
+  // Flowbite: open via data-dropdown-toggle (bell), close via data-dismiss-target (close button); we load on open in bindEvents
 </script>
 
 <style>

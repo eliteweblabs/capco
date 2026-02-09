@@ -157,6 +157,7 @@ import TutorialOverlay from "../common/TutorialOverlay.astro";
 import DebugPanel from "../common/DebugPanel.astro";
 import FeedbackPanel from "../common/FeedbackPanel.astro";
 import NotificationsModal from "../common/NotificationsModal.astro";
+import UserProfileDropdown from "./UserProfileDropdown.astro";
 // import VapiChatWidget from "@/features/vapi-chat-widget/VapiChatWidget.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 import StickyActionButton from "../project/StickyActions.astro";
@@ -956,6 +957,67 @@ const debugData = {
     <!-- Global Modals - Must be siblings of overlay for z-index to work -->
     {currentUser && <NotificationsModal currentUser={currentUser} />}
 
+    {currentUser && <UserProfileDropdown currentUser={currentUser} />}
+
+    {
+      currentUser && currentUser.id && currentRole !== "Client" && project && (
+        
+          <div
+            id="punchlist-drawer"
+            class="fixed top-0 right-0 h-screen overflow-y-auto transition-transform translate-x-full bg-neutral-primary-soft w-full sm:w-96"
+            style="will-change: transform; z-index: 10002;"
+          >
+            <div class="flex flex-col h-full">
+              {/* Header */}
+              <div class="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-600 dark:bg-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  {project.title || project.address || "Project"} Punchlist
+                </h3>
+                <CloseButton
+                  id="punchlist-drawer-close"
+                  tooltipText="Close drawer"
+                  position="left"
+                />
+              </div>
+
+
+
+              {/* Content */}
+              <div class="flex-1 overflow-y-auto p-4 color-background">
+                <div id="content-punchlist">
+                  <div>
+                    <div id="punchlist-container" data-project-id={projectId}>
+                      {/* Add Punchlist Item Button - Admin Only */}
+                      {currentRole === "Admin" && (
+                        <div class="mb-4">
+                          <Button
+                            id="add-punchlist-item-btn"
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            class="w-full"
+                          >
+                            <SimpleIcon name="plus" class="w-4 h-4 mr-2" />
+                            Add Punchlist Item
+                          </Button>
+                        </div>
+                      )}
+
+                      <div class="mb-6">
+                        {/* <!-- Punchlist Items List --> */}
+                        <div id="punchlist-items-list" class="space-y-4">
+                          {/* <!-- Punchlist items will be dynamically loaded here --> */}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        
+      )
+    }
 
     <!-- SPA: re-apply theme and re-init after client-side navigation (backend only) -->
     {isBackend && (
@@ -1079,15 +1141,9 @@ const debugData = {
         style={currentUser ? "transition: margin-left 300ms ease-in-out;" : undefined}
       >
         <main
-          class:list={[
-            "flex-1 relative",
-            horizontalScroll && "overflow-x-auto no-scrollbar",
-            // fullscreenScroll
-            //   ? "min-h-0 overflow-y-auto overscroll-contain"
-            //   : "min-h-[calc(100dvh)]",
-            centerContent ? "flex items-center justify-center" : "",
-          ]}
+         
         >
+        <slot />
         </main>
       
         <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
@@ -1124,82 +1180,11 @@ const debugData = {
     </div>
 
   
-    <!-- Global Sticky Actions Portal Container -->
-    <!-- All StickyActions buttons will be teleported here to avoid z-index stacking context issues -->
-    <div
-      id="sticky-actions-portal"
-      class="fixed bottom-0 left-0 z-[10015] p-6 w-full flex justify-end pointer-events-none"
-      style="display: none;"
-    >
-      <div
-        id="sticky-actions-container"
-        class="grid h-full max-w-4xl font-medium gap-2 pointer-events-auto"
-      >
-        <!-- Buttons will be teleported here via JavaScript -->
-      </div>
-    </div>
+ 
 
 
 
-    {
-      currentUser && currentUser.id && currentRole !== "Client" && project && (
-        <>
-          <div
-            id="punchlist-drawer"
-            class="fixed top-0 right-0 h-screen overflow-y-auto transition-transform translate-x-full bg-neutral-primary-soft w-full sm:w-96"
-            style="will-change: transform; z-index: 10002;"
-          >
-            <div class="flex flex-col h-full">
-              {/* Header */}
-              <div class="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-600 dark:bg-gray-700">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                  {project.title || project.address || "Project"} Punchlist
-                </h3>
-                <CloseButton
-                  id="punchlist-drawer-close"
-                  tooltipText="Close drawer"
-                  position="left"
-                />
-              </div>
 
-
-
-              {/* Content */}
-              <div class="flex-1 overflow-y-auto p-4 color-background">
-                <div id="content-punchlist">
-                  <div>
-                    <div id="punchlist-container" data-project-id={projectId}>
-                      {/* Add Punchlist Item Button - Admin Only */}
-                      {currentRole === "Admin" && (
-                        <div class="mb-4">
-                          <Button
-                            id="add-punchlist-item-btn"
-                            type="button"
-                            variant="primary"
-                            size="sm"
-                            class="w-full"
-                          >
-                            <SimpleIcon name="plus" class="w-4 h-4 mr-2" />
-                            Add Punchlist Item
-                          </Button>
-                        </div>
-                      )}
-
-                      <div class="mb-6">
-                        {/* <!-- Punchlist Items List --> */}
-                        <div id="punchlist-items-list" class="space-y-4">
-                          {/* <!-- Punchlist items will be dynamically loaded here --> */}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )
-    }
 
     <StickyActionButton 
     {isAuthPageResult}

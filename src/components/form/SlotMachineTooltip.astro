@@ -1,0 +1,1881 @@
+---
+import Button from "../common/Button.astro";
+import UserIcon from "../common/UserIcon.astro";
+import Tooltip from "../common/TooltipFloating.astro";
+// Slot Machine with TooltipFloating trigger (same behavior as SlotMachineModalStaff, trigger wrapped in tooltip)
+
+interface Props {
+  id: string; // Required: Unique identifier for this picker instance
+  title: string; // Required: Modal title (e.g., "Select Status", "Choose Staff")
+  options: Array<{ value: string; label: string; disabled?: boolean }>; // Required: Array of options
+  selectedValue?: string; // Optional: Currently selected value
+  placeholder?: string; // Optional: Placeholder text for button
+  buttonText?: string; // Optional: Custom button text (defaults to selected label or placeholder)
+  showCloseButton?: boolean; // Optional: Show X close button (default: true)
+  showCancelButton?: boolean; // Optional: Show Cancel button (default: true)
+  addNewOption?: boolean; // Optional: Show add new option button (default: false)
+  name?: string; // Optional: Form field name (defaults to id)
+  buttonClass?: string; // Optional: Custom button class (defaults to "")
+  noResultsText?: string; // Optional: No results text (defaults to "No results found")
+  // NEW FLEXIBLE PROPS:
+  fetchApiEndpoint?: string; // Optional: API endpoint for fetching/searching data
+  saveApiEndpoint?: string; // Optional: API endpoint for saving data (defaults to id if not provided)
+  searchText?: string; // Optional: Search input label (if provided, enables search)
+  searchPlaceholder?: string; // Optional: Search input placeholder
+  apiParams?: Record<string, any>; // Optional: Additional API parameters
+  dataTransform?: string; // Optional: Function name to transform API response
+  showImages?: boolean; // Optional: Whether to show images (for places)
+  imageField?: string; // Optional: Field name for image URLs
+  valueField?: string; // Optional: Field name to use for the value (default: "value")
+  labelField?: string; // Optional: Field name to use for the label (default: "label")
+  fetchOnLoad?: boolean; // Optional: Whether to fetch data immediately on modal open (default: false)
+  showNotification?: boolean; // Optional: Whether to show notification (default: true)
+  project?: any; // Optional: Project for API calls
+  icon?: string; // Optional: Icon name for the button (default: "")
+  currentUser?: any; // Optional: Current user for API calls
+  globalInputClasses?: string; // Optional: Global input classes
+  component?: string; // Optional: Component name for the button (default: "")
+  componentProps?: any; // Optional: Component props for the button (default: {})
+  buttonType?: "icon" | "text"; // Optional: Button type (default: "text")
+  buttonVariant?:
+    | "primary"
+    | "secondary"
+    | "outline"
+    | "ghost"
+    | "link"
+    | "success"
+    | "warning"
+    | "danger"
+    | "loading"
+    | "disabled"
+    | "selected"
+    | "anchor"; // Optional: Button variant (default: "primary")
+  updateCallback?: string; // Optional: JavaScript function name to call after successful update (e.g., "updateStaffIcon")
+}
+
+const {
+  id,
+  title,
+  options = [],
+  selectedValue = "",
+  placeholder = "Select an option...",
+  buttonClass = "",
+  buttonText,
+  buttonType = "text",
+  showCloseButton = true,
+  showCancelButton = true,
+  addNewOption = false,
+  name,
+  noResultsText = "",
+  icon = "chevron-down",
+  currentUser,
+  globalInputClasses,
+  // NEW FLEXIBLE PROPS:
+  fetchApiEndpoint,
+  saveApiEndpoint,
+  searchText,
+  searchPlaceholder = "Type to search options...",
+  apiParams = {},
+  dataTransform,
+  showImages = false,
+  imageField = "image_url",
+  valueField = "value",
+  labelField = "label",
+  fetchOnLoad = false,
+  showNotification = false,
+  buttonVariant = "primary",
+  componentProps,
+  project,
+  component,
+  updateCallback,
+  // project = {},
+} = Astro.props;
+
+// Debug logging for saveApiEndpoint
+// console.log("🔧 [SLOT-MACHINE] Props received:", { saveApiEndpoint, fetchApiEndpoint, id });
+// console.log("🔧 [SLOT-MACHINE] saveApiEndpoint type:", typeof saveApiEndpoint);
+// console.log("🔧 [SLOT-MACHINE] saveApiEndpoint value:", JSON.stringify(saveApiEndpoint));
+
+const projectId = project?.id || "";
+// Ensure options is always an array
+const optionsArray = Array.isArray(options) ? options : [];
+
+// Debug logging for project data
+// console.log("🔧 [SLOT-MACHINE] Project data:", { project, projectId });
+
+// Determine if search should be enabled (if searchText is provided)
+const enableSearch = !!searchText;
+
+// Find the selected option to get the button text
+const selectedOption = optionsArray.find((option) => option.value === selectedValue);
+// Use buttonText if provided (highest priority), then selectedOption label, then placeholder
+// buttonText is often calculated from project data and is more reliable after refresh
+const displayText = buttonText || selectedOption?.label || placeholder;
+// Tooltip label: for icon with no selection use title, else displayText
+const tooltipLabel =
+  buttonType === "icon" && !selectedValue && !project?.assignedToProfile
+    ? title || "Assign to Staff"
+    : displayText || title || placeholder;
+---
+
+<Tooltip text={tooltipLabel} position="top">
+  {
+    buttonType === "icon" ? (
+      <a
+        {id}
+        data-refresh={name}
+        data-project-id={projectId}
+        data-meta="assignedToId"
+        data-meta-value={selectedValue}
+        class="inline-flex items-center justify-center"
+      >
+        {project?.assignedToProfile ? (
+          <UserIcon {...componentProps} />
+        ) : selectedValue ? (
+          <Button
+            variant={buttonVariant || "outline"}
+            class={buttonClass || ""}
+            size="sm"
+            icon={icon || "user"}
+            iconPosition="left"
+            iconClasses="m-0 p-2"
+          >
+            {displayText}
+          </Button>
+        ) : (
+          <span class="relative inline-block group w-8 h-8">
+            <span class="sr-only">Open user menu</span>
+            <svg
+              class="inline-block avatar-fallback"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M7.5 6.5C7.5 8.981 9.519 11 12 11s4.5-2.019 4.5-4.5S14.481 2 12 2 7.5 4.019 7.5 6.5zM20 21h1v-1c0-3.859-3.141-7-7-7h-4c-3.86 0-7 3.141-7 7v1h17z" />
+            </svg>
+          </span>
+        )}
+      </a>
+    ) : (
+      <Button
+        {id}
+        variant={buttonVariant || "outline"}
+        class={buttonClass || ""}
+        data-refresh={name}
+        size="sm"
+        icon={icon || "chevron-down"}
+        iconPosition="right"
+      >
+        {displayText}
+      </Button>
+    )
+  }
+</Tooltip>
+
+<!-- Hidden input to store the selected value -->
+<input
+  type="hidden"
+  id={`${id}-value`}
+  name={name || id}
+  value={selectedValue}
+  data-refresh={name}
+  required
+/>
+
+<script
+  define:vars={{
+    id,
+    title,
+    options: optionsArray,
+    selectedValue,
+    showCloseButton,
+    showCancelButton,
+    enableSearch,
+    fetchApiEndpoint,
+    saveApiEndpoint,
+    searchText,
+    searchPlaceholder,
+    showNotification,
+    apiParams,
+    dataTransform,
+    showImages,
+    imageField,
+    valueField,
+    labelField,
+    fetchOnLoad,
+    projectId,
+    noResultsText,
+    currentUser,
+    globalInputClasses,
+    project,
+    updateCallback,
+  }}
+  is:inline
+>
+  // Debug logging in script
+
+  // Initialize the slot machine picker
+  document.addEventListener("DOMContentLoaded", function () {
+    // Debug: Log how many slot machines are on the page
+
+    const trigger = document.getElementById(id);
+    const hiddenInput = document.getElementById(`${id}-value`);
+
+    if (!trigger || !hiddenInput) {
+      console.error(`🎰 [SLOT-MACHINE-${id}] Trigger button with ID '${id}' not found`);
+      return;
+    }
+
+    // Set up click handler
+    trigger.addEventListener("click", function (e) {
+      e.stopPropagation();
+      // // console.log(`🎰 [SLOT-MACHINE] Opening picker for ID: ${id}`);
+
+      // Open the slot machine modal using variables directly
+      // Use current hidden input value if it exists, otherwise fall back to original selectedValue
+      const currentValue = hiddenInput ? hiddenInput.value : selectedValue;
+      showSlotMachineModalStaff({
+        id: id,
+        title: title,
+        options: options,
+        selectedValue: currentValue,
+        showCloseButton: showCloseButton,
+        showCancelButton: showCancelButton,
+        globalInputClasses: globalInputClasses,
+        onSelect: (value, label) => {
+          // Update hidden input
+          console.log(`🎰 [SLOT-MACHINE-${id}] Updating hidden input with value: ${value}`);
+          if (hiddenInput) {
+            hiddenInput.value = value;
+          }
+          // Call the generic handleSelect function
+          // Auto-save to API endpoint if saveApiEndpoint is provided or legacy component IDs
+          if (saveApiEndpoint) {
+            saveToAPI(saveApiEndpoint, value, label, projectId);
+          }
+
+          console.log(`🎰 [SLOT-MACHINE] Selection process completed`);
+        },
+        enableSearch: enableSearch,
+        fetchApiEndpoint: fetchApiEndpoint,
+        searchText: searchText,
+        searchPlaceholder: searchPlaceholder,
+        apiParams: apiParams,
+        dataTransform: dataTransform,
+        showImages: showImages,
+        imageField: imageField,
+        valueField: valueField,
+        labelField: labelField,
+        fetchOnLoad: fetchOnLoad,
+        noResultsText: noResultsText,
+        // project: project,
+      });
+    });
+
+    // // Check for URL parameters to auto-open this specific picker
+    // function checkUrlParameters() {
+    //   const urlParams = new URLSearchParams(window.location.search);
+    //   const modalParam = urlParams.get("modal");
+
+    //   console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
+    //     modalParam,
+    //     componentId: id,
+    //     match: modalParam === id,
+    //   });
+
+    //   if (modalParam === id) {
+    //     // console.log(`🎰 [SLOT-MACHINE] URL parameter detected: modal=${id}`);
+
+    //     // Wait for DOM to be ready, then trigger the picker
+    //     setTimeout(() => {
+    //       if (trigger) {
+    //         // console.log(`🎰 [SLOT-MACHINE] Auto-opening picker for ID: ${id}`);
+    //         trigger.click();
+
+    //         // Clean up the URL parameter
+    //         const newUrl = new URL(window.location);
+    //         newUrl.searchParams.delete("modal");
+    //         window.history.replaceState({}, "", newUrl);
+    //         // console.log(`🎰 [SLOT-MACHINE] URL cleaned up: ${newUrl.href}`);
+    //       } else {
+    //         console.error(`🎰 [SLOT-MACHINE] Trigger button not found for auto-open`);
+    //       }
+    //     }, 100);
+    //   }
+    // }
+
+    // Check URL parameters on load
+    // checkUrlParameters();
+  });
+
+  // Auto-save function that uses saveApiEndpoint or falls back to component ID
+  async function saveToAPI(saveApiEndpoint, value, label, projectId) {
+    try {
+      console.log("🔧 [SLOT-MACHINE] saveToAPI called with:", {
+        saveApiEndpoint,
+        value,
+        label,
+        projectId,
+        valueType: typeof value,
+        isEmptyString: value === "",
+      });
+
+      // Validate projectId
+      if (!projectId || projectId === "") {
+        console.error("🔧 [SLOT-MACHINE] No projectId provided - cannot save assignment");
+        throw new Error("Project ID is required for staff assignment");
+      }
+
+      let requestBody = {
+        projectId: parseInt(projectId), // Ensure it's a number
+        assignedToId: value === "" ? null : value, // Staff member ID - convert empty string to null for unassigned
+      };
+
+      console.log("🔧 [SLOT-MACHINE] Request body:", requestBody);
+      console.log(
+        "🔧 [SLOT-MACHINE] assignedToId value:",
+        requestBody.assignedToId,
+        "type:",
+        typeof requestBody.assignedToId
+      );
+
+      // if (apiEndpoint.startsWith("assign-staff-") || apiEndpoint === "assign-staff") {
+      //   console.log(`🎰 [SLOT-MACHINE] Processing ASSIGN-STAFF request`);
+      //   const parsedProjectId =
+      //     parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+      //   console.log(
+      //     `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
+      //   );
+      //   console.log(`🎰 [SLOT-MACHINE] Staff ID: ${value} (type: ${typeof value})`);
+      //   console.log(`🎰 [SLOT-MACHINE] Staff Name: ${label} (type: ${typeof label})`);
+
+      //   // For staff assignment, send the format expected by update-project API
+
+      //   console.log(`🎰 [SLOT-MACHINE] ASSIGN-STAFF requestBody:`, requestBody);
+      // } else if (apiEndpoint === "update-project") {
+      //   console.log(`🎰 [SLOT-MACHINE] ===== UPDATE-PROJECT REQUEST START =====`);
+      //   console.log(`🎰 [SLOT-MACHINE] Processing UPDATE-PROJECT request`);
+      //   console.log(`🎰 [SLOT-MACHINE] Component ID: ${id}`);
+      //   console.log(`🎰 [SLOT-MACHINE] API Endpoint: ${apiEndpoint}`);
+      //   console.log(`🎰 [SLOT-MACHINE] Project ID prop: ${projectId}`);
+      //   console.log(`🎰 [SLOT-MACHINE] Current URL: ${window.location.href}`);
+
+      //   const parsedProjectId =
+      //     parseInt(projectId) || parseInt(window.location.pathname.split("/").pop()) || null;
+      //   console.log(
+      //     `🎰 [SLOT-MACHINE] Parsed projectId: ${parsedProjectId} (type: ${typeof parsedProjectId})`
+      //   );
+      //   console.log(`🎰 [SLOT-MACHINE] Field value: ${value} (type: ${typeof value})`);
+      //   console.log(`🎰 [SLOT-MACHINE] Field label: ${label} (type: ${typeof label})`);
+
+      //   // For generic project updates, determine the field name from the component ID or context
+      //   let fieldName = "value"; // Default field name
+
+      //   // Try to determine field name from component ID or context
+      //   if (id.includes("due-date") || id.includes("dueDate")) {
+      //     fieldName = "dueDate";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (due-date component)`);
+      //   } else if (id.includes("title")) {
+      //     fieldName = "title";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (title component)`);
+      //   } else if (id.includes("address")) {
+      //     fieldName = "address";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (address component)`);
+      //   } else if (id.includes("description")) {
+      //     fieldName = "description";
+      //     console.log(
+      //       `🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (description component)`
+      //     );
+      //   } else if (id.includes("sqFt") || id.includes("sqft")) {
+      //     fieldName = "sqFt";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (sqFt component)`);
+      //   } else if (id.includes("units")) {
+      //     fieldName = "units";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (units component)`);
+      //   } else if (id.includes("building")) {
+      //     fieldName = "building";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (building component)`);
+      //   } else if (id.includes("tier")) {
+      //     fieldName = "tier";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (tier component)`);
+      //   } else if (id.includes("project")) {
+      //     fieldName = "project";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (project component)`);
+      //   } else if (id.includes("service")) {
+      //     fieldName = "service";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (service component)`);
+      //   } else if (id.includes("architect")) {
+      //     fieldName = "architect";
+      //     console.log(`🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (architect component)`);
+      //   } else if (id.includes("requestedDocs")) {
+      //     fieldName = "requestedDocs";
+      //     console.log(
+      //       `🎰 [SLOT-MACHINE] Detected field name: ${fieldName} (requestedDocs component)`
+      //     );
+      //   } else {
+      //     console.log(
+      //       `🎰 [SLOT-MACHINE] Using default field name: ${fieldName} (no specific component detected)`
+      //     );
+      //   }
+
+      //   // For dueDate, convert to proper date format if needed
+      //   let fieldValue = value;
+      //   if (fieldName === "dueDate" && value) {
+      //     console.log(`🎰 [SLOT-MACHINE] Processing dueDate field with value: ${value}`);
+      //     // Ensure the date is in ISO format
+      //     const date = new Date(value);
+      //     if (!isNaN(date.getTime())) {
+      //       fieldValue = date.toISOString().split("T")[0]; // YYYY-MM-DD format
+      //       console.log(`🎰 [SLOT-MACHINE] Converted dueDate to: ${fieldValue}`);
+      //     } else {
+      //       console.log(`🎰 [SLOT-MACHINE] Invalid date value: ${value}`);
+      //     }
+      //   }
+
+      //   requestBody = {
+      //     projectId: parsedProjectId,
+      //     [fieldName]: fieldValue,
+      //   };
+      //   console.log(`🎰 [SLOT-MACHINE] UPDATE-PROJECT requestBody:`, requestBody);
+      //   console.log(`🎰 [SLOT-MACHINE] ===== UPDATE-PROJECT REQUEST END =====`);
+      // } else {
+      //   console.log(`🎰 [SLOT-MACHINE] Processing GENERIC request for component: ${apiEndpoint}`);
+      //   // For other components, use generic format
+      //   requestBody = {
+      //     value: value,
+      //     label: label,
+      //     componentId: apiEndpoint,
+      //   };
+      //   console.log(`🎰 [SLOT-MACHINE] GENERIC requestBody:`, requestBody);
+      // }
+
+      console.log("🔧 [SLOT-MACHINE] Making API call to:", `/api/${saveApiEndpoint}`);
+
+      const response = await fetch(`/api/${saveApiEndpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("🔧 [SLOT-MACHINE] API response status:", response.status);
+      console.log("🔧 [SLOT-MACHINE] API response ok:", response.ok);
+
+      // const response = await fetch(`/api/${apiEndpoint}`, {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   credentials: "include",
+      //   body: JSON.stringify(requestBody),
+      // });
+
+      if (response.ok) {
+        try {
+          const result = await response.clone().json();
+          const slotMachineId = this.id || "unknown";
+          console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] ===== API SUCCESS RESPONSE =====`);
+
+          // Check if result exists and has modalData
+          if (result && result.modalData) {
+            console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] Result modal data:`, result.modalData);
+            console.log(
+              `🎰 [SLOT-MACHINE-${slotMachineId}] showNotice function available:`,
+              typeof window.showNotice
+            );
+            console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] Calling showNotice...`);
+
+            if (typeof window.showNotice === "function") {
+              console.log(
+                `🎰 [SLOT-MACHINE-${slotMachineId}] About to call showNotice with:`,
+                result.modalData
+              );
+              // Add a small delay to ensure UnifiedNotification is ready
+              setTimeout(async () => {
+                try {
+                  await window.showNotice(result.modalData);
+                  console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] showNotice call completed`);
+                } catch (modalError) {
+                  console.error(
+                    `🎰 [SLOT-MACHINE-${slotMachineId}] Error calling showNotice:`,
+                    modalError
+                  );
+                }
+              }, 100);
+            } else {
+              console.error(
+                `🎰 [SLOT-MACHINE-${slotMachineId}] showNotice function not available!`
+              );
+            }
+          } else {
+            console.log(
+              `🎰 [SLOT-MACHINE-${slotMachineId}] Success response received but no modalData in result:`,
+              result
+            );
+          }
+
+          // Call updateCallback if provided and available
+          if (updateCallback && typeof window[updateCallback] === "function") {
+            console.log(
+              `🎰 [SLOT-MACHINE-${slotMachineId}] Calling updateCallback: ${updateCallback}`
+            );
+            try {
+              // Pass the result data to the callback
+              window[updateCallback](result, value, label);
+              console.log(`🎰 [SLOT-MACHINE-${slotMachineId}] updateCallback completed`);
+            } catch (callbackError) {
+              console.error(
+                `🎰 [SLOT-MACHINE-${slotMachineId}] Error calling updateCallback:`,
+                callbackError
+              );
+            }
+          } else if (updateCallback) {
+            console.warn(
+              `🎰 [SLOT-MACHINE-${slotMachineId}] updateCallback "${updateCallback}" not found on window`
+            );
+          }
+        } catch (error) {
+          const slotMachineId = this.id || "unknown";
+          console.error(
+            `🎰 [SLOT-MACHINE-${slotMachineId}] Error parsing success response:`,
+            error
+          );
+          // Response was OK but JSON parsing failed or result is invalid
+          if (window.showNotice) {
+            window.showNotice("error", "Error", "Received invalid response from server.", 5000);
+          }
+        }
+
+        // if (result.notificationData && window.showNotice && showNotification) {
+        //   const { type, title, message, duration } = result.notificationData;
+
+        //   window.showNotice(type, title, message, duration);
+        // } else if (result.success && window.showNotice && showNotification) {
+        //   // Fallback success notification
+        //   window.showNotice(
+        //     "success",
+        //     "Success",
+        //     result.message || "Operation completed successfully",
+        //     3000
+        //   );
+        // }
+
+        // Close the modal after success
+        setTimeout(() => {
+          const modal = document.querySelector(`[data-modal-backdrop="${id}-modal"]`);
+          if (modal) {
+            modal.click(); // Click the backdrop to close
+          }
+        }, 1000);
+      } else {
+        console.log(`🎰 [SLOT-MACHINE] ===== API ERROR RESPONSE =====`);
+        console.log(`🎰 [SLOT-MACHINE] Response status: ${response.status}`);
+        console.log(`🎰 [SLOT-MACHINE] Response statusText: ${response.statusText}`);
+
+        let errorData;
+        try {
+          errorData = await response.clone().json();
+          console.log(`🎰 [SLOT-MACHINE] Error response body:`, errorData);
+        } catch (parseError) {
+          console.log(`🎰 [SLOT-MACHINE] Could not parse error response as JSON:`, parseError);
+          const textResponse = await response.clone().text();
+          console.log(`🎰 [SLOT-MACHINE] Error response as text:`, textResponse);
+          errorData = { error: textResponse };
+        }
+
+        console.error(`🎰 [SLOT-MACHINE] API error:`, errorData);
+        throw new Error(errorData.error || `Failed to save ${apiEndpoint}`);
+      }
+    } catch (error) {
+      console.log(`🎰 [SLOT-MACHINE] ===== CATCH BLOCK =====`);
+      console.error(`🎰 [SLOT-MACHINE] Error saving to API:`, error);
+      console.error(`🎰 [SLOT-MACHINE] Error name:`, error.name);
+      console.error(`🎰 [SLOT-MACHINE] Error message:`, error.message);
+      console.error(`🎰 [SLOT-MACHINE] Error stack:`, error.stack);
+
+      // Show error notification if available
+      if (window.showNotice) {
+        window.showNotice("error", "Error", `Failed to save selection. Please try again.`, 5000);
+      }
+    }
+  }
+
+  // Generic slot machine modal function
+  async function showSlotMachineModalStaff(config) {
+    const {
+      id,
+      title,
+      options,
+      selectedValue,
+      showCloseButton = true,
+      showCancelButton = true,
+      onSelect,
+      enableSearch = false,
+      fetchApiEndpoint,
+      searchText,
+      searchPlaceholder,
+      apiParams = {},
+      dataTransform,
+      showImages = false,
+      imageField = "image_url",
+      valueField = "value",
+      labelField = "label",
+      fetchOnLoad = false,
+      noResultsText = "No results found",
+    } = config;
+
+    // Check for dynamically updated options
+    const dynamicOptions = window.slotMachineOptions && window.slotMachineOptions[id];
+    const finalOptions = dynamicOptions || options;
+
+    // Initialize selectedIndex early to avoid reference errors
+    let selectedIndex = finalOptions.findIndex((option) => {
+      const optionValue = option[valueField] || option.value || option.place_id || option.id;
+
+      // Special handling for date fields (due-date components)
+      if (id.includes("due-date") || id.includes("dueDate")) {
+        if (optionValue && selectedValue) {
+          // Normalize both dates to ISO strings for comparison
+          const optionDate = new Date(optionValue);
+          const selectedDate = new Date(selectedValue);
+
+          // Check if both are valid dates and compare their time values
+          if (!isNaN(optionDate.getTime()) && !isNaN(selectedDate.getTime())) {
+            return optionDate.getTime() === selectedDate.getTime();
+          }
+        }
+      }
+
+      return optionValue && selectedValue && optionValue.toString() === selectedValue.toString();
+    });
+
+    // Initialize originalOptions immediately for static options (before search setup)
+    let originalOptions = [];
+    if (!fetchOnLoad && finalOptions.length > 0) {
+      originalOptions = [...finalOptions];
+      console.log(
+        `🔍 [SLOT-MACHINE] Initialized originalOptions with ${originalOptions.length} static options`
+      );
+      console.log(`🔍 [SLOT-MACHINE] Sample option structure:`, originalOptions[0]);
+    }
+
+    // Helper function to create LI elements consistently
+    function createOptionElement(option, index, isSelected = false) {
+      const li = document.createElement("li");
+      li.className = liClassName;
+
+      // Base styles
+      let baseStyles = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 3rem;
+        text-align: center;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-height: 48px;
+        padding: 12px 16px;
+        user-select: none;
+        position: relative;
+      `;
+
+      // Add selected styling if needed
+      if (isSelected) {
+        baseStyles += `
+          background: bg-primary-500 !important;
+          color: white !important; 
+          border-radius: 8px !important;
+          margin: 0 8px !important;
+        `;
+        li.classList.add("selected");
+      }
+
+      li.style.cssText = baseStyles;
+
+      const span = document.createElement("span");
+      span.className = spanClassName;
+      span.style.cssText = `
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.2s;
+        width: 100%;
+      `;
+
+      // Set content and data attributes
+      span.textContent =
+        option[labelField] || option.label || option.name || option.description || option;
+      span.dataset.value =
+        option[valueField] || option.value || option.place_id || option.id || option;
+      span.dataset.label =
+        option[labelField] || option.label || option.name || option.description || option;
+      span.dataset.index = index;
+
+      li.appendChild(span);
+      return li;
+    }
+
+    // Helper function to create message LI elements
+    function createMessageElement(message, isError = false) {
+      const li = document.createElement("li");
+      li.className = `${liClassName} ${isError ? "error-message" : "info-message"}`;
+      li.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 3rem;
+        text-align: center;
+        font-style: italic;
+      `;
+      li.textContent = message;
+      return li;
+    }
+
+    // Helper function to populate options list
+    function populateOptionsList(optionsArray, clearExisting = true) {
+      if (clearExisting) {
+        optionsList.innerHTML = "";
+      }
+
+      let newSelectedIndex = -1;
+
+      if (optionsArray.length > 0) {
+        optionsArray.forEach((option, index) => {
+          const optionValue = option[valueField] || option.value || option.place_id || option.id;
+          const isSelected =
+            optionValue && selectedValue && optionValue.toString() === selectedValue.toString();
+
+          // Track the new selected index in the filtered results
+          if (isSelected) {
+            newSelectedIndex = index;
+          }
+
+          const li = createOptionElement(option, index, isSelected);
+          optionsList.appendChild(li);
+        });
+      } else {
+        // Show empty state message when no options are available
+        const messageLi = createMessageElement(noResultsText || "No results found");
+        optionsList.appendChild(messageLi);
+      }
+
+      // Handle single item case - if there's only one option and no selection, select it by default
+      if (newSelectedIndex === -1 && optionsArray.length === 1) {
+        newSelectedIndex = 0;
+      }
+
+      return newSelectedIndex;
+    }
+
+    // Lock body scroll to prevent background scrolling (Safari iOS compatible)
+    if (window.lockBodyScroll) {
+      window.lockBodyScroll();
+    } else {
+      // Fallback for older implementations
+      document.body.style.overflow = "hidden";
+    }
+
+    // Create modal using partial route
+    const headers = new Headers();
+    headers.set("x-component-id", id);
+    headers.set("x-modal-title", title);
+    headers.set("x-show-search", enableSearch.toString());
+    headers.set("x-cancel-button", "Cancel");
+    headers.set("x-select-button", "Select");
+    headers.set("x-no-results-text", noResultsText);
+    headers.set("x-global-input-classes", globalInputClasses || "");
+
+    // Add search-specific headers if search is enabled
+    if (enableSearch) {
+      headers.set("x-search-text", searchText || "");
+      headers.set("x-search-placeholder", searchPlaceholder || "Type to search...");
+    }
+
+    let response;
+    let modalHTML;
+
+    try {
+      console.log(`🎰 [SLOT-MACHINE-${id}] Fetching modal partial...`);
+
+      response = await fetch("/partials/slot-machine-modal", {
+        headers: headers,
+      });
+
+      console.log(`🎰 [SLOT-MACHINE-${id}] Fetch response:`, {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`🎰 [SLOT-MACHINE-${id}] Failed to fetch slot machine modal partial:`, {
+          status: response.status,
+          statusText: response.statusText,
+          errorText: errorText.substring(0, 200),
+        });
+
+        // Show error notification to user
+        if (window.showNotice) {
+          window.showNotice(
+            "error",
+            "Failed to Load Templates",
+            "Unable to load templates. Please try again.",
+            5000
+          );
+        }
+
+        // Unlock body scroll before returning
+        if (window.unlockBodyScroll) {
+          window.unlockBodyScroll();
+        } else {
+          document.body.style.overflow = "";
+        }
+
+        return;
+      }
+
+      modalHTML = await response.text();
+      console.log(
+        `🎰 [SLOT-MACHINE-${id}] Modal HTML fetched successfully, length:`,
+        modalHTML.length
+      );
+    } catch (error) {
+      console.error(`🎰 [SLOT-MACHINE-${id}] Error fetching modal partial:`, error);
+
+      // Show error notification to user
+      if (window.showNotice) {
+        window.showNotice(
+          "error",
+          "Failed to Load Templates",
+          `Unable to load templates: ${error.message}`,
+          5000
+        );
+      }
+
+      // Unlock body scroll before returning
+      if (window.unlockBodyScroll) {
+        window.unlockBodyScroll();
+      } else {
+        document.body.style.overflow = "";
+      }
+
+      return;
+    }
+    const modalWrapper = document.createElement("div");
+    modalWrapper.innerHTML = modalHTML;
+    const modal = modalWrapper.firstElementChild;
+
+    // Get the modal content from the partial
+    const modalContent = modal.querySelector(".mx-4.max-h-\\[90vh\\].w-full.max-w-2xl");
+
+    // Get references to elements from the partial
+    const optionsList = modal.querySelector(`#${id}-slot-options-list`);
+    const selectButton = modal.querySelector(`#${id}-slot-select-btn`);
+    const cancelButton = modal.querySelector(`#${id}-slot-cancel-btn`);
+    const closeButton = modal.querySelector(`#${id}-close-slot-modal`);
+    const searchInput = modal.querySelector(`#${id}-slot-search-input`);
+    const clearButton = modal.querySelector(`#${id}-slot-clear-btn`);
+    const searchButton = modal.querySelector(`#${id}-slot-search-btn`);
+    const liClassName = "text-black dark:text-white";
+    const spanClassName = "slot-machine-item-text";
+
+    // Add clear button functionality
+    if (searchInput && clearButton) {
+      // Show/hide clear button based on input value
+      const toggleClearButton = () => {
+        if (searchInput.value.length > 0) {
+          clearButton.classList.remove("opacity-0", "pointer-events-none");
+          clearButton.classList.add("opacity-100");
+        } else {
+          clearButton.classList.add("opacity-0", "pointer-events-none");
+          clearButton.classList.remove("opacity-100");
+        }
+      };
+
+      // Clear input when clear button is clicked
+      clearButton.addEventListener("click", () => {
+        searchInput.value = "";
+        searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+        toggleClearButton();
+        searchInput.focus();
+      });
+
+      // Toggle clear button visibility on input
+      searchInput.addEventListener("input", toggleClearButton);
+
+      // Initial state check
+      toggleClearButton();
+    }
+
+    // Add event listeners to buttons from the partial
+    if (closeButton) {
+      closeButton.addEventListener("click", async () => {
+        await cleanupModal();
+        modal.remove();
+      });
+    }
+
+    if (cancelButton) {
+      cancelButton.addEventListener("click", async () => {
+        await cleanupModal();
+        modal.remove();
+      });
+    }
+
+    // Focus search input after modal is fully rendered (only for non-fetchOnLoad modals)
+    if (searchInput) {
+      // Use setTimeout to ensure the modal is fully rendered
+      setTimeout(() => {
+        searchInput.focus();
+      }, 100);
+    }
+
+    // Add search functionality if enabled
+    if (enableSearch && searchInput) {
+      console.log(
+        `🔍 [SLOT-MACHINE] Setting up search for ${id}, enableSearch: ${enableSearch}, searchInput: ${!!searchInput}, fetchOnLoad: ${fetchOnLoad}, finalOptions: ${finalOptions.length}`
+      );
+      let searchTimeout;
+      // originalOptions is now initialized earlier in the function
+
+      searchInput.addEventListener("input", (e) => {
+        const query = e.target.value.trim();
+        console.log(
+          `🔍 [SLOT-MACHINE] Search input changed: "${query}", originalOptions: ${originalOptions.length}`
+        );
+
+        // Clear previous timeout
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+        }
+
+        // If fetchOnLoad is true OR we have pre-populated options without an API endpoint, filter existing options
+        if (
+          fetchOnLoad ||
+          (!fetchApiEndpoint && (originalOptions.length > 0 || finalOptions.length > 0))
+        ) {
+          // Store original options on first search
+          if (originalOptions.length === 0) {
+            // If we have finalOptions (pre-populated from props), use those
+            if (finalOptions.length > 0) {
+              originalOptions = finalOptions.map((option, index) => ({
+                value: option[valueField] || option.value || "",
+                label: option[labelField] || option.label || "",
+                index: index,
+              }));
+            } else {
+              // Otherwise, get from DOM
+              originalOptions = Array.from(optionsList.querySelectorAll("li")).map((li, index) => {
+                const span = li.querySelector("span");
+                return {
+                  value: span?.dataset.value || "",
+                  label: span?.dataset.label || "",
+                  index: index,
+                };
+              });
+            }
+          }
+
+          // If search is cleared, restore all original options
+          if (query.length === 0) {
+            if (optionsList) {
+              optionsList.innerHTML = "";
+              originalOptions.forEach((option, index) => {
+                const li = document.createElement("li");
+                li.className = spanClassName;
+                li.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 3rem;
+        text-align: center;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-height: 48px;
+        padding: 12px 16px;
+        user-select: none;
+        position: relative;
+      `;
+
+                const span = document.createElement("span");
+                span.className = spanClassName;
+                span.style.cssText = `
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.2s;
+        width: 100%;
+      `;
+
+                span.textContent = option.label;
+                span.dataset.value = option.value;
+                span.dataset.label = option.label;
+                span.dataset.index = index;
+
+                li.appendChild(span);
+                optionsList.appendChild(li);
+              });
+            }
+            return;
+          }
+
+          // Filter options based on search query
+          console.log(`🔍 [SLOT-MACHINE] Filtering options with query: "${query}"`);
+          console.log(
+            `🔍 [SLOT-MACHINE] Original options:`,
+            originalOptions.map((o) => ({ label: o.label, value: o.value }))
+          );
+
+          const filteredOptions = originalOptions.filter((option) => {
+            const matches = option.label.toLowerCase().includes(query.toLowerCase());
+            console.log(
+              `🔍 [SLOT-MACHINE] Option "${option.label}" matches "${query}": ${matches}`
+            );
+            return matches;
+          });
+          console.log(
+            `🔍 [SLOT-MACHINE] Filtered ${originalOptions.length} options to ${filteredOptions.length} results`
+          );
+
+          // Update the options list
+          if (optionsList) {
+            optionsList.innerHTML = "";
+
+            if (filteredOptions.length > 0) {
+              console.log(`🔍 [SLOT-MACHINE] Showing ${filteredOptions.length} filtered results`);
+              const newSelectedIndex = populateOptionsList(filteredOptions);
+              selectedIndex = newSelectedIndex;
+
+              // Update selection styling and center the selected item
+              updateSelection();
+              centerSelectedItem();
+            } else {
+              console.log(
+                `🔍 [SLOT-MACHINE] No matching results found, showing no-results message`
+              );
+              // Show "no results" message
+              const messageLi = createMessageElement("No matching clients found");
+              optionsList.innerHTML = "";
+              optionsList.appendChild(messageLi);
+              selectedIndex = -1;
+            }
+          }
+          return;
+        }
+
+        // Original API-based search for non-fetchOnLoad cases
+        if (query.length >= 2) {
+          searchTimeout = setTimeout(async () => {
+            try {
+              // console.log(`🔍 [SLOT-MACHINE] Searching for: ${query}`);
+
+              // Build search URL with API params
+              const searchParams = new URLSearchParams({
+                input: query,
+                ...apiParams,
+              });
+
+              const response = await fetch(`${fetchApiEndpoint}?${searchParams}`);
+              if (!response.ok) {
+                throw new Error(`Search failed: ${response.status}`);
+              }
+
+              const data = await response.json();
+              console.log(`🔍 [SLOT-MACHINE] Search results:`, data);
+
+              // Transform data if transform function exists
+              let transformedData = data;
+              if (dataTransform && typeof window[dataTransform] === "function") {
+                transformedData = window[dataTransform](data);
+                console.log(`🔍 [SLOT-MACHINE] Transformed data:`, transformedData);
+              }
+
+              // Handle different data formats
+              let optionsArray = [];
+              if (Array.isArray(transformedData)) {
+                optionsArray = transformedData;
+              } else if (transformedData && Array.isArray(transformedData.predictions)) {
+                // Google Places format
+                optionsArray = transformedData.predictions;
+              } else if (transformedData && Array.isArray(transformedData.results)) {
+                // Alternative format
+                optionsArray = transformedData.results;
+              } else if (
+                transformedData &&
+                transformedData.data &&
+                Array.isArray(transformedData.data)
+              ) {
+                // Wrapped format
+                optionsArray = transformedData.data;
+              }
+
+              console.log(`🔍 [SLOT-MACHINE] Options array:`, optionsArray);
+
+              // Update options list with search results
+              if (optionsList) {
+                const newSelectedIndex = populateOptionsList(optionsArray);
+                selectedIndex = newSelectedIndex;
+                updateSelection();
+                centerSelectedItem();
+              }
+            } catch (error) {
+              console.error(`🔍 [SLOT-MACHINE] Search error:`, error);
+
+              // Show error message
+              if (optionsList) {
+                const errorLi = createMessageElement("Error loading results", true);
+                optionsList.innerHTML = "";
+                optionsList.appendChild(errorLi);
+              }
+            }
+          }, 300); // 300ms debounce
+        } else if (query.length === 0) {
+          // Restore original options when search is empty
+          if (optionsList) {
+            // Use originalOptions if available (for static options), otherwise use finalOptions
+            const optionsToRestore = originalOptions.length > 0 ? originalOptions : finalOptions;
+            const newSelectedIndex = populateOptionsList(optionsToRestore);
+            selectedIndex = newSelectedIndex;
+            updateSelection();
+            centerSelectedItem();
+          }
+        }
+      });
+    }
+
+    // Fetch data on load if fetchOnLoad is true
+    if (fetchOnLoad && fetchApiEndpoint && optionsList) {
+      try {
+        console.log(`🔄 [SLOT-MACHINE] Fetching data on load for: ${fetchApiEndpoint}`);
+
+        // Build URL with API params
+        const searchParams = new URLSearchParams(apiParams);
+        const response = await fetch(`${fetchApiEndpoint}?${searchParams}`);
+
+        if (!response.ok) {
+          throw new Error(`Fetch failed: ${response.status}`);
+        }
+
+        let data;
+        try {
+          data = await response.json();
+          console.log(`🔄 [SLOT-MACHINE] Load data response:`, data);
+        } catch (jsonError) {
+          console.error(`🔄 [SLOT-MACHINE] Error parsing JSON response:`, jsonError);
+          // Try to get response as text for debugging
+          try {
+            const responseClone = response.clone();
+            const textResponse = await responseClone.text();
+            console.error(`🔄 [SLOT-MACHINE] Response as text:`, textResponse);
+            throw new Error(`Invalid JSON response: ${textResponse.substring(0, 100)}`);
+          } catch (textError) {
+            throw new Error(`Failed to parse response: ${jsonError.message}`);
+          }
+        }
+
+        // Check if data exists
+        if (!data) {
+          console.warn(`🔄 [SLOT-MACHINE] Empty or null response received`);
+          if (optionsList) {
+            const messageLi = createMessageElement(noResultsText || "No results found");
+            optionsList.innerHTML = "";
+            optionsList.appendChild(messageLi);
+            selectedIndex = -1;
+            updateSelection();
+          }
+          return;
+        }
+
+        // Transform data if transform function exists
+        let transformedData = data;
+        if (dataTransform && typeof window[dataTransform] === "function") {
+          transformedData = window[dataTransform](data);
+          console.log(`🔄 [SLOT-MACHINE] Transformed load data:`, transformedData);
+        }
+
+        // Handle different data formats
+        let optionsArray = [];
+        if (Array.isArray(transformedData)) {
+          optionsArray = transformedData;
+        } else if (transformedData && Array.isArray(transformedData.predictions)) {
+          // Google Places format
+          optionsArray = transformedData.predictions;
+        } else if (transformedData && Array.isArray(transformedData.results)) {
+          // Alternative format
+          optionsArray = transformedData.results;
+        } else if (transformedData && Array.isArray(transformedData.clients)) {
+          // Clients API format
+          optionsArray = transformedData.clients;
+        } else if (transformedData && transformedData.data && Array.isArray(transformedData.data)) {
+          // Wrapped format
+          optionsArray = transformedData.data;
+        }
+
+        console.log(`🔄 [SLOT-MACHINE] Load options array:`, optionsArray);
+
+        // Update finalOptions with fetched data
+        if (optionsArray.length > 0) {
+          const newSelectedIndex = populateOptionsList(optionsArray);
+          selectedIndex = newSelectedIndex;
+          updateSelection();
+          centerSelectedItem();
+        } else {
+          // Show empty state when no options are returned
+          console.log(`🔄 [SLOT-MACHINE] No options returned from API`);
+          if (optionsList) {
+            const messageLi = createMessageElement(noResultsText || "No results found");
+            optionsList.innerHTML = "";
+            optionsList.appendChild(messageLi);
+            selectedIndex = -1;
+            updateSelection();
+          }
+        }
+      } catch (error) {
+        console.error(`🔄 [SLOT-MACHINE] Error fetching data on load:`, error);
+        // Show error message in the options list
+        if (optionsList) {
+          const errorLi = createMessageElement("Error loading results", true);
+          optionsList.innerHTML = "";
+          optionsList.appendChild(errorLi);
+          selectedIndex = -1;
+          updateSelection();
+        }
+      }
+
+      // Focus search input after fetchOnLoad data is populated
+      if (searchInput) {
+        setTimeout(() => {
+          searchInput.focus();
+        }, 100);
+      }
+    }
+
+    // Populate options in the list from the partial (only if not fetched on load)
+    if (optionsList && !fetchOnLoad) {
+      optionsList.style.transform = "translateY(0px)";
+      populateOptionsList(finalOptions);
+    }
+
+    // Slot machine functionality
+
+    // Add event listener to select button from the partial
+    if (selectButton) {
+      selectButton.addEventListener("click", async () => {
+        // Get the currently selected option from the DOM
+        const currentOptions = optionsList.querySelectorAll("li");
+        const selectedItem = currentOptions[selectedIndex];
+
+        if (selectedItem && selectedIndex >= 0) {
+          const span = selectedItem.querySelector("span");
+          if (span) {
+            const value = span.dataset.value;
+            const label = span.dataset.label;
+
+            await cleanupModal();
+            modal.remove();
+
+            // Call the local handleSelect function
+            handleSelect(value, label);
+          }
+        }
+      });
+    }
+
+    // concept for clicking on the item directly, but it doesn't work as expected
+
+    // const currentOptions = optionsList.querySelectorAll("li");
+    // const selectedItem = currentOptions[selectedIndex];
+    // if (selectedItem && selectedIndex >= 0) {
+    //   selectedItem.addEventListener("click", async () => {
+    //     await cleanupModal();
+    //     modal.remove();
+
+    //     const value = span.dataset.value;
+    //     const label = span.dataset.label;
+
+    //     // Call the local handleSelect function
+    //     handleSelect(value, label);
+    //   });
+    // }
+
+    // Add modal to DOM
+    document.body.appendChild(modal);
+
+    // Handle single item case - if there's only one option, select it by default
+    if (selectedIndex === -1 && finalOptions.length === 1) {
+      selectedIndex = 0;
+    }
+
+    // Hide empty state if we have options - do this AFTER appending modal to DOM
+    if (finalOptions.length > 0 || optionsList.querySelectorAll("li").length > 0) {
+      const emptyState = modal.querySelector(".slot-empty-state");
+      if (emptyState) {
+        emptyState.classList.add("hidden");
+      }
+    }
+    // Debug logging for selection
+    // // console.log("🎰 [SLOT-MACHINE] Selection debug:", {
+    //   selectedValue,
+    //   selectedValueType: typeof selectedValue,
+    //   options: finalOptions.map((opt) => ({
+    //     value: opt.value,
+    //     valueType: typeof opt.value,
+    //     label: opt.label,
+    //   })),
+    //   selectedIndex,
+    //   foundOption: finalOptions[selectedIndex],
+    // });
+
+    // Center selected item
+    function centerSelectedItem() {
+      // Only apply translateY if there's a valid selection
+      if (selectedIndex >= 0) {
+        // Use responsive item height based on screen size
+        const itemHeight = window.innerWidth <= 768 ? 56 : 48;
+        const containerHeight = 192;
+        const centerOffset = (containerHeight - itemHeight) / 2;
+        const targetY = -(selectedIndex * itemHeight) + centerOffset;
+
+        // Use smooth transition
+        optionsList.style.transition = "transform 0.2s ease-out";
+        optionsList.style.transform = `translateY(${targetY}px)`;
+      } else {
+        // No selection - keep at default position
+        optionsList.style.transition = "transform 0.2s ease-out";
+        optionsList.style.transform = "translateY(0px)";
+      }
+
+      // Update centering (visual feedback only, no selection styling)
+      updateCentering();
+    }
+
+    // Add checkmark to selected item
+    function addCheckmark(item) {
+      // Remove existing checkmark if any
+      const existingCheckmark = item.querySelector(".checkmark");
+      if (existingCheckmark) {
+        existingCheckmark.remove();
+      }
+
+      const checkmark = document.createElement("div");
+      checkmark.className = "checkmark";
+      checkmark.innerHTML = "✓";
+      checkmark.style.cssText = `
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: all 0.2s ease-out;
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 16px;
+        animation: checkmarkPulse 1.5s ease-in-out infinite;
+        z-index: 10;
+      `;
+
+      item.appendChild(checkmark);
+    }
+
+    // Remove checkmark from item
+    function removeCheckmark(item) {
+      const checkmark = item.querySelector(".checkmark");
+      if (checkmark) {
+        checkmark.remove();
+      }
+    }
+
+    // Update selection styling (only for clicked items)
+    function updateSelection() {
+      const items = optionsList.querySelectorAll("li");
+      items.forEach((item, index) => {
+        if (index === selectedIndex && selectedIndex >= 0) {
+          item.classList.add("selected", "bg-primary-500", "text-white");
+          // Reset and apply selected styles
+          item.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 3rem;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 48px;
+            padding: 12px 16px;
+            user-select: none;
+            position: relative;
+            border-radius: 8px;
+            margin: 0 8px;
+
+            `;
+          addCheckmark(item);
+          if (selectButton) selectButton.disabled = false;
+        } else {
+          item.classList.remove("selected", "bg-primary-500", "text-white");
+          item.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 3rem;
+            text-align: center;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 48px;
+            padding: 12px 16px;
+            user-select: none;
+            position: relative;
+          `;
+          removeCheckmark(item);
+        }
+      });
+
+      // Disable select button if no item is selected
+      if (selectedIndex < 0) {
+        if (selectButton) selectButton.disabled = true;
+      }
+    }
+
+    // Update visual centering (without selection styling)
+    function updateCentering() {
+      const items = optionsList.querySelectorAll("li");
+      items.forEach((item, index) => {
+        // Only update the centering, not the selection styling
+        if (index === selectedIndex && selectedIndex >= 0) {
+          // Just center the item visually, don't apply selected styling
+          item.style.transform = "scale(1.05)";
+          item.style.transition = "transform 0.2s ease-out";
+        } else {
+          item.style.transform = "scale(1)";
+          item.style.transition = "transform 0.2s ease-out";
+        }
+      });
+    }
+
+    // Handle wheel events (desktop) with natural scroll sensitivity
+    let wheelAccumulator = 0;
+    const wheelThreshold = 20; // Lower threshold for more responsive scrolling
+
+    optionsList.addEventListener("wheel", (e) => {
+      e.preventDefault();
+
+      // Accumulate wheel delta to make scrolling feel more natural
+      wheelAccumulator += e.deltaY;
+
+      // Only move when we've accumulated enough scroll distance
+      if (Math.abs(wheelAccumulator) >= wheelThreshold) {
+        const deltaY = wheelAccumulator;
+        wheelAccumulator = 0; // Reset accumulator
+
+        // Get current options count from DOM
+        const currentOptions = optionsList.querySelectorAll("li");
+        const maxIndex = currentOptions.length - 1;
+
+        // Calculate new index based on scroll direction
+        if (deltaY > 0) {
+          // Scrolling down - move to next item
+          selectedIndex = Math.min(selectedIndex + 1, maxIndex);
+        } else {
+          // Scrolling up - move to previous item
+          selectedIndex = Math.max(selectedIndex - 1, 0);
+        }
+
+        // Smoothly center the selected item and update selection
+        centerSelectedItem();
+        updateSelection();
+      }
+    });
+
+    // Handle touch events (mobile) with throw/fling momentum
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isScrolling = false;
+    let momentumAnimation = null;
+
+    optionsList.addEventListener(
+      "touchstart",
+      (e) => {
+        e.preventDefault();
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+        isScrolling = false;
+
+        // Cancel any ongoing momentum animation
+        if (momentumAnimation) {
+          cancelAnimationFrame(momentumAnimation);
+          momentumAnimation = null;
+        }
+      },
+      { passive: false }
+    );
+
+    optionsList.addEventListener(
+      "touchmove",
+      (e) => {
+        e.preventDefault();
+        if (!isScrolling) {
+          isScrolling = true;
+        }
+      },
+      { passive: false }
+    );
+
+    optionsList.addEventListener(
+      "touchend",
+      (e) => {
+        e.preventDefault();
+        if (!isScrolling) return;
+
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchEndTime = Date.now();
+        const deltaY = touchStartY - touchEndY;
+        const deltaTime = touchEndTime - touchStartTime;
+
+        // Calculate velocity (pixels per millisecond)
+        const velocity = deltaY / deltaTime;
+
+        // Only process if there was significant movement
+        if (Math.abs(deltaY) > 10) {
+          // Get current options count from DOM
+          const currentOptions = optionsList.querySelectorAll("li");
+          const maxIndex = currentOptions.length - 1;
+
+          // Determine how many items to scroll based on velocity
+          // Fast swipe = more items, slow swipe = 1 item
+          const minVelocity = 0.3; // pixels/ms threshold for throw
+          const itemsToScroll =
+            Math.abs(velocity) > minVelocity
+              ? Math.min(Math.ceil(Math.abs(velocity) * 2), 5) // Max 5 items per throw
+              : 1;
+
+          // Apply momentum with animation
+          let itemsMoved = 0;
+          const direction = deltaY > 0 ? 1 : -1;
+          const animationDuration = Math.min(itemsToScroll * 150, 600); // Longer animation for more items
+          const startTime = Date.now();
+
+          function animateMomentum() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / animationDuration, 1);
+
+            // Easing function (ease-out quad for natural deceleration)
+            const eased = 1 - Math.pow(1 - progress, 2);
+            const targetItemsMoved = Math.floor(eased * itemsToScroll);
+
+            if (targetItemsMoved > itemsMoved) {
+              itemsMoved = targetItemsMoved;
+
+              if (direction > 0) {
+                // Swiping up - move to next items
+                selectedIndex = Math.min(selectedIndex + 1, maxIndex);
+              } else {
+                // Swiping down - move to previous items
+                selectedIndex = Math.max(selectedIndex - 1, 0);
+              }
+
+              centerSelectedItem();
+              updateSelection();
+            }
+
+            if (progress < 1 && itemsMoved < itemsToScroll) {
+              momentumAnimation = requestAnimationFrame(animateMomentum);
+            } else {
+              momentumAnimation = null;
+            }
+          }
+
+          // Start momentum animation
+          momentumAnimation = requestAnimationFrame(animateMomentum);
+        }
+      },
+      { passive: false }
+    );
+
+    // Handle click on items
+    optionsList.addEventListener("click", (e) => {
+      const span = e.target.closest("span[data-index]");
+
+      if (span) {
+        // blur the search input for mobile if it exists
+        if (searchInput) {
+          searchInput.blur();
+        }
+        selectedIndex = parseInt(span.dataset.index);
+        centerSelectedItem();
+        // Apply full selection styling on click
+        updateSelection();
+      }
+    });
+
+    // Handle touch on items for mobile
+    optionsList.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      const span = e.target.closest("span[data-index]");
+      if (span) {
+        selectedIndex = parseInt(span.dataset.index);
+        centerSelectedItem();
+        // Apply full selection styling on touch
+        updateSelection();
+      }
+    });
+
+    // Handle keyboard navigation
+    document.addEventListener("keydown", (e) => {
+      // Only handle keyboard events when modal is open
+      if (!modal || !document.body.contains(modal)) return;
+
+      const currentOptions = optionsList.querySelectorAll("li");
+      const maxIndex = currentOptions.length - 1;
+
+      switch (e.key) {
+        case "ArrowUp":
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, 0);
+          centerSelectedItem();
+          updateSelection();
+          break;
+
+        case "ArrowDown":
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, maxIndex);
+          centerSelectedItem();
+          updateSelection();
+          break;
+
+        case "Enter":
+          e.preventDefault();
+          if (selectedIndex >= 0 && selectedIndex <= maxIndex) {
+            // Trigger the same logic as clicking the select button
+            const selectedItem = currentOptions[selectedIndex];
+            if (selectedItem) {
+              const span = selectedItem.querySelector("span");
+              if (span) {
+                const value = span.dataset.value;
+                const label = span.dataset.label;
+
+                // Close modal and call handleSelect
+                cleanupModal();
+                modal.remove();
+
+                handleSelect(value, label);
+              }
+            }
+          }
+          break;
+
+        case "Escape":
+          e.preventDefault();
+          // Close modal without selecting
+          cleanupModal();
+          modal.remove();
+          break;
+      }
+    });
+
+    // Initial setup
+    centerSelectedItem();
+    updateSelection();
+
+    // Cleanup function to restore body scroll
+    function cleanupModal() {
+      // Unlock body scroll (Safari iOS compatible)
+      if (window.unlockBodyScroll) {
+        window.unlockBodyScroll();
+      } else {
+        // Fallback for older implementations
+        document.body.style.overflow = "";
+      }
+    }
+
+    // Close modal when clicking outside
+    modal.addEventListener("click", async (e) => {
+      if (e.target === modal) {
+        await cleanupModal();
+        modal.remove();
+      }
+    });
+  }
+
+  // Local handleSelect function for this specific slot machine instance
+  function handleSelect(value, label) {
+    console.log(`🎰 [SLOT-MACHINE-${id}] ===== HANDLESELECT CALLED =====`);
+    console.log(`🎰 [SLOT-MACHINE-${id}] Value: ${value}, Label: ${label}`);
+
+    // Get the elements within the function scope
+    const hiddenInput = document.getElementById(`${id}-value`);
+    const trigger = document.getElementById(id);
+
+    // Update the hidden input
+    if (hiddenInput) {
+      hiddenInput.value = value;
+      console.log(`🎰 [SLOT-MACHINE-${id}] Updated hidden input with value: ${value}`);
+    }
+
+    // Update the button text
+    if (trigger) {
+      const buttonTextSpan = trigger.querySelector(".button-text");
+      if (buttonTextSpan) {
+        buttonTextSpan.textContent = label;
+      } else {
+        trigger.textContent = label;
+      }
+      console.log(`🎰 [SLOT-MACHINE-${id}] Updated button text to: ${label}`);
+    }
+
+    console.log(`✅ [SLOT-MACHINE-${id}] Selected: ${label} (${value})`);
+
+    // Auto-save to API if saveApiEndpoint is provided
+    if (saveApiEndpoint) {
+      console.log(`🎰 [SLOT-MACHINE-${id}] Auto-saving to API with projectId: ${projectId}`);
+      if (!projectId || projectId === "") {
+        console.error(`🎰 [SLOT-MACHINE-${id}] Cannot save - projectId is empty or undefined`);
+        if (window.showNotice) {
+          window.showNotice("error", "Error", "Project ID is missing. Cannot assign staff.", 5000);
+        }
+        return;
+      }
+      saveToAPI(saveApiEndpoint, value, label, projectId);
+    } else {
+      console.log(`🎰 [SLOT-MACHINE-${id}] Not auto-saving to API`);
+    }
+  }
+
+  // Expose function to update slot machine options dynamically
+  // window.updateSlotMachineOptions = function (componentId, newOptions) {
+  //   // Store the new options for this component
+  //   if (!window.slotMachineOptions) {
+  //     window.slotMachineOptions = {};
+  //   }
+  //   window.slotMachineOptions[componentId] = newOptions;
+  // };
+</script>
+
+<style>
+  /* Prevent text selection in modal */
+  .slot-machine-item {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    touch-action: pan-y !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  /* Improve touch targets for mobile */
+  @media (max-width: 768px) {
+    .slot-machine-item {
+      min-height: 56px !important;
+      height: 56px !important;
+      padding: 16px !important;
+      font-size: 16px !important;
+    }
+
+    .slot-machine-item-text {
+      font-size: 16px !important;
+    }
+  }
+
+  .slot-machine-item > span {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+  }
+
+  /* Smooth transitions */
+  .transition-transform {
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  /* Slot machine container styling */
+  .slot-machine-container {
+    min-height: 12rem !important;
+    max-height: 12rem !important;
+    height: 12rem !important;
+    display: block !important;
+  }
+
+  /* Ensure the slot machine list takes full height */
+  .slot-machine-container ul {
+    height: 100% !important;
+    min-height: 12rem !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  /* Ensure slot machine items are visible */
+  .slot-machine-item {
+    min-height: 3rem !important;
+    height: 3rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* Ensure selected items have white text */
+  .slot-machine-item.selected {
+    color: white !important;
+  }
+
+  .slot-machine-item.selected span {
+    color: white !important;
+  }
+
+  /* Default option text color */
+  .slot-machine-item {
+    color: #111827;
+  }
+
+  /* Checkmark pulse animation */
+  @keyframes checkmarkPulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+      text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+    50% {
+      opacity: 0.8;
+      transform: translateY(-50%) scale(1.1);
+      text-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+    }
+  }
+
+  @keyframes checkmarkPulseDark {
+    0%,
+    100% {
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+      text-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+    }
+    50% {
+      opacity: 0.9;
+      transform: translateY(-50%) scale(1.1);
+      text-shadow: 0 0 16px rgba(16, 185, 129, 1);
+    }
+  }
+
+  /* Empty state styling */
+  .slot-empty-state {
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  /* Message element styling */
+  .error-message {
+    color: #ef4444 !important;
+  }
+
+  .info-message {
+    color: #6b7280 !important;
+  }
+</style>
