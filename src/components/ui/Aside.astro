@@ -336,98 +336,55 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
       {
         currentUser &&
           currentRole === "Admin" &&
-          toolsNavItems.map((item) => (
-            <li>
-              <a
-                href={item.href}
-                class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`}
-                data-sidebar-collapse-item=""
-              >
-                {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
-                <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                  {item.label}
-                </span>
-              </a>
-            </li>
-          ))
-      }
-
-      {
-        currentUser && currentRole === "Admin" && (
-          <li>
-            <button
-              type="button"
-              class={`${anchorClasses} ${isActive("/tests") ? activeClasses : ""}`}
-              aria-controls="dropdown-tests"
-              data-collapse-toggle="dropdown-tests"
-              data-sidebar-collapse-item=""
-            >
-              <SimpleIcon
-                name="folder"
-                class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
-              />
-
-              <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide="">
-                Tests
-              </span>
-              <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
-            </button>
-
-            <ul id="dropdown-tests" class="hidden space-y-2 py-2 pl-8">
+          toolsNavItems.map((item) =>
+            item.children?.length ? (
+              <li>
+                <button
+                  type="button"
+                  class={`${anchorClasses} ${item.children.some((c) => isActive(c.href)) ? activeClasses : ""}`}
+                  aria-controls={`dropdown-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                  data-collapse-toggle={`dropdown-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                  data-sidebar-collapse-item=""
+                >
+                  {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
+                  <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide="">
+                    {item.label}
+                  </span>
+                  <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
+                </button>
+                <ul
+                  id={`dropdown-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                  class="hidden space-y-2 py-2 pl-8"
+                >
+                  {item.children.map((child) => (
+                    <li>
+                      <a
+                        href={child.href}
+                        class={`${anchorClasses} ${isActive(child.href) ? activeClasses : ""}`}
+                        data-sidebar-collapse-subitem=""
+                        data-sidebar-collapse-hide=""
+                      >
+                        {child.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ) : (
               <li>
                 <a
-                  href="/tests/cal-booking/"
-                  class={`${anchorClasses} ${isActive("/tests/cal-booking") ? activeClasses : ""}`}
-                  data-sidebar-collapse-subitem=""
-                  data-sidebar-collapse-hide=""
+                  href={item.href}
+                  class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`}
+                  data-sidebar-collapse-item=""
                 >
-                  Cal.com Booking
+                  {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
+                  <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
+                    {item.label}
+                  </span>
                 </a>
               </li>
-              <li>
-                <a
-                  href="/tests/push-notifications/"
-                  class={`${anchorClasses} ${isActive("/tests/push-notifications") ? activeClasses : ""}`}
-                  data-sidebar-collapse-subitem=""
-                  data-sidebar-collapse-hide=""
-                >
-                  Push Notifications
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/tests/vapi-booking/"
-                  class={`${anchorClasses} ${isActive("/tests/vapi-booking") ? activeClasses : ""}`}
-                  data-sidebar-collapse-subitem=""
-                  data-sidebar-collapse-hide=""
-                >
-                  VAPI Booking
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/tests/ai-autocomplete/"
-                  class={`${anchorClasses} ${isActive("/tests/ai-autocomplete") ? activeClasses : ""}`}
-                  data-sidebar-collapse-subitem=""
-                  data-sidebar-collapse-hide=""
-                >
-                  AI Autocomplete
-                </a>
-              </li>
-
-              <li>
-                <a
-                  href="/tests/google-signin/"
-                  class={`${anchorClasses} ${isActive("/tests/google-signin") ? activeClasses : ""}`}
-                  data-sidebar-collapse-subitem=""
-                  data-sidebar-collapse-hide=""
-                >
-                  Google Sign-In
-                </a>
-              </li>
-            </ul>
-          </li>
-        )
+            )
+          )
       }
     </ul>
   </div>

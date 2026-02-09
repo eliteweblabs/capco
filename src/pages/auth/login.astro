@@ -47,6 +47,7 @@ import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
 import App from "../../components/ui/App.astro";
+import LayoutTwoColumn from "../../components/layouts/LayoutTwoColumn.astro";
 import MultiStepForm from "../../components/form/MultiStepForm.astro";
 import { loginFormConfig } from "../../lib/forms/login-form-config";
 ---
@@ -65,15 +66,26 @@ import { loginFormConfig } from "../../lib/forms/login-form-config";
   {globalInputClasses}
   {primaryTextClasses}
   {secondaryTextClasses}
-  layout="centered"
 >
+  <LayoutTwoColumn title="Two Column" description="Two-column layout with centered content">
+    <div slot="left" class="hidden md:block max-w-md">
+      <!-- <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Left panel</h1>
+  <p class="text-gray-600 dark:text-gray-400">
+    Content here is centered horizontally and vertically within this panel.
+  </p> -->
+    </div>
+    <div slot="right" class="max-w-md">
+      <MultiStepForm config={loginFormConfig} initialData={{ redirect: redirectUrl }} />
+    </div>
+  </LayoutTwoColumn>
+
   <!-- <LayoutCentered
     title="Login / Register"
     description="Login or register to access your dashboard"
     {currentUser}
-  > -->
-  <MultiStepForm config={loginFormConfig} initialData={{ redirect: redirectUrl }} />
-  <!-- </LayoutCentered> -->
+  >
+    <MultiStepForm config={loginFormConfig} initialData={{ redirect: redirectUrl }} />
+  </LayoutCentered> -->
 </App>
 <!-- Multi-step Form -->
 

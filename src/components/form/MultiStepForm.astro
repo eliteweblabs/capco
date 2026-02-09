@@ -51,10 +51,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     class={config.progressBar ? "" : ""}
     data-form-config={JSON.stringify({ formId: config.formId, formConfig: config, initialData })}
   >
-    <!-- <div class="multi-step-form-spacer" aria-hidden="true"></div> -->
     <div
       class:list={[
-        "multi-step-form-steps overflow-y-visible p-8 md:p-16",
+        "multi-step-form-steps overflow-y-scroll no-scrollbar",
         initialCentered ? "centered" : "expand-down",
         containerClass,
       ]}
@@ -65,7 +64,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         config.steps.map((step) => (
           <div
             class:list={[
-              "step-content space-y-8 sm:space-y-8 md:space-y-10 lg:space-y-12 mb-6 overflow-y-visible", // leave mt-20 for tooltips
+              "step-content space-y-8 sm:space-y-8 md:space-y-10 lg:space-y-12 mb-6 overflow-y-visible text-lg md:text-xl", // leave mt-20 for tooltips
               step.stepNumber === 1 ? "first-step" : "",
             ]}
             data-step={step.stepNumber}
@@ -75,26 +74,29 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           >
             {/* Step Header */}
 
-            <div class="step-title" tabindex="-1">
-              {step.title && (
-                <h2
-                  class={`inline text-xl sm:text-2xl md:text-3xl ${
-                    step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
-                  }`}
-                  data-text={step.title}
-                  set:html={step.title}
-                  tabindex="-1"
-                />
-              )}
-              {step.subtitle && (
-                <p
-                  class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md"
-                  tabindex="-1"
-                >
-                  {step.subtitle}
-                </p>
-              )}
-            </div>
+            {step.title ||
+              (step.subtitle && (
+                <div class="step-title" tabindex="-1">
+                  {step.title && (
+                    <h2
+                      class={`inline ${
+                        step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
+                      }`}
+                      data-text={step.title}
+                      set:html={step.title}
+                      tabindex="-1"
+                    />
+                  )}
+                  {step.subtitle && (
+                    <p
+                      class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md"
+                      tabindex="-1"
+                    >
+                      {step.subtitle}
+                    </p>
+                  )}
+                </div>
+              ))}
 
             {/* Auth Providers (for registration and login forms) - at top */}
             {(step.additionalContent === "google-oauth" ||
@@ -166,9 +168,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 {step.fields.map((field) => (
                   <div
                     class:list={[
-                      field.type === "hidden"
-                        ? ""
-                        : "input-wrapper w-full text-xl sm:text-2xl md:text-3xl",
+                      field.type === "hidden" ? "" : "input-wrapper w-full",
                       field.columns === 1 ? "md:col-span-2" : "",
                     ]}
                     data-conditional-field={field.conditional ? field.conditional.field : undefined}
@@ -583,8 +583,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 <style is:global>
   /* Title scroll container with max height */
   .title-scroll-container {
-    position: relative;
     display: flex;
+    position: relative;
     flex-direction: column;
   }
 
@@ -596,9 +596,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content.has-typewriter textarea {
     /* max-height: 0; */
     opacity: 0;
-    overflow: hidden;
     transition:
       /* max-height 0.4s ease-out, */ opacity 0.7s ease-out;
+    overflow: hidden;
   }
 
   /* When typewriter completes, each reveals with its own transition-delay (set in JS) */
@@ -607,8 +607,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content.typewriter-complete button,
   .step-content.typewriter-complete a,
   .step-content.typewriter-complete textarea {
-    max-height: 50rem;
     opacity: 1;
+    max-height: 50rem;
     overflow: visible;
   }
 
@@ -618,8 +618,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content:not(.has-typewriter) button,
   .step-content:not(.has-typewriter) a,
   .step-content:not(.has-typewriter) textarea {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
   }
 </style>
 
@@ -627,18 +627,18 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   /* Wrapper: fixed. Initial top at 50dvh, expands down; when bottom would hit 4rem we switch to expand-up (class swap). */
   /* flex-start so step-content divs stack from top and user can scroll up through previous steps. */
   .multi-step-form-steps {
-    position: fixed;
-    left: 50%;
+    /* position: fixed;
     top: 0;
-    transform: translateX(-50%);
-    min-height: 0;
+    left: 50%; */
+    /* transform: translateX(-50%); */
     /* max-height: calc(100vh - 5rem);
     max-height: calc(100dvh - 5rem);
     max-width: var(--multi-step-form-width, 42rem); */
-    box-sizing: border-box;
+    /* box-sizing: border-box;
+    min-height: 0;
+    overflow-x: hidden; */
 
-    overflow-y: auto;
-    overflow-x: hidden;
+    /* overflow-y: auto; */
 
     /* -webkit-overflow-scrolling: touch; */
   }
@@ -657,24 +657,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
   /* Centered: when expandDown is false for current step, keep panel vertically centered */
   .multi-step-form-steps.centered {
-    top: 50%;
+    /* top: 50%;
     bottom: auto;
-    transform: translate(-50%, -50%);
     justify-content: center;
+    transform: translate(-50%, -50%); */
   }
-
-  .multi-step-form-steps::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Spacer grows/contracts with step content; height set by JS, clamped 60vh–80vh */
-  /* .multi-step-form-spacer {
-    min-height: 60vh;
-    max-height: 80vh;
-    height: 60vh;
-    pointer-events: none;
-    transition: height 0.35s ease-out;
-  } */
 
   /* Hide steps that are neither completed nor active so we don't scroll to blank content */
   .multi-step-form-steps .step-content:not(.completed):not(.active) {
@@ -689,21 +676,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     /* transform: translateY(60vh); */
   }
 
-  /* First step on load: slides up into view; when switching steps, initial-load skips animation */
-  /* .step-content.active {
-    animation: slideToTypewriterPosition 600ms ease-out forwards;
-    will-change: transform;
-    backface-visibility: hidden;
-  } */
-
-  /* When switching to a step (not first load), no slide-in so content doesn’t jump */
-  .step-content.active.initial-load {
-    animation: none;
-    opacity: 1;
-    /* transform: translateY(0); */
-    will-change: auto;
-  }
-
   /* Override default slide-in when going backward - panel comes from above */
 
   /* Step indicator states */
@@ -716,13 +688,13 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   }
 
   .step-indicator.active {
-    background-color: var(--color-secondary-400);
     animation: pulse 2s infinite;
+    background-color: var(--color-secondary-400);
   }
 
   .dark .step-indicator.active {
-    background-color: var(--color-secondary-600);
     animation: pulse 2s infinite;
+    background-color: var(--color-secondary-600);
   }
 
   .step-indicator.completed {
@@ -747,10 +719,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   /* Form is the scroll container; .multi-step-form-steps is the single scrollable content block */
   [data-multi-step-form] form {
     position: relative;
-    width: 100%;
     margin: 0 auto;
-    overflow-y: auto;
+    width: 100%;
     overflow-x: hidden;
+    overflow-y: auto;
     scroll-behavior: smooth;
     /* padding-top: 40vh; */
   }
@@ -789,14 +761,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   [data-multi-step-form]::before {
     /* content: ""; */
     position: fixed;
-    left: max(1rem, env(safe-area-inset-left));
-    right: max(1rem, env(safe-area-inset-right));
     top: 40vh;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--color-primary-500) 50%, transparent);
+    right: max(1rem, env(safe-area-inset-right));
+    left: max(1rem, env(safe-area-inset-left));
     opacity: 0.1;
-    pointer-events: none;
     z-index: 100;
+    background: linear-gradient(90deg, transparent, var(--color-primary-500) 50%, transparent);
+    height: 2px;
+    pointer-events: none;
   }
 
   /* @media (min-width: 640px) {
@@ -834,12 +806,12 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   /* When a panel is completed, collapse input wrapper width and align right */
   .step-content.completed .input-wrapper,
   .step-content.completed .inline-address-search-wrapper {
-    width: fit-content;
-    max-width: 100%;
-    margin-left: auto;
     transition:
       width 0.3s ease-out,
       margin 0.3s ease-out;
+    margin-left: auto;
+    width: fit-content;
+    max-width: 100%;
   }
 
   .step-content.completed .input-wrapper input,

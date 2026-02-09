@@ -1,0 +1,56 @@
+---
+/**
+ * Account dropdown panel for the header avatar (AuthIcon).
+ * Flowbite: trigger uses data-dropdown-toggle="account-dropdown"; this panel has id="account-dropdown".
+ * Navbar.astro attaches the logout handler to #logout-btn.
+ */
+interface Props {
+  currentUser: any;
+  projects: any[];
+  globalIconButtonClasses: string;
+  id: string;
+  title: string;
+}
+
+import SimpleIcon from "../common/SimpleIcon.astro";
+import CloseButton from "../ui/CloseButton.astro";
+import AssignedProjects from "../common/AssignedProjects.astro";
+const { id, title = "" } = Astro.props;
+---
+
+<!-- Account dropdown: Flowbite data-dropdown-toggle="account-dropdown" on AuthIcon trigger -->
+<div
+  id={`${id}-dropdown`}
+  class="z-10 hidden w-full max-w-md rounded-b-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
+  data-popper-placement="bottom"
+  aria-labelledby={`${id}-dropdown`}
+>
+  <div class="max-h-[85vh] overflow-hidden flex flex-col">
+    <div class="relative flex flex-col flex-1 min-h-0">
+      <div
+        class="flex items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700 shrink-0"
+      >
+        {title && <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>}
+        <CloseButton data-dismiss-target="#account-dropdown" tooltipText="Close" />
+      </div>
+      <slot />
+    </div>
+  </div>
+</div>
+
+<!-- <script is:inline>
+  document.addEventListener("DOMContentLoaded", function () {
+    if (typeof window.initPageSizeToggle === "function") window.initPageSizeToggle();
+
+    var panel = document.getElementById("account-dropdown");
+    document.querySelectorAll('[data-dropdown-toggle="account-dropdown"]').forEach(function (el) {
+      el.addEventListener("click", function () {
+        setTimeout(function () {
+          if (panel && !panel.classList.contains("hidden")) {
+            panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out");
+          }
+        }, 10);
+      });
+    });
+  });
+</script> -->

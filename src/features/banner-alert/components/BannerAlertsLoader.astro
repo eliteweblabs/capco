@@ -126,13 +126,13 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
     <script is:inline>
       {/* // Adjust main-content padding + #sidebar top/height = full navbar base (navbar + top banners); all update when a banner is cleared */}
       (function() {
-        function adjustMainContentForTopBanners() {
+        function adjustpageContentForTopBanners() {
           const topBannerContainer = document.getElementById("top-banner-container");
           const navbar = document.getElementById("main-navbar");
-          const mainContent = document.getElementById("main-content");
+          const pageContent = document.getElementById("page");
           const sidebar = document.getElementById("sidebar");
 
-          if (topBannerContainer && navbar && mainContent) {
+          if (topBannerContainer && navbar && pageContent) {
             const applyNavbarBaseSpacing = function() {
               // Get dismissed banners from localStorage
               let dismissedSet = new Set();
@@ -162,10 +162,10 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
               var baseHeight = navbar.offsetHeight;
 
               // #main-content padding = full navbar base
-              if (!mainContent.style.transition) {
-                mainContent.style.transition = "padding-top 0.3s ease-in-out";
+              if (!pageContent.style.transition) {
+                pageContent.style.transition = "padding-top 0.3s ease-in-out";
               }
-              mainContent.style.paddingTop = baseHeight + "px";
+              pageContent.style.paddingTop = baseHeight + "px";
 
               // #sidebar top + height to match navbar base (updates when banner is cleared)
               if (sidebar) {
@@ -204,11 +204,11 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 
         // Run immediately if DOM is ready, otherwise wait
         if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", adjustMainContentForTopBanners);
+          document.addEventListener("DOMContentLoaded", adjustpageContentForTopBanners);
         } else {
-          setTimeout(adjustMainContentForTopBanners, 10);
+          setTimeout(adjustpageContentForTopBanners, 10);
         }
-        document.addEventListener("astro:page-load", () => requestAnimationFrame(adjustMainContentForTopBanners));
+        document.addEventListener("astro:page-load", () => requestAnimationFrame(adjustpageContentForTopBanners));
       })();
     </script>
   )
