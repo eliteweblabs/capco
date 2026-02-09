@@ -33,7 +33,7 @@ export function getMepFormConfig(
         buttons: [
           {
             type: "prev",
-            label: "Back",
+            label: "Exit",
             href: "/",
           },
           {
