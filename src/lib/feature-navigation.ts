@@ -20,6 +20,25 @@ export interface GroupedNavigation {
   [section: string]: NavigationItem[];
 }
 
+/** Static tools nav items (e.g. Tests dropdown) — not from feature flags */
+const TOOLS_NAV_ITEMS: NavigationItem[] = [
+  {
+    label: "Tests",
+    href: "#",
+    icon: "folder",
+    position: 5,
+    section: "tools",
+    roles: ["Admin"],
+    children: [
+      { label: "Cal.com Booking", href: "/tests/cal-booking/", position: 0, section: "tools" },
+      { label: "Push Notifications", href: "/tests/push-notifications/", position: 1, section: "tools" },
+      { label: "VAPI Booking", href: "/tests/vapi-booking/", position: 2, section: "tools" },
+      { label: "AI Autocomplete", href: "/tests/ai-autocomplete/", position: 3, section: "tools" },
+      { label: "Google Sign-In", href: "/tests/google-signin/", position: 4, section: "tools" },
+    ],
+  },
+];
+
 /**
  * Get all navigation items from enabled features
  */
@@ -83,12 +102,21 @@ export async function getGroupedNavigation(userRole?: string): Promise<GroupedNa
 }
 
 /**
- * Get navigation for a specific section
+ * Get navigation for a specific section (features + static items like Tools > Tests)
  */
 export async function getSectionNavigation(
   section: string,
   userRole?: string
 ): Promise<NavigationItem[]> {
   const grouped = await getGroupedNavigation(userRole);
-  return grouped[section] || [];
+  const fromFeatures = grouped[section] || [];
+
+  if (section === "tools") {
+    const staticItems = TOOLS_NAV_ITEMS.filter(
+      (item) => !userRole || !item.roles || item.roles.includes(userRole)
+    );
+    return [...staticItems, ...fromFeatures].sort((a, b) => a.position - b.position);
+  }
+
+  return fromFeatures;
 }

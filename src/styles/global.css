@@ -18,16 +18,16 @@
 
 /* Custom base styles */
 html {
-  color: #000000;
   background-color: #fafafa;
-  font-family: var(--font-family, "Outfit Variable"), var(--font-family-secondary, sans-serif);
-  overflow-x: hidden;
   max-width: 100vw;
+  overflow-x: hidden;
+  color: #000000;
+  font-family: var(--font-family, "Outfit Variable"), var(--font-family-secondary, sans-serif);
 }
 
 body {
-  overflow-x: hidden;
   max-width: 100%;
+  overflow-x: hidden;
   font-family: var(--font-family, "Outfit Variable"), var(--font-family-secondary, sans-serif);
 }
 
@@ -42,66 +42,66 @@ body {
     top: 0; /* fallback for older Safari that don’t support max() */
     /* top: max(1rem, env(safe-area-inset-top, 0px)); */
     transform: translateZ(0);
+    -webkit-transform: translateZ(0);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    -webkit-transform: translateZ(0);
   }
 }
 
 /* Mobile: #page is the scroll container (not body) so iOS has one bounded scroll area that works */
 @media (max-width: 767px) {
-  html {
-    overflow-y: hidden;
+  /* html {
     height: 100vh;
     height: 100dvh;
+    overflow-y: hidden;
   }
   body:not(.layout-centered) {
-    overflow: hidden;
-    height: 100vh;
-    height: 100dvh;
     display: flex;
     flex-direction: column;
-  }
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  } */
   /* #page is the flex child that scrolls; min-height: 0 is required for flex scroll */
-  body:not(.layout-centered) #page {
+  /* body:not(.layout-centered) #page {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
     overflow-x: hidden;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
   }
   body:not(.layout-centered) #main-content {
     touch-action: pan-y;
-  }
+  } */
 }
 
 /* Center-content layout: fill viewport and center main content (all viewports).
    Fallback 100vh for older Safari (e.g. iPad) that don't support dvh. */
 body.layout-centered {
-  min-height: 100vh;
-  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 body.layout-centered #page {
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
 }
 body.layout-centered #main-content {
-  min-height: 0;
-  flex: 1;
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
 }
 body.layout-centered #main-content main {
-  min-height: 0;
-  flex: 1;
   display: flex;
-  align-items: center;
+  flex: 1;
   justify-content: center;
+  align-items: center;
+  min-height: 0;
 }
 
 /* Center-content on mobile: single scroll container (main scrolls, no body scroll) */
@@ -334,16 +334,16 @@ input[type="tel"].is-valid {
 .input-with-icon:has(input[type="password"].is-valid) svg,
 .input-with-icon:has(input[type="text"].is-valid) svg,
 .input-with-icon:has(input[type="tel"].is-valid) svg {
-  color: var(--color-success-500);
   opacity: 0.9;
+  color: var(--color-success-500);
 }
 
 .dark .input-with-icon:has(input[type="email"].is-valid) svg,
 .dark .input-with-icon:has(input[type="password"].is-valid) svg,
 .dark .input-with-icon:has(input[type="text"].is-valid) svg,
 .dark .input-with-icon:has(input[type="tel"].is-valid) svg {
-  color: var(--color-success-400);
   opacity: 0.9;
+  color: var(--color-success-400);
 }
 
 /* First-pass autofill override: inset overlay + delay so Chrome’s blue never visibly applies */
@@ -366,10 +366,6 @@ select:autofill,
 select:autofill:hover,
 select:autofill:active {
   -webkit-text-fill-color: var(--color-text-primary) !important;
-  /* Do not set font-size here: let the input's own classes (e.g. text-xl sm:text-2xl) control size so Tailwind responsive sizing works */
-  font-family: inherit !important;
-  line-height: inherit !important;
-  background-color: transparent !important;
   transition:
     background-color 5000s ease-in-out 0s,
     box-shadow 200ms ease-in-out;
@@ -381,6 +377,10 @@ select:autofill:active {
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  background-color: transparent !important;
+  line-height: inherit !important;
+  /* Do not set font-size here: let the input's own classes (e.g. text-xl sm:text-2xl) control size so Tailwind responsive sizing works */
+  font-family: inherit !important;
 }
 
 input:not([type="hidden"]):-webkit-autofill:focus,
@@ -390,7 +390,6 @@ textarea:autofill:focus,
 select:-webkit-autofill:focus,
 select:autofill:focus {
   -webkit-text-fill-color: var(--color-text-primary) !important;
-  background-color: var(--color-input-bg) !important;
   -webkit-box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
@@ -399,33 +398,34 @@ select:autofill:focus {
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+  background-color: var(--color-input-bg) !important;
 }
 
 @keyframes pulse-circle {
   0%,
   100% {
+    opacity: 0.3;
     width: 100px;
     height: 100px;
-    opacity: 0.3;
   }
   50% {
+    opacity: 0.4;
     width: 140px;
     height: 140px;
-    opacity: 0.4;
   }
 }
 
 @keyframes pulse-circle-green {
   0%,
   100% {
+    opacity: 0.3;
     width: 100px;
     height: 100px;
-    opacity: 0.3;
   }
   50% {
+    opacity: 0.4;
     width: 140px;
     height: 140px;
-    opacity: 0.4;
   }
 }
 
@@ -510,11 +510,11 @@ input::-webkit-strong-password-auto-fill-button,
 input::-webkit-contacts-auto-fill-button,
 input::-webkit-credit-card-auto-fill-button {
   display: none !important;
+  position: absolute !important;
   opacity: 0 !important;
-  pointer-events: none !important;
   width: 0 !important;
   height: 0 !important;
-  position: absolute !important;
+  pointer-events: none !important;
 }
 
 /* [OVERHAUL] input:invalid, focus-visible – see INPUT OVERHAUL REFERENCE at end of file
@@ -544,8 +544,8 @@ input:focus {
 
 /* Custom validation tooltip container */
 .input-wrapper {
-  position: relative;
   display: inline-block;
+  position: relative;
 }
 
 /* Custom validation tooltip - DISABLED */
@@ -602,8 +602,8 @@ input:focus {
 }
 @media (max-width: 480px) {
   .tooltip-content {
-    white-space: normal;
     max-width: calc(100vw - 1rem);
+    white-space: normal;
   }
 }
 
@@ -677,8 +677,8 @@ label {
 [data-animate="fade-blur-scale"],
 [data-animate="default"] {
   --animate-blur: 10px;
-  opacity: 0;
   transform: scale(0.95);
+  opacity: 0;
 }
 
 /* Fade + Blur only */
@@ -689,40 +689,40 @@ label {
 
 /* Fade + Scale only */
 [data-animate="fade-scale"] {
-  opacity: 0;
   transform: scale(0.9);
+  opacity: 0;
 }
 
 /* Fade + Slide Up */
 [data-animate="fade-up"] {
-  opacity: 0;
   transform: translateY(40px);
+  opacity: 0;
 }
 
 /* Fade + Slide Up with Blur */
 [data-animate="fade-up-blur"] {
   --animate-blur: 8px;
-  opacity: 0;
   transform: translateY(30px);
+  opacity: 0;
 }
 
 /* Fade + Slide from Left */
 [data-animate="fade-left"] {
-  opacity: 0;
   transform: translateX(-40px);
+  opacity: 0;
 }
 
 /* Fade + Slide from Right */
 [data-animate="fade-right"] {
-  opacity: 0;
   transform: translateX(40px);
+  opacity: 0;
 }
 
 /* Scale from center with blur */
 [data-animate="zoom-blur"] {
   --animate-blur: 15px;
-  opacity: 0;
   transform: scale(0.8);
+  opacity: 0;
 }
 
 /* Subtle fade only */
@@ -733,16 +733,16 @@ label {
 /* Visible state (when in viewport) */
 [data-animate].is-visible {
   --animate-blur: 0px;
-  opacity: 1;
   transform: translateY(0) translateX(0) scale(1);
+  opacity: 1;
 }
 
 /* Stagger delays for child elements */
 [data-animate-stagger] > * {
   --animate-blur: 8px;
+  transform: translateY(20px) scale(0.98);
   opacity: 0;
   filter: blur(var(--animate-blur)) grayscale(var(--animate-grayscale));
-  transform: translateY(20px) scale(0.98);
   transition:
     opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
@@ -751,51 +751,51 @@ label {
 
 [data-animate-stagger].is-visible > *:nth-child(1) {
   --animate-blur: 0px;
-  transition-delay: 0ms;
-  opacity: 1;
   transform: translateY(0) scale(1);
+  opacity: 1;
+  transition-delay: 0ms;
 }
 [data-animate-stagger].is-visible > *:nth-child(2) {
   --animate-blur: 0px;
-  transition-delay: 100ms;
-  opacity: 1;
   transform: translateY(0) scale(1);
+  opacity: 1;
+  transition-delay: 100ms;
 }
 [data-animate-stagger].is-visible > *:nth-child(3) {
   --animate-blur: 0px;
-  transition-delay: 200ms;
-  opacity: 1;
   transform: translateY(0) scale(1);
+  opacity: 1;
+  transition-delay: 200ms;
 }
 [data-animate-stagger].is-visible > *:nth-child(4) {
   --animate-blur: 0px;
-  transition-delay: 300ms;
-  opacity: 1;
   transform: translateY(0) scale(1);
+  opacity: 1;
+  transition-delay: 300ms;
 }
 [data-animate-stagger].is-visible > *:nth-child(5) {
   --animate-blur: 0px;
-  transition-delay: 400ms;
-  opacity: 1;
   transform: translateY(0) scale(1);
+  opacity: 1;
+  transition-delay: 400ms;
 }
 [data-animate-stagger].is-visible > *:nth-child(6) {
   --animate-blur: 0px;
-  transition-delay: 500ms;
-  opacity: 1;
   transform: translateY(0) scale(1);
+  opacity: 1;
+  transition-delay: 500ms;
 }
 [data-animate-stagger].is-visible > *:nth-child(7) {
   --animate-blur: 0px;
-  transition-delay: 600ms;
-  opacity: 1;
   transform: translateY(0) scale(1);
+  opacity: 1;
+  transition-delay: 600ms;
 }
 [data-animate-stagger].is-visible > *:nth-child(8) {
   --animate-blur: 0px;
-  transition-delay: 700ms;
-  opacity: 1;
   transform: translateY(0) scale(1);
+  opacity: 1;
+  transition-delay: 700ms;
 }
 
 /* Custom delay modifiers */
@@ -837,8 +837,8 @@ label {
 @media (prefers-reduced-motion: reduce) {
   [data-animate],
   [data-animate-stagger] > * {
-    opacity: 1 !important;
     transform: none !important;
+    opacity: 1 !important;
     filter: none !important;
     transition: none !important;
   }
@@ -879,120 +879,120 @@ label {
 /* Toast/Modal slide-in animation - Desktop (from right) */
 @keyframes toast-slide-in {
   0% {
-    opacity: 0;
     transform: translateX(100%);
+    opacity: 0;
   }
   100% {
-    opacity: 1;
     transform: translateX(0);
+    opacity: 1;
   }
 }
 
 /* Toast/Modal slide-in animation - Mobile (from top) */
 @keyframes toast-slide-in-mobile {
   0% {
-    opacity: 0;
     transform: translateY(-100%);
+    opacity: 0;
   }
   100% {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
 /* Toast/Modal slide-out animation - Desktop */
 @keyframes toast-slide-out {
   0% {
-    opacity: 1;
     transform: translateX(0);
+    opacity: 1;
   }
   100% {
-    opacity: 0;
     transform: translateX(100%);
+    opacity: 0;
   }
 }
 
 /* Toast/Modal slide-out animation - Mobile */
 @keyframes toast-slide-out-mobile {
   0% {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
   }
   100% {
-    opacity: 0;
     transform: translateY(-100%);
+    opacity: 0;
   }
 }
 
 /* Toast/Modal slide-in animation - LTR (from left) */
 @keyframes toast-slide-in-ltr {
   0% {
-    opacity: 0;
     transform: translateX(-100%);
+    opacity: 0;
   }
   100% {
-    opacity: 1;
     transform: translateX(0);
+    opacity: 1;
   }
 }
 
 /* Toast/Modal slide-out animation - LTR (to left) */
 @keyframes toast-slide-out-ltr {
   0% {
-    opacity: 1;
     transform: translateX(0);
+    opacity: 1;
   }
   100% {
-    opacity: 0;
     transform: translateX(-100%);
+    opacity: 0;
   }
 }
 
 /* Toast/Modal slide-in animation - RTL (from right) */
 @keyframes toast-slide-in-rtl {
   0% {
-    opacity: 0;
     transform: translateX(100%);
+    opacity: 0;
   }
   100% {
-    opacity: 1;
     transform: translateX(0);
+    opacity: 1;
   }
 }
 
 /* Toast/Modal slide-out animation - RTL (to right) */
 @keyframes toast-slide-out-rtl {
   0% {
-    opacity: 1;
     transform: translateX(0);
+    opacity: 1;
   }
   100% {
-    opacity: 0;
     transform: translateX(100%);
+    opacity: 0;
   }
 }
 
 /* Toast/Modal slide-in animation - Bottom (from bottom) */
 @keyframes toast-slide-in-bottom {
   0% {
-    opacity: 0;
     transform: translateY(100%);
+    opacity: 0;
   }
   100% {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
 /* Toast/Modal slide-out animation - Bottom (to bottom) */
 @keyframes toast-slide-out-bottom {
   0% {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
   }
   100% {
-    opacity: 0;
     transform: translateY(100%);
+    opacity: 0;
   }
 }
 
@@ -1022,24 +1022,24 @@ label {
 /* Modal fade-in with scale animation */
 @keyframes modal-fade-in {
   0% {
-    opacity: 0;
     transform: scale(0.95);
+    opacity: 0;
   }
   100% {
-    opacity: 1;
     transform: scale(1);
+    opacity: 1;
   }
 }
 
 /* Modal fade-out with scale animation */
 @keyframes modal-fade-out {
   0% {
-    opacity: 1;
     transform: scale(1);
+    opacity: 1;
   }
   100% {
-    opacity: 0;
     transform: scale(0.95);
+    opacity: 0;
   }
 }
 
@@ -1202,20 +1202,20 @@ span[data-refresh="true"] {
 .relative.inline-block:has(> textarea[data-refresh][data-edited="true"])::after,
 .relative.inline-block:has(> select[data-refresh][data-edited="true"])::after,
 span[data-refresh][data-edited="true"]::after {
-  content: "";
   position: absolute;
-  right: -10px;
   top: 50%;
+  right: -10px;
   transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
+  opacity: 0;
+  z-index: 10;
+  transition: opacity 0.3s ease-out;
+  background-position: center;
   background-size: contain;
   background-repeat: no-repeat;
-  background-position: center;
-  opacity: 0;
-  transition: opacity 0.3s ease-out;
+  width: 20px;
+  height: 20px;
   pointer-events: none;
-  z-index: 10;
+  content: "";
 }
 
 /* Saving state - gray disk icon with pulse */
@@ -1223,9 +1223,9 @@ span[data-refresh][data-edited="true"]::after {
 .relative.inline-block:has(> textarea[data-refresh][data-edited="true"].saving)::after,
 .relative.inline-block:has(> select[data-refresh][data-edited="true"].saving)::after,
 span[data-refresh][data-edited="true"].saving::after {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%236B7280' viewBox='0 0 24 24'%3E%3Cpath d='M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z'/%3E%3C/svg%3E");
   opacity: 1;
   animation: pulse-save 1s ease-in-out infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%236B7280' viewBox='0 0 24 24'%3E%3Cpath d='M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z'/%3E%3C/svg%3E");
 }
 
 /* Saved state - green checkmark */
@@ -1233,8 +1233,8 @@ span[data-refresh][data-edited="true"].saving::after {
 .relative.inline-block:has(> textarea[data-refresh][data-edited="true"].saved)::after,
 .relative.inline-block:has(> select[data-refresh][data-edited="true"].saved)::after,
 span[data-refresh][data-edited="true"].saved::after {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2310B981' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
   opacity: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2310B981' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
 }
 
 /* Error state - red X icon */
@@ -1242,8 +1242,8 @@ span[data-refresh][data-edited="true"].saved::after {
 .relative.inline-block:has(> textarea[data-refresh][data-edited="true"].save-error)::after,
 .relative.inline-block:has(> select[data-refresh][data-edited="true"].save-error)::after,
 span[data-refresh][data-edited="true"].save-error::after {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23EF4444' viewBox='0 0 24 24'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E");
   opacity: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23EF4444' viewBox='0 0 24 24'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E");
 }
 
 /* Fade out animation */
@@ -1293,24 +1293,24 @@ span[data-refresh][data-edited="true"].fade-out::after {
 /* Fade in animation for showing elements */
 @keyframes fadeIn {
   from {
-    opacity: 0;
     transform: scale(0.98);
+    opacity: 0;
   }
   to {
-    opacity: 1;
     transform: scale(1);
+    opacity: 1;
   }
 }
 
 /* Fade out animation for hiding elements */
 @keyframes fadeOut {
   from {
-    opacity: 1;
     transform: scale(1);
+    opacity: 1;
   }
   to {
-    opacity: 0;
     transform: scale(0.98);
+    opacity: 0;
   }
 }
 
@@ -1338,8 +1338,8 @@ span[data-refresh][data-edited="true"].fade-out::after {
 
 /* Delete button wrapper positioning */
 .delete-confirm-wrapper {
-  position: relative;
   display: inline-flex;
+  position: relative;
 }
 
 /* Timer ring overlay - hidden by default */
@@ -1348,10 +1348,10 @@ span[data-refresh][data-edited="true"].fade-out::after {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 1;
   opacity: 0;
+  z-index: 1;
   transition: opacity 0.2s;
+  pointer-events: none;
 }
 
 /* Show timer ring when button is in confirm state */
@@ -1371,9 +1371,9 @@ span[data-refresh][data-edited="true"].fade-out::after {
 
 /* Delete button base styles */
 .delete-confirm-btn {
+  position: relative;
   cursor: pointer;
   user-select: none;
-  position: relative;
 }
 
 /* Disabled state */
@@ -1391,33 +1391,33 @@ button,
 a[role="button"],
 [role="button"] {
   position: relative;
-  overflow: hidden !important;
   isolation: isolate; /* Create stacking context to contain ripple */
+  overflow: hidden !important;
 }
 
 /* Ripple effect using ::before pseudo-element */
 button::before,
 a[role="button"]::before,
 [role="button"]::before {
-  content: "";
   position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: -1; /* Place behind button content */
-  opacity: 0;
+  /* Position and size controlled by CSS variables set from JS */
+  top: var(--ripple-y, 50%);
+  left: var(--ripple-x, 50%);
   transform: scale(0);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  z-index: -1; /* Place behind button content */
+  border-radius: 50%;
   background: radial-gradient(
     circle,
     color-mix(in srgb, var(--color-primary-500) 50%, transparent) 0%,
     color-mix(in srgb, var(--color-primary-500) 30%, transparent) 40%,
     transparent 100%
   );
-  /* Position and size controlled by CSS variables set from JS */
-  top: var(--ripple-y, 50%);
-  left: var(--ripple-x, 50%);
   width: var(--ripple-size, 100%);
   height: var(--ripple-size, 100%);
-  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  content: "";
 }
 
 /* Click ripple animation trigger */
@@ -1431,13 +1431,13 @@ a[role="button"].ripple-active::before,
 button.ripple-focus::before,
 a[role="button"].ripple-focus::before,
 [role="button"].ripple-focus::before {
+  animation: ripple-focus 350ms cubic-bezier(0.4, 0, 0.2, 1);
   background: radial-gradient(
     circle,
     rgba(255, 255, 255, 0.4) 0%,
     rgba(255, 255, 255, 0.2) 50%,
     transparent 100%
   );
-  animation: ripple-focus 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Click ripple animation - fast */
@@ -1532,11 +1532,11 @@ a[role="button"]:focus-visible,
 /* Simple reveal animation (fallback) */
 .scroll-reveal-text {
   display: inline-block;
+  transform: translateY(20px);
+  opacity: 0;
+  filter: blur(10px);
   white-space: pre-wrap;
   word-break: break-word;
-  opacity: 0;
-  transform: translateY(20px);
-  filter: blur(10px);
 }
 
 .step-content.active .scroll-reveal-text {
@@ -1545,25 +1545,25 @@ a[role="button"]:focus-visible,
 
 @keyframes reveal-text {
   0% {
-    opacity: 0;
     transform: translateY(20px);
+    opacity: 0;
     filter: blur(10px);
   }
   100% {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
     filter: blur(0);
   }
 }
 
 /* Disable logo stroke animations for instant display */
 #animated-path {
-  stroke-dasharray: 0 !important;
-  stroke-dashoffset: 0 !important;
-  animation: none !important;
   opacity: 1 !important;
+  animation: none !important;
   fill: currentColor !important;
   stroke: none !important;
+  stroke-dasharray: 0 !important;
+  stroke-dashoffset: 0 !important;
 }
 
 /* Disable ripple on disabled buttons */
@@ -1637,19 +1637,19 @@ input[type="email"]:focus::before,
 input[type="password"]:focus::before,
 input[type="text"]:focus::before,
 input[type="tel"]:focus::before {
-  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 75px;
-  height: 75px;
   transform: translate(-50%, -50%);
+  z-index: -1;
+  mix-blend-mode: multiply;
+  animation: pulse-circle 1s ease-in-out infinite;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(14, 165, 233, 0.2) 0%, transparent 70%);
-  mix-blend-mode: multiply;
+  width: 75px;
+  height: 75px;
   pointer-events: none;
-  animation: pulse-circle 1s ease-in-out infinite;
-  z-index: -1;
+  content: "";
 }
 input[type="email"]:focus,
 input[type="password"]:focus,
@@ -1683,19 +1683,19 @@ input[type="email"].is-valid::before,
 input[type="password"].is-valid::before,
 input[type="text"].is-valid::before,
 input[type="tel"].is-valid::before {
-  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 75px;
-  height: 75px;
   transform: translate(-50%, -50%);
+  z-index: -1;
+  mix-blend-mode: multiply;
+  animation: pulse-circle-green 1s ease-in-out infinite;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
-  mix-blend-mode: multiply;
+  width: 75px;
+  height: 75px;
   pointer-events: none;
-  animation: pulse-circle-green 1s ease-in-out infinite;
-  z-index: -1;
+  content: "";
 }
 input[type="email"]:focus.is-valid,
 input[type="password"]:focus.is-valid,
@@ -1737,15 +1737,15 @@ input[type="tel"].is-valid {
 .input-with-icon:has(input[type="password"].is-valid) svg,
 .input-with-icon:has(input[type="text"].is-valid) svg,
 .input-with-icon:has(input[type="tel"].is-valid) svg {
-  color: var(--color-success-500);
   opacity: 0.9;
+  color: var(--color-success-500);
 }
 .dark .input-with-icon:has(input[type="email"].is-valid) svg,
 .dark .input-with-icon:has(input[type="password"].is-valid) svg,
 .dark .input-with-icon:has(input[type="text"].is-valid) svg,
 .dark .input-with-icon:has(input[type="tel"].is-valid) svg {
-  color: var(--color-success-400);
   opacity: 0.9;
+  color: var(--color-success-400);
 }
 
 /* --- 4. :invalid / .is-invalid (not focused) --- */
@@ -1788,9 +1788,6 @@ select:autofill,
 select:autofill:hover,
 select:autofill:active {
   -webkit-text-fill-color: var(--color-text-primary) !important;
-  font-size: inherit !important;
-  font-family: inherit !important;
-  line-height: inherit !important;
   transition:
     background-color 5000s ease-in-out 0s,
     box-shadow 200ms ease-in-out;
@@ -1798,6 +1795,9 @@ select:autofill:active {
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-success-500) 10%, transparent) !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-family: inherit !important;
 }
 input:not([type="hidden"]):-webkit-autofill:focus,
 input:not([type="hidden"]):autofill:focus,
@@ -1806,11 +1806,11 @@ textarea:autofill:focus,
 select:-webkit-autofill:focus,
 select:autofill:focus {
   -webkit-text-fill-color: var(--color-text-primary) !important;
-  background-color: var(--color-input-bg) !important;
   box-shadow:
     0 0 0 100vmax var(--color-input-bg) inset,
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+  background-color: var(--color-input-bg) !important;
 }
 
 /* --- 6. .input-with-icon (wrapper, ::before, ::after, focus-within, dark) --- */
@@ -1818,43 +1818,41 @@ select:autofill:focus {
   position: relative;
 }
 .input-with-icon.icon-left::before {
-  content: "";
   position: absolute;
-  left: 1rem;
   top: 50%;
+  left: 1rem;
   transform: translateY(-50%);
+  z-index: 1;
+  transition: opacity 0.3s ease;
   width: 1.25rem;
   height: 1.25rem;
-  opacity: 0.5;
-  z-index: 1;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  content: "";
 }
 .input-with-icon.icon-right::after {
-  content: "";
   position: absolute;
-  right: 1rem;
   top: 50%;
+  right: 1rem;
   transform: translateY(-50%);
+  z-index: 1;
+  transition: opacity 0.3s ease;
   width: 1.25rem;
   height: 1.25rem;
-  opacity: 0.5;
-  z-index: 1;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  content: "";
 }
 .input-with-icon:focus-within::before,
 .input-with-icon:focus-within::after {
-  opacity: 0.7;
 }
-.dark .input-with-icon::before,
+
+/* .dark .input-with-icon::before,
 .dark .input-with-icon::after {
   filter: brightness(0.8);
 }
 .dark .input-with-icon:focus-within::before,
 .dark .input-with-icon:focus-within::after {
   filter: brightness(1);
-}
+} */
 
 /* --- 7. input:invalid (remove native validation UI) + focus-visible/outline --- */
 input:invalid {
@@ -1869,8 +1867,8 @@ input:focus {
 input:not([type="hidden"]),
 textarea,
 select {
-  font-family: inherit;
   transition: box-shadow 250ms ease-in-out;
+  font-family: inherit;
 }
 input:not([type="hidden"]),
 textarea {
@@ -1882,16 +1880,16 @@ textarea {
 }
 
 [data-multi-step-form] .input-with-icon .multi-step-input {
-  padding-left: 3rem;
   padding-right: 3rem;
+  padding-left: 3rem;
 }
 [data-multi-step-form] .input-with-icon.icon-right .multi-step-input {
-  padding-left: 1rem;
   padding-right: 3rem;
+  padding-left: 1rem;
 }
 [data-multi-step-form] .input-with-icon.icon-left .multi-step-input {
-  padding-left: 3rem;
   padding-right: 1rem;
+  padding-left: 3rem;
 }
 
 /* Auto-expand textarea with content (field-sizing: content — Chrome 123+, Safari 17.2+) */
@@ -1963,8 +1961,8 @@ button:has(.icon-valid):has(.icon-default).is-valid .icon-valid {
 
 /* --- 10. .input-wrapper + validation tooltip (disabled) --- */
 .input-wrapper {
-  position: relative;
   display: inline-block;
+  position: relative;
 }
 /* .input-wrapper:has(input:invalid:not(:focus):not(:placeholder-shown).touched)::after {
   content: attr(data-error);
@@ -2046,27 +2044,27 @@ select.is-valid:focus {
 @keyframes pulse-circle {
   0%,
   100% {
+    opacity: 0.3;
     width: 100px;
     height: 100px;
-    opacity: 0.3;
   }
   50% {
+    opacity: 0.4;
     width: 140px;
     height: 140px;
-    opacity: 0.4;
   }
 }
 @keyframes pulse-circle-green {
   0%,
   100% {
+    opacity: 0.3;
     width: 100px;
     height: 100px;
-    opacity: 0.3;
   }
   50% {
+    opacity: 0.4;
     width: 140px;
     height: 140px;
-    opacity: 0.4;
   }
 }
 /* @keyframes tooltip-slide {

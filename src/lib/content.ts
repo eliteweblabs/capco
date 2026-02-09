@@ -360,9 +360,9 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
           ...(dbPage.frontmatter || {}),
         };
         cache.set(cacheKey, pageContent);
-        console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`, {
-          contentLength: dbPage.content?.length,
-        });
+        // console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`, {
+        //   contentLength: dbPage.content?.length,
+        // });
         return pageContent;
       } else if (error) {
         const msg = typeof error?.message === "string" ? error.message : String(error);
@@ -382,7 +382,8 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         console.log(`ℹ️ [CONTENT] No database page found for ${slug}`);
       }
     } catch (error) {
-      const msg = typeof (error as any)?.message === "string" ? (error as any).message : String(error);
+      const msg =
+        typeof (error as any)?.message === "string" ? (error as any).message : String(error);
       const isCloudflareBlock =
         msg.includes("<!DOCTYPE") ||
         msg.includes("cf-wrapper") ||
@@ -411,7 +412,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         ...parsed,
       };
       cache.set(cacheKey, pageContent);
-      console.log(`✅ [CONTENT] Loaded ${slug} from environment variable (JSON)`);
+      // console.log(`✅ [CONTENT] Loaded ${slug} from environment variable (JSON)`);
       return pageContent;
     } catch (error) {
       console.warn(`⚠️ [CONTENT] Error parsing PAGE_${slugUpper}_JSON:`, error);
@@ -428,7 +429,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
       content: envContent,
     };
     cache.set(cacheKey, pageContent);
-    console.log(`✅ [CONTENT] Loaded ${slug} from environment variables`);
+    // console.log(`✅ [CONTENT] Loaded ${slug} from environment variables`);
     return pageContent;
   }
 
@@ -445,7 +446,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         title: data.title || "Untitled Page",
       };
       cache.set(cacheKey, pageContent);
-      console.log(`✅ [CONTENT] Loaded ${slug} from persistent volume`);
+      // console.log(`✅ [CONTENT] Loaded ${slug} from persistent volume`);
       return pageContent;
     } catch (error) {
       console.warn(`⚠️ [CONTENT] Error reading from volume:`, error);
@@ -466,7 +467,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
       };
 
       cache.set(cacheKey, pageContent);
-      console.log(`✅ [CONTENT] Loaded ${slug} from file`);
+      // console.log(`✅ [CONTENT] Loaded ${slug} from file`);
       return pageContent;
     } catch (error) {
       console.warn(`⚠️ [CONTENT] Error reading ${slug}.md:`, error);
@@ -476,7 +477,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
   // 3. Fallback to default content
   const defaultContent = await getDefaultPageContent(slug);
   if (defaultContent) {
-    console.log(`ℹ️ [CONTENT] Using default content for: ${slug}`);
+    // console.log(`ℹ️ [CONTENT] Using default content for: ${slug}`);
     cache.set(cacheKey, defaultContent);
     return defaultContent;
   }

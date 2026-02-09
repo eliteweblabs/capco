@@ -151,7 +151,7 @@ export function createMultiStepFormHandler(
     }
 
     formEl.querySelectorAll(".step-content").forEach((el) => {
-      el.classList.remove("active", "initial-load");
+      el.classList.remove("active");
     });
     targetStep.classList.add("active");
 
@@ -234,11 +234,11 @@ export function createMultiStepFormHandler(
     // Activate target step: only first panel slides up on load; when switching steps we skip slide-in to avoid jump
     const isFirstLoad = !currentActiveStep;
     targetStep.classList.add("active");
-    if (isFirstLoad) {
-      targetStep.classList.remove("initial-load");
-    } else {
-      targetStep.classList.add("initial-load");
-    }
+    // if (isFirstLoad) {
+    //   targetStep.classList.remove("initial-load");
+    // } else {
+    //   targetStep.classList.add("initial-load");
+    // }
     // No slide animation on backward — wrapper scroll alone positions the step; slide + scroll caused bounce
 
     // Steps wrapper is fixed with overflow-y: auto — scroll it so target step's bottom is at wrapper bottom (same spot active was)

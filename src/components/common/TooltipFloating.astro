@@ -28,12 +28,13 @@ const {
 
 const wrapperClasses =
   `tooltip-wrapper relative inline-flex items-center justify-center ${mobileClickable ? "mobile-clickable" : ""} ${className}`.trim();
+// Flowbite-aligned: absolute z-10, rounded-base (rounded-lg), shadow-xs, transition-opacity duration-300
 const contentClasses = [
-  "tooltip-content absolute",
-  "px-3 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm rounded-lg shadow-lg",
+  "tooltip-content tooltip absolute z-10 inline-block",
+  "px-3 py-2 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-gray-100 rounded-lg shadow-lg",
   dismissable ? "opacity-100" : open ? "opacity-100" : "opacity-0",
   dismissable ? "pointer-events-auto" : "pointer-events-none",
-  "whitespace-nowrap z-50 transition-opacity duration-200",
+  "whitespace-nowrap transition-opacity duration-300",
   tooltipClass,
   disabled ? "hidden" : "",
 ]
@@ -96,21 +97,7 @@ const contentClasses = [
     transform: rotate(45deg);
   }
 
-  .tooltip-content[data-popper-placement^="top"] > .tooltip-arrow {
-    bottom: -4px;
-  }
-
-  .tooltip-content[data-popper-placement^="bottom"] > .tooltip-arrow {
-    top: -4px;
-  }
-
-  .tooltip-content[data-popper-placement^="left"] > .tooltip-arrow {
-    right: -4px;
-  }
-
-  .tooltip-content[data-popper-placement^="right"] > .tooltip-arrow {
-    left: -4px;
-  }
+  /* Static arrow position per placement is set in JS (Floating UI arrow middleware + static axis) */
 </style>
 
 <script>
@@ -157,13 +144,25 @@ const contentClasses = [
         Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
         tooltip.setAttribute("data-popper-placement", placement);
 
-        // Position arrow
+        // Position arrow (Floating UI sets only one axis per placement; set static axis and clear others per Flowbite/Popper)
         if (arrowElement && middlewareData.arrow) {
           const { x: arrowX, y: arrowY } = middlewareData.arrow;
-          Object.assign(arrowElement.style, {
-            left: arrowX != null ? `${arrowX}px` : "",
-            top: arrowY != null ? `${arrowY}px` : "",
-          });
+          const placementSide = placement.split("-")[0];
+          const staticSide = { top: "bottom", bottom: "top", left: "right", right: "left" }[placementSide];
+          const staticValue = "-4px";
+          const arrowStyle: Record<string, string> = {
+            left: "",
+            top: "",
+            right: "",
+            bottom: "",
+          };
+          if (arrowX != null) arrowStyle.left = `${arrowX}px`;
+          else if (staticSide === "left") arrowStyle.left = staticValue;
+          if (arrowY != null) arrowStyle.top = `${arrowY}px`;
+          else if (staticSide === "top") arrowStyle.top = staticValue;
+          if (staticSide === "right") arrowStyle.right = staticValue;
+          if (staticSide === "bottom") arrowStyle.bottom = staticValue;
+          Object.assign(arrowElement.style, arrowStyle);
         }
       }
 

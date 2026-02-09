@@ -2,15 +2,15 @@
 import SimpleIcon from "../common/SimpleIcon.astro";
 import CloseButton from "../ui/CloseButton.astro";
 import Button from "../common/Button.astro";
-import Modal from "../ui/Modal.astro";
 
 interface Props {
   currentUser?: any;
   project: any;
   supabaseUrl?: string;
+  globalIconButtonClasses?: string;
 }
 
-const { currentUser, project, supabaseUrl } = Astro.props;
+const { currentUser, project, supabaseUrl, globalIconButtonClasses } = Astro.props;
 const id = Astro.params.id;
 
 const currentRole = currentUser?.profile?.role;
@@ -21,22 +21,64 @@ if (!project || !project.id || currentRole === "Client") {
 
 const projectId = project.id;
 
+if (!currentUser || !currentUser.id || currentRole === "Client" || !project) {
+  return null;
+}
+
 // console.log("🔍 [TabPunchlist] props:", Astro.props);
 ---
 
-{
-  projectId && (
-    <a
-      type="button"
-      id="punchlist-drawer-toggle"
-      class="inline-flex items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
+<div
+  id="punchlist-drawer"
+  class="fixed top-0 right-0 h-screen overflow-y-auto transition-transform translate-x-full bg-neutral-primary-soft w-full sm:w-96"
+  style="will-change: transform; z-index: 10002;"
+>
+  <div class="flex flex-col h-full">
+    {/* Header */}
+    <div
+      class="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-600 dark:bg-gray-700"
     >
-      <span class="sr-only">View Punchlist</span>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        {project.title || project.address || "Project"} Punchlist
+      </h3>
+      <CloseButton id="punchlist-drawer-close" tooltipText="Close drawer" position="left" />
+    </div>
 
-      <SimpleIcon name="menu-check" class="w-6 h-6" />
-    </a>
-  )
-}
+    {/* Content */}
+    <div class="flex-1 overflow-y-auto p-4 color-background">
+      <div id="content-punchlist">
+        <div>
+          <div id="punchlist-container" data-project-id={projectId}>
+            {/* Add Punchlist Item Button - Admin Only */}
+            {
+              currentRole === "Admin" && (
+                <div class="mb-4">
+                  <Button
+                    id="add-punchlist-item-btn"
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    class="w-full"
+                  >
+                    <SimpleIcon name="plus" class="w-4 h-4 mr-2" />
+                    Add Punchlist Item
+                  </Button>
+                </div>
+              )
+            }
+
+            <div class="mb-6">
+              {/* <!-- Punchlist Items List --> */}
+              <div id="punchlist-items-list" class="space-y-4">
+                {/* <!-- Punchlist items will be dynamically loaded here --> */}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script
   define:vars={{
