@@ -11,14 +11,32 @@ interface Props {
   currentUser?: any;
   session?: any;
   supabase?: any;
+  mainClasses?: string;
 }
 
-const { children, title, description, lastUpdated, currentUser, session, supabase } = Astro.props;
+const {
+  children,
+  title,
+  description,
+  lastUpdated,
+  currentUser,
+  session,
+  supabase,
+  mainClasses = "",
+} = Astro.props;
 
 import App from "../ui/App.astro";
+import DotGrid from "../ui/DotGrid.astro";
 ---
 
-<App {title} {description} {currentUser} {session} {supabase} layout="fullwidth">
+<App {title} {description} {currentUser} {session} {supabase} layout="fullwidth" {mainClasses}>
+  <DotGrid
+    id="dotGrid"
+    class="absolute inset-0 -z-10 min-h-full w-full"
+    spacing="1rem"
+    baseOpacity={0.35}
+    dotColor="primary-500"
+  />
   {
     lastUpdated === "auto" && (
       <div class="container mx-auto mb-8 rounded-lg border border-primary-200 bg-primary-50 p-6 dark:border-primary-800 dark:bg-primary-900/20">

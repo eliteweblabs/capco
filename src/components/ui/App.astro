@@ -18,7 +18,6 @@ interface Props {
   year?: string;
   globalCompanyName?: string;
   globalCompanySlogan?: string;
-  noFooter?: boolean;
   globalCompanyAddress?: string;
   globalCompanyPhone?: string;
   globalCompanyEmail?: string;
@@ -485,13 +484,9 @@ const debugData = {
       })();
     </script>
 
-    <!-- Expose for components that run in swapped SPA content (no import in inline scripts) -->
-    <script type="module">
-      import { initPageSizeToggle } from "../../lib/page-size-plugin";
-      import { validatePhone, formatPhoneAsYouType } from "../../lib/phone-validation";
-      window["initPageSizeToggle"] = initPageSizeToggle;
-      window["validatePhone"] = validatePhone;
-      window["formatPhoneAsYouType"] = formatPhoneAsYouType;
+    <!-- Expose for components that run in swapped SPA content (bundled so no 404 on /lib/...) -->
+    <script>
+      import "../../scripts/init-auth-globals";
     </script>
 
     <!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
@@ -1146,7 +1141,7 @@ const debugData = {
           mainClasses,
           fullscreenScroll && "flex flex-col min-h-0",
           centerContent ? "" : "",
-          fullWidthPage && "p-4 sm:p-6 lg:p-8",
+          fullWidthPage && "",
 
         ]}
         style={currentUser ? "transition: margin-left 300ms ease-in-out;" : undefined}
