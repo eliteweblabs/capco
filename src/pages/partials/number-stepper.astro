@@ -1,0 +1,64 @@
+---
+// NumberStepper partial – makes the component accessible via fetch with X-headers (same pattern as button.astro)
+import NumberStepperComponent from "../../components/common/NumberStepper.astro";
+
+const hasProps = Object.keys(Astro.props).length > 0;
+
+let value: string | number = 0,
+  min: number | undefined,
+  max: number | undefined,
+  step = 1,
+  name: string | undefined,
+  id: string | undefined,
+  className = "",
+  inputClass = "",
+  dataRowIndex: string | undefined,
+  dataField: string | undefined,
+  onchangeInline: string | undefined,
+  disabled = false;
+
+if (hasProps) {
+  const props = Astro.props;
+  value = props.value ?? 0;
+  min = props.min;
+  max = props.max;
+  step = props.step ?? 1;
+  name = props.name;
+  id = props.id;
+  className = props.class ?? "";
+  inputClass = props.inputClass ?? "";
+  dataRowIndex = props.dataRowIndex;
+  dataField = props.dataField;
+  onchangeInline = props.onchangeInline;
+  disabled = props.disabled ?? false;
+} else {
+  const h = Astro.request.headers;
+  value = h.get("x-value") ?? "0";
+  min = h.get("x-min") != null ? Number(h.get("x-min")) : undefined;
+  max = h.get("x-max") != null ? Number(h.get("x-max")) : undefined;
+  step = h.get("x-step") != null ? Number(h.get("x-step")) : 1;
+  name = h.get("x-name") ?? undefined;
+  id = h.get("x-id") ?? undefined;
+  className = h.get("x-class") ?? "";
+  inputClass = h.get("x-input-class") ?? "";
+  dataRowIndex = h.get("x-row-index") ?? undefined;
+  dataField = h.get("x-field") ?? undefined;
+  onchangeInline = h.get("x-onchange-handler") ?? undefined;
+  disabled = h.get("x-disabled") === "true";
+}
+---
+
+<NumberStepperComponent
+  value={value}
+  min={min}
+  max={max}
+  step={step}
+  name={name}
+  id={id}
+  class={className}
+  inputClass={inputClass}
+  dataRowIndex={dataRowIndex}
+  dataField={dataField}
+  onchangeInline={onchangeInline}
+  disabled={disabled}
+/>

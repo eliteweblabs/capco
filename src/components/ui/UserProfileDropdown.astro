@@ -32,17 +32,17 @@ const isAdmin = currentRole === "Admin" || currentRole === "Staff";
       >
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           <a
-            class="align-center flex px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+            class="align-center flex text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
             href="/profile"
           >
-            <SimpleIcon name="logo" size="md" class="m-0 sm:mr-2 w-12 h-12" />
+            <SimpleIcon name="logo" size="md" class="m-0 sm:mr-2 w-8" />
             <span class="whitespace-nowrap">
               {currentUser?.profile?.companyName || "Add Company Name"} /
               {currentUser?.profile?.firstName}
               {currentUser?.profile?.lastName}
               <br />
               <span class="text-xs text-gray-500 whitespace-nowrap">
-                {currentUser?.profile?.email}
+                {currentUser?.profile?.email} / edit
               </span>
             </span>
           </a>
@@ -54,7 +54,7 @@ const isAdmin = currentRole === "Admin" || currentRole === "Staff";
         <div
           class="align-center flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
         >
-          <ul class="p-2 text-sm font-medium text-gray-900 dark:text-white">
+          <ul class="flex flex-col gap-2 text-sm font-medium text-gray-900 dark:text-white">
             <li>
               <a href="/profile" title="Profile" class={globalIconButtonClasses}>
                 <SimpleIcon name="user-edit" size="md" class="text-black dark:text-white mr-2" />
@@ -77,7 +77,9 @@ const isAdmin = currentRole === "Admin" || currentRole === "Staff";
           </ul>
 
           {/* new section for sign out */}
-          <ul class="p-2 text-sm font-medium text-gray-900 dark:text-white border-t color-border">
+          <ul
+            class="flex flex-col gap-2 text-sm font-medium text-gray-900 dark:text-white border-t color-border"
+          >
             <li>
               <a id="logout-btn" href="#" title="logout" class={globalIconButtonClasses}>
                 <SimpleIcon name="log-out" size="md" class="text-black dark:text-white mr-2" />
@@ -87,7 +89,9 @@ const isAdmin = currentRole === "Admin" || currentRole === "Staff";
           </ul>
 
           {/* Page size toggle: larger elements for mobile/accessibility */}
-          <ul class="p-2 text-sm font-medium text-gray-900 dark:text-white border-t color-border">
+          <ul
+            class="flex flex-col gap-2 text-sm font-medium text-gray-900 dark:text-white border-t color-border"
+          >
             <li>
               <button
                 type="button"
@@ -107,16 +111,14 @@ const isAdmin = currentRole === "Admin" || currentRole === "Staff";
   </div>
 </div>
 
-<script>
-  import { initPageSizeToggle } from "../../lib/page-size-plugin";
+<script is:inline>
+  document.addEventListener("DOMContentLoaded", function () {
+    if (typeof window.initPageSizeToggle === "function") window.initPageSizeToggle();
 
-  document.addEventListener("DOMContentLoaded", () => {
-    initPageSizeToggle();
-
-    const panel = document.getElementById("account-dropdown");
-    document.querySelectorAll('[data-dropdown-toggle="account-dropdown"]').forEach((el) => {
-      el.addEventListener("click", () => {
-        setTimeout(() => {
+    var panel = document.getElementById("account-dropdown");
+    document.querySelectorAll('[data-dropdown-toggle="account-dropdown"]').forEach(function (el) {
+      el.addEventListener("click", function () {
+        setTimeout(function () {
           if (panel && !panel.classList.contains("hidden")) {
             panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out");
           }

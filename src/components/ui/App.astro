@@ -485,6 +485,15 @@ const debugData = {
       })();
     </script>
 
+    <!-- Expose for components that run in swapped SPA content (no import in inline scripts) -->
+    <script type="module">
+      import { initPageSizeToggle } from "../../lib/page-size-plugin";
+      import { validatePhone, formatPhoneAsYouType } from "../../lib/phone-validation";
+      window["initPageSizeToggle"] = initPageSizeToggle;
+      window["validatePhone"] = validatePhone;
+      window["formatPhoneAsYouType"] = formatPhoneAsYouType;
+    </script>
+
     <!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
     <style is:global set:html={criticalColorsCss} />
 
@@ -1133,15 +1142,17 @@ const debugData = {
         class:list={[
           "flex-1 min-w-0",
           currentUser ? "sm:ml-16" : "",
-          dataTemplate === "default" ? "pt-20 min-h-[calc(100dvh-5rem)]" : "",
+          dataTemplate === "default" ? "pt-20 min-h-[calc(100dvh-5rem)] px-4 sm:px-6 md:px-8 lg:px-10" : "",
           mainClasses,
           fullscreenScroll && "flex flex-col min-h-0",
           centerContent ? "" : "",
+          fullWidthPage && "p-4 sm:p-6 lg:p-8",
+
         ]}
         style={currentUser ? "transition: margin-left 300ms ease-in-out;" : undefined}
       >
         <main
-         
+       
         >
         <slot />
         </main>
@@ -1149,12 +1160,20 @@ const debugData = {
         <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
         <DebugPanel {debugData} {currentRole} />
         <FeedbackPanel {currentUser} />
- 
-      </div>
-
-      {
-        fullscreenScroll ? (
-          <div class="shrink-0">
+        {
+          fullscreenScroll ? (
+            <div class="shrink-0">
+              <Footer
+                {globalIconButtonClasses}
+                {globalCompanyName}
+                {isBackend}
+                {globalCompanyPhone}
+                {primaryTextClasses}
+                {secondaryTextClasses}
+                {globalInputClasses}
+              />
+            </div>
+          ) : (
             <Footer
               {globalIconButtonClasses}
               {globalCompanyName}
@@ -1164,19 +1183,11 @@ const debugData = {
               {secondaryTextClasses}
               {globalInputClasses}
             />
-          </div>
-        ) : (
-          <Footer
-            {globalIconButtonClasses}
-            {globalCompanyName}
-            {isBackend}
-            {globalCompanyPhone}
-            {primaryTextClasses}
-            {secondaryTextClasses}
-            {globalInputClasses}
-          />
-        )
-      }
+          )
+        }
+      </div>
+
+    
     </div>
 
   

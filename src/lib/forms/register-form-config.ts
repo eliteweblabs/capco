@@ -46,6 +46,7 @@ export const registerFormConfig: MultiStepFormConfig = {
       stepNumber: 1,
       title: "",
       hideProgressBar: true,
+      expandDown: false,
       response: false,
       fields: [
         {

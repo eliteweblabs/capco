@@ -2,6 +2,7 @@
 // Sliding pill navigation component
 import Button from "./Button.astro";
 import SimpleIcon from "./SimpleIcon.astro";
+import Tooltip from "./TooltipFloating.astro";
 
 export interface NavItem {
   id?: string;
@@ -45,7 +46,7 @@ const filteredItems = items.filter((item) => {
 
 <nav
   id={navId}
-  class={`no-scrollbar mb-0 pb-0 relative flex gap-1 overflow-x-scroll overflow-y-hidden h-12 whitespace-nowrap my-4 px-4 ${navClass}`}
+  class={`no-scrollbar pb-0 relative flex gap-1 overflow-x-scroll overflow-y-hidden h-20 whitespace-nowrap mb-0 px-4 ${navClass} pt-12`}
   data-active-item={activeItem}
   data-url-param={urlParam}
 >
@@ -59,18 +60,22 @@ const filteredItems = items.filter((item) => {
 
   {
     filteredItems.map((item: NavItem, index: number) => (
-      <Button
-        id={item.id}
-        variant={item.variant as any}
-        size="sm"
-        data-index={index}
-        data-active={index === activeItem ? "true" : "false"}
-        dataAttributes={item.dataAttributes || {}}
-        onclick={item.onclick}
-      >
-        {item.icon && <SimpleIcon name={item.icon} size="sm" class="mr-0 sm:mr-2" />}
-        <span class="hidden sm:inline">{item.label}</span>
-      </Button>
+      <Tooltip text={item.label} position="top" mobileClickable={true} className="w-40">
+        <Button
+          id={item.id}
+          variant={item.variant as any}
+          size="sm"
+          data-index={index}
+          class={"max-sm:px-1 max-sm:py-1"}
+          data-active={index === activeItem ? "true" : "false"}
+          dataAttributes={item.dataAttributes || {}}
+          onclick={item.onclick}
+        >
+          {" "}
+          {item.icon && <SimpleIcon name={item.icon} size="sm" class="mr-0 sm:mr-2" />}
+          <span class="sr-only">{item.label}</span>
+        </Button>
+      </Tooltip>
     ))
   }
 </nav>

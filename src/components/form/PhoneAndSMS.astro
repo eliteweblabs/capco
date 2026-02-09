@@ -129,150 +129,101 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 }
 
 <script
+  is:inline
   data-phone-id={id}
   data-sms-section-id={smsSectionId}
   data-sms-alerts-id={smsAlertsId}
   data-carrier-selection-id={carrierSelectionId}
   data-show-sms={showSMS.toString()}
 >
-  import { isValidPhoneNumber, AsYouType } from "libphonenumber-js";
+  (function () {
+    var script = document.currentScript;
+    var phoneId = script && script.getAttribute("data-phone-id");
+    var smsSectionId = script && script.getAttribute("data-sms-section-id");
+    var smsAlertsId = script && script.getAttribute("data-sms-alerts-id");
+    var carrierSelectionId = script && script.getAttribute("data-carrier-selection-id");
+    var showSMS = script && script.getAttribute("data-show-sms") === "true";
 
-  // Get the component props passed from Astro
-  const phoneId = document.currentScript?.getAttribute("data-phone-id");
-  const smsSectionId = document.currentScript?.getAttribute("data-sms-section-id");
-  const smsAlertsId = document.currentScript?.getAttribute("data-sms-alerts-id");
-  const carrierSelectionId = document.currentScript?.getAttribute("data-carrier-selection-id");
-  const showSMS = document.currentScript?.getAttribute("data-show-sms") === "true";
+    document.addEventListener("DOMContentLoaded", function () {
+      if (!showSMS || !phoneId) return;
 
-  document.addEventListener("DOMContentLoaded", function () {
-    if (!showSMS || !phoneId) return;
+      var phoneInput = document.getElementById(phoneId);
+      var smsAlertsCheckbox = document.getElementById(smsAlertsId);
+      var carrierSelection = document.getElementById(carrierSelectionId);
+      var smsSection = document.getElementById(smsSectionId);
+      var phoneIndicator = document.getElementById("phone-indicator-" + phoneId);
 
-    const phoneInput = document.getElementById(phoneId);
-    const smsAlertsCheckbox = document.getElementById(smsAlertsId);
-    const carrierSelection = document.getElementById(carrierSelectionId);
-    const smsSection = document.getElementById(smsSectionId);
-    const phoneIndicator = document.getElementById(`phone-indicator-${phoneId}`);
+      if (!phoneInput || !smsAlertsCheckbox || !carrierSelection || !smsSection) return;
 
-    if (!phoneInput || !smsAlertsCheckbox || !carrierSelection || !smsSection) return;
+      var isUserInteraction = false;
 
-    let isUserInteraction = false;
-
-    // Show/hide carrier selection based on SMS alerts toggle
-    function toggleCarrierSelection() {
-      if (smsAlertsCheckbox.checked) {
-        carrierSelection.classList.remove("hidden");
-        // Only auto-click if this is user interaction, not page load
-        if (isUserInteraction) {
-          const carrierButton = document.getElementById(`mobile-carrier-${phoneId}`);
-          if (carrierButton) {
-            carrierButton.click();
+      function toggleCarrierSelection() {
+        if (smsAlertsCheckbox.checked) {
+          carrierSelection.classList.remove("hidden");
+          if (isUserInteraction) {
+            var carrierButton = document.getElementById("mobile-carrier-" + phoneId);
+            if (carrierButton) carrierButton.click();
           }
+        } else {
+          carrierSelection.classList.add("hidden");
         }
-      } else {
-        carrierSelection.classList.add("hidden");
-      }
-    }
-
-    // Validate phone number using libphonenumber-js
-    function validatePhoneNumber(phone) {
-      if (!phone || phone.trim() === "") {
-        return false;
       }
 
-      try {
-        // Remove all non-digit characters
-        const digitsOnly = phone.replace(/\D/g, "");
+      function validatePhoneNumber(phone) {
+        if (!phone || phone.trim() === "") return false;
+        var fn = window["validatePhone"];
+        return typeof fn === "function" ? fn(phone) : false;
+      }
 
-        // Must have at least 10 digits for a complete US phone number
-        if (digitsOnly.length < 10) {
-          return false;
+      function formatPhone(value) {
+        var fn = window["formatPhoneAsYouType"];
+        return typeof fn === "function" ? fn(value) : value;
+      }
+
+      function toggleSmsSection() {
+        var phoneValue = phoneInput.value.trim();
+        var isValid = validatePhoneNumber(phoneValue);
+        if (isValid || phoneValue) {
+          smsSection.classList.remove("hidden");
+          if (phoneIndicator && isValid) {
+            phoneIndicator.classList.remove("hidden");
+            phoneIndicator.classList.add("flex");
+          } else if (phoneIndicator) {
+            phoneIndicator.classList.add("hidden");
+            phoneIndicator.classList.remove("flex");
+          }
+        } else {
+          smsSection.classList.add("hidden");
+          if (phoneIndicator) {
+            phoneIndicator.classList.add("hidden");
+            phoneIndicator.classList.remove("flex");
+          }
+          smsAlertsCheckbox.checked = false;
+          toggleCarrierSelection();
         }
-
-        // Validate complete phone number
-        return isValidPhoneNumber(phone, "US");
-      } catch (error) {
-        console.error("[PHONE-VALIDATION] Error:", error);
-        return false;
       }
-    }
 
-    // Format phone number as user types
-    function formatPhone(value) {
-      // Remove all non-digit characters to get raw input
-      const digitsOnly = value.replace(/\D/g, "");
+      function handlePhoneInput() {
+        var cursorPos = phoneInput.selectionStart || 0;
+        var formattedValue = formatPhone(phoneInput.value);
+        phoneInput.value = formattedValue;
+        if (formattedValue.length >= cursorPos) {
+          phoneInput.setSelectionRange(cursorPos, cursorPos);
+        }
+        toggleSmsSection();
+      }
 
-      // Format as user types
-      const formatter = new AsYouType("US");
-      return formatter.input(digitsOnly);
-    }
-
-    // Show/hide SMS section based on valid phone number
-    function toggleSmsSection() {
-      const phoneValue = phoneInput.value.trim();
-      const isValid = validatePhoneNumber(phoneValue);
-
-      if (isValid || phoneValue) {
-        // Show if valid OR if there's any phone value (to allow editing)
+      if (phoneInput.value.trim()) {
+        phoneInput.value = formatPhone(phoneInput.value);
+      }
+      if (phoneInput.value.trim() || smsAlertsCheckbox.checked) {
         smsSection.classList.remove("hidden");
-        // Show validation indicator only if actually valid
-        if (phoneIndicator && isValid) {
-          phoneIndicator.classList.remove("hidden");
-          phoneIndicator.classList.add("flex");
-        } else if (phoneIndicator) {
-          phoneIndicator.classList.add("hidden");
-          phoneIndicator.classList.remove("flex");
-        }
-      } else {
-        // Hide only if completely empty
-        smsSection.classList.add("hidden");
-        // Hide validation indicator
-        if (phoneIndicator) {
-          phoneIndicator.classList.add("hidden");
-          phoneIndicator.classList.remove("flex");
-        }
-        // Also uncheck SMS alerts if phone is empty
-        smsAlertsCheckbox.checked = false;
-        toggleCarrierSelection();
+        toggleSmsSection();
       }
-    }
-
-    // Handle phone input with formatting
-    function handlePhoneInput() {
-      const cursorPos = phoneInput.selectionStart || 0;
-      const previousValue = phoneInput.value;
-
-      // Format the phone number
-      const formattedValue = formatPhone(phoneInput.value);
-
-      // Update the input value
-      phoneInput.value = formattedValue;
-
-      // Try to maintain cursor position (approximate)
-      if (formattedValue.length >= cursorPos) {
-        phoneInput.setSelectionRange(cursorPos, cursorPos);
-      }
-
-      // Toggle SMS section visibility
-      toggleSmsSection();
-    }
-
-    // Format initial phone value if present
-    if (phoneInput.value.trim()) {
-      phoneInput.value = formatPhone(phoneInput.value);
-    }
-
-    // Initial state - show SMS section if phone has value or SMS is checked
-    if (phoneInput.value.trim() || smsAlertsCheckbox.checked) {
-      smsSection.classList.remove("hidden");
-      toggleSmsSection();
-    }
-    toggleCarrierSelection();
-
-    // Set flag to true after initial setup
-    isUserInteraction = true;
-
-    // Event listeners
-    smsAlertsCheckbox.addEventListener("change", toggleCarrierSelection);
-    phoneInput.addEventListener("input", handlePhoneInput);
-  });
+      toggleCarrierSelection();
+      isUserInteraction = true;
+      smsAlertsCheckbox.addEventListener("change", toggleCarrierSelection);
+      phoneInput.addEventListener("input", handlePhoneInput);
+    });
+  })();
 </script>

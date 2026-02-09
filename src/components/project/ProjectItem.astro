@@ -2,6 +2,9 @@
 import SimpleIcon from "../common/SimpleIcon.astro";
 import SlotMachineModalStaff from "../form/SlotMachineModalStaff.astro";
 import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
+import StaffSelectTooltip from "../form/StaffSelectTooltip.astro";
+import LiveRelativeTime from "../common/LiveRelativeTime.astro";
+import DueDateStepper from "../common/DueDateStepper.astro";
 interface Props {
   project: {
     punchlistComplete?: number;
@@ -298,7 +301,7 @@ const statusColor = currentStatusColor || "gray";
       <SimpleIcon name="edit" size="xs" class="text-gray-600" />
     </a></th
   >
-  <th scope="row" class="whitespace-nowrap px-4 py-2 text-center"
+  <th scope="row" class="whitespace-nowrap px-4 py-2 text-center w-40 block truncate"
     ><a href={`/project/${project.id}`} class="relative font-medium"
       >{project.address || "No address"}
 
@@ -361,7 +364,7 @@ const statusColor = currentStatusColor || "gray";
       currentRole !== "Client" && (
         <td class="whitespace-nowrap px-4 py-2 font-medium">
           {/* <div class="flex"> */}
-          <SlotMachineModalStaff
+          <StaffSelectTooltip
             id={`assign-staff-slot-machine-${project.id}`}
             title="Assign Staff Member"
             options={staffOptions}
@@ -443,74 +446,27 @@ const statusColor = currentStatusColor || "gray";
       </span>
     </td>
     <td class="whitespace-nowrap px-4 py-2">
-      <div
+      <!-- <div
         class="align-center inline-flex rounded-md border bg-gray-100 dark:border-gray-600 dark:bg-gray-700"
+      > -->
+      <span
+        data-live-timestamp={project.updatedAt}
+        data-project-id={project.id}
+        class="live-time-display"
       >
-        <span
-          data-live-timestamp={project.updatedAt}
-          data-project-id={project.id}
-          class="live-time-display"
-        >
-          {timeSinceUpdate}
-        </span>
-      </div>
+        {timeSinceUpdate}
+      </span>
+      <!-- </div> -->
     </td>
     <td class="whitespace-nowrap px-4 py-2 text-center">
-      {
-        currentRole === "Admin" || currentRole === "Staff" ? (
-          <div class="flex items-center gap-1">
-            <button
-              type="button"
-              class="align-center flex px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
-              data-action="decrement"
-              data-project-id={project.id}
-              onclick={`event.stopPropagation(); adjustDueDate(${project.id}, -1)`}
-            >
-              <SimpleIcon name="minus" size="xs" class="text-gray-600" />
-            </button>
-            <div class="relative inline-block">
-              <input
-                type="text"
-                id={`due-date-${project.id}`}
-                value={
-                  project?.dueDate
-                    ? new Date(project.dueDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        hour12: true,
-                      })
-                    : ""
-                }
-                data-due-date={project?.dueDate || ""}
-                data-refresh="dueDate"
-                data-project-id={project.id}
-                data-meta="dueDate"
-                data-meta-value={project?.dueDate || ""}
-                readonly
-                class="w-24 text-center border-0 bg-transparent text-xs focus:ring-0 p-1"
-              />
-            </div>
-            <button
-              type="button"
-              class="align-center flex px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
-              data-action="increment"
-              data-project-id={project.id}
-              onclick={`event.stopPropagation(); adjustDueDate(${project.id}, 1)`}
-            >
-              <SimpleIcon name="plus" size="xs" class="text-gray-600" />
-            </button>
-          </div>
-        ) : (
-          <span>
-            {new Date(project?.dueDate).toLocaleDateString(undefined, {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </span>
-        )
-      }
+      <DueDateStepper
+        projectId={project.id}
+        value={project?.dueDate ?? ""}
+        showStepper={currentRole === "Admin" || currentRole === "Staff"}
+        meta="dueDate"
+        refresh="dueDate"
+        placeholder=""
+      />
     </td>
 
     <script>

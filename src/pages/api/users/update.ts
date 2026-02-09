@@ -63,10 +63,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const { companyName, firstName, lastName, phone, smsAlerts, mobileCarrier } = body;
+    const { companyName, firstName, lastName, phone, smsAlerts, mobileCarrier, avatarUrl } = body;
 
-    // Validate required fields
-    if (!firstName?.trim() || !lastName?.trim()) {
+    // Validate required fields when doing a full profile update (not avatar-only)
+    const isAvatarOnlyUpdate =
+      avatarUrl !== undefined &&
+      companyName === undefined &&
+      firstName === undefined &&
+      lastName === undefined &&
+      phone === undefined &&
+      smsAlerts === undefined &&
+      mobileCarrier === undefined;
+    if (!isAvatarOnlyUpdate && (!firstName?.trim() || !lastName?.trim())) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -94,15 +102,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Prepare update payload (only allow updating certain fields for own profile)
     const updatePayload: any = {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      phone: phone?.trim() || null,
       updatedAt: new Date().toISOString(),
     };
 
-    // Add companyName if provided
-    if (companyName !== undefined) {
-      updatePayload.companyName = companyName?.trim() || "";
+    if (firstName !== undefined) updatePayload.firstName = firstName.trim();
+    if (lastName !== undefined) updatePayload.lastName = lastName.trim();
+    if (phone !== undefined) updatePayload.phone = phone?.trim() || null;
+    if (companyName !== undefined) updatePayload.companyName = companyName?.trim() || "";
+
+    // Optional avatar URL (set when uploading via media API; null to clear)
+    if (avatarUrl !== undefined) {
+      updatePayload.avatarUrl = avatarUrl === null || avatarUrl === "" ? null : String(avatarUrl).trim();
     }
 
     // Handle SMS alerts and mobile carrier

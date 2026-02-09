@@ -2,6 +2,7 @@
 import SimpleIcon from "../common/SimpleIcon.astro";
 import { supabase } from "../../lib/supabase";
 import Button from "../common/Button.astro";
+import NumberStepper from "../common/NumberStepper.astro";
 
 interface Props {
   projectId: string;
@@ -41,6 +42,10 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
 {
   (canManageProposals || (currentRole === "Client" && projectStatus > 20)) && (
     <div id="proposal-content">
+      {/* NumberStepper script is used by quantity cells in line items; one hidden instance loads it */}
+      <div class="hidden" aria-hidden="true">
+        <NumberStepper value={0} />
+      </div>
       {/* <!-- Proposal Header --> */}
       <div class="mb-6 flex items-start justify-between">
         <div class="flex-1">
@@ -799,7 +804,15 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
               <input type="text" value="${item.description || ""}" class="${globalInputClasses} w-60 line-item-description" autocomplete="off" onchange="window.proposalManager.updateLineItem(${index}, 'description', this.value)">
             </td>
             <td class="whitespace-nowrap px-6 py-4">
-              <input type="number" value="${item.quantity || 1}" class="${globalInputClasses} w-20 line-item-quantity" data-row-index="${index}" data-field="quantity" autocomplete="off" onchange="window.proposalManager.updateLineItemFromInput(this)">
+              <div class="number-stepper flex items-center gap-0 rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden">
+                <button type="button" class="flex items-center justify-center p-2 h-9 w-9 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 border-0 text-gray-600 dark:text-gray-300 disabled:opacity-50 disabled:pointer-events-none transition-colors" data-action="decrement" aria-label="Decrease">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 18 2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h16"></path></svg>
+                </button>
+                <input type="number" value="${item.quantity || 1}" min="1" class="${globalInputClasses} w-14 sm:w-20 text-center border-0 border-x border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:ring-primary-500 focus:border-primary-500 py-1.5 line-item-quantity [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" data-row-index="${index}" data-field="quantity" autocomplete="off" onchange="window.proposalManager.updateLineItemFromInput(this)">
+                <button type="button" class="flex items-center justify-center p-2 h-9 w-9 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 border-0 text-gray-600 dark:text-gray-300 disabled:opacity-50 disabled:pointer-events-none transition-colors" data-action="increment" aria-label="Increase">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 18 18" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"></path></svg>
+                </button>
+              </div>
             </td>
             <td class="whitespace-nowrap px-6 py-4">
               <input type="number" value="${item.unitPrice || 0}" class="${globalInputClasses} w-24 line-item-price" data-row-index="${index}" data-field="unitPrice" autocomplete="off" onchange="window.proposalManager.updateLineItemFromInput(this)">

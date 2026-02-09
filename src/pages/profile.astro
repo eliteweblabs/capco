@@ -72,19 +72,25 @@ const storedCarrierKey = userProfile?.mobileCarrier
       <!-- Profile Form -->
       <form id="profile-form" class="space-y-6">
         <!-- Profile Picture Section -->
-        <!-- <div class="text-center">
-            <div
-              class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700"
-            >
-              <img
-                id="profile-avatar"
-                src=""
-                alt="Profile picture"
-                class="h-20 w-20 rounded-lg object-cover"
-                onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex';"
-              />
-              <SimpleIcon name="user" style="display:none;" class="h-10 w-10 text-gray-400" />
-            </div>
+        <div class="text-center">
+          <div
+            class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden"
+          >
+            <img
+              id="profile-avatar"
+              src={userProfile?.avatarUrl || ""}
+              alt="Profile picture"
+              class="h-20 w-20 rounded-lg object-cover"
+              onerror="this.style.display='none'; const n=this.nextElementSibling; if(n) n.style.display='flex';"
+            />
+            <SimpleIcon
+              id="profile-avatar-fallback"
+              name="user"
+              style={userProfile?.avatarUrl ? "display:none;" : ""}
+              class="h-10 w-10 text-gray-400"
+            />
+          </div>
+          <div class="flex items-center justify-center gap-2">
             <Button
               type="button"
               id="upload-avatar-btn"
@@ -94,22 +100,34 @@ const storedCarrierKey = userProfile?.mobileCarrier
             >
               Upload Photo
             </Button>
-            <input type="file" id="avatar-input" accept="image/*" class="hidden" />
-          </div> -->
+            <Button
+              type="button"
+              id="remove-avatar-btn"
+              variant="link"
+              size="sm"
+              class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              style={userProfile?.avatarUrl ? "" : "display: none;"}
+            >
+              Remove
+            </Button>
+          </div>
+          <input type="file" id="avatar-input" accept="image/*" class="hidden" />
+        </div>
 
         <!-- Company Name Field -->
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
           <div class="relative">
             <label
-              for="companyName"
+              for="company-name"
               class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
-              Company Name
+              Company Name <span class="text-red-500">*</span>
             </label>
             <input
               type="text"
               id="company-name"
-              name="companyName"
+              name="company-name"
+              required
               value={userProfile?.companyName || ""}
               class=`${globalInputClasses}`
               placeholder="Enter your company name"
@@ -226,7 +244,7 @@ const storedCarrierKey = userProfile?.mobileCarrier
   </div>
 </App>
 
-<script type="module">
+<script type="module" lang="ts">
   function initProfile() {
     if (window.location.pathname !== "/profile") return;
     const profileForm = document.getElementById("profile-form");
@@ -236,7 +254,9 @@ const storedCarrierKey = userProfile?.mobileCarrier
     const saveProfileBtnText = saveProfileBtn?.textContent;
     const uploadAvatarBtn = document.getElementById("upload-avatar-btn");
     const avatarInput = document.getElementById("avatar-input");
-    const deleteAccountBtn = document.getElementById("delete-account-btn");
+    const removeAvatarBtn = document.getElementById("remove-avatar-btn");
+    const profileAvatarImg = document.getElementById("profile-avatar");
+    const profileAvatarFallback = document.getElementById("profile-avatar-fallback");
 
     const resetEmailInput = document.getElementById("reset-email");
     const sendResetLinkBtn = document.getElementById("send-reset-link");
@@ -255,7 +275,7 @@ const storedCarrierKey = userProfile?.mobileCarrier
       e.preventDefault();
 
       const formData = new FormData(profileForm);
-      const companyName = formData.get("companyName");
+      const companyName = formData.get("company-name");
       const firstName = formData.get("firstName");
       const lastName = formData.get("lastName");
       const phone = formData.get("phone");
@@ -361,25 +381,113 @@ const storedCarrierKey = userProfile?.mobileCarrier
       }
     });
 
-    // Handle avatar upload
+    // Handle avatar upload (media POST = upsert, then set profile.avatarUrl via users/update)
     uploadAvatarBtn?.addEventListener("click", () => {
       avatarInput?.click();
     });
 
     avatarInput?.addEventListener("change", async (e) => {
-      const file = e.target?.files?.[0];
+      const inputEl = e.target;
+      const file = inputEl?.files?.[0];
       if (!file) return;
 
-      // TODO: Implement avatar upload functionality
-      if (window.showNotice) {
-        window.showNotice(
-          "info",
-          "Avatar Upload",
-          "Avatar upload functionality coming soon!",
-          3000
-        );
-      } else {
-        console.log("🔔 [Avatar Upload] Avatar upload functionality coming soon!");
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        if (window.showNotice) {
+          window.showNotice("error", "File too large", "Please choose an image under 5MB.", 5000);
+        }
+        if (inputEl) inputEl.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result;
+        const base64 = typeof dataUrl === "string" ? dataUrl : "";
+        const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_") || "avatar";
+        const fileType = file.type || "image/jpeg";
+
+        try {
+          const mediaRes = await fetch("/api/media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              mediaData: base64,
+              fileName,
+              fileType,
+              targetLocation: "profiles",
+            }),
+          });
+          const mediaJson = await mediaRes.json();
+          if (!mediaRes.ok || !mediaJson?.file?.publicUrl) {
+            throw new Error(mediaJson?.error || "Upload failed");
+          }
+
+          const updateRes = await fetch("/api/users/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ avatarUrl: mediaJson.file.publicUrl }),
+          });
+          const updateJson = await updateRes.json();
+          if (!updateRes.ok) {
+            throw new Error(updateJson?.error || "Failed to update profile");
+          }
+
+          if (profileAvatarImg) {
+            profileAvatarImg.src = mediaJson.file.publicUrl;
+            profileAvatarImg.style.display = "";
+            if (profileAvatarFallback) profileAvatarFallback.style.display = "none";
+          }
+          if (removeAvatarBtn) removeAvatarBtn.style.display = "";
+          if (window.showNotice) {
+            window.showNotice("success", "Photo updated", "Your profile photo has been updated.", 2500);
+          }
+        } catch (err) {
+          console.error("Avatar upload error:", err);
+          if (window.showNotice) {
+            window.showNotice(
+              "error",
+              "Upload failed",
+              err instanceof Error ? err.message : "Failed to upload photo. Please try again.",
+              5000
+            );
+          }
+        } finally {
+          if (inputEl) inputEl.value = "";
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Handle avatar remove (clear profile.avatarUrl via users/update)
+    removeAvatarBtn?.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/users/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ avatarUrl: null }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to remove photo");
+        if (profileAvatarImg) {
+          profileAvatarImg.src = "";
+          profileAvatarImg.style.display = "none";
+        }
+        if (profileAvatarFallback) profileAvatarFallback.style.display = "";
+        if (removeAvatarBtn) removeAvatarBtn.style.display = "none";
+        if (window.showNotice) {
+          window.showNotice("success", "Photo removed", "Your profile photo has been removed.", 2500);
+        }
+      } catch (err) {
+        console.error("Avatar remove error:", err);
+        if (window.showNotice) {
+          window.showNotice(
+            "error",
+            "Remove failed",
+            err instanceof Error ? err.message : "Failed to remove photo.",
+            5000
+          );
+        }
       }
     });
 
