@@ -1039,8 +1039,7 @@ export function hideModal(modalId: string, resetZIndex: boolean = true): void {
   const modal = document.getElementById(modalId);
   // Use global overlay if it exists, otherwise check for specific overlay
   const overlay =
-    document.getElementById("global-backdrop") ||
-    document.getElementById(`${modalId}-overlay`);
+    document.getElementById("global-backdrop") || document.getElementById(`${modalId}-overlay`);
 
   if (!modal) return;
 

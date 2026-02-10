@@ -41,9 +41,9 @@ Use CSS variables for dynamic styling:
 
 ```css
 .my-component {
+  border: 1px solid var(--color-border-primary);
   background-color: var(--color-background);
   color: var(--color-text-primary);
-  border: 1px solid var(--color-border-primary);
 }
 
 .my-component:hover {

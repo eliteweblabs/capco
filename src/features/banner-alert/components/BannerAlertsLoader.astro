@@ -124,15 +124,14 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
     <script is:inline>
-      {/* // Adjust main-content padding + #sidebar top/height = full navbar base (navbar + top banners); all update when a banner is cleared */}
+      {/* // Adjust padding on all [data-dynamic-height] + #sidebar top/height = full navbar base (navbar + top banners); all update when a banner is cleared */}
       (function() {
         function adjustpageContentForTopBanners() {
           const topBannerContainer = document.getElementById("top-banner-container");
           const navbar = document.getElementById("main-navbar");
-          const pageContent = document.getElementById("page");
           const sidebar = document.getElementById("sidebar");
 
-          if (topBannerContainer && navbar && pageContent) {
+          if (topBannerContainer && navbar) {
             const applyNavbarBaseSpacing = function() {
               // Get dismissed banners from localStorage
               let dismissedSet = new Set();
@@ -161,11 +160,14 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 
               var baseHeight = navbar.offsetHeight;
 
-              // #main-content padding = full navbar base
-              if (!pageContent.style.transition) {
-                pageContent.style.transition = "padding-top 0.3s ease-in-out";
-              }
-              pageContent.style.paddingTop = baseHeight + "px";
+              // All [data-dynamic-height] elements get padding-top = full navbar base
+              var dynamicHeightEls = document.querySelectorAll('[data-dynamic-height="true"]');
+              dynamicHeightEls.forEach(function(el) {
+                if (!el.style.transition) {
+                  el.style.transition = "margin-top 0.3s ease-in-out";
+                }
+                el.style.marginTop = baseHeight + "px";
+              });
 
               // #sidebar top + height to match navbar base (updates when banner is cleared)
               if (sidebar) {

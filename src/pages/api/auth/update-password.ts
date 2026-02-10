@@ -58,10 +58,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!supabase) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Server configuration error" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Server configuration error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const { error } = await supabase.auth.updateUser({ password });

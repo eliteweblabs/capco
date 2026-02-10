@@ -201,6 +201,8 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       updateIcons(false);
     };
 
+    const SIDEBAR_STORAGE_KEY = "sidebar-expanded";
+
     // DESKTOP: Expand sidebar (show text labels)
     const expandSidebarDesktop = () => {
       sidebar.classList.remove("w-16");
@@ -228,7 +230,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       updateIcons(false);
     };
 
-    // Toggle handler
+    // Toggle handler (persist drawer state on desktop so it remembers if left open)
     toggleButton.addEventListener("click", () => {
       if (isMobile()) {
         // Mobile: slide in/out
@@ -243,8 +245,14 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
         const isCollapsed = sidebar.classList.contains("w-16");
         if (isCollapsed) {
           expandSidebarDesktop();
+          try {
+            localStorage.setItem(SIDEBAR_STORAGE_KEY, "true");
+          } catch (_) {}
         } else {
           collapseSidebarDesktop();
+          try {
+            localStorage.setItem(SIDEBAR_STORAGE_KEY, "false");
+          } catch (_) {}
         }
       }
     });
@@ -367,10 +375,19 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       // Mobile: sidebar hidden by default
       sidebar.classList.add("-translate-x-full");
     } else if (isAuth) {
-      // Desktop with auth: show collapsed sidebar (icons only)
+      // Desktop with auth: restore last drawer state (expanded vs collapsed)
       sidebar.classList.remove("-translate-x-full");
       sidebar.classList.add("translate-x-0");
-      collapseSidebarDesktop();
+      try {
+        const remembered = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+        if (remembered === "true") {
+          expandSidebarDesktop();
+        } else {
+          collapseSidebarDesktop();
+        }
+      } catch (_) {
+        collapseSidebarDesktop();
+      }
     }
   });
 </script>

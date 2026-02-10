@@ -112,7 +112,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Optional avatar URL (set when uploading via media API; null to clear)
     if (avatarUrl !== undefined) {
-      updatePayload.avatarUrl = avatarUrl === null || avatarUrl === "" ? null : String(avatarUrl).trim();
+      updatePayload.avatarUrl =
+        avatarUrl === null || avatarUrl === "" ? null : String(avatarUrl).trim();
     }
 
     // Handle SMS alerts and mobile carrier

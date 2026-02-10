@@ -64,7 +64,9 @@ const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalC
           value="20"
           class="w-full max-w-xs accent-primary-500"
         />
-        <span id="base-opacity-value" class="ml-2 text-sm text-gray-600 dark:text-gray-400">0.2</span>
+        <span id="base-opacity-value" class="ml-2 text-sm text-gray-600 dark:text-gray-400"
+          >0.2</span
+        >
       </section>
 
       <section class="mb-8">
@@ -78,62 +80,62 @@ const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalC
         </div>
       </section>
 
-
-    <section
-      class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50/80 dark:bg-gray-800/50"
-    >
-      <h2 class="text-lg font-semibold mb-2">API</h2>
-      <pre
-        class="text-xs overflow-x-auto text-gray-700 dark:text-gray-300"><code>window.dotGrid.setDot(col, row, 0..1)
+      <section
+        class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50/80 dark:bg-gray-800/50"
+      >
+        <h2 class="text-lg font-semibold mb-2">API</h2>
+        <pre
+          class="text-xs overflow-x-auto text-gray-700 dark:text-gray-300"><code>window.dotGrid.setDot(col, row, 0..1)
 window.dotGrid.setBaseOpacity(0..1)
 window.dotGrid.setAllOpacity(0..1)
 window.dotGrid.ripple(cx, cy, radius, intensity)
 window.dotGrid.decayRipples(amount)
 window.dotGrid.draw()</code></pre>
-    </section>
-  </div>
+      </section>
+    </div>
 
-  <script>
-    (function () {
-      const api = window.dotGrid;
-      if (!api) return;
+    <script>
+      (function () {
+        const api = window.dotGrid;
+        if (!api) return;
 
-      const opacityInput = document.getElementById("base-opacity");
-      const opacityValue = document.getElementById("base-opacity-value");
-      if (opacityInput && opacityValue) {
-        opacityInput.addEventListener("input", () => {
-          const v = Number(opacityInput.value) / 100;
-          opacityValue.textContent = v.toFixed(2);
-          api.setBaseOpacity(v);
-        });
-      }
-
-      document.getElementById("decay-once")?.addEventListener("click", () => {
-        api.decayRipples(0.05);
-      });
-
-      let decayInterval = null;
-      document.getElementById("decay-loop")?.addEventListener("click", () => {
-        if (decayInterval) {
-          clearInterval(decayInterval);
-          decayInterval = null;
-          return;
+        const opacityInput = document.getElementById("base-opacity");
+        const opacityValue = document.getElementById("base-opacity-value");
+        if (opacityInput && opacityValue) {
+          opacityInput.addEventListener("input", () => {
+            const v = Number(opacityInput.value) / 100;
+            opacityValue.textContent = v.toFixed(2);
+            api.setBaseOpacity(v);
+          });
         }
-        decayInterval = setInterval(() => api.decayRipples(0.02), 50);
-        setTimeout(() => {
-          if (decayInterval) clearInterval(decayInterval);
-          decayInterval = null;
-        }, 5000);
-      });
 
-      document.querySelector(".relative.min-h-screen")?.addEventListener("click", (e) => {
-        const el = e.currentTarget;
-        if (!el || e.target.closest("button") || e.target.closest("input")) return;
-        const rect = el.getBoundingClientRect();
-        const cx = e.clientX - rect.left;
-        const cy = e.clientY - rect.top;
-        api.ripple(cx, cy, 120, 0.4);
-      });
-    })();
-  </script>
+        document.getElementById("decay-once")?.addEventListener("click", () => {
+          api.decayRipples(0.05);
+        });
+
+        let decayInterval = null;
+        document.getElementById("decay-loop")?.addEventListener("click", () => {
+          if (decayInterval) {
+            clearInterval(decayInterval);
+            decayInterval = null;
+            return;
+          }
+          decayInterval = setInterval(() => api.decayRipples(0.02), 50);
+          setTimeout(() => {
+            if (decayInterval) clearInterval(decayInterval);
+            decayInterval = null;
+          }, 5000);
+        });
+
+        document.querySelector(".relative.min-h-screen")?.addEventListener("click", (e) => {
+          const el = e.currentTarget;
+          if (!el || e.target.closest("button") || e.target.closest("input")) return;
+          const rect = el.getBoundingClientRect();
+          const cx = e.clientX - rect.left;
+          const cy = e.clientY - rect.top;
+          api.ripple(cx, cy, 120, 0.4);
+        });
+      })();
+    </script>
+  </div>
 </App>

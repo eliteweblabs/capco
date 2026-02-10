@@ -31,7 +31,12 @@ const TOOLS_NAV_ITEMS: NavigationItem[] = [
     roles: ["Admin"],
     children: [
       { label: "Cal.com Booking", href: "/tests/cal-booking/", position: 0, section: "tools" },
-      { label: "Push Notifications", href: "/tests/push-notifications/", position: 1, section: "tools" },
+      {
+        label: "Push Notifications",
+        href: "/tests/push-notifications/",
+        position: 1,
+        section: "tools",
+      },
       { label: "VAPI Booking", href: "/tests/vapi-booking/", position: 2, section: "tools" },
       { label: "AI Autocomplete", href: "/tests/ai-autocomplete/", position: 3, section: "tools" },
       { label: "Google Sign-In", href: "/tests/google-signin/", position: 4, section: "tools" },
