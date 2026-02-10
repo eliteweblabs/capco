@@ -51,12 +51,13 @@ const uniqueId = `media-filter-${Math.random().toString(36).substring(7)}`;
 let allFiles: any[] = [];
 let projectFiles: any[] = [];
 let globalFiles: any[] = [];
+let storageOnlyFiles: any[] = [];
 let error: string | null = null;
 
 if (includeGrid) {
   try {
     if (supabaseAdmin) {
-      // Fetch project files
+      // Fetch project files (same as AdminMedia: all from files, then sort/limit)
       const { data: files, error: filesError } = await supabaseAdmin
         .from("files")
         .select("*")
@@ -64,6 +65,7 @@ if (includeGrid) {
 
       if (!filesError && files) {
         projectFiles = files
+          .filter((f: any) => f.id && Number.isInteger(f.id) && f.id > 0)
           .sort((a: any, b: any) => {
             const aDate = a.uploadedAt || a.uploaded_at;
             const bDate = b.uploadedAt || b.uploaded_at;
@@ -74,15 +76,26 @@ if (includeGrid) {
           .slice(0, 100);
       }
 
-      // Fetch global files
-      const result1 = await supabaseAdmin.from("filesGlobal").select("*").limit(200);
+      // Fetch global files: unified files table (targetLocation='global') first, then legacy tables
       let gFiles: any[] = [];
-      
-      if (result1.error) {
-        const result2 = await supabaseAdmin.from("files_global").select("*").limit(200);
-        if (!result2.error) gFiles = result2.data || [];
-      } else {
-        gFiles = result1.data || [];
+      const { data: filesGlobalUnified } = await supabaseAdmin
+        .from("files")
+        .select("*")
+        .eq("targetLocation", "global")
+        .not("id", "is", null)
+        .order("uploadedAt", { ascending: false })
+        .limit(200);
+      if (filesGlobalUnified?.length) {
+        gFiles = filesGlobalUnified.filter((f: any) => f.id && Number.isInteger(f.id) && f.id > 0);
+      }
+      if (gFiles.length === 0) {
+        const result1 = await supabaseAdmin.from("filesGlobal").select("*").limit(200);
+        if (!result1.error && result1.data?.length) {
+          gFiles = result1.data;
+        } else {
+          const result2 = await supabaseAdmin.from("files_global").select("*").limit(200);
+          if (!result2.error && result2.data?.length) gFiles = result2.data || [];
+        }
       }
 
       globalFiles = gFiles
@@ -94,6 +107,41 @@ if (includeGrid) {
           return new Date(bDate).getTime() - new Date(aDate).getTime();
         })
         .slice(0, 100);
+
+      // List storage global/ and add files that have no DB record (match AdminMedia behavior)
+      const { data: globalStorageList } = await supabaseAdmin.storage
+        .from("project-media")
+        .list("global", { limit: 100 });
+      const inDbPaths = new Set<string>();
+      for (const f of projectFiles) {
+        const p = f.filePath || f.file_path;
+        if (p) inDbPaths.add(p);
+      }
+      for (const f of globalFiles) {
+        const p = f.filePath || f.file_path || (f.fileName ? `global/${f.fileName}` : null);
+        if (p) inDbPaths.add(p);
+      }
+      const storageItems = (globalStorageList || []).filter((f: any) => f.name && f.name !== ".emptyFolderPlaceholder");
+      for (const item of storageItems) {
+        const filePath = `global/${item.name}`;
+        if (inDbPaths.has(filePath)) continue;
+        let publicUrl: string | null = null;
+        try {
+          const { data: urlData } = supabaseAdmin.storage.from("project-media").getPublicUrl(filePath);
+          if (urlData?.publicUrl) publicUrl = urlData.publicUrl;
+        } catch (_) {}
+        storageOnlyFiles.push({
+          id: `storage-${item.name}`,
+          fileName: item.name,
+          filePath,
+          fileType: item.metadata?.mimetype || null,
+          fileSize: item.metadata?.size ?? null,
+          uploadedAt: item.created_at || null,
+          source: "storage",
+          bucketName: "project-media",
+          publicUrl,
+        });
+      }
     }
   } catch (fetchError) {
     console.error("❌ [MEDIA-FILTER] Error fetching media:", fetchError);
@@ -170,7 +218,7 @@ async function generateSignedUrls(files: any[], source: string) {
 if (includeGrid) {
   const projectFilesWithUrls = await generateSignedUrls(projectFiles, "project");
   const globalFilesWithUrls = await generateSignedUrls(globalFiles, "global");
-  allFiles = [...projectFilesWithUrls, ...globalFilesWithUrls];
+  allFiles = [...projectFilesWithUrls, ...globalFilesWithUrls, ...storageOnlyFiles];
 }
 
 function formatFileSize(bytes: number | null): string {
