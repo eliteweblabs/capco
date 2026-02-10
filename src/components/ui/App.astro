@@ -1054,9 +1054,7 @@ const debugData = {
     <div class="md:min-h-0">
       <!-- Fixed header (4rem) – visible when scroll at top; masked by scroll pane when margin-top → 0 -->
       <header
-        id="reveal-test-header"
-        class="fixed left-0 right-0 top-0 flex h-16 items-center justify-center border-b border-gray-200 bg-gray-100 px-4 dark:border-gray-700 dark:bg-gray-800"
-        style="height: 4rem; z-index: 0;"
+        class="fixed left-0 right-0 top-0 flexb items-center justify-center border-b border-gray-200 bg-gray-100 px-4 dark:border-gray-700 dark:bg-gray-800"
       >
 
           <Navbar
@@ -1439,90 +1437,6 @@ const debugData = {
       import "../../lib/modal-global";
     </script>
 
-
-<script>
-  (function () {
-    const navbar = document.getElementById("navbar-content");
-    const footer = document.getElementById("reveal-footer");
-    const REM =  Math.max(navbar.offsetHeight, footer.offsetHeight) / 16;
-
-    // const REM = baseHeight / 16; // 4rem max translate (header/footer height)
-    const scrollEl = document.getElementById("reveal-scroll");
-    if (!scrollEl) return;
-
-    const sidebar = document.getElementById("sidebar");
-    const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
-    const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    const maxPx = () => REM * remPx();
-    const THRESH = 8; // px threshold for at-top / at-bottom
-
-    /** Clamp to valid scroll range so overscroll / rubber-band doesn't trip translate */
-    function clampedScrollTop() {
-      const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
-      return Math.max(0, Math.min(maxScroll, scrollEl.scrollTop));
-    }
-
-    function setSidebarRevealValue(scrollTop, maxScroll) {
-      if (!sidebar) return;
-      const value = maxScroll <= 0 ? "top" : scrollTop <= THRESH ? "top" : scrollTop >= maxScroll - THRESH ? "bottom" : null;
-      const off = (window as any).__revealSidebarOffsets;
-      const topPx = off?.topPx ?? remPx() * REM;
-      const bottomPx = off?.bottomPx ?? remPx() * REM;
-      if (value === "top") {
-        sidebar.style.top = topPx + "px";
-        sidebar.style.bottom = "";
-      } else if (value === "bottom") {
-        sidebar.style.top = "";
-        sidebar.style.bottom = bottomPx + "px";
-      } else {
-        sidebar.style.top = "";
-        sidebar.style.bottom = "";
-      }
-    }
-
-    let prevScrollTop = 0;
-    let translateY = 0;
-
-    function updateTranslate() {
-      const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
-      const scrollTop = clampedScrollTop();
-      // setSidebarRevealValue(scrollTop, maxScroll);
-
-      if (!isMobile()) {
-        scrollEl.style.transform = "";
-        prevScrollTop = 0;
-        translateY = 0;
-        return;
-      }
-      const deltaY = scrollTop - prevScrollTop;
-      prevScrollTop = scrollTop;
-      translateY += deltaY;
-      translateY = Math.max(0, Math.min(maxPx(), translateY));
-      scrollEl.style.transform = `translateY(-${translateY}px)`;
-      const sideBar = document.getElementById("sidebar");
-      if (sideBar) {
-        sideBar.style.top = `${Math.max(navbar.offsetHeight, footer.offsetHeight) - translateY}px`;
-      }
-
-      //  const actionButtons = document.getElementById("action-buttons");
-      // if (actionButtons) {
-      //   actionButtons.style.bottom = `${(translateY + 16) }px`;
-      // }
-
-
-    }
-
-    scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
-    window.addEventListener("resize", () => {
-      prevScrollTop = clampedScrollTop();
-      translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
-      updateTranslate();
-    });
-    prevScrollTop = clampedScrollTop();
-    translateY = Math.min(prevScrollTop, maxPx());
-    updateTranslate();
-  })();
-</script>
 
 
 
