@@ -943,9 +943,11 @@ let isDeleting = false; // Flag to prevent multiple delete operations
 };
 
 /**
- * Calls your callback when overscroll *starts*:
- * - Real device: when scroll position goes >100% or <0% (scroll event).
- * - Emulator/desktop: when you're at the bottom and scroll down (wheel) — browser clamps scrollY so we use wheel to detect intent.
+ * Calls your callback only when overscroll *starts* — i.e. user is at the top or bottom
+ * of the scroll range and pulls further (rubber-band). Not for normal scrolling in the middle.
+ * - Real device: when scroll position actually goes >100% or <0% (scroll event).
+ * - Emulator/desktop: first wheel at bottom (scroll down) or at top (scroll up); synthetic % capped 100–120 or -20–0.
+ * Uses #reveal-test-scroll as scroll container when present (your layout), otherwise window/document.
  * Returns an unsubscribe function.
  */
 (window as any).setupOverscrollStart = function (
@@ -954,47 +956,107 @@ let isDeleting = false; // Flag to prevent multiple delete operations
   const getPercent = (window as any).getOverscrollPercent;
   if (!getPercent) return () => {};
 
+  const scrollEl = document.getElementById("reveal-test-scroll");
+  const useEl = scrollEl && scrollEl.scrollHeight > scrollEl.clientHeight;
+
   let lastPercent = getPercent();
+  let lastContainerPercent: number | null = null;
   let wheelAccum = 0;
-  const THRESH = 2; // px tolerance for "at bottom"
+  let overscrollGestureActive: "bottom" | "top" | null = null;
+  const THRESH = 8; // px tolerance for "at bottom/ top"
+  const MIN_SCROLLABLE = 20; // px — minimum scroll range to treat as scrollable
+  const WHEEL_CAP = 20;
+
+  function atBoundary(): { atBottom: boolean; atTop: boolean; maxScroll: number } {
+    if (useEl && scrollEl) {
+      const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+      if (maxScroll < MIN_SCROLLABLE) return { atBottom: false, atTop: false, maxScroll: 0 };
+      const top = scrollEl.scrollTop;
+      return {
+        atBottom: top >= maxScroll - THRESH,
+        atTop: top <= THRESH,
+        maxScroll,
+      };
+    }
+    const doc = document.documentElement;
+    const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+    if (maxScroll < MIN_SCROLLABLE) return { atBottom: false, atTop: false, maxScroll: 0 };
+    const scrollY = window.scrollY ?? doc.scrollTop;
+    return {
+      atBottom: scrollY >= maxScroll - THRESH,
+      atTop: scrollY <= THRESH,
+      maxScroll,
+    };
+  }
+
+  function getContainerPercent(): number | null {
+    if (!useEl || !scrollEl) return null;
+    const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+    if (maxScroll <= 0) return 100;
+    const top = scrollEl.scrollTop;
+    if (top > maxScroll) return 100 + ((top - maxScroll) / scrollEl.clientHeight) * 100;
+    if (top < 0) return (top / scrollEl.clientHeight) * 100;
+    return (top / maxScroll) * 100;
+  }
 
   function onScroll() {
-    const p = getPercent();
-    const wasInRange = lastPercent >= 0 && lastPercent <= 100;
-    const nowOverscroll = p > 100 || p < 0;
-    if (wasInRange && nowOverscroll) {
-      callback(p, "scroll");
+    const { atBottom, atTop } = atBoundary();
+    if (!atBottom && !atTop) {
+      wheelAccum = 0;
+      overscrollGestureActive = null;
     }
-    lastPercent = p;
+    if (useEl && scrollEl) {
+      const p = getContainerPercent();
+      if (p !== null) {
+        const wasInRange = lastContainerPercent !== null && lastContainerPercent >= 0 && lastContainerPercent <= 100;
+        const nowOverscroll = p > 100 || p < 0;
+        if (wasInRange && nowOverscroll) callback(p, "scroll");
+        lastContainerPercent = p;
+      }
+    } else {
+      const p = getPercent();
+      const wasInRange = lastPercent >= 0 && lastPercent <= 100;
+      const nowOverscroll = p > 100 || p < 0;
+      if (wasInRange && nowOverscroll) callback(p, "scroll");
+      lastPercent = p;
+    }
   }
 
   function onWheel(ev: WheelEvent) {
-    const doc = document.documentElement;
-    const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
-    const scrollY = window.scrollY ?? doc.scrollTop;
-    const atBottom = maxScroll <= 0 || scrollY >= maxScroll - THRESH;
-    const atTop = scrollY <= THRESH;
+    const { atBottom, atTop } = atBoundary();
     const scrollingDown = ev.deltaY > 0;
     const scrollingUp = ev.deltaY < 0;
 
     if (atBottom && scrollingDown) {
+      const justStarted = overscrollGestureActive !== "bottom";
+      overscrollGestureActive = "bottom";
       wheelAccum += ev.deltaY;
-      const syntheticPercent = 100 + (wheelAccum / window.innerHeight) * 100;
-      callback(Math.round(syntheticPercent * 10) / 10, "wheel");
+      const clientH = (useEl && scrollEl ? scrollEl.clientHeight : window.innerHeight) || 1;
+      const raw = (wheelAccum / clientH) * 100;
+      const capped = Math.min(WHEEL_CAP, Math.max(0, raw));
+      const percent = Math.round((100 + capped) * 10) / 10;
+      if (justStarted) callback(percent, "wheel");
     } else if (atTop && scrollingUp) {
+      const justStarted = overscrollGestureActive !== "top";
+      overscrollGestureActive = "top";
       wheelAccum += ev.deltaY;
-      const syntheticPercent = (wheelAccum / window.innerHeight) * 100;
-      callback(Math.round(syntheticPercent * 10) / 10, "wheel");
+      const clientH = (useEl && scrollEl ? scrollEl.clientHeight : window.innerHeight) || 1;
+      const raw = (wheelAccum / clientH) * 100;
+      const capped = Math.max(-WHEEL_CAP, Math.min(0, raw));
+      const percent = Math.round(capped * 10) / 10;
+      if (justStarted) callback(percent, "wheel");
     } else {
+      overscrollGestureActive = null;
       wheelAccum = 0;
     }
   }
 
-  window.addEventListener("scroll", onScroll, { passive: true });
+  const target = useEl && scrollEl ? scrollEl : window;
+  target.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("wheel", onWheel, { passive: true });
 
   return function unsubscribe() {
-    window.removeEventListener("scroll", onScroll);
+    target.removeEventListener("scroll", onScroll);
     window.removeEventListener("wheel", onWheel);
   };
 };
