@@ -9,7 +9,7 @@ interface Props {
   projects: any[];
   globalIconButtonClasses: string;
   id: string;
-  title: string;
+  title?: string;
 }
 
 import SimpleIcon from "../common/SimpleIcon.astro";
@@ -21,16 +21,20 @@ const { id, title = "" } = Astro.props;
 <!-- Account dropdown: Flowbite data-dropdown-toggle="account-dropdown" on AuthIcon trigger -->
 <div
   id={`${id}-dropdown`}
-  class="z-10 hidden w-full max-w-md rounded-b-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
+  class="z-100 hidden w-full max-w-md rounded-b-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
   data-popper-placement="bottom"
   aria-labelledby={`${id}-dropdown`}
 >
-  <div class="max-h-[85vh] overflow-hidden flex flex-col">
-    <div class="relative flex flex-col flex-1 min-h-0">
+  <div class="flex max-h-[85vh] flex-col overflow-hidden">
+    <div class="relative flex min-h-0 flex-1 flex-col">
       <div
-        class="flex items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700 shrink-0"
+        class="flex shrink-0 items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700"
       >
-        {title && <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>}
+        <slot name="title">
+          {title && (
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" set:html={title} />
+          )}
+        </slot>
         <CloseButton data-dismiss-target="#account-dropdown" tooltipText="Close" />
       </div>
       <slot />

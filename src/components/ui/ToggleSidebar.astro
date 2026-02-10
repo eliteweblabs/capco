@@ -17,18 +17,15 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
 
 <!-- Toggle button - visible on mobile always, on desktop only when logged in -->
 <button
-  id="sidebar-toggle-button"
   type="button"
+  data-sidebar-toggle-button
   aria-controls="sidebar"
   data-is-auth={currentUser ? "true" : "false"}
   class={`rounded-full inline-flex items-center p-2 text-sm ${responsiveClass} mr-0 sm:mr-2`}
 >
-  <div
-    class="flex items-center relative h-6 justify-center overflow-hidden w-6"
-    id="toggle-icon-container"
-  >
+  <div class="relative flex h-6 w-6 items-center justify-center overflow-hidden">
     <svg
-      class="transition-all duration-300 absolute h-6 lucide transform w-6 lucide-menu opacity-100 rotate-0 scale-100"
+      class="lucide lucide-menu absolute h-6 w-6 rotate-0 scale-100 transform opacity-100 transition-all duration-300"
       fill="none"
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
@@ -38,11 +35,11 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       stroke-linecap="round"
       stroke-linejoin="round"
       stroke-width="2"
-      id="menu-icon"
+      class="sidebar-toggle-menu-icon"
       ><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg
     >
     <svg
-      class="transition-all duration-300 absolute h-6 lucide transform w-6 lucide-x opacity-0 -rotate-90 scale-0"
+      class="lucide lucide-x absolute h-6 w-6 -rotate-90 scale-0 transform opacity-0 transition-all duration-300"
       fill="none"
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
@@ -52,7 +49,8 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       stroke-linecap="round"
       stroke-linejoin="round"
       stroke-width="2"
-      id="close-icon"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg
+      class="sidebar-toggle-close-icon"
+      ><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg
     >
   </div>
 
@@ -89,7 +87,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
   import { BREAKPOINTS } from "../../lib/ux-utils";
 
   document.addEventListener("DOMContentLoaded", function () {
-    const toggleButton = document.getElementById("sidebar-toggle-button");
+    const toggleButtons = Array.from(document.querySelectorAll("[data-sidebar-toggle-button]"));
     const sidebar = document.getElementById("sidebar");
     const mainContent = document.getElementById("main-content");
     const stickyActions = document.getElementById("sticky-actions");
@@ -97,13 +95,11 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
     const collapseShowElements = document.querySelectorAll("[data-sidebar-collapse-show]");
     const collapseIcon = document.querySelector("[data-sidebar-toggle-collapse-icon]");
     const expandIcon = document.querySelector("[data-sidebar-toggle-expand-icon]");
-    const menuIcon = document.getElementById("menu-icon");
-    const closeIcon = document.getElementById("close-icon");
 
-    if (!toggleButton || !sidebar) return;
+    if (!toggleButtons.length || !sidebar) return;
 
-    // Check if user is authenticated
-    const isAuth = toggleButton.getAttribute("data-is-auth") === "true";
+    // Check if user is authenticated (from first toggle button)
+    const isAuth = toggleButtons[0].getAttribute("data-is-auth") === "true";
 
     // Use global breakpoint (Tailwind sm)
     const isMobile = () => window.innerWidth < BREAKPOINTS.SM;
@@ -112,7 +108,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
     // Track if sidebar is expanded (for desktop hover behavior)
     let isHovering = false;
 
-    // Toggle icons based on state
+    // Toggle icons based on state (each toggle button has its own menu/close icons)
     const updateIcons = (isExpanded) => {
       if (collapseIcon && expandIcon) {
         if (isExpanded) {
@@ -124,22 +120,22 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
         }
       }
 
-      // Toggle between menu and close icons
-      if (menuIcon && closeIcon) {
+      toggleButtons.forEach((btn) => {
+        const menuIcon = btn.querySelector(".sidebar-toggle-menu-icon");
+        const closeIcon = btn.querySelector(".sidebar-toggle-close-icon");
+        if (!menuIcon || !closeIcon) return;
         if (isExpanded) {
-          // Show close icon (X)
           menuIcon.classList.remove("opacity-100", "rotate-0", "scale-100");
           menuIcon.classList.add("opacity-0", "rotate-90", "scale-0");
           closeIcon.classList.remove("opacity-0", "-rotate-90", "scale-0");
           closeIcon.classList.add("opacity-100", "rotate-0", "scale-100");
         } else {
-          // Show menu icon (hamburger)
           menuIcon.classList.remove("opacity-0", "rotate-90", "scale-0");
           menuIcon.classList.add("opacity-100", "rotate-0", "scale-100");
           closeIcon.classList.remove("opacity-100", "rotate-0", "scale-100");
           closeIcon.classList.add("opacity-0", "-rotate-90", "scale-0");
         }
-      }
+      });
     };
 
     // Lock body scroll (mobile only). Avoid touch-action: none on body — it breaks iOS Safari scrolling when sidebar closes.
@@ -182,7 +178,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       if (mainContent) {
         mainContent.classList.add("overflow-hidden", "blur-sm", "pointer-events-none");
       }
-      toggleButton.setAttribute("aria-expanded", "true");
+      toggleButtons.forEach((btn) => btn.setAttribute("aria-expanded", "true"));
       updateIcons(true);
       // runSidebarItemStaggerIn();
     };
@@ -197,7 +193,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       if (mainContent) {
         mainContent.classList.remove("overflow-hidden", "blur-sm", "pointer-events-none");
       }
-      toggleButton.setAttribute("aria-expanded", "false");
+      toggleButtons.forEach((btn) => btn.setAttribute("aria-expanded", "false"));
       updateIcons(false);
     };
 
@@ -212,7 +208,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
         mainContent.style.marginLeft = "16rem"; // 256px (w-64)
       }
 
-      toggleButton.setAttribute("aria-expanded", "true");
+      toggleButtons.forEach((btn) => btn.setAttribute("aria-expanded", "true"));
       updateIcons(true);
       // runSidebarItemStaggerIn();
     };
@@ -226,12 +222,12 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       if (mainContent) {
         mainContent.style.marginLeft = "4rem"; // 64px (w-16)
       }
-      toggleButton.setAttribute("aria-expanded", "false");
+      toggleButtons.forEach((btn) => btn.setAttribute("aria-expanded", "false"));
       updateIcons(false);
     };
 
     // Toggle handler (persist drawer state on desktop so it remembers if left open)
-    toggleButton.addEventListener("click", () => {
+    const handleToggleClick = () => {
       if (isMobile()) {
         // Mobile: slide in/out
         const isHidden = sidebar.classList.contains("-translate-x-full");
@@ -247,15 +243,20 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
           expandSidebarDesktop();
           try {
             localStorage.setItem(SIDEBAR_STORAGE_KEY, "true");
-          } catch (_) {}
+          } catch (_) {
+            /* localStorage unavailable (e.g. private mode) */
+          }
         } else {
           collapseSidebarDesktop();
           try {
             localStorage.setItem(SIDEBAR_STORAGE_KEY, "false");
-          } catch (_) {}
+          } catch (_) {
+            /* localStorage unavailable (e.g. private mode) */
+          }
         }
       }
-    });
+    };
+    toggleButtons.forEach((btn) => btn.addEventListener("click", handleToggleClick));
 
     // Desktop hover behavior: expand on hover, collapse on leave
     if (isAuth) {
@@ -287,7 +288,10 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
     document.addEventListener("click", (e) => {
       if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
         // Check if click is outside sidebar and toggle button
-        if (!sidebar.contains(e.target as Node) && !toggleButton.contains(e.target as Node)) {
+        if (
+          !sidebar.contains(e.target as Node) &&
+          !toggleButtons.some((btn) => btn.contains(e.target as Node))
+        ) {
           hideSidebarMobile();
         }
       }

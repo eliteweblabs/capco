@@ -16,10 +16,10 @@ export const SIMPLE_ICONS: Record<string, string> = iconData;
 export function getIcon(name: string, config: IconConfig = {}): string {
   const { size = 16, className = "", globalCompanyIcon } = config;
 
-  // Special case: if name is 'logo', use the global company icon
+  // Special case: if name is 'logo', use the global company icon and normalize viewBox for even padding
   let iconSvg: string | undefined;
   if (name === "logo" && globalCompanyIcon) {
-    iconSvg = globalCompanyIcon;
+    iconSvg = normalizeLogoViewBox(globalCompanyIcon);
   } else {
     iconSvg = SIMPLE_ICONS[name];
   }
@@ -47,6 +47,43 @@ export function getIcon(name: string, config: IconConfig = {}): string {
   }
 
   return result;
+}
+
+/**
+ * Normalize logo SVG so the graphic is centered in a square viewBox (fixes unequal padding).
+ * Wraps content in a centered <g> and sets a square viewBox + preserveAspectRatio.
+ */
+function normalizeLogoViewBox(svg: string): string {
+  const viewBoxMatch = svg.match(/viewBox\s*=\s*["']([^"']+)["']/i);
+  if (!viewBoxMatch) return svg;
+
+  const parts = viewBoxMatch[1]
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number);
+  if (parts.length < 4) return svg;
+
+  const [minX, minY, w, h] = parts;
+  const s = Math.max(w, h, 1);
+  const cx = minX + w / 2;
+  const cy = minY + h / 2;
+  const dx = s / 2 - cx;
+  const dy = s / 2 - cy;
+
+  const innerMatch = svg.match(/<svg[\s\S]*?>([\s\S]*?)<\/svg>/i);
+  const inner = innerMatch ? innerMatch[1] : "";
+
+  const openTag = svg.match(/<svg[^>]*>/i)?.[0] ?? "<svg>";
+  let newOpen = openTag
+    .replace(/viewBox\s*=\s*["'][^"']*["']/i, `viewBox="0 0 ${s} ${s}"`)
+    .replace(/\spreserveAspectRatio\s*=\s*["'][^"']*["']/gi, "");
+  if (!newOpen.includes("preserveAspectRatio=")) {
+    newOpen = newOpen.replace(/>$/, ' preserveAspectRatio="xMidYMid meet">');
+  }
+
+  const wrappedInner =
+    dx !== 0 || dy !== 0 ? `<g transform="translate(${dx}, ${dy})">${inner}</g>` : inner;
+  return newOpen + wrappedInner + "</svg>";
 }
 
 // Auto-initialize for client-side (browser) usage

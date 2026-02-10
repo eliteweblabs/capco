@@ -27,23 +27,23 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 >
   <div
     id="admin-voice-panel"
-    class="admin-voice-panel hidden fixed w-72 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl overflow-hidden"
+    class="admin-voice-panel fixed hidden w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
     style="bottom: 5rem; right: 1.5rem;"
   >
     <div
       id="admin-voice-panel-drag"
-      class="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 cursor-move select-none"
+      class="flex cursor-move select-none items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2 dark:border-gray-700 dark:bg-gray-800/50"
     >
-      <div class="flex items-center gap-2 min-w-0 flex-1">
+      <div class="flex min-w-0 flex-1 items-center gap-2">
         <span
-          class="shrink-0 rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary-700 dark:bg-primary-900/50 dark:text-primary-300"
+          class="dark:bg-primary-900/50 shrink-0 rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary-700 dark:text-primary-300"
           title="Admin mode: form alerts, create project, welcome email"
         >
           Admin
         </span>
-        <div id="admin-voice-status-dot" class="w-2.5 h-2.5 shrink-0 rounded-full bg-gray-400">
+        <div id="admin-voice-status-dot" class="h-2.5 w-2.5 shrink-0 rounded-full bg-gray-400">
         </div>
-        <span id="admin-voice-status-text" class="text-sm text-gray-700 dark:text-gray-300 truncate"
+        <span id="admin-voice-status-text" class="truncate text-sm text-gray-700 dark:text-gray-300"
           >Ready</span
         >
       </div>
@@ -58,7 +58,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       <button
         id="admin-voice-start"
         type="button"
-        class="w-full flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-white font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+        class="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -73,7 +73,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       <button
         id="admin-voice-stop"
         type="button"
-        class="hidden w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-white font-medium hover:bg-red-700 transition-colors text-sm"
+        class="hidden w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-red-700"
       >
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -92,12 +92,12 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
         New form submissions will be announced when the assistant is active.
       </p>
-      <p id="admin-voice-error-hint" class="mt-2 text-xs text-amber-600 dark:text-amber-400 hidden">
+      <p id="admin-voice-error-hint" class="mt-2 hidden text-xs text-amber-600 dark:text-amber-400">
         If connection fails, add this site’s URL to VAPI Dashboard → API Keys → Allowed origins.
       </p>
       <p
         id="admin-voice-localhost-hint"
-        class="mt-2 text-xs text-blue-600 dark:text-blue-400 hidden"
+        class="mt-2 hidden text-xs text-blue-600 dark:text-blue-400"
       >
         VAPI only works with a public URL. Test voice on your deployed site, or use a tunnel (e.g.
         ngrok) and add that URL to VAPI allowed origins.
@@ -110,18 +110,76 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     type="button"
     aria-label="Voice Assistant"
     title="Voice Assistant (Admin)"
-    class="flex h-14 w-14 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-primary-700 text-white shadow-lg hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+    class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-700 text-white shadow-lg hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 sm:h-12 sm:w-12"
   >
-    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+      class="h-8 w-8 shrink-0"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <!-- Equalizer bar: 6×20px, rounded top; scales from bottom center -->
+      <rect
+        class="admin-voice-equalizer-rect"
+        x="9"
+        y="4"
+        width="6"
+        height="20"
+        rx="2"
+        ry="2"
+        fill="white"></rect>
       <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+        d="M19 9v3a5.006 5.006 0 0 1-5 5h-4a5.006 5.006 0 0 1-5-5V9m7 9v3m-3 0h6M11 3h2a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z"
       ></path>
     </svg>
   </button>
 </div>
+
+<style>
+  .admin-voice-equalizer-rect {
+    transform: translateY(-10px) scaleY(0.1);
+    /* Rect bottom center (12,24); max ~75%; up 10px; scaleY driven by JS */
+    transform-origin: 12px 24px;
+  }
+</style>
+
+<script>
+  (function () {
+    const rect = document.querySelector(".admin-voice-equalizer-rect");
+    if (!rect) return;
+    const MIN = 0.05;
+    const MAX = 0.62;
+    const LOW_MAX = 0.14; // ~1–3px height range; bias toward this for 2–3s feel
+    const LERP = 0.85; // ~50ms to reach next value
+    const TICK_MS = 50;
+    let current = 0.08;
+    let target = 0.1;
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+    function pickTarget() {
+      return Math.random() < 0.72 ? rand(MIN, LOW_MAX) : rand(MIN, MAX);
+    }
+    function setScale(sy) {
+      rect.style.transform = "translateY(-10px) scaleY(" + sy + ")";
+    }
+    function tick() {
+      current += (target - current) * LERP;
+      if (Math.random() < 0.18) {
+        target = pickTarget();
+      }
+      setScale(current);
+      setTimeout(tick, TICK_MS);
+    }
+    target = pickTarget();
+    setScale(current);
+    setTimeout(tick, TICK_MS);
+  })();
+</script>
 
 <script
   src="https://cdn.jsdelivr.net/gh/balacodeio/Vapi-Web-UMD@latest/dist/latest/vapi-web-bundle.min.js"

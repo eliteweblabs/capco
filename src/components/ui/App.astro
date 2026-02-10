@@ -156,6 +156,10 @@ import StickyActionButton from "../project/StickyActions.astro";
 import PunchlistDrawer from "../project/PunchlistDrawer.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 import Tooltip from "../common/TooltipFloating.astro";
+import SpeedDial from "../ui/SpeedDial.astro";
+import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro";
+
+const isAdmin = currentUser?.profile?.role === "Admin";
 // import DotGrid from "./DotGrid.astro";
 
 // Notification count loader will be loaded via script tag
@@ -1047,7 +1051,7 @@ const debugData = {
     <UnifiedNotification />
 
 
-    <div class="reveal-slide-toggle-test md:min-h-0">
+    <div class="md:min-h-0">
       <!-- Fixed header (4rem) – visible when scroll at top; masked by scroll pane when margin-top → 0 -->
       <header
         id="reveal-test-header"
@@ -1072,11 +1076,19 @@ const debugData = {
         <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Header branding</span>
       </header>
   
+      <Aside
+      {globalIconButtonClasses}
+      {currentUser}
+      {globalInputClasses}
+      {primaryTextClasses}
+      {projects}
+      {mobileNavigationHTML}
+    />
+
       <!-- Scrolling pane: translateY(-scrollTop) so pane slides up with scroll, masking header and revealing footer -->
       <div
         id="reveal-test-scroll"
-        class="no-scrollbar reveal-scroll-pane relative z-50 overflow-y-auto overflow-x-hidden color-background page-backdrop-dots"
-        style="margin-top: 4rem; height: calc(100dvh - 8rem);"
+        class="no-scrollbar reveal-scroll-pane relative z-50 overflow-y-auto bg-gray-100 dark:bg-gray-900"
         data-reveal-test
       >
 
@@ -1089,19 +1101,11 @@ const debugData = {
       > -->
     <!-- ${centerContent ? 'overscroll-behavior-y: contain;' : ''} -->
     <!-- 'overscroll-behavior-y: contain; touch-action: pan-x;' -->
-    <Aside
-        {globalIconButtonClasses}
-        {currentUser}
-        {globalInputClasses}
-        {primaryTextClasses}
-        {projects}
-        {mobileNavigationHTML}
-      />
-
+ 
       <div
         id="main-content"
         class:list={[
-          "color-background",
+          // "color-background",
           // "flex-1 min-w-0",
           currentUser ? "sm:ml-16" : "",
           // (layout === "default"  || layout === "minimal" || !layout) &&
@@ -1127,9 +1131,7 @@ const debugData = {
         </div>
 
         <ul class="align-center flex justify-center text-gray-500 dark:text-gray-400">
-          <li>
-            <ThemeToggle {globalIconButtonClasses} />
-          </li>
+       
           <li>
             <Tooltip
               position="right"
@@ -1162,6 +1164,22 @@ const debugData = {
       {secondaryTextClasses}
       {globalInputClasses}
     />
+    {isAdmin ? (
+      <AdminVoiceAssistantWidget
+        currentUser={currentUser}
+        globalCompanyPhone={globalCompanyPhone}
+      />
+    ) : (
+      <SpeedDial
+        {globalCompanyPhone}
+        currentUser={currentUser || undefined}
+        {isBackend}
+        {primaryTextClasses}
+        {secondaryTextClasses}
+        {globalInputClasses}
+        {globalCompanyName}
+      />
+    )}
 
     </div>
     <!-- </div> -->
@@ -1179,6 +1197,46 @@ const debugData = {
 
     <script>
       import "../../scripts/app-globals";
+    </script>
+
+    <!-- Overscroll: getOverscrollPercent() for current %; setupOverscrollStart(cb) fires when overscroll *starts*. On emulator/desktop scrollY is clamped — use wheel at bottom to trigger. -->
+    <script is:inline>
+      (function () {
+        function init() {
+          if (typeof window.setupOverscrollStart !== "function") return;
+          window.setupOverscrollStart(function (percent, source) {
+            console.log("overscroll started", Math.round(percent * 10) / 10 + "%", "(" + source + ")");
+          });
+          // Also log ongoing % when actually overscrolled (real device only; emulator uses wheel callback above)
+          if (typeof window.getOverscrollPercent !== "function") return;
+          var last = 0;
+          var lastLog = 0;
+          function logIfOverscrolled() {
+            var p = window.getOverscrollPercent();
+            if (p <= 100 && p >= 0) return;
+            var now = Date.now();
+            if (p !== last || now - lastLog > 300) {
+              last = p;
+              lastLog = now;
+              console.log("overscroll %", Math.round(p * 10) / 10);
+            }
+          }
+          var ticking = false;
+          window.addEventListener("scroll", function () {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(function () {
+              logIfOverscrolled();
+              ticking = false;
+            });
+          }, { passive: true });
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", init);
+        } else {
+          setTimeout(init, 0);
+        }
+      })();
     </script>
 
     <script>
@@ -1365,63 +1423,78 @@ const debugData = {
 
 <script>
   (function () {
-    const REM = 4; // 4rem max translate (header/footer height)
+    const navbar = document.getElementById("main-navbar");
+    const footer = document.getElementById("reveal-footer");
+    const REM =  Math.max(navbar.offsetHeight, footer.offsetHeight) / 16;
+
+    // const REM = baseHeight / 16; // 4rem max translate (header/footer height)
     const scrollEl = document.getElementById("reveal-test-scroll");
     if (!scrollEl) return;
 
+    const sidebar = document.getElementById("sidebar");
     const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
     const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const maxPx = () => REM * remPx();
+    const THRESH = 8; // px threshold for at-top / at-bottom
+
+    /** Clamp to valid scroll range so overscroll / rubber-band doesn't trip translate */
+    function clampedScrollTop() {
+      const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+      return Math.max(0, Math.min(maxScroll, scrollEl.scrollTop));
+    }
+
+    function setSidebarRevealValue(scrollTop, maxScroll) {
+      if (!sidebar) return;
+      const value = maxScroll <= 0 ? "top" : scrollTop <= THRESH ? "top" : scrollTop >= maxScroll - THRESH ? "bottom" : null;
+      const off = (window as any).__revealSidebarOffsets;
+      const topPx = off?.topPx ?? remPx() * REM;
+      const bottomPx = off?.bottomPx ?? remPx() * REM;
+      if (value === "top") {
+        sidebar.style.top = topPx + "px";
+        sidebar.style.bottom = "";
+      } else if (value === "bottom") {
+        sidebar.style.top = "";
+        sidebar.style.bottom = bottomPx + "px";
+      } else {
+        sidebar.style.top = "";
+        sidebar.style.bottom = "";
+      }
+    }
 
     let prevScrollTop = 0;
     let translateY = 0;
 
     function updateTranslate() {
+      const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+      const scrollTop = clampedScrollTop();
+      // setSidebarRevealValue(scrollTop, maxScroll);
+
       if (!isMobile()) {
         scrollEl.style.transform = "";
         prevScrollTop = 0;
         translateY = 0;
         return;
       }
-      const scrollTop = scrollEl.scrollTop;
       const deltaY = scrollTop - prevScrollTop;
       prevScrollTop = scrollTop;
       translateY += deltaY;
       translateY = Math.max(0, Math.min(maxPx(), translateY));
       scrollEl.style.transform = `translateY(-${translateY}px)`;
+      
     }
 
     scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
     window.addEventListener("resize", () => {
-      prevScrollTop = scrollEl.scrollTop;
-      translateY = Math.max(0, Math.min(maxPx(), scrollEl.scrollTop));
+      prevScrollTop = clampedScrollTop();
+      translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
       updateTranslate();
     });
-    prevScrollTop = scrollEl.scrollTop;
-    translateY = Math.min(scrollEl.scrollTop, maxPx());
+    prevScrollTop = clampedScrollTop();
+    translateY = Math.min(prevScrollTop, maxPx());
     updateTranslate();
   })();
 </script>
 
-<style is:global>
-  .reveal-slide-toggle-test .reveal-scroll-pane {
-    -webkit-overflow-scrolling: touch;
-    will-change: transform;
-  }
-  @media (max-width: 767px) {
-    .reveal-slide-toggle-test .reveal-scroll-pane {
-      height: calc(100dvh - 4rem) !important;
-    }
-  }
-  @media (min-width: 768px) {
-    .reveal-slide-toggle-test .reveal-scroll-pane {
-      will-change: auto;
-      margin-top: 0 !important;
-      height: auto !important;
-      max-height: 60vh;
-    }
-  }
-</style>
 
 
     <!-- Plausible Analytics Script -->

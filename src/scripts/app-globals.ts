@@ -17,6 +17,10 @@ declare global {
     handleUrlNotification?: (type: string, message: string) => void;
     hideOnFormFocus?: (elementSelector: string, mobileOnly?: boolean) => void;
     hideNotification?: any;
+    /** Returns scroll position as %; 0–100 = normal, >100 = overscroll past bottom, <0 = overscroll past top */
+    getOverscrollPercent?: () => number;
+    /** Call when overscroll starts (at boundary + scroll/wheel in overscroll direction). On emulator/desktop only wheel-at-bottom fires. */
+    setupOverscrollStart?: (callback: (percent: number, source: "scroll" | "wheel") => void) => () => void;
     // UX Utility Functions
     isDarkMode?: () => boolean;
     currentTheme?: "light" | "dark";
@@ -911,6 +915,90 @@ let isDeleting = false; // Flag to prevent multiple delete operations
 
 // ===== UX UTILITY FUNCTIONS =====
 
+/**
+ * Returns current scroll position as a percentage.
+ * - 0–100: normal scroll (0 = top, 100 = bottom)
+ * - >100: overscroll past bottom (e.g. 100.1, 105, 120, 130)
+ * - <0: overscroll past top (e.g. -5, -10)
+ */
+(window as any).getOverscrollPercent = function (): number {
+  const doc = document.documentElement;
+  const scrollHeight = doc.scrollHeight;
+  const clientHeight = window.innerHeight;
+  const maxScroll = Math.max(0, scrollHeight - clientHeight);
+  const scrollY = window.scrollY ?? doc.scrollTop;
+
+  if (maxScroll <= 0) return 100;
+
+  if (scrollY > maxScroll) {
+    // Overscroll past bottom: 100 + extra as % of viewport
+    const over = scrollY - maxScroll;
+    return 100 + (over / clientHeight) * 100;
+  }
+  if (scrollY < 0) {
+    // Overscroll past top
+    return (scrollY / clientHeight) * 100;
+  }
+  return (scrollY / maxScroll) * 100;
+};
+
+/**
+ * Calls your callback when overscroll *starts*:
+ * - Real device: when scroll position goes >100% or <0% (scroll event).
+ * - Emulator/desktop: when you're at the bottom and scroll down (wheel) — browser clamps scrollY so we use wheel to detect intent.
+ * Returns an unsubscribe function.
+ */
+(window as any).setupOverscrollStart = function (
+  callback: (percent: number, source: "scroll" | "wheel") => void
+): () => void {
+  const getPercent = (window as any).getOverscrollPercent;
+  if (!getPercent) return () => {};
+
+  let lastPercent = getPercent();
+  let wheelAccum = 0;
+  const THRESH = 2; // px tolerance for "at bottom"
+
+  function onScroll() {
+    const p = getPercent();
+    const wasInRange = lastPercent >= 0 && lastPercent <= 100;
+    const nowOverscroll = p > 100 || p < 0;
+    if (wasInRange && nowOverscroll) {
+      callback(p, "scroll");
+    }
+    lastPercent = p;
+  }
+
+  function onWheel(ev: WheelEvent) {
+    const doc = document.documentElement;
+    const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+    const scrollY = window.scrollY ?? doc.scrollTop;
+    const atBottom = maxScroll <= 0 || scrollY >= maxScroll - THRESH;
+    const atTop = scrollY <= THRESH;
+    const scrollingDown = ev.deltaY > 0;
+    const scrollingUp = ev.deltaY < 0;
+
+    if (atBottom && scrollingDown) {
+      wheelAccum += ev.deltaY;
+      const syntheticPercent = 100 + (wheelAccum / window.innerHeight) * 100;
+      callback(Math.round(syntheticPercent * 10) / 10, "wheel");
+    } else if (atTop && scrollingUp) {
+      wheelAccum += ev.deltaY;
+      const syntheticPercent = (wheelAccum / window.innerHeight) * 100;
+      callback(Math.round(syntheticPercent * 10) / 10, "wheel");
+    } else {
+      wheelAccum = 0;
+    }
+  }
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("wheel", onWheel, { passive: true });
+
+  return function unsubscribe() {
+    window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("wheel", onWheel);
+  };
+};
+
 // Scroll utilities
 (window as any).scrollToTopOnMobile = function () {
   if (window.innerWidth < 768) {
@@ -1718,3 +1806,33 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("[APP] DOMContentLoaded error (older Safari/iPad?):", e);
   }
 });
+
+function applyDynamicHeight() {
+  document.querySelectorAll<HTMLElement>("[data-dynamic-height]").forEach((el) => {
+    const value = el.getAttribute("data-dynamic-height");
+    if (value) el.style.height = `calc(100dvh - ${value})`;
+  });
+}
+document.addEventListener("DOMContentLoaded", applyDynamicHeight);
+document.addEventListener("astro:page-load", applyDynamicHeight);
+window.addEventListener("resize", applyDynamicHeight);
+
+/** #reveal-test-scroll: margin-top and height from navbar base (same as BannerAlertsLoader baseHeight = navbar.offsetHeight) */
+function applyRevealTestScrollFromNavbar() {
+  const scrollEl = document.getElementById("reveal-test-scroll");
+  const navbar = document.getElementById("main-navbar");
+  if (!scrollEl || !navbar) return;
+  const baseHeight = navbar.offsetHeight;
+  scrollEl.style.marginTop = `${baseHeight}px`;
+  scrollEl.style.height = `calc(100dvh - ${baseHeight}px)`;
+}
+document.addEventListener("DOMContentLoaded", () => {
+  applyRevealTestScrollFromNavbar();
+  const navbar = document.getElementById("main-navbar");
+  if (navbar) {
+    const ro = new ResizeObserver(() => applyRevealTestScrollFromNavbar());
+    ro.observe(navbar);
+  }
+});
+document.addEventListener("astro:page-load", applyRevealTestScrollFromNavbar);
+window.addEventListener("resize", applyRevealTestScrollFromNavbar);

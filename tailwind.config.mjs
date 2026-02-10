@@ -9,6 +9,9 @@ export default {
   content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
   darkMode: "class", // Esto permite usar 'dark:' en clases
   safelist: [
+    // Button size classes from button-styles.ts (dynamic strings can be missed by content scanner)
+    "px-3.5",
+    "py-2.5",
     // Button outline variant hover classes (ensure they're always generated)
     "hover:bg-primary-500",
     "hover:bg-primary-600",

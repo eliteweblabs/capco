@@ -169,14 +169,25 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
                 el.style.marginTop = baseHeight + "px";
               });
 
-              // #sidebar top + height to match navbar base (updates when banner is cleared)
-              if (sidebar) {
-                if (!sidebar.style.transition) {
-                  sidebar.style.transition = "top 0.3s ease-in-out, height 0.3s ease-in-out";
-                }
-                sidebar.style.top = baseHeight + "px";
-                sidebar.style.height = "calc(100dvh - " + baseHeight + "px)";
+              // #reveal-test-scroll: margin-top and height = 100dvh - baseHeight (same as sidebar)
+              var revealScroll = document.getElementById("reveal-test-scroll");
+              if (revealScroll) {
+                revealScroll.style.marginTop = baseHeight + "px";
+                revealScroll.style.height = "calc(100dvh - " + baseHeight + "px)";
               }
+
+              // #sidebar top + height from combined height of visible alerts (top-banner-container)
+              var combinedAlertsHeight = topBannerContainer.style.display !== "none" ? topBannerContainer.offsetHeight : 0;
+              if (sidebar) {
+                sidebar.style.top = baseHeight + combinedAlertsHeight + "px";
+                sidebar.style.height = "calc(100dvh - 4rem - " + combinedAlertsHeight + "px)";
+              }
+
+              // Reveal layout: expose top/bottom offsets for sidebar (used by App.astro reveal script)
+              var remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+              window.__revealSidebarOffsets = window.__revealSidebarOffsets || { topPx: 4 * remPx, bottomPx: 4 * remPx };
+              window.__revealSidebarOffsets.topPx = baseHeight + combinedAlertsHeight;
+              window.__revealSidebarOffsets.bottomPx = 4 * remPx;
             };
 
             // Initial adjustment
@@ -300,6 +311,11 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
                   footer.style.marginBottom = "";
                 }
               }
+
+              // Reveal layout: expose bottom offset for sidebar (used by App.astro reveal script)
+              var remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+              window.__revealSidebarOffsets = window.__revealSidebarOffsets || { topPx: 4 * remPx, bottomPx: 4 * remPx };
+              window.__revealSidebarOffsets.bottomPx = 4 * remPx + bannerHeight;
             };
 
             // Initial adjustment
