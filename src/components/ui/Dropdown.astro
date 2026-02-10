@@ -35,26 +35,30 @@ const { id, title = "" } = Astro.props;
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white" set:html={title} />
           )}
         </slot>
-        <CloseButton data-dismiss-target="#account-dropdown" tooltipText="Close" />
+        <CloseButton data-dismiss-target={`#${id}-dropdown`} tooltipText="Close" />
       </div>
       <slot />
     </div>
   </div>
 </div>
 
-<!-- <script is:inline>
+<script is:inline>
+  // Flowbite adds opacity/transition classes when closing; when reopening, only 'hidden' is
+  // removed so the panel can stay invisible. Remove those classes on trigger click so dropdowns
+  // (account, notifications) reopen correctly after being closed.
   document.addEventListener("DOMContentLoaded", function () {
-    if (typeof window.initPageSizeToggle === "function") window.initPageSizeToggle();
-
-    var panel = document.getElementById("account-dropdown");
-    document.querySelectorAll('[data-dropdown-toggle="account-dropdown"]').forEach(function (el) {
-      el.addEventListener("click", function () {
-        setTimeout(function () {
-          if (panel && !panel.classList.contains("hidden")) {
-            panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out");
-          }
-        }, 10);
+    document.querySelectorAll("[id$='-dropdown']").forEach(function (panel) {
+      var panelId = panel.id;
+      if (!panelId) return;
+      document.querySelectorAll("[data-dropdown-toggle='" + panelId + "']").forEach(function (trigger) {
+        trigger.addEventListener("click", function () {
+          setTimeout(function () {
+            if (panel && !panel.classList.contains("hidden")) {
+              panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out");
+            }
+          }, 10);
+        });
       });
     });
   });
-</script> -->
+</script>

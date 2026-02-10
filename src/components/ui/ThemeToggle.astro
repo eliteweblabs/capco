@@ -12,10 +12,10 @@ const { globalIconButtonClasses } = await Astro.props;
   title="Toggle dark mode"
   class={globalIconButtonClasses}
 >
-  <Tooltip text="Toggle dark mode" position="bottom">
+  <Tooltip text="Toggle dark mode" position="bottom" touchable={false}>
     <SimpleIcon name="moon" size="sm" id="theme-toggle-dark-icon" class={"hidden"} />
   </Tooltip>
-  <Tooltip text="Toggle light mode" position="bottom">
+  <Tooltip text="Toggle light mode" position="bottom" touchable={false}>
     <SimpleIcon name="sun" size="sm" id="theme-toggle-light-icon" class={`hidden`} />
   </Tooltip>
   <span class="sr-only">Toggle dark mode</span>
@@ -44,7 +44,8 @@ const { globalIconButtonClasses } = await Astro.props;
       lightIcon.classList.add("hidden");
     }
 
-    themeToggle.addEventListener("click", function () {
+    themeToggle.addEventListener("click", function (e) {
+      e.preventDefault();
       const isDark = document.documentElement.classList.contains("dark");
       const newTheme = isDark ? "light" : "dark";
 

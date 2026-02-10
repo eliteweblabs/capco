@@ -11,6 +11,8 @@ export interface Props {
   open?: boolean;
   dismissable?: boolean;
   mobileClickable?: boolean;
+  /** When false, tooltip is disabled on no-hover devices (e.g. touch-only). Default true. */
+  touchable?: boolean;
   html?: boolean; // Whether to render text as HTML
 }
 
@@ -23,6 +25,7 @@ const {
   open = false,
   dismissable = false,
   mobileClickable = false,
+  touchable = true,
   html = false,
 } = Astro.props;
 
@@ -42,7 +45,7 @@ const contentClasses = [
   .join(" ");
 ---
 
-<span class={wrapperClasses} data-tooltip-position={position}>
+<span class={wrapperClasses} data-tooltip-position={position} data-tooltip-touchable={touchable}>
   <slot />
   <span class={contentClasses} data-dismissable={dismissable ? "true" : "false"} role="tooltip">
     {html ? <span set:html={text} /> : text}
@@ -121,6 +124,11 @@ const contentClasses = [
       const preferredPosition = (wrapper.getAttribute("data-tooltip-position") || "top") as any;
       const isMobileClickable = wrapper.classList.contains("mobile-clickable");
       const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      const noHover = window.matchMedia("(hover: none)").matches;
+      const touchable = wrapper.getAttribute("data-tooltip-touchable") !== "false";
+
+      // On no-hover devices, skip tooltip behavior when touchable is false
+      if (noHover && !touchable) return;
 
       // Update position using Floating UI
       async function updatePosition() {

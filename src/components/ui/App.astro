@@ -1202,38 +1202,54 @@ const debugData = {
       import "../../scripts/app-globals";
     </script>
 
-    <!-- Overscroll: getOverscrollPercent() for current %; setupOverscrollStart(cb) fires when overscroll *starts*. On emulator/desktop scrollY is clamped — use wheel at bottom to trigger. -->
+    <!-- Overscroll: scale .overscroll-scale linearly with overscroll % (getOverscrollPercent). 0–100% → scale 1; >100% or <0% → scale tracks linearly. -->
     <script is:inline>
       (function () {
-        function init() {
-          if (typeof window.setupOverscrollStart !== "function") return;
-          window.setupOverscrollStart(function (percent, source) {
-            console.log("overscroll started", Math.round(percent * 10) / 10 + "%", "(" + source + ")");
-          });
-          // Also log ongoing % when actually overscrolled (real device only; emulator uses wheel callback above)
-          if (typeof window.getOverscrollPercent !== "function") return;
-          var last = 0;
-          var lastLog = 0;
-          function logIfOverscrolled() {
-            var p = window.getOverscrollPercent();
-            if (p <= 100 && p >= 0) return;
-            var now = Date.now();
-            if (p !== last || now - lastLog > 300) {
-              last = p;
-              lastLog = now;
-              console.log("overscroll %", Math.round(p * 10) / 10);
-            }
-          }
-          var ticking = false;
-          window.addEventListener("scroll", function () {
-            if (ticking) return;
-            ticking = true;
-            requestAnimationFrame(function () {
-              logIfOverscrolled();
-              ticking = false;
-            });
-          }, { passive: true });
+        var getOverscrollPercent = window.getOverscrollPercent;
+        if (typeof getOverscrollPercent !== "function") return;
+
+        var MIN_SCALE = 0.9;
+        var MAX_SCALE = 1.25;
+        var overscrollScaleEls = [];
+        var wasInRange = true;
+
+        function scaleFromPercent(p) {
+          if (p >= 0 && p <= 100) return 1;
+          if (p > 100) return Math.min(MAX_SCALE, 1 + (p - 100) / 100);
+          return Math.max(MIN_SCALE, 1 + p / 100);
         }
+
+        function applyOverscrollScale() {
+          var p = getOverscrollPercent();
+          var inRange = p >= 0 && p <= 100;
+          if (wasInRange && !inRange) {
+            console.log("overscroll started", Math.round(p * 10) / 10 + "%");
+          }
+          wasInRange = inRange;
+
+          var scale = scaleFromPercent(p);
+          if (overscrollScaleEls.length === 0) overscrollScaleEls = Array.from(document.querySelectorAll(".overscroll-scale"));
+          overscrollScaleEls.forEach(function (el) {
+            el.style.transform = "scale(" + scale + ")";
+          });
+        }
+
+        var ticking = false;
+        function onScrollOrWheel() {
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(function () {
+            applyOverscrollScale();
+            ticking = false;
+          });
+        }
+
+        function init() {
+          window.addEventListener("scroll", onScrollOrWheel, { passive: true });
+          window.addEventListener("wheel", onScrollOrWheel, { passive: true });
+          applyOverscrollScale();
+        }
+
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", init);
         } else {
@@ -1426,7 +1442,7 @@ const debugData = {
 
 <script>
   (function () {
-    const navbar = document.getElementById("main-navbar");
+    const navbar = document.getElementById("navbar-content");
     const footer = document.getElementById("reveal-footer");
     const REM =  Math.max(navbar.offsetHeight, footer.offsetHeight) / 16;
 
