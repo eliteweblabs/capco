@@ -4,6 +4,7 @@ import Logo from "./Logo.astro";
 import ToggleSidebar from "./ToggleSidebar.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
+import ThemeToggle from "./ThemeToggle.astro";
 interface Props {
   currentUser?: any;
   session?: any;
@@ -37,7 +38,7 @@ const currentRole = currentUser?.profile?.role;
 
 <nav
   id="main-navbar"
-  class="z-100 fixed left-0 right-0"
+  class="fixed left-0 right-0 z-100"
   style="top: max(0rem, env(safe-area-inset-top, 0px)); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden;"
 >
   <!-- Top Banner Alerts (if any) -->
@@ -45,36 +46,37 @@ const currentRole = currentUser?.profile?.role;
 
   <!-- Main Navbar Content -->
   <div
-    class="color-background flex gap-1 py-3 h-16 min-w-0 justify-between shadow-primary-md transition-opacity duration-200 px-4"
+    class="color-background flex h-16 min-w-0 justify-between gap-1 px-4 py-3 transition-opacity duration-200 shadow-primary-md"
   >
-    <div class="flex items-center flex-shrink-0 gap-1 min-w-0">
+    <div class="flex min-w-0 flex-shrink-0 items-center gap-1">
       <ToggleSidebar {currentUser} />
 
-      <Logo link="/" file="svg" className="mr-2 md:mr-4 flex" />
+      <Logo link="/" file="svg" className="mr-2 flex md:mr-4" />
     </div>
 
     {
       !isBackend && (
-        <div class="hidden md:block flex-1 min-w-0 mx-2 max-w-3xl" id="navbar-default">
+        <div class="mx-2 hidden min-w-0 max-w-3xl flex-1 md:block" id="navbar-default">
           <ul
-            class="items-center flex flex-row font-medium justify-evenly"
+            class="flex flex-row items-center justify-evenly font-medium"
             set:html={desktopNavigationHTML}
           />
         </div>
       )
     }
 
-    <div class="flex items-center gap-2 flex-shrink-0">
+    <div class="flex flex-shrink-0 items-center gap-2">
       {
         currentUser && currentUser.id && currentRole !== "Client" && project && (
           <a
+            href="#"
             type="button"
             id="punchlist-drawer-toggle"
-            class="inline-flex items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
+            title="View Punchlist"
+            class={globalIconButtonClasses}
           >
+            <SimpleIcon name="menu-check" size="md" />
             <span class="sr-only">View Punchlist</span>
-
-            <SimpleIcon name="menu-check" class="w-6 h-6" />
           </a>
         )
       }
@@ -83,17 +85,19 @@ const currentRole = currentUser?.profile?.role;
           <a
             href={"#"}
             title="Notifications"
-            id="notification-bell"
             data-dropdown-toggle="notification-dropdown"
             data-dropdown-trigger="click"
             class={globalIconButtonClasses}
             aria-label="View notifications"
+            type="button"
           >
             <SimpleIcon name="notification-bell" size="md" />
             <span class="sr-only">Notifications</span>
           </a>
         )
       }
+
+      <ThemeToggle {currentUser} {session} {isBackend} {projects} {globalIconButtonClasses} />
 
       <AuthIcon {currentUser} {session} {isBackend} {projects} {globalIconButtonClasses} />
     </div>
