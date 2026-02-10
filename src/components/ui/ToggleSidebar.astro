@@ -25,7 +25,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
 >
   <div class="relative flex h-6 w-6 items-center justify-center overflow-hidden">
     <svg
-      class="lucide lucide-menu absolute h-6 w-6 rotate-0 scale-100 transform opacity-100 transition-all duration-300"
+      class="sidebar-toggle-menu-icon absolute h-6 w-6 rotate-0 scale-100 transform opacity-100 transition-all duration-300"
       fill="none"
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
@@ -35,11 +35,10 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       stroke-linecap="round"
       stroke-linejoin="round"
       stroke-width="2"
-      class="sidebar-toggle-menu-icon"
       ><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg
     >
     <svg
-      class="lucide lucide-x absolute h-6 w-6 -rotate-90 scale-0 transform opacity-0 transition-all duration-300"
+      class="sidebar-toggle-close-icon absolute h-6 w-6 -rotate-90 scale-0 transform opacity-0 transition-all duration-300"
       fill="none"
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
@@ -48,9 +47,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       stroke="currentColor"
       stroke-linecap="round"
       stroke-linejoin="round"
-      stroke-width="2"
-      class="sidebar-toggle-close-icon"
-      ><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg
+      stroke-width="2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg
     >
   </div>
 
@@ -108,7 +105,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
     // Track if sidebar is expanded (for desktop hover behavior)
     let isHovering = false;
 
-    // Toggle icons based on state (each toggle button has its own menu/close icons)
+    // Toggle icons based on state — update ALL instances (navbar + sticky actions, etc.) so they stay in sync
     const updateIcons = (isExpanded) => {
       if (collapseIcon && expandIcon) {
         if (isExpanded) {
@@ -120,22 +117,28 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
         }
       }
 
-      toggleButtons.forEach((btn) => {
-        const menuIcon = btn.querySelector(".sidebar-toggle-menu-icon");
-        const closeIcon = btn.querySelector(".sidebar-toggle-close-icon");
-        if (!menuIcon || !closeIcon) return;
-        if (isExpanded) {
-          menuIcon.classList.remove("opacity-100", "rotate-0", "scale-100");
-          menuIcon.classList.add("opacity-0", "rotate-90", "scale-0");
-          closeIcon.classList.remove("opacity-0", "-rotate-90", "scale-0");
-          closeIcon.classList.add("opacity-100", "rotate-0", "scale-100");
-        } else {
-          menuIcon.classList.remove("opacity-0", "rotate-90", "scale-0");
-          menuIcon.classList.add("opacity-100", "rotate-0", "scale-100");
-          closeIcon.classList.remove("opacity-100", "rotate-0", "scale-100");
-          closeIcon.classList.add("opacity-0", "-rotate-90", "scale-0");
-        }
-      });
+      const allMenuIcons = document.querySelectorAll(".sidebar-toggle-menu-icon");
+      const allCloseIcons = document.querySelectorAll(".sidebar-toggle-close-icon");
+
+      if (isExpanded) {
+        allMenuIcons.forEach((el) => {
+          el.classList.remove("opacity-100", "rotate-0", "scale-100");
+          el.classList.add("opacity-0", "rotate-90", "scale-0");
+        });
+        allCloseIcons.forEach((el) => {
+          el.classList.remove("opacity-0", "-rotate-90", "scale-0");
+          el.classList.add("opacity-100", "rotate-0", "scale-100");
+        });
+      } else {
+        allMenuIcons.forEach((el) => {
+          el.classList.remove("opacity-0", "rotate-90", "scale-0");
+          el.classList.add("opacity-100", "rotate-0", "scale-100");
+        });
+        allCloseIcons.forEach((el) => {
+          el.classList.remove("opacity-100", "rotate-0", "scale-100");
+          el.classList.add("opacity-0", "-rotate-90", "scale-0");
+        });
+      }
     };
 
     // Lock body scroll (mobile only). Avoid touch-action: none on body — it breaks iOS Safari scrolling when sidebar closes.

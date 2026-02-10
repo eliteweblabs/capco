@@ -11,8 +11,11 @@ echo "📦 [CONTENT-INIT] Initializing persistent content volume..."
 VOLUME_PATH="/data/content"
 PAGES_PATH="$VOLUME_PATH/pages"
 
-# Create directory structure
-mkdir -p "$PAGES_PATH"
+# Create directory structure (may fail if volume not mounted or no write permission)
+if ! mkdir -p "$PAGES_PATH" 2>/dev/null; then
+  echo "⚠️ [CONTENT-INIT] Cannot create $PAGES_PATH (volume not mounted or read-only), skipping"
+  exit 0
+fi
 
 # Check if volume already has content (subsequent deployments)
 if [ -f "$PAGES_PATH/home.md" ]; then
@@ -28,15 +31,16 @@ if [ -d "content/pages" ]; then
   cp -r content/pages/*.md "$PAGES_PATH/" 2>/dev/null || true
 fi
 
-# If no git content, use init-content.sh to generate defaults
+# If no git content, use init-content.sh to generate defaults (only if bash exists - Alpine has no bash)
 if [ ! -f "$PAGES_PATH/home.md" ]; then
   echo "📝 [CONTENT-INIT] Generating default content..."
-  if [ -f "$SCRIPT_DIR/init-content.sh" ]; then
+  if [ -f "$SCRIPT_DIR/init-content.sh" ] && [ -x "/bin/bash" ]; then
     chmod +x "$SCRIPT_DIR/init-content.sh"
     # Redirect output to volume instead of content/
     CONTENT_DIR="$VOLUME_PATH" "$SCRIPT_DIR/init-content.sh" default || true
-  else
-    # Create minimal default home.md
+  fi
+  # Fallback if init-content.sh not run or failed (e.g. Alpine container has no bash)
+  if [ ! -f "$PAGES_PATH/home.md" ]; then
     cat > "$PAGES_PATH/home.md" <<'EOF'
 ---
 title: "Welcome"
@@ -52,4 +56,8 @@ EOF
 fi
 
 echo "✅ [CONTENT-INIT] Persistent content initialized"
-ls -la "$PAGES_PATH/"
+if [ -d "$PAGES_PATH" ]; then
+  ls -la "$PAGES_PATH/"
+else
+  echo "⚠️ [CONTENT-INIT] $PAGES_PATH not present (volume may not be mounted)"
+fi
