@@ -20,7 +20,9 @@ declare global {
     /** Returns scroll position as %; 0–100 = normal, >100 = overscroll past bottom, <0 = overscroll past top */
     getOverscrollPercent?: () => number;
     /** Call when overscroll starts (at boundary + scroll/wheel in overscroll direction). On emulator/desktop only wheel-at-bottom fires. */
-    setupOverscrollStart?: (callback: (percent: number, source: "scroll" | "wheel") => void) => () => void;
+    setupOverscrollStart?: (
+      callback: (percent: number, source: "scroll" | "wheel") => void
+    ) => () => void;
     // UX Utility Functions
     isDarkMode?: () => boolean;
     currentTheme?: "light" | "dark";
@@ -947,7 +949,7 @@ let isDeleting = false; // Flag to prevent multiple delete operations
  * of the scroll range and pulls further (rubber-band). Not for normal scrolling in the middle.
  * - Real device: when scroll position actually goes >100% or <0% (scroll event).
  * - Emulator/desktop: first wheel at bottom (scroll down) or at top (scroll up); synthetic % capped 100–120 or -20–0.
- * Uses #reveal-test-scroll as scroll container when present (your layout), otherwise window/document.
+ * Uses #reveal-scroll as scroll container when present (your layout), otherwise window/document.
  * Returns an unsubscribe function.
  */
 (window as any).setupOverscrollStart = function (
@@ -956,7 +958,7 @@ let isDeleting = false; // Flag to prevent multiple delete operations
   const getPercent = (window as any).getOverscrollPercent;
   if (!getPercent) return () => {};
 
-  const scrollEl = document.getElementById("reveal-test-scroll");
+  const scrollEl = document.getElementById("reveal-scroll");
   const useEl = scrollEl && scrollEl.scrollHeight > scrollEl.clientHeight;
 
   let lastPercent = getPercent();
@@ -1008,7 +1010,8 @@ let isDeleting = false; // Flag to prevent multiple delete operations
     if (useEl && scrollEl) {
       const p = getContainerPercent();
       if (p !== null) {
-        const wasInRange = lastContainerPercent !== null && lastContainerPercent >= 0 && lastContainerPercent <= 100;
+        const wasInRange =
+          lastContainerPercent !== null && lastContainerPercent >= 0 && lastContainerPercent <= 100;
         const nowOverscroll = p > 100 || p < 0;
         if (wasInRange && nowOverscroll) callback(p, "scroll");
         lastContainerPercent = p;
@@ -1879,9 +1882,9 @@ document.addEventListener("DOMContentLoaded", applyDynamicHeight);
 document.addEventListener("astro:page-load", applyDynamicHeight);
 window.addEventListener("resize", applyDynamicHeight);
 
-/** #reveal-test-scroll: margin-top and height from navbar base (same as BannerAlertsLoader baseHeight = navbar.offsetHeight) */
+/** #reveal-scroll: margin-top and height from navbar base (same as BannerAlertsLoader baseHeight = navbar.offsetHeight) */
 function applyRevealTestScrollFromNavbar() {
-  const scrollEl = document.getElementById("reveal-test-scroll");
+  const scrollEl = document.getElementById("reveal-scroll");
   const navbar = document.getElementById("main-navbar");
   if (!scrollEl || !navbar) return;
   const baseHeight = navbar.offsetHeight;
