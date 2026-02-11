@@ -1,4 +1,5 @@
 import type { AstroCookies } from "astro";
+import { supabase } from "./supabase";
 
 export function setAuthCookies(cookies: AstroCookies, accessToken: string, refreshToken: string) {
   // Determine if we're in development or production
@@ -39,9 +40,6 @@ export async function getCurrentSession(cookies: AstroCookies) {
   }
 
   try {
-    // Import supabase dynamically to avoid circular dependencies
-    const { supabase } = await import("./supabase");
-
     if (!supabase) {
       return null;
     }
