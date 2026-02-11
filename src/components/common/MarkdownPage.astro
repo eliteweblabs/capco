@@ -62,11 +62,17 @@ for (const component of components) {
 
 const htmlContent = marked.parse(markdownContent);
 
+// Component name aliases (e.g. markdown uses ProjectsList but file is ProjectList.astro)
+const componentAliases: Record<string, string> = {
+  ProjectsList: "ProjectList",
+};
+
 // Use import.meta.glob to pre-load all possible components (so Vite processes styles)
 const allComponents = import.meta.glob([
   "../layouts/*.astro",
   "../ui/*.astro",
   "../common/*.astro",
+  "../project/*.astro",
   "../blocks/*.astro",
   "../../features/*.astro",
   "../../features/*/*.astro",
@@ -79,11 +85,12 @@ const allComponents = import.meta.glob([
 const componentModules = await Promise.all(
   components.map(async (component) => {
     const name = component.name;
+    const resolvedName = componentAliases[name] ?? name;
 
     // Find matching component in the glob
     const matchingPath = Object.keys(allComponents).find((path) => {
       const fileName = path.split("/").pop()?.replace(".astro", "");
-      return fileName === name;
+      return fileName === resolvedName;
     });
 
     if (!matchingPath) {

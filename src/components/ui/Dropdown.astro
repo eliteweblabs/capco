@@ -24,6 +24,8 @@ const { id, title = "" } = Astro.props;
   class="z-100 hidden w-full max-w-md rounded-b-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
   data-popper-placement="bottom"
   aria-labelledby={`${id}-dropdown`}
+  data-dropdown-trigger="click"
+  data-dropdown-toggle={`${id}-dropdown`}
 >
   <div class="flex max-h-[85vh] flex-col overflow-hidden">
     <div class="relative flex min-h-0 flex-1 flex-col">
@@ -31,9 +33,11 @@ const { id, title = "" } = Astro.props;
         class="flex shrink-0 items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700"
       >
         <slot name="title">
-          {title && (
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" set:html={title} />
-          )}
+          {
+            title && (
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white" set:html={title} />
+            )
+          }
         </slot>
         <CloseButton data-dismiss-target={`#${id}-dropdown`} tooltipText="Close" />
       </div>
@@ -50,15 +54,22 @@ const { id, title = "" } = Astro.props;
     document.querySelectorAll("[id$='-dropdown']").forEach(function (panel) {
       var panelId = panel.id;
       if (!panelId) return;
-      document.querySelectorAll("[data-dropdown-toggle='" + panelId + "']").forEach(function (trigger) {
-        trigger.addEventListener("click", function () {
-          setTimeout(function () {
-            if (panel && !panel.classList.contains("hidden")) {
-              panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out");
-            }
-          }, 10);
+      document
+        .querySelectorAll("[data-dropdown-toggle='" + panelId + "']")
+        .forEach(function (trigger) {
+          trigger.addEventListener("click", function () {
+            setTimeout(function () {
+              if (panel && !panel.classList.contains("hidden")) {
+                panel.classList.remove(
+                  "opacity-0",
+                  "transition-opacity",
+                  "duration-300",
+                  "ease-out"
+                );
+              }
+            }, 10);
+          });
         });
-      });
     });
   });
 </script>

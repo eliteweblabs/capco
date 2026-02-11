@@ -491,8 +491,8 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
 }
 
 /**
- * Heuristic: treat as bot/scanner probe so we don't log 404s for WordPress/PHP exploit scans.
- * Still returns 404; this only suppresses the warning log.
+ * Heuristic: treat as bot/scanner probe so we don't log 404s for WordPress/PHP exploit scans,
+ * common static assets, and CMS exploit paths. Still returns 404; this only suppresses the warning log.
  */
 function isLikelyBotProbe(slug: string): boolean {
   const s = slug.toLowerCase();
@@ -507,7 +507,32 @@ function isLikelyBotProbe(slug: string): boolean {
     s.includes("wp-trackback")
   )
     return true;
-  if (s.startsWith(".well-known/")) return true;
+  // Apple touch icons, robots, .well-known
+  if (
+    s === "apple-touch-icon.png" ||
+    s === "apple-touch-icon-precomposed.png" ||
+    s === "robots.txt" ||
+    s === ".well-known" ||
+    s.startsWith(".well-known/")
+  )
+    return true;
+  // .git/config and similar exposed paths
+  if (s.startsWith(".git/") || s === ".git/config" || s.includes("/.git/"))
+    return true;
+  // Common CMS exploit paths (Drupal, OpenCart, etc.)
+  if (
+    s.startsWith("sites/default/files") ||
+    s.startsWith("admin/controller/extension") ||
+    s === "uploads" ||
+    s === "images" ||
+    s === "files" ||
+    s.endsWith("/uploads") ||
+    s.endsWith("/images") ||
+    s.endsWith("/files")
+  )
+    return true;
+  // Mobile/alternative path variants
+  if (s === "m/bookings" || s.startsWith("m/")) return true;
   if (
     /^(install|admin|config|wp-conflg|manager|login|xmlrpc|readme|license)\.php$/i.test(
       s.split("/").pop() || ""
