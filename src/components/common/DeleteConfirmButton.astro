@@ -27,6 +27,8 @@ export interface Props {
   dataAttributes?: Record<string, string>; // custom data attributes
   itemType?: string; // type of item being deleted (for logging/analytics)
   apiEndpoint?: string; // API endpoint for deletion (for future use)
+  deleteMethod?: "POST" | "DELETE"; // HTTP method for API call (default POST)
+  deleteQueryParam?: string; // e.g. "slug" -> use button dataset and call DELETE with ?slug=...
   onDeleteCallback?: string; // callback function name (for future use)
   tooltipText?: string; // custom tooltip text
   confirmTitle?: string; // custom confirmation title (for future use)
@@ -43,6 +45,8 @@ const {
   dataAttributes = {},
   itemType,
   apiEndpoint,
+  deleteMethod = "POST",
+  deleteQueryParam,
   onDeleteCallback,
   tooltipText = "Delete",
   confirmTitle,
@@ -58,6 +62,8 @@ const mergedDataAttributes = {
   "data-timeout": timeout.toString(),
   ...(itemType && { "data-item-type": itemType }),
   ...(apiEndpoint && { "data-api-endpoint": apiEndpoint }),
+  ...(deleteMethod && { "data-delete-method": deleteMethod }),
+  ...(deleteQueryParam && { "data-delete-query-param": deleteQueryParam }),
   ...(onDeleteCallback && { "data-callback": onDeleteCallback }),
   ...dataAttributes,
 };
@@ -84,7 +90,7 @@ const mergedDataAttributes = {
           viewBox="0 0 44 44"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          class="absolute top-0 left-0 timer-ring-overlay"
+          class="timer-ring-overlay absolute left-0 top-0"
         >
           <circle
             cx="22"
@@ -259,9 +265,12 @@ const mergedDataAttributes = {
       resetButton(button);
       button.setAttribute("disabled", "true");
 
+      const deleteMethod = (button.dataset.deleteMethod as "POST" | "DELETE") || "POST";
+      const deleteQueryParam = button.dataset.deleteQueryParam;
       const itemId = extractItemId(buttonId, itemType);
 
-      if (!itemId) {
+      const needsItemId = !(deleteMethod === "DELETE" && deleteQueryParam);
+      if (needsItemId && !itemId) {
         console.error("[DeleteConfirmButton] Could not extract item ID from:", buttonId);
         button.removeAttribute("disabled");
         if ((window as any).showNotice) {
@@ -272,23 +281,41 @@ const mergedDataAttributes = {
 
       if (apiEndpoint) {
         try {
-          const response = await fetch(apiEndpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              itemId: itemId,
-              id: itemId, // Some APIs might expect 'id' instead
-            }),
-          });
+          let url = apiEndpoint;
+          const fetchOpts: RequestInit = { credentials: "include" };
+
+          if (deleteMethod === "DELETE" && deleteQueryParam) {
+            const paramValue = button.dataset[deleteQueryParam];
+            if (paramValue == null || paramValue === "") {
+              console.error(
+                "[DeleteConfirmButton] DELETE with query param but missing data-" + deleteQueryParam
+              );
+              button.removeAttribute("disabled");
+              if ((window as any).showNotice) {
+                (window as any).showNotice("error", "Delete Failed", "Missing " + deleteQueryParam);
+              }
+              return;
+            }
+            url = `${apiEndpoint}?${encodeURIComponent(deleteQueryParam)}=${encodeURIComponent(paramValue)}`;
+            fetchOpts.method = "DELETE";
+          } else {
+            fetchOpts.method = "POST";
+            fetchOpts.headers = { "Content-Type": "application/json" };
+            fetchOpts.body = JSON.stringify({ itemId: itemId!, id: itemId });
+          }
+
+          const response = await fetch(url, fetchOpts);
 
           const data = await response.json();
 
+          const callbackArg =
+            deleteMethod === "DELETE" && deleteQueryParam
+              ? (button.dataset[deleteQueryParam] ?? itemId)
+              : itemId;
+
           if (data.success || response.ok) {
             if (callbackName && typeof (window as any)[callbackName] === "function") {
-              await (window as any)[callbackName](itemId);
+              await (window as any)[callbackName](callbackArg);
             } else {
               // Show default success message
               if ((window as any).showSuccess) {

@@ -41,7 +41,7 @@ const {
   id = undefined,
   statusData = undefined,
   mainClasses = "",
-  layout = undefined,
+  layout = 'default',
   mask = "center",
   horizontalScroll = false,
 } = Astro.props;
@@ -947,10 +947,7 @@ const debugData = {
 
   <body
     class:list={[
-      "antialiased",
-      "layout-reveal-footer",
-      // fullscreenScroll && "min-h-dvh flex flex-col",
-      // centerContent && "layout-centered",
+      "antialiased"    
     ]}
     transition:animate={isBackend ? "none" : undefined}
     data-spa-enabled={isBackend ? "true" : undefined}
@@ -1050,8 +1047,14 @@ const debugData = {
     
     <UnifiedNotification />
 
+    <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
 
-    <div class="md:min-h-0">
+    <DebugPanel {debugData} {currentRole} />
+    
+    <FeedbackPanel {currentUser} />
+
+
+    <div class="md:min-h-0" data-template={layout}>
       <!-- Fixed header (4rem) – visible when scroll at top; masked by scroll pane when margin-top → 0 -->
       <header
         class="fixed left-0 right-0 top-0 flexb items-center justify-center border-b border-gray-200 bg-gray-100 px-4 dark:border-gray-700 dark:bg-gray-800"
@@ -1086,8 +1089,7 @@ const debugData = {
       <!-- Scrolling pane: translateY(-scrollTop) so pane slides up with scroll, masking header and revealing footer -->
       <div
         id="reveal-scroll"
-        class="no-scrollbar reveal-scroll-pane relative z-50 overflow-y-auto bg-gray-100 dark:bg-gray-900"
-        data-reveal-test
+        class="no-scrollbar relative z-50 overflow-y-auto bg-gray-50 dark:bg-gray-950"
       >
 
 
@@ -1106,21 +1108,21 @@ const debugData = {
           // "color-background",
           // "flex-1 min-w-0",
           currentUser ? "sm:ml-16" : "",
+
           // (layout === "default"  || layout === "minimal" || !layout) &&
           //   "px-4 sm:px-6 md:px-8 lg:px-10",
           mainClasses,
-          layout === "fullscreen" && "",
+          layout === "default" && "px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10",
           layout === "centered" ? "" : "",
         ]}
         style={currentUser ? "" : undefined}
+        
       >
         <main>
           <slot />
         </main>
       
-        <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
-        <DebugPanel {debugData} {currentRole} />
-        <FeedbackPanel {currentUser} />
+     
      
  
       

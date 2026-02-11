@@ -484,19 +484,6 @@ const stats = includeGrid ? {
         <p class="text-sm">Try adjusting your search or filters</p>
       </div>
 
-      <!-- Upload Progress -->
-      <div id={`${uniqueId}-upload-progress`} class="hidden fixed bottom-4 right-4 bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4 min-w-[300px]">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="animate-spin">
-            <SimpleIcon name="loader-2" class="w-3 h-3 text-primary-500" />
-          </div>
-          <span class="text-sm font-medium text-gray-900 dark:text-white">Uploading...</span>
-        </div>
-        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-          <div id={`${uniqueId}-progress-bar`} class="bg-primary-500 h-2 rounded-full transition-all" style="width: 0%"></div>
-        </div>
-        <div id={`${uniqueId}-progress-text`} class="text-xs text-gray-500 dark:text-gray-400 mt-1">0%</div>
-      </div>
     </>
   )}
 </div>
@@ -723,13 +710,10 @@ const stats = includeGrid ? {
       setTimeout(() => buildSuggestionsList(), 500);
     }
 
-    // Upload functionality (if grid included)
+    // Upload functionality (if grid included) — uses global showNotice only
     if (includeGrid) {
       const uploadBtn = document.getElementById(`${uniqueId}-upload-btn`);
       const fileInput = document.getElementById(`${uniqueId}-file-input`);
-      const uploadProgress = document.getElementById(`${uniqueId}-upload-progress`);
-      const progressBar = document.getElementById(`${uniqueId}-progress-bar`);
-      const progressText = document.getElementById(`${uniqueId}-progress-text`);
 
       uploadBtn?.addEventListener("click", () => fileInput?.click());
 
@@ -737,21 +721,16 @@ const stats = includeGrid ? {
         const files = fileInput.files;
         if (!files || files.length === 0) return;
 
-        uploadProgress?.classList.remove("hidden");
         let successCount = 0;
-        
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          const progress = ((i + 1) / files.length) * 100;
-          
           try {
             const reader = new FileReader();
-            const base64Promise = new Promise((resolve, reject) => {
+            const base64 = await new Promise((resolve, reject) => {
               reader.onload = () => resolve(reader.result);
               reader.onerror = reject;
+              reader.readAsDataURL(file);
             });
-            reader.readAsDataURL(file);
-            const base64 = await base64Promise;
 
             const response = await fetch("/api/admin/media", {
               method: "POST",
@@ -764,25 +743,30 @@ const stats = includeGrid ? {
               }),
             });
 
-            if (response.ok) successCount++;
-            
-            if (progressBar) progressBar.style.width = `${progress}%`;
-            if (progressText) progressText.textContent = `${Math.round(progress)}%`;
+            if (response.ok) {
+              successCount++;
+              if (window.showNotice) {
+                window.showNotice("success", "Uploaded", file.name, 2500);
+              }
+            } else {
+              const err = await response.json().catch(() => ({}));
+              const msg = err?.error || err?.message || "Upload failed";
+              if (window.showNotice) {
+                window.showNotice("error", "Failed: " + file.name, msg, 4000);
+              }
+            }
           } catch (error) {
             console.error("Upload error:", error);
+            if (window.showNotice) {
+              window.showNotice("error", "Failed: " + file.name, error instanceof Error ? error.message : "Upload failed", 4000);
+            }
           }
         }
 
-        setTimeout(() => {
-          uploadProgress?.classList.add("hidden");
-          if (progressBar) progressBar.style.width = "0%";
-          if (progressText) progressText.textContent = "0%";
-        }, 500);
-
         if (successCount > 0) {
-          setTimeout(() => location.reload(), 2000);
+          setTimeout(() => location.reload(), 3000);
         }
-        
+
         fileInput.value = "";
       });
 

@@ -53,7 +53,7 @@ const contentClasses = [
       dismissable && (
         <button
           type="button"
-          class="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-white/20 tooltip-close-btn"
+          class="tooltip-close-btn ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-white/20"
           aria-label="Close tooltip"
         >
           <svg
@@ -98,6 +98,49 @@ const contentClasses = [
     transform: rotate(45deg);
     visibility: visible;
     content: "";
+  }
+
+  /* Prevent tooltips from causing horizontal overflow on mobile (Safari overscroll) */
+  .tooltip-content {
+    max-width: 22rem; /* fallback for older Safari that don’t support min() */
+    max-width: min(22rem, calc(100vw - 1rem));
+  }
+  @media (max-width: 480px) {
+    .tooltip-content {
+      max-width: calc(100vw - 1rem);
+      white-space: normal;
+    }
+  }
+
+  /* ============================================
+   DISABLE TOOLTIPS ON TOUCH DEVICES
+   ============================================ */
+
+  /* Disable hover tooltips on devices that support touch (mobile/tablets) */
+  /* BUT allow tooltips with open=true (opacity-100 class) to still show */
+  @media (hover: none) and (pointer: coarse) {
+    .group:hover .group-hover\:opacity-100 {
+      opacity: 0 !important;
+    }
+
+    /* Hide tooltip content ONLY if it relies on hover (opacity-0 base state) */
+    .tooltip-content.opacity-0 {
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    /* Tooltips with open=true (opacity-100) will still display */
+    .tooltip-content.opacity-100 {
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+  }
+
+  /* Alternative: Only enable tooltips on devices with hover capability */
+  @media (hover: hover) and (pointer: fine) {
+    .tooltip-hover-only {
+      display: block;
+    }
   }
 
   /* Static arrow position per placement is set in JS (Floating UI arrow middleware + static axis) */

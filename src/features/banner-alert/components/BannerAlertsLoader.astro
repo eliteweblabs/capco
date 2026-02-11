@@ -121,111 +121,6 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
   )
 }
 
-{
-  topBanners.length > 0 && (position === "all" || position === "top") && (
-    <script is:inline>
-      {/* // Adjust padding on all [data-dynamic-height] + #sidebar top/height = full navbar base (navbar + top banners); all update when a banner is cleared */}
-      (function() {
-        function adjustpageContentForTopBanners() {
-          const topBannerContainer = document.getElementById("top-banner-container");
-          const navbar = document.getElementById("main-navbar");
-          const sidebar = document.getElementById("sidebar");
-
-          if (topBannerContainer && navbar) {
-            const applyNavbarBaseSpacing = function() {
-              // Get dismissed banners from localStorage
-              let dismissedSet = new Set();
-              try {
-                const stored = localStorage.getItem("dismissedBanners");
-                if (stored) {
-                  const dismissed = JSON.parse(stored);
-                  dismissedSet = new Set(dismissed.map(function(id) { return String(id); }));
-                }
-              } catch (e) {
-                // Ignore localStorage errors
-              }
-
-              // Count visible banners (not dismissed)
-              const allBanners = topBannerContainer.querySelectorAll('.banner-alert');
-              let bannerCount = 0;
-              allBanners.forEach(function(banner) {
-                const bannerId = banner.getAttribute('data-banner-id');
-                if (!bannerId || !dismissedSet.has(String(bannerId))) {
-                  bannerCount++;
-                }
-              });
-
-              // Hide container when no visible banners so it doesn't leave empty space
-              topBannerContainer.style.display = bannerCount > 0 ? "" : "none";
-
-              var baseHeight = navbar.offsetHeight;
-
-              // All [data-dynamic-height] elements get padding-top = full navbar base
-              var dynamicHeightEls = document.querySelectorAll('[data-dynamic-height="true"]');
-              dynamicHeightEls.forEach(function(el) {
-                if (!el.style.transition) {
-                  el.style.transition = "margin-top 0.3s ease-in-out";
-                }
-                el.style.marginTop = baseHeight + "px";
-              });
-
-              // #reveal-scroll: margin-top and height = 100dvh - baseHeight (same as sidebar)
-              var revealScroll = document.getElementById("reveal-scroll");
-              if (revealScroll) {
-                revealScroll.style.marginTop = baseHeight + "px";
-                revealScroll.style.height = "calc(100dvh - " + baseHeight + "px)";
-              }
-
-              // #sidebar top + height from combined height of visible alerts (top-banner-container)
-              var combinedAlertsHeight = topBannerContainer.style.display !== "none" ? topBannerContainer.offsetHeight : 0;
-              if (sidebar) {
-                sidebar.style.top = baseHeight + combinedAlertsHeight + "px";
-                sidebar.style.height = "calc(100dvh - 4rem - " + combinedAlertsHeight + "px)";
-              }
-
-              // Reveal layout: expose top/bottom offsets for sidebar (used by App.astro reveal script)
-              var remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-              window.__revealSidebarOffsets = window.__revealSidebarOffsets || { topPx: 4 * remPx, bottomPx: 4 * remPx };
-              window.__revealSidebarOffsets.topPx = baseHeight + combinedAlertsHeight;
-              window.__revealSidebarOffsets.bottomPx = 4 * remPx;
-            };
-
-            // Initial adjustment
-            applyNavbarBaseSpacing();
-
-            // Update on resize for responsive changes
-            window.addEventListener("resize", applyNavbarBaseSpacing);
-
-            // When navbar height changes (e.g. banner container hidden when last banner cleared)
-            var resizeObserver = new ResizeObserver(function() {
-              requestAnimationFrame(applyNavbarBaseSpacing);
-            });
-            resizeObserver.observe(navbar);
-
-            // Watch for banner dismissals (display toggle, etc.)
-            var mutationObserver = new MutationObserver(function() {
-              setTimeout(applyNavbarBaseSpacing, 350); // After animation
-            });
-            mutationObserver.observe(topBannerContainer, {
-              childList: true,
-              subtree: true,
-              attributes: true,
-              attributeFilter: ["style"]
-            });
-          }
-        }
-
-        // Run immediately if DOM is ready, otherwise wait
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", adjustpageContentForTopBanners);
-        } else {
-          setTimeout(adjustpageContentForTopBanners, 10);
-        }
-        document.addEventListener("astro:page-load", () => requestAnimationFrame(adjustpageContentForTopBanners));
-      })();
-    </script>
-  )
-}
 
 {
   bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
@@ -245,200 +140,245 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
   )
 }
 
-{
-  bottomBanners.length > 0 && (position === "all" || position === "bottom") && (
-    <script is:inline>
-      (function() {
-        function checkBottomBanner() {
-          const container = document.getElementById("bottom-banner-container");
-          if (!container) return;
-          container.offsetHeight; // force reflow if needed for layout
-        }
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", checkBottomBanner);
-        } else {
-          setTimeout(checkBottomBanner, 10);
-        }
-      })();
-      
-      {/* // Adjust footer/bottom content for bottom banners */}
-      (function() {
-        function adjustFooterForBanners() {
-          const bottomBannerContainer = document.getElementById("bottom-banner-container");
-          const footer = document.querySelector("footer");
-
-          if (bottomBannerContainer) {
-            const updateContentPadding = function() {
-              // Get dismissed banners from localStorage
-              let dismissedSet = new Set();
-              try {
-                const stored = localStorage.getItem("dismissedBanners");
-                if (stored) {
-                  const dismissed = JSON.parse(stored);
-                  dismissedSet = new Set(dismissed.map(function(id) { return String(id); }));
-                }
-              } catch (e) {
-                // Ignore localStorage errors
-              }
-
-              // Count visible banners (not dismissed)
-              const allBanners = bottomBannerContainer.querySelectorAll('.banner-alert');
-              let visibleCount = 0;
-              allBanners.forEach(function(banner) {
-                const bannerId = banner.getAttribute('data-banner-id');
-                if (!bannerId || !dismissedSet.has(String(bannerId))) {
-                  visibleCount++;
-                }
-              });
-
-              // Hide container when no visible banners so it doesn't leave empty space
-              bottomBannerContainer.style.display = visibleCount > 0 ? "" : "none";
-
-              // Calculate height only if there are visible banners
-              const bannerHeight = visibleCount > 0 ? bottomBannerContainer.offsetHeight : 0;
-
-              if (bannerHeight > 0) {
-                // Add padding to body to push footer up
-                document.body.style.paddingBottom = bannerHeight + "px";
-                
-                // Adjust footer if it exists
-                if (footer) {
-                  footer.style.marginBottom = bannerHeight + "px";
-                }
-              } else {
-                document.body.style.paddingBottom = "";
-                if (footer) {
-                  footer.style.marginBottom = "";
-                }
-              }
-
-              // Reveal layout: expose bottom offset for sidebar (used by App.astro reveal script)
-              var remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-              window.__revealSidebarOffsets = window.__revealSidebarOffsets || { topPx: 4 * remPx, bottomPx: 4 * remPx };
-              window.__revealSidebarOffsets.bottomPx = 4 * remPx + bannerHeight;
-            };
-
-            // Initial adjustment
-            updateContentPadding();
-
-            // Update on resize for responsive changes
-            window.addEventListener("resize", updateContentPadding);
-
-            // Watch for banner dismissals
-            const observer = new MutationObserver(function() {
-              setTimeout(updateContentPadding, 350); // After animation
-            });
-
-            observer.observe(bottomBannerContainer, {
-              childList: true,
-              subtree: true,
-              attributes: true,
-              attributeFilter: ["style"]
-            });
-          }
-        }
-
-        // Run immediately if DOM is ready, otherwise wait
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", adjustFooterForBanners);
-        } else {
-          // Small delay to ensure banner is rendered
-          setTimeout(adjustFooterForBanners, 10);
-        }
-        
-        // Also run on Astro page transitions (defer so swap paints first)
-        document.addEventListener("astro:page-load", () => requestAnimationFrame(adjustFooterForBanners));
-      })();
-    </script>
-
-    
-  )
-}
-
-
-
 <script>
   (function () {
-    const navbar = document.getElementById("navbar-content");
-    const footer = document.getElementById("reveal-footer");
-    const REM =  Math.max(navbar.offsetHeight, footer.offsetHeight) / 16;
-
-    // const REM = baseHeight / 16; // 4rem max translate (header/footer height)
-    const scrollEl = document.getElementById("reveal-scroll");
-    if (!scrollEl) return;
-
-    const sidebar = document.getElementById("sidebar");
-    const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
     const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    const maxPx = () => REM * remPx();
-    const THRESH = 8; // px threshold for at-top / at-bottom
+    const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
+    const THRESH = 8;
 
-    /** Clamp to valid scroll range so overscroll / rubber-band doesn't trip translate */
-    function clampedScrollTop() {
-      const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
-      return Math.max(0, Math.min(maxScroll, scrollEl.scrollTop));
+    /** Re-apply dismiss styles from localStorage after SPA swap (inline script only runs on first load). */
+    function applyDismissStylesFromStorage() {
+      try {
+        const stored = localStorage.getItem("dismissedBanners");
+        if (!stored) return;
+        const dismissed = JSON.parse(stored);
+        const dismissedSet = new Set(dismissed.map((id: unknown) => String(id)));
+        const banners = document.querySelectorAll(".banner-alert[data-banner-id]");
+        let css = "";
+        banners.forEach((el) => {
+          const id = el.getAttribute("data-banner-id");
+          if (id && dismissedSet.has(id)) {
+            css += `.banner-alert[data-banner-id="${id}"] { display: none !important; }\n`;
+          }
+        });
+        if (!css) return;
+        let styleEl = document.getElementById("banner-dismiss-styles");
+        if (!styleEl) {
+          styleEl = document.createElement("style");
+          styleEl.id = "banner-dismiss-styles";
+          document.head.insertBefore(styleEl, document.head.firstChild);
+        }
+        styleEl.textContent = css;
+      } catch (_) {
+        // ignore
+      }
     }
 
-    function setSidebarRevealValue(scrollTop, maxScroll) {
-      if (!sidebar) return;
-      const value = maxScroll <= 0 ? "top" : scrollTop <= THRESH ? "top" : scrollTop >= maxScroll - THRESH ? "bottom" : null;
-      const off = (window as any).__revealSidebarOffsets;
-      const topPx = off?.topPx ?? remPx() * REM;
-      const bottomPx = off?.bottomPx ?? remPx() * REM;
-      if (value === "top") {
-        sidebar.style.top = topPx + "px";
-        sidebar.style.bottom = "";
-      } else if (value === "bottom") {
-        sidebar.style.top = "";
-        sidebar.style.bottom = bottomPx + "px";
+    function getDismissedSet() {
+      let dismissedSet = new Set<string>();
+      try {
+        const stored = localStorage.getItem("dismissedBanners");
+        if (stored) {
+          const dismissed = JSON.parse(stored);
+          dismissedSet = new Set(dismissed.map((id: unknown) => String(id)));
+        }
+      } catch { /* ignore localStorage errors */ }
+      return dismissedSet;
+    }
+
+    function updateBannerOffsets() {
+      const scrollEl = document.getElementById("reveal-scroll");
+      const sidebar = document.getElementById("sidebar");
+      if (!scrollEl) return;
+
+      const rem = remPx();
+      const off = (window as any).__revealSidebarOffsets || { topPx: 4 * rem, topBannersOnlyPx: 0, bottomPx: 4 * rem };
+      (window as any).__revealSidebarOffsets = off;
+
+      const topBannerContainer = document.getElementById("top-banner-container");
+      const bottomBannerContainer = document.getElementById("bottom-banner-container");
+      const dismissedSet = getDismissedSet();
+      // Use navbar-content only (the bar); top-banner-container is inside main-navbar so main-navbar height would include alerts
+      const navbarContent = document.getElementById("navbar-content");
+      const navbarBarHeight = navbarContent ? (navbarContent as HTMLElement).offsetHeight : 4 * rem;
+
+      let topAlertsHeight = 0;
+      if (topBannerContainer) {
+        const topBanners = topBannerContainer.querySelectorAll(".banner-alert");
+        let visibleCount = 0;
+        topBanners.forEach((banner) => {
+          const id = banner.getAttribute("data-banner-id");
+          if (!id || !dismissedSet.has(id)) visibleCount++;
+        });
+        topBannerContainer.style.display = visibleCount > 0 ? "" : "none";
+        topAlertsHeight = visibleCount > 0 ? topBannerContainer.offsetHeight : 0;
+
+        const baseHeight = navbarBarHeight;
+        const totalTopHeight = baseHeight + topAlertsHeight;
+        const dynamicHeightEls = document.querySelectorAll('[data-dynamic-height="true"]');
+        dynamicHeightEls.forEach((el) => {
+          (el as HTMLElement).style.transition = (el as HTMLElement).style.transition || "margin-top 0.3s ease-in-out";
+          (el as HTMLElement).style.marginTop = totalTopHeight + "px";
+        });
+        scrollEl.style.marginTop = totalTopHeight + "px";
+        scrollEl.style.height = "calc(100dvh - " + totalTopHeight + "px)";
+        off.topPx = totalTopHeight;
+        off.topBannersOnlyPx = topAlertsHeight;
+        if (sidebar) {
+          (sidebar as HTMLElement).style.height = "calc(100dvh - 4rem - " + topAlertsHeight + "px)";
+        }
       } else {
-        sidebar.style.top = "";
-        sidebar.style.bottom = "";
+        off.topBannersOnlyPx = 0;
+        const baseHeight = navbarBarHeight;
+        scrollEl.style.marginTop = baseHeight + "px";
+        scrollEl.style.height = "calc(100dvh - " + baseHeight + "px)";
+        off.topPx = baseHeight;
+        if (sidebar) (sidebar as HTMLElement).style.height = "calc(100dvh - 4rem)";
+      }
+
+      let bottomBannerHeight = 0;
+      if (bottomBannerContainer) {
+        const bottomBanners = bottomBannerContainer.querySelectorAll(".banner-alert");
+        let visibleCount = 0;
+        bottomBanners.forEach((banner) => {
+          const id = banner.getAttribute("data-banner-id");
+          if (!id || !dismissedSet.has(id)) visibleCount++;
+        });
+        bottomBannerContainer.style.display = visibleCount > 0 ? "" : "none";
+        bottomBannerHeight = visibleCount > 0 ? bottomBannerContainer.offsetHeight : 0;
+        const footerEl = document.querySelector("footer");
+        if (bottomBannerHeight > 0) {
+          document.body.style.paddingBottom = bottomBannerHeight + "px";
+          if (footerEl) (footerEl as HTMLElement).style.marginBottom = bottomBannerHeight + "px";
+        } else {
+          document.body.style.paddingBottom = "";
+          if (footerEl) (footerEl as HTMLElement).style.marginBottom = "";
+        }
+        off.bottomPx = 4 * rem + bottomBannerHeight;
       }
     }
 
     let prevScrollTop = 0;
     let translateY = 0;
 
-    function updateTranslate() {
-      const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
-      const scrollTop = clampedScrollTop();
-      // setSidebarRevealValue(scrollTop, maxScroll);
+    function run() {
+      const scrollEl = document.getElementById("reveal-scroll");
+      if (!scrollEl) return;
+
+      const navbarContent = document.getElementById("navbar-content");
+      const footer = document.getElementById("reveal-footer");
+      const sidebar = document.getElementById("sidebar");
+      const REM = Math.max((navbarContent as HTMLElement)?.offsetHeight ?? 4 * 16, (footer as HTMLElement)?.offsetHeight ?? 4 * 16) / 16;
+      const maxPx = () => REM * remPx();
+
+      function clampedScrollTop() {
+        const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+        return Math.max(0, Math.min(maxScroll, scrollEl.scrollTop));
+      }
+
+      function setSidebarPosition(translateYVal: number) {
+        const side = document.getElementById("sidebar");
+        if (!side) return;
+        const off = (window as any).__revealSidebarOffsets;
+        const topPx = off?.topPx ?? 4 * remPx();
+        const topBannersOnlyPx = off?.topBannersOnlyPx ?? 0;
+        (side as HTMLElement).style.bottom = "";
+        (side as HTMLElement).style.top = (translateYVal <= THRESH ? topPx : topBannersOnlyPx) + "px";
+      }
+
+      function updateTranslate() {
+        const scrollTop = clampedScrollTop();
+
+        if (!isMobile()) {
+          scrollEl.style.transform = "";
+          prevScrollTop = 0;
+          translateY = 0;
+          setSidebarPosition(0);
+          return;
+        }
+        const deltaY = scrollTop - prevScrollTop;
+        prevScrollTop = scrollTop;
+        translateY += deltaY;
+        translateY = Math.max(0, Math.min(maxPx(), translateY));
+        scrollEl.style.transform = `translateY(-${translateY}px)`;
+        setSidebarPosition(translateY);
+      }
+
+      updateBannerOffsets();
 
       if (!isMobile()) {
         scrollEl.style.transform = "";
-        prevScrollTop = 0;
         translateY = 0;
-        return;
-      }
-      const deltaY = scrollTop - prevScrollTop;
-      prevScrollTop = scrollTop;
-      translateY += deltaY;
-      translateY = Math.max(0, Math.min(maxPx(), translateY));
-      scrollEl.style.transform = `translateY(-${translateY}px)`;
-      const sideBar = document.getElementById("sidebar");
-      if (sideBar) {
-        debugger;
-        console.log("sidebar top", navbar.offsetHeight, "navbar height", footer.offsetHeight, "translateY", translateY);
-        sideBar.style.top = `${Math.max(navbar.offsetHeight, footer.offsetHeight) - translateY}px`;
+        setSidebarPosition(0);
       }
 
-      //  const actionButtons = document.getElementById("action-buttons");
-      // if (actionButtons) {
-      //   actionButtons.style.bottom = `${(translateY + 16) }px`;
-      // }
+      if (navbarContent) {
+        const ro = new ResizeObserver(() => requestAnimationFrame(updateBannerOffsets));
+        ro.observe(navbarContent);
+      }
+      function recalcAfterBannerDismissed() {
+        setTimeout(() => {
+          updateBannerOffsets();
+          setSidebarPosition(translateY);
+        }, 350);
+      }
 
+      const topContainer = document.getElementById("top-banner-container");
+      const bottomContainer = document.getElementById("bottom-banner-container");
+      const observe = (el: Element | null) => {
+        if (!el) return;
+        new MutationObserver(recalcAfterBannerDismissed).observe(el, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["style", "class"],
+        });
+      };
+      observe(topContainer);
+      observe(bottomContainer);
+      window.addEventListener("resize", updateBannerOffsets);
+      document.addEventListener("astro:page-load", () => requestAnimationFrame(updateBannerOffsets));
 
+      // SPA: re-apply dismiss styles after swap so expired/dismissed banners stay hidden
+      document.addEventListener("astro:after-swap", () => {
+        requestAnimationFrame(() => {
+          applyDismissStylesFromStorage();
+          updateBannerOffsets();
+        });
+      });
+      document.addEventListener("astro:page-load", () => {
+        requestAnimationFrame(applyDismissStylesFromStorage);
+      });
+
+      if (isMobile()) {
+        prevScrollTop = clampedScrollTop();
+        translateY = Math.min(prevScrollTop, maxPx());
+        updateTranslate();
+      }
+
+      if (!(scrollEl as HTMLElement).dataset.revealInit) {
+        (scrollEl as HTMLElement).dataset.revealInit = "true";
+        window.addEventListener("resize", () => {
+          prevScrollTop = clampedScrollTop();
+          translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
+          updateTranslate();
+          if (isMobile() && !(scrollEl as HTMLElement).dataset.revealScrollAdded) {
+            (scrollEl as HTMLElement).dataset.revealScrollAdded = "true";
+            scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
+          }
+        });
+      }
+      if (isMobile() && !(scrollEl as HTMLElement).dataset.revealScrollAdded) {
+        (scrollEl as HTMLElement).dataset.revealScrollAdded = "true";
+        scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
+      }
     }
 
-    scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
-    window.addEventListener("resize", () => {
-      prevScrollTop = clampedScrollTop();
-      translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
-      updateTranslate();
-    });
-    prevScrollTop = clampedScrollTop();
-    translateY = Math.min(prevScrollTop, maxPx());
-    updateTranslate();
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => setTimeout(run, 10));
+    } else {
+      setTimeout(run, 10);
+    }
+    document.addEventListener("astro:page-load", () => requestAnimationFrame(run));
   })();
 </script>

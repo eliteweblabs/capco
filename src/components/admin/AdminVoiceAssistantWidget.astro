@@ -141,6 +141,10 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     /* Rect bottom center (12,24); max ~75%; up 10px; scaleY driven by JS */
     transform-origin: 12px 24px;
   }
+
+  .admin-voice-panel-dragging {
+    user-select: none;
+  }
 </style>
 
 <script>
@@ -426,36 +430,69 @@ const currentUserRole = currentUser?.profile?.role || "Client";
         return { left: r.left, top: r.top, width: r.width, height: r.height };
       }
 
-      dragHandle.addEventListener("mousedown", (e) => {
-        if (e.button !== 0) return;
-        if (e.target.closest("#admin-voice-panel-close")) return;
+      function startDrag(clientX, clientY) {
         const r = getPanelRect();
         startLeft = r.left;
         startTop = r.top;
-        startX = e.clientX;
-        startY = e.clientY;
+        startX = clientX;
+        startY = clientY;
         isDragging = true;
         panel.style.right = "auto";
         panel.style.bottom = "auto";
         panel.style.left = startLeft + "px";
         panel.style.top = startTop + "px";
-        console.log(LOG, "drag start", { startLeft, startTop, startX, startY });
+        panel.classList.add("admin-voice-panel-dragging");
+      }
+
+      function moveDrag(clientX, clientY) {
+        if (!isDragging) return;
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        const newLeft = Math.max(0, Math.min(window.innerWidth - 50, startLeft + dx));
+        const newTop = Math.max(0, Math.min(window.innerHeight - 100, startTop + dy));
+        panel.style.left = newLeft + "px";
+        panel.style.top = newTop + "px";
+      }
+
+      function endDrag() {
+        if (isDragging) console.log(LOG, "drag end");
+        isDragging = false;
+        panel.classList.remove("admin-voice-panel-dragging");
+      }
+
+      dragHandle.addEventListener("mousedown", (e) => {
+        if (e.button !== 0) return;
+        if (e.target.closest("#admin-voice-panel-close")) return;
+        startDrag(e.clientX, e.clientY);
         e.preventDefault();
       });
 
       document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        const newLeft = Math.max(0, Math.min(window.innerWidth - 50, startLeft + dx));
-        const newTop = Math.max(0, Math.min(window.innerHeight - 100, startTop + dy));
-        panel.style.left = newLeft + "px";
-        panel.style.top = newTop + "px";
+        moveDrag(e.clientX, e.clientY);
+        e.preventDefault();
       });
 
       document.addEventListener("mouseup", () => {
-        if (isDragging) console.log(LOG, "drag end");
-        isDragging = false;
+        endDrag();
+      });
+
+      dragHandle.addEventListener("touchstart", (e) => {
+        if (e.target.closest("#admin-voice-panel-close")) return;
+        if (e.changedTouches.length) {
+          startDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      document.addEventListener("touchmove", (e) => {
+        if (!isDragging || !e.changedTouches.length) return;
+        moveDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        e.preventDefault();
+      }, { passive: false });
+
+      document.addEventListener("touchend", () => {
+        endDrag();
       });
     }
 

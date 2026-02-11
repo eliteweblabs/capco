@@ -105,15 +105,178 @@ const expireOptions = [
     {secondaryTextClasses}
   />
 
-  <!-- Create/Edit Form -->
-  <div class="mb-8 rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700">
-    <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-      <h2 id="form-title" class="text-lg font-medium text-gray-900 dark:text-white">
-        Create New Banner Alert
-      </h2>
+  <!-- Tabs: Existing Banner Alerts | New -->
+  <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+    <ul
+      class="-mb-px flex flex-wrap text-center text-sm font-medium"
+      id="banner-alerts-tabs"
+      data-tabs-toggle="#banner-alerts-tab-content"
+      role="tablist"
+    >
+      <li class="me-2" role="presentation">
+        <button
+          class="inline-block rounded-t-lg border-b-2 border-primary-600 p-4 text-primary-600 dark:border-primary-500 dark:text-primary-500"
+          id="existing-banners-tab"
+          data-tabs-target="#existing-banners"
+          type="button"
+          role="tab"
+          aria-controls="existing-banners"
+          aria-selected="true"
+        >
+          Existing Banner Alerts
+        </button>
+      </li>
+      <li role="presentation">
+        <button
+          class="inline-block rounded-t-lg border-b-2 border-transparent p-4 text-gray-500 hover:border-gray-300 hover:text-gray-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300"
+          id="new-banner-tab"
+          data-tabs-target="#new-banner"
+          type="button"
+          role="tab"
+          aria-controls="new-banner"
+          aria-selected="false"
+        >
+          New
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <div id="banner-alerts-tab-content">
+    <!-- Tab: Existing Banner Alerts -->
+    <div
+      class="rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700"
+      id="existing-banners"
+      role="tabpanel"
+      aria-labelledby="existing-banners-tab"
+    >
+      <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white">Existing Banner Alerts</h2>
+      </div>
+      <div id="banners-list" class="p-6">
+        {
+          bannerAlerts.length > 0 ? (
+            <div class="space-y-4">
+              {bannerAlerts.map((banner) => (
+                <div
+                  class={`rounded-lg border p-4 ${banner.isActive ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20" : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/50"}`}
+                  data-banner-item={banner.id}
+                >
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2">
+                        <span
+                          class={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+                            banner.type === "info"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                              : banner.type === "success"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                                : banner.type === "warning"
+                                  ? "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300"
+                                  : "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                          }`}
+                        >
+                          {banner.type}
+                        </span>
+                        <span
+                          class={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+                            banner.position === "top"
+                              ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300"
+                              : "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300"
+                          }`}
+                        >
+                          {banner.position}
+                        </span>
+                        {banner.expireMs && (
+                          <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                            {banner.expireMs / 1000}s expire
+                          </span>
+                        )}
+                        {!banner.isActive && (
+                          <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                            Inactive
+                          </span>
+                        )}
+                        {banner.targetPages && (
+                          <span
+                            class="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-900/50 dark:text-sky-300"
+                            title="Only shown on these pages"
+                          >
+                            Pages: {banner.targetPages}
+                          </span>
+                        )}
+                      </div>
+                      {banner.title && (
+                        <h3 class="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Admin Reference: {banner.title}
+                        </h3>
+                      )}
+                      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{banner.content}</p>
+                      <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                        Created: {new Date(banner.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div class="flex flex-shrink-0 gap-2">
+                      <button
+                        type="button"
+                        class="edit-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                        data-id={banner.id}
+                        data-title={banner.title || ""}
+                        data-content={banner.content || ""}
+                        data-type={banner.type || "info"}
+                        data-position={banner.position || "top"}
+                        data-expire-ms={banner.expireMs || ""}
+                        data-dismissible={banner.dismissible !== false}
+                        data-is-active={banner.isActive !== false}
+                        data-start-date={banner.startDate || ""}
+                        data-end-date={banner.endDate || ""}
+                        data-target-pages={banner.targetPages || ""}
+                      >
+                        <i class="bx bx-edit" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        class="toggle-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                        data-id={banner.id}
+                        data-active={banner.isActive}
+                      >
+                        <i class={`bx ${banner.isActive ? "bx-hide" : "bx-show"}`} />
+                        {banner.isActive ? "Hide" : "Show"}
+                      </button>
+                      <DeleteConfirmButton
+                        id={`delete-banner-${banner.id}`}
+                        variant="button"
+                        size="sm"
+                        label="Delete"
+                        class="delete-banner-btn"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p class="text-gray-500 dark:text-gray-400">No banner alerts created yet</p>
+          )
+        }
+      </div>
     </div>
 
-    <form id="banner-form" class="space-y-6 p-6">
+    <!-- Tab: New -->
+    <div
+      class="hidden rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700"
+      id="new-banner"
+      role="tabpanel"
+      aria-labelledby="new-banner-tab"
+    >
+      <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+        <h2 id="form-title" class="text-lg font-medium text-gray-900 dark:text-white">
+          Create New Banner Alert
+        </h2>
+      </div>
+
+      <form id="banner-form" class="space-y-6 p-6">
       <input type="hidden" id="banner-id" name="id" />
 
       <!-- Preview -->
@@ -317,120 +480,6 @@ const expireOptions = [
         </button>
       </div>
     </form>
-  </div>
-
-  <!-- Existing Banners -->
-  <div class="rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700">
-    <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white">Existing Banner Alerts</h2>
-    </div>
-    <div id="banners-list" class="p-6">
-      {
-        bannerAlerts.length > 0 ? (
-          <div class="space-y-4">
-            {bannerAlerts.map((banner) => (
-              <div
-                class={`rounded-lg border p-4 ${banner.isActive ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20" : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/50"}`}
-                data-banner-item={banner.id}
-              >
-                <div class="flex items-start justify-between">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-2">
-                      <span
-                        class={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
-                          banner.type === "info"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
-                            : banner.type === "success"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
-                              : banner.type === "warning"
-                                ? "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300"
-                                : "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
-                        }`}
-                      >
-                        {banner.type}
-                      </span>
-                      <span
-                        class={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
-                          banner.position === "top"
-                            ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300"
-                            : "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300"
-                        }`}
-                      >
-                        {banner.position}
-                      </span>
-                      {banner.expireMs && (
-                        <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                          {banner.expireMs / 1000}s expire
-                        </span>
-                      )}
-                      {!banner.isActive && (
-                        <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                          Inactive
-                        </span>
-                      )}
-                      {banner.targetPages && (
-                        <span
-                          class="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-900/50 dark:text-sky-300"
-                          title="Only shown on these pages"
-                        >
-                          Pages: {banner.targetPages}
-                        </span>
-                      )}
-                    </div>
-                    {banner.title && (
-                      <h3 class="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Admin Reference: {banner.title}
-                      </h3>
-                    )}
-                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{banner.content}</p>
-                    <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                      Created: {new Date(banner.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <div class="flex flex-shrink-0 gap-2">
-                    <button
-                      type="button"
-                      class="edit-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                      data-id={banner.id}
-                      data-title={banner.title || ""}
-                      data-content={banner.content || ""}
-                      data-type={banner.type || "info"}
-                      data-position={banner.position || "top"}
-                      data-expire-ms={banner.expireMs || ""}
-                      data-dismissible={banner.dismissible !== false}
-                      data-is-active={banner.isActive !== false}
-                      data-start-date={banner.startDate || ""}
-                      data-end-date={banner.endDate || ""}
-                      data-target-pages={banner.targetPages || ""}
-                    >
-                      <i class="bx bx-edit" />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      class="toggle-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                      data-id={banner.id}
-                      data-active={banner.isActive}
-                    >
-                      <i class={`bx ${banner.isActive ? "bx-hide" : "bx-show"}`} />
-                      {banner.isActive ? "Hide" : "Show"}
-                    </button>
-                    <DeleteConfirmButton
-                      id={`delete-banner-${banner.id}`}
-                      variant="button"
-                      size="sm"
-                      label="Delete"
-                      class="delete-banner-btn"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p class="text-gray-500 dark:text-gray-400">No banner alerts created yet</p>
-        )
-      }
     </div>
   </div>
 </App>
@@ -638,6 +687,10 @@ const expireOptions = [
       }
 
       updatePreview();
+
+      // Switch to New tab so the form is visible
+      const newTab = document.getElementById("new-banner-tab");
+      if (newTab) newTab.click();
 
       // Scroll to form
       document.getElementById("banner-form").scrollIntoView({ behavior: "smooth" });

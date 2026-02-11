@@ -13,6 +13,7 @@ export interface ButtonStyleConfig {
     | "link"
     | "loading"
     | "disabled"
+    | "icon"
     | "selected"
     | "anchor"
     | "tab";
@@ -37,21 +38,22 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
   const baseClasses =
     "font-secondary relative inline-flex items-center justify-center font-large transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
 
-  // Size classes check if theres an icon and if so, make padding match so the icon is centered and the button is round perfectly
-  const sizeClasses = icon
+  // Icon buttons: square dimensions so they stay perfectly round (rounded-full)
+  const isIconButton = icon || variant === "icon";
+  const sizeClasses = isIconButton
     ? {
-        xs: "px-3 py-2 text-xs",
-        sm: "px-3.5 py-2.5 text-sm",
-        md: "px-5 py-4 text-md",
-        lg: "px-5 py-4 text-lg",
-        xl: "px-6 py-5 text-xl",
+        xs: "h-6 w-6 p-0 text-xs rounded-full",
+        sm: "h-8 w-8 p-0 text-sm rounded-full",
+        md: "h-10 w-10 p-0 text-md rounded-full",
+        lg: "h-12 w-12 p-0 text-lg rounded-full",
+        xl: "h-14 w-14 p-0 text-xl rounded-full",
       }
     : {
-        xs: "px-3 py-2 text-xs",
-        sm: "px-3.5 py-2.5 text-sm",
-        md: "px-5 py-4 text-md",
-        lg: "px-5 py-4 text-lg",
-        xl: "px-6 py-5 text-xl",
+        xs: "px-2 py-1.5 text-xs",
+        sm: "px-3 py-2 text-sm",
+        md: "px-4 py-2.5 text-md",
+        lg: "px-5 py-3 text-lg",
+        xl: "px-6 py-3.5 text-xl",
       };
 
   // Variant classes using global color system
