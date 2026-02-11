@@ -51,11 +51,19 @@ function initTypewriterTexts(): void {
 /**
  * Initialize a single TypeIt instance for an element
  */
+/** Decode HTML entities only (e.g. &amp; → &). Does not parse/strip HTML structure. */
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'");
+}
+
 function initializeTypewriterInstance(element: HTMLElement, text: string): void {
-  // Decode HTML entities if present
-  const textarea = document.createElement("textarea");
-  textarea.innerHTML = text;
-  text = textarea.value;
+  // Decode HTML entities only - do NOT use textarea.innerHTML/value (it strips tags like <br> and <span>)
+  text = decodeHtmlEntities(text);
 
   // Inject form session meta data into the text before typewriter starts
   text = injectSessionMetaIntoText(text);

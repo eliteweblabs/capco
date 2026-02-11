@@ -1,0 +1,238 @@
+---
+/**
+ * FullScreenSlideshow - Full-viewport image slideshow with swipe, arrows, pagination
+ *
+ * Uses Swiper.js for touch/swipe, keyboard nav, and smooth transitions.
+ * Cover-mode images (object-fit: cover) fill the viewport.
+ *
+ * @example
+ * <FullScreenSlideshow
+ *   slides={[
+ *     { src: "/images/hero1.jpg", alt: "Project 1", caption: "Caption optional" },
+ *     { src: "/images/hero2.jpg", alt: "Project 2" },
+ *   ]}
+ *   autoplay={5000}
+ *   showNav={true}
+ *   showPagination={true}
+ * />
+ */
+import SimpleIcon from "../common/SimpleIcon.astro";
+import { buildArrayFromFlatProps } from "../blocks/BlockRegistry";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+
+export interface SlideData {
+  src: string;
+  alt: string;
+  caption?: string;
+}
+
+export interface Props {
+  /** Array of slides, or JSON string (for CMS), or single slide object */
+  slides?: SlideData[] | string | SlideData;
+  /** Unique ID for this slideshow (required if multiple on page) */
+  id?: string;
+  /** Autoplay delay in ms; set to 0 or omit to disable */
+  autoplay?: number;
+  /** Show prev/next arrows (default: true) */
+  showNav?: boolean;
+  /** Show pagination dots (default: true) */
+  showPagination?: boolean;
+  /** Extra classes for the container */
+  class?: string;
+}
+
+const props = Astro.props;
+const {
+  slides: slidesProp,
+  id = "fullscreen-slideshow",
+  showNav: showNavProp = true,
+  showPagination: showPaginationProp = true,
+  class: className = "",
+} = props;
+
+// Coerce for shortcode (props come as strings)
+const autoplay = Math.max(0, parseInt(String(props.autoplay ?? 0), 10) || 0);
+const showNav = showNavProp === "false" ? false : !!showNavProp;
+const showPagination = showPaginationProp === "false" ? false : !!showPaginationProp;
+
+// Normalize slides: accept array, JSON string (from CMS), or single slide object
+function normalizeSlides(input: SlideData[] | string | SlideData | undefined): SlideData[] {
+  let items: SlideData[] = [];
+  if (!input) return [];
+  if (Array.isArray(input)) items = input;
+  else if (typeof input === "string") {
+    try {
+      const parsed = JSON.parse(input);
+      items = Array.isArray(parsed) ? parsed : parsed?.slides ?? [parsed];
+    } catch {
+      return [];
+    }
+  } else {
+    items = [input];
+  }
+  return items.filter((s): s is SlideData => s && typeof s.src === "string" && typeof s.alt === "string");
+}
+
+// First try slides prop, then flat props (slide1Src/slide1Alt or image1/alt1) for shortcode
+let slides = normalizeSlides(slidesProp);
+if (slides.length === 0) {
+  slides = buildArrayFromFlatProps<SlideData>(props, "slide", ["src", "alt", "caption"], 12);
+}
+if (slides.length === 0) {
+  // ImageSlider-style: image1, alt1, image2, alt2, ...
+  for (let i = 1; i <= 12; i++) {
+    const src = (props[`image${i}`] ?? props[`slide${i}`]) as string | undefined;
+    if (src) {
+      slides.push({
+        src,
+        alt: ((props[`alt${i}`] ?? props[`slide${i}Alt`]) as string) || `Slide ${i}`,
+        caption: props[`caption${i}`] as string | undefined,
+      });
+    }
+  }
+}
+
+if (slides.length === 0) {
+  throw new Error("FullScreenSlideshow requires at least one slide. Use slides=[{src,alt}] or slide1Src/slide1Alt, or image1/alt1.");
+}
+---
+
+<div
+  id={id}
+  class={`fullscreen-slideshow relative h-screen w-full overflow-hidden ${className}`}
+>
+  <div class="swiper swiper-fullscreen h-full w-full">
+    <div class="swiper-wrapper">
+      {slides.map((slide, i) => (
+        <div class="swiper-slide">
+          <div class="relative h-full w-full">
+            <img
+              src={slide.src}
+              alt={slide.alt}
+              class="h-full w-full object-cover"
+              loading={i === 0 ? "eager" : "lazy"}
+              fetchpriority={i === 0 ? "high" : undefined}
+            />
+            {slide.caption && (
+              <div
+                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-6 text-white"
+                aria-hidden="true"
+              >
+                <p class="text-sm md:text-base">{slide.caption}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {showPagination && <div class="swiper-pagination swiper-pagination-fullscreen" />}
+
+    {showNav && (
+      <>
+        <button
+          type="button"
+          class="swiper-button-prev swiper-button-fullscreen"
+          aria-label="Previous slide"
+        >
+          <span class="sr-only">Previous</span>
+          <SimpleIcon name="chevron-left" size="lg" class="h-10 w-10 text-white drop-shadow-lg" />
+        </button>
+        <button
+          type="button"
+          class="swiper-button-next swiper-button-fullscreen"
+          aria-label="Next slide"
+        >
+          <span class="sr-only">Next</span>
+          <SimpleIcon name="chevron-right" size="lg" class="h-10 w-10 text-white drop-shadow-lg" />
+        </button>
+      </>
+    )}
+  </div>
+</div>
+
+<script define:vars={{ slideshowId: id, autoplayMs: autoplay, showNav: showNav, showPagination: showPagination }}>
+  import Swiper from "swiper";
+  import { Navigation, Pagination, Autoplay } from "swiper/modules";
+
+  const root = document.getElementById(slideshowId);
+  if (!root) throw new Error("FullScreenSlideshow: root element not found");
+
+  const swiperEl = root.querySelector(".swiper-fullscreen");
+  if (!swiperEl) throw new Error("FullScreenSlideshow: swiper element not found");
+
+  const modules = [];
+  if (showNav) modules.push(Navigation);
+  if (showPagination) modules.push(Pagination);
+  if (autoplayMs > 0) modules.push(Autoplay);
+
+  new Swiper(swiperEl, {
+    modules,
+    loop: true,
+    grabCursor: true,
+    speed: 600,
+    ...(autoplayMs > 0
+      ? { autoplay: { delay: autoplayMs, disableOnInteraction: false } }
+      : {}),
+    ...(showPagination
+      ? {
+          pagination: {
+            el: swiperEl.querySelector(".swiper-pagination-fullscreen"),
+            clickable: true,
+          },
+        }
+      : {}),
+    ...(showNav
+      ? {
+          navigation: {
+            nextEl: swiperEl.querySelector(".swiper-button-next"),
+            prevEl: swiperEl.querySelector(".swiper-button-prev"),
+          },
+        }
+      : {}),
+    keyboard: { enabled: true },
+  });
+</script>
+
+<style is:global>
+  .fullscreen-slideshow .swiper-pagination-fullscreen {
+    bottom: 1.5rem;
+  }
+  .fullscreen-slideshow .swiper-pagination-bullet {
+    width: 10px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.6);
+    opacity: 1;
+  }
+  .fullscreen-slideshow .swiper-pagination-bullet-active {
+    background: white;
+    transform: scale(1.2);
+  }
+  .fullscreen-slideshow .swiper-button-fullscreen {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 9999px;
+    transition: background 0.2s;
+  }
+  .fullscreen-slideshow .swiper-button-fullscreen:hover {
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .fullscreen-slideshow .swiper-button-prev {
+    left: 1rem;
+  }
+  .fullscreen-slideshow .swiper-button-next {
+    right: 1rem;
+  }
+</style>

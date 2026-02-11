@@ -943,6 +943,37 @@ const debugData = {
 
     <!-- SPA client-side routing for project/* and admin/* (no full page reload) -->
     {isBackend && <ClientRouter fallback="swap" />}
+    <!-- SPA: prevent swap on 404 - do full page nav instead to avoid sidebar/colors disappearing -->
+    {isBackend && (
+      <script>
+        import {
+          isTransitionBeforePreparationEvent,
+          TRANSITION_BEFORE_PREPARATION,
+        } from "astro:transitions/client";
+
+        document.addEventListener(TRANSITION_BEFORE_PREPARATION, (event: Event) => {
+          if (!isTransitionBeforePreparationEvent(event)) return;
+          const originalLoader = event.loader;
+          event.loader = async () => {
+            const to = (event as any).to?.toString() || "";
+            if (!to || to.startsWith("#")) {
+              await originalLoader();
+              return;
+            }
+            try {
+              const res = await fetch(to, { redirect: "follow" });
+              if (!res.ok && res.status === 404) {
+                window.location.href = to;
+                return;
+              }
+            } catch {
+              /* Fall through to original loader on network error */
+            }
+            await originalLoader();
+          };
+        });
+      </script>
+    )}
   </head>
 
   <body
@@ -1106,7 +1137,7 @@ const debugData = {
         class:list={[
           // "color-background",
           // "flex-1 min-w-0",
-          currentUser ? "sm:ml-16" : "",
+          currentUser ? "transition-duration-[350ms] ease-in-out" : "",
 
           // (layout === "default"  || layout === "minimal" || !layout) &&
           //   "px-4 sm:px-6 md:px-8 lg:px-10",
@@ -1125,9 +1156,6 @@ const debugData = {
      
  
       
-
-
-        </div>
 
         <ul class="align-center flex justify-center text-gray-500 dark:text-gray-400">
        
@@ -1149,6 +1177,9 @@ const debugData = {
             <a href="/cookies" class="no-underline hover:underline"> cookie </a>
           </li>
         </ul>
+        </div>
+
+    
       </div>
       <Footer
       {isAuthPageResult}

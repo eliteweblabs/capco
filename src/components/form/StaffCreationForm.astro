@@ -4,7 +4,6 @@
 import Button from "../common/Button.astro";
 import Alert from "../partials/Alert.astro";
 import PhoneAndSMS from "./PhoneAndSMS.astro";
-import SlotMachineModalStaff from "./SlotMachineModalStaff.astro";
 const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.props;
 
 // interface Props {
@@ -21,22 +20,37 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
     <div id="new-staff-fields" class="space-y-4">
       <!-- Role Selection -->
       <div>
-        <SlotMachineModalStaff
-          id="role"
-          title="Select Role"
-          options={[
-            { value: "Admin", label: "Admin" },
-            { value: "Staff", label: "Staff" },
-            { value: "Client", label: "Client" },
-          ]}
-          placeholder="Choose role"
-          buttonText="Select Role"
-          showCloseButton={true}
-          showCancelButton={true}
-          icon="user"
-          buttonVariant="outline"
-          buttonClass="w-full"
-        />
+        <p class="mb-2 text-sm font-medium text-gray-900 dark:text-white">Select Role</p>
+        <div class="flex flex-wrap gap-4">
+          <label class="flex cursor-pointer items-center gap-2">
+            <input
+              type="radio"
+              name="role"
+              value="Admin"
+              class="h-4 w-4 border-gray-300 bg-gray-100 focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-700"
+            />
+            <span class="text-sm text-gray-900 dark:text-white">Admin</span>
+          </label>
+          <label class="flex cursor-pointer items-center gap-2">
+            <input
+              type="radio"
+              name="role"
+              value="Staff"
+              checked
+              class="h-4 w-4 border-gray-300 bg-gray-100 focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-700"
+            />
+            <span class="text-sm text-gray-900 dark:text-white">Staff</span>
+          </label>
+          <label class="flex cursor-pointer items-center gap-2">
+            <input
+              type="radio"
+              name="role"
+              value="Client"
+              class="h-4 w-4 border-gray-300 bg-gray-100 focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-700"
+            />
+            <span class="text-sm text-gray-900 dark:text-white">Client</span>
+          </label>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -155,9 +169,8 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
       // Get form data for validation
       const formData = new FormData(form as HTMLFormElement);
 
-      // Get role from hidden input (SlotMachineModalStaff creates role-value input)
-      const roleInput = document.getElementById("role-value") as HTMLInputElement;
-      const role = roleInput?.value || (formData.get("role") as string);
+      // Get role from radio inputs
+      const role = formData.get("role") as string;
 
       // Get SMS fields
       const smsAlertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;

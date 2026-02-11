@@ -1352,6 +1352,9 @@ export function createMultiStepFormHandler(
           const response = await fetch(form.action, {
             method: form.method,
             body: formData,
+            headers: {
+              Accept: "application/json",
+            },
           });
 
           console.log("[MULTISTEP-FORM] Response status:", response.status);
