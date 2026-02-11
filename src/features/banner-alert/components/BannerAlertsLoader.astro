@@ -202,6 +202,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
       // Use navbar-content only (the bar); top-banner-container is inside main-navbar so main-navbar height would include alerts
       const navbarContent = document.getElementById("navbar-content");
       const navbarBarHeight = navbarContent ? (navbarContent as HTMLElement).offsetHeight : 4 * rem;
+      const dynamicHeightEls = document.querySelectorAll('[data-dynamic-height="true"]');
 
       let topAlertsHeight = 0;
       if (topBannerContainer) {
@@ -221,7 +222,6 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         scrollEl.style.marginTop = totalTopHeight + "px";
         scrollEl.style.height = "calc(100dvh - " + totalTopHeight + "px)";
         if (isMobile()) {
-          const dynamicHeightEls = document.querySelectorAll('[data-dynamic-height="true"]');
           dynamicHeightEls.forEach((el) => {
             (el as HTMLElement).style.transition = (el as HTMLElement).style.transition || "margin-top 0.3s ease-in-out";
             (el as HTMLElement).style.marginTop = totalTopHeight + "px";
@@ -236,6 +236,10 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         off.topBannersOnlyPx = 0;
         const baseHeight = navbarBarHeight;
         off.topPx = baseHeight;
+        dynamicHeightEls.forEach((el) => {
+            (el as HTMLElement).style.transition = (el as HTMLElement).style.transition || "margin-top 0.3s ease-in-out";
+            (el as HTMLElement).style.height = "calc(100dvh - " + baseHeight + "px)";
+          });
         scrollEl.style.marginTop = baseHeight + "px";
         scrollEl.style.height = "calc(100dvh - " + baseHeight + "px)";
         if (isMobile()) {
