@@ -104,7 +104,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 
 {
   topBanners.length > 0 && (position === "all" || position === "top") && (
-    <div class={`z-50 banner-alerts-top flex flex-col ${width === "full" ? "w-full" : ""} gap-1`} id="top-banner-container">
+    <div class={`z-50 flex flex-col ${width === "full" ? "w-full" : ""}`} id="top-banner-container">
       {topBanners.map((banner) => (
         <BannerAlert
           id={banner.id}
@@ -141,9 +141,10 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 }
 
 <script>
+  import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
   (function () {
     const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
+    const isMobile = () => window.matchMedia(MOBILE_MEDIA_QUERY).matches;
     const THRESH = 8;
 
     /** Re-apply dismiss styles from localStorage after SPA swap (inline script only runs on first load). */
@@ -215,25 +216,33 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 
         const baseHeight = navbarBarHeight;
         const totalTopHeight = baseHeight + topAlertsHeight;
-        const dynamicHeightEls = document.querySelectorAll('[data-dynamic-height="true"]');
-        dynamicHeightEls.forEach((el) => {
-          (el as HTMLElement).style.transition = (el as HTMLElement).style.transition || "margin-top 0.3s ease-in-out";
-          (el as HTMLElement).style.marginTop = totalTopHeight + "px";
-        });
-        scrollEl.style.marginTop = totalTopHeight + "px";
-        scrollEl.style.height = "calc(100dvh - " + totalTopHeight + "px)";
         off.topPx = totalTopHeight;
         off.topBannersOnlyPx = topAlertsHeight;
-        if (sidebar) {
-          (sidebar as HTMLElement).style.height = "calc(100dvh - 4rem - " + topAlertsHeight + "px)";
+        scrollEl.style.marginTop = totalTopHeight + "px";
+        scrollEl.style.height = "calc(100dvh - " + totalTopHeight + "px)";
+        if (isMobile()) {
+          const dynamicHeightEls = document.querySelectorAll('[data-dynamic-height="true"]');
+          dynamicHeightEls.forEach((el) => {
+            (el as HTMLElement).style.transition = (el as HTMLElement).style.transition || "margin-top 0.3s ease-in-out";
+            (el as HTMLElement).style.marginTop = totalTopHeight + "px";
+          });
+          if (sidebar) {
+            (sidebar as HTMLElement).style.height = "calc(100dvh - 4rem - " + topAlertsHeight + "px)";
+          }
+        } else {
+          if (sidebar) (sidebar as HTMLElement).style.height = "";
         }
       } else {
         off.topBannersOnlyPx = 0;
         const baseHeight = navbarBarHeight;
+        off.topPx = baseHeight;
         scrollEl.style.marginTop = baseHeight + "px";
         scrollEl.style.height = "calc(100dvh - " + baseHeight + "px)";
-        off.topPx = baseHeight;
-        if (sidebar) (sidebar as HTMLElement).style.height = "calc(100dvh - 4rem)";
+        if (isMobile()) {
+          if (sidebar) (sidebar as HTMLElement).style.height = "calc(100dvh - 4rem)";
+        } else {
+          if (sidebar) (sidebar as HTMLElement).style.height = "";
+        }
       }
 
       let bottomBannerHeight = 0;

@@ -75,9 +75,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
     try {
       // Root-level files
-      const { data: rootFiles } = await supabaseAdmin.storage
-        .from(bucket)
-        .list("", { limit: 100 });
+      const { data: rootFiles } = await supabaseAdmin.storage.from(bucket).list("", { limit: 100 });
       for (const item of rootFiles || []) {
         if (item.name && item.name !== ".emptyFolderPlaceholder") {
           existingPaths.add(item.name);
@@ -98,7 +96,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         .eq("bucketName", bucket)
         .limit(1000);
 
-      const dbPaths = (allFilesForScreen || []).map((r: any) => r.filePath).filter(Boolean) as string[];
+      const dbPaths = (allFilesForScreen || [])
+        .map((r: any) => r.filePath)
+        .filter(Boolean) as string[];
       const uniqueParents = new Set<string>();
       for (const p of dbPaths) {
         const parts = p.split("/");
@@ -108,7 +108,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       }
       const parents = Array.from(uniqueParents).slice(0, 80);
       for (const parent of parents) {
-        const { data: folderList } = await supabaseAdmin.storage.from(bucket).list(parent, { limit: 500 });
+        const { data: folderList } = await supabaseAdmin.storage
+          .from(bucket)
+          .list(parent, { limit: 500 });
         for (const item of folderList || []) {
           if (item.name && item.name !== ".emptyFolderPlaceholder") {
             const fullPath = parent ? `${parent}/${item.name}` : item.name;
@@ -125,11 +127,16 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         .map((r: any) => r.id);
 
       if (orphanFileIds.length > 0) {
-        const { error: delErr } = await supabaseAdmin.from("files").delete().in("id", orphanFileIds);
+        const { error: delErr } = await supabaseAdmin
+          .from("files")
+          .delete()
+          .in("id", orphanFileIds);
         if (delErr) {
           console.error("❌ [ADMIN-MEDIA] Error deleting orphaned file index:", delErr);
         } else {
-          console.log(`🗑️ [ADMIN-MEDIA] Deleted ${orphanFileIds.length} orphaned file index record(s) (file not in storage)`);
+          console.log(
+            `🗑️ [ADMIN-MEDIA] Deleted ${orphanFileIds.length} orphaned file index record(s) (file not in storage)`
+          );
         }
         projectFiles = projectFiles.filter((f: any) => !orphanFileIds.includes(f.id));
         globalFiles = globalFiles.filter((f: any) => !orphanFileIds.includes(f.id));

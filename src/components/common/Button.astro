@@ -27,6 +27,7 @@ export interface Props {
   disabled?: boolean;
   loading?: boolean;
   icon?: string;
+  iconOnly?: boolean; // Use width/height sizing (not padding) when true – for icon-only buttons
   iconPosition?: "left" | "right";
   iconClasses?: string;
   fullWidth?: boolean;
@@ -99,14 +100,15 @@ if (isPartial) {
   }
 }
 
-// Use shared button styling logic (icon: true when variant is icon so size classes are square/round)
+// Use shared button styling logic (icon: true when icon-only so size classes are h/w, not padding)
+const isIconOnly = Astro.props.iconOnly === true || variant === "icon";
 const buttonClasses = getButtonClasses({
   variant: variant as any,
   size: size as any,
   fullWidth,
   focus,
   className,
-  icon: variant === "icon",
+  icon: isIconOnly,
 });
 
 // Map button size to icon size

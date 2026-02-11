@@ -1,5 +1,15 @@
 import { getIcon } from "../lib/simple-icons";
 import { setupConsoleInterceptor } from "../lib/console-interceptor";
+import {
+  isMobile,
+  isTablet,
+  isDesktop,
+  getViewportSize,
+  scrollToTopOnMobile,
+  scrollToTop,
+  debounce,
+  throttle,
+} from "../lib/ux-utils";
 
 declare global {
   interface Window {
@@ -44,7 +54,7 @@ declare global {
     fixSafariViewport?: () => void;
     immediateSafariViewportFix?: () => void;
     setupViewportHandling?: () => void;
-    ensureViewportBounds?: (minHeight?: number, maxHeight?: number) => void;
+    // ensureViewportBounds?: (minHeight?: number, maxHeight?: number) => void;
     lockBodyScroll?: () => void;
     unlockBodyScroll?: () => void;
     // Modal system
@@ -1065,62 +1075,18 @@ let isDeleting = false; // Flag to prevent multiple delete operations
 };
 
 // Scroll utilities
-(window as any).scrollToTopOnMobile = function () {
-  if (window.innerWidth < 768) {
-    console.log("📱 [UX-UTILS] Scrolling to top on mobile device");
-    (window as any).scrollTo({ top: 0, behavior: "smooth" });
-  }
-};
+(window as any).scrollToTopOnMobile = scrollToTopOnMobile;
+(window as any).scrollToTop = scrollToTop;
 
-(window as any).scrollToTop = function (behavior = "smooth") {
-  console.log("📱 [UX-UTILS] Scrolling to top");
-  (window as any).scrollTo({ top: 0, behavior });
-};
-
-// Device detection
-(window as any).isMobile = function () {
-  return window.innerWidth < 768;
-};
-
-(window as any).isTablet = function () {
-  return window.innerWidth >= 768 && window.innerWidth < 1024;
-};
-
-(window as any).isDesktop = function () {
-  return window.innerWidth >= 1024;
-};
-
-(window as any).getViewportSize = function () {
-  if (window.innerWidth < 768) return "mobile";
-  if (window.innerWidth < 1024) return "tablet";
-  return "desktop";
-};
+// Device detection – single source from ux-utils (BREAKPOINTS.MOBILE_MAX = 767)
+(window as any).isMobile = isMobile;
+(window as any).isTablet = isTablet;
+(window as any).isDesktop = isDesktop;
+(window as any).getViewportSize = getViewportSize;
 
 // Utility functions
-(window as any).debounce = function (func: any, wait: any) {
-  let timeout: any;
-  return function executedFunction(...args: any[]) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-};
-
-(window as any).throttle = function (func: any, limit: any) {
-  let inThrottle: any;
-  return function executedFunction(this: any, ...args: any[]) {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
-    }
-  };
-};
-
-// String utilities
+(window as any).debounce = debounce;
+(window as any).throttle = throttle;
 (window as any).truncateString = function (
   str: string,
   maxLength: number = 30,
@@ -1185,33 +1151,24 @@ let isDeleting = false; // Flag to prevent multiple delete operations
     window.addEventListener("resize", setViewportHeight);
   }
 };
-(window as any).isMobile = function () {
-  return window.innerWidth < 768;
-};
-(window as any).isTablet = function () {
-  return window.innerWidth >= 768 && window.innerWidth < 1024;
-};
-(window as any).isDesktop = function () {
-  return window.innerWidth >= 1024;
-};
 
 (window as any).setupViewportHandling = function () {
   (window as any).immediateSafariViewportFix();
 };
 
-(window as any).ensureViewportBounds = function (minHeight = 400, maxHeight = 1200) {
-  const currentHeight = window.innerHeight;
-  if (currentHeight < minHeight || currentHeight > maxHeight) {
-    if ((window as any).showNotice) {
-      (window as any).showNotice(
-        "warning",
-        "Viewport Issue",
-        `Viewport height (${currentHeight}px) is outside recommended bounds (${minHeight}-${maxHeight}px)`,
-        5000
-      );
-    }
-  }
-};
+// (window as any).ensureViewportBounds = function (minHeight = 400, maxHeight = 1200) {
+//   const currentHeight = window.innerHeight;
+//   if (currentHeight < minHeight || currentHeight > maxHeight) {
+//     if ((window as any).showNotice) {
+//       (window as any).showNotice(
+//         "warning",
+//         "Viewport Issue",
+//         `Viewport height (${currentHeight}px) is outside recommended bounds (${minHeight}-${maxHeight}px)`,
+//         5000
+//       );
+//     }
+//   }
+// };
 
 // Body scroll utilities
 (window as any).lockBodyScroll = function () {
@@ -1882,22 +1839,4 @@ document.addEventListener("DOMContentLoaded", applyDynamicHeight);
 document.addEventListener("astro:page-load", applyDynamicHeight);
 window.addEventListener("resize", applyDynamicHeight);
 
-/** #reveal-scroll: margin-top and height from navbar base (same as BannerAlertsLoader baseHeight = navbar.offsetHeight) */
-function applyRevealTestScrollFromNavbar() {
-  const scrollEl = document.getElementById("reveal-scroll");
-  const navbar = document.getElementById("main-navbar");
-  if (!scrollEl || !navbar) return;
-  const baseHeight = navbar.offsetHeight;
-  scrollEl.style.marginTop = `${baseHeight}px`;
-  scrollEl.style.height = `calc(100dvh - ${baseHeight}px)`;
-}
-document.addEventListener("DOMContentLoaded", () => {
-  applyRevealTestScrollFromNavbar();
-  const navbar = document.getElementById("main-navbar");
-  if (navbar) {
-    const ro = new ResizeObserver(() => applyRevealTestScrollFromNavbar());
-    ro.observe(navbar);
-  }
-});
-document.addEventListener("astro:page-load", applyRevealTestScrollFromNavbar);
-window.addEventListener("resize", applyRevealTestScrollFromNavbar);
+/** #reveal-scroll: Managed by BannerAlertsLoader.updateBannerOffsets() — mobile-only margin-top/height from navbar + banners. Do not duplicate here to avoid conflicts. */

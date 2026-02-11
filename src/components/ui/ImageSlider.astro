@@ -255,7 +255,7 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
       id={gridId}
       style={`min-height: ${height};`}
     >
-      {/* Image Grid */}
+      {/* Image Grid - z-0 so overlays stack above */}
       <div class="image-slider-grid" style={`grid-template: ${gridTemplate};`}>
         {slides.map((slide, index) => {
           const slideId = `slide-${index}`;
@@ -276,7 +276,7 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
               <img
                 data-src={slide.src}
                 alt={slide.alt}
-                class="lazyload blur-sm slide-image"
+                class="lazyload slide-image blur-sm"
                 width="800"
                 height="600"
               />
@@ -288,25 +288,25 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
       {/* Dark Overlay */}
       {showOverlay && hasOverlayContent && (
         <div
-          class="absolute inset-0 bg-black pointer-events-none"
+          class="image-slider-dark-overlay pointer-events-none absolute inset-0 z-[1] bg-black"
           style={`opacity: ${overlayOpacity};`}
         />
       )}
 
       {/* Content Overlay - fills parent, vertically centered. pointer-events: none on container so iOS Safari can scroll past hero; only buttons/links are clickable. */}
       {hasOverlayContent && (
-        <div class="image-slider-overlay absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-          <div class="mx-auto max-w-4xl w-full px-4 sm:px-6 lg:px-8 text-center">
+        <div class="image-slider-overlay pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <div class="mx-auto w-full max-w-4xl px-4 text-center sm:px-6 lg:px-8">
             {title && (
-              <h1 class="md:text-6xl sm:text-4xl text-3xl font-bold text-white drop-shadow-lg">
+              <h1 class="text-3xl font-bold text-white drop-shadow-lg sm:text-4xl md:text-6xl">
                 {title}
               </h1>
             )}
             {description && (
-              <h2 class="text-xl mt-6 text-gray-200 drop-shadow-md" set:html={description} />
+              <h2 class="mt-6 text-xl text-gray-200 drop-shadow-md" set:html={description} />
             )}
             {hasButtons && (
-              <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 {leftButton && (
                   <Button
                     href={leftButton.href}
@@ -346,6 +346,7 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
   .image-slider-grid {
     display: grid;
     position: absolute;
+    z-index: 0;
     gap: 4px;
     inset: 0;
     width: 100%;
@@ -359,10 +360,13 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
     overflow: hidden;
   }
 
-  /* Overlay is pointer-events: none so touch scroll passes through on iOS; only interactive elements receive clicks */
-  .image-slider-container .image-slider-overlay a,
-  .image-slider-container .image-slider-overlay button {
+  /* Overlay is pointer-events: none so touch scroll passes through on iOS; only interactive elements receive clicks.
+     :global() ensures Button.astro's <a>/<button> are matched (child components may have different Astro scoping). */
+  .image-slider-overlay :global(a),
+  .image-slider-overlay :global(button) {
     pointer-events: auto;
+    position: relative;
+    z-index: 1;
   }
 
   .slide-image {

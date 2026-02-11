@@ -64,7 +64,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         config.steps.map((step) => (
           <div
             class:list={[
-              "step-content space-y-8 sm:space-y-8 md:space-y-10 lg:space-y-12 mb-6 overflow-y-visible text-lg md:text-xl", // leave mt-20 for tooltips
+              "step-content mb-6 space-y-8 overflow-y-visible text-lg sm:space-y-8 md:space-y-10 md:text-xl lg:space-y-12", // leave mt-20 for tooltips
               step.stepNumber === 1 ? "first-step" : "",
             ]}
             data-step={step.stepNumber}
@@ -89,7 +89,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                   )}
                   {step.subtitle && (
                     <p
-                      class="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md"
+                      class="mt-2 max-w-md text-sm text-gray-600 dark:text-gray-400 sm:mt-3 sm:text-base"
                       tabindex="-1"
                     >
                       {step.subtitle}
@@ -106,13 +106,13 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                   mode={step.additionalContent === "auth-providers" ? "login" : "register"}
                 />
                 <div class="flex items-center gap-4 pb-4" tabindex="-1">
-                  <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 uppercase">
+                  <div class="h-px flex-1 bg-zinc-300 dark:bg-zinc-600" />
+                  <span class="text-sm uppercase text-zinc-500 dark:text-zinc-400">
                     {step.additionalContent === "auth-providers"
                       ? "or login with email"
                       : "or register with email"}
                   </span>
-                  <div class="flex-1 h-px bg-zinc-300 dark:bg-zinc-600" />
+                  <div class="h-px flex-1 bg-zinc-300 dark:bg-zinc-600" />
                 </div>
               </div>
             )}
@@ -121,16 +121,16 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {step.isReview ? (
               // Review step - show summary
               <div
-                class="space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700 color-background"
+                class="color-background space-y-4 rounded-lg border border-gray-200 p-8 dark:border-gray-700"
                 tabindex="-1"
               >
                 {step.reviewFields?.map((fieldName) => (
                   <div
-                    class="flex items-start justify-between border-b border-gray-200 pb-2 dark:border-gray-700 last:border-b-0"
+                    class="flex items-start justify-between border-b border-gray-200 pb-2 last:border-b-0 dark:border-gray-700"
                     tabindex="-1"
                   >
                     <div tabindex="-1">
-                      <p class="text-sm text-gray-600 dark:text-gray-400 capitalize" tabindex="-1">
+                      <p class="text-sm capitalize text-gray-600 dark:text-gray-400" tabindex="-1">
                         {fieldName.replace(/([A-Z])/g, " $1").trim()}
                       </p>
                       <p
@@ -295,14 +295,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         />
                         <span
                           class:list={[
-                            "animated-placeholder absolute left-0 -top-0.5 flex items-center w-full h-full pointer-events-none",
+                            "animated-placeholder pointer-events-none absolute -top-0.5 left-0 flex h-full w-full items-center",
                             field.animatedPlaceholderAlignment === "left"
                               ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : "pl-3"}`
                               : field.animatedPlaceholderAlignment === "right"
                                 ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : "pr-3"}`
                                 : "justify-center",
-                            field.icon && field.iconPosition === "right" ? "pr-12 mr-1.25" : "",
-                            field.icon && field.iconPosition !== "right" ? "pl-12 ml-1.25" : "",
+                            field.icon && field.iconPosition === "right" ? "mr-1.25 pr-12" : "",
+                            field.icon && field.iconPosition !== "right" ? "ml-1.25 pl-12" : "",
                           ]}
                           data-for={field.id}
                           tabindex="-1"
@@ -346,7 +346,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                     ) : field.icon ? (
                       <div
                         class:list={[
-                          "relative input-with-icon",
+                          "input-with-icon relative",
                           field.iconPosition === "right" ? "icon-right" : "icon-left",
                         ]}
                         data-icon={field.icon}
@@ -363,7 +363,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           autofocus={field.autofocus}
                           class:list={[
                             appendedMultiStepInputClasses,
-                            field.iconPosition === "right" ? "pr-12 pl-12" : "pl-12 pr-12",
+                            field.iconPosition === "right" ? "pl-12 pr-12" : "pl-12 pr-12",
                           ]}
                           data-error={field.errorMessage}
                           data-validate={field.validate}
@@ -395,7 +395,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {/* Choice buttons (radio-style options) */}
             {step.buttons.some((b) => b.type === "choice") && (
               <div
-                class={`multi-step-choice-buttons flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "justify-center flex-wrap"} gap-3 mb-6`}
+                class={`multi-step-choice-buttons flex ${step.buttons.some((b) => b.type === "choice" && b.classes?.includes("w-full")) ? "flex-col" : "flex-wrap justify-center"} mb-6 gap-3`}
                 tabindex="-1"
               >
                 {step.buttons
@@ -504,7 +504,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         <SimpleIcon
                           name={button.validIcon ?? "return"}
                           size={btnConfig.size}
-                          class="ml-2 icon-valid hidden"
+                          class="icon-valid ml-2 hidden"
                         />
                       )}
                     </Button>
@@ -537,11 +537,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   config.progressBar && (
     <div
       id={`${config.formId}-progress-bar`}
-      class="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 py-4 px-4 transition-opacity duration-300"
+      class="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/90 px-4 py-4 backdrop-blur-md transition-opacity duration-300 dark:border-gray-700 dark:bg-gray-900/90"
       tabindex="-1"
     >
-      <div class="w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] max-w-6xl mx-auto" tabindex="-1">
-        <ol class="flex items-center w-full" id={`${config.formId}-stepper`} tabindex="-1">
+      <div class="mx-auto w-[90vw] max-w-6xl sm:w-[85vw] md:w-[80vw] lg:w-[75vw]" tabindex="-1">
+        <ol class="flex w-full items-center" id={`${config.formId}-stepper`} tabindex="-1">
           {config.steps
             .filter((step) => !step.hideProgressBar)
             .map((step, index, filteredSteps) => (
@@ -553,7 +553,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 {/* Step Circle/Icon with Tooltip */}
                 <Tooltip text={step.title} position="top" mobileClickable={true} html={true}>
                   <span
-                    class="relative step-indicator flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0 transition-all duration-300 bg-gray-300 dark:bg-gray-700"
+                    class="step-indicator relative flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-gray-300 transition-all duration-300 dark:bg-gray-700 sm:h-4 sm:w-4"
                     data-step-title={step.title}
                     tabindex="-1"
                   />
@@ -562,11 +562,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 {/* Connecting Line */}
                 {index < filteredSteps.length - 1 && (
                   <div
-                    class="w-full h-1 mx-2 bg-transparent dark:bg-transparent rounded-full overflow-hidden"
+                    class="mx-2 h-1 w-full overflow-hidden rounded-full bg-transparent dark:bg-transparent"
                     tabindex="-1"
                   >
                     <div
-                      class="h-full bg-transparent dark:bg-transparent transition-all duration-500 ease-out step-progress-line"
+                      class="step-progress-line h-full bg-transparent transition-all duration-500 ease-out dark:bg-transparent"
                       style="width: 0%"
                       tabindex="-1"
                     />

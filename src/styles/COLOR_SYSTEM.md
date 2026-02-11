@@ -32,7 +32,7 @@ Use the custom color names defined in `tailwind.config.mjs`:
 <div class="text-gray-800 dark:text-gray-200">Secondary Text</div>
 
 <!-- Border Colors -->
-<div class="border border-border-light dark:border-border-dark">Adaptive Border</div>
+<div class="border-border-light dark:border-border-dark border">Adaptive Border</div>
 ```
 
 ### 2. CSS Custom Properties
@@ -123,7 +123,7 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
 
 ```html
 <div
-  class="_1jTZ8KXRZul60S6czNi SWeL9OnwkbKp0VeBUJlf rounded-lg border border-border-light p-6 dark:border-border-dark"
+  class="_1jTZ8KXRZul60S6czNi SWeL9OnwkbKp0VeBUJlf border-border-light dark:border-border-dark rounded-lg border p-6"
 >
   <h3 class="dark:text-light mb-2 text-xl font-semibold text-black">Card Title</h3>
   <p class="text-gray-800 dark:text-gray-200">Card content goes here.</p>
@@ -134,7 +134,7 @@ All colors automatically adapt to dark mode using the `dark:` prefix in Tailwind
 
 ```html
 <nav
-  class="border-b border-border-light bg-background-light dark:border-border-dark dark:bg-background-dark"
+  class="border-border-light bg-background-light dark:border-border-dark dark:bg-background-dark border-b"
 >
   <a href="#" class="dark:text-light text-black hover:text-primary-600"> Navigation Link </a>
 </nav>

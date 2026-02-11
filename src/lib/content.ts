@@ -517,8 +517,7 @@ function isLikelyBotProbe(slug: string): boolean {
   )
     return true;
   // .git/config and similar exposed paths
-  if (s.startsWith(".git/") || s === ".git/config" || s.includes("/.git/"))
-    return true;
+  if (s.startsWith(".git/") || s === ".git/config" || s.includes("/.git/")) return true;
   // Common CMS exploit paths (Drupal, OpenCart, etc.)
   if (
     s.startsWith("sites/default/files") ||

@@ -5,23 +5,27 @@
 
 /**
  * Breakpoint constants matching Tailwind CSS defaults
- * Use these constants to ensure consistency across the application
+ * SINGLE SOURCE: Use these everywhere. CSS should use max-width: 767px to match MOBILE_MAX.
  */
 export const BREAKPOINTS = {
   SM: 640, // Tailwind sm: breakpoint
-  MD: 768, // Tailwind md: breakpoint (standard mobile/desktop distinction)
-  LG: 1024, // Tailwind lg: breakpoint
-  XL: 1280, // Tailwind xl: breakpoint
-  "2XL": 1536, // Tailwind 2xl: breakpoint
+  /** Max viewport width that counts as mobile (matches @media (max-width: 767px) in CSS) */
+  MOBILE_MAX: 767,
+  MD: 768, // Tailwind md: breakpoint
+  LG: 1024,
+  XL: 1280,
+  "2XL": 1536,
 } as const;
+
+/** Media query for mobile - use with matchMedia for consistency with CSS */
+export const MOBILE_MEDIA_QUERY = `(max-width: ${BREAKPOINTS.MOBILE_MAX}px)`;
 
 /**
  * Scrolls to the top of the page on mobile devices
- * Only triggers on screens smaller than 768px (mobile breakpoint)
+ * Uses MOBILE_MAX (767px) breakpoint
  */
 export function scrollToTopOnMobile(): void {
-  // Check if device is mobile (screen width < 768px)
-  if (window.innerWidth < BREAKPOINTS.MD) {
+  if (isMobile()) {
     console.log("📱 [UX-UTILS] Scrolling to top on mobile device");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -37,12 +41,12 @@ export function scrollToTop(behavior: ScrollBehavior = "smooth"): void {
 }
 
 /**
- * Checks if the current device is mobile
- * Uses MD breakpoint (768px) which is the standard mobile/desktop distinction
- * @returns true if screen width is less than 768px
+ * Checks if the current device is mobile (< sm / below md)
+ * Uses MOBILE_MAX (767px) - matches @media (max-width: 767px) in CSS
+ * @returns true if viewport width <= 767px
  */
 export function isMobile(): boolean {
-  return window.innerWidth < BREAKPOINTS.MD;
+  return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
 }
 
 /**
@@ -327,8 +331,7 @@ export function immediateSafariViewportFix(): void {
     console.log("🚀 [UX-UTILS] IMMEDIATE positioning fix");
 
     // Fix header/navbar immediately if it exists (layout uses #main-navbar as top bar)
-    const header =
-      document.querySelector("header") || document.getElementById("main-navbar");
+    const header = document.querySelector("header") || document.getElementById("main-navbar");
     if (header) {
       header.style.cssText = `
         position: sticky !important;
@@ -414,8 +417,7 @@ export function setupViewportHandling(): void {
     }
 
     // Disable sticky positioning on Safari 18+ (including final release)
-    const header =
-      document.querySelector("header") || document.getElementById("main-navbar");
+    const header = document.querySelector("header") || document.getElementById("main-navbar");
     if (header) {
       header.style.setProperty("position", "relative", "important");
       header.style.setProperty("top", "0", "important");
@@ -489,8 +491,7 @@ export function setupViewportHandling(): void {
     }
 
     // NUCLEAR HEADER FIX - Override everything (layout may use #main-navbar as top bar)
-    const header =
-      document.querySelector("header") || document.getElementById("main-navbar");
+    const header = document.querySelector("header") || document.getElementById("main-navbar");
     if (header) {
       console.log("🚨 [UX-UTILS] NUCLEAR HEADER FIX - Forcing header position");
 
