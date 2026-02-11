@@ -135,7 +135,7 @@ const validComponentModules = componentModules.filter(
 </Layout>
 
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
+  function replaceComponentPlaceholders() {
     const placeholders = document.querySelectorAll("[data-component-placeholder]");
 
     placeholders.forEach((placeholder) => {
@@ -146,5 +146,8 @@ const validComponentModules = componentModules.filter(
         placeholder.parentNode.replaceChild(renderedComponent, placeholder);
       }
     });
-  });
+  }
+
+  document.addEventListener("DOMContentLoaded", replaceComponentPlaceholders);
+  document.addEventListener("astro:page-load", () => requestAnimationFrame(replaceComponentPlaceholders));
 </script>
