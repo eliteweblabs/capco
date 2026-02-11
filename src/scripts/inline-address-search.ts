@@ -327,7 +327,7 @@ export function createAddressSearchHTML(config: {
   const dropdown = document.createElement("div");
   dropdown.id = `${id}-dropdown`;
   dropdown.className =
-    "inline-address-results-container hidden absolute z-10 mt-2 w-full divide-y divide-gray-100 color-background-50 no-scrollbar rounded-lg shadow-lg dark:divide-gray-600";
+    "inline-address-results-container hidden absolute z-10 mt-2 w-full divide-y divide-gray-100 color-background-50 scrollbar-hide rounded-lg shadow-lg dark:divide-gray-600";
 
   // Results list
   const resultsList = document.createElement("ul");

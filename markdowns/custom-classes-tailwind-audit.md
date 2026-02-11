@@ -11,7 +11,7 @@ Audit of custom CSS classes that have Tailwind equivalents or could be expressed
 | Custom class | Tailwind equivalent | Notes |
 |--------------|--------------------|--------|
 | `.bg-transparent` | `bg-transparent` | Tailwind built-in. Remove custom rule. |
-| `.no-scrollbar` | `scrollbar-hide` | **Already in `tailwind.config.mjs`** as a plugin utility. Replace all `no-scrollbar` with `scrollbar-hide` and remove the `.no-scrollbar` block from global.css. |
+| `.no-scrollbar` | `scrollbar-hide` | **Done:** all usages now use `scrollbar-hide`; `.no-scrollbar` block removed from global.css. |
 | `.input-wrapper` (layout only) | `inline-block relative` | If you only need positioning, use these utilities. Keep the class if it’s used for JS selectors or more complex styling. |
 
 ### Theme/plugin candidates (need Tailwind config)
@@ -136,14 +136,14 @@ The rest of `main.css` (buttons, inputs, accordion, toast, gallery, video, etc.)
 
 ## 4. Summary – quick wins
 
-1. **Replace `no-scrollbar` with `scrollbar-hide`** everywhere (see grep list below) and delete the `.no-scrollbar` block from `global.css`. The plugin in `tailwind.config.mjs` already provides the same behavior.
-2. **Remove `.bg-transparent`** from `global.css` and use Tailwind’s `bg-transparent` where needed.
+1. ~~**Replace `no-scrollbar` with `scrollbar-hide`**~~ **Done.**
+2. ~~**Remove `.bg-transparent`** from `global.css`~~ **Done.** (Markup already uses Tailwind’s `bg-transparent` where needed.)
 3. **Booth:** When touching booth UI, prefer Tailwind utilities (e.g. `flex flex-col`, `items-center`, `justify-between`, `relative`, `absolute inset-0`, `cursor-pointer`, `uppercase`, `w-full`, `hidden`, `z-10`, etc.) instead of the custom classes in `main.css`. You can then remove those rules from `main.css` over time.
 4. **Semantic colors:** If you want one system, extend the Tailwind theme with the same CSS variables used in `colors.css` and use Tailwind classes instead of `.bg-global`, `.text-global-primary`, etc.
 
 ---
 
-## 5. Files using `no-scrollbar` (for swap to `scrollbar-hide`)
+## 5. Files using `no-scrollbar` (for swap to `scrollbar-hide`) — DONE
 
 - `src/components/ui/App.astro`
 - `src/components/ui/Aside.astro`
