@@ -54,8 +54,8 @@ const {
 
 // Coerce for shortcode (props come as strings)
 const autoplay = Math.max(0, parseInt(String(props.autoplay ?? 0), 10) || 0);
-const showNav = showNavProp === "false" ? false : !!showNavProp;
-const showPagination = showPaginationProp === "false" ? false : !!showPaginationProp;
+const showNav = showNavProp === false || String(showNavProp).toLowerCase() === "false" ? false : !!showNavProp;
+const showPagination = showPaginationProp === false || String(showPaginationProp).toLowerCase() === "false" ? false : !!showPaginationProp;
 
 // Normalize slides: accept array, JSON string (from CMS), or single slide object
 function normalizeSlides(input: SlideData[] | string | SlideData | undefined): SlideData[] {
@@ -102,6 +102,9 @@ if (slides.length === 0) {
 <div
   id={id}
   class={`fullscreen-slideshow relative h-screen w-full overflow-hidden ${className}`}
+  data-autoplay-ms={autoplay}
+  data-show-nav={showNav}
+  data-show-pagination={showPagination}
 >
   <div class="swiper swiper-fullscreen h-full w-full">
     <div class="swiper-wrapper">
@@ -153,49 +156,17 @@ if (slides.length === 0) {
   </div>
 </div>
 
-<script define:vars={{ slideshowId: id, autoplayMs: autoplay, showNav: showNav, showPagination: showPagination }}>
-  (async () => {
-    const { default: Swiper } = await import("swiper");
-    const { Navigation, Pagination, Autoplay } = await import("swiper/modules");
-
-    const root = document.getElementById(slideshowId);
-    if (!root) return;
-
-    const swiperEl = root.querySelector(".swiper-fullscreen");
-    if (!swiperEl) return;
-
-    const modules = [];
-    if (showNav) modules.push(Navigation);
-    if (showPagination) modules.push(Pagination);
-    if (autoplayMs > 0) modules.push(Autoplay);
-
-    new Swiper(swiperEl, {
-    modules,
-    loop: true,
-    grabCursor: true,
-    speed: 600,
-    ...(autoplayMs > 0
-      ? { autoplay: { delay: autoplayMs, disableOnInteraction: false } }
-      : {}),
-    ...(showPagination
-      ? {
-          pagination: {
-            el: swiperEl.querySelector(".swiper-pagination-fullscreen"),
-            clickable: true,
-          },
-        }
-      : {}),
-    ...(showNav
-      ? {
-          navigation: {
-            nextEl: swiperEl.querySelector(".swiper-button-next"),
-            prevEl: swiperEl.querySelector(".swiper-button-prev"),
-          },
-        }
-      : {}),
-    keyboard: { enabled: true },
-  });
-  })();
+<script>
+  import { initFullScreenSlideshows } from "../../scripts/fullscreen-slideshow-init";
+  function run() {
+    requestAnimationFrame(() => initFullScreenSlideshows());
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", run);
+  } else {
+    run();
+  }
+  document.addEventListener("astro:page-load", run);
 </script>
 
 <style is:global>
