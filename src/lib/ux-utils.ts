@@ -326,8 +326,9 @@ export function immediateSafariViewportFix(): void {
   const forceImmediatePositioning = () => {
     console.log("🚀 [UX-UTILS] IMMEDIATE positioning fix");
 
-    // Fix header immediately if it exists
-    const header = document.querySelector("header");
+    // Fix header/navbar immediately if it exists (layout uses #main-navbar as top bar)
+    const header =
+      document.querySelector("header") || document.getElementById("main-navbar");
     if (header) {
       header.style.cssText = `
         position: sticky !important;
@@ -413,7 +414,8 @@ export function setupViewportHandling(): void {
     }
 
     // Disable sticky positioning on Safari 18+ (including final release)
-    const header = document.querySelector("header");
+    const header =
+      document.querySelector("header") || document.getElementById("main-navbar");
     if (header) {
       header.style.setProperty("position", "relative", "important");
       header.style.setProperty("top", "0", "important");
@@ -486,8 +488,9 @@ export function setupViewportHandling(): void {
       }
     }
 
-    // NUCLEAR HEADER FIX - Override everything
-    const header = document.querySelector("header");
+    // NUCLEAR HEADER FIX - Override everything (layout may use #main-navbar as top bar)
+    const header =
+      document.querySelector("header") || document.getElementById("main-navbar");
     if (header) {
       console.log("🚨 [UX-UTILS] NUCLEAR HEADER FIX - Forcing header position");
 
