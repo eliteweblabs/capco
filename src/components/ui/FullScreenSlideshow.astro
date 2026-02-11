@@ -107,11 +107,11 @@ if (slides.length === 0) {
     <div class="swiper-wrapper">
       {slides.map((slide, i) => (
         <div class="swiper-slide">
-          <div class="relative h-full w-full">
+          <div class="relative flex h-full w-full items-center justify-center bg-black">
             <img
               src={slide.src}
               alt={slide.alt}
-              class="h-full w-full object-cover"
+              class="h-full w-full object-contain"
               loading={i === 0 ? "eager" : "lazy"}
               fetchpriority={i === 0 ? "high" : undefined}
             />
@@ -154,21 +154,22 @@ if (slides.length === 0) {
 </div>
 
 <script define:vars={{ slideshowId: id, autoplayMs: autoplay, showNav: showNav, showPagination: showPagination }}>
-  import Swiper from "swiper";
-  import { Navigation, Pagination, Autoplay } from "swiper/modules";
+  (async () => {
+    const { default: Swiper } = await import("swiper");
+    const { Navigation, Pagination, Autoplay } = await import("swiper/modules");
 
-  const root = document.getElementById(slideshowId);
-  if (!root) throw new Error("FullScreenSlideshow: root element not found");
+    const root = document.getElementById(slideshowId);
+    if (!root) return;
 
-  const swiperEl = root.querySelector(".swiper-fullscreen");
-  if (!swiperEl) throw new Error("FullScreenSlideshow: swiper element not found");
+    const swiperEl = root.querySelector(".swiper-fullscreen");
+    if (!swiperEl) return;
 
-  const modules = [];
-  if (showNav) modules.push(Navigation);
-  if (showPagination) modules.push(Pagination);
-  if (autoplayMs > 0) modules.push(Autoplay);
+    const modules = [];
+    if (showNav) modules.push(Navigation);
+    if (showPagination) modules.push(Pagination);
+    if (autoplayMs > 0) modules.push(Autoplay);
 
-  new Swiper(swiperEl, {
+    new Swiper(swiperEl, {
     modules,
     loop: true,
     grabCursor: true,
@@ -194,6 +195,7 @@ if (slides.length === 0) {
       : {}),
     keyboard: { enabled: true },
   });
+  })();
 </script>
 
 <style is:global>
