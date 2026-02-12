@@ -62,7 +62,7 @@ const {
   searchPlaceholder = "Search...",
   searchDataAttribute = "data-file-name",
   globalInputClasses = "rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-gray-900 dark:text-white focus:border-primary-500 focus:ring-primary-500",
-  containerClasses = "flex items-center justify-center py-4 md:py-8 flex-wrap gap-3",
+  containerClasses = "flex items-center justify-start py-4 md:py-8 flex-wrap gap-3",
   noResultsId = "no-results",
   itemsContainer,
 } = Astro.props;
@@ -90,7 +90,7 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
   <!-- Button-style Filters (same styles as form toggle buttons) -->
   {
     hasButtonFilters && (
-      <div class="mb-4 flex flex-wrap gap-2">
+      <div class="mb-4 flex flex-wrap justify-start gap-2">
         {filters.map((filter, index) => (
           <button
             type="button"
@@ -461,6 +461,31 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
       return val && String(val).toLowerCase().includes("all");
     }
 
+    // Helper: sync "All" button with other filter states
+    function syncAllButtonState() {
+      const allBtn = Array.from(filterButtons).find((btn) => isAllFilter(btn.getAttribute("data-filter")));
+      if (!allBtn) return;
+      const allValue = allBtn.getAttribute("data-filter");
+      const allBadge = allBtn.querySelector(".filter-badge");
+      const nonAllFilters = Array.from(filterButtons)
+        .map((btn) => btn.getAttribute("data-filter"))
+        .filter((v) => v && !isAllFilter(v));
+      const allNonAllSelected = nonAllFilters.length > 0 && nonAllFilters.every((f) => selectedButtonFilters.has(f));
+      const allCurrentlySelected = selectedButtonFilters.has(allValue);
+
+      if (allNonAllSelected && !allCurrentlySelected) {
+        selectedButtonFilters.add(allValue);
+        allBtn.classList.remove("deselected");
+        allBtn.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+        if (allBadge) allBadge.classList.remove("hidden");
+      } else if (!allNonAllSelected && allCurrentlySelected) {
+        selectedButtonFilters.delete(allValue);
+        allBtn.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+        allBtn.classList.add("deselected");
+        if (allBadge) allBadge.classList.add("hidden");
+      }
+    }
+
     // Button filter event listeners
     filterButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -501,11 +526,13 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
               button.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
               button.classList.add("deselected");
               if (badge) badge.classList.add("hidden");
+              syncAllButtonState();
             } else {
               selectedButtonFilters.add(filterValue);
               button.classList.remove("deselected");
               button.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
               if (badge) badge.classList.remove("hidden");
+              syncAllButtonState();
             }
           }
         } else {
