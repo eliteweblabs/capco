@@ -63,11 +63,11 @@ const filteredItems = items.filter((item) => {
   data-url-param={urlParam || ""}
   data-switch-handler={switchHandler}
 >
-  <!-- Sliding tabs indicator background -->
+  <!-- Sliding tabs indicator background (data attr avoids duplicate IDs when multiple SlidingTabs on page) -->
   <div
-    id="nav-tabs-indicator"
+    data-sliding-tabs-indicator
     class={`color-background absolute shadow-lg transition-all duration-300 ease-out bottom-0 left-0 ${
-      compact ? "h-10 translate-y-0.5" : "h-12 translate-y-1"
+      compact ? "h-10" : "h-12"
     }`}
     style="width: 0px;"
   >
@@ -113,8 +113,7 @@ const filteredItems = items.filter((item) => {
     const nav = document.getElementById(navId);
     if (!nav) return;
 
-    const tabsIndicator =
-      nav.querySelector('[id$="-tabs-indicator"]') || nav.querySelector("#nav-tabs-indicator");
+    const tabsIndicator = nav.querySelector("[data-sliding-tabs-indicator]");
     const buttons = nav.querySelectorAll("button[data-index], button[id], a[data-index], a[id]");
 
     // Update active button data attributes only (styling handled by parent component)
@@ -246,15 +245,16 @@ const filteredItems = items.filter((item) => {
 
   // Initialize function that can be called immediately or on DOMContentLoaded
   function initializeAllSlidingTabs() {
-    // Initialize any sliding tabs found on the page
-    const slidingTabsNavs = document.querySelectorAll('[class*="sliding-tabs"], [id*="nav"]');
-    slidingTabsNavs.forEach((nav) => {
-      if (nav.id) {
-        initializeSlidingTabs(nav.id);
-      }
-    });
+    const initialized = new Set<string>();
 
-    // Also initialize common nav IDs
+    function initIfNeeded(navId: string) {
+      if (navId && !initialized.has(navId) && document.getElementById(navId)) {
+        initialized.add(navId);
+        initializeSlidingTabs(navId);
+      }
+    }
+
+    // Collect nav IDs: from navs with data-sliding-tabs-indicator (SlidingTabs instances) or common IDs
     const commonNavIds = [
       "project-nav",
       "tab-nav",
@@ -265,11 +265,13 @@ const filteredItems = items.filter((item) => {
       "project-form-tabs",
       "default-tab",
     ];
-    commonNavIds.forEach((navId) => {
-      if (document.getElementById(navId)) {
-        initializeSlidingTabs(navId);
-      }
+
+    document.querySelectorAll("nav [data-sliding-tabs-indicator]").forEach((indicator) => {
+      const nav = indicator.closest("nav");
+      if (nav?.id) initIfNeeded(nav.id);
     });
+
+    commonNavIds.forEach(initIfNeeded);
   }
 
   // Initialize immediately if DOM is ready, otherwise wait for DOMContentLoaded

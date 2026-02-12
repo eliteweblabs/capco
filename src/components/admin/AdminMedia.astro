@@ -7,16 +7,17 @@ import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
 import GridFilter from "../../features/grid-filter/GridFilter.astro";
-import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 
 export interface Props {
   currentUser: any;
   supabase: any;
   globalInputClasses?: string;
+  /** "masonry" = varied tile sizes; "columns" = uniform grid (strict column order) */
+  gridLayout?: "masonry" | "columns";
 }
 
-const { currentUser, supabase, globalInputClasses = "" } = Astro.props;
+const { currentUser, supabase, globalInputClasses = "", gridLayout = "masonry" } = Astro.props;
 
 // Fetch media files from database
 let projectFiles: any[] = [];
@@ -500,12 +501,19 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
     </div>
   </div>
 
-  <!-- Actions Bar -->
-  <div class="flex flex-wrap gap-3 mb-6 items-center">
+  <!-- Actions Bar + Layout toggle -->
+  <div class="flex flex-wrap gap-3 mb-4 items-center">
     <Button id="upload-btn" variant="primary" icon="upload">
       Upload File
     </Button>
     <input type="file" id="file-input" class="hidden" multiple accept="image/*,image/webp,image/avif,image/svg+xml,application/pdf,.doc,.docx,.xls,.xlsx" />
+    <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+      <span>Layout:</span>
+      <select id="layout-toggle" class={globalInputClasses + " w-auto min-w-[120px]"} title="Grid layout">
+        <option value="masonry" selected={gridLayout === "masonry"}>Masonry</option>
+        <option value="columns" selected={gridLayout === "columns"}>Columns</option>
+      </select>
+    </label>
   </div>
 
   <!-- Filter Component with Multi-Select -->
@@ -549,8 +557,8 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
     </div>
   )}
 
-  <!-- Files Masonry Grid (8 columns on XL) -->
-  <div id="files-grid" class="masonry-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 auto-rows-[150px]">
+  <!-- Files Grid: masonry (varied tiles) or columns (uniform) -->
+  <div id="files-grid" class={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 auto-rows-[150px] ${gridLayout === "masonry" ? "masonry-grid" : "uniform-grid"}`} data-grid-layout={gridLayout}>
     {allFiles.length === 0 ? (
       <div class="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
         <SimpleIcon name="folder-open" class="w-16 h-16 mx-auto mb-4 opacity-50" />
@@ -559,18 +567,11 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
       </div>
     ) : (
       allFiles.map((file: any, index: number) => {
-        // Create varied grid sizes for masonry effect
         const sizes = [
-          { col: 1, row: 1 }, // 1x1 square
-          { col: 1, row: 2 }, // 1x2 tall
-          { col: 1, row: 4 }, // 1x4 very tall
-          { col: 2, row: 1 }, // 2x1 wide
-          { col: 3, row: 1 }, // 3x1 extra wide
-          { col: 2, row: 2 }, // 2x2 large square
-          { col: 1, row: 3 }, // 1x3 tall
-          { col: 2, row: 3 }, // 2x3 large tall
+          { col: 1, row: 1 }, { col: 1, row: 2 }, { col: 1, row: 4 }, { col: 2, row: 1 },
+          { col: 3, row: 1 }, { col: 2, row: 2 }, { col: 1, row: 3 }, { col: 2, row: 3 },
         ];
-        const sizePattern = sizes[index % sizes.length];
+        const sizePattern = gridLayout === "columns" ? { col: 1, row: 1 } : sizes[index % sizes.length];
         const colSpan = `col-span-${sizePattern.col}`;
         const rowSpan = `row-span-${sizePattern.row}`;
         
@@ -703,6 +704,12 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
     transition: grid-template-rows 0.2s ease;
   }
 
+  /* Uniform columns layout: strict row order, all tiles same size */
+  .uniform-grid {
+    display: grid;
+    grid-auto-flow: row;
+  }
+
   /* Define all possible span combinations */
   .col-span-1 { grid-column: span 1; }
   .col-span-2 { grid-column: span 2; }
@@ -714,9 +721,10 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
   .row-span-3 { grid-row: span 3; }
   .row-span-4 { grid-row: span 4; }
 
-  /* Responsive adjustments */
+  /* Responsive adjustments (masonry and uniform) */
   @media (max-width: 640px) {
-    .masonry-grid {
+    .masonry-grid,
+    .uniform-grid {
       grid-template-columns: repeat(2, 1fr) !important;
     }
     .file-card {
@@ -726,21 +734,24 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
   }
 
   @media (min-width: 641px) and (max-width: 768px) {
-    .masonry-grid {
+    .masonry-grid,
+    .uniform-grid {
       grid-template-columns: repeat(3, 1fr) !important;
     }
     .col-span-4 { grid-column: span 3 !important; }
   }
 
   @media (min-width: 769px) and (max-width: 1024px) {
-    .masonry-grid {
+    .masonry-grid,
+    .uniform-grid {
       grid-template-columns: repeat(4, 1fr) !important;
     }
     .col-span-4 { grid-column: span 4 !important; }
   }
 
   @media (min-width: 1025px) and (max-width: 1280px) {
-    .masonry-grid {
+    .masonry-grid,
+    .uniform-grid {
       grid-template-columns: repeat(6, 1fr) !important;
     }
     .col-span-4 { grid-column: span 3 !important; }
@@ -843,7 +854,8 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
       file: { id: number; fileName: string; filePath: string; fileType?: string; fileSize?: number; publicUrl?: string },
       index: number
     ): HTMLElement {
-      const size = sizes[index % sizes.length];
+      const layout = (filesGrid as HTMLElement)?.dataset?.gridLayout || "masonry";
+      const size = layout === "columns" ? { col: 1, row: 1 } : sizes[index % sizes.length];
       const colSpan = `col-span-${size.col}`;
       const rowSpan = `row-span-${size.row}`;
       const isImage = (file.fileType?.startsWith("image/") || /\.(webp|avif|svg|png|jpg|jpeg|gif)$/i.test(file.fileName || ""));
@@ -940,6 +952,28 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
         setTimeout(() => filesGrid.classList.remove("masonry-recalculate"), 50);
       });
     }
+
+    function applyLayout(layout: "masonry" | "columns") {
+      if (!filesGrid) return;
+      const grid = filesGrid as HTMLElement;
+      grid.dataset.gridLayout = layout;
+      grid.classList.remove("masonry-grid", "uniform-grid");
+      grid.classList.add(layout === "masonry" ? "masonry-grid" : "uniform-grid");
+      const cards = filesGrid.querySelectorAll(".file-card");
+      const spanClasses = ["col-span-1", "col-span-2", "col-span-3", "col-span-4", "row-span-1", "row-span-2", "row-span-3", "row-span-4"];
+      cards.forEach((card, index) => {
+        spanClasses.forEach((c) => card.classList.remove(c));
+        const size = layout === "columns" ? { col: 1, row: 1 } : sizes[index % sizes.length];
+        card.classList.add(`col-span-${size.col}`, `row-span-${size.row}`);
+      });
+      if (layout === "masonry") triggerMasonryRecalc();
+    }
+
+    const layoutToggle = document.getElementById("layout-toggle") as HTMLSelectElement;
+    layoutToggle?.addEventListener("change", () => {
+      const value = layoutToggle.value as "masonry" | "columns";
+      applyLayout(value);
+    });
 
     fileInput?.addEventListener("change", async () => {
       const files = fileInput.files;

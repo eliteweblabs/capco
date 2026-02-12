@@ -356,11 +356,10 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Auto-focus when panel is done. On touch use 0ms so focus runs in same gesture as tap (keypad may open).
+    // Auto-focus when panel is done. Use 4s delay after animations so mobile keypad reliably opens.
     const hasTypewriter = targetStep.classList.contains("has-typewriter");
     if (!hasTypewriter) {
-      const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
-      const focusDelayMs = isTouch ? 0 : 400;
+      const focusDelayMs = 4000;
       setTimeout(() => {
         const formEl = document.getElementById(formId) as HTMLFormElement;
         const cursorFraction = 0.4;
@@ -1141,13 +1140,6 @@ export function createMultiStepFormHandler(
           smsInput.value = smsValue || "false";
         }
 
-        if ("ontouchstart" in window) {
-          const targetStep = form.querySelector(
-            `.step-content[data-step="${nextStep}"]`
-          ) as HTMLElement;
-          if (targetStep && typeof (window as any).focusFirstInputIn === "function")
-            (window as any).focusFirstInputIn(targetStep);
-        }
         await showStep(nextStep);
         return;
       }
@@ -1196,13 +1188,6 @@ export function createMultiStepFormHandler(
 
         (nextBtn as HTMLButtonElement).disabled = true;
 
-        if ("ontouchstart" in window) {
-          const targetStep = form.querySelector(
-            `.step-content[data-step="${nextStep}"]`
-          ) as HTMLElement;
-          if (targetStep && typeof (window as any).focusFirstInputIn === "function")
-            (window as any).focusFirstInputIn(targetStep);
-        }
         try {
           if (await validateStep(currentStep)) {
             await showStep(nextStep);
@@ -1249,13 +1234,6 @@ export function createMultiStepFormHandler(
           console.log("[MULTISTEP-CLICK-DEBUG] form click → skip button, will showStep");
         e.preventDefault();
         const nextStep = parseInt(skipBtn.getAttribute("data-next") || "1");
-        if ("ontouchstart" in window) {
-          const targetStep = form.querySelector(
-            `.step-content[data-step="${nextStep}"]`
-          ) as HTMLElement;
-          if (targetStep && typeof (window as any).focusFirstInputIn === "function")
-            (window as any).focusFirstInputIn(targetStep);
-        }
         await showStep(nextStep);
       }
 

@@ -47,7 +47,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   data-dynamic-height="true"
   data-multi-step-form
   tabindex="-1"
-  class="flex w-full min-w-96 flex-col items-start justify-center"
+  class="flex w-full flex-col items-start justify-center"
 >
   <form
     id={config.formId}
@@ -58,7 +58,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   >
     <div
       class:list={[
-        "multi-step-form-steps relative p-4 scrollbar-hide sm:p-6 md:p-8 lg:p-10",
+        "multi-step-form-steps relative min-w-96 p-4 scrollbar-hide sm:p-6 md:p-8 lg:p-10",
         initialCentered ? "centered" : "expand-down",
         containerClass,
       ]}
@@ -981,7 +981,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           runPanelBottomLoopRef?.(panelLoopDurationMs);
         }
 
-        // Run focus + keypad when cascade animation completes (last element's transitionend), with setTimeout fallback
+        // Run focus + keypad 4s after cascade animation completes so mobile keypad reliably opens
+        const FOCUS_DELAY_AFTER_ANIMATIONS_MS = 4000;
         let focusKeypadDone = false;
         const runFocusAndKeypad = () => {
           if (focusKeypadDone) return;
@@ -993,19 +994,21 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             (window as any).openKeypad(stepContent);
           }
         };
+        const scheduleFocusAfterAnimations = () =>
+          setTimeout(runFocusAndKeypad, FOCUS_DELAY_AFTER_ANIMATIONS_MS);
 
         if (elements.length > 0) {
           const lastEl = elements[elements.length - 1];
           const onCascadeEnd = (e: TransitionEvent) => {
             if (e.target !== lastEl || e.propertyName !== "opacity") return;
             lastEl.removeEventListener("transitionend", onCascadeEnd as EventListener);
-            runFocusAndKeypad();
+            scheduleFocusAfterAnimations();
           };
           lastEl.addEventListener("transitionend", onCascadeEnd as EventListener);
           const fallbackMs = cascadeEndMs + 200;
-          setTimeout(runFocusAndKeypad, fallbackMs);
+          setTimeout(scheduleFocusAfterAnimations, fallbackMs);
         } else {
-          setTimeout(runFocusAndKeypad, OPACITY_DURATION_MS + 100);
+          setTimeout(scheduleFocusAfterAnimations, OPACITY_DURATION_MS + 100);
         }
       }
     });

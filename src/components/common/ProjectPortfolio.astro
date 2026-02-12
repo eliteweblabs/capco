@@ -85,7 +85,7 @@ try {
 
           return {
             id: project.id,
-            title: project.title,
+            title: project.title || project.address,
             address: project.address,
             description: project.description,
             squareFootage: project.sqFt,
@@ -132,6 +132,16 @@ function formatDate(dateString: string | null | undefined): string {
 
 // Get unique categories for filtering
 const categories = ["All Projects", "New Construction", "Renovation"];
+
+export type GridLayout = "masonry" | 2 | 3 | 4 | 6;
+interface Props {
+  /** Grid layout: masonry (varied sizes) or 2/3/4/6 columns (uniform). Use columns for few images. */
+  gridLayout?: GridLayout;
+  /** When false, GridFilter will not run masonry recalc after filtering. Defaults to true when gridLayout is "masonry", false otherwise. */
+  masonry?: boolean;
+}
+const { gridLayout = "masonry", masonry: masonryProp } = Astro.props;
+const masonry = masonryProp ?? (gridLayout === "masonry");
 ---
 
 <div class="mx-auto max-w-7xl">
@@ -170,32 +180,37 @@ const categories = ["All Projects", "New Construction", "Renovation"];
       </div>
     ) : (
       <div class="projects-container">
-        <!-- Filter Component with Multi-Select -->
+        {/* <!-- Filter Component with Multi-Select --> */}
         <GridFilter
           filters={categories}
           itemSelector=".project-item"
           dataAttribute="data-category"
           multiSelect={true}
-          itemsContainer=".projects-container"
+          masonry={masonry}
         />
 
-        <!-- Projects Masonry Grid (8 columns on large screens) -->
-        <div id="projects-grid" class="masonry-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 auto-rows-[200px]">
+        {/* <!-- Projects Grid (masonry or uniform columns) --> */}
+        <div
+          id="projects-grid"
+          class:list={[
+            "grid gap-3 auto-rows-[200px]",
+            gridLayout === "masonry" && "masonry-grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8",
+            gridLayout === 2 && "projects-grid grid-cols-1 sm:grid-cols-2",
+            gridLayout === 3 && "projects-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+            gridLayout === 4 && "projects-grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
+            gridLayout === 6 && "projects-grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6",
+          ]}
+        >
           {featuredProjects.map((project, index) => {
-            // Create varied grid sizes for masonry effect
+            const isMasonry = gridLayout === "masonry";
             const sizes = [
-              { col: 1, row: 1 }, // 1x1
-              { col: 1, row: 2 }, // 1x2 (tall)
-              { col: 1, row: 4 }, // 1x4 (very tall)
-              { col: 2, row: 1 }, // 2x1 (wide)
-              { col: 3, row: 1 }, // 3x1 (extra wide)
-              { col: 2, row: 2 }, // 2x2 (large square)
-              { col: 2, row: 3 }, // 2x3 (large tall)
-              { col: 4, row: 2 }, // 4x2 (panoramic)
+              { col: 1, row: 1 }, { col: 1, row: 2 }, { col: 1, row: 4 },
+              { col: 2, row: 1 }, { col: 3, row: 1 }, { col: 2, row: 2 },
+              { col: 2, row: 3 }, { col: 4, row: 2 },
             ];
             const sizePattern = sizes[index % sizes.length];
-            const colSpan = `col-span-${sizePattern.col}`;
-            const rowSpan = `row-span-${sizePattern.row}`;
+            const colSpan = isMasonry ? `col-span-${sizePattern.col}` : "col-span-1";
+            const rowSpan = isMasonry ? `row-span-${sizePattern.row}` : "row-span-1";
             
             return (
             <div
