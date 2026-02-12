@@ -7,6 +7,7 @@
 import { checkAuth } from "../../lib/auth";
 import App from "../../components/ui/App.astro";
 import Button from "../../components/common/Button.astro";
+import SlidingTabs from "../../components/common/SlidingTabs.astro";
 import UnitSlider from "../../components/form/UnitSlider.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
@@ -27,6 +28,13 @@ if (currentRole !== "Admin") {
 
 const companyData = await globalCompanyData();
 const { globalInputClasses } = globalClasses();
+
+// Tab state from URL for server-side active index
+const settingsTabParam = Astro.url.searchParams.get("tab") || "defaults";
+const validSettingsTabs = ["defaults", "punchlist", "discussion"];
+const settingsActiveTab =
+  validSettingsTabs.includes(settingsTabParam) ? settingsTabParam : "defaults";
+const settingsActiveTabIndex = validSettingsTabs.indexOf(settingsActiveTab);
 
 // Fetch initial default due date hours from globalSettings (server-side)
 let initialDefaultDueDateHours = 72;
@@ -72,34 +80,26 @@ if (supabaseAdmin) {
     </div>
 
     <!-- Tab Navigation -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex space-x-8">
-        <button
-          id="tab-defaults"
-          class="tab-button border-b-2 border-primary-500 px-1 py-4 text-sm font-medium text-primary-600 dark:text-primary-400"
-          data-tab="defaults"
-        >
-          Defaults
-        </button>
-        <button
-          id="tab-punchlist"
-          class="tab-button border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          data-tab="punchlist"
-        >
-          Punchlist Templates
-        </button>
-        <button
-          id="tab-discussion"
-          class="tab-button border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          data-tab="discussion"
-        >
-          Discussion Templates
-        </button>
-      </nav>
+    <div class="mb-6">
+      <SlidingTabs
+        navId="settings-tab-nav"
+        navClass="border-b border-gray-200 dark:border-gray-700"
+        activeItem={settingsActiveTabIndex}
+        urlParam="tab"
+        switchHandler="switchSettingsTab"
+        items={[
+          { id: "tab-defaults", label: "Defaults", variant: "tab", showLabel: true, onclick: "window.switchSettingsTab('defaults')" },
+          { id: "tab-punchlist", label: "Punchlist Templates", variant: "tab", showLabel: true, onclick: "window.switchSettingsTab('punchlist')" },
+          { id: "tab-discussion", label: "Discussion Templates", variant: "tab", showLabel: true, onclick: "window.switchSettingsTab('discussion')" },
+        ]}
+      />
     </div>
 
     <!-- Defaults Section -->
-    <div id="section-defaults" class="template-section">
+    <div
+      id="section-defaults"
+      class={`template-section ${settingsActiveTab !== "defaults" ? "hidden" : ""}`}
+    >
       <div class="mb-4">
         <h2 class="text-xl font-semibold">Default Settings</h2>
       </div>
@@ -131,7 +131,10 @@ if (supabaseAdmin) {
     </div>
 
     <!-- Punchlist Templates Section -->
-    <div id="section-punchlist" class="template-section hidden">
+    <div
+      id="section-punchlist"
+      class={`template-section ${settingsActiveTab !== "punchlist" ? "hidden" : ""}`}
+    >
       <div class="mb-4 flex items-center justify-between">
         <h2 class="text-xl font-semibold">Punchlist Templates</h2>
         <Button id="add-punchlist-btn" type="button" variant="primary">
@@ -151,7 +154,10 @@ if (supabaseAdmin) {
     </div>
 
     <!-- Discussion Templates Section -->
-    <div id="section-discussion" class="template-section hidden">
+    <div
+      id="section-discussion"
+      class={`template-section ${settingsActiveTab !== "discussion" ? "hidden" : ""}`}
+    >
       <div class="mb-4 flex items-center justify-between">
         <h2 class="text-xl font-semibold">Discussion Templates</h2>
         <Button id="add-discussion-btn" type="button" variant="primary">
@@ -293,6 +299,7 @@ if (supabaseAdmin) {
 
   <script>
     // State
+    const validSettingsTabs = ["defaults", "punchlist", "discussion"];
     let currentTab = "defaults";
     let templates: any = { punchlist: [], discussion: [] };
 
@@ -308,14 +315,8 @@ if (supabaseAdmin) {
     });
 
     function setupEventListeners() {
-      // Tab switching
-      document.querySelectorAll(".tab-button").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          const target = e.currentTarget as HTMLElement;
-          const tab = target.dataset.tab || "defaults";
-          switchTab(tab);
-        });
-      });
+      // Tab switching via SlidingTabs onclick; expose switchSettingsTab for URL init
+      (window as any).switchSettingsTab = switchTab;
 
       // Defaults save (UnitSlider updates its own display)
       document
@@ -344,17 +345,10 @@ if (supabaseAdmin) {
     function switchTab(tab: string) {
       currentTab = tab;
 
-      // Update tab buttons
-      document.querySelectorAll(".tab-button").forEach((btn) => {
-        const btnTab = (btn as HTMLElement).dataset.tab;
-        if (btnTab === tab) {
-          btn.classList.remove("border-transparent", "text-gray-500");
-          btn.classList.add("border-primary-500", "text-primary-600", "dark:text-primary-400");
-        } else {
-          btn.classList.add("border-transparent", "text-gray-500");
-          btn.classList.remove("border-primary-500", "text-primary-600", "dark:text-primary-400");
-        }
-      });
+      // Update URL
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", url.toString());
 
       // Update sections
       document.querySelectorAll(".template-section").forEach((section) => {
@@ -652,10 +646,6 @@ if (supabaseAdmin) {
   </script>
 
   <style>
-    .tab-button {
-      box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.1);
-    }
-
     .line-clamp-2 {
       display: -webkit-box;
       -webkit-line-clamp: 2;

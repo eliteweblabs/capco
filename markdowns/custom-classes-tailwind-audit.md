@@ -150,7 +150,7 @@ The rest of `main.css` (buttons, inputs, accordion, toast, gallery, video, etc.)
 - `src/components/common/NotificationsModal.astro`
 - `src/components/form/MultiStepForm.astro`
 - `src/pages/api/global/global-classes.ts`
-- `src/components/common/SlidingPillNav.astro`
+- `src/components/common/SlidingTabs.astro`
 - `src/components/blocks/GalleryBlock.astro`
 - `src/pages/admin/settings.astro`
 - `src/scripts/inline-address-search.ts`

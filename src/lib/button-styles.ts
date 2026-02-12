@@ -80,7 +80,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
       "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
     anchor:
       "text-gray-800 dark:text-gray-200 [@media(hover:hover)]:hover:text-primary dark:[@media(hover:hover)]:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 [@media(hover:hover)]:hover:shadow-none opacity-100 transition-all duration-200",
-    tab: "tab-button pill-nav-item",
+    tab: "tab-button sliding-tabs-item",
   };
 
   // Focus classes with dashed outline

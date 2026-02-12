@@ -5,6 +5,7 @@ import App from "../../components/ui/App.astro";
 import Alert from "../../components/partials/Alert.astro";
 import Hero from "../../components/common/Hero.astro";
 import DeleteConfirmButton from "../../components/common/DeleteConfirmButton.astro";
+import SlidingTabs from "../../components/common/SlidingTabs.astro";
 
 import { globalCompanyData } from "../api/global/global-company-data";
 const {
@@ -61,6 +62,9 @@ const typeOptions = [
   { value: "error", label: "Error", color: "red" },
 ];
 
+// Tab from URL for initial active state
+const bannerTabParam = Astro.url.searchParams.get("tab") || "existing-banners";
+
 // Position options
 const positionOptions = [
   { value: "top", label: "Top" },
@@ -106,49 +110,39 @@ const expireOptions = [
   />
 
   <!-- Tabs: Existing Banner Alerts | New -->
-  <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-    <ul
-      class="-mb-px flex flex-wrap text-center text-sm font-medium"
-      id="banner-alerts-tabs"
-      data-tabs-toggle="#banner-alerts-tab-content"
-      role="tablist"
-    >
-      <li class="me-2" role="presentation">
-        <button
-          class="inline-block rounded-t-lg border-b-2 border-primary-600 p-4 text-primary-600 dark:border-primary-500 dark:text-primary-500"
-          id="existing-banners-tab"
-          data-tabs-target="#existing-banners"
-          type="button"
-          role="tab"
-          aria-controls="existing-banners"
-          aria-selected="true"
-        >
-          Existing Banner Alerts
-        </button>
-      </li>
-      <li role="presentation">
-        <button
-          class="inline-block rounded-t-lg border-b-2 border-transparent p-4 text-gray-500 hover:border-gray-300 hover:text-gray-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300"
-          id="new-banner-tab"
-          data-tabs-target="#new-banner"
-          type="button"
-          role="tab"
-          aria-controls="new-banner"
-          aria-selected="false"
-        >
-          New
-        </button>
-      </li>
-    </ul>
+  <div class="mb-6">
+    <SlidingTabs
+      navId="banner-alerts-tab-nav"
+      navClass="border-b border-gray-200 dark:border-gray-700"
+      activeItem={bannerTabParam === "new-banner" ? 1 : 0}
+      urlParam="tab"
+      switchHandler="switchBannerAlertsTab"
+      items={[
+        {
+          id: "tab-existing-banners",
+          label: "Existing Banner Alerts",
+          variant: "tab",
+          showLabel: true,
+          onclick: "window.switchBannerAlertsTab('existing-banners')",
+        },
+        {
+          id: "tab-new-banner",
+          label: "New",
+          variant: "tab",
+          showLabel: true,
+          onclick: "window.switchBannerAlertsTab('new-banner')",
+        },
+      ]}
+    />
   </div>
 
   <div id="banner-alerts-tab-content">
     <!-- Tab: Existing Banner Alerts -->
     <div
-      class="rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700"
+      class={`rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700 ${bannerTabParam === "new-banner" ? "hidden" : ""}`}
       id="existing-banners"
       role="tabpanel"
-      aria-labelledby="existing-banners-tab"
+      aria-labelledby="tab-existing-banners"
     >
       <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
         <h2 class="text-lg font-medium text-gray-900 dark:text-white">Existing Banner Alerts</h2>
@@ -265,10 +259,10 @@ const expireOptions = [
 
     <!-- Tab: New -->
     <div
-      class="hidden rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700"
+      class={`rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700 ${bannerTabParam !== "new-banner" ? "hidden" : ""}`}
       id="new-banner"
       role="tabpanel"
-      aria-labelledby="new-banner-tab"
+      aria-labelledby="tab-new-banner"
     >
       <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
         <h2 id="form-title" class="text-lg font-medium text-gray-900 dark:text-white">
@@ -507,6 +501,22 @@ const expireOptions = [
       bindFormEvents();
       bindListEvents();
       updatePreview();
+
+      window.switchBannerAlertsTab = function (tab) {
+        const existing = document.getElementById("existing-banners");
+        const newPanel = document.getElementById("new-banner");
+        if (!existing || !newPanel) return;
+        if (tab === "new-banner") {
+          existing.classList.add("hidden");
+          newPanel.classList.remove("hidden");
+        } else {
+          existing.classList.remove("hidden");
+          newPanel.classList.add("hidden");
+        }
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", tab);
+        window.history.replaceState({}, "", url.toString());
+      };
     }
 
     function bindFormEvents() {
@@ -702,8 +712,9 @@ const expireOptions = [
       updatePreview();
 
       // Switch to New tab so the form is visible
-      const newTab = document.getElementById("new-banner-tab");
-      if (newTab) newTab.click();
+      if (typeof window.switchBannerAlertsTab === "function") {
+        window.switchBannerAlertsTab("new-banner");
+      }
 
       // Scroll to form
       document.getElementById("banner-form").scrollIntoView({ behavior: "smooth" });

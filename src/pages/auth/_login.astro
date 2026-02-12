@@ -54,6 +54,7 @@ import Button from "../../components/common/Button.astro";
 import Footer from "../../components/ui/Footer.astro";
 import RegisterForm from "../../components/form/RegisterForm.astro";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
+import SlidingTabs from "../../components/common/SlidingTabs.astro";
 
 // Get auth data for conditional rendering
 ---
@@ -73,42 +74,22 @@ import SimpleIcon from "../../components/common/SimpleIcon.astro";
   {primaryTextClasses}
   {secondaryTextClasses}
 >
-  <!-- Tabs with Sliding Pill -->
-
   <div class="mx-auto grid max-w-7xl grid-cols-1 px-4 py-8 md:grid-cols-12 md:py-16 lg:gap-20">
     <div class="col-span-6 w-full">
       <div class="mx-auto max-w-2xl p-4 md:p-6">
         <div class="mb-8">
-          <div
-            id="auth-tabs"
-            class="b-gray-200 b-2 offset-2 relative flex rounded-full border-2 border-primary text-black transition-all duration-200"
-          >
-            <!-- Sliding pill background -->
-            <div
-              id="auth-pill-bg"
-              class="mix-blend-mode-multiply absolute top-0.5 h-14 rounded-full bg-primary-500 shadow-sm transition-all duration-300 ease-out dark:bg-primary-500"
-              style="width: 0px; left: 0px; opacity: 0;"
-            >
-            </div>
-            <Button
-              id="login-tab"
-              variant="anchor"
-              size="sm"
-              class="disabled"
-              onclick="switchAuthTab('login')"
-            >
-              Sign In
-            </Button>
-            <Button
-              id="register-tab"
-              variant="anchor"
-              size="sm"
-              class="disabled"
-              onclick="switchAuthTab('register')"
-            >
-              Create Account
-            </Button>
-          </div>
+          <SlidingTabs
+            navId="auth-tabs"
+            navClass="rounded-full border-2 border-primary text-black dark:text-white"
+            activeItem={activeTab === "register" ? 1 : 0}
+            urlParam="tab"
+            switchHandler="switchAuthTab"
+            compact={true}
+            items={[
+              { id: "tab-login", label: "Sign In", variant: "tab", showLabel: true, onclick: "window.switchAuthTab('login')" },
+              { id: "tab-register", label: "Create Account", variant: "tab", showLabel: true, onclick: "window.switchAuthTab('register')" },
+            ]}
+          />
         </div>
 
         <!-- Login Form -->
@@ -194,75 +175,23 @@ import SimpleIcon from "../../components/common/SimpleIcon.astro";
 </App>
 
 <script>
-  // Sliding pill functionality
-  function updateSlidingPill(activeButton: Element | null) {
-    const pillBg = document.getElementById("auth-pill-bg");
-    const tabContainer = document.getElementById("auth-tabs");
-
-    if (!pillBg || !activeButton || !tabContainer) return;
-
-    const containerRect = tabContainer.getBoundingClientRect();
-    const buttonRect = activeButton.getBoundingClientRect();
-
-    // Calculate position relative to the container
-    const left = buttonRect.left - containerRect.left;
-    const width = buttonRect.width;
-
-    // Update pill position and size
-    pillBg.style.left = `${left}px`;
-    pillBg.style.width = `${width}px`;
-    pillBg.style.opacity = "1";
-  }
-
-  // Global function for tab switching
+  // Global function for tab switching (SlidingTabs handles indicator; this handles form visibility + URL)
   (window as any).switchAuthTab = function (tab: "login" | "register") {
-    const loginTab = document.getElementById("login-tab");
-    const registerTab = document.getElementById("register-tab");
     const loginForm = document.getElementById("login-form");
     const registerForm = document.getElementById("register-form");
-
-    if (!loginTab || !registerTab || !loginForm || !registerForm) return;
+    if (!loginForm || !registerForm) return;
 
     if (tab === "login") {
-      // Show/hide forms
       loginForm.classList.remove("hidden");
       registerForm.classList.add("hidden");
-      loginTab.classList.add("disabled");
-      registerTab.classList.remove("disabled");
-
-      // Update button text colors - active gets white text, inactive gets primary text
-      loginTab.className =
-        "relative z-1 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none disabled text-white";
-      registerTab.className =
-        "relative z-1 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none disabled";
-      // Update sliding pill
-      updateSlidingPill(loginTab);
-
-      // Update URL without reload
-      const url = new URL(window.location.href);
-      url.searchParams.set("tab", "login");
-      window.history.replaceState({}, "", url.toString());
     } else {
-      // Show/hide forms
       loginForm.classList.add("hidden");
       registerForm.classList.remove("hidden");
-      loginTab.classList.add("disabled");
-      registerTab.classList.remove("disabled");
-      // Update button text colors - active gets white text, inactive gets primary text
-      registerTab.className =
-        "relative z-1 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none disabled text-white";
-      loginTab.className =
-        "relative z-1 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none disabled";
-      // Update sliding pill
-      updateSlidingPill(registerTab);
-
-      // Update URL without reload
-      const url = new URL(window.location.href);
-      url.searchParams.set("tab", "register");
-      window.history.replaceState({}, "", url.toString());
     }
 
-    console.log(`🔐 [LOGIN] Switched to ${tab} tab`);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", url.toString());
   };
 
   // Handle authentication tokens from URL hash (magic links, OAuth callbacks)
@@ -336,31 +265,12 @@ import SimpleIcon from "../../components/common/SimpleIcon.astro";
     }
   }
 
-  // Initialize tab state on page load (in case JavaScript executes before server-side rendering is complete)
   document.addEventListener("DOMContentLoaded", function () {
-    // Handle auth tokens
     handleAuthTokens();
-
     const urlParams = new URLSearchParams(window.location.search);
-    const activeTab = urlParams.get("tab") || "login";
-
-    if (activeTab === "register") {
+    const tab = urlParams.get("tab") || "login";
+    if (tab === "register") {
       (window as any).switchAuthTab("register");
-      console.log("🔐 [LOGIN] Auto-switched to register tab from URL parameter");
-    } else {
-      // Initialize pill position and text colors for login tab
-      setTimeout(() => {
-        const loginTab = document.getElementById("login-tab");
-        const registerTab = document.getElementById("register-tab");
-        if (loginTab && registerTab) {
-          // Set correct text colors for initial state
-          loginTab.className =
-            "relative z-10 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none text-white disabled";
-          registerTab.className =
-            "relative z-10 flex-1 rounded-full px-3 py-5 text-sm font-medium transition-colors focus:outline-none text-black dark:text-white disabled";
-          updateSlidingPill(loginTab);
-        }
-      }, 100);
     }
   });
 </script>

@@ -9,11 +9,12 @@ interface Props {
   title?: string | null;
   description?: string;
   class?: string;
+  variant?: "default" | "banner";
 }
 
-const { type = "info", title = null, description = "", class: className = "" } = Astro.props;
+const { type = "info", title = null, description = "", class: className = "", variant = "default" } = Astro.props;
 
-// Type configurations
+// Type configurations (default: light/dark adaptive)
 const typeConfig = {
   info: {
     icon: "info-circle",
@@ -45,7 +46,39 @@ const typeConfig = {
   },
 };
 
-const config = typeConfig[type] || typeConfig.info;
+// Banner variant: rich solid backgrounds, white text/icons always
+const bannerConfig = {
+  info: {
+    icon: "info-circle",
+    iconClass: "text-white",
+    bgClass: "bg-primary-700",
+    borderClass: "border-0",
+    textClass: "text-white",
+  },
+  success: {
+    icon: "check-circle",
+    iconClass: "text-white",
+    bgClass: "bg-green-600",
+    borderClass: "border-0",
+    textClass: "text-white",
+  },
+  warning: {
+    icon: "error",
+    iconClass: "text-white",
+    bgClass: "bg-orange-600",
+    borderClass: "border-0",
+    textClass: "text-white",
+  },
+  error: {
+    icon: "x-circle",
+    iconClass: "text-white",
+    bgClass: "bg-red-600",
+    borderClass: "border-0",
+    textClass: "text-white",
+  },
+};
+
+const config = variant === "banner" ? bannerConfig[type] || bannerConfig.info : typeConfig[type] || typeConfig.info;
 ---
 
 <div class={`w-100 p-2 ${config.bgClass} ${config.borderClass} ${className}`}>

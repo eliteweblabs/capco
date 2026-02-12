@@ -1,71 +1,37 @@
 ---
-// Demo/example component - Layout and Welcome components not available
-// import Welcome from "../components/Welcome.astro";
-// import Layout from "../layouts/Layout.astro";
+// Demo/example component - uses SlidingTabs for consistency
+import SlidingTabs from "../common/SlidingTabs.astro";
+
+const defaultTabParam = Astro.url.searchParams.get("tab") || "profile";
+const validTabs = ["profile", "dashboard", "settings", "contacts"];
+const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "profile";
+const activeTabIndex = validTabs.indexOf(activeTab);
 ---
 
 <div>
   <div class="mx-auto flex h-screen w-full max-w-xl items-center justify-center">
-    <div>
-      <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
-        <ul
-          class="-mb-px flex flex-wrap text-center text-sm font-medium"
-          id="default-tab"
-          data-tabs-toggle="#default-tab-content"
-          role="tablist"
-        >
-          <li class="me-2" role="presentation">
-            <button
-              class="inline-block rounded-t-lg border-b-2 p-4"
-              id="profile-tab"
-              data-tabs-target="#profile"
-              type="button"
-              role="tab"
-              aria-controls="profile"
-              aria-selected="false">Profile</button
-            >
-          </li>
-          <li class="me-2" role="presentation">
-            <button
-              class="inline-block rounded-t-lg border-b-2 p-4 hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300"
-              id="dashboard-tab"
-              data-tabs-target="#dashboard"
-              type="button"
-              role="tab"
-              aria-controls="dashboard"
-              aria-selected="false">Dashboard</button
-            >
-          </li>
-          <li class="me-2" role="presentation">
-            <button
-              class="inline-block rounded-t-lg border-b-2 p-4 hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300"
-              id="settings-tab"
-              data-tabs-target="#settings"
-              type="button"
-              role="tab"
-              aria-controls="settings"
-              aria-selected="false">Settings</button
-            >
-          </li>
-          <li role="presentation">
-            <button
-              class="inline-block rounded-t-lg border-b-2 p-4 hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300"
-              id="contacts-tab"
-              data-tabs-target="#contacts"
-              type="button"
-              role="tab"
-              aria-controls="contacts"
-              aria-selected="false">Contacts</button
-            >
-          </li>
-        </ul>
+    <div class="w-full">
+      <div class="mb-4">
+        <SlidingTabs
+          navId="default-tab"
+          navClass="border-b border-gray-200 dark:border-gray-700"
+          activeItem={activeTabIndex}
+          urlParam="tab"
+          switchHandler="switchDefaultTab"
+          items={[
+            { id: "tab-profile", label: "Profile", variant: "tab", showLabel: true, onclick: "window.switchDefaultTab('profile')" },
+            { id: "tab-dashboard", label: "Dashboard", variant: "tab", showLabel: true, onclick: "window.switchDefaultTab('dashboard')" },
+            { id: "tab-settings", label: "Settings", variant: "tab", showLabel: true, onclick: "window.switchDefaultTab('settings')" },
+            { id: "tab-contacts", label: "Contacts", variant: "tab", showLabel: true, onclick: "window.switchDefaultTab('contacts')" },
+          ]}
+        />
       </div>
       <div id="default-tab-content">
         <div
-          class="color-background hidden rounded-lg bg-gray-50 p-4"
+          class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${activeTab !== "profile" ? "hidden" : ""}`}
           id="profile"
           role="tabpanel"
-          aria-labelledby="profile-tab"
+          aria-labelledby="tab-profile"
         >
           <p class="text-sm text-gray-500 dark:text-gray-400">
             This is some placeholder content the <strong
@@ -76,10 +42,10 @@
           </p>
         </div>
         <div
-          class="color-background hidden rounded-lg bg-gray-50 p-4"
+          class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${activeTab !== "dashboard" ? "hidden" : ""}`}
           id="dashboard"
           role="tabpanel"
-          aria-labelledby="dashboard-tab"
+          aria-labelledby="tab-dashboard"
         >
           <p class="text-sm text-gray-500 dark:text-gray-400">
             This is some placeholder content the <strong
@@ -90,10 +56,10 @@
           </p>
         </div>
         <div
-          class="color-background hidden rounded-lg bg-gray-50 p-4"
+          class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${activeTab !== "settings" ? "hidden" : ""}`}
           id="settings"
           role="tabpanel"
-          aria-labelledby="settings-tab"
+          aria-labelledby="tab-settings"
         >
           <p class="text-sm text-gray-500 dark:text-gray-400">
             This is some placeholder content the <strong
@@ -104,10 +70,10 @@
           </p>
         </div>
         <div
-          class="color-background hidden rounded-lg bg-gray-50 p-4"
+          class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${activeTab !== "contacts" ? "hidden" : ""}`}
           id="contacts"
           role="tabpanel"
-          aria-labelledby="contacts-tab"
+          aria-labelledby="tab-contacts"
         >
           <p class="text-sm text-gray-500 dark:text-gray-400">
             This is some placeholder content the <strong
@@ -121,3 +87,15 @@
     </div>
   </div>
 </div>
+
+<script>
+  (window as any).switchDefaultTab = function (tab: string) {
+    ["profile", "dashboard", "settings", "contacts"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("hidden", id !== tab);
+    });
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", url.toString());
+  };
+</script>

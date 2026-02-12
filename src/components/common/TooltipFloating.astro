@@ -14,6 +14,8 @@ export interface Props {
   /** When false, tooltip is disabled on no-hover devices (e.g. touch-only). Default true. */
   touchable?: boolean;
   html?: boolean; // Whether to render text as HTML
+  /** When false, use flex instead of inline-flex (avoids nav/flex layout issues). Default true for backwards compat. */
+  inline?: boolean;
 }
 
 const {
@@ -27,10 +29,11 @@ const {
   mobileClickable = false,
   touchable = true,
   html = false,
+  inline = true,
 } = Astro.props;
 
 const wrapperClasses =
-  `tooltip-wrapper relative inline-flex items-center justify-center ${mobileClickable ? "mobile-clickable" : ""} ${className}`.trim();
+  `tooltip-wrapper relative ${inline ? "inline-flex" : "flex"} items-center ${mobileClickable ? "mobile-clickable" : ""} ${className}`.trim();
 // Flowbite-aligned: absolute z-10, rounded-base (rounded-lg), shadow-xs, transition-opacity duration-300
 const contentClasses = [
   "tooltip-content tooltip absolute z-10 inline-block",

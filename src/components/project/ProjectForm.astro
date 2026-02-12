@@ -12,6 +12,7 @@ import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
 import Button from "../common/Button.astro";
 import Dropzone from "../common/Dropzone.astro";
 import StickyActions from "./StickyActions.astro";
+import SlidingTabs from "../common/SlidingTabs.astro";
 
 interface Props {
   project?: any;
@@ -47,44 +48,31 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 <div id="project-form-container">
   {
     showPDFSelector ? (
-      <>
-        {/* Tabs for Admin/Staff */}
-        <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
-          <ul
-            class="flex flex-wrap -mb-px text-sm font-medium text-center"
-            id="project-form-tabs"
-            data-tabs-toggle="#project-form-tab-content"
-            role="tablist"
-          >
-            <li class="me-2" role="presentation">
-              <button
-                class="inline-block p-4 border-b-2 rounded-t-lg border-primary-600 text-primary-600"
-                id="form-tab"
-                data-tabs-target="#form-content"
-                type="button"
-                role="tab"
-                aria-controls="form-content"
-                aria-selected="true"
-              >
-                Project Form
-              </button>
-            </li>
-            <li class="me-2" role="presentation">
-              <button
-                class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 border-transparent text-gray-500 dark:text-gray-400"
-                id="pdf-tab"
-                data-tabs-target="#pdf-content"
-                type="button"
-                role="tab"
-                aria-controls="pdf-content"
-                aria-selected="false"
-              >
-                PDF Data Extractor
-              </button>
-            </li>
-          </ul>
-        </div>
-      </>
+      <div class="mb-4">
+        <SlidingTabs
+          navId="project-form-tabs"
+          navClass="border-b border-gray-200 dark:border-gray-700"
+          activeItem={0}
+          urlParam=""
+          switchHandler="switchProjectFormTab"
+          items={[
+            {
+              id: "form-content-tab",
+              label: "Project Form",
+              variant: "tab",
+              showLabel: true,
+              onclick: "window.switchProjectFormTab('form-content')",
+            },
+            {
+              id: "pdf-content-tab",
+              label: "PDF Data Extractor",
+              variant: "tab",
+              showLabel: true,
+              onclick: "window.switchProjectFormTab('pdf-content')",
+            },
+          ]}
+        />
+      </div>
     ) : null
   }
 
@@ -93,7 +81,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
       class={showPDFSelector ? "" : ""}
       id="form-content"
       role="tabpanel"
-      aria-labelledby="form-tab"
+      aria-labelledby="form-content-tab"
     >
       <div id="project-form-wrapper">
         <form
@@ -429,7 +417,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
     {/* PDF Tab Content (Admin/Staff only) */}
     {
       showPDFSelector && (
-        <div class="hidden" id="pdf-content" role="tabpanel" aria-labelledby="pdf-tab">
+        <div class="hidden" id="pdf-content" role="tabpanel" aria-labelledby="pdf-content-tab">
           <div id="project-form-pdf-wrapper" class="flex flex-col h-full min-h-[600px]">
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 color-background flex flex-col flex-1 min-h-0">
               {/* Header and instructions (hidden after PDF upload) */}
@@ -521,6 +509,20 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 </div>
 
 <script>
+  // Tab switching for Project Form | PDF Data Extractor
+  (window as any).switchProjectFormTab = function (tabId: string) {
+    const formContent = document.getElementById("form-content");
+    const pdfContent = document.getElementById("pdf-content");
+    if (!formContent || !pdfContent) return;
+    if (tabId === "pdf-content") {
+      formContent.classList.add("hidden");
+      pdfContent.classList.remove("hidden");
+    } else {
+      formContent.classList.remove("hidden");
+      pdfContent.classList.add("hidden");
+    }
+  };
+
   // Initialize project form
   document.addEventListener("DOMContentLoaded", async function () {
     const form = document.querySelector("form[data-project-id]");
@@ -2406,51 +2408,6 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 <script src="/js/pdf.min.js" defer></script>
 
 <style>
-  /* Tab styling */
-  #project-form-tabs button[data-tabs-target] {
-    transition: all 0.2s ease-in-out;
-  }
-
-  /* Override Flowbite's default blue tab classes with primary colors */
-  /* Target active tabs by aria-selected attribute */
-  #project-form-tabs button[data-tabs-target][aria-selected="true"] {
-    color: var(--color-primary-600) !important;
-    border-color: var(--color-primary-600) !important;
-  }
-
-  #project-form-tabs button[data-tabs-target][aria-selected="true"]:hover {
-    color: var(--color-primary-600) !important;
-  }
-
-  /* Dark mode overrides */
-  .dark #project-form-tabs button[data-tabs-target][aria-selected="true"] {
-    color: var(--color-primary-500) !important;
-    border-color: var(--color-primary-500) !important;
-  }
-
-  .dark #project-form-tabs button[data-tabs-target][aria-selected="true"]:hover {
-    color: var(--color-primary-500) !important;
-  }
-
-  /* Also override Flowbite's dynamically applied blue classes */
-  #project-form-tabs button[data-tabs-target].text-blue-600,
-  #project-form-tabs button[data-tabs-target].hover\:text-blue-600:hover {
-    color: var(--color-primary-600) !important;
-  }
-
-  #project-form-tabs button[data-tabs-target].border-blue-600 {
-    border-color: var(--color-primary-600) !important;
-  }
-
-  .dark #project-form-tabs button[data-tabs-target].dark\:text-blue-500,
-  .dark #project-form-tabs button[data-tabs-target].dark\:hover\:text-blue-500:hover {
-    color: var(--color-primary-500) !important;
-  }
-
-  .dark #project-form-tabs button[data-tabs-target].dark\:border-blue-500 {
-    border-color: var(--color-primary-500) !important;
-  }
-
   /* Smooth transitions for PDF viewer content */
   #project-form-pdf-viewer-section {
     transition:

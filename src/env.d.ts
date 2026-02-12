@@ -198,5 +198,8 @@ declare global {
     // Partials
     createButtonPartial?: (config: any) => Promise<HTMLElement | null>;
     createSimpleIconPartial?: (config: any) => Promise<string | null>;
+
+    // Banner alerts admin
+    switchBannerAlertsTab?: (tab: "existing-banners" | "new-banner") => void;
   }
 }
