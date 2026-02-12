@@ -108,6 +108,17 @@ if (
 
 // OG Image URL for social sharing - use setting from CMS, with fallback
 const ogImageSrc = ogImage || "/videos/CACPCO-share-preview.gif";
+const ogImageType = ogImageSrc?.includes(".gif")
+  ? "image/gif"
+  : ogImageSrc?.includes(".svg")
+    ? "image/svg+xml"
+    : ogImageSrc?.includes(".png")
+      ? "image/png"
+      : ogImageSrc?.includes(".jpg") || ogImageSrc?.includes(".jpeg")
+        ? "image/jpeg"
+        : ogImageSrc?.includes(".webp")
+          ? "image/webp"
+          : "image/png";
 
 // Get navigation data
 import { navigation } from "@/pages/api/utils/navigation";
@@ -727,22 +738,7 @@ const debugData = {
         <>
           <meta property="og:image" content={ogImageSrc} />
           <meta property="og:image:secure_url" content={ogImageSrc} />
-          <meta
-            property="og:image:type"
-            content={
-              ogImageSrc?.includes(".gif")
-                ? "image/gif"
-                : ogImageSrc?.includes(".svg")
-                  ? "image/svg+xml"
-                  : ogImageSrc?.includes(".png")
-                    ? "image/png"
-                    : ogImageSrc?.includes(".jpg") || ogImageSrc?.includes(".jpeg")
-                      ? "image/jpeg"
-                      : ogImageSrc?.includes(".webp")
-                        ? "image/webp"
-                        : "image/png"
-            }
-          />
+          <meta property="og:image:type" content={ogImageType} />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
           <meta
@@ -890,29 +886,30 @@ const debugData = {
     <!-- Set global user data for client-side components -->
 
     {/* SPA disabled: persist CMS colors for re-apply after client navigation */}
-    {/* {isBackend && (
-      <>
-        <script id="cms-colors" type="application/json" set:html={JSON.stringify({
-          primaryColor: primaryColor || "#825BDD",
-          secondaryColor: secondaryColor || "#0ea5e9",
-          fontFamily: fontFamily || "Outfit Variable",
-          secondaryFontFamily: secondaryFontFamily || "sans-serif",
-        })} />
-        <script is:inline data-astro-rerun>
-          document.addEventListener("astro:after-swap", function reapplyCmsColors() { ... });
-        </script>
-      </>
-    )} */}
+      <!-- {/* {isBackend && (
+        <>
+          <script id="cms-colors" type="application/json" set:html={JSON.stringify({
+            primaryColor: primaryColor || "#825BDD",
+            secondaryColor: secondaryColor || "#0ea5e9",
+            fontFamily: fontFamily || "Outfit Variable",
+            secondaryFontFamily: secondaryFontFamily || "sans-serif",
+          })} />
+          <script is:inline data-astro-rerun>
+            document.addEventListener("astro:after-swap", function reapplyCmsColors() { /* no-op */ 
+      //       });
+      //     </script>
+      //   </>
+      // )}}
 
-    {/* SPA disabled: client-side routing for project/* and admin/* (no full page reload) */}
-    {/* {isBackend && <ClientRouter fallback="swap" />} */}
-    {/* SPA disabled: prevent swap on 404 */}
-    {/* {isBackend && (
-      <script>
-        import { isTransitionBeforePreparationEvent, TRANSITION_BEFORE_PREPARATION } from "astro:transitions/client";
-        document.addEventListener(TRANSITION_BEFORE_PREPARATION, (event: Event) => { ... });
-      </script>
-    )} */}
+      {/* SPA disabled: client-side routing for project/* and admin/* (no full page reload) */}
+      {/* isBackend && <ClientRouter fallback="swap" />} */}
+      {/* SPA disabled: prevent swap on 404 */}
+      {/* {isBackend && (
+        <script>
+          import { isTransitionBeforePreparationEvent, TRANSITION_BEFORE_PREPARATION } from "astro:transitions/client";
+          document.addEventListener(TRANSITION_BEFORE_PREPARATION, (event: Event) => { /* no-op */ });
+        // </script>
+      // )} */} -->
   </head>
 
   <body

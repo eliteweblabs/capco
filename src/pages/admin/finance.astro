@@ -13,21 +13,10 @@ if (currentRole !== "Admin") {
   return Astro.redirect("/dashboard");
 }
 
-import { globalCompanyData } from "../api/global/global-company-data";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-} = await globalCompanyData();
-
 import { globalClasses } from "../api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
-import App from "../../components/ui/App.astro";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import Hero from "../../components/common/Hero.astro";
 import FinanceDashboard from "../../components/admin/FinanceDashboard.astro";
 
@@ -53,24 +42,9 @@ if (currentUser?.id) {
 }
 ---
 
-<App
-  title="Global Activity Feed"
-  description="Monitor all project activities and user actions."
-  {currentUser}
-  {session}
-  {supabase}
-  {projects}
-  isBackend={true}
-  {globalInputClasses}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
+<LayoutDefault
+  title="Finance Dashboard"
+  description="Monitor all financial data and transactions across the platform"
 >
   <!-- Dashboard Container -->
   <Hero
@@ -88,4 +62,4 @@ if (currentUser?.id) {
     {primaryTextClasses}
     {secondaryTextClasses}
   />
-</App>
+</LayoutDefault>

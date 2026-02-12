@@ -30,25 +30,14 @@ if (isAuth) {
 console.log("🔐 [LOGIN] User is not authenticated, showing login page");
 console.log("🔐 [LOGIN] currentUser:", currentUser);
 
-import { globalCompanyData } from "../../pages/api/global/global-company-data";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-} = await globalCompanyData();
-
 import { globalClasses } from "../../pages/api/global/global-classes";
-const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+const { globalInputClasses } = globalClasses();
 
 // Check for tab query parameter
 const urlParams = new URLSearchParams(Astro.url.search);
 const activeTab = urlParams.get("tab") || "login";
 
-import App from "../../components/ui/App.astro";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import AuthForm from "../../components/form/AuthForm.astro";
 import Button from "../../components/common/Button.astro";
 import Footer from "../../components/ui/Footer.astro";
@@ -59,20 +48,9 @@ import SlidingTabs from "../../components/common/SlidingTabs.astro";
 // Get auth data for conditional rendering
 ---
 
-<App
+<LayoutDefault
   title="Login / Register"
-  {currentUser}
   description="Login or register to access your dashboard"
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
-  {globalInputClasses}
-  {primaryTextClasses}
-  {secondaryTextClasses}
 >
   <div class="mx-auto grid max-w-7xl grid-cols-1 px-4 py-8 md:grid-cols-12 md:py-16 lg:gap-20">
     <div class="col-span-6 w-full">
@@ -172,7 +150,7 @@ import SlidingTabs from "../../components/common/SlidingTabs.astro";
       </div>
     </div>
   </div>
-</App>
+</LayoutDefault>
 
 <script>
   // Global function for tab switching (SlidingTabs handles indicator; this handles form visibility + URL)

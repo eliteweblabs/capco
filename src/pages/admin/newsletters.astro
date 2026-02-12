@@ -13,42 +13,15 @@ if (requireAuthRedirect && (!session || !currentUser || currentUser?.profile?.ro
   return Astro.redirect(requireAuthRedirect);
 }
 
-import { globalCompanyData } from "../api/global/global-company-data";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-} = await globalCompanyData();
-
 import { globalClasses } from "../api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
-import App from "../../components/ui/App.astro";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import Hero from "../../components/common/Hero.astro";
 import NewsletterManager from "../../features/newsletters/components/NewsletterManager.astro";
 ---
 
-<App
-  title={`Newsletter Management`}
-  description={`Manage and send newsletters for ${globalCompanyName}`}
-  {currentUser}
-  session={session || undefined}
-  {supabase}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalInputClasses}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
->
+<LayoutDefault title="Newsletter Management" description="Create and manage newsletters to send to users via email and SMS">
   <Hero
     title="Newsletter Management"
     description="Create and manage newsletters to send to users via email and SMS"
@@ -57,4 +30,4 @@ import NewsletterManager from "../../features/newsletters/components/NewsletterM
   />
 
   <NewsletterManager />
-</App>
+</LayoutDefault>

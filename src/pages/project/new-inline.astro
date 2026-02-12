@@ -4,55 +4,15 @@
  */
 import { checkAuth } from "../../lib/auth";
 
-import Hero from "../../components/common/Hero.astro";
-import ProjectForm from "../../components/project/ProjectForm.astro";
-import App from "../../components/ui/App.astro";
 import MultiStepProjectForm from "../../components/project/___MultiStepProjectForm.astro";
-// Get auth state
-const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
-
-// Load content from CMS (slug: "project/new")
-// const pageContent = await getPageContent("project/new");
-
-// If no CMS page exists, return 404
-// if (!pageContent) {
-//   return Astro.redirect("/404");
-// }
-
-import { globalCompanyData } from "../api/global/global-company-data.ts";
+import LayoutCentered from "../../components/layouts/LayoutCentered.astro";
 import { globalClasses } from "../api/global/global-classes.ts";
+
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-} = await globalCompanyData();
 ---
 
-<!-- <MarkdownPage slug="project/new" {currentUser} {session} {supabase} /> -->
-<App
-  title="Global Dashboard"
-  description="View all projects."
-  {currentUser}
-  {session}
-  {supabase}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalInputClasses}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
-  mainClasses="overflow-x-scroll"
-  layout="centered"
->
+<LayoutCentered title="Start a New Project" description="Create a new project using the multi-step form">
   <MultiStepProjectForm
     {currentUser}
     isNewProject={true}
@@ -60,4 +20,4 @@ const {
     {secondaryTextClasses}
     {primaryTextClasses}
   />
-</App>
+</LayoutCentered>

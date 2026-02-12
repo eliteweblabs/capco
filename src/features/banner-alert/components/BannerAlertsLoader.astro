@@ -304,6 +304,11 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         (side as HTMLElement).style.top = (translateYVal <= THRESH ? topPx : topBannersOnlyPx) + "px";
       }
 
+      function syncNavbarAtTop(translateYVal: number) {
+        const navbar = document.getElementById("main-navbar");
+        if (navbar) navbar.classList.toggle("navbar-at-top", translateYVal <= 0);
+      }
+
       function updateTranslate() {
         const scrollTop = clampedScrollTop();
 
@@ -312,6 +317,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
           prevScrollTop = 0;
           translateY = 0;
           setSidebarPosition(0);
+          syncNavbarAtTop(0);
           return;
         }
         const deltaY = scrollTop - prevScrollTop;
@@ -320,6 +326,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         translateY = Math.max(0, Math.min(maxPx(), translateY));
         scrollEl.style.transform = `translateY(-${translateY}px)`;
         setSidebarPosition(translateY);
+        syncNavbarAtTop(translateY);
       }
 
       updateBannerOffsets();
@@ -328,6 +335,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         scrollEl.style.transform = "";
         translateY = 0;
         setSidebarPosition(0);
+        syncNavbarAtTop(0);
       }
 
       if (navbarContent) {

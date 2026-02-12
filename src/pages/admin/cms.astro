@@ -4,12 +4,11 @@
  * Manage page content stored in Supabase database
  */
 import { checkAuth } from "../../lib/auth";
-import App from "../../components/ui/App.astro";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import Button from "../../components/common/Button.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
 import DeleteConfirmButton from "../../components/common/DeleteConfirmButton.astro";
 import StickyActions from "../../components/project/StickyActions.astro";
-import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
@@ -29,8 +28,6 @@ if (!currentUser || !session) {
 if (currentRole !== "Admin") {
   return Astro.redirect("/dashboard");
 }
-
-const { globalCompanyName, globalCompanySlogan, globalCompanyLogo } = await globalCompanyData();
 
 const { globalInputClasses } = globalClasses();
 
@@ -404,18 +401,11 @@ const dbSlugs = new Set(cmsPages.map((p) => p.slug));
 const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
 ---
 
-<App
+<LayoutDefault
   title="CMS Management"
-  description="Manage page content"
-  {currentUser}
-  {session}
-  {supabase}
-  isBackend={true}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {globalCompanyLogo}
+  description="Manage page content stored in the database. Database pages override markdown files."
 >
-  <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+  <div class="py-6 sm:px-0">
     <div class="px-4 py-6 sm:px-0">
       <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">CMS Management</h1>
@@ -704,7 +694,7 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
       </div>
     </div>
   </div>
-</App>
+</LayoutDefault>
 
 <!-- Page editor form: moved into row slots by script (pool hidden) -->
 <div id="page-editor-form-pool" class="hidden">

@@ -1,5 +1,5 @@
 ---
-import App from "../../../components/ui/App.astro";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
 import PDFPreview from "../../../components/common/PDFPreview.astro";
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 import { checkAuth } from "../../../lib/auth";
@@ -19,17 +19,6 @@ if (!currentUser) {
   console.error("🏗️ [GENERATE-PDF] No authenticated user, redirecting to login");
   return Astro.redirect("/auth/login");
 }
-
-import { globalCompanyData } from "../../api/global/global-company-data.ts";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-} = await globalCompanyData();
 
 import { globalClasses } from "../../api/global/global-classes.ts";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
@@ -88,19 +77,9 @@ const projectId = id;
 const title = project.title || "Untitled Project";
 ---
 
-<App
+<LayoutDefault
   title={`Generate PDF - ${title}`}
-  {currentUser}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalInputClasses}
+  description={`Create a custom PDF document for ${title}`}
 >
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="container mx-auto px-4 py-8">
@@ -912,4 +891,4 @@ const title = project.title || "Untitled Project";
       }
     });
   </script>
-</App>
+</LayoutDefault>

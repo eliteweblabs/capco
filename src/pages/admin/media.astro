@@ -14,31 +14,15 @@ if (requireAuthRedirect && (!session || !currentUser || currentRole !== "Admin")
   return Astro.redirect(requireAuthRedirect);
 }
 
-import { globalCompanyData } from "../api/global/global-company-data";
-const { globalCompanyName, globalCompanySlogan, globalCompanyLogo } = await globalCompanyData();
-
 import { globalClasses } from "../api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
-import App from "../../components/ui/App.astro";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import MediaFilter from "../../features/media-filter/MediaFilter.astro";
 import AdminMedia from "../../components/admin/AdminMedia.astro";
 ---
 
-<App
-  title={`Media Manager`}
-  description="Manage all media files"
-  {currentUser}
-  {session}
-  {supabase}
-  isBackend={true}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {globalCompanyLogo}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalInputClasses}
->
+<LayoutDefault title="Media Manager" description="Browse, upload, and manage all media files across the system">
   <div class="mb-6">
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Media Manager</h1>
     <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -58,4 +42,4 @@ import AdminMedia from "../../components/admin/AdminMedia.astro";
     {globalInputClasses}
     includeGrid={true}
   />
-</App>
+</LayoutDefault>

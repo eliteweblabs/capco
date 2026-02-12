@@ -13,42 +13,15 @@ if (requireAuthRedirect && (!session || !currentUser || currentUser?.profile?.ro
   return Astro.redirect(requireAuthRedirect);
 }
 
-import { globalCompanyData } from "../api/global/global-company-data.ts";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-} = await globalCompanyData();
-
 import { globalClasses } from "../api/global/global-classes.ts";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
-import App from "../../components/ui/App.astro";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import AdminUsers from "../../components/admin/AdminUsers.astro";
 import "../../lib/refresh-manager.ts";
 ---
 
-<App
-  title={`User Management`}
-  description={`Manage all system users for ${globalCompanyName}`}
-  {currentUser}
-  session={session || undefined}
-  {supabase}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalInputClasses}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
->
+<LayoutDefault title="User Management" description="Manage all system users">
   <AdminUsers
     {currentUser}
     {supabase}
@@ -56,4 +29,4 @@ import "../../lib/refresh-manager.ts";
     {primaryTextClasses}
     {secondaryTextClasses}
   />
-</App>
+</LayoutDefault>

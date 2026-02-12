@@ -11,21 +11,10 @@ if (requireAuthRedirect && (!session || !currentUser)) {
   return Astro.redirect(requireAuthRedirect);
 }
 
-import { globalCompanyData } from "../api/global/global-company-data.ts";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-} = await globalCompanyData();
-
 import { globalClasses } from "../api/global/global-classes.ts";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
-import App from "../../components/ui/App.astro";
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import "../../lib/refresh-manager.ts";
 import HeroDashboard from "../../components/common/HeroDashboard.astro";
 import type { Project } from "../../lib/api/.ts";
@@ -67,25 +56,12 @@ const statusResponseData = await statusResponse.json();
 const statusData = statusResponseData.statuses || [];
 ---
 
-<App
-  title="Global Dashboard"
-  description="View all projects."
-  {currentUser}
-  {session}
-  {supabase}
-  {projects}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalInputClasses}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
-  {statusData}
+<LayoutFullWidth
+  title="Project Dashboard"
+  description="Manage and track fire protection projects"
   mainClasses="overflow-x-scroll"
+  {projects}
+  {statusData}
 >
   <!-- Dashboard Container -->
 
@@ -429,4 +405,4 @@ const statusData = statusResponseData.statuses || [];
       </div>
     </div>
   </div>
-</App>
+</LayoutFullWidth>

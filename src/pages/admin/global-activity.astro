@@ -17,41 +17,16 @@ if (currentRole !== "Admin") {
   return Astro.redirect("/dashboard");
 }
 
-import { globalCompanyData } from "../api/global/global-company-data";
-const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
-} = await globalCompanyData();
-
 import { globalClasses } from "../api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
-import App from "../../components/ui/App.astro";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import AdminGlobalActivity from "../../components/admin/AdminGlobalActivity.astro";
 ---
 
-<App
+<LayoutDefault
   title="Global Activity Feed"
-  description="Monitor all project activities and user actions."
-  {currentUser}
-  {session}
-  {supabase}
-  isBackend={true}
-  {globalInputClasses}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
+  description="Monitor all project activities and user actions"
 >
   <AdminGlobalActivity
     {currentUser}
@@ -60,4 +35,4 @@ import AdminGlobalActivity from "../../components/admin/AdminGlobalActivity.astr
     {secondaryTextClasses}
     limit={100}
   />
-</App>
+</LayoutDefault>

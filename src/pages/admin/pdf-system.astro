@@ -1,11 +1,12 @@
 ---
-import App from "../../components/ui/App.astro";
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import PDFSystem from "../../features/pdf-system/PDFSystem.astro";
 import { checkAuth } from "../../lib/auth";
+import { globalClasses } from "../api/global/global-classes";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role || "Client";
-const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.props;
+const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = globalClasses();
 
 // For development: allow access without authentication
 // In production, you might want to re-enable these checks
@@ -18,6 +19,6 @@ if (currentRole !== "Admin") {
 }
 ---
 
-<App title="PDF System" {currentUser} {session} {supabase}>
+<LayoutFullWidth title="PDF System" description="Manage PDF documents and templates">
   <PDFSystem {globalInputClasses} {secondaryTextClasses} {primaryTextClasses} />
-</App>
+</LayoutFullWidth>

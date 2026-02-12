@@ -42,7 +42,7 @@ const currentRole = currentUser?.profile?.role;
 
 <nav
   id="main-navbar"
-  class="fixed left-0 right-0 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07)] dark:shadow-[0_4px_6px_-1px_rgba(255,255,255,0.05)] navbar-at-top"
+  class="navbar-at-top fixed left-0 right-0 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07)] dark:shadow-[0_4px_6px_-1px_rgba(255,255,255,0.05)]"
   style="top: max(0rem, env(safe-area-inset-top, 0px)); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden;"
 >
   <!-- Top Banner Alerts (if any) -->
@@ -204,31 +204,13 @@ const currentRole = currentUser?.profile?.role;
     });
   }
 
-  // Toggle z-100 based on scroll position (only at top)
-  function setupNavbarZIndexOnScroll() {
-    const navbar = document.getElementById("main-navbar");
-    if (!navbar) return;
-
-    const TOP_THRESHOLD = 10; // px - consider "at top" when scrollY is below this
-
-    function updateNavbarZIndex() {
-      const atTop = window.scrollY <= TOP_THRESHOLD;
-      navbar.classList.toggle("navbar-at-top", atTop);
-    }
-
-    updateNavbarZIndex(); // Set initial state
-    window.addEventListener("scroll", updateNavbarZIndex, { passive: true });
-  }
+  // navbar-at-top is synced by BannerAlertsLoader's reveal-scroll logic: translateY 0 === at top (all screens)
 
   // Initialize on DOM ready
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      setupNavbarHideOnModal();
-      setupNavbarZIndexOnScroll();
-    });
+    document.addEventListener("DOMContentLoaded", setupNavbarHideOnModal);
   } else {
     setupNavbarHideOnModal();
-    setupNavbarZIndexOnScroll();
   }
 </script>
 <style>
