@@ -22,6 +22,16 @@
  *   <div slot="left">Wider left column</div>
  *   <div slot="right">Narrower right</div>
  * </TwoColumnBlock>
+ *
+ * @example With panel backgrounds:
+ * <TwoColumnBlock
+ *   leftContent="<h2>Title</h2><p>Content</p>"
+ *   rightContent="<p>More content</p>"
+ *   leftBackgroundImage="/images/left-bg.jpg"
+ *   leftBackgroundSize="cover"
+ *   rightBackgroundImage="/images/right-bg.jpg"
+ *   rightBackgroundSize="contain"
+ * />
  */
 
 interface Props {
@@ -57,6 +67,14 @@ interface Props {
   leftContent?: string;
   rightContent?: string;
 
+  // Background images per panel
+  leftBackgroundImage?: string;
+  leftBackgroundSize?: "cover" | "contain" | "auto";
+  leftBackgroundPosition?: string;
+  rightBackgroundImage?: string;
+  rightBackgroundSize?: "cover" | "contain" | "auto";
+  rightBackgroundPosition?: string;
+
   // Styling
   className?: string;
   id?: string;
@@ -86,9 +104,32 @@ const {
   backgroundColor,
   leftContent,
   rightContent,
+  leftBackgroundImage,
+  leftBackgroundSize = "cover",
+  leftBackgroundPosition = "center",
+  rightBackgroundImage,
+  rightBackgroundSize = "cover",
+  rightBackgroundPosition = "center",
   className = "",
   id,
 } = props;
+
+// Build background style for a panel
+function panelBgStyle(
+  image?: string,
+  size: string = "cover",
+  position: string = "center"
+): string {
+  if (!image) return "";
+  return [
+    `background-image:url(${image})`,
+    `background-size:${size}`,
+    `background-position:${position}`,
+    "background-repeat:no-repeat",
+  ].join(";");
+}
+const leftBgStyle = panelBgStyle(leftBackgroundImage, leftBackgroundSize, leftBackgroundPosition);
+const rightBgStyle = panelBgStyle(rightBackgroundImage, rightBackgroundSize, rightBackgroundPosition);
 
 // Handle boolean/string conversions
 const reversed = props.reversed === "true" || props.reversed === true;
@@ -174,8 +215,9 @@ const mobileOrder = mobileOrderClasses[mobileStack] || mobileOrderClasses["left-
 >
   <div
     class:list={[
-      contained && "mx-auto px-4 sm:px-6 lg:px-8",
-      contained && maxWidthClasses[maxWidth],
+      contained && maxWidth !== "full" && "mx-auto px-4 sm:px-6 lg:px-8",
+      contained && maxWidth !== "full" && maxWidthClasses[maxWidth],
+      contained && maxWidth === "full" && "w-full max-w-full",
     ]}
   >
     <div
@@ -193,14 +235,27 @@ const mobileOrder = mobileOrderClasses[mobileStack] || mobileOrderClasses["left-
           columnRatio.left,
           mobileOrder.left,
           showDivider && "lg:border-r lg:border-gray-200 lg:pr-8 lg:dark:border-gray-700",
+          leftBackgroundImage && "min-h-[12rem] rounded-lg overflow-hidden",
+          leftBackgroundImage && leftContent && "flex items-center p-6 md:p-8 prose prose-lg prose-invert max-w-none",
+          leftContent && !leftBackgroundImage && "prose prose-lg dark:prose-invert max-w-none",
         ]}
+        style={leftBgStyle || undefined}
       >
         {leftContent ? <Fragment set:html={leftContent} /> : <slot name="left" />}
       </div>
 
       <!-- Right Column -->
       <div
-        class:list={["col-span-1", columnRatio.right, mobileOrder.right, showDivider && "lg:pl-8"]}
+        class:list={[
+          "col-span-1",
+          columnRatio.right,
+          mobileOrder.right,
+          showDivider && "lg:pl-8",
+          rightBackgroundImage && "min-h-[12rem] rounded-lg overflow-hidden",
+          rightBackgroundImage && rightContent && "flex items-center p-6 md:p-8 prose prose-lg prose-invert max-w-none",
+          rightContent && !rightBackgroundImage && "prose prose-lg dark:prose-invert max-w-none",
+        ]}
+        style={rightBgStyle || undefined}
       >
         {rightContent ? <Fragment set:html={rightContent} /> : <slot name="right" />}
       </div>

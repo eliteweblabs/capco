@@ -1399,9 +1399,9 @@ if (document.readyState === "loading") {
   processUrlNotificationsWithRetry();
 }
 
-document.addEventListener("astro:after-swap", () => {
-  if ((window as any).initInputWithIcon) (window as any).initInputWithIcon();
-});
+// SPA disabled: document.addEventListener("astro:after-swap", () => {
+//   if ((window as any).initInputWithIcon) (window as any).initInputWithIcon();
+// });
 
 // Suppress ResizeObserver loop warnings (they're usually harmless)
 window.addEventListener("error", (e: any) => {
@@ -1638,7 +1638,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // (window as any).setupAutofillNavigation();
 
     // Initialize Sticky Actions Portal System
-    (window as any).initializeStickyActionsPortal();
+    // (window as any).initializeStickyActionsPortal();
 
     // Inject icons into .input-with-icon[data-icon] (e.g. MultiStepForm)
     if ((window as any).initInputWithIcon) (window as any).initInputWithIcon();
@@ -1836,7 +1836,7 @@ function applyDynamicHeight() {
   });
 }
 document.addEventListener("DOMContentLoaded", applyDynamicHeight);
-document.addEventListener("astro:page-load", applyDynamicHeight);
+// SPA disabled: document.addEventListener("astro:page-load", applyDynamicHeight);
 window.addEventListener("resize", applyDynamicHeight);
 
 /** #reveal-scroll: Managed by BannerAlertsLoader.updateBannerOffsets() — mobile-only margin-top/height from navbar + banners. Do not duplicate here to avoid conflicts. */

@@ -965,7 +965,7 @@ export function createMultiStepFormHandler(
       // Ignore clicks on non-interactive areas (step container, dividers, labels, empty space)
       // so that clicking anywhere in the form doesn't advance the step
       if (
-        target.closest(".step-content, .multi-step-form-steps") &&
+        target.closest(".step-content, [id$='-steps']") &&
         !target.closest("button, a[href], input, textarea, select")
       ) {
         return;

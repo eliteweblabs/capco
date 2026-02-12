@@ -4,7 +4,8 @@ import SlotMachineModalStaff from "../form/SlotMachineModalStaff.astro";
 import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
 import StaffSelectTooltip from "../form/StaffSelectTooltip.astro";
 import LiveRelativeTime from "../common/LiveRelativeTime.astro";
-import DueDateStepper from "../common/DueDateStepper.astro";
+import Stepper from "../common/Stepper.astro";
+import SlideToggle from "../common/SlideToggle.astro";
 interface Props {
   project: {
     punchlistComplete?: number;
@@ -27,6 +28,7 @@ interface Props {
     generated_document_count?: any;
     authorProfile?: any;
     assignedToProfile?: any;
+    featured?: boolean;
     featuredImageData?: {
       id: any;
       filePath: string;
@@ -302,8 +304,8 @@ const statusColor = currentStatusColor || "gray";
     </a></th
   >
   <th scope="row" class="whitespace-nowrap px-4 py-2 text-center"
-    ><a href={`/project/${project.id}`} class="relative block w-40 truncate font-medium"
-      >{project.address || "No address"}
+    ><a href={`/project/${project.id}`} class="relative block min-w-0 truncate font-medium"
+      >{project.address || project.title || "No address"}
 
       {
         currentRole !== "Client" && projectAlertIconCount > 0 && (
@@ -344,7 +346,26 @@ const statusColor = currentStatusColor || "gray";
       data-status={project.status}>{currentStatusName || "Unknown Status"}</a
     >
   </td>
-  <td class="block w-60 whitespace-nowrap px-4 py-2 text-center">
+  {
+    currentRole !== "Client" && (
+      <td class="whitespace-nowrap px-4 py-2 text-center">
+        <div class="flex justify-center">
+          <SlideToggle
+            id={`featured-toggle-${project.id}`}
+            checked={project.featured === true}
+            size="md"
+            color="warning"
+            class="featured-toggle"
+            dataAttributes={{
+              "data-project-id": project.id,
+              "data-meta": "featured",
+            }}
+          />
+        </div>
+      </td>
+    )
+  }
+  <td class="block min-w-0 overflow-hidden whitespace-nowrap px-4 py-2 text-center">
     <div class="flex justify-center">
       <a href={`/project/${project.id}?status=files`} class="text-sm text-gray-600">
         {
@@ -360,265 +381,264 @@ const statusColor = currentStatusColor || "gray";
         }
       </a>
     </div>
-    {
-      currentRole !== "Client" && (
-        <td class="whitespace-nowrap px-4 py-2 font-medium">
-          {/* <div class="flex"> */}
-          <StaffSelectTooltip
-            id={`assign-staff-slot-machine-${project.id}`}
-            title="Assign Staff Member"
-            options={staffOptions}
-            selectedValue={project?.assignedToId || ""}
-            buttonType="icon"
-            buttonText={(() => {
-              if (!project?.assignedToId) return "Unassigned";
-              const assignedStaff = staffOptions.find(
-                (staff: any) => staff.value === project.assignedToId
-              );
-              return assignedStaff?.label || "Unknown Staff";
-            })()}
-            buttonClass="w-8 h-8 rounded-full border-2 block items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
-            buttonVariant="anchor"
-            placeholder=""
-            saveApiEndpoint="utils/assign-staff"
-            showCloseButton={true}
-            showCancelButton={true}
-            project={project}
-            showNotification={true}
-            icon="user"
-            component="UserIcon"
-            componentProps={{
-              users: [project?.assignedToProfile],
-            }}
-            searchText="Search staff..."
-            currentUser={currentUser}
-            globalInputClasses={globalInputClasses}
-            updateCallback={`updateStaffIcon_${project.id}`}
-          />
-          {/* </div> */}
-        </td>
-      )
-    }
-
-    <td class="whitespace-nowrap px-4 py-2 text-center font-medium">
-      <div class="flex">
-        <span class="text-xs font-medium text-gray-500 dark:text-gray-400"
-          >{((project.status / 220) * 100).toFixed(0)}%</span
-        >
-      </div>
-      <div class="w-full dark:bg-gray-700">
-        <div style={`width: ${((project.status / 220) * 100).toFixed(0)}%`}></div>
-      </div>
-    </td>
-    <td class="whitespace-nowrap px-4 py-2 font-medium">
-      <div class="flex items-center gap-1">
-        <span
-          data-refresh="punchlistComplete"
-          data-project-id={project.id}
-          data-meta="punchlistComplete"
-          data-meta-value={project.punchlistComplete || 0}
-        >
-          {project.punchlistComplete || 0}
-        </span>
-        <span class="text-gray-400">/</span>
-        <span
-          data-refresh="punchlistCount"
-          data-project-id={project.id}
-          data-meta="punchlistCount"
-          data-meta-value={project.punchlistCount || 0}
-        >
-          {project.punchlistCount || 0}
-        </span>
-      </div>
-    </td>
-    <td class="whitespace-nowrap px-4 py-2 text-center font-medium">
-      <span
-        data-refresh="createdAt"
-        data-project-id={project.id}
-        data-meta="createdAt"
-        data-meta-value={project.createdAt}
+  </td>
+  {
+    currentRole !== "Client" && (
+      <td class="whitespace-nowrap px-4 py-2 font-medium">
+        <StaffSelectTooltip
+          id={`assign-staff-slot-machine-${project.id}`}
+          title="Assign Staff Member"
+          options={staffOptions}
+          selectedValue={project?.assignedToId || ""}
+          buttonType="icon"
+          buttonText={(() => {
+            if (!project?.assignedToId) return "Unassigned";
+            const assignedStaff = staffOptions.find(
+              (staff: any) => staff.value === project.assignedToId
+            );
+            return assignedStaff?.label || "Unknown Staff";
+          })()}
+          buttonClass="w-8 h-8 rounded-full border-2 block items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
+          buttonVariant="anchor"
+          placeholder=""
+          saveApiEndpoint="utils/assign-staff"
+          showCloseButton={true}
+          showCancelButton={true}
+          project={project}
+          showNotification={true}
+          icon="user"
+          component="UserIcon"
+          componentProps={{
+            users: [project?.assignedToProfile],
+          }}
+          searchText="Search staff..."
+          currentUser={currentUser}
+          globalInputClasses={globalInputClasses}
+          updateCallback={`updateStaffIcon_${project.id}`}
+        />
+      </td>
+    )
+  }
+  <td class="whitespace-nowrap px-4 py-2 text-center font-medium">
+    <div class="flex">
+      <span class="text-xs font-medium text-gray-500 dark:text-gray-400"
+        >{((project.status / 220) * 100).toFixed(0)}%</span
       >
-        {
-          formatElapsedTime({
-            total_seconds: (Date.now() - new Date(project.createdAt).getTime()) / 1000,
-          })
-        }
+    </div>
+    <div class="w-full dark:bg-gray-700">
+      <div style={`width: ${((project.status / 220) * 100).toFixed(0)}%`}></div>
+    </div>
+  </td>
+  <td class="whitespace-nowrap px-4 py-2 font-medium">
+    <div class="flex items-center gap-1">
+      <span
+        data-refresh="punchlistComplete"
+        data-project-id={project.id}
+        data-meta="punchlistComplete"
+        data-meta-value={project.punchlistComplete || 0}
+      >
+        {project.punchlistComplete || 0}
       </span>
-    </td>
-    <td class="whitespace-nowrap px-4 py-2">
-      <!-- <div
+      <span class="text-gray-400">/</span>
+      <span
+        data-refresh="punchlistCount"
+        data-project-id={project.id}
+        data-meta="punchlistCount"
+        data-meta-value={project.punchlistCount || 0}
+      >
+        {project.punchlistCount || 0}
+      </span>
+    </div>
+  </td>
+  <td class="whitespace-nowrap px-4 py-2 text-center font-medium">
+    <span
+      data-refresh="createdAt"
+      data-project-id={project.id}
+      data-meta="createdAt"
+      data-meta-value={project.createdAt}
+    >
+      {
+        formatElapsedTime({
+          total_seconds: (Date.now() - new Date(project.createdAt).getTime()) / 1000,
+        })
+      }
+    </span>
+  </td>
+  <td class="whitespace-nowrap px-4 py-2">
+    <!-- <div
         class="align-center inline-flex rounded-md border bg-gray-100 dark:border-gray-600 dark:bg-gray-700"
       > -->
-      <span
-        data-live-timestamp={project.updatedAt}
-        data-project-id={project.id}
-        class="live-time-display"
-      >
-        {timeSinceUpdate}
-      </span>
-      <!-- </div> -->
-    </td>
-    <td class="whitespace-nowrap px-4 py-2 text-center">
-      <DueDateStepper
-        projectId={project.id}
-        value={project?.dueDate ?? ""}
-        showStepper={currentRole === "Admin" || currentRole === "Staff"}
-        meta="dueDate"
-        refresh="dueDate"
-        placeholder=""
-      />
-    </td>
-
-    <script>
-      // Set up a global listener for all deleteConfirmed events (runs once)
-      if (!(window as any).__projectDeleteListenerInitialized) {
-        (window as any).__projectDeleteListenerInitialized = true;
-
-        console.log("[ProjectItem] Setting up GLOBAL deleteConfirmed listener");
-
-        document.addEventListener("deleteConfirmed", async (e: Event) => {
-          const customEvent = e as CustomEvent;
-          const button = customEvent.target as HTMLElement;
-          const projectId = button?.getAttribute("data-project-id");
-
-          console.log("[ProjectItem] ✅ GLOBAL deleteConfirmed event RECEIVED!");
-          console.log("[ProjectItem] Button:", button);
-          console.log("[ProjectItem] Project ID:", projectId);
-
-          if (!projectId) {
-            console.error("[ProjectItem] Missing projectId from button");
-            return;
-          }
-
-          // Directly call delete API
-          console.log("[ProjectItem] Sending delete request for project:", projectId);
-
-          try {
-            const response = await fetch(`/api/projects/delete`, {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ projectId }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-              throw new Error(data.error || "Failed to delete project");
-            }
-
-            // Show success notification
-            if ((window as any).showNotice) {
-              (window as any).showNotice(
-                "success",
-                "Project Deleted!",
-                data.message || "Project has been deleted successfully.",
-                1500
-              );
-            }
-
-            // Remove the project row from the DOM
-            document.querySelectorAll(`[data-project-id='${projectId}']`)?.forEach((element) => {
-              const row = element.closest("tr");
-              if (row) row.remove();
-            });
-
-            console.log("[ProjectItem] Project deleted successfully");
-          } catch (error) {
-            console.error("[ProjectItem] Error deleting project:", error);
-
-            // Show error notification
-            if ((window as any).showNotice) {
-              (window as any).showNotice(
-                "error",
-                "Delete Failed",
-                error.message || "Failed to delete project. Please try again.",
-                6000
-              );
-            }
-          }
-        });
-      }
-
-      // Get the parent TR for this specific project item
-      const currentScript = document.currentScript;
-      const parentTr = currentScript?.closest("tr");
-
-      console.log("[ProjectItem] currentScript:", currentScript);
-      console.log("[ProjectItem] parentTr:", parentTr);
-
-      const refreshElement = parentTr?.querySelector("[data-project-id][data-refresh]");
-      const deleteButtonElement = parentTr?.querySelector(".delete-confirm-btn[data-project-id]");
-      const deleteWrapperElement = parentTr?.querySelector(
-        ".delete-confirm-wrapper [data-project-id]"
-      );
-
-      console.log("[ProjectItem] refreshElement:", refreshElement);
-      console.log("[ProjectItem] deleteButtonElement:", deleteButtonElement);
-      console.log("[ProjectItem] deleteWrapperElement:", deleteWrapperElement);
-
-      const projectIdElement = refreshElement || deleteButtonElement || deleteWrapperElement;
-      const projectId = projectIdElement?.getAttribute("data-project-id");
-
-      console.log("[ProjectItem] Found projectId:", projectId);
-
-      // Initialize live "time ago" display for updatedAt field
-      const liveTimeElement = parentTr?.querySelector("[data-live-timestamp]");
-      if (liveTimeElement) {
-        const timestamp = liveTimeElement.getAttribute("data-live-timestamp");
-
-        function formatTimeAgo(seconds: number): string {
-          const minutes = Math.floor(seconds / 60);
-          const hours = Math.floor(minutes / 60);
-          const days = Math.floor(hours / 24);
-          const weeks = Math.floor(days / 7);
-          const months = Math.floor(days / 30);
-          const years = Math.floor(days / 365);
-
-          if (years > 0) return `${years} year${years > 1 ? "s" : ""} ago`;
-          if (months > 0) return `${months} month${months > 1 ? "s" : ""} ago`;
-          if (weeks > 0) return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
-          if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
-          if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-          if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-          return "Just now";
-        }
-
-        function updateLiveTime() {
-          if (!timestamp) return;
-          const now = Date.now();
-          const updated = new Date(timestamp).getTime();
-          const secondsAgo = Math.floor((now - updated) / 1000);
-          liveTimeElement.textContent = formatTimeAgo(secondsAgo);
-        }
-
-        // Update immediately
-        updateLiveTime();
-
-        // Then update every second for live ticking
-        setInterval(updateLiveTime, 1000);
-      }
-
-      // Render file icons for this project using global function
-      // Wait for global script to load if not ready yet
-      const tryRenderFileIcons = () => {
-        if ((window as any).renderFileIcons) {
-          (window as any).renderFileIcons();
-        } else {
-          // Global script not loaded yet, try again after a small delay
-          setTimeout(tryRenderFileIcons, 50);
-        }
-      };
-      tryRenderFileIcons();
-
-      // Create a project-specific wrapper for the staff icon update callback
-      // This just calls the global updateStaffIcon function with the projectId
-      if (projectId) {
-        window[`updateStaffIcon_${projectId}`] = function (result, assignedToId, staffName) {
-          (window as any).updateStaffIcon(projectId, result, assignedToId, staffName);
-        };
-      }
-    </script>
+    <span
+      data-live-timestamp={project.updatedAt}
+      data-project-id={project.id}
+      class="live-time-display"
+    >
+      {timeSinceUpdate}
+    </span>
+    <!-- </div> -->
   </td>
+  <td class="whitespace-nowrap px-4 py-2 text-center">
+    <Stepper
+      entityId={project.id}
+      value={project?.dueDate ?? ""}
+      showStepper={currentRole === "Admin" || currentRole === "Staff"}
+      onIncrement={`adjustDueDate(${project.id}, 1)`}
+      onDecrement={`adjustDueDate(${project.id}, -1)`}
+      meta="dueDate"
+      refresh="dueDate"
+      placeholder=""
+    />
+  </td>
+
+  <script>
+    // Set up a global listener for all deleteConfirmed events (runs once)
+    if (!(window as any).__projectDeleteListenerInitialized) {
+      (window as any).__projectDeleteListenerInitialized = true;
+
+      console.log("[ProjectItem] Setting up GLOBAL deleteConfirmed listener");
+
+      document.addEventListener("deleteConfirmed", async (e: Event) => {
+        const customEvent = e as CustomEvent;
+        const button = customEvent.target as HTMLElement;
+        const projectId = button?.getAttribute("data-project-id");
+
+        console.log("[ProjectItem] ✅ GLOBAL deleteConfirmed event RECEIVED!");
+        console.log("[ProjectItem] Button:", button);
+        console.log("[ProjectItem] Project ID:", projectId);
+
+        if (!projectId) {
+          console.error("[ProjectItem] Missing projectId from button");
+          return;
+        }
+
+        // Directly call delete API
+        console.log("[ProjectItem] Sending delete request for project:", projectId);
+
+        try {
+          const response = await fetch(`/api/projects/delete`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ projectId }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to delete project");
+          }
+
+          // Show success notification
+          if ((window as any).showNotice) {
+            (window as any).showNotice(
+              "success",
+              "Project Deleted!",
+              data.message || "Project has been deleted successfully.",
+              1500
+            );
+          }
+
+          // Remove the project row from the DOM
+          document.querySelectorAll(`[data-project-id='${projectId}']`)?.forEach((element) => {
+            const row = element.closest("tr");
+            if (row) row.remove();
+          });
+
+          console.log("[ProjectItem] Project deleted successfully");
+        } catch (error) {
+          console.error("[ProjectItem] Error deleting project:", error);
+
+          // Show error notification
+          if ((window as any).showNotice) {
+            (window as any).showNotice(
+              "error",
+              "Delete Failed",
+              error.message || "Failed to delete project. Please try again.",
+              6000
+            );
+          }
+        }
+      });
+    }
+
+    // Get the parent TR for this specific project item
+    const currentScript = document.currentScript;
+    const parentTr = currentScript?.closest("tr");
+
+    console.log("[ProjectItem] currentScript:", currentScript);
+    console.log("[ProjectItem] parentTr:", parentTr);
+
+    const refreshElement = parentTr?.querySelector("[data-project-id][data-refresh]");
+    const deleteButtonElement = parentTr?.querySelector(".delete-confirm-btn[data-project-id]");
+    const deleteWrapperElement = parentTr?.querySelector(
+      ".delete-confirm-wrapper [data-project-id]"
+    );
+
+    console.log("[ProjectItem] refreshElement:", refreshElement);
+    console.log("[ProjectItem] deleteButtonElement:", deleteButtonElement);
+    console.log("[ProjectItem] deleteWrapperElement:", deleteWrapperElement);
+
+    const projectIdElement = refreshElement || deleteButtonElement || deleteWrapperElement;
+    const projectId = projectIdElement?.getAttribute("data-project-id");
+
+    console.log("[ProjectItem] Found projectId:", projectId);
+
+    // Initialize live "time ago" display for updatedAt field
+    const liveTimeElement = parentTr?.querySelector("[data-live-timestamp]");
+    if (liveTimeElement) {
+      const timestamp = liveTimeElement.getAttribute("data-live-timestamp");
+
+      function formatTimeAgo(seconds: number): string {
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        const weeks = Math.floor(days / 7);
+        const months = Math.floor(days / 30);
+        const years = Math.floor(days / 365);
+
+        if (years > 0) return `${years} year${years > 1 ? "s" : ""} ago`;
+        if (months > 0) return `${months} month${months > 1 ? "s" : ""} ago`;
+        if (weeks > 0) return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+        if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+        if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+        if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+        return "Just now";
+      }
+
+      function updateLiveTime() {
+        if (!timestamp) return;
+        const now = Date.now();
+        const updated = new Date(timestamp).getTime();
+        const secondsAgo = Math.floor((now - updated) / 1000);
+        liveTimeElement.textContent = formatTimeAgo(secondsAgo);
+      }
+
+      // Update immediately
+      updateLiveTime();
+
+      // Then update every second for live ticking
+      setInterval(updateLiveTime, 1000);
+    }
+
+    // Render file icons for this project using global function
+    // Wait for global script to load if not ready yet
+    const tryRenderFileIcons = () => {
+      if ((window as any).renderFileIcons) {
+        (window as any).renderFileIcons();
+      } else {
+        // Global script not loaded yet, try again after a small delay
+        setTimeout(tryRenderFileIcons, 50);
+      }
+    };
+    tryRenderFileIcons();
+
+    // Create a project-specific wrapper for the staff icon update callback
+    // This just calls the global updateStaffIcon function with the projectId
+    if (projectId) {
+      window[`updateStaffIcon_${projectId}`] = function (result, assignedToId, staffName) {
+        (window as any).updateStaffIcon(projectId, result, assignedToId, staffName);
+      };
+    }
+  </script>
 </tr>

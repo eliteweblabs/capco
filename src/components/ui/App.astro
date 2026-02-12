@@ -123,7 +123,7 @@ const navigationData = await navigation(
   isBackend || false
 );
 const { desktopNavigationHTML, mobileNavigationHTML, visibleNavItems } = navigationData;
-import { ClientRouter } from "astro:transitions";
+// SPA disabled: import { ClientRouter } from "astro:transitions";
 import { generateColorPalette } from "@/lib/color-utils";
 
 // Server-rendered critical CMS colors so first paint uses DB colors before any script runs
@@ -875,7 +875,7 @@ const debugData = {
           runSimpleTypewriterOnSelector("[data-loading-typewriter]");
         }
         document.addEventListener("DOMContentLoaded", initLoadingTypewriters);
-        document.addEventListener("astro:page-load", initLoadingTypewriters);
+        // SPA disabled: document.addEventListener("astro:page-load", initLoadingTypewriters);
         if (document.readyState === "complete" || document.readyState === "interactive") {
           initLoadingTypewriters();
         }
@@ -889,8 +889,8 @@ const debugData = {
 
     <!-- Set global user data for client-side components -->
 
-    <!-- SPA: persist CMS colors for re-apply after client navigation -->
-    {isBackend && (
+    {/* SPA disabled: persist CMS colors for re-apply after client navigation */}
+    {/* {isBackend && (
       <>
         <script id="cms-colors" type="application/json" set:html={JSON.stringify({
           primaryColor: primaryColor || "#825BDD",
@@ -899,172 +899,30 @@ const debugData = {
           secondaryFontFamily: secondaryFontFamily || "sans-serif",
         })} />
         <script is:inline data-astro-rerun>
-          document.addEventListener("astro:after-swap", function reapplyCmsColors() {
-            const el = document.getElementById("cms-colors");
-            if (!el || !el.textContent) return;
-            try {
-              const cms = JSON.parse(el.textContent);
-              const primary = cms.primaryColor || "#825BDD";
-              const secondary = cms.secondaryColor || "#0ea5e9";
-              const root = document.documentElement;
-              function hexToHsl(hex) {
-                hex = hex.replace("#", "");
-                var r = parseInt(hex.substr(0, 2), 16) / 255, g = parseInt(hex.substr(2, 2), 16) / 255, b = parseInt(hex.substr(4, 2), 16) / 255;
-                var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, s = 0, h = 0;
-                if (max !== min) {
-                  var d = max - min;
-                  s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                  switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; }
-                  h /= 6;
-                }
-                return [h * 360, s * 100, l * 100];
-              }
-              function hslToHex(h, s, l) {
-                h /= 360; s /= 100; l /= 100;
-                var a = s * Math.min(l, 1 - l) / 100;
-                var f = function(n) { var k = (n + h / 30) % 12; return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1); };
-                return "#" + [0, 8, 4].map(function(n) { return Math.round(255 * f(n)).toString(16).padStart(2, "0"); }).join("");
-              }
-              function palette(base) {
-                if (!base || !base.match(/^#[0-9A-F]{6}$/i)) base = "#825BDD";
-                var _a = hexToHsl(base), h = _a[0], s = _a[1], l = _a[2];
-                return { 50: hslToHex(h, Math.max(s - 20, 10), Math.min(l + 45, 95)), 100: hslToHex(h, Math.max(s - 15, 15), Math.min(l + 40, 90)), 200: hslToHex(h, Math.max(s - 10, 20), Math.min(l + 30, 85)), 300: hslToHex(h, Math.max(s - 5, 25), Math.min(l + 20, 75)), 400: hslToHex(h, s, Math.min(l + 10, 65)), 500: base, 600: hslToHex(h, Math.min(s + 5, 90), Math.max(l - 10, 25)), 700: hslToHex(h, Math.min(s + 10, 95), Math.max(l - 20, 20)), 800: hslToHex(h, Math.min(s + 15, 100), Math.max(l - 30, 15)), 900: hslToHex(h, Math.min(s + 20, 100), Math.max(l - 40, 10)), 950: hslToHex(h, Math.min(s + 25, 100), Math.max(l - 50, 5)) };
-              }
-              var p = palette(primary), s = palette(secondary);
-              Object.keys(p).forEach(function(k) { root.style.setProperty("--color-primary-" + k, p[k]); });
-              Object.keys(s).forEach(function(k) { root.style.setProperty("--color-secondary-" + k, s[k]); });
-              root.style.setProperty("--font-family", cms.fontFamily || "Outfit Variable");
-              root.style.setProperty("--font-family-secondary", cms.secondaryFontFamily || "sans-serif");
-            } catch (e) { console.warn("[App] astro:after-swap reapplyCmsColors:", e); }
-          });
+          document.addEventListener("astro:after-swap", function reapplyCmsColors() { ... });
         </script>
       </>
-    )}
+    )} */}
 
-    <!-- SPA client-side routing for project/* and admin/* (no full page reload) -->
-    {isBackend && <ClientRouter fallback="swap" />}
-    <!-- SPA: prevent swap on 404 - do full page nav instead to avoid sidebar/colors disappearing -->
-    {isBackend && (
+    {/* SPA disabled: client-side routing for project/* and admin/* (no full page reload) */}
+    {/* {isBackend && <ClientRouter fallback="swap" />} */}
+    {/* SPA disabled: prevent swap on 404 */}
+    {/* {isBackend && (
       <script>
-        import {
-          isTransitionBeforePreparationEvent,
-          TRANSITION_BEFORE_PREPARATION,
-        } from "astro:transitions/client";
-
-        document.addEventListener(TRANSITION_BEFORE_PREPARATION, (event: Event) => {
-          if (!isTransitionBeforePreparationEvent(event)) return;
-          const originalLoader = event.loader;
-          event.loader = async () => {
-            const to = (event as any).to?.toString() || "";
-            if (!to || to.startsWith("#")) {
-              await originalLoader();
-              return;
-            }
-            try {
-              const res = await fetch(to, { redirect: "follow" });
-              if (!res.ok && res.status === 404) {
-                window.location.href = to;
-                return;
-              }
-            } catch {
-              /* Fall through to original loader on network error */
-            }
-            await originalLoader();
-          };
-        });
+        import { isTransitionBeforePreparationEvent, TRANSITION_BEFORE_PREPARATION } from "astro:transitions/client";
+        document.addEventListener(TRANSITION_BEFORE_PREPARATION, (event: Event) => { ... });
       </script>
-    )}
+    )} */}
   </head>
 
   <body
     class:list={[
       "antialiased"    
     ]}
-    transition:animate={isBackend ? "none" : undefined}
-    data-spa-enabled={isBackend ? "true" : undefined}
-    data-spa-path={isBackend ? currentUrl : undefined}
   >
 
-   
-    <!-- SPA: re-apply theme and re-init after client-side navigation (backend only) -->
-    {isBackend && (
-      <script is:inline>
-        (function () {
-          function applyTheme() {
-            if (!document.documentElement) return;
-            var theme = localStorage.getItem("color-theme");
-            var dark =
-              theme === "dark" ||
-              (!theme && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-            document.documentElement.classList.toggle("dark", dark);
-            document.documentElement.classList.toggle("zD1iTsv7EQco3GO_szee", dark);
-          }
-          applyTheme();
-          document.addEventListener("astro:page-load", applyTheme);
-
-          // SPA: reset body scroll state after swap so new page can scroll (avoids stuck overflow:hidden from modals)
-          document.addEventListener("astro:after-swap", function resetBodyScrollAfterSwap() {
-            var body = document.body;
-            var html = document.documentElement;
-            body.style.overflow = "";
-            body.style.position = "";
-            body.style.top = "";
-            body.style.width = "";
-            html.style.overflow = "";
-            body.classList.remove("modal-open");
-            if (typeof window.forceUnlockBodyScroll === "function") {
-              window.forceUnlockBodyScroll();
-            }
-          });
-        })();
-      </script>
-    )}
-
-
-    <!-- SPA debug: log transition lifecycle (localhost or ?debug=spa). Open browser console to trace. -->
-    {isBackend && (
-      <script is:inline data-astro-rerun>
-        (function () {
-          var isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-          var qs = typeof window !== "undefined" && window.location.search;
-          var debugSpa = isLocal || (qs && qs.indexOf("debug=spa") !== -1);
-          if (!debugSpa) return;
-          var path = typeof window !== "undefined" ? window.location.pathname : "";
-          console.log("[SPA] Initial load pathname:", path);
-          ["astro:before-preparation", "astro:after-preparation", "astro:page-load", "astro:after-swap"].forEach(function (ev) {
-            document.addEventListener(ev, function (e) {
-              var d = e.detail || {};
-              console.log("[SPA] " + ev, {
-                from: d.from,
-                to: d.to || (ev === "astro:page-load" || ev === "astro:after-swap" ? window.location.pathname : undefined),
-                response: d.response ? (d.response.redirected ? "redirect:" + d.response.url : "status:" + d.response.status) : undefined,
-              });
-            });
-          });
-        })();
-      </script>
-    )}
-
-    <!-- SPA: run backend page inits on navigation (when swapped-in scripts may not run) -->
-    {isBackend && (
-      <script is:inline>
-        (function () {
-          function runPageInits() {
-            var path = window.location.pathname;
-            if (path === '/project/dashboard' && typeof window.__initProjectDashboard === 'function') {
-              window.__initProjectDashboard();
-            }
-            if (path === '/dashboard' && typeof window.__initDashboard === 'function') {
-              window.__initDashboard();
-            }
-            if (path === '/profile' && typeof window.__initProfile === 'function') {
-              window.__initProfile();
-            }
-          }
-          document.addEventListener('astro:page-load', runPageInits);
-        })();
-      </script>
-    )}
+    {/* SPA disabled: re-apply theme and astro:after-swap/astro:page-load scripts */}
+    {/* SPA disabled: debug and runPageInits scripts */}
 
 
 <!-- Global Modal Overlay - Single instance used by all modals -->
@@ -1143,7 +1001,6 @@ const debugData = {
           //   "px-4 sm:px-6 md:px-8 lg:px-10",
           mainClasses,
           layout === "default" && "px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10",
-          layout === "centered" ? "" : "",
         ]}
         style={currentUser ? "" : undefined}
         

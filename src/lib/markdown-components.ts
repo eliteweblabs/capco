@@ -48,33 +48,39 @@ export function parseComponentShortcodes(content: string): ComponentShortcode[] 
     index++;
   }
 
-  // Second pass: Match self-closing tags that weren't part of a component with children
-  const selfClosingRegex = /<([A-Z][a-zA-Z0-9]*)\s*([^>]*?)\/>/g;
-
-  while ((match = selfClosingRegex.exec(content)) !== null) {
+  // Second pass: Match self-closing tags (supports attribute values containing ">")
+  const selfClosingStartRegex = /<([A-Z][a-zA-Z0-9]*)(\s|$)/g;
+  while ((match = selfClosingStartRegex.exec(content)) !== null) {
     const matchStart = match.index;
-    const matchEnd = match.index + match[0].length;
+    const componentName = match[1];
+    const afterName = matchStart + match[0].length;
+    const tagEnd = findSelfClosingTagEnd(content, afterName);
+    if (tagEnd === -1) continue;
 
-    // Skip if this was already processed as part of a component with children
+    const fullMatch = content.slice(matchStart, tagEnd);
+    if (!fullMatch.endsWith("/>")) continue;
+
+    const matchEnd = tagEnd;
     const alreadyProcessed = processedRanges.some(
       (range) => matchStart >= range.start && matchEnd <= range.end
     );
-
     if (alreadyProcessed) continue;
 
-    const [fullMatch, componentName, propsString] = match;
+    const propsString = fullMatch
+      .slice(afterName - matchStart, fullMatch.length - 2)
+      .trim();
     const props = parseProps(propsString);
     const id = `__COMPONENT_${index}__`;
 
     components.push({
       name: componentName,
       props,
-      position: match.index,
+      position: matchStart,
       fullMatch,
       id,
     });
-
     index++;
+    selfClosingStartRegex.lastIndex = matchEnd;
   }
 
   // Sort by position to maintain order
@@ -121,6 +127,44 @@ function slotNameToPropName(slotName: string): string {
   };
 
   return slotMapping[slotName] || `${slotName}Content`;
+}
+
+/**
+ * Find end index of self-closing tag (exclusive), respecting quoted attribute values.
+ * Attribute values may contain ">" (e.g. leftContent="<h2>Title</h2>").
+ */
+function findSelfClosingTagEnd(content: string, startIndex: number): number {
+  let i = startIndex;
+  let inDouble = false;
+  let inSingle = false;
+  while (i < content.length) {
+    const c = content[i];
+    if (inDouble) {
+      if (c === '"') inDouble = false;
+      i++;
+      continue;
+    }
+    if (inSingle) {
+      if (c === "'") inSingle = false;
+      i++;
+      continue;
+    }
+    if (c === '"') {
+      inDouble = true;
+      i++;
+      continue;
+    }
+    if (c === "'") {
+      inSingle = true;
+      i++;
+      continue;
+    }
+    if (c === "/" && content[i + 1] === ">") {
+      return i + 2;
+    }
+    i++;
+  }
+  return -1;
 }
 
 /**

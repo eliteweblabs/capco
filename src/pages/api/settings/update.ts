@@ -75,6 +75,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         ].includes(key)
       ) {
         return { category: "company", valueType: "text" };
+      } else if (key === "projectDefaultDueDateHours") {
+        return { category: "project", valueType: "text" };
       }
       return { category: "general", valueType: "text" };
     }

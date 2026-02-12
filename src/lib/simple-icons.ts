@@ -16,16 +16,19 @@ export const SIMPLE_ICONS: Record<string, string> = iconData;
 export function getIcon(name: string, config: IconConfig = {}): string {
   const { size = 16, className = "", globalCompanyIcon } = config;
 
+  // Normalize: "icon:hospital" → "hospital" (CMS/content may use this format)
+  const iconName = name.startsWith("icon:") ? name.slice(5) : name;
+
   // Special case: if name is 'logo', use the global company icon and normalize viewBox for even padding
   let iconSvg: string | undefined;
-  if (name === "logo" && globalCompanyIcon) {
+  if (iconName === "logo" && globalCompanyIcon) {
     iconSvg = normalizeLogoViewBox(globalCompanyIcon);
   } else {
-    iconSvg = SIMPLE_ICONS[name];
+    iconSvg = SIMPLE_ICONS[iconName];
   }
 
   if (!iconSvg) {
-    return `<span class="inline-block text-red-500">[icon:${name}]</span>`; // Debug fallback
+    return `<span class="inline-block text-red-500">[icon:${iconName}]</span>`; // Debug fallback
   }
 
   // Replace size and add className (add inline-block only if className is provided and doesn't already have it)

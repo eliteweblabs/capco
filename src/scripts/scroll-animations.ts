@@ -168,16 +168,16 @@ if (typeof document !== "undefined") {
   }
 }
 
-// Re-initialize on Astro page transitions (defer so swap paints first)
-document.addEventListener("astro:page-load", () => {
-  requestAnimationFrame(() => {
-    if (scrollAnimationsInstance) {
-      scrollAnimationsInstance.refresh();
-    } else {
-      initScrollAnimations();
-    }
-  });
-});
+// SPA disabled: Re-initialize on Astro page transitions (defer so swap paints first)
+// document.addEventListener("astro:page-load", () => {
+//   requestAnimationFrame(() => {
+//     if (scrollAnimationsInstance) {
+//       scrollAnimationsInstance.refresh();
+//     } else {
+//       initScrollAnimations();
+//     }
+//   });
+// });
 
 // Export for manual usage
 export { ScrollAnimations, initScrollAnimations };

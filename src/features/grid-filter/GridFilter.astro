@@ -47,6 +47,9 @@ export interface Props {
 
   // No results element ID
   noResultsId?: string;
+
+  // Optional: scope item search to this container (e.g. ".projects-container") so we only filter items in the same block
+  itemsContainer?: string;
 }
 
 const {
@@ -61,6 +64,7 @@ const {
   globalInputClasses = "rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-gray-900 dark:text-white focus:border-primary-500 focus:ring-primary-500",
   containerClasses = "flex items-center justify-center py-4 md:py-8 flex-wrap gap-3",
   noResultsId = "no-results",
+  itemsContainer,
 } = Astro.props;
 
 const hasButtonFilters = filters.length > 0;
@@ -83,19 +87,17 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
     )
   }
 
-  <!-- Button-style Filters -->
+  <!-- Button-style Filters (same styles as form toggle buttons) -->
   {
     hasButtonFilters && (
-      <div class="flex flex-wrap items-center justify-center gap-3">
+      <div class="mb-4 flex flex-wrap gap-2">
         {filters.map((filter, index) => (
           <button
             type="button"
             data-filter={filter}
             data-filter-type="button"
-            class={`grid-filter-btn rounded-base px-5 py-2.5 text-center text-base font-medium transition-all focus:outline-none focus:ring-4 ${
-              index === 0
-                ? "text-fg-brand border-brand bg-gray-primary focus:ring-gray-tertiary border-2"
-                : "text-heading border-buffer hover:border-default bg-gray-primary focus:ring-gray-tertiary border-2"
+            class={`grid-filter-btn toggle-button preserve dark:text-white font-secondary relative inline-flex items-center justify-center font-large transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-md [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-md ${
+              (!multiSelect && index === 0) || multiSelect ? "selected bg-primary dark:bg-primary-dark text-white" : ""
             }`}
           >
             {filter}
@@ -169,9 +171,10 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
     uniqueId,
     noResultsId,
     multiSelect,
+    itemsContainer: itemsContainer ?? "",
   }}
 >
-  document.addEventListener("DOMContentLoaded", () => {
+  function runGridFilterInit() {
     const container = document.querySelector(`[data-filter-id="${uniqueId}"]`);
     if (!container) return;
 
@@ -186,10 +189,19 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
     const currentDropdownFilters = {};
     const multiDropdownSelections = {};
 
-    // Initialize first button as selected (if not multi-select)
-    if (hasButtonFilters && !multiSelect && filterButtons.length > 0) {
-      const firstFilter = filterButtons[0].getAttribute("data-filter");
-      if (firstFilter) selectedButtonFilters.add(firstFilter);
+    // Initialize selection
+    if (hasButtonFilters && filterButtons.length > 0) {
+      if (multiSelect) {
+        // Multi-select: start with ALL filters on (including "All")
+        filterButtons.forEach((btn) => {
+          const val = btn.getAttribute("data-filter");
+          if (val) selectedButtonFilters.add(val);
+        });
+      } else {
+        // Single-select: first button selected
+        const firstFilter = filterButtons[0].getAttribute("data-filter");
+        if (firstFilter) selectedButtonFilters.add(firstFilter);
+      }
     }
 
     // Initialize dropdown filter state
@@ -293,7 +305,8 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
 
     // Main filter function
     function applyFilters() {
-      const items = document.querySelectorAll(itemSelector);
+      const root = itemsContainer ? document.querySelector(itemsContainer) : document;
+      const items = root ? root.querySelectorAll(itemSelector) : document.querySelectorAll(itemSelector);
       const searchTerm = searchInput?.value.toLowerCase() || "";
       let visibleCount = 0;
 
@@ -314,16 +327,20 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
         }
 
         // Button filter with multi-select support
-        if (hasButtonFilters && selectedButtonFilters.size > 0) {
-          const itemCategory = item.getAttribute(dataAttribute);
-
-          // Check if "All" is in selections
-          const hasAllFilter = Array.from(selectedButtonFilters).some((f) =>
-            f.toLowerCase().includes("all")
-          );
-
-          if (!hasAllFilter && !selectedButtonFilters.has(itemCategory)) {
+        if (hasButtonFilters) {
+          if (selectedButtonFilters.size === 0) {
+            // Nothing selected = hide everything
             show = false;
+          } else {
+            const itemCategory = item.getAttribute(dataAttribute);
+            // Check if "All" is in selections
+            const hasAllFilter = Array.from(selectedButtonFilters).some((f) =>
+              f.toLowerCase().includes("all")
+            );
+
+            if (!hasAllFilter && !selectedButtonFilters.has(itemCategory)) {
+              show = false;
+            }
           }
         }
 
@@ -439,6 +456,11 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
       });
     }
 
+    // Helper: check if filter label contains "all" (e.g. "All Projects")
+    function isAllFilter(val) {
+      return val && String(val).toLowerCase().includes("all");
+    }
+
     // Button filter event listeners
     filterButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -447,16 +469,44 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
 
         if (multiSelect) {
           // Multi-select mode
-          if (selectedButtonFilters.has(filterValue)) {
-            selectedButtonFilters.delete(filterValue);
-            button.classList.remove("text-fg-brand", "border-brand");
-            button.classList.add("text-heading", "border-buffer");
-            if (badge) badge.classList.add("hidden");
+          const isAll = isAllFilter(filterValue);
+          const wasSelected = selectedButtonFilters.has(filterValue);
+
+          if (isAll) {
+            // Toggling "All": turn all others on or off to match
+            if (wasSelected) {
+              // All was ON → turn everything OFF
+              selectedButtonFilters.clear();
+              filterButtons.forEach((btn) => {
+                btn.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+                btn.classList.add("deselected");
+                const b = btn.querySelector(".filter-badge");
+                if (b) b.classList.add("hidden");
+              });
+            } else {
+              // All was OFF → turn everything ON
+              filterButtons.forEach((btn) => {
+                const val = btn.getAttribute("data-filter");
+                if (val) selectedButtonFilters.add(val);
+                btn.classList.remove("deselected");
+                btn.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+                const b = btn.querySelector(".filter-badge");
+                if (b) b.classList.remove("hidden");
+              });
+            }
           } else {
-            selectedButtonFilters.add(filterValue);
-            button.classList.remove("text-heading", "border-buffer", "hover:border-default");
-            button.classList.add("text-fg-brand", "border-brand");
-            if (badge) badge.classList.remove("hidden");
+            // Toggling a specific filter (not All)
+            if (wasSelected) {
+              selectedButtonFilters.delete(filterValue);
+              button.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+              button.classList.add("deselected");
+              if (badge) badge.classList.add("hidden");
+            } else {
+              selectedButtonFilters.add(filterValue);
+              button.classList.remove("deselected");
+              button.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+              if (badge) badge.classList.remove("hidden");
+            }
           }
         } else {
           // Single-select mode
@@ -465,12 +515,10 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
 
           filterButtons.forEach((btn) => {
             const btnBadge = btn.querySelector(".filter-badge");
-            btn.classList.remove("text-fg-brand", "border-brand");
-            btn.classList.add("text-heading", "border-buffer", "hover:border-default");
+            btn.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
             if (btnBadge) btnBadge.classList.add("hidden");
           });
-          button.classList.remove("text-heading", "border-buffer", "hover:border-default");
-          button.classList.add("text-fg-brand", "border-brand");
+          button.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
           if (badge) badge.classList.remove("hidden");
         }
 
@@ -491,7 +539,10 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
 
     // Search input event listener
     searchInput?.addEventListener("input", applyFilters);
-  });
+  }
+
+  document.addEventListener("DOMContentLoaded", runGridFilterInit);
+  // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(runGridFilterInit));
 </script>
 
 <style>

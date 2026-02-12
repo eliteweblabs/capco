@@ -7,8 +7,10 @@
 import { checkAuth } from "../../lib/auth";
 import App from "../../components/ui/App.astro";
 import Button from "../../components/common/Button.astro";
+import UnitSlider from "../../components/form/UnitSlider.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
@@ -25,6 +27,26 @@ if (currentRole !== "Admin") {
 
 const companyData = await globalCompanyData();
 const { globalInputClasses } = globalClasses();
+
+// Fetch initial default due date hours from globalSettings (server-side)
+let initialDefaultDueDateHours = 72;
+if (supabaseAdmin) {
+  try {
+    const { data } = await supabaseAdmin
+      .from("globalSettings")
+      .select("value")
+      .eq("key", "projectDefaultDueDateHours")
+      .maybeSingle();
+    if (data?.value) {
+      const parsed = parseInt(data.value, 10);
+      if (!isNaN(parsed)) {
+        initialDefaultDueDateHours = Math.min(240, Math.max(1, parsed));
+      }
+    }
+  } catch {
+    // use fallback 72
+  }
+}
 ---
 
 <App
@@ -53,8 +75,15 @@ const { globalInputClasses } = globalClasses();
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
       <nav class="-mb-px flex space-x-8">
         <button
-          id="tab-punchlist"
+          id="tab-defaults"
           class="tab-button border-b-2 border-primary-500 px-1 py-4 text-sm font-medium text-primary-600 dark:text-primary-400"
+          data-tab="defaults"
+        >
+          Defaults
+        </button>
+        <button
+          id="tab-punchlist"
+          class="tab-button border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
           data-tab="punchlist"
         >
           Punchlist Templates
@@ -69,8 +98,40 @@ const { globalInputClasses } = globalClasses();
       </nav>
     </div>
 
+    <!-- Defaults Section -->
+    <div id="section-defaults" class="template-section">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold">Default Settings</h2>
+      </div>
+
+      <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-900">
+        <div class="space-y-6">
+          <div>
+            <UnitSlider
+              projectId="defaults"
+              name="defaultDueDateHours"
+              label="Due date"
+              value={initialDefaultDueDateHours}
+              min={1}
+              max={240}
+              step={1}
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Default hours until due when creating new projects (1–240 hours)
+            </p>
+          </div>
+          <div>
+            <Button id="save-defaults-btn" type="button" variant="primary">
+              <i class="bx bx-save mr-2"></i>
+              Save Defaults
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Punchlist Templates Section -->
-    <div id="section-punchlist" class="template-section">
+    <div id="section-punchlist" class="template-section hidden">
       <div class="mb-4 flex items-center justify-between">
         <h2 class="text-xl font-semibold">Punchlist Templates</h2>
         <Button id="add-punchlist-btn" type="button" variant="primary">
@@ -232,7 +293,7 @@ const { globalInputClasses } = globalClasses();
 
   <script>
     // State
-    let currentTab = "punchlist";
+    let currentTab = "defaults";
     let templates: any = { punchlist: [], discussion: [] };
 
     // DOM Elements
@@ -241,6 +302,7 @@ const { globalInputClasses } = globalClasses();
 
     // Initialize
     document.addEventListener("DOMContentLoaded", () => {
+      loadDefaults();
       loadTemplates();
       setupEventListeners();
     });
@@ -250,10 +312,15 @@ const { globalInputClasses } = globalClasses();
       document.querySelectorAll(".tab-button").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           const target = e.currentTarget as HTMLElement;
-          const tab = target.dataset.tab || "punchlist";
+          const tab = target.dataset.tab || "defaults";
           switchTab(tab);
         });
       });
+
+      // Defaults save (UnitSlider updates its own display)
+      document
+        .getElementById("save-defaults-btn")
+        ?.addEventListener("click", saveDefaults);
 
       // Add buttons
       document
@@ -298,6 +365,53 @@ const { globalInputClasses } = globalClasses();
           section.classList.add("hidden");
         }
       });
+    }
+
+    async function loadDefaults() {
+      try {
+        const response = await fetch("/api/project-defaults/get");
+        if (!response.ok) return;
+        const data = await response.json();
+        const hours = Math.min(240, Math.max(1, data.defaultDueDateHours || 72));
+        const slider = document.getElementById("defaultDueDateHours-slider-defaults");
+        const valueDisplay = document.getElementById("defaultDueDateHours-value-defaults");
+        if (slider) (slider as HTMLInputElement).value = String(hours);
+        if (valueDisplay) valueDisplay.textContent = String(hours);
+      } catch (error) {
+        console.error("Error loading defaults:", error);
+      }
+    }
+
+    async function saveDefaults() {
+      const slider = document.getElementById("defaultDueDateHours-slider-defaults");
+      const hours = slider ? parseInt((slider as HTMLInputElement).value, 10) : 72;
+      try {
+        const response = await fetch("/api/settings/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            settings: { projectDefaultDueDateHours: String(hours) },
+          }),
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || "Failed to save defaults");
+        }
+
+        if (window.showSuccess) {
+          window.showSuccess("Defaults Saved", "Project defaults updated successfully", 4000);
+        }
+      } catch (error) {
+        console.error("Error saving defaults:", error);
+        if (window.showError) {
+          window.showError(
+            "Save Failed",
+            error instanceof Error ? error.message : "Failed to save defaults",
+            0
+          );
+        }
+      }
     }
 
     async function loadTemplates() {

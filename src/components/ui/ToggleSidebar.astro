@@ -83,11 +83,18 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
 <script>
   import { BREAKPOINTS } from "../../lib/ux-utils";
 
-  document.addEventListener("DOMContentLoaded", function () {
+  /** AbortController to remove previous listeners when re-initing (SPA navigations). */
+  let sidebarAbortController: AbortController | null = null;
+
+  function initSidebar() {
+    // Abort previous run to avoid duplicate document/window listeners
+    sidebarAbortController?.abort();
+    sidebarAbortController = new AbortController();
+    const signal = sidebarAbortController.signal;
+
     const toggleButtons = Array.from(document.querySelectorAll("[data-sidebar-toggle-button]"));
     const sidebar = document.getElementById("sidebar");
     const mainContent = document.getElementById("main-content");
-    const stickyActions = document.getElementById("sticky-actions");
     const collapseHideElements = document.querySelectorAll("[data-sidebar-collapse-hide]");
     const collapseShowElements = document.querySelectorAll("[data-sidebar-collapse-show]");
     const collapseIcon = document.querySelector("[data-sidebar-toggle-collapse-icon]");
@@ -100,13 +107,12 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
 
     // Use global breakpoint (Tailwind sm)
     const isMobile = () => window.innerWidth < BREAKPOINTS.SM;
-    const isAboveSm = () => window.innerWidth >= BREAKPOINTS.SM;
 
     // Track if sidebar is expanded (for desktop hover behavior)
     let isHovering = false;
 
     // Toggle icons based on state — update ALL instances (navbar + sticky actions, etc.) so they stay in sync
-    const updateIcons = (isExpanded) => {
+    const updateIcons = (isExpanded: boolean) => {
       if (collapseIcon && expandIcon) {
         if (isExpanded) {
           collapseIcon.classList.remove("hidden");
@@ -141,36 +147,25 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       }
     };
 
-    // Lock body scroll (mobile only). Avoid touch-action: none on body — it breaks iOS Safari scrolling when sidebar closes.
     const lockBodyScroll = () => {
       document.body.style.overflow = "hidden";
     };
-
-    // Unlock body scroll
     const unlockBodyScroll = () => {
       document.body.style.overflow = "";
     };
 
-    // Show collapse-hide elements (expanded state)
     const showCollapseElements = () => {
       collapseHideElements.forEach((el) => el.classList.remove("hidden"));
       collapseShowElements.forEach((el) => el.classList.add("hidden"));
       collapseShowElements.forEach((el) => el.classList.remove("flex"));
     };
 
-    // Hide collapse-hide elements (collapsed state)
     const hideCollapseElements = () => {
       collapseHideElements.forEach((el) => el.classList.add("hidden"));
       collapseShowElements.forEach((el) => el.classList.remove("hidden"));
       collapseShowElements.forEach((el) => el.classList.add("flex"));
     };
 
-    // COMMENTED OUT: sidebar nav item stagger (broken)
-    // const sidebarNavItemSelector = ".sticky ul#sidebar-menu > li, .sticky ul#sidebar-menu-1 > li";
-    // const runSidebarItemStaggerIn = () => { ... };
-    // const clearSidebarItemStyles = () => { ... };
-
-    // MOBILE: Show sidebar (slide in)
     const showSidebarMobile = () => {
       sidebar.classList.remove("-translate-x-full");
       sidebar.classList.add("translate-x-0");
@@ -183,13 +178,9 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       }
       toggleButtons.forEach((btn) => btn.setAttribute("aria-expanded", "true"));
       updateIcons(true);
-      // runSidebarItemStaggerIn();
     };
 
-    // MOBILE: Hide sidebar (slide out)
     const hideSidebarMobile = () => {
-      // sidebar.classList.remove("sidebar-open");
-      // clearSidebarItemStyles();
       sidebar.classList.remove("translate-x-0");
       sidebar.classList.add("-translate-x-full");
       unlockBodyScroll();
@@ -202,105 +193,102 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
 
     const SIDEBAR_STORAGE_KEY = "sidebar-expanded";
 
-    // DESKTOP: Expand sidebar (show text labels)
     const expandSidebarDesktop = () => {
       sidebar.classList.remove("w-16");
       sidebar.classList.add("w-64");
       showCollapseElements();
       if (mainContent) {
-        mainContent.style.marginLeft = "16rem"; // 256px (w-64)
+        mainContent.style.marginLeft = "16rem";
       }
-
       toggleButtons.forEach((btn) => btn.setAttribute("aria-expanded", "true"));
       updateIcons(true);
-      // runSidebarItemStaggerIn();
     };
 
-    // DESKTOP: Collapse sidebar (icons only)
     const collapseSidebarDesktop = () => {
-      // if (!isAboveSm()) { sidebar.classList.remove("sidebar-open"); clearSidebarItemStyles(); }
       sidebar.classList.remove("w-64");
       sidebar.classList.add("w-16");
       hideCollapseElements();
       if (mainContent) {
-        mainContent.style.marginLeft = "4rem"; // 64px (w-16)
+        mainContent.style.marginLeft = "4rem";
       }
       toggleButtons.forEach((btn) => btn.setAttribute("aria-expanded", "false"));
       updateIcons(false);
     };
 
-    // Toggle handler (persist drawer state on desktop so it remembers if left open)
     const handleToggleClick = () => {
       if (isMobile()) {
-        // Mobile: slide in/out
         const isHidden = sidebar.classList.contains("-translate-x-full");
-        if (isHidden) {
-          showSidebarMobile();
-        } else {
-          hideSidebarMobile();
-        }
+        if (isHidden) showSidebarMobile();
+        else hideSidebarMobile();
       } else {
-        // Desktop: expand/collapse (icons only vs full)
         const isCollapsed = sidebar.classList.contains("w-16");
         if (isCollapsed) {
           expandSidebarDesktop();
           try {
             localStorage.setItem(SIDEBAR_STORAGE_KEY, "true");
-          } catch (_) {
-            /* localStorage unavailable (e.g. private mode) */
-          }
+          } catch (_) {}
         } else {
           collapseSidebarDesktop();
           try {
             localStorage.setItem(SIDEBAR_STORAGE_KEY, "false");
-          } catch (_) {
-            /* localStorage unavailable (e.g. private mode) */
-          }
+          } catch (_) {}
         }
       }
     };
-    toggleButtons.forEach((btn) => btn.addEventListener("click", handleToggleClick));
 
-    // Desktop hover behavior: expand on hover, collapse on leave
+    toggleButtons.forEach((btn) => btn.addEventListener("click", handleToggleClick, { signal }));
+
     if (isAuth) {
-      sidebar.addEventListener("mouseenter", () => {
-        if (!isMobile() && sidebar.classList.contains("w-16")) {
-          isHovering = true;
-          expandSidebarDesktop();
-        }
-      });
+      sidebar.addEventListener(
+        "mouseenter",
+        () => {
+          if (!isMobile() && sidebar.classList.contains("w-16")) {
+            isHovering = true;
+            expandSidebarDesktop();
+          }
+        },
+        { signal }
+      );
 
-      sidebar.addEventListener("mouseleave", () => {
-        if (!isMobile() && isHovering) {
-          isHovering = false;
-          collapseSidebarDesktop();
-        }
-      });
+      sidebar.addEventListener(
+        "mouseleave",
+        () => {
+          if (!isMobile() && isHovering) {
+            isHovering = false;
+            collapseSidebarDesktop();
+          }
+        },
+        { signal }
+      );
     }
 
-    // Close on escape key
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key === "Escape") {
+          if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
+            hideSidebarMobile();
+          }
+        }
+      },
+      { signal }
+    );
+
+    document.addEventListener(
+      "click",
+      (e) => {
         if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
-          hideSidebarMobile();
+          if (
+            !sidebar.contains(e.target as Node) &&
+            !toggleButtons.some((btn) => btn.contains(e.target as Node))
+          ) {
+            hideSidebarMobile();
+          }
         }
-      }
-    });
+      },
+      { signal }
+    );
 
-    // Close on click outside (mobile only)
-    document.addEventListener("click", (e) => {
-      if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
-        // Check if click is outside sidebar and toggle button
-        if (
-          !sidebar.contains(e.target as Node) &&
-          !toggleButtons.some((btn) => btn.contains(e.target as Node))
-        ) {
-          hideSidebarMobile();
-        }
-      }
-    });
-
-    // Swipe to close functionality (mobile only)
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
@@ -308,93 +296,88 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
     let isDragging = false;
     let currentTranslateX = 0;
 
-    sidebar.addEventListener("touchstart", (e) => {
-      if (!isMobile()) return;
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      isDragging = true;
-      sidebar.style.transition = "none";
-    });
+    sidebar.addEventListener(
+      "touchstart",
+      (e) => {
+        if (!isMobile()) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isDragging = true;
+        sidebar.style.transition = "none";
+      },
+      { signal }
+    );
 
-    sidebar.addEventListener("touchmove", (e) => {
-      if (!isMobile() || !isDragging) return;
-
-      const touchCurrentX = e.touches[0].clientX;
-      const touchCurrentY = e.touches[0].clientY;
-      const deltaX = touchCurrentX - touchStartX;
-      const deltaY = touchCurrentY - touchStartY;
-
-      // Only respond to horizontal swipes (left)
-      if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX < 0) {
-        currentTranslateX = deltaX;
-        sidebar.style.transform = `translateX(${deltaX}px)`;
-      }
-    });
-
-    sidebar.addEventListener("touchend", (e) => {
-      if (!isMobile() || !isDragging) return;
-
-      isDragging = false;
-      sidebar.style.transition = "";
-      sidebar.style.transform = "";
-
-      const deltaX = touchEndX - touchStartX;
-      const swipeThreshold = 100; // minimum swipe distance in pixels
-
-      // If swiped left more than threshold, close sidebar
-      if (currentTranslateX < -swipeThreshold) {
-        hideSidebarMobile();
-      }
-
-      currentTranslateX = 0;
-      touchStartX = 0;
-      touchStartY = 0;
-      touchEndX = 0;
-      touchEndY = 0;
-    });
-
-    // Handle resize
-    window.addEventListener("resize", () => {
-      if (!isMobile()) {
-        // Switching to desktop
-        unlockBodyScroll();
-        if (mainContent) {
-          mainContent.classList.remove("overflow-hidden", "blur-sm", "pointer-events-none");
+    sidebar.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!isMobile() || !isDragging) return;
+        const touchCurrentX = e.touches[0].clientX;
+        const touchCurrentY = e.touches[0].clientY;
+        const deltaX = touchCurrentX - touchStartX;
+        const deltaY = touchCurrentY - touchStartY;
+        if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX < 0) {
+          currentTranslateX = deltaX;
+          sidebar.style.transform = `translateX(${deltaX}px)`;
         }
-        // On desktop with auth: show collapsed sidebar
-        if (isAuth) {
-          sidebar.classList.remove("-translate-x-full");
-          sidebar.classList.add("translate-x-0");
-          collapseSidebarDesktop();
-        }
-      } else {
-        // Switching to mobile
-        if (mainContent) {
-          mainContent.style.marginLeft = ""; // Clear inline style on mobile
-        }
-        // Hide sidebar on mobile
-        hideSidebarMobile();
-      }
-    });
+      },
+      { signal }
+    );
 
-    // Initialize
+    sidebar.addEventListener(
+      "touchend",
+      () => {
+        if (!isMobile() || !isDragging) return;
+        isDragging = false;
+        sidebar.style.transition = "";
+        sidebar.style.transform = "";
+        if (currentTranslateX < -100) hideSidebarMobile();
+        currentTranslateX = 0;
+        touchStartX = 0;
+        touchStartY = 0;
+        touchEndX = 0;
+        touchEndY = 0;
+      },
+      { signal }
+    );
+
+    window.addEventListener(
+      "resize",
+      () => {
+        if (!isMobile()) {
+          unlockBodyScroll();
+          if (mainContent) {
+            mainContent.classList.remove("overflow-hidden", "blur-sm", "pointer-events-none");
+          }
+          if (isAuth) {
+            sidebar.classList.remove("-translate-x-full");
+            sidebar.classList.add("translate-x-0");
+            collapseSidebarDesktop();
+          }
+        } else {
+          if (mainContent) mainContent.style.marginLeft = "";
+          hideSidebarMobile();
+        }
+      },
+      { signal }
+    );
+
+    // Initialize visibility state (critical: runs on SPA swap so sidebar shows after navigation)
     if (isMobile()) {
-      // Mobile: sidebar hidden by default
       sidebar.classList.add("-translate-x-full");
     } else if (isAuth) {
-      // Desktop with auth: restore last drawer state (expanded vs collapsed)
       sidebar.classList.remove("-translate-x-full");
       sidebar.classList.add("translate-x-0");
       try {
         const remembered = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-        if (remembered === "true") {
-          expandSidebarDesktop();
-        } else {
-          collapseSidebarDesktop();
-        }
+        if (remembered === "true") expandSidebarDesktop();
+        else collapseSidebarDesktop();
       } catch (_) {
         collapseSidebarDesktop();
       }
     }
-  });
+  }
+
+  document.addEventListener("DOMContentLoaded", initSidebar);
+  // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(initSidebar));
 </script>

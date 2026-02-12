@@ -52,6 +52,12 @@ Navigate to `/your-page` (the slug matches the filename without `.md`)
 ### Layout
 - `<LandingProduct/>` - Product landing section
 
+## ⚠️ Nested Shortcodes
+
+**Shortcodes cannot be nested inside other shortcodes.** The parser only extracts top-level component tags. If you pass something like `leftContent="<ImageBlock/>"` to TwoColumnBlock, it will be output as raw text/HTML—the inner component is never parsed or rendered.
+
+**Workaround**: Use direct Astro files instead of markdown when you need nesting—e.g. create a page that imports both TwoColumnBlock and ImageBlock and composes them with slots. For CMS/markdown, stick to HTML strings in content props (e.g. `leftContent="<img src='...' />"`).
+
 ## 🔧 Component Syntax
 
 ### Self-Closing Tags

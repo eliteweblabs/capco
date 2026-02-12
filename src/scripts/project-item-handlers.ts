@@ -476,4 +476,43 @@ if (!(window as any).__timeDisplayInitialized) {
   }
 };
 
+/**
+ * Featured toggle change handler (event delegation)
+ */
+document.addEventListener("change", async (e) => {
+  const target = e.target as HTMLElement;
+  if (target.getAttribute("data-meta") !== "featured" || !target.hasAttribute("data-project-id")) {
+    return;
+  }
+  const projectId = target.getAttribute("data-project-id");
+  const checked = (target as HTMLInputElement).checked;
+
+  try {
+    const response = await fetch("/api/projects/upsert", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: parseInt(projectId!), featured: checked }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update featured");
+    }
+
+    if ((window as any).showNotice) {
+      (window as any).showNotice(
+        "success",
+        checked ? "Project featured" : "Project unfeatured",
+        "",
+        1500
+      );
+    }
+  } catch (err) {
+    console.error("Error updating featured:", err);
+    (target as HTMLInputElement).checked = !checked; // Revert on error
+    if ((window as any).showNotice) {
+      (window as any).showNotice("error", "Update Failed", "Failed to update featured.", 3000);
+    }
+  }
+});
+
 console.log("✅ [GLOBAL] Project item handlers loaded");

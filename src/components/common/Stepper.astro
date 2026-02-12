@@ -1,0 +1,144 @@
+---
+/**
+ * Stepper – generic value display with optional +/- controls.
+ * Pass onIncrement/onDecrement handler strings for stepper mode, or showStepper=false for read-only.
+ * Use for due dates, quantities, or any value that can be incremented/decremented.
+ */
+import SimpleIcon from "./SimpleIcon.astro";
+
+export interface Props {
+  /** Entity id for data attributes (e.g. project.id for data-project-id) */
+  entityId: string | number;
+  /** Raw value (ISO date string, number, etc.) */
+  value?: string | number | null;
+  /** Show stepper (+/-) and short display; false = read-only long display */
+  showStepper?: boolean;
+  /** onclick handler for increment (e.g. `adjustDueDate(24, 1)`) – required when showStepper */
+  onIncrement?: string;
+  /** onclick handler for decrement (e.g. `adjustDueDate(24, -1)`) – required when showStepper */
+  onDecrement?: string;
+  /** Field name for data-meta and data-refresh (default "dueDate" for compat) */
+  meta?: string;
+  /** data-refresh value (defaults to meta) */
+  refresh?: string;
+  /** Shown when value is empty */
+  placeholder?: string;
+  /** Input element id (default `stepper-${entityId}`) */
+  inputId?: string;
+  /** Wrapper class (e.g. "flex items-center gap-1") */
+  wrapperClass?: string;
+  /** Decrement button class */
+  decrementButtonClass?: string;
+  /** Increment button class */
+  incrementButtonClass?: string;
+  /** Input class */
+  inputClass?: string;
+  /** Span class when showStepper is false (display-only) */
+  displayOnlyClass?: string;
+  /** Locale for date formatting (when value is date and displayShort/displayLong not provided) */
+  locale?: string;
+  /** Short format options (when deriving from date value) */
+  dateFormatShort?: Intl.DateTimeFormatOptions;
+  /** Long format options (when deriving from date value) */
+  dateFormatLong?: Intl.DateTimeFormatOptions;
+  /** Override short display text (skips date formatting) */
+  displayShort?: string;
+  /** Override long display text (skips date formatting) */
+  displayLong?: string;
+  /** data-* attribute suffix for entity id (default "project-id" → data-project-id) */
+  dataEntityAttr?: string;
+  /** data-* attribute for raw value (default "due-date" for refresh compat; use "value" for generic) */
+  dataValueAttr?: string;
+}
+
+const {
+  entityId,
+  value = "",
+  showStepper = true,
+  onIncrement,
+  onDecrement,
+  meta = "dueDate",
+  refresh,
+  placeholder = "",
+  inputId,
+  wrapperClass = "flex items-center gap-1",
+  decrementButtonClass = "align-center flex px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg",
+  incrementButtonClass = "align-center flex px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg",
+  inputClass = "w-24 text-center border-0 bg-transparent text-xs focus:ring-0 p-1",
+  displayOnlyClass = "",
+  locale = "en-US",
+  dateFormatShort = {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    hour12: true,
+  },
+  dateFormatLong = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  },
+  displayShort: displayShortOverride,
+  displayLong: displayLongOverride,
+  dataEntityAttr = "project-id",
+  dataValueAttr = "due-date",
+} = Astro.props;
+
+const refreshValue = refresh ?? meta;
+const resolvedInputId = inputId ?? `stepper-${entityId}`;
+const rawValue = value ?? "";
+const displayShort =
+  displayShortOverride ??
+  (typeof rawValue === "string" && rawValue
+    ? new Date(rawValue).toLocaleDateString(locale, dateFormatShort)
+    : rawValue != null && rawValue !== "" ? String(rawValue) : placeholder);
+const displayLong =
+  displayLongOverride ??
+  (typeof rawValue === "string" && rawValue
+    ? new Date(rawValue).toLocaleDateString(locale, dateFormatLong)
+    : rawValue != null && rawValue !== "" ? String(rawValue) : placeholder);
+const dataIdAttr = `data-${dataEntityAttr}`;
+const dataValueKey = `data-${dataValueAttr}`;
+---
+
+{
+  showStepper ? (
+    <div class={wrapperClass}>
+      <button
+        type="button"
+        class={decrementButtonClass}
+        data-action="decrement"
+        {...{ [dataIdAttr]: entityId }}
+        onclick={onDecrement ? `event.stopPropagation(); ${onDecrement}` : undefined}
+      >
+        <SimpleIcon name="minus" size="xs" class="text-gray-600" />
+      </button>
+      <div class="relative inline-block">
+        <input
+          type="text"
+          id={resolvedInputId}
+          value={displayShort}
+          {...{ [dataValueKey]: rawValue }}
+          data-refresh={refreshValue}
+          {...{ [dataIdAttr]: entityId }}
+          data-meta={meta}
+          data-meta-value={rawValue}
+          readonly
+          class={inputClass}
+          placeholder={placeholder || undefined}
+        />
+      </div>
+      <button
+        type="button"
+        class={incrementButtonClass}
+        data-action="increment"
+        {...{ [dataIdAttr]: entityId }}
+        onclick={onIncrement ? `event.stopPropagation(); ${onIncrement}` : undefined}
+      >
+        <SimpleIcon name="plus" size="xs" class="text-gray-600" />
+      </button>
+    </div>
+  ) : (
+    <span class={displayOnlyClass}>{displayLong || placeholder}</span>
+  )
+}

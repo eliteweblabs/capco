@@ -1,0 +1,13 @@
+-- Project Default Due Date Hours
+-- Stored in existing globalSettings table (no new columns or tables needed)
+--
+-- Table: public.globalSettings
+-- Columns used: key, value, category, valueType
+-- Key: projectDefaultDueDateHours
+-- Value: text (e.g. "72") - hours from now until due when creating new projects
+-- Range: 1–240 hours
+--
+-- The settings page upserts this automatically when "Save Defaults" is clicked.
+--
+-- Check if it exists:
+SELECT key, value, category, "valueType" FROM "globalSettings" WHERE key = 'projectDefaultDueDateHours';
