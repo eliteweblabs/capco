@@ -43,7 +43,12 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 }));
 ---
 
-<div data-dynamic-height="true" data-multi-step-form tabindex="-1" class="w-full min-w-96">
+<div
+  data-dynamic-height="true"
+  data-multi-step-form
+  tabindex="-1"
+  class="flex w-full min-w-96 flex-col items-start justify-center"
+>
   <form
     id={config.formId}
     action={config.formAction}
@@ -1818,21 +1823,19 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       console.log("❌ [FIELD-VALIDATION] Some fields are invalid or empty");
     }
 
-    // When panel is valid: show check icon, hide default icon (and vice versa). Applies to any button with both icons, regardless of validLabel.
+    // When panel is valid: show valid icon, hide default icon (and vice versa). CSS in global.css uses button.is-valid to control .icon-valid/.icon-default display.
     activeStep.querySelectorAll("button").forEach((btn) => {
       const iconValid = btn.querySelector(".icon-valid");
       const iconDefault = btn.querySelector(".icon-default");
       if (!iconValid || !iconDefault) return;
       if (allValid) {
-        iconValid.classList.remove("hidden");
-        iconDefault.classList.add("hidden");
+        btn.classList.add("is-valid");
         const buttonText = btn.querySelector(".button-text");
         const validLabel = btn.getAttribute("data-valid-label");
         const defaultLabel = btn.getAttribute("data-default-label");
         if (buttonText && validLabel && defaultLabel) buttonText.textContent = validLabel;
       } else {
-        iconValid.classList.add("hidden");
-        iconDefault.classList.remove("hidden");
+        btn.classList.remove("is-valid");
         const buttonText = btn.querySelector(".button-text");
         const defaultLabel = btn.getAttribute("data-default-label");
         if (buttonText && defaultLabel) buttonText.textContent = defaultLabel;

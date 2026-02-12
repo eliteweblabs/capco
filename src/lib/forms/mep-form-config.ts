@@ -28,7 +28,7 @@ export function getMepFormConfig(
         skipCondition: "isAuthenticated", // Skip for logged-in users
         fieldLayout: "grid", // Enable grid layout for side-by-side fields
         fields: [],
-        expandDown: true,
+        expandDown: false,
         hideProgressBar: true,
         buttons: [
           {

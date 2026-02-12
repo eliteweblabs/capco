@@ -64,7 +64,7 @@ export function getContactFormConfig(
         title: `<span data-typewriter-pause="1360"></span>Hi, I'm ${assistantName}...<br><br>${globalCompanyName}'s project assistant. <br><br>Let's start with your name!`,
         fieldLayout: "single",
         response: true,
-        expandDown: true,
+        expandDown: false,
 
         fields: [
           {
