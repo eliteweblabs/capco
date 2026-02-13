@@ -67,9 +67,9 @@ export const POST: APIRoute = async ({ request }) => {
           alt="${fullName}"
           class="rounded-full w-full h-full object-cover user-avatar-img"
           style="display: none;"
-          onerror="this.style.display='none'; this.parentElement?.querySelector('.user-avatar-fallback')?.classList.remove('hidden');"
+          onerror="this.style.display='none'; this.parentElement?.querySelector('.avatar-fallback')?.classList.remove('hidden');"
         />
-        <span class="user-avatar-fallback">${initials}</span>
+        <span class="avatar-fallback">${initials}</span>
       `;
     } else {
       avatarHTML += `<span>${initials}</span>`;
@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
           const container = document.currentScript.previousElementSibling;
           const avatarUrl = container.getAttribute("data-avatar-url");
           const avatarImg = container.querySelector(".user-avatar-img");
-          const fallbackSpan = container.querySelector(".user-avatar-fallback");
+          const fallbackSpan = container.querySelector(".avatar-fallback");
 
           if (avatarUrl && avatarImg && fallbackSpan) {
             const img = new Image();

@@ -369,88 +369,19 @@ if (!String.prototype.startsWith) {
   }
 };
 
-/** Focus first focusable input in a container. Call at end of panel animations so mobile keypad opens. */
+/**
+ * Focus first focusable input in a container.
+ * iOS keypad only opens when focus() is called within a direct user interaction (click/touch).
+ * Use from a button/link click handler, e.g. "Open keypad" button or dropdown trigger.
+ */
 (window as any).focusFirstInputIn = function (container: HTMLElement): boolean {
-  console.log("[AUTOFOCUS] focusFirstInputIn called", {
-    hasContainer: !!container,
-    containerTag: container?.tagName,
-    containerStep: container?.getAttribute?.("data-step"),
-  });
-  if (!container || typeof container.querySelector !== "function") {
-    console.log("[AUTOFOCUS] early return: no container or no querySelector");
-    return false;
-  }
+  if (!container?.querySelector) return false;
   const first = container.querySelector(
     "input:not([type=hidden]):not([readonly]), textarea, select"
   ) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
-  console.log("[AUTOFOCUS] first focusable", {
-    found: !!first,
-    tag: first?.tagName,
-    id: first?.id,
-    name: (first as HTMLInputElement)?.name,
-    type: (first as HTMLInputElement)?.type,
-  });
-  if (!first || typeof first.focus !== "function") {
-    console.log("[AUTOFOCUS] early return: no first element or no focus method");
-    return false;
-  }
-  const isTouch = "ontouchstart" in window;
-  console.log("[AUTOFOCUS] focusing", { isTouch, preventScroll: false });
-  if (isTouch) {
-    first.scrollIntoView({ block: "center", behavior: "auto" });
-    console.log("[AUTOFOCUS] touch: scrolled input into view before focus");
-  }
+  if (!first?.focus) return false;
   first.focus({ preventScroll: false });
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const active = document.activeElement === first;
-      console.log("[AUTOFOCUS] after rAF x2", { activeElementIsFirst: active });
-      if (!active) first.focus({ preventScroll: false });
-    });
-  });
-  if (isTouch) {
-    console.log("[AUTOFOCUS] touch device: scheduling focus at 50ms, 300ms, 500ms (mobile keypad)");
-    setTimeout(() => {
-      first.focus({ preventScroll: false });
-      console.log("[AUTOFOCUS] touch focus 50ms", {
-        activeElementIsFirst: document.activeElement === first,
-      });
-    }, 50);
-    setTimeout(() => {
-      first.focus({ preventScroll: false });
-      console.log("[AUTOFOCUS] touch focus 300ms", {
-        activeElementIsFirst: document.activeElement === first,
-      });
-    }, 300);
-    setTimeout(() => {
-      first.focus({ preventScroll: false });
-      console.log("[AUTOFOCUS] touch focus 500ms (iOS fallback)", {
-        activeElementIsFirst: document.activeElement === first,
-      });
-    }, 500);
-  }
-  console.log("[AUTOFOCUS] done", {
-    activeElement: document.activeElement?.tagName,
-    activeId: (document.activeElement as HTMLElement)?.id,
-  });
   return true;
-};
-
-/** Try to open mobile keypad by focusing first input and using click (helps iOS). Call after focusFirstInputIn. */
-(window as any).openKeypad = function (container: HTMLElement): void {
-  if (!container?.querySelector) return;
-  const first = container.querySelector(
-    "input:not([type=hidden]):not([readonly]), textarea, select"
-  ) as HTMLInputElement | HTMLTextAreaElement | null;
-  if (!first || typeof first.focus !== "function") return;
-  if (!("ontouchstart" in window)) return; // Desktop: no keypad
-  first.scrollIntoView({ block: "center", behavior: "smooth" });
-  first.focus({ preventScroll: false });
-  // Simulated click can help iOS show keypad when programmatic focus alone fails
-  first.click();
-  [100, 300, 500].forEach((ms) =>
-    setTimeout(() => first.focus({ preventScroll: false }), ms)
-  );
 };
 
 /**

@@ -8,105 +8,118 @@ interface Props {
   currentUser: any;
   projects: any[];
   globalIconButtonClasses: string;
+  closeButton: boolean;
+  id: string;
+  /** Name of global function to call when dropdown opens (e.g. for refresh). Expose as window.refreshUserProfile. */
+  onOpen?: string;
 }
 
-const { currentUser, projects, globalIconButtonClasses } = Astro.props;
-if (!currentUser) {
-  return null;
+// Redirect to API callback only when code is on a page that shouldn't handle it
+// /auth/callback must render so client-side JS can exchange the code - do NOT redirect there
+const authCode = Astro.url.searchParams.get("code");
+if (authCode && !Astro.url.pathname.startsWith("/auth/callback")) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
 }
+
+const { currentUser, projects, globalIconButtonClasses, closeButton = false, id, onOpen } = Astro.props;
+
+const redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
 
 const currentRole = currentUser?.profile?.role;
 import SimpleIcon from "../common/SimpleIcon.astro";
-import CloseButton from "../ui/CloseButton.astro";
 import AssignedProjects from "../common/AssignedProjects.astro";
 import Dropdown from "./Dropdown.astro";
+import MultiStepForm from "../form/MultiStepForm.astro";
+import { loginFormConfig } from "../../lib/forms/login-form-config";
 ---
 
-<!-- Account dropdown: Flowbite data-dropdown-toggle="account-dropdown" on AuthIcon trigger -->
-<Dropdown id="account" {currentUser} {projects} {globalIconButtonClasses}>
-  <a
-    slot="title"
-    class="align-center flex rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-    href="/profile"
-  >
-    <SimpleIcon name="logo" size="lg" class="m-0 mr-2 w-8" />
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-      {currentUser?.profile?.companyName || "Add Company Name"} /
-      {currentUser?.profile?.firstName}
-      {currentUser?.profile?.lastName}
-    </h3>
-  </a>
-  <div class="min-h-0 flex-1 overflow-y-auto p-3">
-    <div
-      class="align-center flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-    >
-      <ul class="flex flex-col gap-2 text-sm font-medium text-gray-900 dark:text-white">
-        <li>
-          <a href="/profile" title="Profile" class={globalIconButtonClasses}>
-            <SimpleIcon name="user-edit" size="md" class="mr-2 text-black dark:text-white" />
-            Profile
-          </a>
-        </li>
-        <li>
-          <a href="/project/dashboard" title="Dashboard" class={globalIconButtonClasses}>
-            <SimpleIcon name="dashboard" size="md" class="mr-2 text-black dark:text-white" />
-            Dashboard
-          </a>
-        </li>
+<!-- Account dropdown: Flowbite data-popover-target on AuthIcon trigger -->
+<Dropdown
+  id={id}
+  {currentUser}
+  {projects}
+  {globalIconButtonClasses}
+  {closeButton}
+  title="User Profile"
+  onOpenCallback={onOpen}
+>
+  {
+    currentUser ? (
+      <>
+        <a
+          slot="title"
+          class="align-center flex rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+          href="/profile"
+        >
+          <SimpleIcon name="logo" size="lg" class="m-0 mr-2 w-8" />
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            {currentUser?.profile?.companyName || "Add Company Name"} /
+            {currentUser?.profile?.firstName}
+            {currentUser?.profile?.lastName}
+          </h3>
+        </a>
+        <div class="min-h-0 flex-1 overflow-y-auto p-3">
+          <div class="align-center flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            <ul class="flex flex-col gap-2 text-sm font-medium text-gray-900 dark:text-white">
+              <li>
+                <a href="/profile" title="Profile" class={globalIconButtonClasses}>
+                  <SimpleIcon name="user-edit" size="md" class="mr-2 text-black dark:text-white" />
+                  Profile
+                </a>
+              </li>
+              <li>
+                <a href="/project/dashboard" title="Dashboard" class={globalIconButtonClasses}>
+                  <SimpleIcon name="dashboard" size="md" class="mr-2 text-black dark:text-white" />
+                  Dashboard
+                </a>
+              </li>
 
-        {/* Assigned Projects */}
-        {
-          currentRole !== "Client" && (
-            <AssignedProjects currentUser={currentUser} projects={projects} />
-          )
-        }
-      </ul>
+              {/* Assigned Projects */}
+              {(currentRole === "Admin" || currentRole === "Staff") && (
+                <AssignedProjects currentUser={currentUser} projects={projects} />
+              )}
+            </ul>
 
-      {/* new section for sign out */}
-      <ul
-        class="color-border flex flex-col gap-2 border-t text-sm font-medium text-gray-900 dark:text-white"
-      >
-        <li>
-          <a id="logout-btn" href="#" title="logout" class={globalIconButtonClasses}>
-            <SimpleIcon name="log-out" size="md" class="mr-2 text-black dark:text-white" />
-            Sign Out
-          </a>
-        </li>
-      </ul>
+            {/* new section for sign out */}
+            <ul class="color-border flex flex-col gap-2 border-t text-sm font-medium text-gray-900 dark:text-white">
+              <li>
+                <button id="logout-btn" type="button" title="logout" class={globalIconButtonClasses}>
+                  <SimpleIcon name="log-out" size="md" class="mr-2 text-black dark:text-white" />
+                  Sign Out
+                </button>
+              </li>
+            </ul>
 
-      {/* Page size toggle: larger elements for mobile/accessibility */}
-      <ul
-        class="color-border flex flex-col gap-2 border-t text-sm font-medium text-gray-900 dark:text-white"
-      >
-        <li>
-          <button
-            type="button"
-            id="page-size-toggle"
-            title="Toggle larger page elements (better on mobile)"
-            class={`w-full text-left ${globalIconButtonClasses}`}
-            aria-pressed="false"
-          >
-            <SimpleIcon name="zoom-in" size="md" class="mr-2 text-black dark:text-white" />
-            <span id="page-size-toggle-label">Larger page elements</span>
-          </button>
-        </li>
-      </ul>
-    </div>
-  </div>
+            {/* Page size toggle: larger elements for mobile/accessibility */}
+            <ul class="color-border flex flex-col gap-2 border-t text-sm font-medium text-gray-900 dark:text-white">
+              <li>
+                <button
+                  type="button"
+                  id="page-size-toggle"
+                  title="Toggle larger page elements (better on mobile)"
+                  class={`w-full text-left ${globalIconButtonClasses}`}
+                  aria-pressed="false"
+                >
+                  <SimpleIcon name="zoom-in" size="md" class="mr-2 text-black dark:text-white" />
+                  <span id="page-size-toggle-label">Larger page elements</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </>
+    ) : (
+      <MultiStepForm
+        config={loginFormConfig}
+        initialData={{ redirect: redirectUrl }}
+        containerClass="max-w-md"
+        testNoCascade={true}
+      />
+    )
+  }
 </Dropdown>
 <script is:inline>
   document.addEventListener("DOMContentLoaded", function () {
     if (typeof window.initPageSizeToggle === "function") window.initPageSizeToggle();
-
-    var panel = document.getElementById("account-dropdown");
-    document.querySelectorAll('[data-dropdown-toggle="account-dropdown"]').forEach(function (el) {
-      el.addEventListener("click", function () {
-        setTimeout(function () {
-          if (panel && !panel.classList.contains("hidden")) {
-            panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out");
-          }
-        }, 10);
-      });
-    });
   });
 </script>

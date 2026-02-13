@@ -126,12 +126,12 @@ const noItemsId = `${id}-no-items`;
   /**
    * SocialMediaRepeater - init for a single instance
    */
-  function initSocialRepeater(instance: HTMLElement) {
+  function initSocialRepeater(instance) {
     const id = instance.dataset.repeaterId;
     if (!id) return;
     const container = instance.querySelector(`#${id}-container`);
     const addBtn = instance.querySelector(`#${id}-add-btn`);
-    const hiddenInput = instance.querySelector(`#${id}-hidden`) as HTMLInputElement;
+    const hiddenInput = instance.querySelector(`#${id}-hidden`);
     const noItemsEl = instance.querySelector(`#${id}-no-items`);
     if (!container || !addBtn || !hiddenInput) return;
 
@@ -171,10 +171,10 @@ const noItemsId = `${id}-no-items`;
 
     function updateValue() {
       const items = instance.querySelectorAll(".social-network-item");
-      const socials: { url: string; label?: string }[] = [];
+      const socials = [];
       items.forEach((item) => {
-        const urlInput = item.querySelector(".social-url-input") as HTMLInputElement | null;
-        const labelInput = item.querySelector(".social-label-input") as HTMLInputElement | null;
+        const urlInput = item.querySelector(".social-url-input");
+        const labelInput = item.querySelector(".social-label-input");
         const url = urlInput?.value?.trim();
         if (url) {
           socials.push({ url, label: labelInput?.value?.trim() || undefined });
@@ -182,7 +182,7 @@ const noItemsId = `${id}-no-items`;
       });
       hiddenInput.value = JSON.stringify(socials);
       if (noItemsEl) {
-        (noItemsEl as HTMLElement).style.display = items.length === 0 ? "block" : "none";
+        noItemsEl.style.display = items.length === 0 ? "block" : "none";
       }
     }
 
@@ -265,11 +265,11 @@ const noItemsId = `${id}-no-items`;
     instance.querySelectorAll(".social-network-item").forEach(attachListeners);
 
     addBtn.addEventListener("click", () => {
-      if (noItemsEl) (noItemsEl as HTMLElement).style.display = "none";
+      if (noItemsEl) noItemsEl.style.display = "none";
       const newItem = createItem(socialIndex++);
       container.appendChild(newItem);
       attachListeners(newItem);
-      (newItem.querySelector(".social-url-input") as HTMLInputElement | null)?.focus();
+      newItem.querySelector(".social-url-input")?.focus();
     });
   }
 

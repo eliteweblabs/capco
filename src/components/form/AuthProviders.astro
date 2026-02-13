@@ -63,8 +63,8 @@ const { mode = "login" } = Astro.props;
     <span class="provider-label hidden md:block">Email</span>
   </button>
 
-  <!-- Google: OAuth started by .provider-btn click → handleGoogleSignup() (see login/register page script) -->
-  <Tooltip text="Sign in with Google" position="top" mobileClickable={true}>
+  <!-- Google: OAuth via handleGoogleSignup (login/register) or redirect to login page (dropdown/popper) -->
+  <Tooltip text="Sign in with Google" position="top" mobileClickable={false} touchable={false}>
     <button
       type="button"
       class="provider-btn w-10 object-contain"
@@ -321,12 +321,11 @@ const { mode = "login" } = Astro.props;
             window.location.href = "/auth/otp-login";
             break;
           case "google": {
-            // Trigger Google OAuth: use global if set (login/register page), else dispatch event
             const handleGoogle = (window as any).handleGoogleSignup;
             if (typeof handleGoogle === "function") {
-              handleGoogle();
+              handleGoogle(e);
             } else {
-              document.dispatchEvent(new CustomEvent("auth-google-request"));
+              window.location.href = "/auth/login?provider=google";
             }
             break;
           }

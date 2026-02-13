@@ -8,6 +8,7 @@ export const loginFormConfig: MultiStepFormConfig = {
   totalSteps: 2,
   progressBar: false, // Simple 2-step, no need for progress bar
   registerUser: false,
+  authRedirect: [{ name: "Dashboard", url: "/project/dashboard" }],
   hiddenFields: [{ name: "redirect", value: "/project/dashboard" }],
 
   // Default button styles

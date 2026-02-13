@@ -32,6 +32,7 @@ console.log("🔐 [LOGIN] User is not authenticated, showing login page");
 
 import LayoutTwoColumn from "../../components/layouts/LayoutTwoColumn.astro";
 import MultiStepForm from "../../components/form/MultiStepForm.astro";
+import Button from "../../components/common/Button.astro";
 import { loginFormConfig } from "../../lib/forms/login-form-config";
 import DotGrid from "../../components/ui/DotGrid.astro";
 ---
@@ -51,13 +52,24 @@ import DotGrid from "../../components/ui/DotGrid.astro";
       dotColor="primary-500"
     />
   </div>
-  <div slot="right" class="color-background max-w-md">
-    <MultiStepForm
-      config={loginFormConfig}
-      initialData={{ redirect: redirectUrl }}
-      containerClass="max-w-md"
-      testNoCascade={true}
-    />
+  <div slot="right" class="color-background max-w-md" data-redirect-url={redirectUrl}>
+    <!-- Fallback: if user somehow lands here already logged in (e.g. session in another tab) -->
+    <div id="login-already-authenticated" class="hidden">
+      <div class="flex flex-col items-center gap-4 rounded-lg border border-primary-200 bg-primary-50/50 p-6 dark:border-primary-700 dark:bg-primary-900/20">
+        <p class="text-center text-sm text-primary-700 dark:text-primary-300">You're already logged in.</p>
+        <Button href={redirectUrl} variant="secondary" size="md" icon="arrow-right" iconPosition="right">
+          Go to Dashboard
+        </Button>
+      </div>
+    </div>
+    <div id="login-form-wrapper">
+      <MultiStepForm
+        config={loginFormConfig}
+        initialData={{ redirect: redirectUrl }}
+        containerClass="max-w-md"
+        testNoCascade={true}
+      />
+    </div>
   </div>
 </LayoutTwoColumn>
 
@@ -75,9 +87,40 @@ import DotGrid from "../../components/ui/DotGrid.astro";
   // Use singleton Supabase client to avoid multiple instances
   import { getSupabaseClient } from "../../lib/supabase-client";
 
-  // Check for error in URL params and show notification
-  document.addEventListener("DOMContentLoaded", () => {
+  // Fallback: if user is already logged in (e.g. session synced from another tab), hide form and show redirect
+  document.addEventListener("DOMContentLoaded", async () => {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        const formWrapper = document.getElementById("login-form-wrapper");
+        const alreadyAuth = document.getElementById("login-already-authenticated");
+        const redirectUrl =
+          document.querySelector('[data-redirect-url]')?.getAttribute("data-redirect-url") ||
+          "/project/dashboard";
+        if (formWrapper && alreadyAuth) {
+          formWrapper.classList.add("hidden");
+          alreadyAuth.classList.remove("hidden");
+          const btn = alreadyAuth.querySelector('a[href]');
+          if (btn) btn.setAttribute("href", redirectUrl);
+        } else {
+          window.location.href = redirectUrl;
+        }
+        return;
+      }
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
+    const provider = urlParams.get("provider");
+    if (provider === "google") {
+      window.history.replaceState({}, document.title, "/auth/login");
+      triggerGoogleOAuth();
+      return;
+    }
+
+    // Check for error in URL params and show notification
     const error = urlParams.get("error");
     const message = urlParams.get("message");
 

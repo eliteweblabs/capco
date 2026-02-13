@@ -74,6 +74,8 @@ const topBannersToShow = isAuthPath ? [] : topBanners;
 
 // Get all banner IDs for early dismiss check (use filtered so hidden banners stay hidden)
 const allBannerIds = filteredBanners.map((b) => String(b.id));
+
+import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
 ---
 
 <!-- 
@@ -145,8 +147,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
   )
 }
 
-<script define:vars={{ pathname: pathname ?? "" }}>
-  import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
+<script define:vars={{ pathname: pathname ?? "", MOBILE_MEDIA_QUERY }}>
   (function () {
     const isAuthPath = typeof pathname === "string" && pathname.startsWith("/auth");
     const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -159,7 +160,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         const stored = localStorage.getItem("dismissedBanners");
         if (!stored) return;
         const dismissed = JSON.parse(stored);
-        const dismissedSet = new Set(dismissed.map((id: unknown) => String(id)));
+        const dismissedSet = new Set(dismissed.map((id) => String(id)));
         const banners = document.querySelectorAll(".banner-alert[data-banner-id]");
         let css = "";
         banners.forEach((el) => {
@@ -182,12 +183,12 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
     }
 
     function getDismissedSet() {
-      let dismissedSet = new Set<string>();
+      let dismissedSet = new Set();
       try {
         const stored = localStorage.getItem("dismissedBanners");
         if (stored) {
           const dismissed = JSON.parse(stored);
-          dismissedSet = new Set(dismissed.map((id: unknown) => String(id)));
+          dismissedSet = new Set(dismissed.map((id) => String(id)));
         }
       } catch { /* ignore localStorage errors */ }
       return dismissedSet;
@@ -199,15 +200,15 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
       if (!scrollEl) return;
 
       const rem = remPx();
-      const off = (window as any).__revealSidebarOffsets || { topPx: 4 * rem, topBannersOnlyPx: 0, bottomPx: 4 * rem };
-      (window as any).__revealSidebarOffsets = off;
+      const off = window.__revealSidebarOffsets || { topPx: 4 * rem, topBannersOnlyPx: 0, bottomPx: 4 * rem };
+      window.__revealSidebarOffsets = off;
 
       const topBannerContainer = document.getElementById("top-banner-container");
       const bottomBannerContainer = document.getElementById("bottom-banner-container");
       const dismissedSet = getDismissedSet();
       // Use navbar-content only (the bar); top-banner-container is inside main-navbar so main-navbar height would include alerts
       const navbarContent = document.getElementById("navbar-content");
-      const navbarBarHeight = navbarContent ? (navbarContent as HTMLElement).offsetHeight : 4 * rem;
+      const navbarBarHeight = navbarContent ? navbarContent.offsetHeight : 4 * rem;
       const dynamicHeightEls = document.querySelectorAll('[data-dynamic-height]');
 
       let topAlertsHeight = 0;
@@ -238,12 +239,12 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         }
 
         if (sidebar) {
-            (sidebar as HTMLElement).style.height = "calc(100dvh - " + totalTopHeight + "px)";
+            sidebar.style.height = "calc(100dvh - " + totalTopHeight + "px)";
           }
           
         dynamicHeightEls.forEach((el) => {
             const v = (el.getAttribute("data-dynamic-height") || "true").toLowerCase();
-            const elH = el as HTMLElement;
+            const elH = el;
             elH.style.transition = elH.style.transition || "margin-top 0.3s ease-in-out";
             const calcVal = "calc(100dvh - " + totalTopHeight + "px)";
             if (v === "height") {
@@ -260,7 +261,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         off.topPx = baseHeight;
         dynamicHeightEls.forEach((el) => {
             const v = (el.getAttribute("data-dynamic-height") || "true").toLowerCase();
-            const elH = el as HTMLElement;
+            const elH = el;
             elH.style.transition = elH.style.transition || "margin-top 0.3s ease-in-out";
             const calcVal = "calc(100dvh - " + baseHeight + "px)";
             if (v === "height") {
@@ -293,10 +294,10 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         const footerEl = document.querySelector("footer");
         if (bottomBannerHeight > 0) {
           document.body.style.paddingBottom = bottomBannerHeight + "px";
-          if (footerEl) (footerEl as HTMLElement).style.marginBottom = bottomBannerHeight + "px";
+          if (footerEl) footerEl.style.marginBottom = bottomBannerHeight + "px";
         } else {
           document.body.style.paddingBottom = "";
-          if (footerEl) (footerEl as HTMLElement).style.marginBottom = "";
+          if (footerEl) footerEl.style.marginBottom = "";
         }
         off.bottomPx = 4 * rem + bottomBannerHeight;
       }
@@ -312,7 +313,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
       const navbarContent = document.getElementById("navbar-content");
       const footer = document.getElementById("reveal-footer");
       const sidebar = document.getElementById("sidebar");
-      const REM = Math.max((navbarContent as HTMLElement)?.offsetHeight ?? 4 * 16, (footer as HTMLElement)?.offsetHeight ?? 4 * 16) / 16;
+      const REM = Math.max(navbarContent?.offsetHeight ?? 4 * 16, footer?.offsetHeight ?? 4 * 16) / 16;
       const maxPx = () => REM * remPx();
 
       function clampedScrollTop() {
@@ -320,17 +321,17 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         return Math.max(0, Math.min(maxScroll, scrollEl.scrollTop));
       }
 
-      function setSidebarPosition(translateYVal: number) {
+      function setSidebarPosition(translateYVal) {
         const side = document.getElementById("sidebar");
         if (!side) return;
-        const off = (window as any).__revealSidebarOffsets;
+        const off = window.__revealSidebarOffsets;
         const topPx = off?.topPx ?? 4 * remPx();
         const topBannersOnlyPx = off?.topBannersOnlyPx ?? 0;
-        (side as HTMLElement).style.bottom = "";
-        (side as HTMLElement).style.top = (translateYVal <= THRESH ? topPx : topBannersOnlyPx) + "px";
+        side.style.bottom = "";
+        side.style.top = (translateYVal <= THRESH ? topPx : topBannersOnlyPx) + "px";
       }
 
-      function syncNavbarAtTop(translateYVal: number) {
+      function syncNavbarAtTop(translateYVal) {
         const navbar = document.getElementById("main-navbar");
         if (navbar) navbar.classList.toggle("navbar-at-top", translateYVal <= 0);
       }
@@ -379,7 +380,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 
         const topContainer = document.getElementById("top-banner-container");
         const bottomContainer = document.getElementById("bottom-banner-container");
-        const observe = (el: Element | null) => {
+        const observe = (el) => {
           if (!el) return;
           new MutationObserver(recalcAfterBannerDismissed).observe(el, {
             childList: true,
@@ -412,20 +413,20 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
       }
 
       if (!isAuthPath) {
-        if (!(scrollEl as HTMLElement).dataset.revealInit) {
-          (scrollEl as HTMLElement).dataset.revealInit = "true";
+        if (!scrollEl.dataset.revealInit) {
+          scrollEl.dataset.revealInit = "true";
           window.addEventListener("resize", () => {
             prevScrollTop = clampedScrollTop();
             translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
             updateTranslate();
-            if (isMobile() && !(scrollEl as HTMLElement).dataset.revealScrollAdded) {
-              (scrollEl as HTMLElement).dataset.revealScrollAdded = "true";
+            if (isMobile() && !scrollEl.dataset.revealScrollAdded) {
+              scrollEl.dataset.revealScrollAdded = "true";
               scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
             }
           });
         }
-        if (isMobile() && !(scrollEl as HTMLElement).dataset.revealScrollAdded) {
-          (scrollEl as HTMLElement).dataset.revealScrollAdded = "true";
+        if (isMobile() && !scrollEl.dataset.revealScrollAdded) {
+          scrollEl.dataset.revealScrollAdded = "true";
           scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
         }
       }

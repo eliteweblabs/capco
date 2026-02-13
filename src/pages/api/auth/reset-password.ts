@@ -21,8 +21,19 @@ interface ResetPasswordData {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const body = await request.json();
-    const resetData: ResetPasswordData = body;
+    const contentType = request.headers.get("content-type") || "";
+    let resetData: ResetPasswordData;
+
+    if (contentType.includes("application/json")) {
+      const body = await request.json();
+      resetData = body;
+    } else {
+      const formData = await request.formData();
+      resetData = {
+        email: formData.get("email")?.toString()?.trim() || "",
+        redirectTo: formData.get("redirectTo")?.toString(),
+      };
+    }
 
     if (!resetData.email?.trim()) {
       return new Response(

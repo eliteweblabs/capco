@@ -197,6 +197,8 @@ export interface MultiStepFormConfig {
   totalSteps: number;
   progressBar?: boolean; // Show progress bar
   registerUser?: boolean; // If true, require unique email and redirect to login if exists
+  /** Auth forms only: post-login redirect options */
+  authRedirect?: Array<{ name: string; url: string }>;
   // Button templates - defaults for all buttons
   buttonDefaults?: {
     next?: Partial<FormButtonConfig>;

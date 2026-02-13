@@ -3,13 +3,13 @@ import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 /**
- * Get team members (profiles with same companyName as current user).
- * Returns minimal profile data for display. Excludes current user.
+ * Get team members (profiles with teamMember = true).
+ * Returns minimal profile data for display.
  */
 export const GET: APIRoute = async ({ cookies }) => {
   try {
-    const { isAuth, currentUser } = await checkAuth(cookies);
-    if (!isAuth || !currentUser) {
+    const { isAuth } = await checkAuth(cookies);
+    if (!isAuth) {
       return new Response(
         JSON.stringify({ success: false, error: "Authentication required" }),
         { status: 401, headers: { "Content-Type": "application/json" } }
@@ -23,26 +23,10 @@ export const GET: APIRoute = async ({ cookies }) => {
       );
     }
 
-    const profile = currentUser.profile;
-    const companyName = profile?.companyName?.trim();
-    const userId = currentUser.id;
-
-    if (!companyName) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: [],
-          message: "No company name set",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
     const { data, error } = await supabaseAdmin
       .from("profiles")
       .select("id, firstName, lastName, role, avatarUrl, email")
-      .eq("companyName", companyName)
-      .neq("id", userId)
+      .eq("teamMember", true)
       .order("firstName", { ascending: true });
 
     if (error) {

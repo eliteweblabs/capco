@@ -356,29 +356,22 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Auto-focus when panel is done. On touch use 0ms so focus runs in same gesture as tap (keypad may open).
+    // Auto-focus when panel is done. iOS keypad requires focus() in same user gesture - NO setTimeout for touch.
     const hasTypewriter = targetStep.classList.contains("has-typewriter");
     if (!hasTypewriter) {
       const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
-      const focusDelayMs = isTouch ? 0 : 400;
-      setTimeout(() => {
-        const formEl = document.getElementById(formId) as HTMLFormElement;
-        const cursorFraction = 0.4;
+      const formEl = document.getElementById(formId) as HTMLFormElement;
+      const cursorFraction = 0.4;
 
-        const scrollFormToCursor = (element: HTMLElement) => {
-          if (!formEl) return;
-          const formRect = formEl.getBoundingClientRect();
-          const elementRect = element.getBoundingClientRect();
-          const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
-          formEl.scrollBy({ top: delta, behavior: "smooth" });
-          console.log("[MULTISTEP-SCROLL] Form scrollBy (auto-focus after step):", {
-            element: element.id || element.getAttribute("name") || element.tagName,
-            delta,
-            formScrollTop: formEl.scrollTop,
-            reason: "position focused element at cursor line (40vh)",
-          });
-        };
+      const scrollFormToCursor = (element: HTMLElement) => {
+        if (!formEl) return;
+        const formRect = formEl.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
+        formEl.scrollBy({ top: delta, behavior: "smooth" });
+      };
 
+      const doFocus = () => {
         const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
         if (smsChoiceButtons.length > 0) {
           const yesButton = targetStep.querySelector(
@@ -389,19 +382,22 @@ export function createMultiStepFormHandler(
             scrollFormToCursor(yesButton);
           }
         } else {
-          // Programmatic focus/click won't open iOS keypad - user must tap "Open keypad" button
-          const focusFirstIn = (window as any).focusFirstInputIn;
-          if (typeof focusFirstIn === "function" && focusFirstIn(targetStep)) {
-            const firstInput = targetStep.querySelector(
-              "input:not([type=hidden]):not([readonly]), textarea, select"
-            ) as HTMLElement;
-            if (firstInput) scrollFormToCursor(firstInput);
-            if (typeof (window as any).openKeypad === "function") {
-              (window as any).openKeypad(targetStep);
-            }
+          const firstInput = targetStep.querySelector(
+            "input:not([type=hidden]):not([readonly]), textarea, select"
+          ) as HTMLInputElement | HTMLTextAreaElement | null;
+          if (firstInput?.focus) {
+            firstInput.focus();
+            scrollFormToCursor(firstInput);
           }
         }
-      }, focusDelayMs);
+      };
+
+      if (isTouch) {
+        // Sync: must run in same click handler as "Next" tap for iOS keypad
+        doFocus();
+      } else {
+        setTimeout(doFocus, 400);
+      }
     }
     // Steps with typewriter: focus + keypad run from MultiStepForm typewriter-complete → cascade transitionend
   }
@@ -1482,15 +1478,12 @@ export function createMultiStepFormHandler(
           const firstInput = firstStep.querySelector(
             "input:not([type=hidden]):not([readonly]), textarea, select"
           ) as HTMLElement;
-          if (firstInput && typeof firstInput.focus === "function") {
+          if (firstInput?.focus) {
             firstInput.focus();
             const elementRect = firstInput.getBoundingClientRect();
             const absoluteElementTop = elementRect.top + window.pageYOffset;
             const cursorLine = absoluteElementTop - window.innerHeight * 0.4;
             window.scrollTo({ top: cursorLine, behavior: "smooth" });
-            if ("ontouchstart" in window && typeof (window as any).openKeypad === "function") {
-              (window as any).openKeypad(firstStep);
-            }
           }
         }
       }, 120);

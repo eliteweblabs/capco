@@ -3,18 +3,20 @@
  * Socials Component
  *
  * Displays social network links with auto-detected icons based on URL.
- * Icons use Font Awesome for consistency.
+ * Uses SimpleIcon with brand-colored SVGs. Icons show grayscale by default;
+ * hover/focus/active removes grayscale to reveal branding colors.
  *
  * @example
  * <Socials links={[
  *   { url: "https://facebook.com/company" },
- *   { url: "https://twitter.com/company" },
  *   { url: "https://linkedin.com/company/name" }
  * ]} />
  *
  * @example with variant
  * <Socials links={socialLinks} variant="footer" size="lg" />
  */
+
+import SimpleIcon from "../common/SimpleIcon.astro";
 
 interface SocialLink {
   url: string;
@@ -69,359 +71,69 @@ if (typeof Astro.props.links === "string") {
 socialLinks = socialLinks.filter((link) => link.url && link.url.trim() !== "");
 
 /**
- * Detect social network from URL and return icon/label info
+ * Detect social network from URL and return SimpleIcon name + label.
+ * Icons have brand colors in SVG; grayscale filter reveals them on hover.
+ * Uses optional label hint when URL doesn't match known patterns.
  */
-function detectSocialNetwork(url: string): {
-  icon: string;
-  label: string;
-  brandColor: string;
-  hoverColor: string;
-} {
+function detectSocialNetwork(url: string, labelHint?: string): { icon: string; label: string } {
   const urlLower = url.toLowerCase();
+  const labelLower = labelHint?.toLowerCase() ?? "";
 
-  // Facebook
+  // Networks with brand-colored SVGs in icon-data
   if (
     urlLower.includes("facebook.com") ||
     urlLower.includes("fb.com") ||
     urlLower.includes("fb.me")
   ) {
-    return {
-      icon: "fa-brands fa-facebook-f",
-      label: "Facebook",
-      brandColor: "text-[#1877F2]",
-      hoverColor: "hover:text-[#1877F2]",
-    };
+    return { icon: "facebook", label: "Facebook" };
   }
-
-  // Twitter/X
-  if (urlLower.includes("twitter.com") || urlLower.includes("x.com")) {
-    return {
-      icon: "fa-brands fa-x-twitter",
-      label: "X (Twitter)",
-      brandColor: "text-black dark:text-white",
-      hoverColor: "hover:text-black dark:hover:text-white",
-    };
-  }
-
-  // Instagram
-  if (urlLower.includes("instagram.com") || urlLower.includes("instagr.am")) {
-    return {
-      icon: "fa-brands fa-instagram",
-      label: "Instagram",
-      brandColor: "text-[#E4405F]",
-      hoverColor: "hover:text-[#E4405F]",
-    };
-  }
-
-  // LinkedIn
-  if (urlLower.includes("linkedin.com") || urlLower.includes("lnkd.in")) {
-    return {
-      icon: "fa-brands fa-linkedin-in",
-      label: "LinkedIn",
-      brandColor: "text-[#0A66C2]",
-      hoverColor: "hover:text-[#0A66C2]",
-    };
-  }
-
-  // YouTube
-  if (urlLower.includes("youtube.com") || urlLower.includes("youtu.be")) {
-    return {
-      icon: "fa-brands fa-youtube",
-      label: "YouTube",
-      brandColor: "text-[#FF0000]",
-      hoverColor: "hover:text-[#FF0000]",
-    };
-  }
-
-  // TikTok
-  if (urlLower.includes("tiktok.com")) {
-    return {
-      icon: "fa-brands fa-tiktok",
-      label: "TikTok",
-      brandColor: "text-black dark:text-white",
-      hoverColor: "hover:text-black dark:hover:text-white",
-    };
-  }
-
-  // Pinterest
-  if (urlLower.includes("pinterest.com") || urlLower.includes("pin.it")) {
-    return {
-      icon: "fa-brands fa-pinterest-p",
-      label: "Pinterest",
-      brandColor: "text-[#E60023]",
-      hoverColor: "hover:text-[#E60023]",
-    };
-  }
-
-  // Snapchat
-  if (urlLower.includes("snapchat.com")) {
-    return {
-      icon: "fa-brands fa-snapchat",
-      label: "Snapchat",
-      brandColor: "text-[#FFFC00]",
-      hoverColor: "hover:text-[#FFFC00]",
-    };
-  }
-
-  // GitHub
   if (urlLower.includes("github.com") || urlLower.includes("github.io")) {
-    return {
-      icon: "fa-brands fa-github",
-      label: "GitHub",
-      brandColor: "text-[#181717] dark:text-white",
-      hoverColor: "hover:text-[#181717] dark:hover:text-white",
-    };
+    return { icon: "github", label: "GitHub" };
   }
-
-  // GitLab
-  if (urlLower.includes("gitlab.com")) {
-    return {
-      icon: "fa-brands fa-gitlab",
-      label: "GitLab",
-      brandColor: "text-[#FC6D26]",
-      hoverColor: "hover:text-[#FC6D26]",
-    };
+  if (urlLower.includes("google.com") || urlLower.includes("goo.gl")) {
+    return { icon: "google", label: "Google" };
   }
-
-  // Discord
-  if (urlLower.includes("discord.com") || urlLower.includes("discord.gg")) {
-    return {
-      icon: "fa-brands fa-discord",
-      label: "Discord",
-      brandColor: "text-[#5865F2]",
-      hoverColor: "hover:text-[#5865F2]",
-    };
+  if (urlLower.includes("youtube.com") || urlLower.includes("youtu.be")) {
+    return { icon: "youtube", label: "YouTube" };
   }
-
-  // Slack
+  // LinkedIn: linkedin.com, lnkd.in, or any regional subdomain (e.g. uk.linkedin.com)
+  if (urlLower.includes("linkedin.com") || urlLower.includes("lnkd.in") || urlLower.includes("linkedin.co")) {
+    return { icon: "linkedin", label: "LinkedIn" };
+  }
   if (urlLower.includes("slack.com")) {
-    return {
-      icon: "fa-brands fa-slack",
-      label: "Slack",
-      brandColor: "text-[#4A154B]",
-      hoverColor: "hover:text-[#4A154B]",
-    };
+    return { icon: "slack", label: "Slack" };
   }
-
-  // WhatsApp
-  if (urlLower.includes("whatsapp.com") || urlLower.includes("wa.me")) {
-    return {
-      icon: "fa-brands fa-whatsapp",
-      label: "WhatsApp",
-      brandColor: "text-[#25D366]",
-      hoverColor: "hover:text-[#25D366]",
-    };
-  }
-
-  // Telegram
-  if (urlLower.includes("telegram.org") || urlLower.includes("t.me")) {
-    return {
-      icon: "fa-brands fa-telegram",
-      label: "Telegram",
-      brandColor: "text-[#26A5E4]",
-      hoverColor: "hover:text-[#26A5E4]",
-    };
-  }
-
-  // Reddit
-  if (urlLower.includes("reddit.com")) {
-    return {
-      icon: "fa-brands fa-reddit-alien",
-      label: "Reddit",
-      brandColor: "text-[#FF4500]",
-      hoverColor: "hover:text-[#FF4500]",
-    };
-  }
-
-  // Threads
-  if (urlLower.includes("threads.net")) {
-    return {
-      icon: "fa-brands fa-threads",
-      label: "Threads",
-      brandColor: "text-black dark:text-white",
-      hoverColor: "hover:text-black dark:hover:text-white",
-    };
-  }
-
-  // Mastodon
-  if (urlLower.includes("mastodon") || urlLower.includes("mstdn")) {
-    return {
-      icon: "fa-brands fa-mastodon",
-      label: "Mastodon",
-      brandColor: "text-[#6364FF]",
-      hoverColor: "hover:text-[#6364FF]",
-    };
-  }
-
-  // Bluesky
-  if (urlLower.includes("bsky.app") || urlLower.includes("bluesky")) {
-    return {
-      icon: "fa-brands fa-bluesky",
-      label: "Bluesky",
-      brandColor: "text-[#0085FF]",
-      hoverColor: "hover:text-[#0085FF]",
-    };
-  }
-
-  // Twitch
-  if (urlLower.includes("twitch.tv")) {
-    return {
-      icon: "fa-brands fa-twitch",
-      label: "Twitch",
-      brandColor: "text-[#9146FF]",
-      hoverColor: "hover:text-[#9146FF]",
-    };
-  }
-
-  // Vimeo
-  if (urlLower.includes("vimeo.com")) {
-    return {
-      icon: "fa-brands fa-vimeo-v",
-      label: "Vimeo",
-      brandColor: "text-[#1AB7EA]",
-      hoverColor: "hover:text-[#1AB7EA]",
-    };
-  }
-
-  // Dribbble
-  if (urlLower.includes("dribbble.com")) {
-    return {
-      icon: "fa-brands fa-dribbble",
-      label: "Dribbble",
-      brandColor: "text-[#EA4C89]",
-      hoverColor: "hover:text-[#EA4C89]",
-    };
-  }
-
-  // Behance
-  if (urlLower.includes("behance.net")) {
-    return {
-      icon: "fa-brands fa-behance",
-      label: "Behance",
-      brandColor: "text-[#1769FF]",
-      hoverColor: "hover:text-[#1769FF]",
-    };
-  }
-
-  // Medium
-  if (urlLower.includes("medium.com")) {
-    return {
-      icon: "fa-brands fa-medium",
-      label: "Medium",
-      brandColor: "text-black dark:text-white",
-      hoverColor: "hover:text-black dark:hover:text-white",
-    };
-  }
-
-  // Spotify
-  if (urlLower.includes("spotify.com") || urlLower.includes("open.spotify")) {
-    return {
-      icon: "fa-brands fa-spotify",
-      label: "Spotify",
-      brandColor: "text-[#1DB954]",
-      hoverColor: "hover:text-[#1DB954]",
-    };
-  }
-
-  // Apple Music / Apple Podcasts
-  if (urlLower.includes("music.apple.com") || urlLower.includes("podcasts.apple.com")) {
-    return {
-      icon: "fa-brands fa-apple",
-      label: "Apple",
-      brandColor: "text-[#000000] dark:text-white",
-      hoverColor: "hover:text-[#FC3C44]",
-    };
-  }
-
-  // Yelp
-  if (urlLower.includes("yelp.com")) {
-    return {
-      icon: "fa-brands fa-yelp",
-      label: "Yelp",
-      brandColor: "text-[#FF1A1A]",
-      hoverColor: "hover:text-[#FF1A1A]",
-    };
-  }
-
-  // Google Business / Maps
-  if (
-    urlLower.includes("google.com/maps") ||
-    urlLower.includes("goo.gl/maps") ||
-    urlLower.includes("business.google")
-  ) {
-    return {
-      icon: "fa-brands fa-google",
-      label: "Google",
-      brandColor: "text-[#4285F4]",
-      hoverColor: "hover:text-[#4285F4]",
-    };
-  }
-
-  // Email (mailto:)
   if (urlLower.startsWith("mailto:")) {
-    return {
-      icon: "fa-solid fa-envelope",
-      label: "Email",
-      brandColor: "text-gray-600 dark:text-gray-400",
-      hoverColor: "hover:text-primary-600",
-    };
+    return { icon: "mail", label: "Email" };
   }
-
-  // Phone (tel:)
   if (urlLower.startsWith("tel:")) {
-    return {
-      icon: "fa-solid fa-phone",
-      label: "Phone",
-      brandColor: "text-gray-600 dark:text-gray-400",
-      hoverColor: "hover:text-primary-600",
-    };
+    return { icon: "phone", label: "Phone" };
   }
 
-  // Default/Unknown - generic link
-  return {
-    icon: "fa-solid fa-link",
-    label: "Website",
-    brandColor: "text-gray-600 dark:text-gray-400",
-    hoverColor: "hover:text-primary-600",
-  };
+  // Label-based fallback: if user set "LinkedIn" as label, use linkedin icon
+  if (labelLower.includes("linkedin")) {
+    return { icon: "linkedin", label: "LinkedIn" };
+  }
+
+  // Fallback for unknown URLs
+  return { icon: "link-external", label: "Website" };
 }
 
-// Size classes
-const sizeClasses = {
-  sm: "text-sm",
-  md: "text-lg",
-  lg: "text-xl",
-  xl: "text-2xl",
-};
+// SimpleIcon size mapping
+const sizeMap = { sm: "sm" as const, md: "md" as const, lg: "lg" as const, xl: "xl" as const };
 
 // Gap classes
-const gapClasses = {
-  sm: "gap-2",
-  md: "gap-4",
-  lg: "gap-6",
-};
+const gapClasses = { sm: "gap-2", md: "gap-4", lg: "gap-6" };
 
-// Get color class based on scheme
-function getColorClass(network: ReturnType<typeof detectSocialNetwork>): string {
-  switch (colorScheme) {
-    case "brand":
-      return `${network.brandColor} ${network.hoverColor}`;
-    case "mono":
-      return "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white";
-    case "white":
-      return "text-white/80 hover:text-white";
-    default:
-      return `text-gray-500 dark:text-gray-400 ${network.hoverColor}`;
-  }
-}
+// Grayscale icon classes: default grayscale, hover/focus/active reveal brand colors from SVG
+const grayscaleIconBase =
+  "grayscale transition-[filter] duration-200 group-hover:grayscale-0 group-focus-visible:grayscale-0 group-active:grayscale-0";
+const grayscaleIconMono = "grayscale"; // mono: always grayscale, no hover reveal
 
 // Build link classes
-function getLinkClasses(network: ReturnType<typeof detectSocialNetwork>): string {
-  const base = "transition-colors duration-200 inline-flex items-center";
-  const colorClass = getColorClass(network);
-  const sizeClass = sizeClasses[size];
+function getLinkClasses(): string {
+  const base = "group inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-full";
 
-  // Variant-specific styles
   let variantClass = "";
   switch (variant) {
     case "footer":
@@ -437,7 +149,13 @@ function getLinkClasses(network: ReturnType<typeof detectSocialNetwork>): string
       variantClass = "p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800";
   }
 
-  return `${base} ${colorClass} ${sizeClass} ${variantClass}`;
+  return `${base} ${variantClass}`;
+}
+
+// Icon classes: grayscale by default, reveal colors on hover (except mono)
+function getIconClasses(): string {
+  const scheme = colorScheme === "mono" ? grayscaleIconMono : grayscaleIconBase;
+  return scheme;
 }
 ---
 
@@ -446,23 +164,34 @@ function getLinkClasses(network: ReturnType<typeof detectSocialNetwork>): string
     <div
       class:list={[
         "socials-component flex w-full flex-row flex-nowrap items-center justify-evenly gap-2 sm:gap-3",
+        gapClasses[gap],
         className,
       ]}
     >
       {socialLinks.map((link) => {
-        const network = detectSocialNetwork(link.url);
+        const network = detectSocialNetwork(link.url, link.label);
         const label = link.label || network.label;
+        const iconClasses =
+          colorScheme === "white"
+            ? `${getIconClasses()} text-white/90 group-hover:text-white group-focus-visible:text-white`
+            : getIconClasses();
+
+        const isExternal = link.url.startsWith("http");
 
         return (
           <a
             href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class={getLinkClasses(network)}
+            target={isExternal ? "_blank" : undefined}
+            rel={isExternal ? "noopener noreferrer" : undefined}
+            class={getLinkClasses()}
             title={label}
             aria-label={label}
           >
-            <i class={network.icon} aria-hidden="true" />
+            <SimpleIcon
+              name={network.icon}
+              size={sizeMap[size]}
+              class={iconClasses}
+            />
             {showLabels && <span class="ml-2 text-sm">{label}</span>}
           </a>
         );

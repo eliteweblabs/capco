@@ -5,7 +5,9 @@ import ToggleSidebar from "./ToggleSidebar.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import ThemeToggle from "./ThemeToggle.astro";
-
+import MultiStepForm from "../form/MultiStepForm.astro";
+import { loginFormConfig } from "../../lib/forms/login-form-config";
+const redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
 
 interface Props {
   currentUser?: any;
@@ -73,8 +75,7 @@ const currentRole = currentUser?.profile?.role;
     <div class="flex flex-shrink-0 items-center gap-2">
       {
         currentUser && currentUser.id && currentRole !== "Client" && project && (
-          <a
-            href="#"
+          <button
             type="button"
             id="punchlist-drawer-toggle"
             title="View Punchlist"
@@ -82,29 +83,76 @@ const currentRole = currentUser?.profile?.role;
           >
             <SimpleIcon name="menu-check" size="md" />
             <span class="sr-only">View Punchlist</span>
-          </a>
+          </button>
         )
       }
       {
         currentUser && (
-          <a
-            href={"#"}
+          <button
+            type="button"
             title="Notifications"
             data-dropdown-toggle="notification-dropdown"
             data-dropdown-trigger="hover"
             class={globalIconButtonClasses}
             aria-label="View notifications"
-            type="button"
           >
             <SimpleIcon name="notification-bell" size="md" />
             <span class="sr-only">Notifications</span>
-          </a>
+          </button>
         )
       }
 
       <ThemeToggle {currentUser} {session} {isBackend} {projects} {globalIconButtonClasses} />
 
-      <AuthIcon {currentUser} {session} {isBackend} {projects} {globalIconButtonClasses} />
+      <AuthIcon
+        id="account"
+        {currentUser}
+        {session}
+        {isBackend}
+        {projects}
+        {globalIconButtonClasses}
+      />
+
+      <button
+        data-popover-target="popover-company-profile"
+        data-popover-trigger="click"
+        type="button"
+        class="bg-brand hover:bg-brand-strong focus:ring-brand-medium shadow-xs rounded-base box-border border border-transparent px-4 py-2.5 text-sm font-medium leading-5 text-white focus:outline-none focus:ring-4"
+        >Cole</button
+      >
+
+      <div
+        data-popover
+        id="popover-company-profile"
+        role="tooltip"
+        class="bg-neutral-primary-soft border-default rounded-base shadow-xs invisible absolute z-10 inline-block w-80 border text-body text-sm opacity-0 transition-opacity duration-300"
+      >
+        <div class="p-3">
+          <div class="flex">
+            <div class="me-3 shrink-0">
+              <button
+                type="button"
+                class="bg-neutral-tertiary block flex h-10 w-10 items-center justify-center rounded p-2"
+              >
+                <img
+                  class="h-8 w-8 rounded-full"
+                  src="https://flowbite.com/docs/images/logo.svg"
+                  alt="Flowbite logo"
+                />
+              </button>
+            </div>
+
+            <div>
+              <MultiStepForm
+                config={loginFormConfig}
+                initialData={{ redirect: redirectUrl }}
+                testNoCascade={true}
+              />
+            </div>
+          </div>
+        </div>
+        <div data-popper-arrow></div>
+      </div>
     </div>
   </div>
 </nav>

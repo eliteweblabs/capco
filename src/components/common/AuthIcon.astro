@@ -1,10 +1,5 @@
 ---
 import SimpleIcon from "./SimpleIcon.astro";
-import Button from "./Button.astro";
-import { checkAuth } from "../../lib/auth";
-import Tooltip from "./TooltipFloating.astro";
-import AssignedProjects from "../common/AssignedProjects.astro";
-import CloseButton from "../ui/CloseButton.astro";
 
 interface Props {
   currentUser: any;
@@ -12,10 +7,19 @@ interface Props {
   isBackend?: boolean;
   projects: any[];
   globalIconButtonClasses?: string;
+  id: string;
 }
 
-const { currentUser, session, isBackend, projects, globalIconButtonClasses } = Astro.props;
+const {
+  currentUser,
+  session,
+  isBackend,
+  projects,
+  globalIconButtonClasses,
+  id = "account",
+} = Astro.props;
 const currentRole = currentUser?.profile?.role;
+import UserProfileDropdown from "../ui/UserProfileDropdown.astro";
 
 // Get current path to determine auth link
 const currentPath = Astro.url.pathname;
@@ -33,40 +37,35 @@ const avatarUrl =
   currentUser?.user_metadata?.picture;
 ---
 
-{
-  currentUser ? (
-    <a
-      href="#"
-      data-dropdown-toggle="account-dropdown"
-      aria-expanded="false"
-      data-dropdown-trigger="hover"
-      data-avatar-url={avatarUrl}
-      class={globalIconButtonClasses}
-    >
-      <span class="sr-only">Open user menu</span>
-      {/* <!-- Fallback icon (visible initially, hidden if avatar loads) --> */}
-      {avatarUrl && avatarUrl !== "" ? (
-        <SimpleIcon
-          name="user"
-          class="avatar-fallback"
-          size="md"
-          class="text-black dark:text-white"
-        />
-      ) : (
-        <SimpleIcon name="user" size="md" />
-      )}
-    </a>
-  ) : (
-    // <Button href="/auth/login" variant="anchor" size="xs">
-    <a href={authLink} title={authTooltipText} class={globalIconButtonClasses}>
-      <Tooltip text={authTooltipText} position="bottom" touchable={false}>
-        <SimpleIcon name="user" size="md" />
-        <span class="sr-only">{authTooltipText}</span>
-      </Tooltip>
-    </a>
-  )
-}
+<button
+  class={`avatar-button ${globalIconButtonClasses || ""}`.trim()}
+  data-popover-trigger="click"
+  data-popover-target={`${id}-dropdown`}
+  data-avatar-url={avatarUrl}
+  type="button"
+>
+  <span class="sr-only">Open user menu</span>
+  {/* <!-- Fallback icon (visible initially, hidden if avatar loads) --> */}
+  {
+    avatarUrl && avatarUrl !== "" ? (
+      <SimpleIcon
+        name="user"
+        class="avatar-fallback text-black dark:text-white"
+        size="md"
+      />
+    ) : (
+      <SimpleIcon name="user" size="md" />
+    )
+  }
+</button>
 
+<UserProfileDropdown
+  id={id}
+  {globalIconButtonClasses}
+  {projects}
+  {currentUser}
+  closeButton={false}
+/>
 <script>
   // Handle Google avatar loading errors and rate limiting (429 errors)
   // Page size toggle is initialized in UserProfileDropdown.astro

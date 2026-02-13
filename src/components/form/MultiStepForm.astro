@@ -47,13 +47,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 }));
 ---
 
-<div
-  data-dynamic-height="true"
-  data-multi-step-form
-  data-test-no-cascade={testNoCascade || undefined}
-  tabindex="-1"
-  class="flex w-full flex-col items-start justify-center"
->
+<div data-multi-step-form tabindex="-1">
   <form
     id={config.formId}
     action={config.formAction}
@@ -540,15 +534,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
   </form>
 
-  <!-- Sticky "Open keypad" button - tap triggers focus (user gesture). For debugging. -->
-  <button
-    type="button"
-    data-open-keypad-btn
-    class="fixed bottom-20 right-4 z-50 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-500"
-    aria-label="Open keypad"
-  >
-    Open keypad
-  </button>
 </div>
 
 <!-- Advanced Stepper - Fixed to bottom (outside of container to avoid flex interference) -->
@@ -911,17 +896,21 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   // TypeIt typewriter loaded globally from App.astro (window.initTypewriterTexts, window.triggerActiveStepTypewriter)
 
   document.addEventListener("DOMContentLoaded", () => {
-    // Sticky "Open keypad" button - direct user tap, so focus should trigger keypad
-    document.querySelectorAll("[data-open-keypad-btn]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const form = (e.currentTarget as HTMLElement).closest("[data-multi-step-form]");
-        const activeStep = form?.querySelector(".step-content.active") as HTMLElement;
-        if (!activeStep) return;
-        const focusFirstIn = (window as any).focusFirstInputIn;
-        if (typeof focusFirstIn === "function") focusFirstIn(activeStep);
-        if (typeof (window as any).openKeypad === "function") (window as any).openKeypad(activeStep);
-      });
-    });
+    // Tap-to-focus: tapping the field wrapper focuses the input (iOS keypad requires direct user gesture)
+    document.addEventListener(
+      "click",
+      (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("button") || target.closest("a")) return;
+        const wrapper = target.closest(".input-wrapper");
+        if (!wrapper) return;
+        const input = wrapper.querySelector(
+          "input:not([type=hidden]):not([readonly]), textarea, select"
+        ) as HTMLInputElement | HTMLTextAreaElement | null;
+        if (input?.focus && document.activeElement !== input) input.focus();
+      },
+      true
+    );
 
     // Panel position: only .multi-step-form-steps height matters (spacer removed)
     let updateStepsPanelBottomRef: (() => void) | null = null;
@@ -1037,20 +1026,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         const CASCADE_END_MS = 750; /* 500ms buttons delay + ~250ms opacity/expand */
         runPanelBottomLoopRef?.(CASCADE_END_MS + 600);
 
-        // Run focus + keypad soon after cascade (150ms) - minimal delay to stay in user-gesture chain
+        // Focus first input after cascade (for desktop; on iOS, user taps the field to open keypad)
         const FOCUS_DELAY_AFTER_ANIMATIONS_MS = 150;
-        let focusKeypadDone = false;
-        const runFocusAndKeypad = () => {
-          if (focusKeypadDone) return;
-          focusKeypadDone = true;
-          // Programmatic focus/click won't open iOS keypad - user must tap "Open keypad" button
+        let focusDone = false;
+        const runFocus = () => {
+          if (focusDone) return;
+          focusDone = true;
           const focusFirstIn = (window as any).focusFirstInputIn;
-          if (typeof focusFirstIn === "function") {
-            const ok = focusFirstIn(stepContent);
-            if (ok && typeof (window as any).openKeypad === "function") {
-              (window as any).openKeypad(stepContent);
-            }
-          }
+          if (typeof focusFirstIn === "function") focusFirstIn(stepContent);
         };
 
         const buttonsWrapper = stepContent.querySelector(".step-form-buttons-wrapper");
@@ -1058,11 +1041,11 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           const onCascadeEnd = (e: TransitionEvent) => {
             if (e.target !== buttonsWrapper || e.propertyName !== "opacity") return;
             buttonsWrapper.removeEventListener("transitionend", onCascadeEnd as EventListener);
-            setTimeout(runFocusAndKeypad, FOCUS_DELAY_AFTER_ANIMATIONS_MS);
+            setTimeout(runFocus, FOCUS_DELAY_AFTER_ANIMATIONS_MS);
           };
           buttonsWrapper.addEventListener("transitionend", onCascadeEnd as EventListener);
         }
-        setTimeout(runFocusAndKeypad, CASCADE_END_MS + FOCUS_DELAY_AFTER_ANIMATIONS_MS + 200);
+        setTimeout(runFocus, CASCADE_END_MS + FOCUS_DELAY_AFTER_ANIMATIONS_MS + 200);
       }
     });
 

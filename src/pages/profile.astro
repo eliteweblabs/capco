@@ -38,14 +38,13 @@ import { supabaseAdmin } from "../lib/supabase-admin";
 
 const userProfile = currentUser?.profile || null;
 
-// Fetch team members (same company, excluding self)
+// Fetch team members (profiles with teamMember = true)
 let teamMembers: Array<{ id: string; name: string; role?: string; avatarUrl?: string | null }> = [];
-if (supabaseAdmin && userProfile?.companyName) {
+if (supabaseAdmin) {
   const { data } = await supabaseAdmin
     .from("profiles")
     .select("id, firstName, lastName, role, avatarUrl")
-    .eq("companyName", userProfile.companyName.trim())
-    .neq("id", currentUser!.id)
+    .eq("teamMember", true)
     .order("firstName", { ascending: true });
   teamMembers = (data || []).map((p) => ({
     id: p.id,
@@ -283,7 +282,7 @@ const storedCarrierKey = userProfile?.mobileCarrier
         title="Team"
         description="People in your organization"
         members={teamMembers}
-        emptyMessage="No other team members yet. Others from your company will appear here when they join."
+        emptyMessage="No team members yet. Mark profiles as team members to display them here."
       />
     </div>
   </div>

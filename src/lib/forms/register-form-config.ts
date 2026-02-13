@@ -8,6 +8,7 @@ export const registerFormConfig: MultiStepFormConfig = {
   totalSteps: 8,
   progressBar: false,
   registerUser: true, // Require unique email and redirect to login if exists
+  authRedirect: [{ name: "Dashboard", url: "/project/dashboard" }],
 
   // Default button styles
   buttonDefaults: {
