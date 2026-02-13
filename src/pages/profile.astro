@@ -31,8 +31,29 @@ import { getCarrierKeyFromGateway } from "../lib/sms-utils";
 import SimpleIcon from "../components/common/SimpleIcon.astro";
 import Footer from "../components/ui/Footer.astro";
 import PhoneAndSMS from "../components/form/PhoneAndSMS.astro";
+import SocialMediaRepeater from "../components/form/SocialMediaRepeater.astro";
+import ProfileTeamSection from "../components/profile/ProfileTeamSection.astro";
 import Button from "../components/common/Button.astro";
+import { supabaseAdmin } from "../lib/supabase-admin";
+
 const userProfile = currentUser?.profile || null;
+
+// Fetch team members (same company, excluding self)
+let teamMembers: Array<{ id: string; name: string; role?: string; avatarUrl?: string | null }> = [];
+if (supabaseAdmin && userProfile?.companyName) {
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("id, firstName, lastName, role, avatarUrl")
+    .eq("companyName", userProfile.companyName.trim())
+    .neq("id", currentUser!.id)
+    .order("firstName", { ascending: true });
+  teamMembers = (data || []).map((p) => ({
+    id: p.id,
+    name: [p.firstName, p.lastName].filter(Boolean).join(" ") || "Unknown",
+    role: p.role || undefined,
+    avatarUrl: p.avatarUrl || null,
+  }));
+}
 
 // Get the carrier key from the stored gateway domain
 const storedCarrierKey = userProfile?.mobileCarrier
@@ -202,6 +223,21 @@ const storedCarrierKey = userProfile?.mobileCarrier
           </div>
         </div>
 
+        <!-- Social Media -->
+        <div class="relative">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Social Media
+          </label>
+          <SocialMediaRepeater
+            id="profile-socials"
+            name="socialNetworks"
+            value={userProfile?.socialNetworks || []}
+            inputClasses={globalInputClasses}
+            addButtonLabel="Add Social Link"
+            emptyMessage="No social links yet. Add your LinkedIn, Twitter, or other profiles."
+          />
+        </div>
+
         <!-- Phone and SMS -->
         <PhoneAndSMS
           id="phone"
@@ -240,6 +276,15 @@ const storedCarrierKey = userProfile?.mobileCarrier
           </Button>
         </div>
       </form>
+
+      <!-- Team Section -->
+      <ProfileTeamSection
+        class="mt-8"
+        title="Team"
+        description="People in your organization"
+        members={teamMembers}
+        emptyMessage="No other team members yet. Others from your company will appear here when they join."
+      />
     </div>
   </div>
 </App>
@@ -282,6 +327,16 @@ const storedCarrierKey = userProfile?.mobileCarrier
       const smsAlertsCheckbox = document.getElementById("sms-alerts-phone");
       const smsAlerts = smsAlertsCheckbox?.checked || false;
       const mobileCarrier = formData.get("mobileCarrier");
+      const socialNetworksRaw = formData.get("socialNetworks");
+      let socialNetworks = [];
+      if (socialNetworksRaw && typeof socialNetworksRaw === "string") {
+        try {
+          const parsed = JSON.parse(socialNetworksRaw);
+          socialNetworks = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          socialNetworks = [];
+        }
+      }
 
       // Validate required fields manually as well
       if (!firstName?.trim() || !lastName?.trim()) {
@@ -317,6 +372,7 @@ const storedCarrierKey = userProfile?.mobileCarrier
             phone,
             smsAlerts,
             mobileCarrier: smsAlerts ? mobileCarrier : null,
+            socialNetworks,
           }),
         });
 

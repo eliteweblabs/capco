@@ -8,6 +8,7 @@ import { checkAuth } from "../../lib/auth";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import Button from "../../components/common/Button.astro";
 import DeleteConfirmButton from "../../components/common/DeleteConfirmButton.astro";
+import SocialMediaRepeater from "../../components/form/SocialMediaRepeater.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
 
@@ -65,6 +66,8 @@ const settings = {
   // Colors
   primaryColor: companyData.primaryColor || "#825BDD",
   secondaryColor: companyData.secondaryColor || "#0ea5e9",
+  backgroundColor: companyData.backgroundColor || "#ffffff",
+  backgroundColorDark: companyData.backgroundColorDark || "#0a0a0a",
 
   // Typography
   fontFamily: companyData.fontFamily || "Outfit Variable",
@@ -324,71 +327,13 @@ const settings = {
           Add your social media profiles. Icons are automatically detected based on the URL.
         </p>
 
-        <div id="social-networks-container" class="space-y-3">
-          {
-            settings.socialNetworks.length > 0 ? (
-              settings.socialNetworks.map((social, index) => (
-                <div
-                  class="social-network-item flex flex-col gap-3 sm:flex-row sm:items-center"
-                  data-index={index}
-                >
-                  <div class="w-full min-w-0 flex-1">
-                    <input
-                      type="url"
-                      name={`social_url_${index}`}
-                      value={social.url}
-                      class={`${globalInputClasses} social-url-input`}
-                      placeholder="https://facebook.com/yourpage"
-                    />
-                  </div>
-                  <div class="w-full sm:w-32">
-                    <input
-                      type="text"
-                      name={`social_label_${index}`}
-                      value={social.label || ""}
-                      class={`${globalInputClasses} social-label-input`}
-                      placeholder="Label (optional)"
-                    />
-                  </div>
-                  <div class="social-icon-preview flex h-10 w-10 items-center justify-center text-xl text-gray-400">
-                    <i class="fa-solid fa-link" />
-                  </div>
-                  <DeleteConfirmButton
-                    id={`remove-social-${index}`}
-                    class="remove-social-btn"
-                    size="sm"
-                    variant="icon"
-                  />
-                </div>
-              ))
-            ) : (
-              <p
-                class="py-4 text-center text-sm text-gray-500 dark:text-gray-400"
-                id="no-socials-message"
-              >
-                No social networks added yet. Click the button below to add one.
-              </p>
-            )
-          }
-        </div>
-
-        <Button
-          type="button"
-          id="add-social-btn"
-          variant="ghost"
-          size="sm"
-          icon="plus"
-          class="mt-4"
-        >
-          Add Social Network
-        </Button>
-
-        <!-- Hidden input to store the JSON value -->
-        <input
-          type="hidden"
-          id="social_networks"
+        <SocialMediaRepeater
+          id="settings-socials"
           name="social_networks"
-          value={JSON.stringify(settings.socialNetworks)}
+          value={settings.socialNetworks}
+          inputClasses={globalInputClasses}
+          addButtonLabel="Add Social Network"
+          emptyMessage="No social networks added yet. Click the button below to add one."
         />
       </div>
 
@@ -822,6 +767,78 @@ const settings = {
               </div>
             </div>
           </div>
+
+          <div>
+            <label for="background_color" class="mb-2 block text-sm font-medium">
+              Background Color (Light)
+              {
+                isFromDatabase("backgroundColor") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
+            </label>
+            <div class="flex items-center gap-3">
+              <input
+                type="color"
+                id="background_color_picker"
+                value={settings.backgroundColor}
+                class="h-16 w-16 cursor-pointer rounded border-2 border-gray-300 dark:border-gray-600"
+              />
+              <div class="flex-1">
+                <input
+                  type="text"
+                  id="background_color"
+                  name="background_color"
+                  value={settings.backgroundColor}
+                  class={globalInputClasses + " font-mono"}
+                  placeholder="#ffffff"
+                  pattern="^#[0-9A-Fa-f]{6}$"
+                />
+                <p class="mt-1 text-xs text-gray-500">Page background for light mode</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label for="background_color_dark" class="mb-2 block text-sm font-medium">
+              Background Color (Dark)
+              {
+                isFromDatabase("backgroundColorDark") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
+            </label>
+            <div class="flex items-center gap-3">
+              <input
+                type="color"
+                id="background_color_dark_picker"
+                value={settings.backgroundColorDark}
+                class="h-16 w-16 cursor-pointer rounded border-2 border-gray-300 dark:border-gray-600"
+              />
+              <div class="flex-1">
+                <input
+                  type="text"
+                  id="background_color_dark"
+                  name="background_color_dark"
+                  value={settings.backgroundColorDark}
+                  class={globalInputClasses + " font-mono"}
+                  placeholder="#0a0a0a"
+                  pattern="^#[0-9A-Fa-f]{6}$"
+                />
+                <p class="mt-1 text-xs text-gray-500">Page background for dark mode</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1133,6 +1150,37 @@ const settings = {
     }
   });
 
+  const backgroundColorPicker = document.getElementById("background_color_picker") as HTMLInputElement;
+  const backgroundColorInput = document.getElementById("background_color") as HTMLInputElement;
+  const backgroundColorDarkPicker = document.getElementById(
+    "background_color_dark_picker"
+  ) as HTMLInputElement;
+  const backgroundColorDarkInput = document.getElementById(
+    "background_color_dark"
+  ) as HTMLInputElement;
+
+  backgroundColorPicker?.addEventListener("input", (e) => {
+    backgroundColorInput.value = (e.target as HTMLInputElement).value;
+  });
+
+  backgroundColorInput?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+      backgroundColorPicker.value = value;
+    }
+  });
+
+  backgroundColorDarkPicker?.addEventListener("input", (e) => {
+    backgroundColorDarkInput.value = (e.target as HTMLInputElement).value;
+  });
+
+  backgroundColorDarkInput?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+      backgroundColorDarkPicker.value = value;
+    }
+  });
+
   // Live preview for logos and icons
   function updatePreview(textareaId: string, previewSelector: string) {
     const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
@@ -1211,234 +1259,6 @@ const settings = {
   updatePreviewBoth("logo", "#logo-preview-light", "#logo-preview-dark", false);
   updatePreviewBoth("icon", "#icon-preview-light", "#icon-preview-dark", true);
 
-  // =====================
-  // Social Networks Repeater
-  // =====================
-
-  const socialContainer = document.getElementById("social-networks-container");
-  const addSocialBtn = document.getElementById("add-social-btn");
-  const socialNetworksInput = document.getElementById("social_networks") as HTMLInputElement;
-  const noSocialsMessage = document.getElementById("no-socials-message");
-  let socialIndex = document.querySelectorAll(".social-network-item").length;
-
-  /**
-   * Detect social network icon based on URL
-   */
-  function detectSocialIcon(url: string): string {
-    const urlLower = url.toLowerCase();
-
-    if (urlLower.includes("facebook.com") || urlLower.includes("fb.com"))
-      return "fa-brands fa-facebook-f";
-    if (urlLower.includes("twitter.com") || urlLower.includes("x.com"))
-      return "fa-brands fa-x-twitter";
-    if (urlLower.includes("instagram.com")) return "fa-brands fa-instagram";
-    if (urlLower.includes("linkedin.com")) return "fa-brands fa-linkedin-in";
-    if (urlLower.includes("youtube.com") || urlLower.includes("youtu.be"))
-      return "fa-brands fa-youtube";
-    if (urlLower.includes("tiktok.com")) return "fa-brands fa-tiktok";
-    if (urlLower.includes("pinterest.com")) return "fa-brands fa-pinterest-p";
-    if (urlLower.includes("snapchat.com")) return "fa-brands fa-snapchat";
-    if (urlLower.includes("github.com")) return "fa-brands fa-github";
-    if (urlLower.includes("discord.com") || urlLower.includes("discord.gg"))
-      return "fa-brands fa-discord";
-    if (urlLower.includes("whatsapp.com") || urlLower.includes("wa.me"))
-      return "fa-brands fa-whatsapp";
-    if (urlLower.includes("telegram.org") || urlLower.includes("t.me"))
-      return "fa-brands fa-telegram";
-    if (urlLower.includes("reddit.com")) return "fa-brands fa-reddit-alien";
-    if (urlLower.includes("threads.net")) return "fa-brands fa-threads";
-    if (urlLower.includes("twitch.tv")) return "fa-brands fa-twitch";
-    if (urlLower.includes("spotify.com")) return "fa-brands fa-spotify";
-    if (urlLower.includes("yelp.com")) return "fa-brands fa-yelp";
-    if (urlLower.includes("google.com/maps") || urlLower.includes("business.google"))
-      return "fa-brands fa-google";
-    if (urlLower.startsWith("mailto:")) return "fa-solid fa-envelope";
-    if (urlLower.startsWith("tel:")) return "fa-solid fa-phone";
-
-    return "fa-solid fa-link";
-  }
-
-  /**
-   * Update the hidden input with current social networks data
-   */
-  function updateSocialNetworksValue() {
-    const items = document.querySelectorAll(".social-network-item");
-    const socials: Array<{ url: string; label?: string }> = [];
-
-    items.forEach((item) => {
-      const urlInput = item.querySelector(".social-url-input") as HTMLInputElement;
-      const labelInput = item.querySelector(".social-label-input") as HTMLInputElement;
-
-      if (urlInput?.value?.trim()) {
-        const social: { url: string; label?: string } = { url: urlInput.value.trim() };
-        if (labelInput?.value?.trim()) {
-          social.label = labelInput.value.trim();
-        }
-        socials.push(social);
-      }
-    });
-
-    socialNetworksInput.value = JSON.stringify(socials);
-
-    // Show/hide no socials message
-    if (noSocialsMessage) {
-      noSocialsMessage.style.display = items.length === 0 ? "block" : "none";
-    }
-  }
-
-  /**
-   * Update icon preview for a social network item
-   */
-  function updateIconPreview(item: Element) {
-    const urlInput = item.querySelector(".social-url-input") as HTMLInputElement;
-    const iconPreview = item.querySelector(".social-icon-preview");
-
-    if (urlInput && iconPreview) {
-      const icon = detectSocialIcon(urlInput.value || "");
-      iconPreview.innerHTML = `<i class="${icon}"></i>`;
-
-      // Update color based on detection
-      if (urlInput.value && !urlInput.value.includes("link")) {
-        iconPreview.classList.remove("text-gray-400");
-        iconPreview.classList.add("text-primary-600", "dark:text-primary-400");
-      } else {
-        iconPreview.classList.add("text-gray-400");
-        iconPreview.classList.remove("text-primary-600", "dark:text-primary-400");
-      }
-    }
-  }
-
-  /** Escape for use in HTML attribute values to prevent XSS */
-  function escapeHtml(s: string): string {
-    return s
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
-  /**
-   * Create a new social network item
-   */
-  function createSocialItem(index: number, url: string = "", label: string = ""): HTMLElement {
-    const div = document.createElement("div");
-    div.className = "social-network-item flex flex-col sm:flex-row sm:items-center gap-3";
-    div.dataset.index = String(index);
-    const inputClasses =
-      (document.querySelector("input.color-background") as HTMLInputElement)?.className ||
-      "color-background shadow-secondary-inner-md w-full border-0 py-2.5 px-4 text-gray-900 transition-colors duration-200 text-grey-900 placeholder:text-gray-600 focus:outline-none dark:text-white dark:placeholder:text-gray-300 scrollbar-hide";
-
-    div.innerHTML = `
-      <div class="flex-1 w-full min-w-0">
-        <input
-          type="url"
-          name="social_url_${index}"
-          value="${escapeHtml(url)}"
-          class="${inputClasses} social-url-input"
-          placeholder="https://facebook.com/yourpage"
-        />
-      </div>
-      <div class="w-full sm:w-32">
-        <input
-          type="text"
-          name="social_label_${index}"
-          value="${escapeHtml(label)}"
-          class="${inputClasses} social-label-input"
-          placeholder="Label (optional)"
-        />
-      </div>
-      <div class="w-10 h-10 flex items-center justify-center text-xl social-icon-preview text-gray-400">
-        <i class="fa-solid fa-link"></i>
-      </div>
-      <!-- Using DeleteConfirmButton component instead of raw button -->
-      <div class="delete-confirm-wrapper inline-flex">
-        <Button
-          id="remove-social-${index}"
-          type="button"
-          variant="ghost"
-          size="sm"
-          icon="trash"
-          iconClasses="delete-confirm-icon"
-          class="delete-confirm-btn remove-social-btn"
-          title="Delete"
-          dataAttributes={{
-            "data-state": "trash",
-            "data-timeout": "3000"
-          }}
-        >
-          <svg
-            width="44"
-            height="44"
-            viewBox="0 0 44 44"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            class="absolute top-0 left-0 timer-ring-overlay"
-          >
-            <circle
-              cx="22"
-              cy="22"
-              r="18"
-              fill="none"
-              stroke="#ef4444"
-              stroke-width="3"
-              stroke-dasharray="113.1"
-              stroke-dashoffset="113.1"
-              transform="rotate(-90 22 22)"
-              class="timer-icon-test"
-            />
-          </svg>
-        </Button>
-      </div>
-    `;
-
-    return div;
-  }
-
-  /**
-   * Attach event listeners to a social network item
-   */
-  function attachSocialItemListeners(item: Element) {
-    // URL input change - update icon and value
-    const urlInput = item.querySelector(".social-url-input");
-    urlInput?.addEventListener("input", () => {
-      updateIconPreview(item);
-      updateSocialNetworksValue();
-    });
-
-    // Label input change - update value
-    const labelInput = item.querySelector(".social-label-input");
-    labelInput?.addEventListener("input", updateSocialNetworksValue);
-
-    // Remove button - listen for deleteConfirmed event
-    const removeBtn = item.querySelector(".remove-social-btn");
-    removeBtn?.addEventListener("deleteConfirmed", () => {
-      item.remove();
-      updateSocialNetworksValue();
-    });
-
-    // Initial icon preview
-    updateIconPreview(item);
-  }
-
-  // Initialize existing items
-  document.querySelectorAll(".social-network-item").forEach(attachSocialItemListeners);
-
-  // Add new social network
-  addSocialBtn?.addEventListener("click", () => {
-    // Hide no socials message
-    if (noSocialsMessage) {
-      noSocialsMessage.style.display = "none";
-    }
-
-    const newItem = createSocialItem(socialIndex++);
-    socialContainer?.appendChild(newItem);
-    attachSocialItemListeners(newItem);
-
-    // Focus the new URL input
-    const urlInput = newItem.querySelector(".social-url-input") as HTMLInputElement;
-    urlInput?.focus();
-  });
-
   // Live preview for OG image
   const ogImageInput = document.getElementById("og_image") as HTMLInputElement;
   const ogImagePreview = document.getElementById("og-image-preview") as HTMLElement;
@@ -1511,6 +1331,8 @@ const settings = {
       virtual_assistant_name: "virtualAssistantName",
       primary_color: "primaryColor",
       secondary_color: "secondaryColor",
+      background_color: "backgroundColor",
+      background_color_dark: "backgroundColorDark",
       font_family: "fontFamily",
       secondary_font_family: "secondaryFontFamily",
       logo: "logo",
@@ -1621,6 +1443,8 @@ const settings = {
       if (
         settings.primaryColor ||
         settings.secondaryColor ||
+        settings.backgroundColor ||
+        settings.backgroundColorDark ||
         settings.fontFamily ||
         settings.secondaryFontFamily
       ) {
@@ -1647,6 +1471,18 @@ const settings = {
             injectDynamicColors(newPrimaryColor || "#825BDD", newSecondaryColor || "#0ea5e9");
           }
 
+          // Inject background colors for .color-background (uses r,g,b format)
+          const hexToRgb = (hex: string) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
+          };
+          const newBackgroundColor = settings.backgroundColor || backgroundColorInput?.value || "#ffffff";
+          const newBackgroundColorDark = settings.backgroundColorDark || backgroundColorDarkInput?.value || "#0a0a0a";
+          const rgbLight = hexToRgb(newBackgroundColor);
+          const rgbDark = hexToRgb(newBackgroundColorDark);
+          if (rgbLight) document.documentElement.style.setProperty("--color-background", rgbLight);
+          if (rgbDark) document.documentElement.style.setProperty("--color-background-dark", rgbDark);
+
           // Inject font families if they were updated
           if (newFontFamily) {
             document.documentElement.style.setProperty("--font-family", newFontFamily);
@@ -1661,7 +1497,7 @@ const settings = {
           }
 
           const updates = [];
-          if (settings.primaryColor || settings.secondaryColor) updates.push("colors");
+          if (settings.primaryColor || settings.secondaryColor || settings.backgroundColor || settings.backgroundColorDark) updates.push("colors");
           if (settings.fontFamily || settings.secondaryFontFamily) updates.push("fonts");
           if (updates.length > 0 && window.showSuccess) {
             window.showSuccess(

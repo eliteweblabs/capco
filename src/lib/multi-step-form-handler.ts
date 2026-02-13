@@ -356,10 +356,11 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Auto-focus when panel is done. Use 4s delay after animations so mobile keypad reliably opens.
+    // Auto-focus when panel is done. On touch use 0ms so focus runs in same gesture as tap (keypad may open).
     const hasTypewriter = targetStep.classList.contains("has-typewriter");
     if (!hasTypewriter) {
-      const focusDelayMs = 4000;
+      const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
+      const focusDelayMs = isTouch ? 0 : 400;
       setTimeout(() => {
         const formEl = document.getElementById(formId) as HTMLFormElement;
         const cursorFraction = 0.4;
@@ -388,6 +389,7 @@ export function createMultiStepFormHandler(
             scrollFormToCursor(yesButton);
           }
         } else {
+          // Programmatic focus/click won't open iOS keypad - user must tap "Open keypad" button
           const focusFirstIn = (window as any).focusFirstInputIn;
           if (typeof focusFirstIn === "function" && focusFirstIn(targetStep)) {
             const firstInput = targetStep.querySelector(
@@ -1486,11 +1488,6 @@ export function createMultiStepFormHandler(
             const absoluteElementTop = elementRect.top + window.pageYOffset;
             const cursorLine = absoluteElementTop - window.innerHeight * 0.4;
             window.scrollTo({ top: cursorLine, behavior: "smooth" });
-            console.log("[MULTISTEP-SCROLL] window.scrollTo (initial focus):", {
-              element: firstInput.id || (firstInput as HTMLInputElement).name || "firstInput",
-              cursorLine,
-              reason: "position first input at cursor line (40vh) on load",
-            });
             if ("ontouchstart" in window && typeof (window as any).openKeypad === "function") {
               (window as any).openKeypad(firstStep);
             }

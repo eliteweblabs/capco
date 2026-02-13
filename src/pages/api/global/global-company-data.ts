@@ -109,6 +109,8 @@ export const globalCompanyData = async () => {
     // Theme colors
     primaryColor: get("primaryColor", "GLOBAL_COLOR_PRIMARY"),
     secondaryColor: get("secondaryColor", "GLOBAL_COLOR_SECONDARY"),
+    backgroundColor: get("backgroundColor") || "#ffffff",
+    backgroundColorDark: get("backgroundColorDark") || "#0a0a0a",
 
     // Typography
     fontFamily: get("fontFamily", "FONT_FAMILY") || "Outfit Variable",

@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const { companyName, firstName, lastName, phone, smsAlerts, mobileCarrier, avatarUrl } = body;
+    const { companyName, firstName, lastName, phone, smsAlerts, mobileCarrier, avatarUrl, socialNetworks } = body;
 
     // Validate required fields when doing a full profile update (not avatar-only)
     const isAvatarOnlyUpdate =
@@ -73,7 +73,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       lastName === undefined &&
       phone === undefined &&
       smsAlerts === undefined &&
-      mobileCarrier === undefined;
+      mobileCarrier === undefined &&
+      socialNetworks === undefined;
     if (!isAvatarOnlyUpdate && (!firstName?.trim() || !lastName?.trim())) {
       return new Response(
         JSON.stringify({
@@ -114,6 +115,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (avatarUrl !== undefined) {
       updatePayload.avatarUrl =
         avatarUrl === null || avatarUrl === "" ? null : String(avatarUrl).trim();
+    }
+
+    // Social networks (array of { url: string, label?: string })
+    if (socialNetworks !== undefined) {
+      const parsed =
+        typeof socialNetworks === "string"
+          ? (() => {
+              try {
+                return JSON.parse(socialNetworks);
+              } catch {
+                return [];
+              }
+            })()
+          : Array.isArray(socialNetworks)
+            ? socialNetworks
+            : [];
+      const valid = parsed
+        .filter((s) => s && typeof s.url === "string" && s.url.trim())
+        .map((s) => ({ url: s.url.trim(), label: s.label?.trim() || null }));
+      updatePayload.socialNetworks = valid;
     }
 
     // Handle SMS alerts and mobile carrier

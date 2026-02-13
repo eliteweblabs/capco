@@ -436,6 +436,23 @@ if (!String.prototype.startsWith) {
   return true;
 };
 
+/** Try to open mobile keypad by focusing first input and using click (helps iOS). Call after focusFirstInputIn. */
+(window as any).openKeypad = function (container: HTMLElement): void {
+  if (!container?.querySelector) return;
+  const first = container.querySelector(
+    "input:not([type=hidden]):not([readonly]), textarea, select"
+  ) as HTMLInputElement | HTMLTextAreaElement | null;
+  if (!first || typeof first.focus !== "function") return;
+  if (!("ontouchstart" in window)) return; // Desktop: no keypad
+  first.scrollIntoView({ block: "center", behavior: "smooth" });
+  first.focus({ preventScroll: false });
+  // Simulated click can help iOS show keypad when programmatic focus alone fails
+  first.click();
+  [100, 300, 500].forEach((ms) =>
+    setTimeout(() => first.focus({ preventScroll: false }), ms)
+  );
+};
+
 /**
  * Injects SimpleIcons into elements with class .input-with-icon and data-icon="name".
  * Call with no args to run on the whole document, or pass a container to scope (e.g. after dynamic content).

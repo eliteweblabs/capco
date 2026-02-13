@@ -19,17 +19,21 @@ interface Props {
   config: MultiStepFormConfig;
   containerClass?: string;
   initialData?: Record<string, any>;
+  /** TEST: Disables cascade/visibility animations to debug iOS keypad. Remove when fixed. */
+  testNoCascade?: boolean;
 }
 
 const {
   config,
   containerClass = "min-w-sm max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full",
   initialData = {},
+  testNoCascade = false,
 } = Astro.props;
 
 // When first step has expandDown: false, start with centered panel (no expand-down/expand-up)
-const firstStep = config.steps.find((s) => s.stepNumber === 1);
-const initialCentered = firstStep?.expandDown === false;
+// const firstStep = config.steps.find((s) => s.stepNumber === 1);
+// const initialCentered = firstStep?.expandDown === false;
+const initialCentered = true;
 
 const { globalInputClasses, multiStepInputClasses } = globalClasses();
 const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
@@ -46,6 +50,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 <div
   data-dynamic-height="true"
   data-multi-step-form
+  data-test-no-cascade={testNoCascade || undefined}
   tabindex="-1"
   class="flex w-full flex-col items-start justify-center"
 >
@@ -69,7 +74,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         config.steps.map((step) => (
           <div
             class:list={[
-              "step-content mb-6 space-y-8 overflow-y-visible text-xl sm:space-y-8", // leave mt-20 for tooltips
+              "step-content space-y-8 overflow-y-visible text-xl sm:space-y-8", // leave mt-20 for tooltips
               step.stepNumber === 1 ? "first-step" : "",
             ]}
             data-step={step.stepNumber}
@@ -534,6 +539,16 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       ))
     }
   </form>
+
+  <!-- Sticky "Open keypad" button - tap triggers focus (user gesture). For debugging. -->
+  <button
+    type="button"
+    data-open-keypad-btn
+    class="fixed bottom-20 right-4 z-50 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-500"
+    aria-label="Open keypad"
+  >
+    Open keypad
+  </button>
 </div>
 
 <!-- Advanced Stepper - Fixed to bottom (outside of container to avoid flex interference) -->
@@ -592,29 +607,68 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     flex-direction: column;
   }
 
-  /* Cascade reveal: collapsed until typewriter completes, then each element expands with stagger so panel height grows per element */
-  .step-content.has-typewriter .input-wrapper,
-  .step-content.has-typewriter .inline-address-search-wrapper,
-  .step-content.has-typewriter button,
-  .step-content.has-typewriter a,
-  .step-content.has-typewriter textarea {
-    /* max-height: 0; */
+  /* Wrapper cascade: hidden until typewriter completes, then 250ms > fields > 250ms > buttons */
+  .step-content.has-typewriter .step-form-fields-wrapper,
+  .step-content.has-typewriter .step-form-buttons-wrapper {
+    max-height: 0;
+    overflow: hidden;
     opacity: 0;
     transition:
       max-height 0.4s ease-out,
-      opacity 0.7s ease-out;
-    overflow: hidden;
+      opacity 0.25s ease-out;
   }
 
-  /* When typewriter completes, each reveals with its own transition-delay (set in JS) */
+  .step-content.typewriter-complete .step-form-fields-wrapper {
+    max-height: 200rem;
+    opacity: 1;
+    overflow: visible;
+    transition-delay: 250ms;
+  }
+
+  .step-content.typewriter-complete .step-form-buttons-wrapper {
+    max-height: 200rem;
+    opacity: 1;
+    overflow: visible;
+    transition-delay: 500ms;
+  }
+
+  /* For steps without typewriter, show wrappers immediately */
+  .step-content:not(.has-typewriter) .step-form-fields-wrapper,
+  .step-content:not(.has-typewriter) .step-form-buttons-wrapper {
+    max-height: none;
+    opacity: 1;
+    overflow: visible;
+  }
+
+  /* Inner elements: opacity tied to wrapper reveal (no per-element stagger) */
+  .step-content.has-typewriter .input-wrapper,
+  .step-content.has-typewriter .inline-address-search-wrapper,
+  .step-content.has-typewriter .step-form-fields-wrapper button,
+  .step-content.has-typewriter .step-form-fields-wrapper a,
+  .step-content.has-typewriter .step-form-buttons-wrapper button,
+  .step-content.has-typewriter .step-form-buttons-wrapper a,
+  .step-content.has-typewriter textarea {
+    opacity: 0;
+    transition: opacity 0.25s ease-out;
+  }
+
   .step-content.typewriter-complete .input-wrapper,
   .step-content.typewriter-complete .inline-address-search-wrapper,
-  .step-content.typewriter-complete button,
-  .step-content.typewriter-complete a,
   .step-content.typewriter-complete textarea {
     opacity: 1;
-    max-height: 50rem;
-    overflow: visible;
+    transition-delay: 250ms; /* sync with fields-wrapper */
+  }
+
+  .step-content.typewriter-complete .step-form-fields-wrapper button,
+  .step-content.typewriter-complete .step-form-fields-wrapper a {
+    opacity: 1;
+    transition-delay: 250ms;
+  }
+
+  .step-content.typewriter-complete .step-form-buttons-wrapper button,
+  .step-content.typewriter-complete .step-form-buttons-wrapper a {
+    opacity: 1;
+    transition-delay: 500ms; /* sync with buttons-wrapper */
   }
 
   /* For steps without typewriter effect, show content immediately */
@@ -625,6 +679,25 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   .step-content:not(.has-typewriter) textarea {
     transform: translateY(0);
     opacity: 1;
+  }
+
+  /* TEST: When data-test-no-cascade, bypass all hiding - everything visible immediately for keypad debugging */
+  [data-multi-step-form][data-test-no-cascade] .step-form-fields-wrapper,
+  [data-multi-step-form][data-test-no-cascade] .step-form-buttons-wrapper {
+    max-height: none !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    transition: none !important;
+    transition-delay: 0ms !important;
+  }
+  [data-multi-step-form][data-test-no-cascade] .input-wrapper,
+  [data-multi-step-form][data-test-no-cascade] .inline-address-search-wrapper,
+  [data-multi-step-form][data-test-no-cascade] button,
+  [data-multi-step-form][data-test-no-cascade] a,
+  [data-multi-step-form][data-test-no-cascade] textarea {
+    opacity: 1 !important;
+    transition: none !important;
+    transition-delay: 0ms !important;
   }
 </style>
 
@@ -838,6 +911,18 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   // TypeIt typewriter loaded globally from App.astro (window.initTypewriterTexts, window.triggerActiveStepTypewriter)
 
   document.addEventListener("DOMContentLoaded", () => {
+    // Sticky "Open keypad" button - direct user tap, so focus should trigger keypad
+    document.querySelectorAll("[data-open-keypad-btn]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const form = (e.currentTarget as HTMLElement).closest("[data-multi-step-form]");
+        const activeStep = form?.querySelector(".step-content.active") as HTMLElement;
+        if (!activeStep) return;
+        const focusFirstIn = (window as any).focusFirstInputIn;
+        if (typeof focusFirstIn === "function") focusFirstIn(activeStep);
+        if (typeof (window as any).openKeypad === "function") (window as any).openKeypad(activeStep);
+      });
+    });
+
     // Panel position: only .multi-step-form-steps height matters (spacer removed)
     let updateStepsPanelBottomRef: (() => void) | null = null;
     /** Run panel bottom update every frame for the given duration (e.g. during typewriter/cascade). */
@@ -939,77 +1024,45 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       });
     }
 
-    // Listen for typewriter completion to trigger content animations
+    // Listen for typewriter completion to trigger content animations (wrapper cascade: 250ms > fields > 250ms > buttons)
     document.addEventListener("typewriter-complete", (e) => {
       const target = e.target as HTMLElement;
       const stepContent = target.closest(".step-content");
       if (stepContent) {
-        // console.log("[MULTISTEP-FORM] Typewriter complete, revealing content");
-
-        // Collect all animatable elements in DOM order (include textarea so they cascade instead of jumping)
-        const elements: HTMLElement[] = [];
-
-        // Get all input wrappers, address search wrappers, and textareas
-        const inputWrappers = stepContent.querySelectorAll(
-          ".input-wrapper, .inline-address-search-wrapper, textarea"
-        );
-        inputWrappers.forEach((el) => elements.push(el as HTMLElement));
-
-        // Get all buttons and anchors (both choice buttons and navigation buttons)
-        const buttons = stepContent.querySelectorAll("button, a");
-        buttons.forEach((el) => elements.push(el as HTMLElement));
-
-        // Cascade delay per element (200ms = doubled from 100ms for slower reveal)
-        const CASCADE_DELAY_MS = 200;
-        const OPACITY_DURATION_MS = 550;
-        elements.forEach((element, index) => {
-          element.style.transitionDelay = `${index * CASCADE_DELAY_MS}ms`;
-        });
-
-        // Add the class to trigger animations
+        // Add the class to trigger wrapper cascade (fields at 250ms, buttons at 500ms)
         stepContent.classList.add("typewriter-complete");
 
-        // Panel bottom: update every frame while content expands (cascade) so position tracks in real time
-        // console.log(
-        //   "[MULTISTEP-DEBUG] typewriter-complete → updateStepsPanelBottomRef + runPanelBottomLoopRef"
-        // );
+        // Panel bottom: update every frame while wrappers expand so position tracks in real time
         requestAnimationFrame(() => requestAnimationFrame(updateStepsPanelBottomRef ?? (() => {})));
-        const cascadeEndMs =
-          elements.length > 0 ? (elements.length - 1) * CASCADE_DELAY_MS + OPACITY_DURATION_MS : 0;
-        const panelLoopDurationMs = cascadeEndMs + 600;
-        if (cascadeEndMs > 0) {
-          runPanelBottomLoopRef?.(panelLoopDurationMs);
-        }
+        const CASCADE_END_MS = 750; /* 500ms buttons delay + ~250ms opacity/expand */
+        runPanelBottomLoopRef?.(CASCADE_END_MS + 600);
 
-        // Run focus + keypad 4s after cascade animation completes so mobile keypad reliably opens
-        const FOCUS_DELAY_AFTER_ANIMATIONS_MS = 4000;
+        // Run focus + keypad soon after cascade (150ms) - minimal delay to stay in user-gesture chain
+        const FOCUS_DELAY_AFTER_ANIMATIONS_MS = 150;
         let focusKeypadDone = false;
         const runFocusAndKeypad = () => {
           if (focusKeypadDone) return;
           focusKeypadDone = true;
+          // Programmatic focus/click won't open iOS keypad - user must tap "Open keypad" button
           const focusFirstIn = (window as any).focusFirstInputIn;
-          if (typeof focusFirstIn !== "function") return;
-          const ok = focusFirstIn(stepContent);
-          if (ok && typeof (window as any).openKeypad === "function") {
-            (window as any).openKeypad(stepContent);
+          if (typeof focusFirstIn === "function") {
+            const ok = focusFirstIn(stepContent);
+            if (ok && typeof (window as any).openKeypad === "function") {
+              (window as any).openKeypad(stepContent);
+            }
           }
         };
-        const scheduleFocusAfterAnimations = () =>
-          setTimeout(runFocusAndKeypad, FOCUS_DELAY_AFTER_ANIMATIONS_MS);
 
-        if (elements.length > 0) {
-          const lastEl = elements[elements.length - 1];
+        const buttonsWrapper = stepContent.querySelector(".step-form-buttons-wrapper");
+        if (buttonsWrapper) {
           const onCascadeEnd = (e: TransitionEvent) => {
-            if (e.target !== lastEl || e.propertyName !== "opacity") return;
-            lastEl.removeEventListener("transitionend", onCascadeEnd as EventListener);
-            scheduleFocusAfterAnimations();
+            if (e.target !== buttonsWrapper || e.propertyName !== "opacity") return;
+            buttonsWrapper.removeEventListener("transitionend", onCascadeEnd as EventListener);
+            setTimeout(runFocusAndKeypad, FOCUS_DELAY_AFTER_ANIMATIONS_MS);
           };
-          lastEl.addEventListener("transitionend", onCascadeEnd as EventListener);
-          const fallbackMs = cascadeEndMs + 200;
-          setTimeout(scheduleFocusAfterAnimations, fallbackMs);
-        } else {
-          setTimeout(scheduleFocusAfterAnimations, OPACITY_DURATION_MS + 100);
+          buttonsWrapper.addEventListener("transitionend", onCascadeEnd as EventListener);
         }
+        setTimeout(runFocusAndKeypad, CASCADE_END_MS + FOCUS_DELAY_AFTER_ANIMATIONS_MS + 200);
       }
     });
 

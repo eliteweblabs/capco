@@ -23,18 +23,19 @@ interface Props {
   description?: string;
   /** Column ratio on md+: "1/2" (default) | "1/3" | "2/3" | "1/4" | "3/4" | "1/5" | "4/5" */
   ratio?: TwoColumnRatio;
+  hideFooter?: boolean;
 }
 
-const { title = "", description = "", ratio = "1/2" } = Astro.props;
+const { title = "", description = "", ratio = "1/2", hideFooter = false } = Astro.props;
 const gridColsClass = RATIO_CLASSES[ratio];
 
 import App from "../ui/App.astro";
 ---
 
-<App title={title} description={description} layout="two-column">
+<App title={title} description={description} layout="two-column" {hideFooter}>
   <div
-    class={`grid h-[calc(100dvh-8rem)] w-full grid-cols-1 grid-rows-[1fr_1fr] md:grid-rows-1 ${gridColsClass}`}
-    data-dynamic-height="true"
+    class={`grid w-full grid-cols-1 grid-rows-[1fr_1fr] md:grid-rows-1 ${gridColsClass}`}
+    data-dynamic-height="height"
     role="presentation"
   >
     <div

@@ -11,11 +11,12 @@ import BannerAlert from "./BannerAlert.astro";
 interface Props {
   position?: "top" | "bottom" | "all";
   width?: "full" | "auto";
+  hideFooter?: boolean;
   /** Current pathname (e.g. from Astro.url.pathname). Used to filter banners by targetPages. */
   pathname?: string;
 }
 
-const { position = "all", width = "full", pathname } = Astro.props;
+const { position = "all", width = "full", pathname, hideFooter = false } = Astro.props;
 
 // Fetch active banner alerts
 let banners: any[] = [];
@@ -61,6 +62,10 @@ const hasContent = (b: { content?: string | null }) => (b.content ?? "").trim().
 const topBanners = filteredBanners.filter((b) => b.position === "top" && hasContent(b));
 const bottomBanners = filteredBanners.filter((b) => b.position === "bottom" && hasContent(b));
 
+// Hide top banners on auth pages (e.g. /auth/login) to avoid layout/focus interference with iOS keypad
+const isAuthPath = pathname?.startsWith("/auth") ?? false;
+const topBannersToShow = isAuthPath ? [] : topBanners;
+
 // Debug logging
 // console.log("[BannerAlertsLoader] Total banners:", banners.length);
 // console.log("[BannerAlertsLoader] Top banners:", topBanners.length);
@@ -103,9 +108,9 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
 </script>
 
 {
-  topBanners.length > 0 && (position === "all" || position === "top") && (
+  topBannersToShow.length > 0 && (position === "all" || position === "top") && (
     <div class={`z-50 flex flex-col ${width === "full" ? "w-full" : ""}`} id="top-banner-container">
-      {topBanners.map((banner) => (
+      {topBannersToShow.map((banner) => (
         <BannerAlert
           id={banner.id}
           type={banner.type}
@@ -140,9 +145,10 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
   )
 }
 
-<script>
+<script define:vars={{ pathname: pathname ?? "" }}>
   import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
   (function () {
+    const isAuthPath = typeof pathname === "string" && pathname.startsWith("/auth");
     const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const isMobile = () => window.matchMedia(MOBILE_MEDIA_QUERY).matches;
     const THRESH = 8;
@@ -202,7 +208,7 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
       // Use navbar-content only (the bar); top-banner-container is inside main-navbar so main-navbar height would include alerts
       const navbarContent = document.getElementById("navbar-content");
       const navbarBarHeight = navbarContent ? (navbarContent as HTMLElement).offsetHeight : 4 * rem;
-      const dynamicHeightEls = document.querySelectorAll('[data-dynamic-height="true"]');
+      const dynamicHeightEls = document.querySelectorAll('[data-dynamic-height]');
 
       let topAlertsHeight = 0;
       if (topBannerContainer) {
@@ -220,39 +226,58 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         off.topPx = totalTopHeight;
         off.topBannersOnlyPx = topAlertsHeight;
         scrollEl.style.marginTop = totalTopHeight + "px";
-        scrollEl.style.height = "calc(100dvh - " + totalTopHeight + "px)";
+        /* Do NOT set minHeight: flex layout (flex-1 min-h-0) constrains #reveal-scroll as the scroll container */
         if (isMobile()) {
-          dynamicHeightEls.forEach((el) => {
+          // dynamicHeightEls.forEach((el) => {
             // (el as HTMLElement).style.transition = (el as HTMLElement).style.transition || "margin-top 0.3s ease-in-out";
             // (el as HTMLElement).style.marginTop = totalTopHeight + "px";
-          });
+          // });
          
         } else {
-          if (sidebar) (sidebar as HTMLElement).style.height = "";
+          // if (sidebar) (sidebar as HTMLElement).style.minHeight = "";
         }
 
         if (sidebar) {
-            (sidebar as HTMLElement).style.height = "calc(100dvh - 4rem - " + topAlertsHeight + "px)";
+            (sidebar as HTMLElement).style.height = "calc(100dvh - " + totalTopHeight + "px)";
           }
+          
         dynamicHeightEls.forEach((el) => {
-            (el as HTMLElement).style.transition = (el as HTMLElement).style.transition || "margin-top 0.3s ease-in-out";
-            (el as HTMLElement).style.height = "calc(100dvh - " + baseHeight + "px)";
+            const v = (el.getAttribute("data-dynamic-height") || "true").toLowerCase();
+            const elH = el as HTMLElement;
+            elH.style.transition = elH.style.transition || "margin-top 0.3s ease-in-out";
+            const calcVal = "calc(100dvh - " + totalTopHeight + "px)";
+            if (v === "height") {
+              elH.style.height = calcVal;
+              elH.style.minHeight = "";
+            } else {
+              elH.style.minHeight = calcVal;
+              elH.style.height = "";
+            }
           });
       } else {
         off.topBannersOnlyPx = 0;
         const baseHeight = navbarBarHeight;
         off.topPx = baseHeight;
         dynamicHeightEls.forEach((el) => {
-            (el as HTMLElement).style.transition = (el as HTMLElement).style.transition || "margin-top 0.3s ease-in-out";
-            (el as HTMLElement).style.height = "calc(100dvh - " + baseHeight + "px)";
+            const v = (el.getAttribute("data-dynamic-height") || "true").toLowerCase();
+            const elH = el as HTMLElement;
+            elH.style.transition = elH.style.transition || "margin-top 0.3s ease-in-out";
+            const calcVal = "calc(100dvh - " + baseHeight + "px)";
+            if (v === "height") {
+              elH.style.height = calcVal;
+              elH.style.minHeight = "";
+            } else {
+              elH.style.minHeight = calcVal;
+              elH.style.height = "";
+            }
           });
         scrollEl.style.marginTop = baseHeight + "px";
-        scrollEl.style.height = "calc(100dvh - " + baseHeight + "px)";
-        if (isMobile()) {
-          if (sidebar) (sidebar as HTMLElement).style.height = "calc(100dvh - 4rem)";
-        } else {
-          if (sidebar) (sidebar as HTMLElement).style.height = "";
-        }
+        /* Do NOT set minHeight: flex layout constrains #reveal-scroll as the scroll container */
+        // if (isMobile()) {
+        //   if (sidebar) (sidebar as HTMLElement).style.minHeight = "calc(100dvh - " + totalTopHeight + "px)";
+        // } else {
+        //   if (sidebar) (sidebar as HTMLElement).style.minHeight = "";
+        // }
       }
 
       let bottomBannerHeight = 0;
@@ -339,31 +364,34 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
         syncNavbarAtTop(0);
       }
 
-      if (navbarContent) {
-        const ro = new ResizeObserver(() => requestAnimationFrame(updateBannerOffsets));
-        ro.observe(navbarContent);
-      }
-      function recalcAfterBannerDismissed() {
-        setTimeout(() => {
-          updateBannerOffsets();
-          setSidebarPosition(translateY);
-        }, 350);
-      }
+      // Skip observers on auth pages (e.g. /auth/login) to avoid layout thrash that can block iOS keypad
+      if (!isAuthPath) {
+        if (navbarContent) {
+          const ro = new ResizeObserver(() => requestAnimationFrame(updateBannerOffsets));
+          ro.observe(navbarContent);
+        }
+        function recalcAfterBannerDismissed() {
+          setTimeout(() => {
+            updateBannerOffsets();
+            setSidebarPosition(translateY);
+          }, 350);
+        }
 
-      const topContainer = document.getElementById("top-banner-container");
-      const bottomContainer = document.getElementById("bottom-banner-container");
-      const observe = (el: Element | null) => {
-        if (!el) return;
-        new MutationObserver(recalcAfterBannerDismissed).observe(el, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ["style", "class"],
-        });
-      };
-      observe(topContainer);
-      observe(bottomContainer);
-      window.addEventListener("resize", updateBannerOffsets);
+        const topContainer = document.getElementById("top-banner-container");
+        const bottomContainer = document.getElementById("bottom-banner-container");
+        const observe = (el: Element | null) => {
+          if (!el) return;
+          new MutationObserver(recalcAfterBannerDismissed).observe(el, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["style", "class"],
+          });
+        };
+        observe(topContainer);
+        observe(bottomContainer);
+        window.addEventListener("resize", updateBannerOffsets);
+      }
       // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(updateBannerOffsets));
 
       // SPA disabled: re-apply dismiss styles after swap
@@ -377,27 +405,29 @@ const allBannerIds = filteredBanners.map((b) => String(b.id));
       //   requestAnimationFrame(applyDismissStylesFromStorage);
       // });
 
-      if (isMobile()) {
+      if (isMobile() && !isAuthPath) {
         prevScrollTop = clampedScrollTop();
         translateY = Math.min(prevScrollTop, maxPx());
         updateTranslate();
       }
 
-      if (!(scrollEl as HTMLElement).dataset.revealInit) {
-        (scrollEl as HTMLElement).dataset.revealInit = "true";
-        window.addEventListener("resize", () => {
-          prevScrollTop = clampedScrollTop();
-          translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
-          updateTranslate();
-          if (isMobile() && !(scrollEl as HTMLElement).dataset.revealScrollAdded) {
-            (scrollEl as HTMLElement).dataset.revealScrollAdded = "true";
-            scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
-          }
-        });
-      }
-      if (isMobile() && !(scrollEl as HTMLElement).dataset.revealScrollAdded) {
-        (scrollEl as HTMLElement).dataset.revealScrollAdded = "true";
-        scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
+      if (!isAuthPath) {
+        if (!(scrollEl as HTMLElement).dataset.revealInit) {
+          (scrollEl as HTMLElement).dataset.revealInit = "true";
+          window.addEventListener("resize", () => {
+            prevScrollTop = clampedScrollTop();
+            translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
+            updateTranslate();
+            if (isMobile() && !(scrollEl as HTMLElement).dataset.revealScrollAdded) {
+              (scrollEl as HTMLElement).dataset.revealScrollAdded = "true";
+              scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
+            }
+          });
+        }
+        if (isMobile() && !(scrollEl as HTMLElement).dataset.revealScrollAdded) {
+          (scrollEl as HTMLElement).dataset.revealScrollAdded = "true";
+          scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
+        }
       }
     }
 

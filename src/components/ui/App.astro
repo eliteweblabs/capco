@@ -30,6 +30,7 @@ interface Props {
   layout?: "default" | "fullwidth" | "minimal" | "centered" | "fullscreen" | "reveal-footer" | "two-column";
   mask?: string;
   horizontalScroll?: boolean;
+  hideFooter?: boolean;
 }
 
 const {
@@ -44,6 +45,7 @@ const {
   layout = 'default',
   mask = "center",
   horizontalScroll = false,
+  hideFooter = false,
 } = Astro.props;
 
 // Derive layout behavior from layout prop only
@@ -62,6 +64,8 @@ const {
   globalCompanyLogo,
   primaryColor,
   secondaryColor,
+  backgroundColor,
+  backgroundColorDark,
   fontFamily,
   secondaryFontFamily,
   globalCompanyIcon,
@@ -135,7 +139,7 @@ const navigationData = await navigation(
 );
 const { desktopNavigationHTML, mobileNavigationHTML, visibleNavItems } = navigationData;
 // SPA disabled: import { ClientRouter } from "astro:transitions";
-import { generateColorPalette } from "@/lib/color-utils";
+import { generateColorPalette, hexToRgb } from "@/lib/color-utils";
 
 // Server-rendered critical CMS colors so first paint uses DB colors before any script runs
 const primaryPalette = generateColorPalette(primaryColor || "#825BDD");
@@ -147,6 +151,8 @@ const criticalColorVars = [
   ...Object.entries(secondaryPalette)
     .filter(([k]) => k !== "DEFAULT" && !Number.isNaN(Number(k)))
     .map(([shade, color]) => "--color-secondary-" + shade + ": " + color + ";"),
+  "--color-background: " + hexToRgb(backgroundColor || "#ffffff") + ";",
+  "--color-background-dark: " + hexToRgb(backgroundColorDark || "#0a0a0a") + ";",
 ].join("\n");
 const criticalColorsCss = ":root {\n  " + criticalColorVars + "\n}";
 import "../../styles/global.css"; // Import Tailwind CSS
@@ -945,8 +951,9 @@ const debugData = {
     />
 
 
-    <!-- Layout shell: one fixed nav (banners + bar), sidebar, then scroll pane. Scripts use #main-navbar height for #reveal-scroll. -->
-    <div class="md:min-h-0" data-template={layout}>
+    <!-- Layout shell: one fixed nav (banners + bar), sidebar, then scroll pane. Scripts use #main-navbar height for #reveal-scroll.
+         flex + h-dvh + overflow-hidden make #reveal-scroll the single scroll container (prevents body/document scroll competition). -->
+    <div class="flex flex-col h-dvh md:min-h-0 overflow-hidden" data-template={layout}>
       <Navbar
         {globalIconButtonClasses}
         {desktopNavigationHTML}
@@ -959,6 +966,7 @@ const debugData = {
         {project}
         pathname={Astro.url.pathname}
         template={layout}
+        {hideFooter}
       />
 
       <Aside
@@ -970,10 +978,10 @@ const debugData = {
       {mobileNavigationHTML}
     />
 
-      <!-- Scrolling pane: translateY(-scrollTop) so pane slides up with scroll, masking header and revealing footer -->
+      <!-- Scrolling pane: flex-1 min-h-0 constrains height so this is the scroll container (not body). translateY on mobile for reveal effect. -->
       <div
         id="reveal-scroll"
-        class="scrollbar-hide relative z-50 overflow-y-auto bg-gray-100 dark:bg-gray-900"
+        class="scrollbar-hide relative z-50 flex-1 min-h-0 overflow-y-auto overscroll-y-contain bg-gray-100 dark:bg-gray-900"
       >
 
 
@@ -1009,13 +1017,12 @@ const debugData = {
      
      
  
-      
+      {!isAuthPageResult && (
 
         <ul class="align-center flex justify-center text-gray-500 dark:text-gray-400">
        
           <li>
             <Tooltip
-              position="right"
               text={`${new Date().getFullYear().toString()} ${globalCompanyName}. 
               All rights reserved.`}
               ><span class="me-6 no-underline hover:underline">©</span>
@@ -1031,6 +1038,9 @@ const debugData = {
             <a href="/cookies" class="no-underline hover:underline"> cookie </a>
           </li>
         </ul>
+
+      )}
+
         </div>
 
     
@@ -1047,6 +1057,7 @@ const debugData = {
       {primaryTextClasses}
       {secondaryTextClasses}
       {globalInputClasses}
+      {hideFooter}
     />
 
     <div id="action-buttons" class="fixed bottom-8 right-4 hide-on-form-focus z-50">

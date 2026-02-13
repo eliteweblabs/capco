@@ -1,0 +1,282 @@
+---
+/**
+ * SocialMediaRepeater
+ *
+ * Reusable repeater for adding/removing social media links.
+ * URLs auto-detect icons (Facebook, LinkedIn, etc.).
+ * Outputs JSON array to hidden input: [{ url, label? }]
+ *
+ * @example
+ * <SocialMediaRepeater
+ *   id="profile-socials"
+ *   name="socialNetworks"
+ *   value={userProfile?.socialNetworks || []}
+ *   {inputClasses}
+ * />
+ */
+
+import Button from "../common/Button.astro";
+import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
+
+interface SocialLink {
+  url: string;
+  label?: string;
+}
+
+interface Props {
+  id: string;
+  name: string;
+  value?: SocialLink[];
+  inputClasses?: string;
+  addButtonLabel?: string;
+  emptyMessage?: string;
+  containerClass?: string;
+}
+
+const {
+  id,
+  name,
+  value = [],
+  inputClasses = "w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400",
+  addButtonLabel = "Add Social Network",
+  emptyMessage = "No social networks added yet. Click the button below to add one.",
+  containerClass = "",
+} = Astro.props;
+
+const containerId = `${id}-container`;
+const addBtnId = `${id}-add-btn`;
+const hiddenInputId = `${id}-hidden`;
+const noItemsId = `${id}-no-items`;
+---
+
+<div
+  class={containerClass}
+  data-social-repeater
+  data-repeater-id={id}
+  data-input-classes={inputClasses}
+>
+  <div id={containerId} class="space-y-3">
+    {
+      value.length > 0 ? (
+        value.map((social, index) => (
+          <div
+            class="social-network-item flex flex-col gap-3 sm:flex-row sm:items-center"
+            data-index={index}
+          >
+            <div class="w-full min-w-0 flex-1">
+              <input
+                type="url"
+                name={`${name}_url_${index}`}
+                value={social.url}
+                class={`${inputClasses} social-url-input`}
+                placeholder="https://facebook.com/yourpage"
+              />
+            </div>
+            <div class="w-full sm:w-32">
+              <input
+                type="text"
+                name={`${name}_label_${index}`}
+                value={social.label || ""}
+                class={`${inputClasses} social-label-input`}
+                placeholder="Label (optional)"
+              />
+            </div>
+            <div class="social-icon-preview flex h-10 w-10 items-center justify-center text-xl text-gray-400">
+              <i class="fa-solid fa-link" />
+            </div>
+            <DeleteConfirmButton
+              id={`${id}-remove-${index}`}
+              class="remove-social-btn"
+              size="sm"
+              variant="icon"
+            />
+          </div>
+        ))
+      ) : (
+        <p
+          id={noItemsId}
+          class="py-4 text-center text-sm text-gray-500 dark:text-gray-400"
+        >
+          {emptyMessage}
+        </p>
+      )
+    }
+  </div>
+
+  <Button
+    type="button"
+    id={addBtnId}
+    variant="ghost"
+    size="sm"
+    icon="plus"
+    class="mt-4"
+  >
+    {addButtonLabel}
+  </Button>
+
+  <input
+    type="hidden"
+    id={hiddenInputId}
+    name={name}
+    value={JSON.stringify(value)}
+  />
+</div>
+
+<script lang="ts">
+  /**
+   * SocialMediaRepeater - init for a single instance
+   */
+  function initSocialRepeater(instance: HTMLElement) {
+    const id = instance.dataset.repeaterId;
+    if (!id) return;
+    const container = instance.querySelector(`#${id}-container`);
+    const addBtn = instance.querySelector(`#${id}-add-btn`);
+    const hiddenInput = instance.querySelector(`#${id}-hidden`) as HTMLInputElement;
+    const noItemsEl = instance.querySelector(`#${id}-no-items`);
+    if (!container || !addBtn || !hiddenInput) return;
+
+    let socialIndex = instance.querySelectorAll(".social-network-item").length;
+
+    function detectSocialIcon(url) {
+      const urlLower = (url || "").toLowerCase();
+      if (urlLower.includes("facebook.com") || urlLower.includes("fb.com"))
+        return "fa-brands fa-facebook-f";
+      if (urlLower.includes("twitter.com") || urlLower.includes("x.com"))
+        return "fa-brands fa-x-twitter";
+      if (urlLower.includes("instagram.com")) return "fa-brands fa-instagram";
+      if (urlLower.includes("linkedin.com")) return "fa-brands fa-linkedin-in";
+      if (urlLower.includes("youtube.com") || urlLower.includes("youtu.be"))
+        return "fa-brands fa-youtube";
+      if (urlLower.includes("tiktok.com")) return "fa-brands fa-tiktok";
+      if (urlLower.includes("pinterest.com")) return "fa-brands fa-pinterest-p";
+      if (urlLower.includes("snapchat.com")) return "fa-brands fa-snapchat";
+      if (urlLower.includes("github.com")) return "fa-brands fa-github";
+      if (urlLower.includes("discord.com") || urlLower.includes("discord.gg"))
+        return "fa-brands fa-discord";
+      if (urlLower.includes("whatsapp.com") || urlLower.includes("wa.me"))
+        return "fa-brands fa-whatsapp";
+      if (urlLower.includes("telegram.org") || urlLower.includes("t.me"))
+        return "fa-brands fa-telegram";
+      if (urlLower.includes("reddit.com")) return "fa-brands fa-reddit-alien";
+      if (urlLower.includes("threads.net")) return "fa-brands fa-threads";
+      if (urlLower.includes("twitch.tv")) return "fa-brands fa-twitch";
+      if (urlLower.includes("spotify.com")) return "fa-brands fa-spotify";
+      if (urlLower.includes("yelp.com")) return "fa-brands fa-yelp";
+      if (urlLower.includes("google.com/maps") || urlLower.includes("business.google"))
+        return "fa-brands fa-google";
+      if (urlLower.startsWith("mailto:")) return "fa-solid fa-envelope";
+      if (urlLower.startsWith("tel:")) return "fa-solid fa-phone";
+      return "fa-solid fa-link";
+    }
+
+    function updateValue() {
+      const items = instance.querySelectorAll(".social-network-item");
+      const socials: { url: string; label?: string }[] = [];
+      items.forEach((item) => {
+        const urlInput = item.querySelector(".social-url-input") as HTMLInputElement | null;
+        const labelInput = item.querySelector(".social-label-input") as HTMLInputElement | null;
+        const url = urlInput?.value?.trim();
+        if (url) {
+          socials.push({ url, label: labelInput?.value?.trim() || undefined });
+        }
+      });
+      hiddenInput.value = JSON.stringify(socials);
+      if (noItemsEl) {
+        (noItemsEl as HTMLElement).style.display = items.length === 0 ? "block" : "none";
+      }
+    }
+
+    function updateIconPreview(item) {
+      const urlInput = item.querySelector(".social-url-input");
+      const iconPreview = item.querySelector(".social-icon-preview");
+      if (urlInput && iconPreview) {
+        const icon = detectSocialIcon(urlInput.value || "");
+        iconPreview.innerHTML = `<i class="${icon}"></i>`;
+        if (urlInput.value && !urlInput.value.includes("link")) {
+          iconPreview.classList.remove("text-gray-400");
+          iconPreview.classList.add("text-primary-600", "dark:text-primary-400");
+        } else {
+          iconPreview.classList.add("text-gray-400");
+          iconPreview.classList.remove("text-primary-600", "dark:text-primary-400");
+        }
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function createItem(index, url = "", label = "") {
+      const inputClassesVal = instance.dataset.inputClasses || "";
+      const div = document.createElement("div");
+      div.className = "social-network-item flex flex-col sm:flex-row sm:items-center gap-3";
+      div.dataset.index = String(index);
+      div.innerHTML = `
+        <div class="flex-1 w-full min-w-0">
+          <input type="url" name="${hiddenInput.name}_url_${index}" value="${escapeHtml(url)}"
+            class="${escapeHtml(inputClassesVal)} social-url-input"
+            placeholder="https://facebook.com/yourpage" />
+        </div>
+        <div class="w-full sm:w-32">
+          <input type="text" name="${hiddenInput.name}_label_${index}" value="${escapeHtml(label)}"
+            class="${escapeHtml(inputClassesVal)} social-label-input"
+            placeholder="Label (optional)" />
+        </div>
+        <div class="w-10 h-10 flex items-center justify-center text-xl social-icon-preview text-gray-400">
+          <i class="fa-solid fa-link"></i>
+        </div>
+        <div class="delete-confirm-wrapper inline-flex">
+          <button type="button" id="${id}-remove-${index}"
+            class="delete-confirm-btn remove-social-btn px-2 py-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+            data-state="trash" data-timeout="3000" title="Delete">
+            <svg class="delete-confirm-icon inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              <path d="M10 11v6M14 11v6"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+      return div;
+    }
+
+    function attachListeners(item) {
+      const urlInput = item.querySelector(".social-url-input");
+      const labelInput = item.querySelector(".social-label-input");
+      const removeBtn = item.querySelector(".remove-social-btn");
+
+      urlInput?.addEventListener("input", () => {
+        updateIconPreview(item);
+        updateValue();
+      });
+      labelInput?.addEventListener("input", updateValue);
+
+      removeBtn?.addEventListener("deleteConfirmed", () => {
+        item.remove();
+        updateValue();
+      });
+
+      updateIconPreview(item);
+    }
+
+    instance.querySelectorAll(".social-network-item").forEach(attachListeners);
+
+    addBtn.addEventListener("click", () => {
+      if (noItemsEl) (noItemsEl as HTMLElement).style.display = "none";
+      const newItem = createItem(socialIndex++);
+      container.appendChild(newItem);
+      attachListeners(newItem);
+      (newItem.querySelector(".social-url-input") as HTMLInputElement | null)?.focus();
+    });
+  }
+
+  document.querySelectorAll("[data-social-repeater]").forEach((el) => {
+    if (el instanceof HTMLElement && !el.hasAttribute("data-repeater-inited")) {
+      el.setAttribute("data-repeater-inited", "true");
+      initSocialRepeater(el);
+    }
+  });
+</script>

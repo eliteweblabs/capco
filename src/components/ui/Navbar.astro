@@ -5,9 +5,7 @@ import ToggleSidebar from "./ToggleSidebar.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import ThemeToggle from "./ThemeToggle.astro";
-import NotificationsModal from "../common/NotificationsModal.astro";
-import UserProfileDropdown from "./UserProfileDropdown.astro";
-import PunchlistDrawer from "../project/PunchlistDrawer.astro";
+
 
 interface Props {
   currentUser?: any;
@@ -23,6 +21,7 @@ interface Props {
   pathname?: string;
   /** Page template (layout) for tooltip: default | fullwidth | minimal | centered | fullscreen */
   template?: string;
+  hideFooter?: boolean;
 }
 
 const {
@@ -36,6 +35,7 @@ const {
   globalIconButtonClasses,
   pathname,
   template = "default",
+  hideFooter = false,
 } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 ---
@@ -46,7 +46,7 @@ const currentRole = currentUser?.profile?.role;
   style="top: max(0rem, env(safe-area-inset-top, 0px)); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden;"
 >
   <!-- Top Banner Alerts (if any) -->
-  <BannerAlertsLoader position="top" width="auto" {pathname} />
+  <BannerAlertsLoader position="top" width="auto" {pathname} {hideFooter} />
 
   <!-- Main Navbar Content -->
   <div
@@ -91,7 +91,7 @@ const currentRole = currentUser?.profile?.role;
             href={"#"}
             title="Notifications"
             data-dropdown-toggle="notification-dropdown"
-            data-dropdown-trigger="click"
+            data-dropdown-trigger="hover"
             class={globalIconButtonClasses}
             aria-label="View notifications"
             type="button"
