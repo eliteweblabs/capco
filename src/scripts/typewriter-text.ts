@@ -307,12 +307,14 @@ function parseTextWithPauses(
 
 /**
  * Trigger typewriter animation for active step
+ * @param root - Optional: scope search to this element (e.g. form-container when revealing hidden form)
  */
-function triggerActiveStepTypewriter(): void {
-  console.log("[TYPEWRITER] Checking for active step...");
+function triggerActiveStepTypewriter(root?: Element | null): void {
+  const scope = root || document;
+  console.log("[TYPEWRITER] Checking for active step...", root ? "(scoped)" : "");
 
-  // Find active step
-  const activeStep = document.querySelector(".step-content.active");
+  // Find active step (within scope to avoid picking wrong form when multiple exist)
+  const activeStep = scope.querySelector(".step-content.active");
   if (!activeStep) {
     console.log("[TYPEWRITER] No active step found");
     return;

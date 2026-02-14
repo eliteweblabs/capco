@@ -3,7 +3,7 @@ import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
-export const DELETE: APIRoute = async ({ request, cookies }) => {
+async function deleteUserHandler({ request, cookies }: { request: Request; cookies: any }) {
   console.log("🗑️ [DELETE-USER] API route called");
 
   try {
@@ -189,4 +189,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       }
     );
   }
-};
+}
+
+export const POST: APIRoute = deleteUserHandler;
+export const DELETE: APIRoute = deleteUserHandler;

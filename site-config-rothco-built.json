@@ -1,5 +1,128 @@
 {
   "$schema": "./site-config.schema.json",
+  "asideNav": [
+    "dashboard",
+    "settings",
+    "design",
+    "content",
+    "media",
+    "alerts",
+    "testimonials",
+    "global-functions",
+    "projects",
+    "feature-admin",
+    "notifications",
+    "feature-tools"
+  ],
+  "projectListColumns": [
+    {
+      "id": "delete",
+      "label": "",
+      "type": "delete",
+      "allow": ["Admin", "Staff"],
+      "width": 48,
+      "icon": "trash",
+      "tooltip": "Delete"
+    },
+    {
+      "id": "edit",
+      "label": "",
+      "type": "edit",
+      "width": 48,
+      "icon": "edit"
+    },
+    {
+      "id": "address",
+      "label": "Address",
+      "type": "text",
+      "field": "address",
+      "linkToProject": true,
+      "width": 180
+    },
+    {
+      "id": "company",
+      "label": "Company",
+      "type": "company",
+      "field": "authorProfile.companyName",
+      "allow": ["Admin", "Staff"],
+      "width": 120
+    },
+    {
+      "id": "status",
+      "label": "Status",
+      "type": "status",
+      "field": "status",
+      "width": 100
+    },
+    {
+      "id": "featured",
+      "label": "",
+      "type": "featured",
+      "allow": ["Admin", "Staff"],
+      "width": 80,
+      "icon": "star",
+      "tooltip": "Featured"
+    },
+    {
+      "id": "files",
+      "label": "Files",
+      "type": "files",
+      "field": "projectFiles",
+      "width": 200
+    },
+    {
+      "id": "assigned",
+      "label": "",
+      "type": "assigned",
+      "field": "assignedToId",
+      "allow": ["Admin", "Staff"],
+      "width": 100,
+      "icon": "user",
+      "tooltip": "Assigned To"
+    },
+    {
+      "id": "progress",
+      "label": "",
+      "type": "progress",
+      "field": "status",
+      "width": 100,
+      "icon": "percent",
+      "tooltip": "Progress Thru Statuses"
+    },
+    {
+      "id": "checklist",
+      "label": "",
+      "type": "checklist",
+      "width": 80,
+      "icon": "checklist",
+      "tooltip": "Checklist"
+    },
+    {
+      "id": "elapsed",
+      "label": "",
+      "type": "elapsed",
+      "field": "createdAt",
+      "width": 90,
+      "icon": "calendar",
+      "tooltip": "Elapsed Time"
+    },
+    {
+      "id": "timeSince",
+      "label": "",
+      "type": "timeSince",
+      "field": "updatedAt",
+      "width": 110,
+      "icon": "stopwatch",
+      "tooltip": "Time since last status change"
+    },
+    {
+      "id": "dueDate",
+      "label": "Due Date",
+      "type": "dueDate",
+      "field": "dueDate",
+      "width": 140
+    }
+  ],
   "navigation": {
     "main": [
       {
@@ -156,5 +279,735 @@
       "enabled": false,
       "navigation": null
     }
-  }
+  },
+  "projectForm": [
+    {
+      "id": "address-input",
+      "name": "address",
+      "type": "field",
+      "elementType": "component",
+      "label": "Address / Title",
+      "component": "GoogleAddressAutocomplete",
+      "componentProps": {
+        "placeholder": "Enter project address...",
+        "required": true
+      },
+      "required": true,
+      "dataField": "address",
+      "allow": ["Admin", "Staff", "Client"],
+      "hideAtStatus": [
+        10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200
+      ],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 1
+    },
+    {
+      "id": "title-input",
+      "name": "title",
+      "type": "field",
+      "elementType": "text",
+      "label": "Title",
+      "placeholder": "Title",
+      "dataField": "title",
+      "allow": ["Admin", "Staff", "Client"],
+      "hideAtStatus": [],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 1
+    },
+    {
+      "id": "architect-input",
+      "name": "architect",
+      "type": "field",
+      "elementType": "text",
+      "label": "Architect",
+      "placeholder": "Architect",
+      "dataField": "architect",
+      "allow": ["Admin", "Staff"],
+      "hideAtStatus": [],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 2
+    },
+    {
+      "id": "architect-input",
+      "name": "architect",
+      "type": "field",
+      "elementType": "text",
+      "label": "Architect",
+      "placeholder": "Architect",
+      "dataField": "architect",
+      "allow": ["Client"],
+      "hideAtStatus": [],
+      "readOnlyAtStatus": [
+        20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
+        125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 2
+    },
+    {
+      "id": "square-foot-input",
+      "name": "sqFt",
+      "type": "field",
+      "elementType": "component",
+      "label": "Square Footage",
+      "placeholder": "Gross Square Footage (GFA) *",
+      "required": false,
+      "min": 0,
+      "max": 50000,
+      "step": 5,
+      "component": "UnitSlider",
+      "componentProps": {
+        "required": false
+      },
+      "dataField": "sqFt",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 2
+    },
+    {
+      "id": "square-foot-input",
+      "name": "sqFt",
+      "type": "field",
+      "elementType": "component",
+      "label": "Square Footage",
+      "placeholder": "Gross Square Footage (GFA) *",
+      "required": false,
+      "min": 0,
+      "max": 50000,
+      "step": 5,
+      "component": "UnitSlider",
+      "componentProps": {
+        "required": false
+      },
+      "dataField": "sqFt",
+      "allow": ["Client"],
+      "readOnlyAtStatus": [
+        20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
+        125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 2
+    },
+    {
+      "id": "description-input",
+      "name": "description",
+      "type": "field",
+      "elementType": "textarea",
+      "label": "Description",
+      "placeholder": "Project description...",
+      "dataField": "description",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 1
+    },
+    {
+      "id": "description-input",
+      "name": "description",
+      "type": "field",
+      "elementType": "textarea",
+      "label": "Description",
+      "placeholder": "Project description...",
+      "dataField": "description",
+      "allow": ["Client"],
+      "readOnlyAtStatus": [
+        20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
+        125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 1
+    },
+    {
+      "id": "site-access-input",
+      "name": "siteAccess",
+      "type": "field",
+      "elementType": "text",
+      "label": "Site Access",
+      "placeholder": "Site access for fire / rescue vehicles is via ____________",
+      "dataField": "siteAccess",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 2
+    },
+    {
+      "id": "commencement-of-construction-input",
+      "name": "commencementOfConstruction",
+      "type": "field",
+      "elementType": "text",
+      "label": "Commencement",
+      "placeholder": "Estimated Commencement of Construction",
+      "dataField": "commencementOfConstruction",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 2
+    },
+    {
+      "id": "building-height-input",
+      "name": "buildingHeight",
+      "type": "field",
+      "elementType": "component",
+      "label": "Building Height",
+      "placeholder": "Building Height",
+      "required": false,
+      "min": 0,
+      "max": 500,
+      "step": 1,
+      "component": "UnitSlider",
+      "componentProps": {
+        "required": false
+      },
+      "dataField": "buildingHeight",
+      "allow": ["Admin", "Staff"],
+      "hideAtStatus": [],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ]
+    },
+    {
+      "id": "fire-service",
+      "name": "service",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Supply / Service",
+      "groupType": "radio",
+      "cssClass": "fire-service-radio",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "Pump & Tank 300",
+          "label": "Pump & Tank 300"
+        },
+        {
+          "value": "Pump & Tank 600",
+          "label": "Pump & Tank 600"
+        },
+        {
+          "value": "2' Copper",
+          "label": "2' Copper"
+        },
+        {
+          "value": "4' Ductile",
+          "label": "4' Ductile"
+        },
+        {
+          "value": "6' Ductile",
+          "label": "6' Ductile"
+        },
+        {
+          "value": "Unknown",
+          "label": "Unknown"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "fire-service",
+      "name": "service",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Supply / Service",
+      "groupType": "radio",
+      "cssClass": "fire-service-radio",
+      "allow": ["Client"],
+      "readOnlyAtStatus": [
+        20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
+        125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "Pump & Tank",
+          "label": "Pump & Tank"
+        },
+        {
+          "value": "2' Copper",
+          "label": "2' Copper"
+        },
+        {
+          "value": "4' Ductile",
+          "label": "4' Ductile"
+        },
+        {
+          "value": "6' Ductile",
+          "label": "6' Ductile"
+        },
+        {
+          "value": "Unknown",
+          "label": "Unknown"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "fire-service-type",
+      "name": "fireServiceType",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Fire Service Type",
+      "groupType": "radio",
+      "cssClass": "fire-service-type-radio",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "The fire protection system will be fed with a newly installed flushed and chlorinated DICL fire service. Installation by licensed and bonded utility contractor",
+          "label": "DICL"
+        },
+        {
+          "value": "The fire protection system will be fed with a newly installed flushed and chlorinated Type K Copper fire service. Installation by licensed and bonded utility contractor.  Flushing and testing to be witnessed by the licensed fire sprinkler contractor.",
+          "label": "Type K Copper"
+        },
+        {
+          "value": "The fire protection system installed will be fed by a residential GT-15 Goulds fire pump or equivalent. NFPA 13D requires 10 minutes of stored water supply calculated by the head flow of the two hydraulically most remote sprinkler heads. 2-26GPM = 600 Gallons of stored water.",
+          "label": "GT-15 Goulds"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "floors-below-grade-input",
+      "name": "floorsBelowGrade",
+      "type": "field",
+      "elementType": "component",
+      "label": "Floors Below Grade",
+      "placeholder": "Floors Below Grade",
+      "required": false,
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "component": "UnitSlider",
+      "componentProps": {
+        "required": false
+      },
+      "dataField": "floorsBelowGrade",
+      "allow": ["Admin", "Staff"],
+      "hideAtStatus": [],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 2
+    },
+    {
+      "id": "new-construction",
+      "name": "newConstruction",
+      "type": "field",
+      "elementType": "checkbox",
+      "label": "New Construction",
+      "allow": ["Admin", "Staff", "Client"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ]
+    },
+    {
+      "id": "units-slider",
+      "name": "units",
+      "type": "field",
+      "elementType": "component",
+      "label": "Units",
+      "component": "UnitSlider",
+      "componentProps": {
+        "required": false
+      },
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 1
+    },
+    {
+      "id": "units-slider",
+      "name": "units",
+      "type": "field",
+      "elementType": "component",
+      "label": "Units",
+      "component": "UnitSlider",
+      "componentProps": {
+        "required": false
+      },
+      "allow": ["Client"],
+      "readOnlyAtStatus": [
+        20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
+        125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 1
+    },
+    {
+      "id": "nfpa-version-input",
+      "name": "nfpaVersion",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "NFPA Version",
+      "groupType": "radio",
+      "cssClass": "nfpa-version-radio",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "13",
+          "label": "13"
+        },
+        {
+          "value": "13R",
+          "label": "13R"
+        },
+        {
+          "value": "13D",
+          "label": "13D"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "building-type",
+      "name": "building",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Building Type",
+      "groupType": "multi-select",
+      "cssClass": "building-type-radio",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "Residential",
+          "label": "Residential"
+        },
+        {
+          "value": "Mixed use",
+          "label": "Mixed use"
+        },
+        {
+          "value": "Mercantile",
+          "label": "Mercantile"
+        },
+        {
+          "value": "Commercial",
+          "label": "Commercial"
+        },
+        {
+          "value": "Storage",
+          "label": "Storage"
+        },
+        {
+          "value": "Warehouse",
+          "label": "Warehouse"
+        },
+        {
+          "value": "Institutional",
+          "label": "Institutional"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "building-type",
+      "name": "building",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Building Type",
+      "groupType": "multi-select",
+      "cssClass": "building-type-radio",
+      "allow": ["Client"],
+      "readOnlyAtStatus": [
+        20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
+        125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "Residential",
+          "label": "Residential"
+        },
+        {
+          "value": "Commercial",
+          "label": "Commercial"
+        },
+        {
+          "value": "Federal",
+          "label": "Federal"
+        },
+        {
+          "value": "Healthcare",
+          "label": "Healthcare"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "consulting-services",
+      "name": "project",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Project",
+      "groupType": "multi-select",
+      "cssClass": "project-type-btns",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "Sprinkler",
+          "label": "Sprinkler"
+        },
+        {
+          "value": "Alarm",
+          "label": "Alarm"
+        },
+        {
+          "value": "Mechanical",
+          "label": "Mechanical"
+        },
+        {
+          "value": "Electrical",
+          "label": "Electrical"
+        },
+        {
+          "value": "Plumbing",
+          "label": "Plumbing"
+        },
+        {
+          "value": "Civil engineering",
+          "label": "Civil engineering"
+        },
+        {
+          "value": "Other",
+          "label": "Other"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "consulting-services",
+      "name": "project",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Project",
+      "groupType": "multi-select",
+      "cssClass": "project-type-btns",
+      "allow": ["Client"],
+      "readOnlyAtStatus": [
+        20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
+        125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "Sprinkler",
+          "label": "Sprinkler"
+        },
+        {
+          "value": "Alarm",
+          "label": "Alarm"
+        },
+        {
+          "value": "Mechanical",
+          "label": "Mechanical"
+        },
+        {
+          "value": "Electrical",
+          "label": "Electrical"
+        },
+        {
+          "value": "Plumbing",
+          "label": "Plumbing"
+        },
+        {
+          "value": "Civil engineering",
+          "label": "Civil engineering"
+        },
+        {
+          "value": "Other",
+          "label": "Other"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "tier",
+      "name": "tier",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Tier",
+      "groupType": "multi-select",
+      "cssClass": "project-type-btns",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "Tier I",
+          "label": "Tier I"
+        },
+        {
+          "value": "Tier II",
+          "label": "Tier II"
+        },
+        {
+          "value": "Tier III",
+          "label": "Tier III"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "tier",
+      "name": "tier",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Tier",
+      "groupType": "multi-select",
+      "cssClass": "project-type-btns",
+      "allow": ["Client"],
+      "readOnlyAtStatus": [
+        20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
+        125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "Tier I",
+          "label": "Tier I"
+        },
+        {
+          "value": "Tier II",
+          "label": "Tier II"
+        },
+        {
+          "value": "Tier III",
+          "label": "Tier III"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "reports-required",
+      "name": "requestedDocs",
+      "type": "button-group",
+      "elementType": "button-group",
+      "label": "Reports Required",
+      "groupType": "multi-select",
+      "cssClass": "",
+      "allow": ["Admin", "Staff"],
+      "readOnlyAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "options": [
+        {
+          "value": "Narrative",
+          "label": "Narrative",
+          "selected": true
+        },
+        {
+          "value": "Sprinkler",
+          "label": "Sprinkler",
+          "selected": true
+        },
+        {
+          "value": "Alarm",
+          "label": "Alarm"
+        },
+        {
+          "value": "Hydraulic Calculations",
+          "label": "Hydraulic Calculations",
+          "selected": true
+        },
+        {
+          "value": "Fire Hydrant Flow Test",
+          "label": "Fire Hydrant Flow Test",
+          "selected": true
+        },
+        {
+          "value": "NFPA 241",
+          "label": "NFPA 241"
+        },
+        {
+          "value": "IEBC",
+          "label": "IEBC"
+        },
+        {
+          "value": "IBC",
+          "label": "IBC"
+        }
+      ],
+      "columns": 1
+    },
+    {
+      "id": "delete-project",
+      "name": "delete-project",
+      "type": "action",
+      "elementType": "button",
+      "label": "<span class='hidden sm:block md:hidden'>Delete</span><span class='hidden md:block'>Delete Project</span>",
+      "icon": "trash",
+      "variant": "danger",
+      "action": "deleteProject",
+      "allow": ["Admin", "Staff"],
+      "hideAtStatus": [],
+      "columns": 1
+    },
+    {
+      "id": "save-project",
+      "name": "save-project",
+      "type": "action",
+      "elementType": "submit",
+      "label": "<span class='hidden md:block'>Save Project</span><span class='block md:hidden'>Save</span>",
+      "icon": "save",
+      "variant": "secondary",
+      "allow": ["Admin", "Staff"],
+      "hideAtStatus": [
+        60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
+        160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 1
+    },
+    {
+      "id": "save-project",
+      "name": "save-project",
+      "type": "action",
+      "elementType": "submit",
+      "label": "<span class='hidden md:block'>Save Project</span><span class='block md:hidden'>Save</span>",
+      "icon": "save",
+      "variant": "secondary",
+      "allow": ["Client"],
+      "hideAtStatus": [
+        20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120,
+        125, 130, 135, 140, 145, 150, 155, 160, 170, 180, 190, 200, 210, 220
+      ],
+      "columns": 1
+    }
+  ]
 }

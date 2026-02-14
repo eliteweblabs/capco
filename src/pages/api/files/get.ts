@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
+import { verifyFileExistsAndCleanupIfMissing } from "../../../lib/media";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
@@ -319,7 +320,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     // Generate signed URLs for each file and add checkout name + featured status
-    const filesWithUrls = await Promise.all(
+    // Verify each file exists in storage; remove orphaned DB records if missing
+    const filesWithUrlsRaw = await Promise.all(
       validFiles.map(async (file) => {
         const checked_out_by_name = file.checkedOutBy
           ? checkoutMap.get(file.checkedOutBy) || "Unknown"
@@ -332,20 +334,20 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           return { ...file, checked_out_by_name, isFeatured, publicUrl: null };
         }
 
-        try {
-          // console.log(`🔗 [FILES-GET] Generating public URL for file ${file.id}:`, {
-          //   bucketName: file.bucketName,
-          //   filePath: file.filePath,
-          // });
+        if (supabaseAdmin) {
+          const exists = await verifyFileExistsAndCleanupIfMissing(supabaseAdmin, {
+            id: file.id,
+            bucketName: file.bucketName,
+            filePath: file.filePath,
+            projectId: file.projectId,
+          });
+          if (!exists) return null;
+        }
 
+        try {
           const { data: urlData } = supabaseAdmin!.storage
             .from(file.bucketName)
             .getPublicUrl(file.filePath);
-
-          // console.log(
-          //   `✅ [FILES-GET] Generated public URL for file ${file.id}:`,
-          //   urlData?.publicUrl
-          // );
 
           return {
             ...file,
@@ -362,6 +364,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         }
       })
     );
+    const filesWithUrls = filesWithUrlsRaw.filter((f): f is NonNullable<typeof f> => f != null);
 
     // Return response
     return new Response(
@@ -675,29 +678,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Generate signed URLs for each file
-    const filesWithUrls = await Promise.all(
+    // Generate signed URLs for each file; verify exists in storage, remove orphans
+    const filesWithUrlsRaw = await Promise.all(
       validFiles.map(async (file) => {
         if (!file.bucketName || !file.filePath) {
           return { ...file, publicUrl: null };
         }
 
-        try {
-          // console.log(`🔗 [FILES-GET] Generating public URL for file ${file.id}:`, {
-          //   bucketName: file.bucketName,
-          //   filePath: file.filePath,
-          // });
+        if (supabaseAdmin) {
+          const exists = await verifyFileExistsAndCleanupIfMissing(supabaseAdmin, {
+            id: file.id,
+            bucketName: file.bucketName,
+            filePath: file.filePath,
+            projectId: file.projectId,
+          });
+          if (!exists) return null;
+        }
 
+        try {
           const { data: urlData } = supabaseAdmin!.storage
             .from(file.bucketName)
             .getPublicUrl(file.filePath);
 
-          // console.log(
-          //   `✅ [FILES-GET] Generated public URL for file ${file.id}:`,
-          //   urlData?.publicUrl
-          // );
-
-          // Extract nested data from the join results
           const projectData = file.projects || {};
           const profileData = file.profiles || {};
 
@@ -706,7 +708,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             publicUrl: urlData?.publicUrl || null,
             uploadedByName: profileData.companyName,
             projectTitle: projectData.title,
-            // Remove nested objects to keep response clean
             projects: undefined,
             profiles: undefined,
           };
@@ -719,6 +720,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       })
     );
+    const filesWithUrls = filesWithUrlsRaw.filter((f): f is NonNullable<typeof f> => f != null);
 
     const hasMore = filesWithUrls.length === filters.limit || 20;
 

@@ -1,0 +1,25 @@
+---
+interface Props {
+  id: string;
+  label: string;
+  required?: boolean;
+  show?: boolean;
+  compact?: boolean;
+}
+
+const { id, label, required = false, show = true, compact = false } = Astro.props;
+---
+
+{
+  show && label ? (
+    <div class={compact ? "" : "relative"}>
+      <label for={id} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        {label}
+        {required ? <span class="text-red-500"> *</span> : null}
+      </label>
+      <slot />
+    </div>
+  ) : (
+    <slot />
+  )
+}

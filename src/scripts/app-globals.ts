@@ -51,6 +51,7 @@ declare global {
     isSafari?: () => boolean;
     isSafariBeta?: () => boolean;
     isSafari18OrLater?: () => boolean;
+    focusFirstInputIn?: (container: HTMLElement) => boolean;
     fixSafariViewport?: () => void;
     immediateSafariViewportFix?: () => void;
     setupViewportHandling?: () => void;
@@ -97,7 +98,7 @@ declare global {
     ) => void;
     runSimpleTypewriterOnSelector?: (selector: string) => void;
     initTypewriterTexts?: () => void;
-    triggerActiveStepTypewriter?: () => void;
+    triggerActiveStepTypewriter?: (root?: Element | null) => void;
     // Sticky Actions Portal System
     initializeStickyActionsPortal?: () => void;
     showStickyActions?: (instanceIdOrElement: string | HTMLElement) => void;

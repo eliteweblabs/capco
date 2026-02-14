@@ -19,6 +19,12 @@ export interface Props {
   /** Inline onchange handler string (e.g. "window.proposalManager.updateLineItemFromInput(this)") */
   onchangeInline?: string;
   disabled?: boolean;
+  /** For table refresh/polling: field name (data-refresh, data-meta) */
+  dataRefresh?: string;
+  /** For table refresh: raw value for comparison (data-meta-value) */
+  dataMetaValue?: string | number;
+  /** For table refresh: entity id (data-project-id) */
+  dataProjectId?: string | number;
 }
 
 const {
@@ -34,6 +40,9 @@ const {
   dataField,
   onchangeInline,
   disabled = false,
+  dataRefresh,
+  dataMetaValue,
+  dataProjectId,
 } = Astro.props;
 
 const numValue = typeof value === "string" ? (value === "" ? 0 : Number(value)) : Number(value);
@@ -67,6 +76,10 @@ const resolvedInputClass = [inputBaseClass, inputClass].filter(Boolean).join(" "
     class={resolvedInputClass}
     data-row-index={dataRowIndex != null ? String(dataRowIndex) : undefined}
     data-field={dataField}
+    data-refresh={dataRefresh}
+    data-meta={dataRefresh}
+    data-meta-value={dataMetaValue != null ? String(dataMetaValue) : undefined}
+    data-project-id={dataProjectId != null ? String(dataProjectId) : undefined}
     autocomplete="off"
     {disabled}
     {...onchangeInline && { onchange: onchangeInline }}

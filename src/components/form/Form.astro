@@ -1,0 +1,358 @@
+---
+/**
+ * Form - Unified form component driven by JSON config
+ * type="project" | type="user"
+ *
+ * When type="user": Renders user/profile fields (for use inside parent form, e.g. ProfileTabForm)
+ * When type="project": Renders full project form (form tag, PDF tab, etc.) - delegates to ProjectForm
+ */
+import { getFormElements } from "../../lib/form-config";
+
+import ProjectForm from "../project/ProjectForm.astro";
+import Tooltip from "../common/TooltipFloating.astro";
+import SimpleIcon from "../common/SimpleIcon.astro";
+import Button from "../common/Button.astro";
+import PhoneAndSMS from "./PhoneAndSMS.astro";
+import { getCarrierKeyFromGateway } from "../../lib/sms-utils";
+
+import type { FormType } from "../../lib/form-config";
+
+interface Props {
+  type: FormType;
+  /** For type="user" */
+  userProfile?: any;
+  currentUser?: any;
+  formIdPrefix?: string;
+  isAdminEdit?: boolean;
+  /** When true, show create-only fields (e.g. password), editable email, "Create User" button */
+  isCreateMode?: boolean;
+  /** When true, include all fields (createOnly+updateOnly) for unified admin form; use data attributes for client show/hide */
+  includeAllModes?: boolean;
+  globalInputClasses?: string;
+  globalCompanyPhone?: string;
+  emailDisplay?: string;
+  /** For type="project" - passed through to ProjectForm */
+  project?: any;
+  isNewProject?: boolean;
+  projectStatus?: number | null;
+  secondaryTextClasses?: string;
+  primaryTextClasses?: string;
+}
+
+const {
+  type,
+  userProfile = null,
+  currentUser = {},
+  formIdPrefix = "",
+  isAdminEdit = false,
+  isCreateMode = false,
+  includeAllModes = false,
+  globalInputClasses = "",
+  globalCompanyPhone = "",
+  emailDisplay,
+  project = {},
+  isNewProject = true,
+  projectStatus = null,
+  secondaryTextClasses,
+  primaryTextClasses,
+} = Astro.props;
+
+const p = (id: string) => (formIdPrefix ? `${formIdPrefix}${id}` : id);
+
+// User form: fetch config and derive values
+const userRole = currentUser?.profile?.role;
+const formElements =
+  type === "user"
+    ? await getFormElements("user", {
+        userRole,
+        isAdminEdit,
+        isCreateMode,
+        includeAllModes,
+      })
+    : [];
+const displayEmail = emailDisplay ?? currentUser?.email ?? userProfile?.email ?? "";
+const storedCarrierKey = userProfile?.mobileCarrier
+  ? getCarrierKeyFromGateway(userProfile.mobileCarrier)
+  : null;
+const data = userProfile || {};
+const getValue = (name: string) => {
+  const map: Record<string, string> = {
+    "company-name": data.companyName,
+    firstName: data.firstName,
+    lastName: data.lastName,
+    title: data.title,
+    email: displayEmail,
+    phone: data.phone,
+    bio: data.bio,
+    role: data.role,
+  };
+  return map[name] ?? "";
+};
+const fieldElements = formElements.filter((e) => e.type === "field");
+const actionElements = formElements.filter((e) => e.type === "action");
+---
+
+{
+  type === "project" ? (
+    <ProjectForm
+      project={project}
+      currentUser={currentUser}
+      isNewProject={isNewProject}
+      projectStatus={projectStatus}
+      globalInputClasses={globalInputClasses}
+      secondaryTextClasses={secondaryTextClasses}
+      primaryTextClasses={primaryTextClasses}
+    />
+  ) : (
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-y-6">
+      {fieldElements.map((element) => {
+        const value = getValue(element.name);
+        const isHalfWidth = element.columns === 2;
+        const colClass = isHalfWidth ? "" : "lg:col-span-2";
+        const el = element as any;
+        const wrapperProps = includeAllModes
+          ? {
+              ...(el.createOnly && { "data-create-only": "" }),
+              ...(el.updateOnly && { "data-update-only": "" }),
+            }
+          : {};
+
+        if (element.elementType === "avatar") {
+          return (
+            <div class={`text-center ${colClass}`} {...wrapperProps}>
+              <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
+                <img
+                  id={p("profile-avatar")}
+                  src={userProfile?.avatarUrl || ""}
+                  alt="Profile picture"
+                  class="h-20 w-20 rounded-lg object-cover"
+                  onerror="this.style.display='none'; const n=this.nextElementSibling; if(n) n.style.display='flex';"
+                />
+                <SimpleIcon
+                  id={p("profile-avatar-fallback")}
+                  name="user"
+                  style={userProfile?.avatarUrl ? "display:none;" : ""}
+                  class="h-10 w-10 text-gray-400"
+                />
+              </div>
+              <div class="flex items-center justify-center gap-2">
+                <Button
+                  type="button"
+                  id={p("upload-avatar-btn")}
+                  variant="link"
+                  size="sm"
+                  class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                >
+                  Upload Photo
+                </Button>
+                <Button
+                  type="button"
+                  id={p("remove-avatar-btn")}
+                  variant="link"
+                  size="sm"
+                  class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  style={userProfile?.avatarUrl ? "" : "display: none;"}
+                >
+                  Remove
+                </Button>
+              </div>
+              <input type="file" id={p("avatar-input")} accept="image/*" class="hidden" />
+            </div>
+          );
+        }
+
+        if (element.elementType === "select") {
+          return (
+            <div class={`relative ${colClass}`} {...wrapperProps}>
+              <label
+                for={p(element.id)}
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {element.label}
+              </label>
+              <select
+                id={p(element.id)}
+                name={element.name}
+                class={globalInputClasses}
+                value={value || "Client"}
+              >
+                {element.options?.map((opt: any) => {
+                  const o = typeof opt === "string" ? { value: opt, label: opt } : opt;
+                  const selected = o.value === (value || "Client");
+                  return (
+                    <option value={o.value} selected={selected}>
+                      {o.label}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          );
+        }
+
+        if (element.elementType === "text") {
+          return (
+            <div class={`relative ${colClass}`} {...wrapperProps}>
+              <label
+                for={p(element.id)}
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {element.label} {element.required ? <span class="text-red-500">*</span> : ""}
+              </label>
+              <input
+                type="text"
+                id={p(element.id)}
+                name={element.name}
+                value={value}
+                required={element.required}
+                class={globalInputClasses}
+                placeholder={element.placeholder}
+              />
+            </div>
+          );
+        }
+
+        if (element.elementType === "email") {
+          const emailReadOnly = isCreateMode || includeAllModes ? false : (element.readOnly ?? true);
+          const showLock = !isAdminEdit && !isCreateMode && !includeAllModes && globalCompanyPhone && (element.readOnly ?? true);
+          return (
+            <div class={`relative ${colClass}`} {...wrapperProps}>
+              <label
+                for={p(element.id)}
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {element.label} {element.required ? <span class="text-red-500">*</span> : ""}
+              </label>
+              <div class="relative">
+                <input
+                  type="email"
+                  id={p(element.id)}
+                  name={element.name}
+                  value={displayEmail}
+                  required={element.required}
+                  readonly={emailReadOnly}
+                  class={globalInputClasses}
+                  placeholder={element.placeholder}
+                />
+                {showLock && (
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Tooltip
+                      text={element.lockTooltip || `Call ${globalCompanyPhone} to change email`}
+                      position="top"
+                    >
+                      <SimpleIcon id={p("email-lock-icon")} name="lock" />
+                    </Tooltip>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        if (element.elementType === "phone-sms") {
+          return (
+            <div class={colClass} {...wrapperProps}>
+              <PhoneAndSMS
+                id={p(element.id)}
+                name={element.name}
+                value={value}
+                placeholder={element.placeholder}
+                showSMS={element.componentProps?.showSMS ?? true}
+                smsChecked={userProfile?.smsAlerts || false}
+                selectedCarrier={storedCarrierKey || ""}
+                globalInputClasses={globalInputClasses}
+              />
+            </div>
+          );
+        }
+
+        if (element.elementType === "password") {
+          return (
+            <div class={`relative ${colClass}`} {...wrapperProps}>
+              <label
+                for={p(element.id)}
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {element.label} {element.required ? <span class="text-red-500">*</span> : ""}
+              </label>
+              <input
+                type="password"
+                id={p(element.id)}
+                name={element.name}
+                class={globalInputClasses}
+                placeholder={element.placeholder}
+                autocomplete="new-password"
+              />
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Leave empty to auto-generate a secure password
+              </p>
+            </div>
+          );
+        }
+
+        if (element.elementType === "textarea") {
+          return (
+            <div class={`relative ${colClass}`} {...wrapperProps}>
+              <label
+                for={p(element.id)}
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {element.label}
+              </label>
+              <textarea
+                id={p(element.id)}
+                name={element.name}
+                rows="4"
+                class={`${globalInputClasses} resize-y`}
+                placeholder={element.placeholder}
+              >
+                {value}
+              </textarea>
+              {element.id === "bio" && (
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Short description shown on your team profile
+                </p>
+              )}
+            </div>
+          );
+        }
+
+        return null;
+      })}
+
+      <div class="col-span-2 flex gap-3 pt-4">
+        {actionElements.map((action) => {
+          const isSaveBtn = action.id === "save-profile-btn";
+          const label =
+            isSaveBtn && (isCreateMode || includeAllModes)
+              ? "Create User"
+              : (action.label as string);
+          const actionEl = action as any;
+          const actionWrapperProps = includeAllModes
+            ? {
+                ...(actionEl.createOnly && { "data-create-only": "" }),
+                ...(actionEl.updateOnly && { "data-update-only": "" }),
+              }
+            : {};
+          return (
+            <span {...actionWrapperProps}>
+            <Button
+              type={action.elementType === "submit" ? "submit" : "button"}
+              id={p(action.id)}
+              variant={
+                action.variant === "outline" ? "outline" : (action.variant as any) || "secondary"
+              }
+              size="sm"
+              class={action.cssClass || ""}
+              icon={isSaveBtn && isCreateMode ? "plus" : action.icon}
+              iconPosition={action.iconPosition}
+            >
+              <span set:html={isSaveBtn && includeAllModes ? "Create User" : label} />
+            </Button>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  )
+}

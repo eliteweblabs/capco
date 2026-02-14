@@ -38,26 +38,35 @@ const avatarUrl =
 ---
 
 <button
-  class={`avatar-button ${globalIconButtonClasses || ""}`.trim()}
+  class={`h-8 w-8 overflow-hidden rounded-full ${globalIconButtonClasses || ""}`.trim()}
   data-popover-trigger="click"
   data-popover-target={`${id}-dropdown`}
-  data-avatar-url={avatarUrl}
-  data-refresh="true"
-  data-meta="avatarUrl"
-  data-meta-value={avatarUrl}
+  data-avatar-url={avatarUrl || ""}
   data-user-id={currentUser?.id}
   data-project-id={currentUser?.projectId}
   type="button"
 >
   <span class="sr-only">Open user menu</span>
-  {/* <!-- Fallback icon (visible initially, hidden if avatar loads) --> */}
-  {
-    avatarUrl && avatarUrl !== "" ? (
-      <SimpleIcon name="user" class="avatar-fallback text-black dark:text-white" size="md" />
-    ) : (
-      <SimpleIcon name="user" size="md" />
-    )
-  }
+  <img
+    src={avatarUrl || undefined}
+    alt="Profile"
+    class="avatar-img h-full min-h-full w-full min-w-full scale-110 object-cover p-0"
+    style={!avatarUrl ? "display:none" : undefined}
+    onerror="this.style.display='none'; const f=this.nextElementSibling; if(f) { f.classList.remove('hidden'); f.classList.add('flex'); }"
+  />
+  <span
+    class:list={[
+      "avatar-fallback",
+      "h-full",
+      "w-full",
+      "items-center",
+      "justify-center",
+      avatarUrl ? "hidden" : "flex",
+    ]}
+    aria-hidden="true"
+  >
+    <SimpleIcon name="user" size="md" />
+  </span>
 </button>
 
 <UserProfileDropdown
@@ -68,60 +77,47 @@ const avatarUrl =
   closeButton={false}
 />
 <script>
-  function applyAvatarToButton(button, urlOrUndefined) {
-    const avatarUrl =
-      urlOrUndefined != null ? urlOrUndefined : button.getAttribute("data-avatar-url");
-    const fallbackIcon = button.querySelector(".avatar-fallback");
-    if (!avatarUrl || !fallbackIcon) return;
+  /**
+   * Refresh avatar img src across all [data-avatar-url] elements.
+   * Uses <img> for content manipulation; works for AuthIcon and any avatar using this pattern.
+   * @param newUrl - New avatar URL, or empty string to clear. Omit to re-apply current data-avatar-url.
+   * @param userId - Optional: only update elements with matching data-user-id
+   */
+  function refreshAvatar(newUrl?: string, userId?: string) {
+    document.querySelectorAll("[data-avatar-url]").forEach((container) => {
+      if (userId && container.getAttribute("data-user-id") !== userId) return;
 
-    const img = new Image();
-    img.onload = () => {
-      console.log("✅ [AUTH-ICON] Avatar loaded successfully");
-      button.style.backgroundImage = `url('${avatarUrl}')`;
-      button.style.backgroundSize = "cover";
-      button.style.backgroundPosition = "center";
-      button.style.backgroundRepeat = "no-repeat";
-      fallbackIcon.style.visibility = "hidden";
-      fallbackIcon.style.opacity = "0";
-      fallbackIcon.style.pointerEvents = "none";
-      fallbackIcon.style.userSelect = "none";
-      fallbackIcon.style.webkitUserSelect = "none";
-    };
-    img.onerror = () => {
-      console.warn("⚠️ [AUTH-ICON] Avatar failed to load, keeping fallback icon");
-    };
-    img.src = avatarUrl;
-  }
+      const url = newUrl !== undefined ? newUrl || "" : container.getAttribute("data-avatar-url");
+      container.setAttribute("data-avatar-url", url || "");
 
-  function refreshAuthAvatar(newUrl) {
-    document.querySelectorAll(".avatar-button").forEach((btn) => {
-      const url = newUrl ?? btn.getAttribute("data-avatar-url");
-      btn.setAttribute("data-avatar-url", url || "");
-      btn.setAttribute("data-meta-value", url || "");
+      const img = container.querySelector("img");
+      const fallback = container.querySelector(".avatar-fallback");
+
       if (!url) {
-        btn.style.backgroundImage = "";
-        const fallback = btn.querySelector(".avatar-fallback");
-        if (fallback) {
-          fallback.style.visibility = "";
-          fallback.style.opacity = "";
-          fallback.style.pointerEvents = "";
+        if (img instanceof HTMLImageElement) {
+          img.removeAttribute("src");
+          img.style.display = "none";
         }
-      } else {
-        applyAvatarToButton(btn, url);
+        if (fallback instanceof HTMLElement) {
+          fallback.classList.remove("hidden");
+          fallback.classList.add("flex");
+          fallback.style.display = "";
+        }
+      } else if (img instanceof HTMLImageElement) {
+        img.src = url;
+        img.style.display = "";
+        if (fallback instanceof HTMLElement) {
+          fallback.classList.add("hidden");
+          fallback.style.display = "none";
+        }
       }
     });
   }
 
-  window.refreshAuthAvatar = refreshAuthAvatar;
-
-  document.addEventListener("DOMContentLoaded", () => {
-    document
-      .querySelectorAll(".avatar-button")
-      .forEach((btn) => applyAvatarToButton(btn, undefined));
-  });
+  (window as any).refreshAvatar = refreshAvatar;
 
   document.addEventListener("avatarUpdated", (e) => {
     const url = e instanceof CustomEvent && e.detail ? e.detail.avatarUrl : undefined;
-    refreshAuthAvatar(url);
+    refreshAvatar(url, undefined);
   });
 </script>

@@ -172,7 +172,8 @@ export async function fetchProjects(
 
 export async function getProjectsByAuthor(
   supabaseAdmin: SupabaseClient,
-  authorId: string
+  authorId: string,
+  options?: { includeFiles?: boolean }
 ): Promise<Project[]> {
   try {
     const { data: projects, error } = await supabaseAdmin
@@ -190,6 +191,27 @@ export async function getProjectsByAuthor(
     // Get project IDs for punchlist stats
     const projectIds = (projects || []).map((p) => p.id);
     const punchlistStats = await fetchPunchlistStats(supabaseAdmin, projectIds);
+
+    // Fetch files if requested
+    let filesMap: Record<number, { count: number; files: any[] }> = {};
+    if (options?.includeFiles && projectIds.length > 0) {
+      try {
+        const { data: filesData } = await supabaseAdmin
+          .from("files")
+          .select("id, fileName, fileType, fileSize, uploadedAt, projectId")
+          .in("projectId", projectIds);
+
+        (filesData || []).forEach((file) => {
+          if (!filesMap[file.projectId]) {
+            filesMap[file.projectId] = { count: 0, files: [] };
+          }
+          filesMap[file.projectId].count++;
+          filesMap[file.projectId].files.push(file);
+        });
+      } catch (fileError) {
+        console.warn("Could not fetch files for projects:", fileError);
+      }
+    }
 
     // Get unique author and assigned-to IDs
     const authorIds = [...new Set((projects || []).map((p) => p.authorId).filter(Boolean))];
@@ -213,13 +235,20 @@ export async function getProjectsByAuthor(
       );
     }
 
-    // Add featuredImageData, punchlist data, and profile data for projects
+    // Add featuredImageData, punchlist data, profile data, and files for projects
     const projectsWithData = (projects || []).map((project) => {
+      const fileData = options?.includeFiles
+        ? filesMap[project.id] || { count: 0, files: [] }
+        : null;
       const projectWithData = {
         ...project,
         punchlistItems: punchlistStats[project.id] || { completed: 0, total: 0 },
         authorProfile: project.authorId ? profilesMap[project.authorId] : null,
         assignedToProfile: project.assignedToId ? profilesMap[project.assignedToId] : null,
+        ...(fileData && {
+          fileCount: fileData.count,
+          projectFiles: fileData.files,
+        }),
       };
 
       if (project.featuredImageData) {

@@ -1,139 +1,166 @@
-// Dynamic project form configuration loader
-// Loads client-specific config files based on company name slug
-// Falls back to default config if client-specific file doesn't exist
+/**
+ * Project form configuration - reads from site-config JSON (projectForm).
+ * Replaces project-form-config-{company}.ts files.
+ */
 
-import { globalCompanyData } from "../pages/api/global/global-company-data";
+import { getSiteConfig } from "./content";
 
-// Re-export all interfaces and helper functions from default config
-export type {
-  FormFieldConfig,
-  FormElementConfig,
-  FormActionConfig,
-} from "./project-form-config-capco-design-group";
-
-export {
-  isAllowed,
-  isStatusAllowed,
-  isFieldStatusAllowed,
-  isFieldReadOnly,
-  isFormElementReadOnly,
-  isUnifiedElementAllowed,
-  isUnifiedElementStatusAllowed,
-} from "./project-form-config-capco-design-group";
-
-// Import default config for fallback
-import * as defaultConfig from "./project-form-config-capco-design-group";
-
-// Import client-specific configs here as they are created
-// This allows static analysis and proper bundling
-import * as rothcoBuiltConfig from "./project-form-config-rothco-built";
-
-// Export default UNIFIED_FORM_ELEMENTS for backwards compatibility
-export const UNIFIED_FORM_ELEMENTS = defaultConfig.UNIFIED_FORM_ELEMENTS;
-
-// Helper function to slugify company name
-function slugifyCompanyName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-    .trim();
+export interface FormFieldConfig {
+  id: string;
+  name: string;
+  type: string;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  [key: string]: any;
 }
 
-// Cache for loaded configs
-let configCache: {
-  UNIFIED_FORM_ELEMENTS: any[];
-  getFilteredUnifiedFormElements: (
-    userRole?: string | null,
-    isNewProject?: boolean,
-    projectStatus?: number | null
-  ) => any[];
-} | null = null;
-let configCompanySlug: string | null = null;
-
-/**
- * Get the project form configuration for the current company
- * Loads client-specific config if available, otherwise falls back to default
- */
-async function getProjectFormConfig() {
-  // Get company name
-  const companyData = await globalCompanyData();
-  const companyName = companyData.globalCompanyName || process.env.RAILWAY_PROJECT_NAME || "";
-  const companySlug = slugifyCompanyName(companyName);
-
-  // Return cached config if it's for the same company
-  if (configCache && configCompanySlug === companySlug) {
-    return configCache;
-  }
-
-  // Try to load client-specific config
-  // Use explicit imports for each client to avoid dynamic import issues
-  let configModule = defaultConfig;
-
-  // Map company slugs to their config modules
-  // Add new client configs here as they are created
-  // Import them at the top of the file, then reference here
-  switch (companySlug) {
-    case "capco-design-group":
-      configModule = defaultConfig;
-      console.log(`✅ [PROJECT-FORM-CONFIG] Using config for: ${companyName} (${companySlug})`);
-      break;
-    case "rothco-built":
-      configModule = rothcoBuiltConfig;
-      console.log(`✅ [PROJECT-FORM-CONFIG] Using config for: ${companyName} (${companySlug})`);
-      break;
-    default:
-      // Fall back to default config
-      console.log(
-        `⚠️ [PROJECT-FORM-CONFIG] No client-specific config for "${companySlug}", using default (capco-design-group)`
-      );
-      configModule = defaultConfig;
-  }
-
-  // Cache the config
-  configCache = {
-    UNIFIED_FORM_ELEMENTS: configModule.UNIFIED_FORM_ELEMENTS,
-    getFilteredUnifiedFormElements: configModule.getFilteredUnifiedFormElements,
-  };
-  configCompanySlug = companySlug;
-
-  return configCache;
+export interface FormElementConfig {
+  id: string;
+  name: string;
+  type: "field" | "button-group" | "action";
+  elementType: string;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  allow?: string[];
+  hideAtStatus?: number[];
+  readOnlyAtStatus?: number[];
+  columns?: number;
+  [key: string]: any;
 }
 
-/**
- * Get filtered unified form elements based on user role and project status
- * This is the main function used by components
- *
- * NOTE: This function is async. For synchronous usage, use getFilteredUnifiedFormElementsSync
- * which uses the default config.
- */
+export interface FormActionConfig {
+  id: string;
+  type: string;
+  label: string;
+  icon?: string;
+  cssClass?: string;
+  action?: string;
+  allow?: string[];
+  hideAtStatus?: number[];
+  [key: string]: any;
+}
+
+export function isAllowed(item: { allow?: string[] }, userRole?: string | null): boolean {
+  if (!item.allow?.length) return true;
+  if (!userRole) return false;
+  const r = userRole.toLowerCase();
+  return item.allow.some((a) => a.toLowerCase() === r);
+}
+
+export function isStatusAllowed(
+  action: { hideAtStatus?: number[] },
+  projectStatus?: number | null
+): boolean {
+  if (!action.hideAtStatus?.length) return true;
+  if (projectStatus == null) return true;
+  return !action.hideAtStatus.includes(projectStatus);
+}
+
+export function isFieldStatusAllowed(
+  field: { hideAtStatus?: number[] },
+  projectStatus?: number | null
+): boolean {
+  if (!field.hideAtStatus?.length) return true;
+  if (projectStatus == null) return true;
+  return !field.hideAtStatus.includes(projectStatus);
+}
+
+export function isFieldReadOnly(
+  field: { readOnlyAtStatus?: number[] },
+  projectStatus?: number | null
+): boolean {
+  if (!field.readOnlyAtStatus?.length) return false;
+  if (projectStatus == null) return false;
+  return field.readOnlyAtStatus.includes(projectStatus);
+}
+
+export function isFormElementReadOnly(
+  element: { readOnlyAtStatus?: number[] },
+  projectStatus?: number | null
+): boolean {
+  if (!element.readOnlyAtStatus?.length) return false;
+  if (projectStatus == null) return false;
+  return element.readOnlyAtStatus.includes(projectStatus);
+}
+
+export function isUnifiedElementAllowed(
+  element: FormElementConfig,
+  userRole?: string | null
+): boolean {
+  if (!element.allow?.length) return true;
+  if (!userRole) return false;
+  const r = userRole.toLowerCase();
+  return element.allow.some((a) => a.toLowerCase() === r);
+}
+
+export function isUnifiedElementStatusAllowed(
+  element: FormElementConfig,
+  projectStatus?: number | null
+): boolean {
+  if (!element.hideAtStatus?.length) return true;
+  if (projectStatus == null) return true;
+  return !element.hideAtStatus.includes(projectStatus);
+}
+
+function filterAndTransformElements(
+  elements: FormElementConfig[],
+  userRole?: string | null,
+  isNewProject = false,
+  projectStatus?: number | null
+): FormElementConfig[] {
+  const effectiveStatus = isNewProject ? 0 : projectStatus;
+  let out = elements.filter(
+    (el) =>
+      isUnifiedElementAllowed(el, userRole) && isUnifiedElementStatusAllowed(el, effectiveStatus)
+  );
+  if (isNewProject) {
+    out = out
+      .filter((el) => el.id !== "delete-project")
+      .map((el) => {
+        if (el.id === "save-project") {
+          return {
+            ...el,
+            label:
+              "<span class='hidden md:block'>Create Project</span><span class='block md:hidden'>Create</span>",
+            icon: "plus",
+          };
+        }
+        return el;
+      });
+  }
+  return out;
+}
+
+async function getElementsFromConfig(): Promise<FormElementConfig[]> {
+  const config = await getSiteConfig();
+  const pf = (config as any).projectForm;
+  const arr = Array.isArray(pf) ? pf : pf?.unifiedFormElements;
+  return Array.isArray(arr) && arr.length > 0 ? arr : [];
+}
+
 export async function getFilteredUnifiedFormElements(
   userRole?: string | null,
-  isNewProject: boolean = false,
+  isNewProject = false,
   projectStatus?: number | null
-): Promise<any[]> {
-  const config = await getProjectFormConfig();
-  return config.getFilteredUnifiedFormElements(userRole, isNewProject, projectStatus);
+): Promise<FormElementConfig[]> {
+  const elements = await getElementsFromConfig();
+  return filterAndTransformElements(elements, userRole, isNewProject, projectStatus);
 }
 
-/**
- * Synchronous version that uses default config
- * Use this when you can't use async/await (for backwards compatibility)
- */
 export function getFilteredUnifiedFormElementsSync(
   userRole?: string | null,
-  isNewProject: boolean = false,
-  projectStatus?: number | null
-): any[] {
-  return defaultConfig.getFilteredUnifiedFormElements(userRole, isNewProject, projectStatus);
+  isNewProject = false,
+  projectStatus?: number | null,
+  elements?: FormElementConfig[]
+): FormElementConfig[] {
+  const els = elements ?? [];
+  return filterAndTransformElements(els, userRole, isNewProject, projectStatus);
 }
 
-/**
- * Get unified form elements (unfiltered)
- * Useful for admin/debugging purposes
- */
-export async function getUnifiedFormElements(): Promise<any[]> {
-  const config = await getProjectFormConfig();
-  return config.UNIFIED_FORM_ELEMENTS;
+export async function getUnifiedFormElements(): Promise<FormElementConfig[]> {
+  return getElementsFromConfig();
 }
+
+export const UNIFIED_FORM_ELEMENTS: FormElementConfig[] = [];

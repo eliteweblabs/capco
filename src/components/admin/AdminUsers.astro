@@ -1,12 +1,10 @@
 ---
 /**
  * AdminUsers Component
- * User management panel - accordion table with inline profile editing
+ * User management panel - clickable user list with profile form in side panel
  */
 import Alert from "../partials/Alert.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
-import StaffCreationForm from "../form/StaffCreationForm.astro";
-import AccordionDataTable from "../common/AccordionDataTable.astro";
 import ProfileTabForm from "../profile/ProfileTabForm.astro";
 import AdminUserRowActions from "./AdminUserRowActions.astro";
 
@@ -70,7 +68,7 @@ const userCounts = {
 
   <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <div
-      class="color-background rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
+      class="color-background rounded-lg bg-gray-100 p-4 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
     >
       <div class="flex items-center">
         <div class="flex-shrink-0">
@@ -78,13 +76,13 @@ const userCounts = {
         </div>
         <div class="ml-4">
           <dt class="text-muted dark:text-muted text-sm font-medium">
-            Total Users: {userCounts.Total}
+            Total: {userCounts.Total}
           </dt>
         </div>
       </div>
     </div>
     <div
-      class="color-background rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
+      class="color-background rounded-lg bg-gray-100 p-4 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
     >
       <div class="flex items-center">
         <div class="flex-shrink-0">
@@ -96,7 +94,7 @@ const userCounts = {
       </div>
     </div>
     <div
-      class="color-background rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
+      class="color-background rounded-lg bg-gray-100 p-4 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
     >
       <div class="flex items-center">
         <div class="flex-shrink-0">
@@ -108,7 +106,7 @@ const userCounts = {
       </div>
     </div>
     <div
-      class="color-background rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
+      class="color-background rounded-lg bg-gray-100 p-4 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
     >
       <div class="flex items-center">
         <div class="flex-shrink-0">
@@ -124,7 +122,7 @@ const userCounts = {
   </div>
 
   <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-    <div class="lg:col-span-2">
+    <div id="admin-users-list" class="lg:col-span-2">
       <div
         class="color-background rounded-lg bg-gray-100 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
       >
@@ -155,107 +153,160 @@ const userCounts = {
         </div>
 
         <div class="overflow-hidden">
-          <AccordionDataTable
-            id="admin-users-accordion"
-            title=""
-            data={users}
-            getItemId={(u) => u.id}
-            getReorderId={(u) => u.id}
-            slotIdPrefix="user-slot"
-            draggable={true}
-            reorderCallback="handleUsersReorder"
-            emptyMessage={error
-              ? `Error: ${error}`
-              : "No users found. Create one in the panel to the right."}
-            columns={[
-              {
-                key: "name",
-                label: "Name",
-                getValue: (u) => {
-                  const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-                  return fullName || u.companyName || "Unknown User";
-                },
-                cellClass: "whitespace-nowrap",
-              },
-              { key: "email", label: "Email", cellClass: "whitespace-nowrap" },
-              {
-                key: "role",
-                label: "Role",
-                getValue: (u) => u.role,
-                cellClass: "whitespace-nowrap",
-              },
-              {
-                key: "createdAt",
-                label: "Created",
-                getValue: (u) => (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"),
-                cellClass: "whitespace-nowrap text-gray-500 dark:text-gray-400",
-              },
-            ]}
-            getTriggerDataAttrs={(u) => {
-              const fullName = ((u.firstName || "") + " " + (u.lastName || "")).trim();
-              const displayName = fullName || u.companyName || "unknown";
-              return {
-                role: u.role,
-                name: displayName.toLowerCase(),
-                email: (u.email || "").toLowerCase(),
-                userId: u.id,
-              };
-            }}
-            actionsComponent={AdminUserRowActions}
-            actionsGetProps={(u) => ({ user: u })}
-          />
+          <div
+            class="accordion-data-table overflow-hidden rounded-lg bg-white shadow dark:bg-gray-900"
+          >
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th
+                      class="w-12 px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                    >
+                      <SimpleIcon name="drag-handle-y" class="h-4 w-4" />
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                    >
+                      Name
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                    >
+                      Email
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                    >
+                      Role
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                    >
+                      Created
+                    </th>
+                    <th
+                      class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="admin-users-tbody"
+                  class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900"
+                >
+                  {
+                    users.length === 0 ? (
+                      <tr>
+                        <td
+                          colspan="6"
+                          class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                        >
+                          {error
+                            ? `Error: ${error}`
+                            : "No users found. Create one in the panel to the right."}
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((u) => {
+                        const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+                        const displayName = fullName || u.companyName || "Unknown User";
+                        return (
+                          <tr
+                            class="accordion-trigger user-row cursor-pointer border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                            data-item-id={u.id}
+                            data-reorder-id={u.id}
+                            data-user-id={u.id}
+                            data-name={(displayName || "unknown").toLowerCase()}
+                            data-email={(u.email || "").toLowerCase()}
+                            data-role={u.role || ""}
+                            role="button"
+                            tabindex="0"
+                            draggable
+                          >
+                            <td class="w-12 cursor-grab px-2 py-3 text-center text-gray-400 active:cursor-grabbing dark:text-gray-500">
+                              <SimpleIcon name="drag-handle-y" class="mx-auto h-5 w-5" />
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white">
+                              {displayName}
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white">
+                              {u.email}
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white">
+                              {u.role}
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-500 dark:text-gray-400">
+                              {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-3 text-right">
+                              <AdminUserRowActions user={u} />
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div
+            data-accordion-reorder-init
+            data-table-id="admin-users"
+            data-trigger-class="accordion-trigger"
+            data-detail-class="accordion-detail"
+            data-reorder-callback="handleUsersReorder"
+            hidden
+          >
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="lg:col-span-1">
+    <div id="user-form-panel" class="lg:col-span-1">
       <Alert
         type="info"
         title="Account Setup"
         class="mb-4"
         description="<ol class='list-inside list-decimal space-y-1 text-xs'><li>An invitation email will be sent</li><li>User can set up authentication</li><li>User will appear in the list immediately</li></ol>"
       />
-      <StaffCreationForm {globalInputClasses} {secondaryTextClasses} {primaryTextClasses} />
+      <div class="mb-3 flex items-center justify-between">
+        <h3 id="user-form-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+          Create User
+        </h3>
+        <button
+          type="button"
+          id="admin-new-user-btn"
+          class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+        >
+          + New User
+        </button>
+      </div>
+      <div class="color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+        <ProfileTabForm
+          userProfile={null}
+          currentUser={currentUser}
+          globalInputClasses={globalInputClasses}
+          formIdPrefix="admin-"
+          isAdminEdit={true}
+          showSettingsTab={false}
+          showSignOut={false}
+          switchHandlerName="adminSwitchProfileTab"
+          generalOnly={true}
+          includeAllModes={true}
+        />
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Profile form pool: single form moved into accordion slot on expand (on-demand load) -->
-<div id="admin-profile-form-pool" class="hidden">
-  <div id="admin-profile-form-container">
-    <div class="p-5">
-      <ProfileTabForm
-        userProfile={null}
-        currentUser={currentUser}
-        globalInputClasses={globalInputClasses}
-        formIdPrefix="admin-"
-        isAdminEdit={true}
-        showSettingsTab={false}
-        showSignOut={false}
-        switchHandlerName="adminSwitchProfileTab"
-      />
-    </div>
-  </div>
-</div>
-
-<script define:vars={{ basePath: "/admin/users" }}>
-  document.addEventListener("DOMContentLoaded", initAdminUsers);
-
-  function initAdminUsers() {
-    const searchInput = document.getElementById("user-search");
-    const roleFilter = document.getElementById("role-filter");
-    if (searchInput) searchInput.value = "";
-    if (roleFilter) roleFilter.value = "";
-
-    setupSearchFilter();
-    setupAccordionFormPool();
-    if (typeof window.handleUserDeleted !== "function") {
-      window.handleUserDeleted = handleUserDeleted;
-    }
-    if (typeof window.handleUsersReorder !== "function") {
-      window.handleUsersReorder = handleUsersReorder;
-    }
-  }
+<script>
+  import "../../scripts/accordion-reorder-init";
+</script>
+<script define:vars={{ basePath: "/admin/users", formIdPrefix: "admin-" }}>
+  let selectedUserId = null;
 
   async function handleUsersReorder(order) {
     try {
@@ -277,6 +328,26 @@ const userCounts = {
     }
   }
 
+  window.handleUsersReorder = handleUsersReorder;
+
+  document.addEventListener("DOMContentLoaded", initAdminUsers);
+
+  function initAdminUsers() {
+    const searchInput = document.getElementById("user-search");
+    const roleFilter = document.getElementById("role-filter");
+    if (searchInput) searchInput.value = "";
+    if (roleFilter) roleFilter.value = "";
+
+    setupSearchFilter();
+    setupUserRowClicks();
+    setupNewUserButton();
+    setupAdminFormSubmit();
+    setCreateMode();
+    if (typeof window.handleUserDeleted !== "function") {
+      window.handleUserDeleted = handleUserDeleted;
+    }
+  }
+
   function setupSearchFilter() {
     const searchInput = document.getElementById("user-search");
     const roleFilter = document.getElementById("role-filter");
@@ -291,33 +362,52 @@ const userCounts = {
     const roleEl = document.getElementById("role-filter");
     const searchTerm = (searchInput?.value?.toLowerCase() || "").trim();
     const roleVal = roleEl?.value || "";
-    document.querySelectorAll("tr.accordion-trigger[data-user-id]").forEach((trigger) => {
-      const el = trigger;
-      const name = (el.dataset.name || "").toLowerCase();
-      const email = (el.dataset.email || "").toLowerCase();
-      const role = el.dataset.role || "";
+    document.querySelectorAll("tr.user-row[data-user-id]").forEach((row) => {
+      const name = (row.dataset.name || "").toLowerCase();
+      const email = (row.dataset.email || "").toLowerCase();
+      const role = row.dataset.role || "";
       const matchSearch = !searchTerm || name.includes(searchTerm) || email.includes(searchTerm);
       const matchRole = !roleVal || role === roleVal;
-      const show = matchSearch && matchRole;
-      el.style.display = show ? "" : "none";
-      const slotId = el.dataset.slot;
-      const detail = document.querySelector(`tr.accordion-detail[data-slot="${slotId}"]`);
-      if (detail) detail.style.display = show ? "" : "none";
+      row.style.display = matchSearch && matchRole ? "" : "none";
     });
   }
 
-  let openSlotId = null;
-  const formPool = document.getElementById("admin-profile-form-pool");
-  const formContainer = document.getElementById("admin-profile-form-container");
-  const tableId = "admin-users-accordion";
-  const slotPrefix = "user-slot";
-
-  function setupAccordionFormPool() {
-    if (!formContainer || !formPool) return;
+  function setCreateMode() {
+    selectedUserId = null;
+    document.getElementById("admin-users-list")?.classList.remove("max-md:hidden");
+    document
+      .querySelectorAll("tr.user-row")
+      .forEach((r) => r.classList.remove("ring-2", "ring-primary-500"));
+    document.querySelectorAll("[data-create-only]").forEach((el) => el.classList.remove("hidden"));
+    document.querySelectorAll("[data-update-only]").forEach((el) => el.classList.add("hidden"));
+    const title = document.getElementById("user-form-title");
+    if (title) title.textContent = "Create User";
+    const targetInput = document.getElementById("admin-target-user-id");
+    if (targetInput && targetInput instanceof HTMLInputElement) targetInput.value = "";
+    document.querySelectorAll(".save-profile-btn").forEach((b) => (b.textContent = "Create User"));
     const form = document.getElementById("admin-profile-form");
-    if (!form) return;
+    if (form && form instanceof HTMLFormElement) form.reset();
+    const emailInput = document.getElementById("admin-email");
+    if (emailInput && emailInput instanceof HTMLInputElement) emailInput.removeAttribute("readonly");
+    const roleSelect = document.getElementById("admin-role-select");
+    if (roleSelect && roleSelect instanceof HTMLSelectElement) roleSelect.value = "Staff";
+  }
 
-    // Tab switching for admin form
+  function setUpdateMode(userId) {
+    selectedUserId = userId;
+    document.getElementById("admin-users-list")?.classList.add("max-md:hidden");
+    document.querySelectorAll("[data-create-only]").forEach((el) => el.classList.add("hidden"));
+    document.querySelectorAll("[data-update-only]").forEach((el) => el.classList.remove("hidden"));
+    const title = document.getElementById("user-form-title");
+    if (title) title.textContent = "Update User";
+    const targetInput = document.getElementById("admin-target-user-id");
+    if (targetInput && targetInput instanceof HTMLInputElement) targetInput.value = userId;
+    document.querySelectorAll(".save-profile-btn").forEach((b) => (b.textContent = "Update User"));
+    const emailInput = document.getElementById("admin-email");
+    if (emailInput && emailInput instanceof HTMLInputElement) emailInput.setAttribute("readonly", "");
+  }
+
+  function setupUserRowClicks() {
     window.adminSwitchProfileTab = (tab) => {
       ["general", "social", "team"].forEach((id) => {
         const el = document.getElementById(`admin-${id}`);
@@ -325,107 +415,89 @@ const userCounts = {
       });
     };
 
-    document.querySelectorAll(`#${tableId}-tbody tr.accordion-trigger`).forEach((triggerRow) => {
-      triggerRow.addEventListener("click", async (e) => {
+    document.querySelectorAll("tr.user-row[data-user-id]").forEach((row) => {
+      row.addEventListener("click", async (e) => {
         if (e.target?.closest?.(".delete-confirm-btn, .delete-confirm-wrapper")) return;
-        const slotId = triggerRow.dataset.slot;
-        if (!slotId) return;
-        const slotEl = document.getElementById(`${slotPrefix}-${slotId}`);
-        if (!slotEl) return;
+        const userId = row.dataset.userId;
+        if (!userId) return;
 
-        if (openSlotId === slotId) {
-          closeEditor();
-          return;
-        }
+        setUpdateMode(userId);
+        document.querySelectorAll("tr.user-row").forEach((r) => {
+          r.classList.toggle("ring-2 ring-primary-500", r.dataset.userId === userId);
+        });
 
-        closeEditor();
-        slotEl.appendChild(formContainer);
-        const detailRow = document.getElementById(`${tableId}-detail-${slotId}`);
-        const chevron = triggerRow.querySelector(".accordion-chevron");
-        if (detailRow) {
-          detailRow.classList.remove("hidden");
-          detailRow.setAttribute("aria-hidden", "false");
-        }
-        if (chevron) chevron.classList.add("rotate-180");
-        triggerRow.setAttribute("aria-expanded", "true");
-        openSlotId = slotId;
-
-        const targetUserId = slotId;
-        const targetInput = document.getElementById("admin-target-user-id");
-        if (targetInput && targetInput instanceof HTMLInputElement)
-          targetInput.value = targetUserId;
         try {
-          const res = await fetch(`/api/users/get?id=${targetUserId}`);
+          const res = await fetch(`/api/users/get?id=${userId}`);
           const json = await res.json();
           const profile = json?.data;
           if (profile) populateAdminForm(profile);
+          document.querySelectorAll(".save-profile-btn").forEach((b) => {
+            b.textContent = "Update User";
+          });
         } catch (err) {
           console.error("Failed to load user:", err);
           if (window.showNotice)
             window.showNotice("error", "Load Failed", "Could not load user data", 4000);
         }
-        detailRow?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+        document
+          .getElementById("user-form-panel")
+          ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       });
     });
+  }
 
-    function closeEditor() {
-      if (!openSlotId) return;
-      const detailRow = document.getElementById(`${tableId}-detail-${openSlotId}`);
-      const triggerRow = document.querySelector(`tr.accordion-trigger[data-slot="${openSlotId}"]`);
-      if (detailRow) {
-        detailRow.classList.add("hidden");
-        detailRow.setAttribute("aria-hidden", "true");
-      }
-      if (triggerRow) {
-        triggerRow.setAttribute("aria-expanded", "false");
-        const chevron = triggerRow.querySelector(".accordion-chevron");
-        if (chevron) chevron.classList.remove("rotate-180");
-      }
-      if (formContainer && formPool) formPool.appendChild(formContainer);
-      openSlotId = null;
-    }
+  function setupNewUserButton() {
+    document.getElementById("admin-new-user-btn")?.addEventListener("click", setCreateMode);
+  }
 
-    function populateAdminForm(profile) {
-      const set = (id, value) => {
-        const el = document.getElementById(`admin-${id}`);
-        if (
-          !el ||
-          !(
-            el instanceof HTMLInputElement ||
-            el instanceof HTMLSelectElement ||
-            el instanceof HTMLTextAreaElement
-          )
+  function populateAdminForm(profile) {
+    const set = (id, value) => {
+      const el = document.getElementById(`admin-${id}`);
+      if (
+        !el ||
+        !(
+          el instanceof HTMLInputElement ||
+          el instanceof HTMLSelectElement ||
+          el instanceof HTMLTextAreaElement
         )
-          return;
-        el.value = value ?? "";
-      };
-      const setCheckbox = (id, checked) => {
-        const el = document.getElementById(`admin-${id}`);
-        if (el && el instanceof HTMLInputElement) el.checked = !!checked;
-      };
-      set("company-name", profile.companyName);
-      set("first-name", profile.firstName);
-      set("last-name", profile.lastName);
-      set("title", profile.title);
-      set("email", profile.email);
-      set("phone", profile.phone);
-      set("bio", profile.bio);
-      set("role-select", profile.role);
-      setCheckbox("sms-alerts-phone", profile.smsAlerts);
-      const socialInput = document.getElementById("admin-profile-socials-hidden");
-      if (socialInput && socialInput instanceof HTMLInputElement) {
-        socialInput.value = JSON.stringify(profile.socialNetworks || []);
-      }
-      const avatarImg = document.getElementById("admin-profile-avatar");
-      if (avatarImg && avatarImg instanceof HTMLImageElement) {
-        avatarImg.src = profile.avatarUrl || "";
-        avatarImg.style.display = profile.avatarUrl ? "" : "none";
-        const fallback = document.getElementById("admin-profile-avatar-fallback");
-        if (fallback) fallback.style.display = profile.avatarUrl ? "none" : "flex";
-      }
+      )
+        return;
+      el.value = value ?? "";
+    };
+    const setCheckbox = (id, checked) => {
+      const el = document.getElementById(`admin-${id}`);
+      if (el && el instanceof HTMLInputElement) el.checked = !!checked;
+    };
+    set("company-name", profile.companyName);
+    set("first-name", profile.firstName);
+    set("last-name", profile.lastName);
+    set("title", profile.title);
+    set("email", profile.email);
+    set("phone", profile.phone);
+    set("bio", profile.bio);
+    set("role-select", profile.role);
+    const smsCheckboxId = `sms-alerts-${formIdPrefix}phone`;
+    const smsCheckbox = document.getElementById(smsCheckboxId);
+    if (smsCheckbox && smsCheckbox instanceof HTMLInputElement) smsCheckbox.checked = !!profile.smsAlerts;
+    const socialInput = document.getElementById("admin-profile-socials-hidden");
+    if (socialInput && socialInput instanceof HTMLInputElement) {
+      socialInput.value = JSON.stringify(profile.socialNetworks || []);
     }
+    const avatarImg = document.getElementById("admin-profile-avatar");
+    if (avatarImg && avatarImg instanceof HTMLImageElement) {
+      avatarImg.src = profile.avatarUrl || "";
+      avatarImg.style.display = profile.avatarUrl ? "" : "none";
+      const fallback = document.getElementById("admin-profile-avatar-fallback");
+      if (fallback) fallback.style.display = profile.avatarUrl ? "none" : "flex";
+    }
+  }
 
-    form?.addEventListener("submit", async (e) => {
+  function setupAdminFormSubmit() {
+    const form = document.getElementById("admin-profile-form");
+    if (!form) return;
+
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const formEl = form;
       if (!formEl.checkValidity()) {
@@ -435,11 +507,67 @@ const userCounts = {
       const targetInput = document.getElementById("admin-target-user-id");
       const targetUserId =
         targetInput instanceof HTMLInputElement ? targetInput.value?.trim() : null;
+      const formData = new FormData(formEl);
+
       if (!targetUserId) {
-        window.showNotice?.("error", "No user selected", "Expand a user row first.", 4000);
+        // Create mode: call upsert
+        const roleEl = document.getElementById("admin-role-select");
+        const smsEl = document.getElementById(`sms-alerts-${formIdPrefix}phone`);
+        const role = roleEl?.value || "Staff";
+        const smsAlerts = smsEl?.checked || false;
+        const mobileCarrier = formData.get("mobileCarrier")?.toString()?.trim() || undefined;
+        const passwordValue = formData.get("password")?.toString()?.trim();
+        const userData = {
+          email: formData.get("email"),
+          role,
+          firstName: formData.get("firstName"),
+          lastName: formData.get("lastName"),
+          companyName: formData.get("company-name") || undefined,
+          phone: formData.get("phone") || undefined,
+          smsAlerts,
+          mobileCarrier: smsAlerts ? mobileCarrier : undefined,
+        };
+        if (passwordValue) userData.password = passwordValue;
+        if (!userData.companyName) {
+          userData.companyName = `${userData.firstName} ${userData.lastName}`;
+        }
+        const saveBtns = formEl.querySelectorAll(".save-profile-btn");
+        saveBtns.forEach((b) => {
+          b.textContent = "Creating...";
+          b.disabled = true;
+        });
+        try {
+          const res = await fetch("/api/users/upsert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(userData),
+          });
+          const result = await res.json();
+          if (res.ok) {
+            window.showNotice?.("success", "User Created", "User has been created.", 2500);
+            setCreateMode();
+            setTimeout(() => window.location.reload(), 1500);
+          } else {
+            window.showNotice?.(
+              "error",
+              "Creation Failed",
+              result?.error || result?.details || "Failed to create user.",
+              5000
+            );
+          }
+        } catch (err) {
+          console.error("Create user error:", err);
+          window.showNotice?.("error", "Network Error", "Failed to create. Try again.", 5000);
+        } finally {
+          saveBtns.forEach((b) => {
+            b.disabled = false;
+            b.textContent = "Create User";
+          });
+        }
         return;
       }
-      const formData = new FormData(formEl);
+
+      // Update mode: call update
       const companyName = formData.get("company-name");
       const firstName = formData.get("firstName");
       const lastName = formData.get("lastName");
@@ -447,7 +575,7 @@ const userCounts = {
       const phone = formData.get("phone");
       const bio = formData.get("bio");
       const roleEl = document.getElementById("admin-role-select");
-      const smsEl = document.getElementById("admin-sms-alerts-phone");
+      const smsEl = document.getElementById(`sms-alerts-${formIdPrefix}phone`);
       const role = roleEl?.value;
       const smsAlerts = smsEl?.checked || false;
       const mobileCarrier = formData.get("mobileCarrier");
@@ -497,7 +625,7 @@ const userCounts = {
       } finally {
         saveBtns.forEach((b) => {
           b.disabled = false;
-          b.textContent = "Save Changes";
+          b.textContent = "Update User";
         });
       }
     });
@@ -505,13 +633,11 @@ const userCounts = {
 
   async function handleUserDeleted(userId) {
     window.showNotice?.("success", "User Deleted", "User has been deleted.", 3000);
-    const trigger = document.querySelector(`tr.accordion-trigger[data-user-id="${userId}"]`);
-    const slotId = trigger?.dataset?.slot;
-    if (trigger) trigger.remove();
-    if (slotId) {
-      const detail = document.querySelector(`tr.accordion-detail[data-slot="${slotId}"]`);
-      if (detail) detail.remove();
+    if (selectedUserId === userId) {
+      setCreateMode();
     }
+    const row = document.querySelector(`tr.user-row[data-user-id="${userId}"]`);
+    if (row) row.remove();
     setTimeout(() => window.location.reload(), 1500);
   }
 </script>

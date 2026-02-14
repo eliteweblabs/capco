@@ -2,6 +2,7 @@
 import SimpleIcon from "../common/SimpleIcon.astro";
 import ProjectItem from "./ProjectItem.astro";
 import Tooltip from "../common/TooltipFloating.astro";
+import { getProjectListTableColumns, isColumnAllowed } from "../../lib/project-list-table-config";
 
 interface Props {
   projects: any[];
@@ -10,10 +11,11 @@ interface Props {
   globalInputClasses: string;
 }
 
-// // const { currentLocale } = Astro;
-// // const i18n = getI18N({ currentLocale });
 const { projects, statusData, currentUser, globalInputClasses } = Astro.props;
 const currentRole = currentUser?.profile?.role;
+
+const allColumns = await getProjectListTableColumns();
+const visibleColumns = allColumns.filter((c) => isColumnAllowed(c, currentRole));
 
 // console.log("🔍 [DEBUG] ProjectList statusData:", statusData);
 // console.log("🔍 [DEBUG] ProjectList currentUser:", currentUser);
@@ -140,86 +142,54 @@ const createDueDateOptions = () => {
 const dueDateOptions = createDueDateOptions();
 ---
 
-<!-- Project List: table-layout fixed for resizable columns (widths saved to localStorage) -->
+<!-- Project List: JSON-driven columns (config per client) -->
 <table id="project-list" class="w-full min-w-max table-fixed text-sm dark:text-gray-400">
   <thead class="text-uppercase color-background bg-gray-200 text-xs">
     <tr>
       {
-        currentRole !== "Client" && (
-          <th scope="col" data-col-id="delete" class="px-4 py-3 text-center font-semibold">
-            <Tooltip text="Delete" open={false}>
-              <SimpleIcon name="trash" class="text-red-500" size="xs" />
-            </Tooltip>
-          </th>
-        )
-      }
-      <th scope="col" data-col-id="edit" class="px-4 py-3 font-semibold"
-        ><SimpleIcon name="edit" size="xs" class="text-gray-600" /></th
-      >
-      <th scope="col" data-col-id="address" class="px-4 py-3 font-semibold">Address</th>
-
-      {
-        currentRole !== "Client" && (
-          <th scope="col" data-col-id="company" class="px-4 py-3 text-center font-semibold">
-            Company
-          </th>
-        )
-      }
-
-      <th scope="col" data-col-id="status" class="px-4 py-3 text-center font-semibold">Status</th>
-      {
-        currentRole !== "Client" && (
-          <th scope="col" data-col-id="featured" class="px-4 py-3 text-center font-semibold">
-            <Tooltip text="Featured">
-              <SimpleIcon name="star" class="" size="lg" />
-            </Tooltip>
-          </th>
-        )
-      }
-      <th scope="col" data-col-id="files" class="px-4 py-3 text-center font-semibold">Files</th>
-
-      {
-        currentRole !== "Client" && (
-          <th scope="col" data-col-id="assigned" class="px-4 py-3 text-center font-semibold">
-            <Tooltip text="Assigned To">
-              <SimpleIcon name="user" class="" size="lg" />
-            </Tooltip>
-          </th>
-        )
-      }
-
-      <th scope="col" data-col-id="progress" class="px-4 py-3 font-semibold"
-        ><Tooltip text="Progress Thru Statuses"
-          ><SimpleIcon name="percent" class="" />
-        </Tooltip></th
-      >
-      <th scope="col" data-col-id="checklist" class="px-4 py-3 text-center font-semibold">
-        <Tooltip text="Checklist">
-          <svg
-            class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="currentColor"
-            viewBox="0 0 24 24"
+        visibleColumns.map((col) => (
+          <th
+            scope="col"
+            data-col-id={col.id}
+            class={`px-4 py-3 font-semibold ${col.type === "edit" || col.type === "delete" ? "" : "text-center"}`}
           >
-            <path
-              d="M3 6C3 4.89688 3.89688 4 5 4H13C14.1031 4 15 4.89688 15 6V10.2063C12.6906 10.8594 11 12.9812 11 15.5C11 17.3469 11.9094 18.9781 13.3031 19.9781C13.2031 19.9937 13.1031 20 13 20H5C3.89688 20 3 19.1031 3 18V6ZM5 8.5C5 8.775 5.225 9 5.5 9H12.5C12.775 9 13 8.775 13 8.5C13 8.225 12.775 8 12.5 8H5.5C5.225 8 5 8.225 5 8.5ZM5.5 11C5.225 11 5 11.225 5 11.5C5 11.775 5.225 12 5.5 12H10.5C10.775 12 11 11.775 11 11.5C11 11.225 10.775 11 10.5 11H5.5ZM5.5 14C5.225 14 5 14.225 5 14.5C5 14.775 5.225 15 5.5 15H8.5C8.775 15 9 14.775 9 14.5C9 14.225 8.775 14 8.5 14H5.5ZM12 15.5C12 14.3065 12.4741 13.1619 13.318 12.318C14.1619 11.4741 15.3065 11 16.5 11C17.6935 11 18.8381 11.4741 19.682 12.318C20.5259 13.1619 21 14.3065 21 15.5C21 16.6935 20.5259 17.8381 19.682 18.682C18.8381 19.5259 17.6935 20 16.5 20C15.3065 20 14.1619 19.5259 13.318 18.682C12.4741 17.8381 12 16.6935 12 15.5ZM17.8969 14.1469L16 16.0437L15.1031 15.1469C14.9094 14.9531 14.5906 14.9531 14.3969 15.1469C14.2031 15.3406 14.2031 15.6594 14.3969 15.8531L15.6469 17.1031C15.8406 17.2969 16.1594 17.2969 16.3531 17.1031L18.6031 14.8531C18.7969 14.6594 18.7969 14.3406 18.6031 14.1469C18.4094 13.9531 18.0906 13.9531 17.8969 14.1469Z"
-              fill="currentColor"></path>
-          </svg>
-        </Tooltip>
-      </th>
-      <th scope="col" data-col-id="elapsed" class="px-4 py-3 text-center font-semibold">
-        <Tooltip text="Elapsed Time"><SimpleIcon name="calendar" class="" /> </Tooltip>
-      </th>
-      <th scope="col" data-col-id="timeSince" class="px-4 py-3 text-center font-semibold">
-        <Tooltip text="Time since last status change">
-          <SimpleIcon name="stopwatch" class="" size="lg" />
-        </Tooltip>
-      </th>
-      <th scope="col" data-col-id="dueDate" class="px-4 py-3 text-center font-semibold">Due Date</th
-      >
+            {col.tooltip ? (
+              <Tooltip text={col.tooltip} open={false}>
+                {col.icon === "checklist" ? (
+                  <svg
+                    class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M3 6C3 4.89688 3.89688 4 5 4H13C14.1031 4 15 4.89688 15 6V10.2063C12.6906 10.8594 11 12.9812 11 15.5C11 17.3469 11.9094 18.9781 13.3031 19.9781C13.2031 19.9937 13.1031 20 13 20H5C3.89688 20 3 19.1031 3 18V6ZM5 8.5C5 8.775 5.225 9 5.5 9H12.5C12.775 9 13 8.775 13 8.5C13 8.225 12.775 8 12.5 8H5.5C5.225 8 5 8.225 5 8.5ZM5.5 11C5.225 11 5 11.225 5 11.5C5 11.775 5.225 12 5.5 12H10.5C10.775 12 11 11.775 11 11.5C11 11.225 10.775 11 10.5 11H5.5ZM5.5 14C5.225 14 5 14.225 5 14.5C5 14.775 5.225 15 5.5 15H8.5C8.775 15 9 14.775 9 14.5C9 14.225 8.775 14 8.5 14H5.5ZM12 15.5C12 14.3065 12.4741 13.1619 13.318 12.318C14.1619 11.4741 15.3065 11 16.5 11C17.6935 11 18.8381 11.4741 19.682 12.318C20.5259 13.1619 21 14.3065 21 15.5C21 16.6935 20.5259 17.8381 19.682 18.682C18.8381 19.5259 17.6935 20 16.5 20C15.3065 20 14.1619 19.5259 13.318 18.682C12.4741 17.8381 12 16.6935 12 15.5ZM17.8969 14.1469L16 16.0437L15.1031 15.1469C14.9094 14.9531 14.5906 14.9531 14.3969 15.1469C14.2031 15.3406 14.2031 15.6594 14.3969 15.8531L15.6469 17.1031C15.8406 17.2969 16.1594 17.2969 16.3531 17.1031L18.6031 14.8531C18.7969 14.6594 18.7969 14.3406 18.6031 14.1469C18.4094 13.9531 18.0906 13.9531 17.8969 14.1469Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                ) : (
+                  <SimpleIcon
+                    name={col.icon || "edit"}
+                    size={col.type === "featured" || col.type === "assigned" ? "lg" : "xs"}
+                    class={col.type === "delete" ? "text-red-500" : "text-gray-600"}
+                  />
+                )}
+              </Tooltip>
+            ) : col.icon ? (
+              <SimpleIcon
+                name={col.icon}
+                size="xs"
+                class={col.type === "delete" ? "text-red-500" : "text-gray-600"}
+              />
+            ) : (
+              col.label
+            )}
+          </th>
+        ))
+      }
     </tr>
   </thead>
   <tbody id="project-list-tbody">
@@ -230,6 +200,7 @@ const dueDateOptions = createDueDateOptions();
           const isHidden = index >= INITIAL_LOAD_COUNT;
           return (
             <ProjectItem
+              columns={visibleColumns}
               currentUser={currentUser}
               project={project}
               statusData={statusData}

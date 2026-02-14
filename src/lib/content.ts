@@ -47,6 +47,8 @@ export interface SiteConfig {
       label: string;
       href: string;
     }>;
+    /** Aside sidebar nav. Company-specific via site-config-{slug}.json. See aside-nav-config.ts */
+    aside?: (string | Record<string, unknown>)[];
   };
   features: {
     [key: string]:
@@ -194,10 +196,61 @@ export async function getSiteConfig(): Promise<SiteConfig> {
 
       // Merge navigation and features from JSON file
       if (jsonConfig.navigation) {
-        config.navigation = jsonConfig.navigation;
+        config.navigation = { ...config.navigation, ...jsonConfig.navigation };
       }
       if (jsonConfig.features) {
         config.features = jsonConfig.features;
+      }
+      if (jsonConfig.asideNav) {
+        (config.navigation as any).aside = jsonConfig.asideNav;
+      } else if (jsonConfig.navigation?.aside) {
+        (config.navigation as any).aside = jsonConfig.navigation.aside;
+      }
+      if (Array.isArray(jsonConfig.projectListColumns)) {
+        (config as any).projectListColumns = jsonConfig.projectListColumns;
+      }
+      if (jsonConfig.projectForm) {
+        (config as any).projectForm = jsonConfig.projectForm;
+      }
+      if (jsonConfig.registerForm) {
+        (config as any).registerForm = jsonConfig.registerForm;
+      }
+      if (jsonConfig.loginForm) {
+        (config as any).loginForm = jsonConfig.loginForm;
+      }
+      if (jsonConfig.mepForm) {
+        (config as any).mepForm = jsonConfig.mepForm;
+      }
+      if (jsonConfig.contactForm) {
+        (config as any).contactForm = jsonConfig.contactForm;
+      }
+      if (Array.isArray(jsonConfig.userForm)) {
+        (config as any).userForm = jsonConfig.userForm;
+      }
+
+      // When using company-specific file, merge missing form configs from site-config.json
+      const defaultConfigPath = join(process.cwd(), "site-config.json");
+      if (
+        configPath !== defaultConfigPath &&
+        existsSync(defaultConfigPath)
+      ) {
+        try {
+          const defaultJson = JSON.parse(readFileSync(defaultConfigPath, "utf-8"));
+          if (!(config as any).projectForm && defaultJson.projectForm)
+            (config as any).projectForm = defaultJson.projectForm;
+          if (!(config as any).registerForm && defaultJson.registerForm)
+            (config as any).registerForm = defaultJson.registerForm;
+          if (!(config as any).loginForm && defaultJson.loginForm)
+            (config as any).loginForm = defaultJson.loginForm;
+          if (!(config as any).mepForm && defaultJson.mepForm)
+            (config as any).mepForm = defaultJson.mepForm;
+          if (!(config as any).contactForm && defaultJson.contactForm)
+            (config as any).contactForm = defaultJson.contactForm;
+          if (!(config as any).userForm && defaultJson.userForm)
+            (config as any).userForm = defaultJson.userForm;
+        } catch (_e) {
+          /* ignore */
+        }
       }
 
       const featureCount = Object.keys(config.features || {}).length;
@@ -213,11 +266,25 @@ export async function getSiteConfig(): Promise<SiteConfig> {
       try {
         const jsonConfig = JSON.parse(envConfig);
         if (jsonConfig.navigation) {
-          config.navigation = jsonConfig.navigation;
+          config.navigation = { ...config.navigation, ...jsonConfig.navigation };
         }
         if (jsonConfig.features) {
           config.features = jsonConfig.features;
         }
+        if (jsonConfig.asideNav) {
+          (config.navigation as any).aside = jsonConfig.asideNav;
+        } else if (jsonConfig.navigation?.aside) {
+          (config.navigation as any).aside = jsonConfig.navigation.aside;
+        }
+        if (Array.isArray(jsonConfig.projectListColumns)) {
+          (config as any).projectListColumns = jsonConfig.projectListColumns;
+        }
+        if (jsonConfig.projectForm) (config as any).projectForm = jsonConfig.projectForm;
+        if (jsonConfig.registerForm) (config as any).registerForm = jsonConfig.registerForm;
+        if (jsonConfig.loginForm) (config as any).loginForm = jsonConfig.loginForm;
+        if (jsonConfig.mepForm) (config as any).mepForm = jsonConfig.mepForm;
+        if (jsonConfig.contactForm) (config as any).contactForm = jsonConfig.contactForm;
+        if (Array.isArray(jsonConfig.userForm)) (config as any).userForm = jsonConfig.userForm;
         const featureCount = Object.keys(config.features || {}).length;
         // console.log(`✅ [CONTENT] Loaded site-config from SITE_CONFIG_JSON env var - ${featureCount} features enabled`);
       } catch (error) {

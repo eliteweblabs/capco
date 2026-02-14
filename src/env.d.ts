@@ -137,9 +137,10 @@ declare global {
       };
     };
 
-    refreshAuthAvatar?: (newUrl?: string) => void;
+    refreshAvatar?: (newUrl?: string, userId?: string) => void;
 
     // UX Utility Functions
+    focusFirstInputIn?: (container: HTMLElement) => boolean;
     hideOnFormFocus?: (elementSelector: string, mobileOnly?: boolean) => void;
     initInputWithIcon?: (root?: Document | Element) => void;
     hideOnMobileInput?: (elementSelector: string) => void;

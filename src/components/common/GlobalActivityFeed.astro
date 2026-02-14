@@ -32,30 +32,33 @@ const {
       </Button>
     </div>
 
-    <!-- Filter Controls -->
+    <!-- Filter Controls (toggle buttons style like GridFilter) -->
     {
       showFilters && (
-        <div class="mt-4 flex flex-wrap gap-3">
-          <select
-            id="action-filter"
-            class="rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-          >
-            <option value="all">All Activities</option>
-            {/* <!-- Options will be populated by JavaScript --> */}
-          </select>
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <div id="action-filter-buttons" class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-action-filter="all"
+              class="action-filter-btn toggle-button preserve font-large text-md [@media(hover:hover)]:hover:scale-101 dark:bg-primary-dark selected relative inline-flex items-center justify-center rounded-full border-2 border-primary-500 bg-primary px-4 py-2.5 font-secondary text-primary-500 text-white backdrop-blur-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-primary-400 dark:text-primary-400 dark:text-white [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white [@media(hover:hover)]:hover:shadow-xl dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white"
+            >
+              All Activities
+            </button>
+            {/* Additional action buttons populated by JavaScript */}
+          </div>
 
           <input
             type="text"
             id="user-filter"
             placeholder="Filter by user..."
-            class="rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm text-gray-700 placeholder-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:placeholder-gray-500"
+            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-primary-500 dark:focus:ring-primary-500"
           />
 
           <input
             type="text"
             id="project-filter"
             placeholder="Filter by project..."
-            class="rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm text-gray-700 placeholder-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:placeholder-gray-500"
+            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-primary-500 dark:focus:ring-primary-500"
           />
         </div>
       )
@@ -220,8 +223,16 @@ const {
         this.loadActivities();
       });
 
-      // Filter controls
-      document.getElementById("action-filter")?.addEventListener("change", () => {
+      // Filter controls (action filter buttons)
+      document.getElementById("action-filter-buttons")?.addEventListener("click", (e) => {
+        const btn = (e.target as HTMLElement).closest(".action-filter-btn");
+        if (!btn) return;
+        document.querySelectorAll(".action-filter-btn").forEach((b) => {
+          b.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+          b.classList.add("deselected");
+        });
+        btn.classList.remove("deselected");
+        btn.classList.add("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
         this.applyFilters();
       });
 
@@ -260,7 +271,9 @@ const {
 
       try {
         const actionFilter =
-          (document.getElementById("action-filter") as HTMLSelectElement)?.value || "all";
+          document
+            .querySelector(".action-filter-btn.selected")
+            ?.getAttribute("data-action-filter") || "all";
         const url = `/api/activity/get?limit=${this.currentLimit}&offset=${this.currentOffset}&action=${actionFilter}`;
 
         const response = await fetch(url);
@@ -310,7 +323,8 @@ const {
 
     private applyFilters() {
       const actionFilter =
-        (document.getElementById("action-filter") as HTMLSelectElement)?.value || "all";
+        document.querySelector(".action-filter-btn.selected")?.getAttribute("data-action-filter") ||
+        "all";
       const userFilter =
         (document.getElementById("user-filter") as HTMLInputElement)?.value.toLowerCase() || "";
       const projectFilter =
@@ -348,20 +362,24 @@ const {
     }
 
     private populateActionFilter() {
-      const actionSelect = document.getElementById("action-filter") as HTMLSelectElement;
-      if (!actionSelect) return;
+      const container = document.getElementById("action-filter-buttons");
+      if (!container) return;
 
-      // Clear existing options except "All Activities"
-      while (actionSelect.children.length > 1) {
-        actionSelect.removeChild(actionSelect.lastChild!);
-      }
+      // Remove dynamically added buttons (keep only "All Activities")
+      const allBtn = container.querySelector('[data-action-filter="all"]');
+      container
+        .querySelectorAll(".action-filter-btn:not([data-action-filter='all'])")
+        .forEach((b) => b.remove());
 
-      // Add action type options
+      // Add toggle buttons for each action type
       this.actionTypes.forEach((actionType) => {
-        const option = document.createElement("option");
-        option.value = actionType;
-        option.textContent = this.formatActionType(actionType);
-        actionSelect.appendChild(option);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className =
+          "action-filter-btn toggle-button preserve font-large text-md relative inline-flex items-center justify-center rounded-full border-2 border-primary-500 px-4 py-2.5 font-secondary text-primary-500 backdrop-blur-md transition-all duration-200 [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white [@media(hover:hover)]:hover:shadow-xl dark:border-primary-400 dark:text-primary-400 dark:text-white dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white";
+        btn.setAttribute("data-action-filter", actionType);
+        btn.textContent = this.formatActionType(actionType);
+        container.appendChild(btn);
       });
     }
 

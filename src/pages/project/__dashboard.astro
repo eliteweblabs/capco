@@ -35,10 +35,10 @@ if (currentUser?.id) {
     if (!supabaseAdmin) {
       console.error("🏗️ [PROJECT/DASHBOARD] Supabase admin client not available");
     } else if (currentRole === "Client") {
-      projects = await getProjectsByAuthor(supabaseAdmin, currentUser.id);
+      projects = await getProjectsByAuthor(supabaseAdmin, currentUser.id, { includeFiles: true });
     } else {
       // Admin/Staff can see all projects
-      projects = await fetchProjects(supabaseAdmin);
+      projects = await fetchProjects(supabaseAdmin, undefined, { includeFiles: true });
     }
   } catch (error) {
     console.error("🏗️ [PROJECT/DASHBOARD] Error fetching projects:", error);

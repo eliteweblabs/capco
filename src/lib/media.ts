@@ -345,6 +345,33 @@ export async function saveMedia(params: SaveMediaParams): Promise<MediaFile> {
   };
 }
 
+// Exported for use in api/files/get - verify file exists in storage; if not, delete DB record and return false
+export async function verifyFileExistsAndCleanupIfMissing(
+  supabase: { storage: any; from: (table: string) => any },
+  file: { id: number; bucketName: string; filePath: string; projectId?: number }
+): Promise<boolean> {
+  if (!file.bucketName || !file.filePath) return false;
+  try {
+    const { data: urlData } = supabase.storage.from(file.bucketName).getPublicUrl(file.filePath);
+    const res = await fetch(urlData.publicUrl, { method: "HEAD" });
+    if (res.ok) return true;
+    // File missing (400, 404, etc.) - remove orphaned DB record
+    console.warn(
+      `🔧 [MEDIA] File ${file.id} missing in storage (${res.status}), removing orphaned index`
+    );
+    await supabase.from("files").delete().eq("id", file.id);
+    if (file.projectId) {
+      await supabase
+        .from("projects")
+        .update({ featuredImageId: null, featuredImageData: null })
+        .eq("featuredImageId", String(file.id));
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 // GET MEDIA FUNCTION
 export async function getMedia(params: GetMediaParams): Promise<{
   success: boolean;
@@ -379,6 +406,23 @@ export async function getMedia(params: GetMediaParams): Promise<{
       // console.log("🐛 [MEDIA] Using denormalized featured image data");
 
       const featuredData = projectData.featuredImageData;
+      const exists = await verifyFileExistsAndCleanupIfMissing(supabaseAdmin, {
+        id: featuredData.id,
+        bucketName: featuredData.bucketName,
+        filePath: featuredData.filePath,
+        projectId: parseInt(params.projectId!),
+      });
+      if (!exists) {
+        await supabaseAdmin
+          .from("projects")
+          .update({ featuredImageId: null, featuredImageData: null })
+          .eq("id", parseInt(params.projectId!));
+        return {
+          success: true,
+          media: null,
+          message: "Featured image file missing, index removed",
+        };
+      }
 
       // Generate signed URL for the cached data
       const { data: urlData } = supabaseAdmin.storage
@@ -412,6 +456,20 @@ export async function getMedia(params: GetMediaParams): Promise<{
 
     if (fileError) {
       throw new Error(`File lookup error: ${fileError.message}`);
+    }
+
+    const exists = await verifyFileExistsAndCleanupIfMissing(supabaseAdmin, {
+      id: fileData.id,
+      bucketName: fileData.bucketName,
+      filePath: fileData.filePath,
+      projectId: fileData.projectId,
+    });
+    if (!exists) {
+      return {
+        success: true,
+        media: null,
+        message: "Featured image file missing, index removed",
+      };
     }
 
     const { data: urlData } = supabaseAdmin.storage
@@ -451,6 +509,20 @@ export async function getMedia(params: GetMediaParams): Promise<{
 
     if (fileError) {
       throw new Error(`File lookup error: ${fileError.message}`);
+    }
+
+    const exists = await verifyFileExistsAndCleanupIfMissing(supabaseAdmin, {
+      id: fileData.id,
+      bucketName: fileData.bucketName,
+      filePath: fileData.filePath,
+      projectId: fileData.projectId,
+    });
+    if (!exists) {
+      return {
+        success: false,
+        media: null,
+        message: "File missing in storage, index removed",
+      };
     }
 
     const { data: urlData } = supabaseAdmin.storage
@@ -534,8 +606,16 @@ export async function getMedia(params: GetMediaParams): Promise<{
     // console.log("🔧 [MEDIA] Files found:", files?.length || 0);
     // console.log("🔧 [MEDIA] Files data:", files);
 
-    const mediaFiles = await Promise.all(
+    const mediaFilesRaw = await Promise.all(
       (files || []).map(async (file) => {
+        const exists = await verifyFileExistsAndCleanupIfMissing(supabaseAdmin, {
+          id: file.id,
+          bucketName: file.bucketName,
+          filePath: file.filePath,
+          projectId: file.projectId,
+        });
+        if (!exists) return null;
+
         const { data: urlData } = supabaseAdmin.storage
           .from(file.bucketName)
           .getPublicUrl(file.filePath);
@@ -603,6 +683,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
         };
       })
     );
+    const mediaFiles = mediaFilesRaw.filter((f): f is NonNullable<typeof f> => f != null);
 
     return {
       success: true,

@@ -1,13 +1,11 @@
 ---
 // Flowbite Sidebar Component
 // Based on Flowbite dashboard design patterns
+// Nav items driven by asideNav in site-config-{company-slug}.json (see aside-nav-config.ts)
 
 import { isFeatureEnabled } from "../../lib/features";
-import { getSectionNavigation } from "../../lib/feature-navigation";
-// import HttpChatWidget from "../../features/chat/components/HttpChatWidget.astro";
-// import CampfireChatWidget from "../../features/chat/components/CampfireChatWidget.astro";
+import { getResolvedAsideNav } from "../../lib/aside-nav-config";
 import SimpleIcon from "../common/SimpleIcon.astro";
-// import Tooltip from "../common/TooltipFloating.astro";
 import Socials from "./Socials.astro";
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
@@ -38,9 +36,8 @@ const chatEnabled = await isFeatureEnabled("chat");
 const companyData = await globalCompanyData();
 const socialNetworks = companyData.socialNetworks || [];
 
-// Get dynamic navigation based on enabled features and user role
-const adminNavItems = await getSectionNavigation("admin", currentRole);
-const toolsNavItems = await getSectionNavigation("tools", currentRole);
+// Get aside nav from company-specific config (site-config-{slug}.json)
+const asideNavItems = currentUser?.id ? await getResolvedAsideNav(currentRole) : [];
 
 // Get current page URL for active state
 const currentPath = Astro.url.pathname;
@@ -48,7 +45,6 @@ const currentPath = Astro.url.pathname;
 // Helper function to check if a link is active
 const isActive = (href: string) => {
   if (!href || href === "#") return false;
-  // Exact match or starts with the path (for subpages)
   return currentPath === href || (href !== "/" && currentPath.startsWith(href));
 };
 
@@ -56,6 +52,13 @@ const anchorClasses =
   "lowercase hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg px-3 py-2 whitespace-nowrap";
 const activeClasses = "bg-gray-300 dark:bg-gray-700 font-bold";
 const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
+
+function slugifyId(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+}
 ---
 
 <aside
@@ -82,253 +85,165 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
     </div>
     <ul class={`space-y-2 text-xs font-medium uppercase tracking-wider`} id="sidebar-menu">
       {
-        currentUser && currentUser.id && (
-          <li>
-            <a
-              href="/dashboard"
-              class={`${anchorClasses} ${isActive("/dashboard") ? activeClasses : ""}`}
-            >
-              <SimpleIcon name="dashboard" class={svgClasses} />
-              <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                Dashboard
-              </span>
-            </a>
-          </li>
-        )
-      }
-
-      {
-        currentUser && currentUser.id && currentRole === "Admin" && (
-          <>
-            <li>
-              <a
-                href="/admin/settings"
-                class={`${anchorClasses} ${isActive("/admin/settings") ? activeClasses : ""}`}
-              >
-                <SimpleIcon name="settings" class={svgClasses} />
-                <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                  Settings
-                </span>
-              </a>
-            </li>
-
-            <li>
-              <button
-                type="button"
-                class={`${anchorClasses} w-full ${isActive("/admin/design") ? activeClasses : ""}`}
-                aria-controls="dropdown-design"
-                data-collapse-toggle="dropdown-design"
-                data-sidebar-collapse-item=""
-              >
-                <SimpleIcon name="palette" class={svgClasses} />
-                <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                  Design
-                </span>
-                <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
-              </button>
-              <div data-sidebar-collapse-hide="">
-                <ul id="dropdown-design" class="hidden space-y-2 py-2 pl-8">
-                  <li>
-                    <a
-                      href="/admin/design"
-                      class={`${anchorClasses} ${isActive("/admin/design") && currentPath === "/admin/design" ? activeClasses : ""}`}
-                      data-sidebar-collapse-subitem=""
-                      data-sidebar-collapse-hide=""
-                    >
-                      Components
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="/admin/design/placeholders"
-                      class={`${anchorClasses} ${isActive("/admin/design/placeholders") ? activeClasses : ""}`}
-                      data-sidebar-collapse-subitem=""
-                      data-sidebar-collapse-hide=""
-                    >
-                      Placeholders
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </li>
-
-            <li>
-              <a
-                href="/admin/cms"
-                class={`${anchorClasses} ${isActive("/admin/cms") ? activeClasses : ""}`}
-              >
-                <SimpleIcon name="dashboard" class={svgClasses} />
-                <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                  Content
-                </span>
-              </a>
-            </li>
-
-            <li>
-              <a
-                href="/admin/media"
-                class={`${anchorClasses} ${isActive("/admin/media") ? activeClasses : ""}`}
-              >
-                <SimpleIcon name="image" class={svgClasses} />
-                <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                  Media
-                </span>
-              </a>
-            </li>
-
-            <li>
-              <a
-                href="/admin/banner-alerts"
-                class={`${anchorClasses} ${isActive("/admin/banner-alerts") ? activeClasses : ""}`}
-              >
-                <SimpleIcon name="alert" class={svgClasses} />
-                <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                  Alerts
-                </span>
-              </a>
-            </li>
-
-            <li>
-              <a
-                href="/admin/testimonials"
-                class={`${anchorClasses} ${isActive("/admin/testimonials") ? activeClasses : ""}`}
-              >
-                <SimpleIcon name="quote" class={svgClasses} />
-                <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                  Testimonials
-                </span>
-              </a>
-            </li>
-
-            <li>
-              <a
-                href="/admin/global-functions"
-                class={`${anchorClasses} ${isActive("/admin/global-functions") ? activeClasses : ""}`}
-              >
-                <SimpleIcon name="code" class={svgClasses} />
-                <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                  Global Functions
-                </span>
-              </a>
-            </li>
-          </>
-        )
-      }
-
-      {
-        currentUser && (
-          <li>
-            <button
-              type="button"
-              class={`${anchorClasses} w-full ${isActive("/project") ? activeClasses : ""}`}
-              aria-controls="dropdown-projects"
-              data-collapse-toggle="dropdown-projects"
-              data-sidebar-collapse-item=""
-              aria-expanded="false"
-            >
-              <SimpleIcon
-                name="folder"
-                class="h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400"
-              />
-
-              <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide="">
-                Projects
-              </span>
-              <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
-            </button>
-            <div data-sidebar-collapse-hide="">
-              <ul id="dropdown-projects" class="hidden space-y-2 py-2 pl-8">
-                <li>
-                  <a
-                    href="/project/dashboard/"
-                    class={`${anchorClasses} ${isActive("/project/dashboard") ? activeClasses : ""}`}
-                    data-sidebar-collapse-subitem=""
-                    data-sidebar-collapse-hide
+        asideNavItems.map((item) => {
+          if (item.type === "link") {
+            return (
+              <li>
+                <a
+                  href={item.href}
+                  class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`}
+                >
+                  {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
                   >
-                    Dashboard
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/project/new"
-                    class={`${anchorClasses} ${isActive("/project/new") ? activeClasses : ""}`}
-                    data-sidebar-collapse-subitem=""
-                    data-sidebar-collapse-hide
+                    {item.label}
+                  </span>
+                </a>
+              </li>
+            );
+          }
+          if (item.type === "dropdown") {
+            const ddId = `dropdown-${slugifyId(item.label)}`;
+            const childHrefs = item.children.map((c) => c.href);
+            const isDropdownActive = childHrefs.some((h) => isActive(h));
+            return (
+              <li>
+                <button
+                  type="button"
+                  class={`${anchorClasses} w-full ${isDropdownActive ? activeClasses : ""}`}
+                  aria-controls={ddId}
+                  data-collapse-toggle={ddId}
+                  data-sidebar-collapse-item=""
+                  aria-expanded="false"
+                >
+                  {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
+                  <span
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                    data-sidebar-collapse-hide=""
                   >
-                    New
-                  </a>
-                </li>
-                {currentUser && currentRole === "Admin" && (
-                  <>
-                    <li>
-                      <a
-                        href="/project/proposals"
-                        class={`${anchorClasses} ${isActive("/project/proposals") ? activeClasses : ""}`}
-                        data-sidebar-collapse-subitem=""
-                        data-sidebar-collapse-hide
-                      >
-                        Proposals
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="/project/settings"
-                        class={`${anchorClasses} ${isActive("/project/settings") ? activeClasses : ""}`}
-                        data-sidebar-collapse-subitem=""
-                        data-sidebar-collapse-hide
-                      >
-                        Settings
-                      </a>
-                    </li>
-                  </>
+                    {item.label}
+                  </span>
+                  <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
+                </button>
+                <div data-sidebar-collapse-hide="">
+                  <ul id={ddId} class="hidden space-y-2 py-2 pl-8">
+                    {item.children.map((child) => (
+                      <li>
+                        <a
+                          href={child.href}
+                          class={`${anchorClasses} ${currentPath === child.href ? activeClasses : ""}`}
+                          data-sidebar-collapse-subitem=""
+                          data-sidebar-collapse-hide=""
+                        >
+                          {child.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </li>
+            );
+          }
+          if (item.type === "feature-admin") {
+            return item.items.map((nav) => (
+              <li>
+                <a
+                  href={nav.href}
+                  class={`${anchorClasses} ${isActive(nav.href) ? activeClasses : ""}`}
+                  data-sidebar-collapse-item=""
+                >
+                  {nav.icon && <SimpleIcon name={nav.icon} class={svgClasses} />}
+                  <span
+                    data-sidebar-collapse-hide=""
+                    class="ml-3 flex-1 whitespace-nowrap text-left"
+                  >
+                    {nav.label}
+                  </span>
+                </a>
+              </li>
+            ));
+          }
+          if (item.type === "feature-tools") {
+            return (
+              <>
+                {item.items.length > 0 && item.sectionLabel && (
+                  <li class="pb-2 pt-4">
+                    <span class="text-xs uppercase text-gray-500 dark:text-gray-400">
+                      {item.sectionLabel}
+                    </span>
+                  </li>
                 )}
-              </ul>
-            </div>
-          </li>
-        )
+                {item.items.map((nav) =>
+                  nav.children?.length ? (
+                    <li>
+                      <button
+                        type="button"
+                        class={`${anchorClasses} ${nav.children.some((c) => isActive(c.href)) ? activeClasses : ""}`}
+                        aria-controls={`dropdown-${slugifyId(nav.label)}`}
+                        data-collapse-toggle={`dropdown-${slugifyId(nav.label)}`}
+                        data-sidebar-collapse-item=""
+                      >
+                        {nav.icon && <SimpleIcon name={nav.icon} class={svgClasses} />}
+                        <span
+                          class="ml-3 flex-1 whitespace-nowrap text-left"
+                          data-sidebar-collapse-hide=""
+                        >
+                          {nav.label}
+                        </span>
+                        <SimpleIcon
+                          name="chevron-right"
+                          class="h-4 w-4"
+                          data-sidebar-collapse-hide=""
+                        />
+                      </button>
+                      <ul
+                        id={`dropdown-${slugifyId(nav.label)}`}
+                        class="hidden space-y-2 py-2 pl-8"
+                      >
+                        {nav.children.map((child) => (
+                          <li>
+                            <a
+                              href={child.href}
+                              class={`${anchorClasses} ${isActive(child.href) ? activeClasses : ""}`}
+                              data-sidebar-collapse-subitem=""
+                              data-sidebar-collapse-hide=""
+                            >
+                              {child.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ) : (
+                    <li>
+                      <a
+                        href={nav.href}
+                        class={`${anchorClasses} ${isActive(nav.href) ? activeClasses : ""}`}
+                        data-sidebar-collapse-item=""
+                      >
+                        {nav.icon && <SimpleIcon name={nav.icon} class={svgClasses} />}
+                        <span
+                          data-sidebar-collapse-hide=""
+                          class="ml-3 flex-1 whitespace-nowrap text-left"
+                        >
+                          {nav.label}
+                        </span>
+                      </a>
+                    </li>
+                  )
+                )}
+              </>
+            );
+          }
+          return null;
+        })
       }
 
-      <!-- Dynamic Admin Features (from site-config.json) -->
+        {<!-- Dev Test (specific user - not in config) -->}
       {
-        currentUser &&
-          currentRole === "Admin" &&
-          adminNavItems.map((item) => (
-            <li>
-              <a
-                href={item.href}
-                class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`}
-                data-sidebar-collapse-item=""
-              >
-                {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
-                <span data-sidebar-collapse-hide="" class="ml-3 flex-1 whitespace-nowrap text-left">
-                  {item.label}
-                </span>
-              </a>
-            </li>
-          ))
-      }
-
-      <!-- Admin-Only: Send Notifications -->
-      {
-        currentRole === "Admin" && (
-          <li>
-            <a
-              href="/admin/notifications"
-              class={`${anchorClasses} ${isActive("/admin/notifications") ? activeClasses : ""}`}
-              data-sidebar-collapse-item=""
-            >
-              <SimpleIcon name="zap" class={svgClasses} />
-              <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide="">
-                Send Notifications
-              </span>
-            </a>
-          </li>
-        )
-      }
-
-      <!-- Dev Test (Specific user) -->
-      {
-        currentRole === "Admin" && currentUser.email === "tom@tomsens.com" && (
+        currentUser && currentRole === "Admin" && currentUser.email === "tom@tomsens.com" && (
           <li>
             <a
               href="/admin/update-test"
@@ -343,120 +258,52 @@ const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
           </li>
         )
       }
+    </ul>
 
-      <!-- Dynamic Tools Features -->
+    <!-- Fixed footer with social icons -->
+    <div
+      class="color-border border-t px-3 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.07)] dark:shadow-[0_-4px_6px_-1px_rgba(255,255,255,0.05)]"
+    >
       {
-        currentUser && currentRole === "Admin" && toolsNavItems.length > 0 && (
-          <li class="pb-2 pt-4">
-            <span class="text-xs uppercase text-gray-500 dark:text-gray-400">Tools</span>
-          </li>
+        socialNetworks.length > 0 ? (
+          <div data-sidebar-collapse-hide="">
+            <Socials
+              links={socialNetworks}
+              variant="minimal"
+              size="md"
+              colorScheme="default"
+              gap="md"
+              className="justify-center"
+            />
+          </div>
+        ) : (
+          <div
+            class="flex items-center justify-center text-xs text-gray-400 dark:text-gray-500"
+            data-sidebar-collapse-hide=""
+          >
+            <span>No social links configured</span>
+          </div>
         )
       }
-      {
-        currentUser &&
-          currentRole === "Admin" &&
-          toolsNavItems.map((item) =>
-            item.children?.length ? (
-              <li>
-                <button
-                  type="button"
-                  class={`${anchorClasses} ${item.children.some((c) => isActive(c.href)) ? activeClasses : ""}`}
-                  aria-controls={`dropdown-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
-                  data-collapse-toggle={`dropdown-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
-                  data-sidebar-collapse-item=""
-                >
-                  {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
-                  <span
-                    class="ml-3 flex-1 whitespace-nowrap text-left"
-                    data-sidebar-collapse-hide=""
-                  >
-                    {item.label}
-                  </span>
-                  <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
-                </button>
-                <ul
-                  id={`dropdown-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
-                  class="hidden space-y-2 py-2 pl-8"
-                >
-                  {item.children.map((child) => (
-                    <li>
-                      <a
-                        href={child.href}
-                        class={`${anchorClasses} ${isActive(child.href) ? activeClasses : ""}`}
-                        data-sidebar-collapse-subitem=""
-                        data-sidebar-collapse-hide=""
-                      >
-                        {child.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ) : (
-              <li>
-                <a
-                  href={item.href}
-                  class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`}
-                  data-sidebar-collapse-item=""
-                >
-                  {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
-                  <span
-                    data-sidebar-collapse-hide=""
-                    class="ml-3 flex-1 whitespace-nowrap text-left"
-                  >
-                    {item.label}
-                  </span>
-                </a>
-              </li>
-            )
-          )
-      }
-    </ul>
-  </div>
-
-  <!-- Fixed footer with social icons -->
-  <div
-    class="color-border border-t px-3 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.07)] dark:shadow-[0_-4px_6px_-1px_rgba(255,255,255,0.05)]"
-  >
-    {
-      socialNetworks.length > 0 ? (
-        <div data-sidebar-collapse-hide="">
-          <Socials
-            links={socialNetworks}
-            variant="minimal"
-            size="md"
-            colorScheme="default"
-            gap="md"
-            className="justify-center"
-          />
-        </div>
-      ) : (
-        <div
-          class="flex items-center justify-center text-xs text-gray-400 dark:text-gray-500"
-          data-sidebar-collapse-hide=""
-        >
-          <span>No social links configured</span>
-        </div>
-      )
-    }
-    <!-- Collapsed state: show single icon -->
-    <div class="hidden items-center justify-center" data-sidebar-collapse-show="">
-      <span class="text-gray-500 dark:text-gray-400">
-        <svg
-          class="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-          ></path>
-        </svg>
-      </span>
+      <!-- Collapsed state: show single icon -->
+      <div class="hidden items-center justify-center" data-sidebar-collapse-show="">
+        <span class="text-gray-500 dark:text-gray-400">
+          <svg
+            class="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+            ></path>
+          </svg>
+        </span>
+      </div>
     </div>
   </div>
 </aside>

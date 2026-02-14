@@ -115,7 +115,7 @@
 (window as any).adjustDueDate = async function (projectId: number, hours: number) {
   console.log(`🎯 [ADJUST] adjustDueDate called: projectId=${projectId}, hours=${hours}`);
 
-  const input = document.getElementById(`due-date-${projectId}`) as HTMLInputElement;
+  const input = document.getElementById(`stepper-${projectId}`) as HTMLInputElement;
   if (!input) {
     console.error(`❌ [ADJUST] Input not found for project ${projectId}`);
     return;

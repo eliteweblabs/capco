@@ -7,13 +7,13 @@
 import App from "../components/ui/App.astro";
 import VapiChatInterface from "../components/chat/VapiChatInterface.astro";
 import MultiStepForm from "../components/form/MultiStepForm.astro";
-import { getContactFormConfig } from "../lib/forms/contact-form-config";
+import { getContactFormConfig } from "../lib/forms/form-config-from-site";
 import { checkAuth } from "../lib/auth";
 import { globalCompanyData } from "../pages/api/global/global-company-data";
 
 const { currentUser } = await checkAuth(Astro.cookies);
 const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
-const contactFormConfig = getContactFormConfig(globalCompanyName, virtualAssistantName);
+const contactFormConfig = await getContactFormConfig(globalCompanyName, virtualAssistantName);
 ---
 
 <App title={`Contact ${globalCompanyName}`} {currentUser} mask="top-left">
@@ -336,6 +336,16 @@ const contactFormConfig = getContactFormConfig(globalCompanyName, virtualAssista
 
     // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // Typewriter runs on DOMContentLoaded but form was hidden; TypeIt uses waitUntilVisible.
+    // Re-trigger typewriter scoped to form-container so we don't trigger the wrong form (e.g. login).
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (typeof window.triggerActiveStepTypewriter === "function") {
+          window.triggerActiveStepTypewriter(document.getElementById("form-container"));
+        }
+      });
+    });
   }
 
   function showChoice() {

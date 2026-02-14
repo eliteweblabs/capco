@@ -6,7 +6,10 @@ import StaffSelectTooltip from "../form/StaffSelectTooltip.astro";
 import LiveRelativeTime from "../common/LiveRelativeTime.astro";
 import Stepper from "../common/Stepper.astro";
 import SlideToggle from "../common/SlideToggle.astro";
+import type { ProjectListColumnConfig } from "../../lib/project-list-table-config";
+
 interface Props {
+  columns: ProjectListColumnConfig[];
   project: {
     punchlistComplete?: number;
     punchlistCount?: number;
@@ -83,6 +86,7 @@ interface Props {
 }
 
 const {
+  columns = [],
   project,
   currentUser,
   statusData,
@@ -283,212 +287,255 @@ const statusColor = currentStatusColor || "gray";
   style={isHidden ? "display: none;" : undefined}
 >
   {
-    currentRole !== "Client" && (
-      <td class="px-4 py-2">
-        <div class="align-center flex">
-          <DeleteConfirmButton
-            id={`delete-project-${project.id}`}
-            size="xs"
-            variant="icon"
-            dataAttributes={{
-              "data-project-id": project.id,
-            }}
-          />
-        </div>
-      </td>
-    )
-  }
-  <th scope="row" class="whitespace-nowrap px-4 py-2 text-center"
-    ><a href={`/project/${project.id}`} class="relative font-medium">
-      <SimpleIcon name="edit" size="xs" class="text-gray-600" />
-    </a></th
-  >
-  <th scope="row" class="whitespace-nowrap px-4 py-2 text-center"
-    ><a href={`/project/${project.id}`} class="relative block min-w-0 truncate font-medium"
-      >{project.address || project.title || "No address"}
+    columns.length > 0
+      ? columns.map((col) => {
+          const baseCellClass = "whitespace-nowrap px-4 py-2";
+          const centerClass = `${baseCellClass} text-center`;
 
-      {
-        currentRole !== "Client" && projectAlertIconCount > 0 && (
-          <span class={`font-large absolute right-0 top-0 z-1 mb-4 cursor-pointer`}>
-            {Array.from({ length: projectAlertIconCount }, (_, i) => (
-              <svg
-                class="color-background block h-3 w-3 rounded-full bg-gray-100 text-red-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            ))}
-          </span>
-        )
-      }
-    </a></th
-  >
-
-  {
-    currentRole !== "Client" && (
-      <td class="whitespace-nowrap px-4 py-2 text-center">
-        {project?.authorProfile?.companyName || "Unknown Author"}
-      </td>
-    )
-  }
-
-  <td class="whitespace-nowrap px-4 py-2 text-center">
-    <a
-      href={`/project/${project.id}?status=${currentStatusTab}`}
-      style={`background-color: ${statusColor};`}
-      class="block w-full rounded-sm px-2.5 text-center text-black"
-      data-project-id={project.id}
-      data-status={project.status}>{currentStatusName || "Unknown Status"}</a
-    >
-  </td>
-  {
-    currentRole !== "Client" && (
-      <td class="whitespace-nowrap px-4 py-2 text-center">
-        <div class="flex justify-center">
-          <SlideToggle
-            id={`featured-toggle-${project.id}`}
-            checked={project.featured === true}
-            size="md"
-            color="warning"
-            class="featured-toggle"
-            dataAttributes={{
-              "data-project-id": project.id,
-              "data-meta": "featured",
-            }}
-          />
-        </div>
-      </td>
-    )
-  }
-  <td class="block min-w-0 overflow-hidden whitespace-nowrap px-4 py-2 text-center">
-    <div class="flex justify-center">
-      <a href={`/project/${project.id}?status=files`} class="text-sm text-gray-600">
-        {
-          project.projectFiles?.length && project.projectFiles?.length > 0 ? (
-            <div
-              class="flex flex-wrap items-center gap-2"
-              id="project-files-{project.id}"
-              data-project-files={JSON.stringify(project.projectFiles || [])}
-            />
-          ) : (
-            <span class="text-gray-600">No files</span>
-          )
-        }
-      </a>
-    </div>
-  </td>
-  {
-    currentRole !== "Client" && (
-      <td class="whitespace-nowrap px-4 py-2 font-medium">
-        <StaffSelectTooltip
-          id={`assign-staff-slot-machine-${project.id}`}
-          title="Assign Staff Member"
-          options={staffOptions}
-          selectedValue={project?.assignedToId || ""}
-          buttonType="icon"
-          buttonText={(() => {
-            if (!project?.assignedToId) return "Unassigned";
-            const assignedStaff = staffOptions.find(
-              (staff: any) => staff.value === project.assignedToId
+          if (col.type === "delete") {
+            return (
+              <td class="px-4 py-2">
+                <div class="align-center flex">
+                  <DeleteConfirmButton
+                    id={`delete-project-${project.id}`}
+                    size="xs"
+                    variant="icon"
+                    dataAttributes={{ "data-project-id": project.id }}
+                  />
+                </div>
+              </td>
             );
-            return assignedStaff?.label || "Unknown Staff";
-          })()}
-          buttonClass="w-8 h-8 rounded-full border-2 block items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
-          buttonVariant="anchor"
-          placeholder=""
-          saveApiEndpoint="utils/assign-staff"
-          showCloseButton={true}
-          showCancelButton={true}
-          project={project}
-          showNotification={true}
-          icon="user"
-          component="UserIcon"
-          componentProps={{
-            users: [project?.assignedToProfile],
-          }}
-          searchText="Search staff..."
-          currentUser={currentUser}
-          globalInputClasses={globalInputClasses}
-          updateCallback={`updateStaffIcon_${project.id}`}
-        />
-      </td>
-    )
-  }
-  <td class="whitespace-nowrap px-4 py-2 text-center font-medium">
-    <div class="flex">
-      <span class="text-xs font-medium text-gray-500 dark:text-gray-400"
-        >{((project.status / 220) * 100).toFixed(0)}%</span
-      >
-    </div>
-    <div class="w-full dark:bg-gray-700">
-      <div style={`width: ${((project.status / 220) * 100).toFixed(0)}%`}></div>
-    </div>
-  </td>
-  <td class="whitespace-nowrap px-4 py-2 font-medium">
-    <div class="flex items-center gap-1">
-      <span
-        data-refresh="punchlistComplete"
-        data-project-id={project.id}
-        data-meta="punchlistComplete"
-        data-meta-value={project.punchlistComplete || 0}
-      >
-        {project.punchlistComplete || 0}
-      </span>
-      <span class="text-gray-400">/</span>
-      <span
-        data-refresh="punchlistCount"
-        data-project-id={project.id}
-        data-meta="punchlistCount"
-        data-meta-value={project.punchlistCount || 0}
-      >
-        {project.punchlistCount || 0}
-      </span>
-    </div>
-  </td>
-  <td class="whitespace-nowrap px-4 py-2 text-center font-medium">
-    <span
-      data-refresh="createdAt"
-      data-project-id={project.id}
-      data-meta="createdAt"
-      data-meta-value={project.createdAt}
-    >
-      {
-        formatElapsedTime({
-          total_seconds: (Date.now() - new Date(project.createdAt).getTime()) / 1000,
+          }
+
+          if (col.type === "edit") {
+            return (
+              <th scope="row" class={`${centerClass} font-medium`}>
+                <a href={`/project/${project.id}`} class="relative font-medium">
+                  <SimpleIcon name="edit" size="xs" class="text-gray-600" />
+                </a>
+              </th>
+            );
+          }
+
+          if (col.type === "text" && col.field === "address") {
+            return (
+              <th scope="row" class={`${centerClass} font-medium`}>
+                <a
+                  href={`/project/${project.id}`}
+                  class="relative block min-w-0 truncate font-medium"
+                >
+                  {project.address || project.title || "No address"}
+                  {currentRole !== "Client" && projectAlertIconCount > 0 && (
+                    <span class="font-large absolute right-0 top-0 z-1 mb-4 cursor-pointer">
+                      {Array.from({ length: projectAlertIconCount }, () => (
+                        <svg
+                          class="color-background block h-3 w-3 rounded-full bg-gray-100 text-red-500"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      ))}
+                    </span>
+                  )}
+                </a>
+              </th>
+            );
+          }
+
+          if (col.type === "company") {
+            return (
+              <td class={centerClass}>{project?.authorProfile?.companyName || "Unknown Author"}</td>
+            );
+          }
+
+          if (col.type === "status") {
+            return (
+              <td class={centerClass}>
+                <a
+                  href={`/project/${project.id}?status=${currentStatusTab}`}
+                  style={`background-color: ${statusColor};`}
+                  class="block w-full rounded-sm px-2.5 text-center text-black"
+                  data-project-id={project.id}
+                  data-status={project.status}
+                >
+                  {currentStatusName || "Unknown Status"}
+                </a>
+              </td>
+            );
+          }
+
+          if (col.type === "featured") {
+            return (
+              <td class={centerClass}>
+                <div class="flex justify-center">
+                  <SlideToggle
+                    id={`featured-toggle-${project.id}`}
+                    checked={project.featured === true}
+                    size="md"
+                    color="warning"
+                    class="featured-toggle"
+                    dataAttributes={{
+                      "data-project-id": project.id,
+                      "data-meta": "featured",
+                    }}
+                  />
+                </div>
+              </td>
+            );
+          }
+
+          if (col.type === "files") {
+            return (
+              <td class="block min-w-0 overflow-hidden whitespace-nowrap px-4 py-2 text-center">
+                <div class="flex justify-center">
+                  <a href={`/project/${project.id}?status=files`} class="text-sm text-gray-600">
+                    {project.projectFiles?.length && project.projectFiles?.length > 0 ? (
+                      <div
+                        class="flex flex-wrap items-center gap-2"
+                        id={`project-files-${project.id}`}
+                        data-project-files={JSON.stringify(project.projectFiles || [])}
+                      />
+                    ) : (
+                      <span class="text-gray-600">No files</span>
+                    )}
+                  </a>
+                </div>
+              </td>
+            );
+          }
+
+          if (col.type === "assigned") {
+            return (
+              <td class="whitespace-nowrap px-4 py-2 font-medium">
+                <StaffSelectTooltip
+                  id={`assign-staff-slot-machine-${project.id}`}
+                  title="Assign Staff Member"
+                  options={staffOptions}
+                  selectedValue={project?.assignedToId || ""}
+                  buttonType="icon"
+                  buttonText={
+                    !project?.assignedToId
+                      ? "Unassigned"
+                      : staffOptions.find((s: any) => s.value === project.assignedToId)?.label ||
+                        "Unknown Staff"
+                  }
+                  buttonClass="w-8 h-8 rounded-full border-2 block items-center rounded-full p-2 text-center text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
+                  buttonVariant="anchor"
+                  placeholder=""
+                  saveApiEndpoint="utils/assign-staff"
+                  showCloseButton={true}
+                  showCancelButton={true}
+                  project={project}
+                  showNotification={true}
+                  icon="user"
+                  component="UserIcon"
+                  componentProps={{ users: [project?.assignedToProfile] }}
+                  searchText="Search staff..."
+                  currentUser={currentUser}
+                  globalInputClasses={globalInputClasses}
+                  updateCallback={`updateStaffIcon_${project.id}`}
+                />
+              </td>
+            );
+          }
+
+          if (col.type === "progress") {
+            const pct = ((project.status / 220) * 100).toFixed(0);
+            return (
+              <td class={`${centerClass} font-medium`}>
+                <div class="flex">
+                  <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{pct}%</span>
+                </div>
+                <div class="w-full dark:bg-gray-700">
+                  <div style={`width: ${pct}%`} />
+                </div>
+              </td>
+            );
+          }
+
+          if (col.type === "checklist") {
+            return (
+              <td class="whitespace-nowrap px-4 py-2 font-medium">
+                <div class="flex items-center gap-1">
+                  <span
+                    data-refresh="punchlistComplete"
+                    data-project-id={project.id}
+                    data-meta="punchlistComplete"
+                    data-meta-value={project.punchlistComplete || 0}
+                  >
+                    {project.punchlistComplete || 0}
+                  </span>
+                  <span class="text-gray-400">/</span>
+                  <span
+                    data-refresh="punchlistCount"
+                    data-project-id={project.id}
+                    data-meta="punchlistCount"
+                    data-meta-value={project.punchlistCount || 0}
+                  >
+                    {project.punchlistCount || 0}
+                  </span>
+                </div>
+              </td>
+            );
+          }
+
+          if (col.type === "elapsed") {
+            return (
+              <td class={`${centerClass} font-medium`}>
+                <span
+                  data-refresh="createdAt"
+                  data-project-id={project.id}
+                  data-meta="createdAt"
+                  data-meta-value={project.createdAt}
+                >
+                  {formatElapsedTime({
+                    total_seconds: (Date.now() - new Date(project.createdAt).getTime()) / 1000,
+                  })}
+                </span>
+              </td>
+            );
+          }
+
+          if (col.type === "timeSince") {
+            return (
+              <td class="whitespace-nowrap px-4 py-2">
+                <span
+                  data-live-timestamp={project.updatedAt}
+                  data-project-id={project.id}
+                  class="live-time-display"
+                >
+                  {timeSinceUpdate}
+                </span>
+              </td>
+            );
+          }
+
+          if (col.type === "dueDate") {
+            return (
+              <td class={centerClass}>
+                <Stepper
+                  entityId={project.id}
+                  value={project?.dueDate ?? ""}
+                  showStepper={currentRole === "Admin" || currentRole === "Staff"}
+                  onIncrement={`adjustDueDate(${project.id}, 1)`}
+                  onDecrement={`adjustDueDate(${project.id}, -1)`}
+                  meta="dueDate"
+                  refresh="dueDate"
+                  placeholder=""
+                />
+              </td>
+            );
+          }
+
+          return <td class={centerClass}>—</td>;
         })
-      }
-    </span>
-  </td>
-  <td class="whitespace-nowrap px-4 py-2">
-    <!-- <div
-        class="align-center inline-flex rounded-md border bg-gray-100 dark:border-gray-600 dark:bg-gray-700"
-      > -->
-    <span
-      data-live-timestamp={project.updatedAt}
-      data-project-id={project.id}
-      class="live-time-display"
-    >
-      {timeSinceUpdate}
-    </span>
-    <!-- </div> -->
-  </td>
-  <td class="whitespace-nowrap px-4 py-2 text-center">
-    <Stepper
-      entityId={project.id}
-      value={project?.dueDate ?? ""}
-      showStepper={currentRole === "Admin" || currentRole === "Staff"}
-      onIncrement={`adjustDueDate(${project.id}, 1)`}
-      onDecrement={`adjustDueDate(${project.id}, -1)`}
-      meta="dueDate"
-      refresh="dueDate"
-      placeholder=""
-    />
-  </td>
+      : null
+  }
 
   <script>
     // Set up a global listener for all deleteConfirmed events (runs once)

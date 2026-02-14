@@ -235,12 +235,12 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     const dropdownWrap = document.querySelector(`[data-staff-dropdown-id="${id}"]`);
     const dropdownPanel = dropdownWrap?.querySelector("[data-staff-dropdown-panel]");
 
-    function closeDropdown() {
-      if (dropdownPanel) {
-        dropdownPanel.classList.add("hidden");
-        dropdownPanel.innerHTML = "";
-      }
-    }
+    // function closeDropdown() {
+    //   if (dropdownPanel) {
+    //     dropdownPanel.classList.add("hidden");
+    //     dropdownPanel.innerHTML = "";
+    //   }
+    // }
 
     // Set up click handler: open dropdown, inject content, run slot machine in panel
     trigger.addEventListener("click", async function (e) {
@@ -276,7 +276,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         showCancelButton: showCancelButton,
         globalInputClasses: globalInputClasses,
         containerElement: dropdownPanel || undefined,
-        onCloseDropdown: closeDropdown,
+        // onCloseDropdown: closeDropdown,
         onSelect: (value, label) => {
           if (hiddenInput) hiddenInput.value = value;
           if (saveApiEndpoint) saveToAPI(saveApiEndpoint, value, label, projectId);
@@ -297,15 +297,15 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     });
 
     // Click outside to close dropdown
-    document.addEventListener("click", function (e) {
-      if (
-        !dropdownWrap?.contains(e.target) &&
-        dropdownPanel &&
-        !dropdownPanel.classList.contains("hidden")
-      ) {
-        closeDropdown();
-      }
-    });
+    // document.addEventListener("click", function (e) {
+    //   if (
+    //     !dropdownWrap?.contains(e.target) &&
+    //     dropdownPanel &&
+    //     !dropdownPanel.classList.contains("hidden")
+    //   ) {
+    //     closeDropdown();
+    //   }
+    // });
 
     // // Check for URL parameters to auto-open this specific picker
     // function checkUrlParameters() {
@@ -599,8 +599,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
         // Close the modal/dropdown after success
         setTimeout(() => {
-          if (onCloseDropdown) {
-            onCloseDropdown();
+          if (closeCallback && typeof closeCallback === "function") {
+            closeCallback();
           } else {
             const modalEl = document.querySelector(`[data-modal-backdrop="${id}-modal"]`);
             if (modalEl) modalEl.click();
@@ -650,7 +650,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       showCancelButton = true,
       onSelect,
       containerElement = null,
-      onCloseDropdown = null,
+      // onCloseDropdown = null,
       enableSearch = false,
       fetchApiEndpoint,
       searchText,
@@ -1733,7 +1733,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
           document.body.style.overflow = "";
         }
       }
-      if (onCloseDropdown) onCloseDropdown();
+      // if (onCloseDropdown) onCloseDropdown();
     }
 
     // Close modal when clicking outside
