@@ -58,7 +58,12 @@ import LayoutFullScreen from "../../components/layouts/LayoutFullscreen.astro";
   const capturedError = initialUrlParams.get("error") || initialHashParams.get("error");
   const capturedErrorDescription =
     initialUrlParams.get("error_description") || initialHashParams.get("error_description");
-  const capturedRedirect = initialUrlParams.get("redirect") || initialHashParams.get("redirect");
+  let capturedRedirect = initialUrlParams.get("redirect") || initialHashParams.get("redirect") || "/project/dashboard";
+  // Never redirect to auth pages (prevents loop)
+  const authPaths = ["/auth/login", "/auth/register", "/auth/callback", "/auth/forgot-password", "/auth/reset"];
+  if (authPaths.some((p) => capturedRedirect === p || capturedRedirect.startsWith(p + "/"))) {
+    capturedRedirect = "/project/dashboard";
+  }
 
   console.log("[AUTH-CALLBACK] IMMEDIATE CAPTURE on page load:");
   console.log("[AUTH-CALLBACK] Initial URL:", initialUrl);

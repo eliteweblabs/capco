@@ -190,6 +190,9 @@ export interface FormStepConfig {
   response?: boolean;
 }
 
+/** Form layout: standard = single-page form, multi-step = step-by-step wizard */
+export type FormLayout = "standard" | "multi-step";
+
 export interface MultiStepFormConfig {
   formId: string;
   formAction: string; // API endpoint
@@ -197,6 +200,8 @@ export interface MultiStepFormConfig {
   totalSteps: number;
   progressBar?: boolean; // Show progress bar
   registerUser?: boolean; // If true, require unique email and redirect to login if exists
+  /** Which form renderer to use: standard (single-page) or multi-step (wizard). Default: multi-step */
+  layout?: FormLayout;
   /** Auth forms only: post-login redirect options */
   authRedirect?: Array<{ name: string; url: string }>;
   // Button templates - defaults for all buttons

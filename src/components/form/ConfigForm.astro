@@ -1,0 +1,31 @@
+---
+/**
+ * ConfigForm - Routes MultiStepFormConfig to the appropriate form renderer.
+ * Use StandardForm (single-page) or MultiStepForm (step-by-step) based on config.layout.
+ *
+ * Add new renderers in the future by extending the layout type and this switch.
+ *
+ * Example: <ConfigForm config={loginFormConfig} initialData={{ redirect: "/dashboard" }} />
+ */
+import type { MultiStepFormConfig, FormLayout } from "../../lib/multi-step-form-config";
+import StandardForm from "./StandardForm.astro";
+import MultiStepForm from "./MultiStepForm.astro";
+
+interface Props {
+  config: MultiStepFormConfig;
+  initialData?: Record<string, any>;
+  containerClass?: string;
+}
+
+const { config, initialData = {}, containerClass } = Astro.props;
+
+const layout: FormLayout = config.layout || "multi-step";
+---
+
+{
+  layout === "standard" ? (
+    <StandardForm config={config} initialData={initialData} containerClass={containerClass} />
+  ) : (
+    <MultiStepForm config={config} initialData={initialData} containerClass={containerClass} />
+  )
+}

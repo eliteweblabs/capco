@@ -33,9 +33,43 @@ const protectedAPIRoutes = [
   "/api/upload",
 ];
 const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify"];
+/** Auth pages - never redirect these, let them render (avoids loops) */
+const authPageRoutes = ["/auth/login", "/auth/register", "/auth/callback", "/auth/forgot-password", "/auth/reset", "/auth/otp-login"];
+/** Public routes - homepage and explicitly public paths. Never redirect to login. */
+const publicRoutes = ["/", "/en", "/es", "/contact", "/contact-hybrid", "/mep-form", "/setup", "/404", "/500", "/voice-assistant", "/voice-assistant-vapi"];
 
 export const onRequest = defineMiddleware(
   async ({ locals, url, cookies, redirect, request }, next) => {
+    // Debug: trace redirect issues (console.warn survives production)
+    if (url.pathname === "/" || url.pathname === "") {
+      console.warn("[---MIDDLEWARE] Root path:", url.pathname, "-> allowing");
+    }
+
+    // OAuth code redirect: must happen before any page renders to avoid "response already sent" error
+    // When Google OAuth returns ?code= on a page (not /auth/callback or /api/auth/callback), send to API
+    const authCode = url.searchParams.get("code");
+    if (
+      authCode &&
+      !url.pathname.startsWith("/auth/callback") &&
+      !micromatch.isMatch(url.pathname, authCallbackRoutes)
+    ) {
+      return redirect(`/api/auth/callback?${url.searchParams.toString()}`);
+    }
+
+    // Auth pages: always pass through, no auth checks (prevents redirect loops)
+    if (authPageRoutes.some((p) => url.pathname === p || url.pathname.startsWith(p + "/"))) {
+      return next();
+    }
+
+    // Public routes: homepage, contact, etc. Never redirect to login.
+    const isPublic =
+      url.pathname === "/" ||
+      url.pathname === "" ||
+      publicRoutes.some((p) => url.pathname === p || url.pathname.startsWith(p + "/"));
+    if (isPublic) {
+      return next();
+    }
+
     // Force HTTPS redirect in production (Railway handles SSL termination)
     if (import.meta.env.PROD || process.env.NODE_ENV === "production") {
       const protocol = request.headers.get("x-forwarded-proto") || url.protocol;
@@ -101,7 +135,13 @@ export const onRequest = defineMiddleware(
       (locals as any).virtualAssistantName = companyData.virtualAssistantName;
     }
 
-    if (micromatch.isMatch(url.pathname, protectedRoutes)) {
+    // Only apply auth redirect for /dashboard and /project/* - use explicit checks to avoid false matches
+    const isProtectedPath =
+      url.pathname === "/dashboard" ||
+      url.pathname.startsWith("/dashboard/") ||
+      url.pathname.startsWith("/project/");
+    if (isProtectedPath) {
+      console.warn("[---MIDDLEWARE] Protected path:", url.pathname);
       const accessToken = cookies.get("sb-access-token");
       const refreshToken = cookies.get("sb-refresh-token");
 
@@ -113,6 +153,7 @@ export const onRequest = defineMiddleware(
       if (!accessToken || !refreshToken) {
         // If no standard tokens, check for custom session cookies
         if (!customSessionToken || !customUserEmail || !customUserId) {
+          console.warn("[---MIDDLEWARE] Redirect to login, path=" + url.pathname);
           return redirect("/auth/login");
         }
         // Custom session found, skip Supabase session validation

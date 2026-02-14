@@ -14,12 +14,7 @@ interface Props {
   onOpen?: string;
 }
 
-// Redirect to API callback only when code is on a page that shouldn't handle it
-// /auth/callback must render so client-side JS can exchange the code - do NOT redirect there
-const authCode = Astro.url.searchParams.get("code");
-if (authCode && !Astro.url.pathname.startsWith("/auth/callback")) {
-  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
-}
+// OAuth ?code= redirect is handled in middleware (before any page renders) to avoid "response already sent"
 
 const {
   currentUser,
@@ -36,10 +31,7 @@ const currentRole = currentUser?.profile?.role;
 import SimpleIcon from "../common/SimpleIcon.astro";
 import AssignedProjects from "../common/AssignedProjects.astro";
 import Dropdown from "./Dropdown.astro";
-import MultiStepForm from "../form/MultiStepForm.astro";
-import { getLoginFormConfig } from "../../lib/forms/form-config-from-site";
-
-const loginFormConfig = await getLoginFormConfig();
+import LoginForm from "../../features/forms/components/LoginForm.astro";
 ---
 
 <!-- Account dropdown: Flowbite data-popover-target on AuthIcon trigger -->
@@ -123,11 +115,7 @@ const loginFormConfig = await getLoginFormConfig();
         </div>
       </>
     ) : (
-      <MultiStepForm
-        config={loginFormConfig}
-        initialData={{ redirect: redirectUrl }}
-        containerClass="max-w-md"
-      />
+      <LoginForm />
     )
   }
 </Dropdown>
