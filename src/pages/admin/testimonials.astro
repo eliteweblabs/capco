@@ -18,7 +18,11 @@ if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
 
-const { data: profile } = await supabase.from("profiles").select("role").eq("id", currentUser.id).single();
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", currentUser.id)
+  .single();
 if (profile?.role !== "Admin") {
   return Astro.redirect("/dashboard");
 }
@@ -132,15 +136,15 @@ if (supabaseAdmin) {
           />
         </div>
         <div>
-          <label for="testimonial-quote" class="mb-2 block text-sm font-medium">Testimonial *</label>
+          <label for="testimonial-quote" class="mb-2 block text-sm font-medium">Testimonial *</label
+          >
           <textarea
             id="testimonial-quote"
             name="testimonial"
             rows="4"
             required
             class={globalInputClasses}
-            placeholder="Customer quote..."
-          />
+            placeholder="Customer quote..."></textarea>
         </div>
         <div>
           <label for="testimonial-name" class="mb-2 block text-sm font-medium">Name</label>
@@ -187,7 +191,11 @@ if (supabaseAdmin) {
   const testimonialsList = testimonials || [];
 
   function initTestimonials() {
-    if (typeof window === "undefined" || !window.location.pathname.startsWith("/admin/testimonials")) return;
+    if (
+      typeof window === "undefined" ||
+      !window.location.pathname.startsWith("/admin/testimonials")
+    )
+      return;
 
     const formContainer = document.getElementById("testimonial-editor-form-container");
     const formPool = document.getElementById("testimonial-editor-form-pool");
@@ -207,7 +215,9 @@ if (supabaseAdmin) {
     }
 
     function getTriggerRow(slotId) {
-      return document.querySelector(`tr.testimonial-accordion-trigger[data-testimonial-slot="${slotId}"]`);
+      return document.querySelector(
+        `tr.testimonial-accordion-trigger[data-testimonial-slot="${slotId}"]`
+      );
     }
 
     function closeEditor() {
@@ -247,7 +257,11 @@ if (supabaseAdmin) {
       detailRow?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
-    if (closeBtn) closeBtn.addEventListener("click", (e) => { e.preventDefault(); closeEditor(); });
+    if (closeBtn)
+      closeBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        closeEditor();
+      });
 
     document.querySelectorAll(".edit-testimonial-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -265,9 +279,11 @@ if (supabaseAdmin) {
           const imageInp = document.getElementById("testimonial-image");
           if (idInp && idInp instanceof HTMLInputElement) idInp.value = t.id;
           if (titleInp && titleInp instanceof HTMLInputElement) titleInp.value = t.title || "";
-          if (quoteInp && quoteInp instanceof HTMLTextAreaElement) quoteInp.value = t.testimonial || "";
+          if (quoteInp && quoteInp instanceof HTMLTextAreaElement)
+            quoteInp.value = t.testimonial || "";
           if (nameInp && nameInp instanceof HTMLInputElement) nameInp.value = t.name || "";
-          if (companyInp && companyInp instanceof HTMLInputElement) companyInp.value = t.company || "";
+          if (companyInp && companyInp instanceof HTMLInputElement)
+            companyInp.value = t.company || "";
           if (imageInp && imageInp instanceof HTMLInputElement) imageInp.value = t.image || "";
           if (editorTitle) editorTitle.textContent = "Edit Testimonial";
         }
@@ -278,7 +294,8 @@ if (supabaseAdmin) {
     document.querySelectorAll("tr.testimonial-accordion-trigger").forEach((triggerRow) => {
       triggerRow.addEventListener("click", (e) => {
         const tgt = e.target instanceof Element ? e.target : null;
-        if (tgt?.closest(".edit-testimonial-btn, .delete-confirm-btn, .delete-confirm-wrapper")) return;
+        if (tgt?.closest(".edit-testimonial-btn, .delete-confirm-btn, .delete-confirm-wrapper"))
+          return;
         const slotId = triggerRow.getAttribute("data-testimonial-slot");
         if (!slotId) return;
         if (openSlotId === slotId) {
@@ -303,9 +320,11 @@ if (supabaseAdmin) {
           const imageInp = document.getElementById("testimonial-image");
           if (idInp && idInp instanceof HTMLInputElement) idInp.value = t.id;
           if (titleInp && titleInp instanceof HTMLInputElement) titleInp.value = t.title || "";
-          if (quoteInp && quoteInp instanceof HTMLTextAreaElement) quoteInp.value = t.testimonial || "";
+          if (quoteInp && quoteInp instanceof HTMLTextAreaElement)
+            quoteInp.value = t.testimonial || "";
           if (nameInp && nameInp instanceof HTMLInputElement) nameInp.value = t.name || "";
-          if (companyInp && companyInp instanceof HTMLInputElement) companyInp.value = t.company || "";
+          if (companyInp && companyInp instanceof HTMLInputElement)
+            companyInp.value = t.company || "";
           if (imageInp && imageInp instanceof HTMLInputElement) imageInp.value = t.image || "";
           if (editorTitle) editorTitle.textContent = "Edit Testimonial";
         }
@@ -323,11 +342,18 @@ if (supabaseAdmin) {
       const imageInp = document.getElementById("testimonial-image");
       const data = {
         id: idInp?.value || undefined,
-        title: (titleInp && titleInp instanceof HTMLInputElement ? titleInp.value : "").trim() || null,
-        testimonial: (quoteInp && quoteInp instanceof HTMLTextAreaElement ? quoteInp.value : "").trim(),
+        title:
+          (titleInp && titleInp instanceof HTMLInputElement ? titleInp.value : "").trim() || null,
+        testimonial: (quoteInp && quoteInp instanceof HTMLTextAreaElement
+          ? quoteInp.value
+          : ""
+        ).trim(),
         name: (nameInp && nameInp instanceof HTMLInputElement ? nameInp.value : "").trim() || null,
-        company: (companyInp && companyInp instanceof HTMLInputElement ? companyInp.value : "").trim() || null,
-        image: (imageInp && imageInp instanceof HTMLInputElement ? imageInp.value : "").trim() || null,
+        company:
+          (companyInp && companyInp instanceof HTMLInputElement ? companyInp.value : "").trim() ||
+          null,
+        image:
+          (imageInp && imageInp instanceof HTMLInputElement ? imageInp.value : "").trim() || null,
       };
       if (!data.testimonial) {
         if (window.showError) window.showError("Validation", "Testimonial text is required", 0);
@@ -342,7 +368,8 @@ if (supabaseAdmin) {
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error || "Save failed");
-        if (window.showSuccess) window.showSuccess("Saved", "Testimonial saved. Reloading...", 2000);
+        if (window.showSuccess)
+          window.showSuccess("Saved", "Testimonial saved. Reloading...", 2000);
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Save failed";
@@ -363,10 +390,12 @@ if (supabaseAdmin) {
           const err = await res.json();
           throw new Error(err.error || "Failed to update order");
         }
-        if (window.showSuccess) window.showSuccess("Order Updated", "Testimonial order saved", 2000);
+        if (window.showSuccess)
+          window.showSuccess("Order Updated", "Testimonial order saved", 2000);
       } catch (err) {
         console.error("Reorder failed:", err);
-        if (window.showError) window.showError("Save Failed", "Failed to save order. Reloading...", 3000);
+        if (window.showError)
+          window.showError("Save Failed", "Failed to save order. Reloading...", 3000);
         setTimeout(() => location.reload(), 1000);
       }
     };

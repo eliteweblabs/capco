@@ -103,11 +103,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       data = result.data;
       error = result.error;
     } else {
-      const result = await supabaseAdmin
-        .from("testimonials")
-        .insert(payload)
-        .select()
-        .single();
+      const result = await supabaseAdmin.from("testimonials").insert(payload).select().single();
       data = result.data;
       error = result.error;
     }
@@ -219,10 +215,10 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const errors = results.filter((r) => r.error);
 
     if (errors.length > 0) {
-      return new Response(
-        JSON.stringify({ error: "Reorder failed", details: errors }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Reorder failed", details: errors }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ success: true, message: "Order updated" }), {

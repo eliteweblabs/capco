@@ -159,12 +159,7 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      window.showNotice(
-        "info",
-        "Creating User...",
-        "Please wait while we create the user.",
-        5000
-      );
+      window.showNotice("info", "Creating User...", "Please wait while we create the user.", 5000);
 
       // Get form data for validation
       const formData = new FormData(form);
@@ -175,9 +170,7 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
       // Get SMS fields
       const smsAlertsCheckbox = document.getElementById("sms-alerts-phone");
       const smsAlerts = smsAlertsCheckbox?.checked || false;
-      const mobileCarrierInput = document.getElementById(
-        "mobile-carrier-phone-value"
-      );
+      const mobileCarrierInput = document.getElementById("mobile-carrier-phone-value");
       const mobileCarrier = mobileCarrierInput?.value?.trim() || "";
 
       const passwordValue = formData.get("password")?.toString()?.trim();
@@ -212,21 +205,15 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
             "Please fill in all required fields.",
             5000
           );
-        } else if (window.showNotice) {
-          window.showNotice("error", "Validation Error", "Please fill in all required fields.");
         }
         return;
       }
 
       // Validate email format using global function
-      const emailError = window.validateEmail
-        ? window.validateEmail(userData.email)
-        : null;
+      const emailError = window.validateEmail ? window.validateEmail(userData.email) : null;
       if (emailError) {
         if (window.showNotice) {
           window.showNotice("error", "Validation Error", emailError, 5000);
-        } else if (window.showNotice) {
-          window.showNotice("error", "Validation Error", emailError);
         }
         return;
       }
@@ -307,9 +294,6 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
           // Show error notification
           if (window.showNotice) {
             window.showNotice(errorTitle, errorMessage, "error", errorDuration);
-          } else if (window.showNotice) {
-            // Fallback to modal
-            window.showNotice("error", errorTitle, errorMessage);
           }
         }
       } catch (error) {
@@ -320,12 +304,6 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
             "Network error. Please check your connection and try again.",
             "error",
             5000
-          );
-        } else if (window.showNotice) {
-          window.showNotice(
-            "Network Error",
-            "Network error. Please check your connection and try again.",
-            "error"
           );
         }
       } finally {
