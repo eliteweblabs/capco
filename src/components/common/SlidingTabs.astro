@@ -42,7 +42,7 @@ const {
   compact = false,
   showTooltips = false,
   currentUser,
-} = Astro.props as Props;
+} = Astro.props;
 
 // Filter items based on clientHide parameter
 const filteredItems = items.filter((item) => {
@@ -80,7 +80,7 @@ const filteredItems = items.filter((item) => {
       const button = (
         <Button
           id={item.id}
-          variant={item.variant as any}
+          variant={item.variant}
           size="sm"
           data-index={index}
           class={compact ? "px-4 py-2" : "px-5 py-2.5"}
@@ -109,7 +109,7 @@ const filteredItems = items.filter((item) => {
 
 <script>
   // Generic sliding tabs - works with any nav that has the right structure
-  function initializeSlidingTabs(navId: string) {
+  function initializeSlidingTabs(navId) {
     const nav = document.getElementById(navId);
     if (!nav) return;
 
@@ -117,7 +117,7 @@ const filteredItems = items.filter((item) => {
     const buttons = nav.querySelectorAll("button[data-index], button[id], a[data-index], a[id]");
 
     // Update active button data attributes only (styling handled by parent component)
-    function updateActiveButton(activeButton: Element | null) {
+    function updateActiveButton(activeButton) {
       if (!nav) return;
 
       // Remove active state from all buttons (data attributes only)
@@ -132,7 +132,7 @@ const filteredItems = items.filter((item) => {
     }
 
     // Update sliding tabs indicator position
-    function updateSlidingTabsIndicator(activeButton: Element | null) {
+    function updateSlidingTabsIndicator(activeButton) {
       if (!tabsIndicator || !activeButton || !nav) return;
 
       const navRect = nav.getBoundingClientRect();
@@ -143,8 +143,8 @@ const filteredItems = items.filter((item) => {
       const width = buttonRect.width;
 
       // Update indicator position and size
-      (tabsIndicator as HTMLElement).style.left = `${left}px`;
-      (tabsIndicator as HTMLElement).style.width = `${width}px`;
+      tabsIndicator.style.left = `${left}px`;
+      tabsIndicator.style.width = `${width}px`;
 
       // Always try to center the active item
       setTimeout(() => {
@@ -166,15 +166,15 @@ const filteredItems = items.filter((item) => {
     }
 
     // Handle button clicks - update indicator position
-    buttons.forEach((button: Element) => {
-      button.addEventListener("click", function (this: HTMLElement) {
+    buttons.forEach((button) => {
+      button.addEventListener("click", function () {
         updateActiveButton(this);
         updateSlidingTabsIndicator(this);
       });
     });
 
     // Function to determine active button from URL
-    function getActiveButtonFromURL(): Element | null {
+    function getActiveButtonFromURL() {
       if (!nav) return null;
 
       const urlParam = nav.getAttribute("data-url-param");
@@ -190,12 +190,12 @@ const filteredItems = items.filter((item) => {
 
         // Call the page-specific switch handler (e.g. switchTab, switchAuthTab)
         const handlerName = nav.getAttribute("data-switch-handler") || "switchTab";
-        const fn = (window as any)[handlerName];
+        const fn = window[handlerName];
         if (typeof fn === "function") {
           fn(paramValue);
         } else {
           setTimeout(() => {
-            const retryFn = (window as any)[handlerName];
+            const retryFn = window[handlerName];
             if (typeof retryFn === "function") retryFn(paramValue);
           }, 100);
         }
@@ -231,7 +231,7 @@ const filteredItems = items.filter((item) => {
     }, 300);
 
     // Handle window resize to reposition indicator
-    let resizeTimeout: NodeJS.Timeout;
+    let resizeTimeout;
     window.addEventListener("resize", () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
@@ -247,7 +247,7 @@ const filteredItems = items.filter((item) => {
   function initializeAllSlidingTabs() {
     const initialized = new Set<string>();
 
-    function initIfNeeded(navId: string) {
+    function initIfNeeded(navId) {
       if (navId && !initialized.has(navId) && document.getElementById(navId)) {
         initialized.add(navId);
         initializeSlidingTabs(navId);
@@ -259,6 +259,7 @@ const filteredItems = items.filter((item) => {
       "project-nav",
       "tab-nav",
       "project-tab-nav",
+      "profile-tab-nav",
       "settings-tab-nav",
       "banner-alerts-tab-nav",
       "auth-tabs",

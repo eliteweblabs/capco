@@ -32,7 +32,6 @@ console.log("🔐 [LOGIN] User is not authenticated, showing login page");
 
 import LayoutTwoColumn from "../../components/layouts/LayoutTwoColumn.astro";
 import MultiStepForm from "../../components/form/MultiStepForm.astro";
-import Button from "../../components/common/Button.astro";
 import { loginFormConfig } from "../../lib/forms/login-form-config";
 import DotGrid from "../../components/ui/DotGrid.astro";
 ---
@@ -53,15 +52,6 @@ import DotGrid from "../../components/ui/DotGrid.astro";
     />
   </div>
   <div slot="right" class="color-background max-w-md" data-redirect-url={redirectUrl}>
-    <!-- Fallback: if user somehow lands here already logged in (e.g. session in another tab) -->
-    <div id="login-already-authenticated" class="hidden">
-      <div class="flex flex-col items-center gap-4 rounded-lg border border-primary-200 bg-primary-50/50 p-6 dark:border-primary-700 dark:bg-primary-900/20">
-        <p class="text-center text-sm text-primary-700 dark:text-primary-300">You're already logged in.</p>
-        <Button href={redirectUrl} variant="secondary" size="md" icon="arrow-right" iconPosition="right">
-          Go to Dashboard
-        </Button>
-      </div>
-    </div>
     <div id="login-form-wrapper">
       <MultiStepForm
         config={loginFormConfig}
@@ -87,31 +77,24 @@ import DotGrid from "../../components/ui/DotGrid.astro";
   // Use singleton Supabase client to avoid multiple instances
   import { getSupabaseClient } from "../../lib/supabase-client";
 
-  // Fallback: if user is already logged in (e.g. session synced from another tab), hide form and show redirect
-  document.addEventListener("DOMContentLoaded", async () => {
+  // Redirect logged-in users immediately (runs as soon as script loads, before DOMContentLoaded)
+  (async () => {
     const supabase = getSupabaseClient();
     if (supabase) {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (session) {
-        const formWrapper = document.getElementById("login-form-wrapper");
-        const alreadyAuth = document.getElementById("login-already-authenticated");
-        const redirectUrl =
-          document.querySelector('[data-redirect-url]')?.getAttribute("data-redirect-url") ||
-          "/project/dashboard";
-        if (formWrapper && alreadyAuth) {
-          formWrapper.classList.add("hidden");
-          alreadyAuth.classList.remove("hidden");
-          const btn = alreadyAuth.querySelector('a[href]');
-          if (btn) btn.setAttribute("href", redirectUrl);
-        } else {
-          window.location.href = redirectUrl;
-        }
+        const params = new URLSearchParams(window.location.search);
+        const redirectUrl = params.get("redirect") || "/project/dashboard";
+        window.location.replace(redirectUrl);
         return;
       }
     }
+  })();
 
+  // OAuth, error handling, etc.
+  document.addEventListener("DOMContentLoaded", async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const provider = urlParams.get("provider");
     if (provider === "google") {
@@ -124,7 +107,7 @@ import DotGrid from "../../components/ui/DotGrid.astro";
     const error = urlParams.get("error");
     const message = urlParams.get("message");
 
-    if (error && (window as any).showNotice) {
+    if (error && window.showNotice) {
       let errorTitle = "Authentication Error";
       let errorMessage = message || "An error occurred during authentication";
 
@@ -154,7 +137,7 @@ import DotGrid from "../../components/ui/DotGrid.astro";
           break;
       }
 
-      (window as any).showNotice({
+      window.showNotice({
         type: "error",
         title: errorTitle,
         message: errorMessage,
@@ -176,7 +159,7 @@ import DotGrid from "../../components/ui/DotGrid.astro";
 
     // Get the redirect destination from hidden input in the MultiStepForm
     const redirectDestination =
-      (document.querySelector('input[name="redirect"]') as HTMLInputElement)?.value ||
+      document.querySelector('input[name="redirect"]')?.value ||
       "/project/dashboard";
     console.log("[GOOGLE-SIGNIN] Post-auth redirect destination:", redirectDestination);
 
@@ -243,7 +226,7 @@ import DotGrid from "../../components/ui/DotGrid.astro";
   }
 
   // Make OAuth trigger available globally for AuthProviders (in case this script runs first)
-  (window as any).handleGoogleSignup = triggerGoogleOAuth;
+  window.handleGoogleSignup = triggerGoogleOAuth;
 
   // Fallback: listen for custom event so Google sign-in works even if script order is wrong
   document.addEventListener("auth-google-request", () => triggerGoogleOAuth());
@@ -252,8 +235,8 @@ import DotGrid from "../../components/ui/DotGrid.astro";
   document.addEventListener(
     "click",
     (e) => {
-      const btn = (e.target as HTMLElement).closest?.('.provider-btn[data-provider="google"]');
-      if (btn && !(btn as HTMLButtonElement).disabled) {
+      const btn = e.target.closest?.('.provider-btn[data-provider="google"]');
+      if (btn && !btn.disabled) {
         e.stopImmediatePropagation();
         triggerGoogleOAuth(e as Event);
       }

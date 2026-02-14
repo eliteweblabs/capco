@@ -10,7 +10,7 @@ interface Props {
   globalIconButtonClasses: string;
   id: string;
   title?: string;
-  closeButton: boolean;
+  closeButton?: boolean;
   /** Name of global function to call when dropdown opens (e.g. for lazy load or refresh) */
   onOpenCallback?: string;
   /** Selector for input to focus when dropdown opens. Must run in same click handler for iOS keypad. */
@@ -28,8 +28,8 @@ const { id, title = "", closeButton = true, onOpenCallback, focusSelector } = As
   id={`${id}-dropdown`}
   data-popover
   role="tooltip"
-  {...(onOpenCallback ? { "data-on-open": onOpenCallback } : {})}
-  {...(focusSelector ? { "data-focus-on-open": focusSelector } : {})}
+  {...onOpenCallback ? { "data-on-open": onOpenCallback } : {}}
+  {...focusSelector ? { "data-focus-on-open": focusSelector } : {}}
   class="invisible absolute z-10 inline-block w-full max-w-md overflow-visible rounded-b-lg border border-gray-200 bg-white text-body text-sm opacity-0 shadow-lg transition-opacity duration-300 dark:border-gray-700 dark:bg-gray-900"
 >
   <!-- <div class="flex max-h-[85vh] flex-col overflow-hidden">
@@ -67,7 +67,8 @@ const { id, title = "", closeButton = true, onOpenCallback, focusSelector } = As
       if (!panelId) return;
       var onOpen = panel.getAttribute("data-on-open");
       var focusSel = panel.getAttribute("data-focus-on-open");
-      var selectors = "[data-dropdown-toggle='" + panelId + "'], [data-popover-target='" + panelId + "']";
+      var selectors =
+        "[data-dropdown-toggle='" + panelId + "'], [data-popover-target='" + panelId + "']";
       document.querySelectorAll(selectors).forEach(function (trigger) {
         trigger.addEventListener("click", function () {
           // Sync focus in same click (required for iOS keypad)
@@ -77,12 +78,7 @@ const { id, title = "", closeButton = true, onOpenCallback, focusSelector } = As
           }
           setTimeout(function () {
             if (panel && !panel.classList.contains("hidden")) {
-              panel.classList.remove(
-                "opacity-0",
-                "transition-opacity",
-                "duration-300",
-                "ease-out"
-              );
+              panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out");
               if (onOpen && typeof window[onOpen] === "function") {
                 window[onOpen]();
               }

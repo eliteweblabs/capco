@@ -1,13 +1,14 @@
 ---
 /**
  * AdminUsers Component
- * User management panel - can be embedded in any page
+ * User management panel - accordion table with inline profile editing
  */
 import Alert from "../partials/Alert.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
-import Button from "../common/Button.astro";
-import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
 import StaffCreationForm from "../form/StaffCreationForm.astro";
+import AccordionDataTable from "../common/AccordionDataTable.astro";
+import ProfileTabForm from "../profile/ProfileTabForm.astro";
+import AdminUserRowActions from "./AdminUserRowActions.astro";
 
 export interface Props {
   currentUser: any;
@@ -31,25 +32,21 @@ let error = null;
 
 try {
   if (supabase) {
-    // First get all profiles
     const { data: allProfiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, firstName, lastName, companyName, phone, role, email, createdAt")
+      .select("id, firstName, lastName, companyName, phone, role, email, createdAt, displayOrder")
+      .order("displayOrder", { ascending: true, nullsFirst: false })
       .order("createdAt", { ascending: false });
 
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
       error = profilesError.message;
     } else if (allProfiles) {
-      const profilesWithEmails = allProfiles.map((profile: any) => {
-        return {
-          ...profile,
-          email: profile.email || "No email found",
-          phone: profile.phone || null,
-        };
-      });
-
-      users = profilesWithEmails;
+      users = allProfiles.map((profile: any) => ({
+        ...profile,
+        email: profile.email || "No email found",
+        phone: profile.phone || null,
+      }));
     }
   }
 } catch (fetchError) {
@@ -57,7 +54,6 @@ try {
   error = "Failed to fetch users";
 }
 
-// Get user counts by role
 const userCounts = {
   Admin: users.filter((u) => u.role === "Admin").length,
   Staff: users.filter((u) => u.role === "Staff").length,
@@ -67,13 +63,11 @@ const userCounts = {
 ---
 
 <div class="admin-users-component px-4 pt-4">
-  <!-- Page Header -->
   <div class="mb-8">
     <h1 class="mb-2 text-3xl font-bold">User Management</h1>
     <p class="text-gray-800 dark:text-gray-200">Create, view, and manage all system users</p>
   </div>
 
-  <!-- User Statistics Cards -->
   <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <div
       class="color-background rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
@@ -83,14 +77,12 @@ const userCounts = {
           <SimpleIcon name="users" class="h-8 w-8 text-primary-600" />
         </div>
         <div class="ml-4">
-          <dt class="text-muted dark:text-muted text-sm font-medium">Total Users</dt>
-          <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {userCounts.Total}
-          </dd>
+          <dt class="text-muted dark:text-muted text-sm font-medium">
+            Total Users: {userCounts.Total}
+          </dt>
         </div>
       </div>
     </div>
-
     <div
       class="color-background rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
     >
@@ -99,14 +91,10 @@ const userCounts = {
           <SimpleIcon name="shield-check" class="h-8 w-8 text-red-600" />
         </div>
         <div class="ml-4">
-          <dt class="text-muted dark:text-muted text-sm font-medium">Admins</dt>
-          <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {userCounts.Admin}
-          </dd>
+          <dt class="text-muted dark:text-muted text-sm font-medium">Admins: {userCounts.Admin}</dt>
         </div>
       </div>
     </div>
-
     <div
       class="color-background rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
     >
@@ -116,13 +104,10 @@ const userCounts = {
         </div>
         <div class="ml-4">
           <dt class="text-muted dark:text-muted text-sm font-medium">Staff</dt>
-          <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {userCounts.Staff}
-          </dd>
+          <dd class="text-2xl font-semibold text-gray-900 dark:text-white">{userCounts.Staff}</dd>
         </div>
       </div>
     </div>
-
     <div
       class="color-background rounded-lg bg-gray-100 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
     >
@@ -132,29 +117,20 @@ const userCounts = {
         </div>
         <div class="ml-4">
           <dt class="text-muted dark:text-muted text-sm font-medium">Clients</dt>
-          <dd class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {userCounts.Client}
-          </dd>
+          <dd class="text-2xl font-semibold text-gray-900 dark:text-white">{userCounts.Client}</dd>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Main Content Grid -->
   <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-    <!-- User List (Left Side - 2 columns) -->
     <div class="lg:col-span-2">
       <div
         class="color-background rounded-lg bg-gray-100 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
       >
-        <!-- Header with Search and Filters -->
         <div class="border-border-light dark:border-border-dark border-b p-6">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-center gap-4">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">All Users</h2>
-            </div>
-
-            <div class="relative">
+            <div class="relative flex-1">
               <SimpleIcon
                 name="search"
                 class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -163,353 +139,377 @@ const userCounts = {
                 type="text"
                 id="user-search"
                 placeholder="Search by name or email..."
-                class={`${globalInputClasses} pl-10 pr-4`}
+                class={`${globalInputClasses} w-full pl-10 pr-4`}
               />
             </div>
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <!-- Search -->
-
-              <!-- Role Filter -->
-              <select
-                id="role-filter"
-                class="border-border-light dark:border-border-dark color-background rounded-lg border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:text-white dark:focus:border-primary-400"
-              >
-                <option value="">All Roles</option>
-                <option value="Admin">Admin</option>
-                <option value="Staff">Staff</option>
-                <option value="Client">Client</option>
-              </select>
-            </div>
+            <select
+              id="role-filter"
+              class="border-border-light dark:border-border-dark color-background rounded-lg border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:text-white dark:focus:border-primary-400"
+            >
+              <option value="">All Roles</option>
+              <option value="Admin">Admin</option>
+              <option value="Staff">Staff</option>
+              <option value="Client">Client</option>
+            </select>
           </div>
         </div>
 
-        <!-- Users Table -->
         <div class="overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead
-                class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400"
-              >
-                <tr>
-                  <th
-                    class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
-                    data-sort="name"
-                  >
-                    <div class="flex items-center gap-1">
-                      Name
-                      <SimpleIcon name="chevrons-up-down" class="h-3 w-3" />
-                    </div>
-                  </th>
-                  <th
-                    class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
-                    data-sort="email"
-                  >
-                    <div class="flex items-center gap-1">
-                      Email
-                      <SimpleIcon name="chevrons-up-down" class="h-3 w-3" />
-                    </div>
-                  </th>
-                  <th
-                    class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
-                    data-sort="role"
-                  >
-                    <div class="flex items-center gap-1">
-                      Role
-                      <SimpleIcon name="chevrons-up-down" class="h-3 w-3" />
-                    </div>
-                  </th>
-                  <th
-                    class="text-muted dark:text-muted dark:hover:text-primary-dark cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hover:text-primary"
-                    data-sort="created"
-                  >
-                    <div class="flex items-center gap-1">
-                      Created
-                      <SimpleIcon name="chevrons-up-down" class="h-3 w-3" />
-                    </div>
-                  </th>
-                  <th
-                    class="text-muted dark:text-muted px-6 py-3 text-right text-xs font-medium uppercase tracking-wider"
-                  >
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody
-                id="users-table-body"
-                class="color-background divide-y divide-gray-200 bg-gray-100 dark:divide-gray-700"
-              >
-                {
-                  users.map((user) => {
-                    const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
-                    const displayName = fullName || user.companyName || "Unknown User";
-                    const createdDate = new Date(user.createdAt).toLocaleDateString();
-
-                    return (
-                      <tr
-                        class="user-row hover:bg-gray-50 dark:hover:bg-gray-700"
-                        data-role={user.role}
-                        data-name={displayName.toLowerCase()}
-                        data-email={user.email.toLowerCase()}
-                        data-user-id={user.id}
-                      >
-                        <td class="whitespace-nowrap px-6 py-4">
-                          <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                              <div
-                                class={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                                  user.role === "Admin"
-                                    ? "bg-red-100 dark:bg-red-900/30"
-                                    : user.role === "Staff"
-                                      ? "bg-green-100 dark:bg-green-900/30"
-                                      : "bg-purple-100 dark:bg-purple-900/30"
-                                }`}
-                              >
-                                <SimpleIcon
-                                  name={
-                                    user.role === "Admin"
-                                      ? "shield-check"
-                                      : user.role === "Staff"
-                                        ? "user-check"
-                                        : "user"
-                                  }
-                                  class={`h-5 w-5 ${
-                                    user.role === "Admin"
-                                      ? "text-red-600 dark:text-red-400"
-                                      : user.role === "Staff"
-                                        ? "text-green-600 dark:text-green-400"
-                                        : "text-purple-600 dark:text-purple-400"
-                                  }`}
-                                />
-                              </div>
-                            </div>
-                            <div class="ml-4">
-                              <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                {displayName}
-                              </div>
-                              {user.phone && (
-                                <div class="text-muted dark:text-muted text-sm">{user.phone}</div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td class="whitespace-nowrap px-6 py-4">
-                          <div class="text-sm text-gray-900 dark:text-white">{user.email}</div>
-                        </td>
-                        <td class="whitespace-nowrap px-6 py-4">
-                          <span
-                            class={`inline-flex rounded-lg px-2 py-1 text-xs font-semibold ${
-                              user.role === "Admin"
-                                ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                                : user.role === "Staff"
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                  : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-                            }`}
-                          >
-                            {user.role}
-                          </span>
-                        </td>
-                        <td class="text-muted dark:text-muted whitespace-nowrap px-6 py-4 text-sm">
-                          {createdDate}
-                        </td>
-                        <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                          <DeleteConfirmButton
-                            id={`delete-user-${user.id}`}
-                            itemType="user"
-                            apiEndpoint="/api/users/delete"
-                            onDeleteCallback="handleUserDeleted"
-                            tooltipText={`Delete ${displayName}`}
-                            size="sm"
-                            variant="icon"
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })
-                }
-              </tbody>
-            </table>
-
-            {
-              users.length === 0 && (
-                <div class="py-12 text-center">
-                  <SimpleIcon name="users" class="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                    No users found
-                  </h3>
-                  <p class="text-muted dark:text-muted mt-1 text-sm">
-                    {error ? `Error: ${error}` : "Get started by creating a new user."}
-                  </p>
-                </div>
-              )
-            }
-          </div>
+          <AccordionDataTable
+            id="admin-users-accordion"
+            title=""
+            data={users}
+            getItemId={(u) => u.id}
+            getReorderId={(u) => u.id}
+            slotIdPrefix="user-slot"
+            draggable={true}
+            reorderCallback="handleUsersReorder"
+            emptyMessage={error
+              ? `Error: ${error}`
+              : "No users found. Create one in the panel to the right."}
+            columns={[
+              {
+                key: "name",
+                label: "Name",
+                getValue: (u) => {
+                  const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+                  return fullName || u.companyName || "Unknown User";
+                },
+                cellClass: "whitespace-nowrap",
+              },
+              { key: "email", label: "Email", cellClass: "whitespace-nowrap" },
+              {
+                key: "role",
+                label: "Role",
+                getValue: (u) => u.role,
+                cellClass: "whitespace-nowrap",
+              },
+              {
+                key: "createdAt",
+                label: "Created",
+                getValue: (u) => (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"),
+                cellClass: "whitespace-nowrap text-gray-500 dark:text-gray-400",
+              },
+            ]}
+            getTriggerDataAttrs={(u) => {
+              const fullName = ((u.firstName || "") + " " + (u.lastName || "")).trim();
+              const displayName = fullName || u.companyName || "unknown";
+              return {
+                role: u.role,
+                name: displayName.toLowerCase(),
+                email: (u.email || "").toLowerCase(),
+                userId: u.id,
+              };
+            }}
+            actionsComponent={AdminUserRowActions}
+            actionsGetProps={(u) => ({ user: u })}
+          />
         </div>
       </div>
     </div>
 
-    <!-- Create User Form (Right Side - 1 column) -->
     <div class="lg:col-span-1">
-      <!-- Header -->
       <Alert
         type="info"
         title="Account Setup"
         class="mb-4"
         description="<ol class='list-inside list-decimal space-y-1 text-xs'><li>An invitation email will be sent</li><li>User can set up authentication</li><li>User will appear in the list immediately</li></ol>"
       />
-
       <StaffCreationForm {globalInputClasses} {secondaryTextClasses} {primaryTextClasses} />
     </div>
   </div>
 </div>
 
-<script>
-  // User management functionality
-  interface User {
-    element: Element;
-    name: string;
-    email: string;
-    role: string;
-    created: string;
-  }
+<!-- Profile form pool: single form moved into accordion slot on expand (on-demand load) -->
+<div id="admin-profile-form-pool" class="hidden">
+  <div id="admin-profile-form-container">
+    <div class="p-5">
+      <ProfileTabForm
+        userProfile={null}
+        currentUser={currentUser}
+        globalInputClasses={globalInputClasses}
+        formIdPrefix="admin-"
+        isAdminEdit={true}
+        showSettingsTab={false}
+        showSignOut={false}
+        switchHandlerName="adminSwitchProfileTab"
+      />
+    </div>
+  </div>
+</div>
 
-  let currentUsers: User[] = [];
-  let currentSort = { field: "created", direction: "desc" };
+<script define:vars={{ basePath: "/admin/users" }}>
+  document.addEventListener("DOMContentLoaded", initAdminUsers);
 
-  document.addEventListener("DOMContentLoaded", function () {
+  function initAdminUsers() {
     const searchInput = document.getElementById("user-search");
     const roleFilter = document.getElementById("role-filter");
-    if (searchInput) (searchInput as HTMLInputElement).value = "";
-    if (roleFilter) (roleFilter as HTMLSelectElement).value = "";
+    if (searchInput) searchInput.value = "";
+    if (roleFilter) roleFilter.value = "";
 
-    initializeUserManagement();
-  });
-
-  function initializeUserManagement() {
-    currentUsers = Array.from(document.querySelectorAll(".user-row")).map((row) => ({
-      element: row,
-      name: (row as HTMLElement).dataset.name || "",
-      email: (row as HTMLElement).dataset.email || "",
-      role: (row as HTMLElement).dataset.role || "",
-      created: (row as HTMLElement).querySelector("td:nth-child(4)")?.textContent?.trim() || "",
-    }));
-
-    setupSearchAndFilter();
-    setupSorting();
-
-    setTimeout(() => {
-      filterUsers();
-    }, 100);
-  }
-
-  function setupSearchAndFilter() {
-    const searchInput = document.getElementById("user-search");
-    const roleFilter = document.getElementById("role-filter");
-
-    if (searchInput) {
-      searchInput.addEventListener("input", filterUsers as EventListener);
+    setupSearchFilter();
+    setupAccordionFormPool();
+    if (typeof window.handleUserDeleted !== "function") {
+      window.handleUserDeleted = handleUserDeleted;
     }
-
-    if (roleFilter) {
-      roleFilter.addEventListener("change", filterUsers as EventListener);
+    if (typeof window.handleUsersReorder !== "function") {
+      window.handleUsersReorder = handleUsersReorder;
     }
   }
 
-  function setupSorting() {
-    const sortHeaders = document.querySelectorAll("[data-sort]");
-    sortHeaders.forEach((header) => {
-      header.addEventListener("click", () => {
-        const field = (header as HTMLElement).dataset.sort;
-        if (currentSort.field === field) {
-          currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
-        } else {
-          currentSort.field = field as keyof typeof currentSort;
-          currentSort.direction = "asc";
+  async function handleUsersReorder(order) {
+    try {
+      const res = await fetch("/api/users/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ orders: order }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to update order");
+      }
+      window.showSuccess?.("Order Updated", "User order saved.", 2000);
+    } catch (err) {
+      console.error("Users reorder failed:", err);
+      window.showError?.("Save Failed", "Failed to save order. Reloading...", 3000);
+      setTimeout(() => window.location.reload(), 1000);
+    }
+  }
+
+  function setupSearchFilter() {
+    const searchInput = document.getElementById("user-search");
+    const roleFilter = document.getElementById("role-filter");
+    const filter = () => filterUserRows();
+    searchInput?.addEventListener("input", filter);
+    roleFilter?.addEventListener("change", filter);
+    setTimeout(filter, 100);
+  }
+
+  function filterUserRows() {
+    const searchInput = document.getElementById("user-search");
+    const roleEl = document.getElementById("role-filter");
+    const searchTerm = (searchInput?.value?.toLowerCase() || "").trim();
+    const roleVal = roleEl?.value || "";
+    document.querySelectorAll("tr.accordion-trigger[data-user-id]").forEach((trigger) => {
+      const el = trigger;
+      const name = (el.dataset.name || "").toLowerCase();
+      const email = (el.dataset.email || "").toLowerCase();
+      const role = el.dataset.role || "";
+      const matchSearch = !searchTerm || name.includes(searchTerm) || email.includes(searchTerm);
+      const matchRole = !roleVal || role === roleVal;
+      const show = matchSearch && matchRole;
+      el.style.display = show ? "" : "none";
+      const slotId = el.dataset.slot;
+      const detail = document.querySelector(`tr.accordion-detail[data-slot="${slotId}"]`);
+      if (detail) detail.style.display = show ? "" : "none";
+    });
+  }
+
+  let openSlotId = null;
+  const formPool = document.getElementById("admin-profile-form-pool");
+  const formContainer = document.getElementById("admin-profile-form-container");
+  const tableId = "admin-users-accordion";
+  const slotPrefix = "user-slot";
+
+  function setupAccordionFormPool() {
+    if (!formContainer || !formPool) return;
+    const form = document.getElementById("admin-profile-form");
+    if (!form) return;
+
+    // Tab switching for admin form
+    window.adminSwitchProfileTab = (tab) => {
+      ["general", "social", "team"].forEach((id) => {
+        const el = document.getElementById(`admin-${id}`);
+        if (el) el.classList.toggle("hidden", id !== tab);
+      });
+    };
+
+    document.querySelectorAll(`#${tableId}-tbody tr.accordion-trigger`).forEach((triggerRow) => {
+      triggerRow.addEventListener("click", async (e) => {
+        if (e.target?.closest?.(".delete-confirm-btn, .delete-confirm-wrapper")) return;
+        const slotId = triggerRow.dataset.slot;
+        if (!slotId) return;
+        const slotEl = document.getElementById(`${slotPrefix}-${slotId}`);
+        if (!slotEl) return;
+
+        if (openSlotId === slotId) {
+          closeEditor();
+          return;
         }
-        sortUsers();
+
+        closeEditor();
+        slotEl.appendChild(formContainer);
+        const detailRow = document.getElementById(`${tableId}-detail-${slotId}`);
+        const chevron = triggerRow.querySelector(".accordion-chevron");
+        if (detailRow) {
+          detailRow.classList.remove("hidden");
+          detailRow.setAttribute("aria-hidden", "false");
+        }
+        if (chevron) chevron.classList.add("rotate-180");
+        triggerRow.setAttribute("aria-expanded", "true");
+        openSlotId = slotId;
+
+        const targetUserId = slotId;
+        const targetInput = document.getElementById("admin-target-user-id");
+        if (targetInput && targetInput instanceof HTMLInputElement)
+          targetInput.value = targetUserId;
+        try {
+          const res = await fetch(`/api/users/get?id=${targetUserId}`);
+          const json = await res.json();
+          const profile = json?.data;
+          if (profile) populateAdminForm(profile);
+        } catch (err) {
+          console.error("Failed to load user:", err);
+          if (window.showNotice)
+            window.showNotice("error", "Load Failed", "Could not load user data", 4000);
+        }
+        detailRow?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       });
     });
+
+    function closeEditor() {
+      if (!openSlotId) return;
+      const detailRow = document.getElementById(`${tableId}-detail-${openSlotId}`);
+      const triggerRow = document.querySelector(`tr.accordion-trigger[data-slot="${openSlotId}"]`);
+      if (detailRow) {
+        detailRow.classList.add("hidden");
+        detailRow.setAttribute("aria-hidden", "true");
+      }
+      if (triggerRow) {
+        triggerRow.setAttribute("aria-expanded", "false");
+        const chevron = triggerRow.querySelector(".accordion-chevron");
+        if (chevron) chevron.classList.remove("rotate-180");
+      }
+      if (formContainer && formPool) formPool.appendChild(formContainer);
+      openSlotId = null;
+    }
+
+    function populateAdminForm(profile) {
+      const set = (id, value) => {
+        const el = document.getElementById(`admin-${id}`);
+        if (
+          !el ||
+          !(
+            el instanceof HTMLInputElement ||
+            el instanceof HTMLSelectElement ||
+            el instanceof HTMLTextAreaElement
+          )
+        )
+          return;
+        el.value = value ?? "";
+      };
+      const setCheckbox = (id, checked) => {
+        const el = document.getElementById(`admin-${id}`);
+        if (el && el instanceof HTMLInputElement) el.checked = !!checked;
+      };
+      set("company-name", profile.companyName);
+      set("first-name", profile.firstName);
+      set("last-name", profile.lastName);
+      set("title", profile.title);
+      set("email", profile.email);
+      set("phone", profile.phone);
+      set("bio", profile.bio);
+      set("role-select", profile.role);
+      setCheckbox("sms-alerts-phone", profile.smsAlerts);
+      const socialInput = document.getElementById("admin-profile-socials-hidden");
+      if (socialInput && socialInput instanceof HTMLInputElement) {
+        socialInput.value = JSON.stringify(profile.socialNetworks || []);
+      }
+      const avatarImg = document.getElementById("admin-profile-avatar");
+      if (avatarImg && avatarImg instanceof HTMLImageElement) {
+        avatarImg.src = profile.avatarUrl || "";
+        avatarImg.style.display = profile.avatarUrl ? "" : "none";
+        const fallback = document.getElementById("admin-profile-avatar-fallback");
+        if (fallback) fallback.style.display = profile.avatarUrl ? "none" : "flex";
+      }
+    }
+
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formEl = form;
+      if (!formEl.checkValidity()) {
+        formEl.reportValidity();
+        return;
+      }
+      const targetInput = document.getElementById("admin-target-user-id");
+      const targetUserId =
+        targetInput instanceof HTMLInputElement ? targetInput.value?.trim() : null;
+      if (!targetUserId) {
+        window.showNotice?.("error", "No user selected", "Expand a user row first.", 4000);
+        return;
+      }
+      const formData = new FormData(formEl);
+      const companyName = formData.get("company-name");
+      const firstName = formData.get("firstName");
+      const lastName = formData.get("lastName");
+      const title = formData.get("title");
+      const phone = formData.get("phone");
+      const bio = formData.get("bio");
+      const roleEl = document.getElementById("admin-role-select");
+      const smsEl = document.getElementById("admin-sms-alerts-phone");
+      const role = roleEl?.value;
+      const smsAlerts = smsEl?.checked || false;
+      const mobileCarrier = formData.get("mobileCarrier");
+      let socialNetworks = [];
+      try {
+        const raw = formData.get("socialNetworks");
+        if (raw && typeof raw === "string") socialNetworks = JSON.parse(raw);
+      } catch {}
+      if (!Array.isArray(socialNetworks)) socialNetworks = [];
+      const saveBtns = formEl.querySelectorAll(".save-profile-btn");
+      saveBtns.forEach((b) => {
+        b.disabled = true;
+        b.textContent = "Saving...";
+      });
+      try {
+        const res = await fetch("/api/users/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetUserId,
+            companyName,
+            firstName,
+            lastName,
+            title: title?.toString().trim() || null,
+            phone,
+            bio: bio?.toString().trim() || null,
+            role,
+            smsAlerts,
+            mobileCarrier: smsAlerts ? mobileCarrier : null,
+            socialNetworks,
+          }),
+        });
+        const result = await res.json();
+        if (res.ok) {
+          window.showNotice?.("success", "Profile Updated", "User profile saved.", 2500);
+          const userRes = await fetch(`/api/users/get?id=${targetUserId}`);
+          const userJson = await userRes.json();
+          if (userJson?.data) populateAdminForm(userJson.data);
+        } else {
+          window.showNotice?.("error", "Update Failed", result?.error || "Failed to save.", 5000);
+        }
+      } catch (err) {
+        console.error("Profile update error:", err);
+        window.showNotice?.("error", "Network Error", "Failed to update. Try again.", 5000);
+      } finally {
+        saveBtns.forEach((b) => {
+          b.disabled = false;
+          b.textContent = "Save Changes";
+        });
+      }
+    });
   }
 
-  // Global callback for DeleteConfirmButton component
-  (window as any).handleUserDeleted = async function (userId: string) {
-    console.log("[AdminUsers] User deleted callback:", userId);
-
-    if ((window as any).showNotice) {
-      (window as any).showNotice(
-        "success",
-        "User Deleted",
-        "User has been successfully deleted.",
-        3000
-      );
+  async function handleUserDeleted(userId) {
+    window.showNotice?.("success", "User Deleted", "User has been deleted.", 3000);
+    const trigger = document.querySelector(`tr.accordion-trigger[data-user-id="${userId}"]`);
+    const slotId = trigger?.dataset?.slot;
+    if (trigger) trigger.remove();
+    if (slotId) {
+      const detail = document.querySelector(`tr.accordion-detail[data-slot="${slotId}"]`);
+      if (detail) detail.remove();
     }
-
-    // Remove the user row from the table
-    const userRow = document.querySelector(`[data-user-id="${userId}"]`)?.closest(".user-row");
-    if (userRow) {
-      userRow.remove();
-    }
-
-    // Reload after a short delay to refresh user counts
     setTimeout(() => window.location.reload(), 1500);
-  };
-
-  function filterUsers() {
-    const searchTerm =
-      ((
-        document.getElementById("user-search") as HTMLInputElement
-      )?.value?.toLowerCase() as string) || "";
-    const roleFilter =
-      ((document.getElementById("role-filter") as HTMLSelectElement)?.value as string) || "";
-
-    currentUsers.forEach((user) => {
-      const matchesSearch =
-        !searchTerm || user.name.includes(searchTerm) || user.email.includes(searchTerm);
-      const matchesRole = !roleFilter || user.role === roleFilter;
-      const shouldShow = matchesSearch && matchesRole;
-
-      if (shouldShow) {
-        (user.element as HTMLElement).style.display = "";
-      } else {
-        (user.element as HTMLElement).style.display = "none";
-      }
-    });
-  }
-
-  function sortUsers() {
-    const tbody = document.getElementById("users-table-body") as HTMLTableSectionElement;
-    if (!tbody) return;
-
-    const sortedUsers = [...currentUsers].sort((a, b) => {
-      let aVal: any, bVal: any;
-
-      switch (currentSort.field) {
-        case "name":
-          aVal = a.name;
-          bVal = b.name;
-          break;
-        case "email":
-          aVal = a.email;
-          bVal = b.email;
-          break;
-        case "role":
-          aVal = a.role;
-          bVal = b.role;
-          break;
-        case "created":
-          aVal = new Date(a.created);
-          bVal = new Date(b.created);
-          break;
-        default:
-          return 0;
-      }
-
-      if (aVal < bVal) return currentSort.direction === "asc" ? -1 : 1;
-      if (aVal > bVal) return currentSort.direction === "asc" ? 1 : -1;
-      return 0;
-    });
-
-    sortedUsers.forEach((user) => {
-      tbody.appendChild(user.element);
-    });
   }
 </script>

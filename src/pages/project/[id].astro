@@ -552,7 +552,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 
 <script>
   // Global tab switching function - source of truth for all tab navigation
-  (window as any).switchTab = async function (tabName: string) {
+  window.switchTab = async function (tabName) {
     console.log(`🔄 [SWITCH-TAB] Switching to: ${tabName}`);
 
     // Parse tab name and parameters
@@ -570,7 +570,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
       selectedContent.classList.remove("hidden");
 
       // Try to call the initialization function if it exists (e.g., initializeDiscussion)
-      const initFunc = (window as any)[
+      const initFunc = window[
         `initialize${baseTabName.charAt(0).toUpperCase() + baseTabName.slice(1)}`
       ];
       if (typeof initFunc === "function") {
@@ -600,7 +600,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   };
 
   // Initialize Discussion tab function
-  (window as any).initializeDiscussion = async function () {
+  window.initializeDiscussion = async function () {
     console.log("🎬 [INIT-DISCUSSION] Initializing discussion tab...");
 
     // Find the discussions container
@@ -611,10 +611,10 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     }
 
     // Call the initialization function if it exists
-    if (typeof (window as any).initializeDiscussions === "function") {
+    if (typeof window.initializeDiscussions === "function") {
       console.log("🎬 [INIT-DISCUSSION] Calling initializeDiscussions");
       try {
-        await (window as any).initializeDiscussions();
+        await window.initializeDiscussions();
         console.log("✅ [INIT-DISCUSSION] Discussion system initialized");
       } catch (error) {
         console.error("❌ [INIT-DISCUSSION] Error initializing discussions:", error);

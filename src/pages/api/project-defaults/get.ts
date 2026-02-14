@@ -24,10 +24,10 @@ export const GET: APIRoute = async ({ cookies }) => {
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ defaultDueDateHours: 72 }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ defaultDueDateHours: 72 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const { data } = await supabaseAdmin
@@ -39,15 +39,15 @@ export const GET: APIRoute = async ({ cookies }) => {
     const hours = data?.value ? parseInt(data.value, 10) : 72;
     const defaultDueDateHours = Math.min(240, Math.max(1, isNaN(hours) ? 72 : hours));
 
-    return new Response(
-      JSON.stringify({ defaultDueDateHours }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ defaultDueDateHours }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error: any) {
     console.error("[project-defaults/get] Error:", error);
-    return new Response(
-      JSON.stringify({ defaultDueDateHours: 72 }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ defaultDueDateHours: 72 }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

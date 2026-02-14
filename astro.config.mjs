@@ -58,7 +58,7 @@ export default defineConfig({
       target: "es2018",
     },
     optimizeDeps: {
-      include: ["@floating-ui/dom", "@supabase/supabase-js", "libphonenumber-js", "typeit"],
+      include: ["cropperjs", "@floating-ui/dom", "@supabase/supabase-js", "libphonenumber-js", "typeit"],
       // Avoid 504 Outdated Optimize Dep in dev by re-optimizing when deps change
       ...(process.env.NODE_ENV === "development" && { force: true }),
     },

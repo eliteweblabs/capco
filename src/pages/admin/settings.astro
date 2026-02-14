@@ -1150,7 +1150,9 @@ const settings = {
     }
   });
 
-  const backgroundColorPicker = document.getElementById("background_color_picker") as HTMLInputElement;
+  const backgroundColorPicker = document.getElementById(
+    "background_color_picker"
+  ) as HTMLInputElement;
   const backgroundColorInput = document.getElementById("background_color") as HTMLInputElement;
   const backgroundColorDarkPicker = document.getElementById(
     "background_color_dark_picker"
@@ -1474,14 +1476,19 @@ const settings = {
           // Inject background colors for .color-background (uses r,g,b format)
           const hexToRgb = (hex: string) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
+            return result
+              ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+              : null;
           };
-          const newBackgroundColor = settings.backgroundColor || backgroundColorInput?.value || "#ffffff";
-          const newBackgroundColorDark = settings.backgroundColorDark || backgroundColorDarkInput?.value || "#0a0a0a";
+          const newBackgroundColor =
+            settings.backgroundColor || backgroundColorInput?.value || "#ffffff";
+          const newBackgroundColorDark =
+            settings.backgroundColorDark || backgroundColorDarkInput?.value || "#0a0a0a";
           const rgbLight = hexToRgb(newBackgroundColor);
           const rgbDark = hexToRgb(newBackgroundColorDark);
           if (rgbLight) document.documentElement.style.setProperty("--color-background", rgbLight);
-          if (rgbDark) document.documentElement.style.setProperty("--color-background-dark", rgbDark);
+          if (rgbDark)
+            document.documentElement.style.setProperty("--color-background-dark", rgbDark);
 
           // Inject font families if they were updated
           if (newFontFamily) {
@@ -1497,7 +1504,13 @@ const settings = {
           }
 
           const updates = [];
-          if (settings.primaryColor || settings.secondaryColor || settings.backgroundColor || settings.backgroundColorDark) updates.push("colors");
+          if (
+            settings.primaryColor ||
+            settings.secondaryColor ||
+            settings.backgroundColor ||
+            settings.backgroundColorDark
+          )
+            updates.push("colors");
           if (settings.fontFamily || settings.secondaryFontFamily) updates.push("fonts");
           if (updates.length > 0 && window.showSuccess) {
             window.showSuccess(

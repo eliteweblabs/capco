@@ -13,6 +13,16 @@ interface ButtonProps {
 
 interface Props {
   title: string;
+  /** DB field name for refresh (e.g. "companyName"). Enables polling when combined with context. */
+  titleRefreshField?: string;
+  /** Raw value for change detection - must match API response format. */
+  titleRefreshValue?: string | null;
+  /** User ID for user-context polling (profiles table) */
+  titleRefreshUserId?: string;
+  /** Project ID for project-context polling */
+  titleRefreshProjectId?: string;
+  /** Suffix for display (e.g. "'s Profile") - appended to refreshed value */
+  titleRefreshSuffix?: string;
   description: string;
   primaryTextClasses?: string;
   secondaryTextClasses?: string;
@@ -44,6 +54,11 @@ const defaultDescription =
 // Destructure with support for both formats
 const {
   title = defaultTitle,
+  titleRefreshField,
+  titleRefreshValue,
+  titleRefreshUserId,
+  titleRefreshProjectId,
+  titleRefreshSuffix,
   description = defaultDescription,
   primaryTextClasses,
   secondaryTextClasses,
@@ -118,6 +133,13 @@ const getButtonClasses = (variant: string = "primary") => {
       <!-- Main Headline -->
       <h1
         class={`${primaryTextClasses || ""} md:text-6xl sm:text-3xl text-2xl font-bold ${backgroundImage ? "text-white" : ""}`}
+        {...(titleRefreshField && {
+          "data-refresh": titleRefreshField,
+          "data-meta-value": titleRefreshValue ?? title ?? "",
+          ...(titleRefreshUserId && { "data-user-id": titleRefreshUserId }),
+          ...(titleRefreshProjectId && { "data-project-id": String(titleRefreshProjectId) }),
+          ...(titleRefreshSuffix && { "data-refresh-suffix": titleRefreshSuffix }),
+        })}
       >
         {title}
       </h1>

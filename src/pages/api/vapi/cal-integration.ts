@@ -133,7 +133,7 @@ export const POST: APIRoute = async ({ request }) => {
         return await handleGetAvailability(params);
 
       case "create_booking":
-        return await handleCreateBooking(params, effectiveCalendarType);
+        return await handleCreateBooking(params, effectiveCalendarType, request);
 
       case "get_bookings":
         return await handleGetBookings(params);
@@ -1520,7 +1520,11 @@ async function handleGetAvailability(params: any) {
   }
 }
 
-async function handleCreateBooking(params: any, calendarType: string = "calcom") {
+async function handleCreateBooking(
+  params: any,
+  calendarType: string = "calcom",
+  request?: Request
+) {
   try {
     // Route to appropriate calendar handler based on calendar type
     switch (calendarType.toLowerCase()) {
@@ -1530,7 +1534,7 @@ async function handleCreateBooking(params: any, calendarType: string = "calcom")
         return await handleICalCreateBooking(params);
       case "calcom":
       default:
-        return await handleCalComCreateBooking(params);
+        return await handleCalComCreateBooking(params, request);
     }
   } catch (error: any) {
     console.error("❌ [CAL-INTEGRATION] Error in handleCreateBooking:", error);
@@ -1549,7 +1553,7 @@ async function handleCreateBooking(params: any, calendarType: string = "calcom")
 }
 
 // Cal.com implementation for create_booking
-async function handleCalComCreateBooking(params: any) {
+async function handleCalComCreateBooking(params: any, request?: Request) {
   const {
     start: startParam,
     name,

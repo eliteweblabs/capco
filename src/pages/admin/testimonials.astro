@@ -1,0 +1,385 @@
+---
+/**
+ * Admin Testimonials Page
+ * Manage customer testimonials with drag/drop AccordionDataTable
+ */
+import { checkAuth } from "../../lib/auth";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
+import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
+import TestimonialRowActions from "../../components/admin/TestimonialRowActions.astro";
+import CloseButton from "../../components/ui/CloseButton.astro";
+import { globalClasses } from "../api/global/global-classes";
+import Button from "../../components/common/Button.astro";
+
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+
+const { data: profile } = await supabase.from("profiles").select("role").eq("id", currentUser.id).single();
+if (profile?.role !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const { globalInputClasses } = globalClasses();
+
+// Fetch testimonials
+let testimonials: any[] = [];
+if (supabaseAdmin) {
+  const { data, error } = await supabaseAdmin
+    .from("testimonials")
+    .select("*")
+    .order("displayOrder", { ascending: true, nullsFirst: false });
+  if (!error) testimonials = data || [];
+}
+---
+
+<LayoutDefault
+  title="Testimonials"
+  description="Manage customer testimonials displayed on the site"
+>
+  <div class="mx-auto max-w-6xl px-4 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Testimonials</h1>
+      <p class="mt-1 text-gray-600 dark:text-gray-400">
+        Manage customer testimonials. Drag rows to reorder. Click a row to expand and edit.
+      </p>
+    </div>
+
+    <div class="overflow-x-scroll rounded-lg bg-white shadow dark:bg-gray-900">
+      <AccordionDataTable
+        id="testimonials-table"
+        data={testimonials}
+        getItemId={(t) => t.id}
+        getReorderId={(t) => t.id}
+        slotIdPrefix="testimonial-slot"
+        draggable={true}
+        showCreateRow={true}
+        createRowLabel="+ Create new testimonial"
+        getCreateSlotId={() => "create"}
+        reorderCallback="handleTestimonialsReorder"
+        triggerClass="testimonial-accordion-trigger"
+        detailClass="testimonial-accordion-detail"
+        slotClass="testimonial-slot"
+        chevronClass="testimonial-chevron"
+        detailRowIdPrefix="testimonial"
+        emptyMessage='Use "Create new testimonial" above to add your first testimonial.'
+        getTriggerDataAttrs={(t) => ({
+          testimonialSlot: t.id,
+          testimonialId: t.id,
+          displayOrder: String(t.displayOrder ?? 0),
+        })}
+        getDetailRowDataAttrs={(t) => ({ testimonialSlot: t.id })}
+        createRowDataAttrs={{ testimonialSlot: "create" }}
+        columns={[
+          {
+            key: "title",
+            label: "Title",
+            getValue: (t) => t.title || "—",
+            cellClass: "whitespace-nowrap font-medium max-w-32 truncate",
+          },
+          {
+            key: "testimonial",
+            label: "Testimonial",
+            getValue: (t) => (t.testimonial ? `${String(t.testimonial).slice(0, 60)}…` : "—"),
+            cellClass: "max-w-64 truncate text-gray-500 dark:text-gray-400",
+          },
+          {
+            key: "name",
+            label: "Name / Company",
+            getValue: (t) => {
+              const parts = [t.name, t.company].filter(Boolean);
+              return parts.length ? parts.join(", ") : "—";
+            },
+            cellClass: "whitespace-nowrap",
+          },
+          {
+            key: "image",
+            label: "Image",
+            getValue: (t) => (t.image ? "✓" : "—"),
+            cellClass: "text-center",
+          },
+        ]}
+        actionsComponent={TestimonialRowActions}
+        actionsGetProps={(t) => ({ testimonial: t })}
+      />
+    </div>
+  </div>
+</LayoutDefault>
+
+{/* Form pool – moved into open slot by script */}
+<div id="testimonial-editor-form-pool" class="hidden">
+  <div id="testimonial-editor-form-container">
+    <div class="p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="testimonial-editor-title">
+          Create New Testimonial
+        </h3>
+        <CloseButton id="testimonial-close-editor-btn" tooltipText="Close editor" position="top" />
+      </div>
+      <form id="testimonial-form" class="space-y-4">
+        <input type="hidden" id="testimonial-id" name="id" />
+        <div>
+          <label for="testimonial-title" class="mb-2 block text-sm font-medium">Title</label>
+          <input
+            type="text"
+            id="testimonial-title"
+            name="title"
+            class={globalInputClasses}
+            placeholder="Optional title"
+          />
+        </div>
+        <div>
+          <label for="testimonial-quote" class="mb-2 block text-sm font-medium">Testimonial *</label>
+          <textarea
+            id="testimonial-quote"
+            name="testimonial"
+            rows="4"
+            required
+            class={globalInputClasses}
+            placeholder="Customer quote..."
+          />
+        </div>
+        <div>
+          <label for="testimonial-name" class="mb-2 block text-sm font-medium">Name</label>
+          <input
+            type="text"
+            id="testimonial-name"
+            name="name"
+            class={globalInputClasses}
+            placeholder="Customer name"
+          />
+        </div>
+        <div>
+          <label for="testimonial-company" class="mb-2 block text-sm font-medium">Company</label>
+          <input
+            type="text"
+            id="testimonial-company"
+            name="company"
+            class={globalInputClasses}
+            placeholder="Company name"
+          />
+        </div>
+        <div>
+          <label for="testimonial-image" class="mb-2 block text-sm font-medium">Image URL</label>
+          <input
+            type="url"
+            id="testimonial-image"
+            name="image"
+            class={globalInputClasses}
+            placeholder="https://..."
+          />
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Paste a URL or upload via Media and paste the public URL
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <Button type="submit" variant="primary">Save Testimonial</Button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ testimonials }}>
+  const testimonialsList = testimonials || [];
+
+  function initTestimonials() {
+    if (typeof window === "undefined" || !window.location.pathname.startsWith("/admin/testimonials")) return;
+
+    const formContainer = document.getElementById("testimonial-editor-form-container");
+    const formPool = document.getElementById("testimonial-editor-form-pool");
+    const form = document.getElementById("testimonial-form");
+    const closeBtn = document.getElementById("testimonial-close-editor-btn");
+    const editorTitle = document.getElementById("testimonial-editor-title");
+
+    if (!formContainer || !form || !formPool) return;
+
+    let openSlotId = null;
+
+    function getDetailRow(slotId) {
+      return (
+        document.getElementById(`testimonial-detail-${slotId}`) ||
+        document.querySelector(`tr.testimonial-accordion-detail[data-testimonial-slot="${slotId}"]`)
+      );
+    }
+
+    function getTriggerRow(slotId) {
+      return document.querySelector(`tr.testimonial-accordion-trigger[data-testimonial-slot="${slotId}"]`);
+    }
+
+    function closeEditor() {
+      if (!openSlotId) return;
+      const detailRow = getDetailRow(openSlotId);
+      const triggerRow = getTriggerRow(openSlotId);
+      if (detailRow) {
+        detailRow.classList.add("hidden");
+        detailRow.setAttribute("aria-hidden", "true");
+      }
+      if (triggerRow) {
+        triggerRow.setAttribute("aria-expanded", "false");
+        const chevron = triggerRow.querySelector(".testimonial-chevron");
+        if (chevron) chevron.classList.remove("rotate-180");
+      }
+      if (formContainer && formPool) formPool.appendChild(formContainer);
+      openSlotId = null;
+    }
+
+    function openEditor(slotId) {
+      const slotEl = document.getElementById(`testimonial-slot-${slotId}`);
+      if (!slotEl) return;
+      closeEditor();
+      if (formContainer) slotEl.appendChild(formContainer);
+      const detailRow = getDetailRow(slotId);
+      const triggerRow = getTriggerRow(slotId);
+      if (detailRow) {
+        detailRow.classList.remove("hidden");
+        detailRow.setAttribute("aria-hidden", "false");
+      }
+      if (triggerRow) {
+        triggerRow.setAttribute("aria-expanded", "true");
+        const chevron = triggerRow.querySelector(".testimonial-chevron");
+        if (chevron) chevron.classList.add("rotate-180");
+      }
+      openSlotId = slotId;
+      detailRow?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    if (closeBtn) closeBtn.addEventListener("click", (e) => { e.preventDefault(); closeEditor(); });
+
+    document.querySelectorAll(".edit-testimonial-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = btn.getAttribute("data-id");
+        if (!id) return;
+        const t = testimonialsList.find((x) => x.id === id);
+        if (t) {
+          const idInp = document.getElementById("testimonial-id");
+          const titleInp = document.getElementById("testimonial-title");
+          const quoteInp = document.getElementById("testimonial-quote");
+          const nameInp = document.getElementById("testimonial-name");
+          const companyInp = document.getElementById("testimonial-company");
+          const imageInp = document.getElementById("testimonial-image");
+          if (idInp && idInp instanceof HTMLInputElement) idInp.value = t.id;
+          if (titleInp && titleInp instanceof HTMLInputElement) titleInp.value = t.title || "";
+          if (quoteInp && quoteInp instanceof HTMLTextAreaElement) quoteInp.value = t.testimonial || "";
+          if (nameInp && nameInp instanceof HTMLInputElement) nameInp.value = t.name || "";
+          if (companyInp && companyInp instanceof HTMLInputElement) companyInp.value = t.company || "";
+          if (imageInp && imageInp instanceof HTMLInputElement) imageInp.value = t.image || "";
+          if (editorTitle) editorTitle.textContent = "Edit Testimonial";
+        }
+        openEditor(id);
+      });
+    });
+
+    document.querySelectorAll("tr.testimonial-accordion-trigger").forEach((triggerRow) => {
+      triggerRow.addEventListener("click", (e) => {
+        const tgt = e.target instanceof Element ? e.target : null;
+        if (tgt?.closest(".edit-testimonial-btn, .delete-confirm-btn, .delete-confirm-wrapper")) return;
+        const slotId = triggerRow.getAttribute("data-testimonial-slot");
+        if (!slotId) return;
+        if (openSlotId === slotId) {
+          closeEditor();
+          return;
+        }
+        if (slotId === "create") {
+          form.reset();
+          const idInp = document.getElementById("testimonial-id");
+          if (idInp && idInp instanceof HTMLInputElement) idInp.value = "";
+          if (editorTitle) editorTitle.textContent = "Create New Testimonial";
+          openEditor("create");
+          return;
+        }
+        const t = testimonialsList.find((x) => x.id === slotId);
+        if (t) {
+          const idInp = document.getElementById("testimonial-id");
+          const titleInp = document.getElementById("testimonial-title");
+          const quoteInp = document.getElementById("testimonial-quote");
+          const nameInp = document.getElementById("testimonial-name");
+          const companyInp = document.getElementById("testimonial-company");
+          const imageInp = document.getElementById("testimonial-image");
+          if (idInp && idInp instanceof HTMLInputElement) idInp.value = t.id;
+          if (titleInp && titleInp instanceof HTMLInputElement) titleInp.value = t.title || "";
+          if (quoteInp && quoteInp instanceof HTMLTextAreaElement) quoteInp.value = t.testimonial || "";
+          if (nameInp && nameInp instanceof HTMLInputElement) nameInp.value = t.name || "";
+          if (companyInp && companyInp instanceof HTMLInputElement) companyInp.value = t.company || "";
+          if (imageInp && imageInp instanceof HTMLInputElement) imageInp.value = t.image || "";
+          if (editorTitle) editorTitle.textContent = "Edit Testimonial";
+        }
+        openEditor(slotId);
+      });
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const idInp = document.getElementById("testimonial-id");
+      const titleInp = document.getElementById("testimonial-title");
+      const quoteInp = document.getElementById("testimonial-quote");
+      const nameInp = document.getElementById("testimonial-name");
+      const companyInp = document.getElementById("testimonial-company");
+      const imageInp = document.getElementById("testimonial-image");
+      const data = {
+        id: idInp?.value || undefined,
+        title: (titleInp && titleInp instanceof HTMLInputElement ? titleInp.value : "").trim() || null,
+        testimonial: (quoteInp && quoteInp instanceof HTMLTextAreaElement ? quoteInp.value : "").trim(),
+        name: (nameInp && nameInp instanceof HTMLInputElement ? nameInp.value : "").trim() || null,
+        company: (companyInp && companyInp instanceof HTMLInputElement ? companyInp.value : "").trim() || null,
+        image: (imageInp && imageInp instanceof HTMLInputElement ? imageInp.value : "").trim() || null,
+      };
+      if (!data.testimonial) {
+        if (window.showError) window.showError("Validation", "Testimonial text is required", 0);
+        return;
+      }
+      try {
+        const res = await fetch("/api/testimonials", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || "Save failed");
+        if (window.showSuccess) window.showSuccess("Saved", "Testimonial saved. Reloading...", 2000);
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Save failed";
+        if (window.showError) window.showError("Save Failed", msg, 0);
+        console.error("Testimonial save error:", err);
+      }
+    });
+
+    window.handleTestimonialsReorder = async function (order) {
+      try {
+        const res = await fetch("/api/testimonials", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ orders: order }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || "Failed to update order");
+        }
+        if (window.showSuccess) window.showSuccess("Order Updated", "Testimonial order saved", 2000);
+      } catch (err) {
+        console.error("Reorder failed:", err);
+        if (window.showError) window.showError("Save Failed", "Failed to save order. Reloading...", 3000);
+        setTimeout(() => location.reload(), 1000);
+      }
+    };
+
+    window.handleTestimonialDeleted = async function () {
+      if (window.showSuccess) window.showSuccess("Deleted", "Testimonial deleted", 2000);
+      setTimeout(() => location.reload(), 500);
+    };
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initTestimonials);
+  } else {
+    initTestimonials();
+  }
+</script>

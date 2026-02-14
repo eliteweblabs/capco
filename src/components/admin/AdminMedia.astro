@@ -1019,8 +1019,8 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
         } catch (error) {
           console.error("Upload error:", error);
           failCount++;
-          if ((window as any).showNotice) {
-            (window as any).showNotice("error", "Upload Failed", `Failed to upload ${file.name}`, 3000);
+          if (window.showNotice) {
+            window.showNotice("error", "Upload Failed", `Failed to upload ${file.name}`, 3000);
           }
         }
       }
@@ -1033,8 +1033,8 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
       }, 500);
 
       if (successCount > 0) {
-        if ((window as any).showNotice) {
-          (window as any).showNotice(
+        if (window.showNotice) {
+          window.showNotice(
             "success",
             "Upload Complete",
             `${successCount} file${successCount > 1 ? "s" : ""} uploaded successfully${failCount > 0 ? ` (${failCount} failed)` : ""}`,
@@ -1051,7 +1051,7 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
           // Prepend in reverse so first uploaded ends up first in DOM (newest at start)
           cards.reverse().forEach((card) => filesGrid.insertBefore(card, filesGrid.firstChild));
           triggerMasonryRecalc();
-          if (typeof (window as any).lazyLoadImages === "function") (window as any).lazyLoadImages();
+          if (typeof window.lazyLoadImages === "function") window.lazyLoadImages();
           else {
             const newImgs = filesGrid.querySelectorAll('img.lazyload[data-src]');
             newImgs.forEach((img) => {
@@ -1077,8 +1077,8 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
         const url = card.dataset.fileUrl;
         if (url) {
           navigator.clipboard.writeText(url);
-          if ((window as any).showNotice) {
-            (window as any).showNotice("success", "Success", "URL copied to clipboard!", 2000);
+          if (window.showNotice) {
+            window.showNotice("success", "Success", "URL copied to clipboard!", 2000);
           }
         }
         return;
@@ -1167,8 +1167,8 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
             }
           }, 300);
           
-          if ((window as any).showNotice) {
-            (window as any).showNotice("success", "Success", "File deleted successfully", 2000);
+          if (window.showNotice) {
+            window.showNotice("success", "Success", "File deleted successfully", 2000);
           }
         } else {
           console.error("❌ [MEDIA-DELETE] Delete failed:", result);

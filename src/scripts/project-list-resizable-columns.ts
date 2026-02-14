@@ -28,14 +28,18 @@ function loadSavedWidths(): Record<string, number> {
       const parsed = JSON.parse(raw) as Record<string, number>;
       return { ...DEFAULT_WIDTHS, ...parsed };
     }
-  } catch (_) {}
+  } catch {
+    /* ignore parse errors */
+  }
   return { ...DEFAULT_WIDTHS };
 }
 
 function saveWidths(widths: Record<string, number>) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(widths));
-  } catch (_) {}
+  } catch {
+    /* ignore */
+  }
 }
 
 function initResizableColumns() {

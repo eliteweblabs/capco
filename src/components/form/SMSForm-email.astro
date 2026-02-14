@@ -180,12 +180,12 @@ const { compact = false } = Astro.props;
 
         // Check if modal notification function is available
         // console.log("📱 [SMS-FORM] Modal notification function available:", {
-        //   showNotice: typeof (window as any).showNotice
+        //   showNotice: typeof window.showNotice
         // });
 
         // Client-side validation - only check message since phone/carrier are hardcoded
         if (!message || message.trim().length === 0) {
-          (window as any).showNotice(
+          window.showNotice(
             "error",
             "Message Required",
             "Please enter a message to send.",
@@ -195,7 +195,7 @@ const { compact = false } = Astro.props;
         }
 
         // Show loading notification as modal
-        // (window as any).showNotice("info", "Sending Email...", "Please wait while we send your email to the CAPCo team.", 0); // 0 = no auto-hide
+        // window.showNotice("info", "Sending Email...", "Please wait while we send your email to the CAPCo team.", 0); // 0 = no auto-hide
 
         try {
           // Create FormData from the form
@@ -226,7 +226,7 @@ const { compact = false } = Astro.props;
             // Check if emails were actually sent successfully
             if (result.totalSent && result.totalSent > 0) {
               // Success - emails were actually sent
-              (window as any).showNotice(
+              window.showNotice(
                 "success",
                 "Email Sent!",
                 "Your message has been sent to the CAPCo team successfully.",
@@ -240,7 +240,7 @@ const { compact = false } = Astro.props;
             } else {
               // No emails were sent - show error modal
               console.error("🔔 [SMS Error] No emails were sent:", result);
-              (window as any).showNotice(
+              window.showNotice(
                 "error",
                 "Send Failed",
                 "Failed to send message. No emails were delivered.",
@@ -251,7 +251,7 @@ const { compact = false } = Astro.props;
             // Error
             const errorText = await response.text();
             console.error("🔔 [SMS Error] API response:", response.status, errorText);
-            (window as any).showNotice(
+            window.showNotice(
               "error",
               "Send Failed",
               "Failed to send message. Please try again.",
@@ -260,7 +260,7 @@ const { compact = false } = Astro.props;
           }
         } catch (error) {
           console.error("🔔 [SMS Error] Network error:", error);
-          (window as any).showNotice(
+          window.showNotice(
             "error",
             "Network Error",
             "Failed to send message. Please check your connection.",

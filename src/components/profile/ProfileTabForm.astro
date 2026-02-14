@@ -1,0 +1,485 @@
+---
+/**
+ * ProfileTabForm - Tabbed profile edit form (General, Social, Settings, Team)
+ * Extracted from profile.astro for reuse on profile page and admin user editing.
+ *
+ * @example Self-edit (profile page)
+ * <ProfileTabForm
+ *   userProfile={currentUser?.profile}
+ *   currentUser={currentUser}
+ *   {globalInputClasses}
+ *   globalCompanyPhone={globalCompanyPhone}
+ * />
+ *
+ * @example Admin edit (pool form for accordion)
+ * <ProfileTabForm
+ *   userProfile={null}
+ *   currentUser={currentUser}
+ *   formIdPrefix="admin-"
+ *   isAdminEdit={true}
+ *   {globalInputClasses}
+ * />
+ */
+import Tooltip from "../common/TooltipFloating.astro";
+import SimpleIcon from "../common/SimpleIcon.astro";
+import Button from "../common/Button.astro";
+import SlidingTabs from "../common/SlidingTabs.astro";
+import PhoneAndSMS from "../form/PhoneAndSMS.astro";
+import SocialMediaRepeater from "../form/SocialMediaRepeater.astro";
+import ProfileTeamSection from "./ProfileTeamSection.astro";
+import CloseButton from "../ui/CloseButton.astro";
+import { getCarrierKeyFromGateway } from "../../lib/sms-utils";
+
+interface Props {
+  userProfile: any;
+  currentUser: any;
+  globalInputClasses: string;
+  globalCompanyPhone?: string;
+  formIdPrefix?: string;
+  isAdminEdit?: boolean;
+  activeTab?: string;
+  showSettingsTab?: boolean;
+  showSignOut?: boolean;
+  /** Override email display (for admin editing another user) */
+  emailDisplay?: string;
+  /** Override switch handler name (e.g. "adminSwitchProfileTab" for admin form) */
+  switchHandlerName?: string;
+}
+
+const {
+  userProfile = null,
+  currentUser,
+  globalInputClasses,
+  globalCompanyPhone = "",
+  formIdPrefix = "",
+  isAdminEdit = false,
+  activeTab = "general",
+  showSettingsTab = !isAdminEdit,
+  showSignOut = !isAdminEdit,
+  emailDisplay,
+  switchHandlerName,
+} = Astro.props;
+
+const switchHandler = switchHandlerName ?? (formIdPrefix ? `${formIdPrefix.replace(/-$/, "")}SwitchProfileTab` : "switchProfileTab");
+
+const displayEmail = emailDisplay ?? currentUser?.email ?? userProfile?.email ?? "";
+
+const p = (id: string) => (formIdPrefix ? `${formIdPrefix}${id}` : id);
+const storedCarrierKey = userProfile?.mobileCarrier
+  ? getCarrierKeyFromGateway(userProfile.mobileCarrier)
+  : null;
+
+const validTabs = ["general", "social", "team", ...(showSettingsTab ? ["settings"] : [])];
+const tabIndex = validTabs.indexOf(activeTab) >= 0 ? validTabs.indexOf(activeTab) : 0;
+---
+
+<form id={p("profile-form")} class="space-y-6">
+  {isAdminEdit && <input type="hidden" name="targetUserId" id={p("target-user-id")} />}
+  <SlidingTabs
+    navId={p("profile-tab-nav")}
+    navClass="border-b border-gray-200 dark:border-gray-700"
+    activeItem={tabIndex}
+    urlParam="tab"
+    switchHandler={switchHandler}
+    items={[
+      ...(showSettingsTab
+        ? [{ id: "tab-settings", label: "Settings", variant: "tab", showLabel: true }]
+        : []),
+      { id: "tab-general", label: "General", variant: "tab", showLabel: true },
+      { id: "tab-social", label: "Social", variant: "tab", showLabel: true },
+      { id: "tab-team", label: "Team", variant: "tab", showLabel: true },
+    ]}
+  />
+
+  <div id={p("profile-tab-content")}>
+    {showSettingsTab && (
+      <div
+        class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${activeTab !== "settings" ? "hidden" : ""}`}
+        id={p("settings")}
+        role="tabpanel"
+        aria-labelledby="tab-settings"
+      >
+        <div class="space-y-6">
+          <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-700/50">
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">Larger page elements</p>
+              <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                Better readability on mobile; scales buttons and text
+              </p>
+            </div>
+            <button
+              type="button"
+              id={p("profile-page-size-toggle")}
+              title="Toggle larger page elements"
+              class="color-background inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+              aria-pressed="false"
+            >
+              <SimpleIcon name="zoom-in" size="sm" class="mr-2" />
+              <span id={p("profile-page-size-toggle-label")}>Larger page elements</span>
+            </button>
+          </div>
+          <div class="relative">
+            <label for={p("profile-language")} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Language
+            </label>
+            <select
+              id={p("profile-language")}
+              name="language"
+              class={globalInputClasses}
+              disabled
+              aria-describedby={p("profile-language-hint")}
+            >
+              <option value="">Select language (coming soon)</option>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+            <p id={p("profile-language-hint")} class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Interface language preference. Coming soon.
+            </p>
+          </div>
+          <div class="relative">
+            <label for={p("profile-timezone")} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Timezone
+            </label>
+            <select
+              id={p("profile-timezone")}
+              name="timezone"
+              class={globalInputClasses}
+              disabled
+              aria-describedby={p("profile-timezone-hint")}
+            >
+              <option value="">Detect automatically (coming soon)</option>
+            </select>
+            <p id={p("profile-timezone-hint")} class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              For dates and notifications. Coming soon.
+            </p>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <div
+      class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${activeTab !== "general" ? "hidden" : ""}`}
+      id={p("general")}
+      role="tabpanel"
+      aria-labelledby="tab-general"
+    >
+      <div class="space-y-6">
+        <div class="text-center">
+          <div
+            class="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700"
+          >
+            <img
+              id={p("profile-avatar")}
+              src={userProfile?.avatarUrl || ""}
+              alt="Profile picture"
+              class="h-20 w-20 rounded-lg object-cover"
+              onerror="this.style.display='none'; const n=this.nextElementSibling; if(n) n.style.display='flex';"
+            />
+            <SimpleIcon
+              id={p("profile-avatar-fallback")}
+              name="user"
+              style={userProfile?.avatarUrl ? "display:none;" : ""}
+              class="h-10 w-10 text-gray-400"
+            />
+          </div>
+          <div class="flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              id={p("upload-avatar-btn")}
+              variant="link"
+              size="sm"
+              class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            >
+              Upload Photo
+            </Button>
+            <Button
+              type="button"
+              id={p("remove-avatar-btn")}
+              variant="link"
+              size="sm"
+              class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              style={userProfile?.avatarUrl ? "" : "display: none;"}
+            >
+              Remove
+            </Button>
+          </div>
+          <input type="file" id={p("avatar-input")} accept="image/*" class="hidden" />
+        </div>
+
+        {isAdminEdit && (
+          <div class="relative">
+            <label for={p("role-select")} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Role
+            </label>
+            <select id={p("role-select")} name="role" class={globalInputClasses} value={userProfile?.role || "Client"}>
+              <option value="Client">Client</option>
+              <option value="Staff">Staff</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+        )}
+
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
+          <div class="relative">
+            <label
+              for={p("company-name")}
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Company Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id={p("company-name")}
+              name="company-name"
+              required
+              value={userProfile?.companyName || ""}
+              class={globalInputClasses}
+              placeholder="Enter company name"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div class="relative">
+            <label
+              for={p("first-name")}
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              First Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id={p("first-name")}
+              name="firstName"
+              value={userProfile?.firstName || ""}
+              required
+              class={globalInputClasses}
+              placeholder="Enter first name"
+            />
+          </div>
+          <div class="relative">
+            <label
+              for={p("last-name")}
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Last Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id={p("last-name")}
+              name="lastName"
+              value={userProfile?.lastName || ""}
+              required
+              class={globalInputClasses}
+              placeholder="Enter last name"
+            />
+          </div>
+        </div>
+
+        <div class="relative">
+          <label for={p("title")} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Title
+          </label>
+          <input
+            type="text"
+            id={p("title")}
+            name="title"
+            value={userProfile?.title || ""}
+            class={globalInputClasses}
+            placeholder="e.g. Project Manager, Engineer"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
+          <div class="relative">
+            <label for={p("email")} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Email Address <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input
+                type="email"
+                id={p("email")}
+                name="email"
+                required
+                value={displayEmail}
+                readonly
+                class={globalInputClasses}
+                placeholder="Enter email address"
+              />
+              {!isAdminEdit && globalCompanyPhone && (
+                <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Tooltip text={`Call ${globalCompanyPhone} to change email`} position="top">
+                    <SimpleIcon id={p("email-lock-icon")} name="lock" />
+                  </Tooltip>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <PhoneAndSMS
+          id={p("phone")}
+          name="phone"
+          value={userProfile?.phone || ""}
+          placeholder="Enter phone number"
+          showSMS={true}
+          smsChecked={userProfile?.smsAlerts || false}
+          selectedCarrier={storedCarrierKey || ""}
+          {globalInputClasses}
+        />
+
+        <div class="relative">
+          <label for={p("bio")} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Bio
+          </label>
+          <textarea
+            id={p("bio")}
+            name="bio"
+            rows="4"
+            class={`${globalInputClasses} resize-y`}
+            placeholder="Tell us about yourself"
+          >
+            {userProfile?.bio ?? ""}
+          </textarea>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Short description shown on your team profile
+          </p>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            class="w-auto md:w-full md:flex-1"
+            id={p("back-button")}
+            icon="chevron-left"
+            iconPosition="left"
+          >
+            <span class="hidden sm:inline"> Back </span>
+          </Button>
+          <Button
+            type="submit"
+            id={p("save-profile-btn")}
+            variant="secondary"
+            size="sm"
+            class={`${p("save-profile-btn")} flex-1 md:w-full md:flex-grow save-profile-btn`}
+            icon="save"
+            iconPosition="left"
+          >
+            Save Changes
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${activeTab !== "social" ? "hidden" : ""}`}
+      id={p("social")}
+      role="tabpanel"
+      aria-labelledby="tab-social"
+    >
+      <div class="space-y-6">
+        <div class="relative">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Social Media
+          </label>
+          <SocialMediaRepeater
+            id={p("profile-socials")}
+            name="socialNetworks"
+            value={userProfile?.socialNetworks || []}
+            inputClasses={globalInputClasses}
+            addButtonLabel="Add Social Link"
+            emptyMessage="No social links yet. Add your LinkedIn, Twitter, or other profiles."
+          />
+        </div>
+        <div class="flex gap-3 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            class="w-auto md:w-full md:flex-1"
+            id={p("back-button-social")}
+            icon="chevron-left"
+            iconPosition="left"
+            onclick={`window.${switchHandler}?.('general')`}
+          >
+            <span class="hidden sm:inline"> Back </span>
+          </Button>
+          <Button
+            type="submit"
+            id={p("save-profile-btn-social")}
+            variant="secondary"
+            size="sm"
+            class={`${p("save-profile-btn")} flex-1 md:w-full md:flex-grow save-profile-btn`}
+            icon="save"
+            iconPosition="left"
+          >
+            Save Changes
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${activeTab !== "team" ? "hidden" : ""}`}
+      id={p("team")}
+      role="tabpanel"
+      aria-labelledby="tab-team"
+    >
+      <ProfileTeamSection
+        title="Team"
+        description="People in your organization"
+        emptyMessage="No team members yet. Mark profiles as team members to display them here."
+      />
+    </div>
+  </div>
+</form>
+
+{showSignOut && (
+  <div class="mt-8 flex justify-center border-t border-gray-200 pt-6 dark:border-gray-700">
+    <Button
+      type="button"
+      id={p("profile-logout-btn")}
+      variant="outline"
+      size="sm"
+      icon="log-out"
+      iconPosition="left"
+      class="text-gray-600 dark:text-gray-400"
+    >
+      Sign Out
+    </Button>
+  </div>
+)}
+
+<!-- Avatar cropper modal -->
+<div
+  id={p("profile-avatar-cropper")}
+  tabindex="-1"
+  aria-hidden="true"
+  class="fixed left-0 right-0 top-0 hidden h-[calc(100%-1rem)] max-h-full w-full items-center justify-center overflow-y-auto overflow-x-hidden md:inset-0"
+  style="z-index: 1050;"
+>
+  <div class="relative max-h-full w-full max-w-2xl p-4">
+    <div class="relative rounded-lg bg-white shadow dark:bg-gray-800">
+      <div class="flex items-center justify-between rounded-t border-b p-4 dark:border-gray-600">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Crop Photo</h3>
+        <CloseButton data-avatar-cropper-close tooltipText="Close" />
+      </div>
+      <div class="p-4">
+        <div id={p("avatar-cropper-container")} class="h-80 w-full max-w-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+          <img id={p("avatar-cropper-image")} src="" alt="Crop" class="block max-h-full max-w-full" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 rounded-b border-t border-gray-200 p-4 dark:border-gray-600">
+        <button type="button" data-avatar-cropper-close class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">
+          Cancel
+        </button>
+        <button type="button" id={p("avatar-cropper-apply")} class="rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 dark:bg-primary-600 dark:hover:bg-primary-700">
+          Apply
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -807,15 +807,15 @@
 
   // Create instance and make it globally accessible
   const toastNotificationManager = new ToastNotificationManager();
-  (window as any).toastNotificationManager = toastNotificationManager;
+  window.toastNotificationManager = toastNotificationManager;
 
   // Convenience functions for backward compatibility and ease of use
-  (window as any).showNotification = async (options: NotificationOptions) => {
+  window.showNotification = async (options) => {
     return await toastNotificationManager.show(options);
   };
 
   // Toast-specific convenience functions
-  (window as any).showSuccess = (title: string, message: string, duration: number = 4000) => {
+  window.showSuccess = (title, message, duration = 4000) => {
     return toastNotificationManager.show({
       type: "success",
       title,
@@ -824,7 +824,7 @@
     });
   };
 
-  (window as any).showError = (title: string, message: string, duration: number = 0) => {
+  window.showError = (title, message, duration = 0) => {
     return toastNotificationManager.show({
       type: "error",
       title,
@@ -833,7 +833,7 @@
     });
   };
 
-  (window as any).showWarning = (title: string, message: string, duration: number = 4000) => {
+  window.showWarning = (title, message, duration = 4000) => {
     return toastNotificationManager.show({
       type: "warning",
       title,
@@ -842,7 +842,7 @@
     });
   };
 
-  (window as any).showInfo = (title: string, message: string, duration: number = 4000) => {
+  window.showInfo = (title, message, duration = 4000) => {
     return toastNotificationManager.show({
       type: "info",
       title,
@@ -852,18 +852,16 @@
   };
 
   // Default behavior is now toast notifications - supports both object and individual parameters
-  (window as any).showNotice = async (
-    typeOrObject: string | any,
-    title?: string,
-    message?: string,
-    duration?: number,
-    redirectOrActions?:
-      | Array<{ label: string; action: () => void; primary?: boolean }>
-      | { url: string; showCountdown?: boolean },
-    persist?: boolean
+  window.showNotice = async (
+    typeOrObject,
+    title,
+    message,
+    duration,
+    redirectOrActions,
+    persist
   ) => {
     console.log("🔔 [TOAST] showNotice called with:", typeOrObject);
-    let modalData: any;
+    let modalData;
 
     // Check if first parameter is an object (new format)
     if (typeof typeOrObject === "object" && typeOrObject !== null) {
@@ -897,7 +895,7 @@
 
     // Prepare notification options
     const notificationOptions = {
-      type: modalData.type as any,
+      type: modalData.type,
       title: modalData.title,
       message: modalData.message,
       duration: modalData.duration, // Don't set default duration - let it be undefined for persistent toasts
@@ -905,9 +903,9 @@
       modal: modalData.modal !== undefined ? modalData.modal : false, // Default to false (toast)
       actions: isRedirect
         ? undefined
-        : (modalData.actions as Array<{ label: string; action: () => void; primary?: boolean }>),
+        : modalData.actions,
       redirect: isRedirect
-        ? (redirectData as { url: string; delay?: number; showCountdown?: boolean })
+        ? redirectData
         : modalData.redirect, // Also check for redirect in modalData itself
     };
 
@@ -920,9 +918,9 @@
   };
 
   // Ensure showNotice is always available with fallback
-  if (!(window as any).showNotice) {
+  if (!window.showNotice) {
     console.warn("🔔 [TOAST] showNotice not properly initialized, creating fallback");
-    (window as any).showNotice = (type: string, title: string, message: string) => {
+    window.showNotice = (type, title, message) => {
       console.error("🔔 [TOAST] Fallback showNotice called - notification system not ready");
       alert(`${title}: ${message}`);
     };

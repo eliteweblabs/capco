@@ -141,7 +141,7 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
 
   <!-- Submit Button -->
   <div class="pt-2">
-    <Button type="submit" id="submit-btn" variant="primary" size="md" fullWidth loading={true}>
+    <Button type="submit" id="submit-btn" variant="primary" size="md" fullWidth>
       <span id="submit-text">Create User</span>
     </Button>
   </div>
@@ -159,7 +159,7 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      (window as any).showNotice(
+      window.showNotice(
         "info",
         "Creating User...",
         "Please wait while we create the user.",
@@ -167,28 +167,28 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
       );
 
       // Get form data for validation
-      const formData = new FormData(form as HTMLFormElement);
+      const formData = new FormData(form);
 
       // Get role from radio inputs
-      const role = formData.get("role") as string;
+      const role = formData.get("role");
 
       // Get SMS fields
-      const smsAlertsCheckbox = document.getElementById("sms-alerts-phone") as HTMLInputElement;
+      const smsAlertsCheckbox = document.getElementById("sms-alerts-phone");
       const smsAlerts = smsAlertsCheckbox?.checked || false;
       const mobileCarrierInput = document.getElementById(
         "mobile-carrier-phone-value"
-      ) as HTMLInputElement;
+      );
       const mobileCarrier = mobileCarrierInput?.value?.trim() || "";
 
-      const passwordValue = (formData.get("password") as string)?.trim();
+      const passwordValue = formData.get("password")?.toString()?.trim();
 
-      const userData: any = {
-        email: formData.get("email") as string,
-        phone: formData.get("phone") as string,
+      const userData = {
+        email: formData.get("email"),
+        phone: formData.get("phone"),
         role: role,
-        firstName: formData.get("firstName") as string,
-        lastName: formData.get("lastName") as string,
-        companyName: formData.get("companyName") as string,
+        firstName: formData.get("firstName"),
+        lastName: formData.get("lastName"),
+        companyName: formData.get("companyName"),
         smsAlerts: smsAlerts,
         mobileCarrier: mobileCarrier || undefined,
       };
@@ -205,8 +205,8 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
         !userData.email?.trim() ||
         !userData.role
       ) {
-        if ((window as any).showNotice) {
-          (window as any).showNotice(
+        if (window.showNotice) {
+          window.showNotice(
             "error",
             "Validation Error",
             "Please fill in all required fields.",
@@ -219,12 +219,12 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
       }
 
       // Validate email format using global function
-      const emailError = (window as any).validateEmail
-        ? (window as any).validateEmail(userData.email)
+      const emailError = window.validateEmail
+        ? window.validateEmail(userData.email)
         : null;
       if (emailError) {
-        if ((window as any).showNotice) {
-          (window as any).showNotice("error", "Validation Error", emailError, 5000);
+        if (window.showNotice) {
+          window.showNotice("error", "Validation Error", emailError, 5000);
         } else if (window.showNotice) {
           window.showNotice("error", "Validation Error", emailError);
         }
@@ -255,8 +255,8 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
           console.log("✅ [CREATE-USER] User created successfully:", result.data);
 
           // Show notification if provided by API
-          if (result.notification && (window as any).showNotice) {
-            (window as any).showNotice(
+          if (result.notification && window.showNotice) {
+            window.showNotice(
               result.notification.type,
               result.notification.title,
               result.notification.message,
@@ -265,7 +265,7 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
           }
 
           // Reset form
-          (form as HTMLFormElement).reset();
+          form.reset();
 
           // Refresh page after short delay to show new user
           setTimeout(() => {
@@ -305,8 +305,8 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
           }
 
           // Show error notification
-          if ((window as any).showNotice) {
-            (window as any).showNotice(errorTitle, errorMessage, "error", errorDuration);
+          if (window.showNotice) {
+            window.showNotice(errorTitle, errorMessage, "error", errorDuration);
           } else if (window.showNotice) {
             // Fallback to modal
             window.showNotice("error", errorTitle, errorMessage);
@@ -314,8 +314,8 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
         }
       } catch (error) {
         console.error("Create user error:", error);
-        if ((window as any).showNotice) {
-          (window as any).showNotice(
+        if (window.showNotice) {
+          window.showNotice(
             "Network Error",
             "Network error. Please check your connection and try again.",
             "error",
@@ -333,13 +333,13 @@ const { globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.p
       }
     });
 
-    function setFormLoading(loading: boolean) {
+    function setFormLoading(loading) {
       if (loading) {
-        (submitBtn as HTMLButtonElement).disabled = true;
-        (submitText as HTMLElement).textContent = "Creating...";
+        submitBtn.disabled = true;
+        submitText.textContent = "Creating...";
       } else {
-        (submitBtn as HTMLButtonElement).disabled = false;
-        (submitText as HTMLElement).textContent = "Create User";
+        submitBtn.disabled = false;
+        submitText.textContent = "Create User";
       }
     }
   }

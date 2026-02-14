@@ -14,17 +14,14 @@ import MultiStepForm from "../../components/form/MultiStepForm.astro";
 import { resetFormConfig } from "../../lib/forms/reset-form-config";
 ---
 
-<LayoutCentered
-  title="Reset Password"
-  description="Set a new password for your account"
->
+<LayoutCentered title="Reset Password" description="Set a new password for your account">
   <MultiStepForm config={resetFormConfig} />
 
   <script>
     import { getSupabaseClient } from "../../lib/supabase-client";
 
     document.addEventListener("DOMContentLoaded", async () => {
-      const form = document.getElementById("multi-step-reset-form") as HTMLFormElement;
+      const form = document.getElementById("multi-step-reset-form");
       if (!form) return;
 
       const hash = window.location.hash;
@@ -62,16 +59,16 @@ import { resetFormConfig } from "../../lib/forms/reset-form-config";
       form.addEventListener(
         "submit",
         (e) => {
-          const password = (form.querySelector('input[name="password"]') as HTMLInputElement)
+          const password = (form.querySelector('input[name="password"]'))
             ?.value;
           const passwordConfirm = (
-            form.querySelector('input[name="passwordConfirm"]') as HTMLInputElement
+            form.querySelector('input[name="passwordConfirm"]')
           )?.value;
           if (password && passwordConfirm && password !== passwordConfirm) {
             e.preventDefault();
             e.stopPropagation();
-            if ((window as any).showNotice) {
-              (window as any).showNotice(
+            if (window.showNotice) {
+              window.showNotice(
                 "error",
                 "Passwords don't match",
                 "Please make sure both password fields match.",
@@ -89,8 +86,8 @@ import { resetFormConfig } from "../../lib/forms/reset-form-config";
       const urlParams = new URLSearchParams(window.location.search);
       const error = urlParams.get("error");
       const message = urlParams.get("message");
-      if (error && (window as any).showNotice) {
-        (window as any).showNotice("error", "Error", message || error, 6000);
+      if (error && window.showNotice) {
+        window.showNotice("error", "Error", message || error, 6000);
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     });

@@ -828,10 +828,10 @@ const debugData = {
       } from "@/lib/notification-count-loader";
 
       // Make functions globally available
-      (window as any).initializeNotificationCount = initializeNotificationCount;
-      (window as any).updateNotificationBellCount = updateNotificationBellCount;
-      (window as any).loadNotificationCount = loadNotificationCount;
-      (window as any).refreshNotificationCount = refreshNotificationCount;
+      window.initializeNotificationCount = initializeNotificationCount;
+      window.updateNotificationBellCount = updateNotificationBellCount;
+      window.loadNotificationCount = loadNotificationCount;
+      window.refreshNotificationCount = refreshNotificationCount;
     </script>
 
     <!-- Global typewriter: simple (vanilla) + TypeIt-based -->
@@ -869,8 +869,8 @@ const debugData = {
           document.querySelectorAll<HTMLElement>(selector).forEach((el) => runSimpleTypewriter(el));
         }
 
-        (window as any).runSimpleTypewriter = runSimpleTypewriter;
-        (window as any).runSimpleTypewriterOnSelector = runSimpleTypewriterOnSelector;
+        window.runSimpleTypewriter = runSimpleTypewriter;
+        window.runSimpleTypewriterOnSelector = runSimpleTypewriterOnSelector;
 
         function initLoadingTypewriters() {
           runSimpleTypewriterOnSelector("[data-loading-typewriter]");
@@ -884,8 +884,8 @@ const debugData = {
     </script>
     <script>
       import { initTypewriterTexts, triggerActiveStepTypewriter } from "../../scripts/typewriter-text";
-      (window as any).initTypewriterTexts = initTypewriterTexts;
-      (window as any).triggerActiveStepTypewriter = triggerActiveStepTypewriter;
+      window.initTypewriterTexts = initTypewriterTexts;
+      window.triggerActiveStepTypewriter = triggerActiveStepTypewriter;
     </script>
 
     <!-- Set global user data for client-side components -->
@@ -1005,7 +1005,7 @@ const debugData = {
           mainClasses,
           layout === "default" && "px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10",
         ]}
-        style={currentUser ? "" : undefined}
+        style={currentUser ? "transition-duration: 350ms;" : undefined}
         
         
       >
@@ -1154,21 +1154,21 @@ const debugData = {
 
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
-        (window as any).hideOnFormFocus();
+        window.hideOnFormFocus();
 
         // Initialize notification count only if user is authenticated
         try {
-          const notificationBell = document.querySelector('[data-dropdown-toggle="notification-dropdown"]') as HTMLElement | null;
+          const notificationBell = document.querySelector('[data-dropdown-toggle="notification-dropdown"]');
           if (
             notificationBell &&
             notificationBell.dataset?.userId &&
-            (window as any).initializeNotificationCount
+            window.initializeNotificationCount
           ) {
             console.log(
               "🔔 [APP] Initializing notifications for user:",
               notificationBell.dataset.userId
             );
-            await (window as any).initializeNotificationCount();
+            await window.initializeNotificationCount();
           } else {
             console.log("🔔 [APP] Skipping notification initialization - no authenticated user");
           }
@@ -1191,7 +1191,7 @@ const debugData = {
 
         images.forEach((img) => {
           img.addEventListener("error", (event) => {
-            const target = event.target as HTMLImageElement;
+            const target = event.target;
             const src = target.src;
 
             // Check if it's a Supabase storage URL that's failing
@@ -1223,11 +1223,11 @@ const debugData = {
           mutations.forEach((mutation) => {
             mutation.addedNodes.forEach((node) => {
               if (node.nodeType === Node.ELEMENT_NODE) {
-                const element = node as Element;
+                const element = node;
                 const newImages = element.querySelectorAll("img");
                 newImages.forEach((img) => {
                   img.addEventListener("error", (event) => {
-                    const target = event.target as HTMLImageElement;
+                    const target = event.target;
                     const src = target.src;
 
                     if (src && src.includes("supabase.co/storage")) {

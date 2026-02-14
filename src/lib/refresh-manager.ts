@@ -308,10 +308,12 @@ export class RefreshManager {
       element.textContent = value;
     });
 
-    // User name/company name - update text content
+    // User name/company name - update text content (supports data-refresh-suffix for e.g. "'s Profile")
     this.registerCallback("companyName", (value: string) => {
       const element = this as any;
-      element.textContent = value;
+      const suffix = element.getAttribute("data-refresh-suffix");
+      const displayValue = value || (suffix ? "User" : "");
+      element.textContent = suffix ? `${displayValue}${suffix}` : displayValue;
     });
 
     // Project count - format with singular/plural

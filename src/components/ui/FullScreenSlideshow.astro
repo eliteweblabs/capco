@@ -54,8 +54,12 @@ const {
 
 // Coerce for shortcode (props come as strings)
 const autoplay = Math.max(0, parseInt(String(props.autoplay ?? 0), 10) || 0);
-const showNav = showNavProp === false || String(showNavProp).toLowerCase() === "false" ? false : !!showNavProp;
-const showPagination = showPaginationProp === false || String(showPaginationProp).toLowerCase() === "false" ? false : !!showPaginationProp;
+const showNav =
+  showNavProp === false || String(showNavProp).toLowerCase() === "false" ? false : !!showNavProp;
+const showPagination =
+  showPaginationProp === false || String(showPaginationProp).toLowerCase() === "false"
+    ? false
+    : !!showPaginationProp;
 
 // Normalize slides: accept array, JSON string (from CMS), or single slide object
 function normalizeSlides(input: SlideData[] | string | SlideData | undefined): SlideData[] {
@@ -65,14 +69,16 @@ function normalizeSlides(input: SlideData[] | string | SlideData | undefined): S
   else if (typeof input === "string") {
     try {
       const parsed = JSON.parse(input);
-      items = Array.isArray(parsed) ? parsed : parsed?.slides ?? [parsed];
+      items = Array.isArray(parsed) ? parsed : (parsed?.slides ?? [parsed]);
     } catch {
       return [];
     }
   } else {
     items = [input];
   }
-  return items.filter((s): s is SlideData => s && typeof s.src === "string" && typeof s.alt === "string");
+  return items.filter(
+    (s): s is SlideData => s && typeof s.src === "string" && typeof s.alt === "string"
+  );
 }
 
 // First try slides prop, then flat props (slide1Src/slide1Alt or image1/alt1) for shortcode
@@ -95,7 +101,9 @@ if (slides.length === 0) {
 }
 
 if (slides.length === 0) {
-  throw new Error("FullScreenSlideshow requires at least one slide. Use slides=[{src,alt}] or slide1Src/slide1Alt, or image1/alt1.");
+  throw new Error(
+    "FullScreenSlideshow requires at least one slide. Use slides=[{src,alt}] or slide1Src/slide1Alt, or image1/alt1."
+  );
 }
 ---
 
@@ -108,51 +116,59 @@ if (slides.length === 0) {
 >
   <div class="swiper swiper-fullscreen h-full w-full">
     <div class="swiper-wrapper">
-      {slides.map((slide, i) => (
-        <div class="swiper-slide">
-          <div class="relative flex h-full w-full items-center justify-center bg-black">
-            <img
-              src={slide.src}
-              alt={slide.alt}
-              class="h-full w-full object-contain"
-              loading={i === 0 ? "eager" : "lazy"}
-              fetchpriority={i === 0 ? "high" : undefined}
-            />
-            {slide.caption && (
-              <div
-                class="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 py-6 text-white"
-                aria-hidden="true"
-              >
-                <p class="text-sm md:text-base text-white drop-shadow-lg">{slide.caption}</p>
-              </div>
-            )}
+      {
+        slides.map((slide, i) => (
+          <div class="swiper-slide">
+            <div class="relative flex h-full w-full items-center justify-center bg-black">
+              <img
+                src={slide.src}
+                alt={slide.alt}
+                class="h-full w-full object-contain"
+                loading={i === 0 ? "eager" : "lazy"}
+                fetchpriority={i === 0 ? "high" : undefined}
+              />
+              {slide.caption && (
+                <div
+                  class="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 py-6 text-white"
+                  aria-hidden="true"
+                >
+                  <p class="text-sm text-white drop-shadow-lg md:text-base">{slide.caption}</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      }
     </div>
 
     {showPagination && <div class="swiper-pagination swiper-pagination-fullscreen" />}
 
-    {showNav && (
-      <>
-        <button
-          type="button"
-          class="swiper-button-prev swiper-button-fullscreen"
-          aria-label="Previous slide"
-        >
-          <span class="sr-only">Previous</span>
-          <SimpleIcon name="chevron-left" size="lg" class="h-10 w-10 text-white drop-shadow-lg" />
-        </button>
-        <button
-          type="button"
-          class="swiper-button-next swiper-button-fullscreen"
-          aria-label="Next slide"
-        >
-          <span class="sr-only">Next</span>
-          <SimpleIcon name="chevron-right" size="lg" class="h-10 w-10 text-white drop-shadow-lg" />
-        </button>
-      </>
-    )}
+    {
+      showNav && (
+        <>
+          <button
+            type="button"
+            class="swiper-button-prev swiper-button-fullscreen"
+            aria-label="Previous slide"
+          >
+            <span class="sr-only">Previous</span>
+            <SimpleIcon name="chevron-left" size="lg" class="h-10 w-10 text-white drop-shadow-lg" />
+          </button>
+          <button
+            type="button"
+            class="swiper-button-next swiper-button-fullscreen"
+            aria-label="Next slide"
+          >
+            <span class="sr-only">Next</span>
+            <SimpleIcon
+              name="chevron-right"
+              size="lg"
+              class="h-10 w-10 text-white drop-shadow-lg"
+            />
+          </button>
+        </>
+      )
+    }
   </div>
 </div>
 

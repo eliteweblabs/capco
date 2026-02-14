@@ -1,0 +1,35 @@
+---
+import Button from "../common/Button.astro";
+import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
+
+interface Props {
+  testimonial: { id: string; title?: string };
+}
+
+const { testimonial } = Astro.props;
+---
+
+<div class="flex items-center gap-2">
+  <Button
+    variant="ghost"
+    size="sm"
+    iconOnly
+    icon="edit"
+    class="edit-testimonial-btn"
+    dataAttributes={{ "data-id": testimonial.id }}
+    title="Edit testimonial"
+    iconClasses="mr-0"
+  />
+  <DeleteConfirmButton
+    id={"delete-testimonial-" + testimonial.id}
+    itemType="testimonial"
+    apiEndpoint="/api/testimonials"
+    deleteMethod="DELETE"
+    deleteQueryParam="id"
+    onDeleteCallback="handleTestimonialDeleted"
+    tooltipText={"Delete " + (testimonial.title || "testimonial")}
+    size="sm"
+    variant="icon"
+    dataAttributes={{ id: testimonial.id }}
+  />
+</div>

@@ -44,7 +44,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       email: email.trim(),
       token: token.trim(),
       type: type as "email" | "sms",
-    });
+    } as any);
 
     if (error) {
       // Log failed verification

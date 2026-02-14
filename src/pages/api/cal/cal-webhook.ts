@@ -77,7 +77,7 @@ export const POST: APIRoute = async ({ request }) => {
     switch (triggerEvent) {
       case "BOOKING_CREATED":
       case "BOOKING_CONFIRMED":
-      case "BOOKING_RESCHEDULED":
+      case "BOOKING_RESCHEDULED": {
         // Upsert appointment into our database
         const { data: upsertedAppointment, error: upsertError } = await supabaseAdmin
           .from("appointments")
@@ -112,8 +112,9 @@ export const POST: APIRoute = async ({ request }) => {
         // Create notification for admins/staff
         await createBookingNotification(upsertedAppointment, triggerEvent);
         break;
+      }
 
-      case "BOOKING_CANCELLED":
+      case "BOOKING_CANCELLED": {
         // Mark appointment as cancelled in our database
         const { data: cancelledAppointment, error: cancelError } = await supabaseAdmin
           .from("appointments")
@@ -133,6 +134,7 @@ export const POST: APIRoute = async ({ request }) => {
           await createBookingNotification(cancelledAppointment, triggerEvent);
         }
         break;
+      }
 
       default:
         console.warn(`⚠️ [CAL-WEBHOOK] Unhandled trigger event: ${triggerEvent}`);

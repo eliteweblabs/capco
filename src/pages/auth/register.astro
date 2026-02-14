@@ -77,7 +77,7 @@ import DotGrid from "../../components/ui/DotGrid.astro";
   async function triggerGoogleOAuth(e?: Event) {
     if (e) e.preventDefault();
     const redirectDestination =
-      (document.querySelector('input[name="redirect"]') as HTMLInputElement)?.value ||
+      document.querySelector('input[name="redirect"]')?.value ||
       "/project/dashboard";
     const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
     if (supabaseUrl) {
@@ -88,8 +88,8 @@ import DotGrid from "../../components/ui/DotGrid.astro";
     }
     const supabase = getSupabaseClient();
     if (!supabase) {
-      if ((window as any).showNotice) {
-        (window as any).showNotice("error", "Configuration Error", "Supabase is not configured.");
+      if (window.showNotice) {
+        window.showNotice("error", "Configuration Error", "Supabase is not configured.");
       }
       return;
     }
@@ -103,27 +103,27 @@ import DotGrid from "../../components/ui/DotGrid.astro";
           queryParams: { access_type: "offline", prompt: "consent" },
         },
       });
-      if (error && (window as any).showNotice) {
-        (window as any).showNotice("error", "Sign In Error", error.message);
+      if (error && window.showNotice) {
+        window.showNotice("error", "Sign In Error", error.message);
       }
     } catch (err) {
       console.error("[GOOGLE-SIGNIN]", err);
-      if ((window as any).showNotice) {
-        (window as any).showNotice("error", "Sign In Error", "An unexpected error occurred");
+      if (window.showNotice) {
+        window.showNotice("error", "Sign In Error", "An unexpected error occurred");
       }
     }
   }
 
-  (window as any).handleGoogleSignup = triggerGoogleOAuth;
+  window.handleGoogleSignup = triggerGoogleOAuth;
   document.addEventListener("auth-google-request", () => triggerGoogleOAuth());
 
   document.addEventListener(
     "click",
     (e) => {
-      const btn = (e.target as HTMLElement).closest?.('.provider-btn[data-provider="google"]');
-      if (btn && !(btn as HTMLButtonElement).disabled) {
+      const btn = e.target.closest?.('.provider-btn[data-provider="google"]');
+      if (btn && !btn.disabled) {
         e.stopImmediatePropagation();
-        triggerGoogleOAuth(e as Event);
+        triggerGoogleOAuth(e);
       }
     },
     true

@@ -1,0 +1,21 @@
+---
+import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
+
+interface Props {
+  user: { id: string; firstName?: string; lastName?: string; companyName?: string };
+}
+
+const { user } = Astro.props;
+const fullName = ((user.firstName || "") + " " + (user.lastName || "")).trim();
+const displayName = fullName || user.companyName || "Unknown User";
+---
+
+<DeleteConfirmButton
+  id={"delete-user-" + user.id}
+  itemType="user"
+  apiEndpoint="/api/users/delete"
+  onDeleteCallback="handleUserDeleted"
+  tooltipText={"Delete " + displayName}
+  size="sm"
+  variant="icon"
+/>

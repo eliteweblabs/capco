@@ -112,7 +112,7 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
       console.log("[CAMPFIRE-AUTO-LOGIN] Flag detected, attempting auto-login...");
 
       // Get user email from page (we'll need to pass it from server)
-      const userEmail = (window as any).currentUserEmail || "";
+      const userEmail = window.currentUserEmail || "";
 
       // Prompt user for password or use stored password (if available)
       // For security, we'll need to ask user once or use a secure storage method
@@ -139,7 +139,7 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
   })();
 
   // Request push notification permission
-  (window as any).requestPushNotificationPermission = function () {
+  window.requestPushNotificationPermission = function () {
     // Check if we're on mobile Safari
     const isMobileSafari =
       /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
@@ -153,7 +153,7 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
 
       // Check if running as PWA
       const isStandalone =
-        (window as any).matchMedia("(display-mode: standalone)").matches ||
+        window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as any).standalone === true;
       console.log("🔔 [APP] Running as PWA:", isStandalone);
 
@@ -172,8 +172,8 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
         if (permission === "granted") {
           console.log("🔔 Push notifications enabled for authenticated user!");
           // Show a subtle notification
-          if ((window as any).showNotice) {
-            (window as any).showNotice(
+          if (window.showNotice) {
+            window.showNotice(
               "info",
               "Notifications Enabled",
               "You'll receive push notifications for project updates!",
@@ -190,7 +190,7 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
   };
 
   // Reset notification permissions for debugging
-  (window as any).resetNotifications = function () {
+  window.resetNotifications = function () {
     console.log("🔄 [APP] Resetting notification permissions...");
 
     // Check if we're on mobile Safari
@@ -242,7 +242,7 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
   const requestPermissionOnInteraction = () => {
     if (!permissionRequested) {
       permissionRequested = true;
-      (window as any).requestPushNotificationPermission();
+      window.requestPushNotificationPermission();
       // Remove listeners after first interaction
       document.removeEventListener("click", requestPermissionOnInteraction);
       document.removeEventListener("touchstart", requestPermissionOnInteraction);
@@ -262,9 +262,9 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
     private readonly limit = 20;
 
     constructor() {
-      this.projects = (window as any).initialProjects || [];
+      this.projects = window.initialProjects || [];
       this.offset = this.projects.length;
-      this.hasMore = (window as any).initialProjectsHasMore || false;
+      this.hasMore = window.initialProjectsHasMore || false;
       this.setupScrollListener();
     }
 
@@ -296,8 +296,8 @@ const statusResponse = await fetch(statusApiUrl.toString(), {
         let apiUrl = `${baseUrl}/api/projects/get?limit=${this.limit}&offset=${this.offset}`;
 
         // Add role-based filtering
-        const userRole = (window as any).currentUser?.profile?.role;
-        const userId = (window as any).currentUser?.id;
+        const userRole = window.currentUser?.profile?.role;
+        const userId = window.currentUser?.id;
 
         if (userRole === "Client") {
           apiUrl += `&authorId=${userId}`;

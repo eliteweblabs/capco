@@ -330,6 +330,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .single();
 
       let userEmailContent = "";
+      const { globalCompanyData } = await import("../global/global-company-data");
+      const companyData = await globalCompanyData();
+      const companyName = companyData.globalCompanyName || "the platform";
+
       if (userTemplate?.value) {
         userEmailContent = await replacePlaceholders(
           userTemplate.value,
@@ -351,11 +355,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           request
         );
       } else {
-        // Get company name from database
-        const { globalCompanyData } = await import("../global/global-company-data");
-        const companyData = await globalCompanyData();
-        const companyName = companyData.globalCompanyName || "the platform";
-
         // Fallback welcome message if template doesn't exist
         userEmailContent = `
           <h2>Welcome to ${companyName}!</h2>

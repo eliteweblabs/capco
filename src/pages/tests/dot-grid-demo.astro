@@ -96,14 +96,23 @@ window.dotGrid.draw()</code></pre>
 
     <script>
       (function () {
-        const api = window.dotGrid;
+        const api = (
+          window as Window & {
+            dotGrid?: {
+              decayRipples: (n: number) => void;
+              draw: () => void;
+              setBaseOpacity: (n: number) => void;
+              ripple: (cx: number, cy: number, r: number, o: number) => void;
+            };
+          }
+        ).dotGrid;
         if (!api) return;
 
         const opacityInput = document.getElementById("base-opacity");
         const opacityValue = document.getElementById("base-opacity-value");
         if (opacityInput && opacityValue) {
           opacityInput.addEventListener("input", () => {
-            const v = Number(opacityInput.value) / 100;
+            const v = Number((opacityInput as HTMLInputElement).value) / 100;
             opacityValue.textContent = v.toFixed(2);
             api.setBaseOpacity(v);
           });
@@ -127,12 +136,18 @@ window.dotGrid.draw()</code></pre>
           }, 5000);
         });
 
-        document.querySelector(".relative.min-h-screen")?.addEventListener("click", (e) => {
-          const el = e.currentTarget;
-          if (!el || e.target.closest("button") || e.target.closest("input")) return;
+        document.querySelector(".relative.min-h-screen")?.addEventListener("click", (e: Event) => {
+          const ev = e as MouseEvent;
+          const el = ev.currentTarget;
+          if (
+            !el ||
+            ev.target.closest("button") ||
+            ev.target.closest("input")
+          )
+            return;
           const rect = el.getBoundingClientRect();
-          const cx = e.clientX - rect.left;
-          const cy = e.clientY - rect.top;
+          const cx = ev.clientX - rect.left;
+          const cy = ev.clientY - rect.top;
           api.ripple(cx, cy, 120, 0.4);
         });
       })();

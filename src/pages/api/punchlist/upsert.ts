@@ -184,15 +184,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       // Log activity
       try {
-        await SimpleProjectLogger({
-          projectId: parseInt(projectId),
-          userId: currentUser.id,
-          action: "punchlist_created",
-          details: {
-            message: message.substring(0, 100),
+        await SimpleProjectLogger.addLogEntry(
+          parseInt(projectId),
+          "info",
+          "Punchlist item created",
+          {
+            userId: currentUser.id,
             punchlistId: newPunchlist.id,
-          },
-        });
+            message: message.substring(0, 100),
+          }
+        );
       } catch (logError) {
         console.error("⚠️ [CREATE-PUNCHLIST] Failed to log activity:", logError);
       }

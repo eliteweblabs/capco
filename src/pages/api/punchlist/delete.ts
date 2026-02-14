@@ -97,15 +97,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log activity
     try {
-      await SimpleProjectLogger({
-        projectId: punchlistItem.projectId,
-        userId: currentUser.id,
-        action: "punchlist_deleted",
-        details: {
-          message: punchlistItem.message?.substring(0, 100),
+      await SimpleProjectLogger.addLogEntry(
+        punchlistItem.projectId,
+        "info",
+        "Punchlist item deleted",
+        {
+          userId: currentUser.id,
           punchlistId: itemId,
-        },
-      });
+          message: punchlistItem.message?.substring(0, 100),
+        }
+      );
     } catch (logError) {
       console.error("⚠️ [DELETE-PUNCHLIST] Failed to log activity:", logError);
     }

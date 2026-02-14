@@ -4,7 +4,13 @@ const { currentUser } = Astro.props;
 // Note: Widget will still render even without currentUser - adjust if needed
 ---
 
-<div id="mapbox-widget" class="mapbox-container">
+<div
+  id="mapbox-widget"
+  class="mapbox-container"
+  data-mapbox-token={
+    import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.MAPBOX_PUBLIC_KEY || ""
+  }
+>
   <!-- Navigation Tabs with Counts -->
   <div class="mapbox-nav">
     <button class="nav-tab active" data-filter="all">
@@ -573,9 +579,9 @@ const { currentUser } = Astro.props;
 </style>
 
 <script is:inline>
-  // Mapbox configuration
+  // Mapbox configuration - token from env via data attribute
   const MAPBOX_ACCESS_TOKEN =
-    "REDACTED_MAPBOX_TOKEN"; // Replace with your token
+    document.getElementById("mapbox-widget")?.dataset?.mapboxToken || "";
 
   // Global zoom configuration
   const MIN_ZOOM = 4;

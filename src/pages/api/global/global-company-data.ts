@@ -118,6 +118,8 @@ export const globalCompanyData = async () => {
 
     // Analytics settings
     plausibleTrackingScript: get("plausibleTrackingScript", "PLAUSIBLE_TRACKING_SCRIPT") || "",
+    plausibleSiteId: get("plausibleSiteId", "PLAUSIBLE_SITE_ID") || "",
+    plausibleDomain: get("plausibleDomain", "PLAUSIBLE_DOMAIN") || "",
 
     // OG Image for social sharing (URL path like /images/og-image.png)
     ogImage: get("ogImage", "OG_IMAGE") || "",

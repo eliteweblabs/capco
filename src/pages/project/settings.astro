@@ -32,8 +32,9 @@ const { globalInputClasses } = globalClasses();
 // Tab state from URL for server-side active index
 const settingsTabParam = Astro.url.searchParams.get("tab") || "defaults";
 const validSettingsTabs = ["defaults", "punchlist", "discussion"];
-const settingsActiveTab =
-  validSettingsTabs.includes(settingsTabParam) ? settingsTabParam : "defaults";
+const settingsActiveTab = validSettingsTabs.includes(settingsTabParam)
+  ? settingsTabParam
+  : "defaults";
 const settingsActiveTabIndex = validSettingsTabs.indexOf(settingsActiveTab);
 
 // Fetch initial default due date hours from globalSettings (server-side)
@@ -83,9 +84,27 @@ if (supabaseAdmin) {
         urlParam="tab"
         switchHandler="switchSettingsTab"
         items={[
-          { id: "tab-defaults", label: "Defaults", variant: "tab", showLabel: true, onclick: "window.switchSettingsTab('defaults')" },
-          { id: "tab-punchlist", label: "Punchlist Templates", variant: "tab", showLabel: true, onclick: "window.switchSettingsTab('punchlist')" },
-          { id: "tab-discussion", label: "Discussion Templates", variant: "tab", showLabel: true, onclick: "window.switchSettingsTab('discussion')" },
+          {
+            id: "tab-defaults",
+            label: "Defaults",
+            variant: "tab",
+            showLabel: true,
+            onclick: "window.switchSettingsTab('defaults')",
+          },
+          {
+            id: "tab-punchlist",
+            label: "Punchlist Templates",
+            variant: "tab",
+            showLabel: true,
+            onclick: "window.switchSettingsTab('punchlist')",
+          },
+          {
+            id: "tab-discussion",
+            label: "Discussion Templates",
+            variant: "tab",
+            showLabel: true,
+            onclick: "window.switchSettingsTab('discussion')",
+          },
         ]}
       />
     </div>
@@ -299,8 +318,8 @@ if (supabaseAdmin) {
     let templates: any = { punchlist: [], discussion: [] };
 
     // DOM Elements
-    const modal = document.getElementById("edit-modal") as HTMLElement;
-    const templateForm = document.getElementById("template-form") as HTMLFormElement;
+    const modal = document.getElementById("edit-modal");
+    const templateForm = document.getElementById("template-form");
 
     // Initialize
     document.addEventListener("DOMContentLoaded", () => {
@@ -311,12 +330,10 @@ if (supabaseAdmin) {
 
     function setupEventListeners() {
       // Tab switching via SlidingTabs onclick; expose switchSettingsTab for URL init
-      (window as any).switchSettingsTab = switchTab;
+      window.switchSettingsTab = switchTab;
 
       // Defaults save (UnitSlider updates its own display)
-      document
-        .getElementById("save-defaults-btn")
-        ?.addEventListener("click", saveDefaults);
+      document.getElementById("save-defaults-btn")?.addEventListener("click", saveDefaults);
 
       // Add buttons
       document
@@ -364,7 +381,7 @@ if (supabaseAdmin) {
         const hours = Math.min(240, Math.max(1, data.defaultDueDateHours || 72));
         const slider = document.getElementById("defaultDueDateHours-slider-defaults");
         const valueDisplay = document.getElementById("defaultDueDateHours-value-defaults");
-        if (slider) (slider as HTMLInputElement).value = String(hours);
+        if (slider) (slider).value = String(hours);
         if (valueDisplay) valueDisplay.textContent = String(hours);
       } catch (error) {
         console.error("Error loading defaults:", error);
@@ -373,7 +390,7 @@ if (supabaseAdmin) {
 
     async function saveDefaults() {
       const slider = document.getElementById("defaultDueDateHours-slider-defaults");
-      const hours = slider ? parseInt((slider as HTMLInputElement).value, 10) : 72;
+      const hours = slider ? parseInt((slider).value, 10) : 72;
       try {
         const response = await fetch("/api/settings/update", {
           method: "POST",
@@ -496,20 +513,20 @@ if (supabaseAdmin) {
 
       // Reset form
       form.reset();
-      (document.getElementById("template-type") as HTMLInputElement).value = type;
+      (document.getElementById("template-type")).value = type;
 
       // Populate form if editing
       if (template) {
-        (document.getElementById("template-id") as HTMLInputElement).value = template.id;
-        (document.getElementById("template-title") as HTMLInputElement).value = template.title;
+        (document.getElementById("template-id")).value = template.id;
+        (document.getElementById("template-title")).value = template.title;
         (document.getElementById("template-message") as HTMLTextAreaElement).value =
           template.message;
-        (document.getElementById("template-order") as HTMLInputElement).value = template.orderIndex;
-        (document.getElementById("template-internal") as HTMLInputElement).checked =
+        (document.getElementById("template-order")).value = template.orderIndex;
+        (document.getElementById("template-internal")).checked =
           template.internal;
-        (document.getElementById("template-completed") as HTMLInputElement).checked =
+        (document.getElementById("template-completed")).checked =
           template.markCompleted;
-        (document.getElementById("template-enabled") as HTMLInputElement).checked =
+        (document.getElementById("template-enabled")).checked =
           template.enabled;
       }
 
@@ -636,8 +653,8 @@ if (supabaseAdmin) {
     }
 
     // Expose functions to window for onclick handlers
-    (window as any).editTemplate = editTemplate;
-    (window as any).deleteTemplate = deleteTemplate;
+    window.editTemplate = editTemplate;
+    window.deleteTemplate = deleteTemplate;
   </script>
 
   <style>

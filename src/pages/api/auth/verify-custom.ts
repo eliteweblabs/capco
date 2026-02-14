@@ -203,12 +203,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
     console.log("🔐 [VERIFY-CUSTOM] Custom session cookies set successfully");
 
-    // Redirect directly to the target URL
-    const finalUrl = new URL(redirectPath, currentBaseUrl);
-    console.log("🔐 [VERIFY-CUSTOM] Redirecting to:", finalUrl.toString());
-    return redirect(finalUrl.toString());
-
-    // Log the successful login
+    // Log the successful login (best-effort, before redirect)
     try {
       await SimpleProjectLogger.logUserLogin(email, "magiclink_custom", {
         provider: "magiclink_custom",
@@ -221,9 +216,9 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
       console.error("❌ [VERIFY-CUSTOM] Error logging login event:", logError);
     }
 
-    console.log(
-      "🔐 [VERIFY-CUSTOM] Custom magic link verification complete, redirecting to dashboard"
-    );
+    // Redirect directly to the target URL
+    const finalUrl = new URL(redirectPath, currentBaseUrl);
+    console.log("🔐 [VERIFY-CUSTOM] Redirecting to:", finalUrl.toString());
     return redirect(finalUrl.toString());
   } catch (error) {
     console.error("🔐 [VERIFY-CUSTOM] Unexpected error in custom magic link verification:", error);

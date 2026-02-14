@@ -208,7 +208,6 @@ if (!self.__WB_pmw) {
                   return (console.error("Cannot generate model", e), "no-model-id");
                 })
                 .then(function (e) {
-                  debugger;
                   Cart.getEntries();
                   UI.showToast("got entries?", "alert");
                   // Commerce.getCheckoutUrl(Cart.getEntries()).then(function(t) {
@@ -412,7 +411,6 @@ if (!self.__WB_pmw) {
   })()),
     (App.saveModel = function () {
       return new Promise(function (e, t) {
-        debugger;
         $.ajax({
           url: "/api/save.php",
           async: !0,
@@ -487,11 +485,13 @@ if (!self.__WB_pmw) {
                     (e.t0 = e.catch(1)),
                     Log.error("Cannot load from URL"),
                     Log.error(e.t0));
+                // falls through
                 case 12:
                   !t &&
                     Store.has(StoreClass.KEY_SERIALIZED) &&
                     (Log.info("Loading from local store"),
                     Doc.loadSerialized(Store.get(StoreClass.KEY_SERIALIZED)));
+                // falls through
                 case 13:
                 case "end":
                   return e.stop();

@@ -48,10 +48,7 @@ import SlidingTabs from "../../components/common/SlidingTabs.astro";
 // Get auth data for conditional rendering
 ---
 
-<LayoutDefault
-  title="Login / Register"
-  description="Login or register to access your dashboard"
->
+<LayoutDefault title="Login / Register" description="Login or register to access your dashboard">
   <div class="mx-auto grid max-w-7xl grid-cols-1 px-4 py-8 md:grid-cols-12 md:py-16 lg:gap-20">
     <div class="col-span-6 w-full">
       <div class="mx-auto max-w-2xl p-4 md:p-6">
@@ -64,8 +61,20 @@ import SlidingTabs from "../../components/common/SlidingTabs.astro";
             switchHandler="switchAuthTab"
             compact={true}
             items={[
-              { id: "tab-login", label: "Sign In", variant: "tab", showLabel: true, onclick: "window.switchAuthTab('login')" },
-              { id: "tab-register", label: "Create Account", variant: "tab", showLabel: true, onclick: "window.switchAuthTab('register')" },
+              {
+                id: "tab-login",
+                label: "Sign In",
+                variant: "tab",
+                showLabel: true,
+                onclick: "window.switchAuthTab('login')",
+              },
+              {
+                id: "tab-register",
+                label: "Create Account",
+                variant: "tab",
+                showLabel: true,
+                onclick: "window.switchAuthTab('register')",
+              },
             ]}
           />
         </div>
@@ -154,7 +163,7 @@ import SlidingTabs from "../../components/common/SlidingTabs.astro";
 
 <script>
   // Global function for tab switching (SlidingTabs handles indicator; this handles form visibility + URL)
-  (window as any).switchAuthTab = function (tab: "login" | "register") {
+  window.switchAuthTab = function (tab) {
     const loginForm = document.getElementById("login-form");
     const registerForm = document.getElementById("register-form");
     if (!loginForm || !registerForm) return;
@@ -248,7 +257,7 @@ import SlidingTabs from "../../components/common/SlidingTabs.astro";
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get("tab") || "login";
     if (tab === "register") {
-      (window as any).switchAuthTab("register");
+      window.switchAuthTab("register");
     }
   });
 </script>

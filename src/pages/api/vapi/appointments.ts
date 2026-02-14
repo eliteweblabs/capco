@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       case "delete":
         return await handleDeleteAppointment(currentUser, appointmentId);
       case "availability":
-        return await handleCheckAvailability(currentUser, data);
+        return await handleCheckAvailability(currentUser, data, request);
       default:
         return new Response(JSON.stringify({ error: "Invalid action" }), {
           status: 400,
@@ -285,7 +285,7 @@ async function handleDeleteAppointment(currentUser: any, appointmentId: string |
 }
 
 // Check availability
-async function handleCheckAvailability(currentUser: any, data: any) {
+async function handleCheckAvailability(currentUser: any, data: any, request: Request) {
   try {
     const { date, startDate, endDate, duration } = data;
 

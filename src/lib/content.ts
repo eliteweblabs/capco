@@ -601,8 +601,8 @@ export function clearContentCache() {
 /**
  * Get all available pages
  */
-export function getAvailablePages(): string[] {
-  const config = getSiteConfig();
+export async function getAvailablePages(): Promise<string[]> {
+  const config = await getSiteConfig();
   const pages = config.pages ? Object.keys(config.pages) : [];
 
   // Also check content directory

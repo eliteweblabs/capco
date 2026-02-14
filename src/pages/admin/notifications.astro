@@ -3,6 +3,9 @@ import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import Hero from "../../components/common/Hero.astro";
+import SlidingTabs from "../../components/common/SlidingTabs.astro";
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
+import Tooltip from "../../components/common/TooltipFloating.astro";
 
 import { globalClasses } from "../api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
@@ -53,22 +56,31 @@ const groupOptions = [
 // Combine group options with individual users
 allUsers = [...groupOptions, ...allUsers];
 
-// Get recent notifications for display
-let recentNotifications = [];
+// Get recent notifications for display (deduplicated by title+message - one per unique notification)
+let recentNotifications: any[] = [];
 if (supabaseAdmin) {
   const { data: notifications } = await supabaseAdmin
     .from("notifications")
     .select("*")
     .order("createdAt", { ascending: false })
-    .limit(10);
-  recentNotifications = notifications || [];
+    .limit(50);
+  const seen = new Set<string>();
+  recentNotifications = (notifications || []).filter((n: any) => {
+    const key = `${n.title ?? ""}|${n.message ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
+
+// Tab state from URL
+const defaultTabParam = Astro.url.searchParams.get("tab") || "create";
+const validTabs = ["create", "archive"];
+const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "create";
+const activeTabIndex = validTabs.indexOf(activeTab);
 ---
 
-<LayoutDefault
-  title="Send Notifications"
-  description="Send custom notifications to users"
->
+<LayoutDefault title="Send Notifications" description="Send custom notifications to users">
   <Hero
     title="Send Notifications"
     description="Send custom notifications to users"
@@ -77,13 +89,31 @@ if (supabaseAdmin) {
     {globalInputClasses}
   />
 
-  <!-- Notification Form -->
-  <div class="color-background rounded-lg bg-gray-100 shadow-md dark:shadow-gray-700">
-    <div class="border-b border-gray-200 px-6 py-4">
-      <h2 class={`text-lg font-medium ${primaryTextClasses}`}>Create Notification</h2>
-    </div>
+  <SlidingTabs
+    navId="notifications-tab-nav"
+    navClass="border-b border-gray-200 dark:border-gray-700 mb-0"
+    activeItem={activeTabIndex}
+    urlParam="tab"
+    switchHandler="switchNotificationsTab"
+    items={[
+      { id: "tab-create", label: "Create", variant: "tab", showLabel: true },
+      { id: "tab-archive", label: "Archive", variant: "tab", showLabel: true },
+    ]}
+  />
 
-    <form id="notification-form" class="space-y-6 p-6">
+  <!-- Tab content wrapper -->
+  <div id="notifications-tab-content">
+    <!-- Create tab -->
+    <div
+      class={`color-background rounded-lg bg-gray-100 shadow-md dark:shadow-gray-700 ${activeTab !== "create" ? "hidden" : ""}`}
+      id="create"
+      role="tabpanel"
+      aria-labelledby="tab-create"
+    >
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h2 class={`text-lg font-medium ${primaryTextClasses}`}>Create Notification</h2>
+      </div>
+      <form id="notification-form" class="space-y-6 p-6">
       <!-- Recipients -->
       <div>
         <label for="recipients" class={`mb-2 block text-sm font-medium ${secondaryTextClasses}`}>
@@ -199,26 +229,48 @@ if (supabaseAdmin) {
         </button>
       </div>
     </form>
-  </div>
-
-  <!-- Recent Notifications -->
-  <div class="color-background mt-8 rounded-lg bg-gray-100 shadow-md dark:shadow-gray-700">
-    <div class="border-b border-gray-200 px-6 py-4">
-      <h2 class={`text-lg font-medium ${primaryTextClasses}`}>Recent Notifications</h2>
     </div>
+
+    <!-- Archive tab -->
+    <div
+      class={`color-background mt-0 rounded-lg bg-gray-100 shadow-md dark:shadow-gray-700 ${activeTab !== "archive" ? "hidden" : ""}`}
+      id="archive"
+      role="tabpanel"
+      aria-labelledby="tab-archive"
+    >
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h2 class={`text-lg font-medium ${primaryTextClasses}`}>Archive</h2>
+      </div>
     <div id="recent-notifications" class="p-6">
       {
         recentNotifications.length > 0 ? (
           <div class="space-y-4">
             {recentNotifications.map((notification) => (
               <div class="dark:bg-primary-900/20 border-l-4 border-primary-500 bg-primary-50 p-4">
-                <div class="flex justify-between">
-                  <div>
+                <div class="flex justify-between items-start gap-3">
+                  <div class="min-w-0 flex-1">
                     <h3 class={`font-medium ${primaryTextClasses}`}>{notification.title}</h3>
                     <p class={secondaryTextClasses}>{notification.message}</p>
                   </div>
-                  <div class={`text-sm ${secondaryTextClasses} opacity-70`}>
-                    {new Date(notification.createdAt).toLocaleDateString()}
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span class={`text-sm ${secondaryTextClasses} opacity-70`}>
+                      {new Date(notification.createdAt).toLocaleDateString()}
+                    </span>
+                    <Tooltip text="Copy to create form" position="top" mobileClickable={true}>
+                      <button
+                        type="button"
+                        class="copy-notification-btn rounded p-1.5 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-200"
+                        data-title={notification.title}
+                        data-message={notification.message}
+                        data-type={notification.type ?? "info"}
+                        data-priority={notification.priority ?? "normal"}
+                        data-action-url={notification.actionUrl ?? ""}
+                        data-action-text={notification.actionText ?? ""}
+                        aria-label="Copy to create form"
+                      >
+                        <SimpleIcon name="copy" size="sm" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               </div>
@@ -228,6 +280,7 @@ if (supabaseAdmin) {
           <p class={`${secondaryTextClasses} opacity-70`}>No notifications sent yet</p>
         )
       }
+    </div>
     </div>
   </div>
 </LayoutDefault>
@@ -240,8 +293,19 @@ if (supabaseAdmin) {
     interface Window {
       showError: (title: string, message: string, duration: number) => void;
       showSuccess: (title: string, message: string, duration: number) => void;
+      switchNotificationsTab?: (tab: string) => void;
     }
   }
+
+  window.switchNotificationsTab = function (tab: string) {
+    ["create", "archive"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("hidden", id !== tab);
+    });
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", url.toString());
+  };
 
   class NotificationManager {
     constructor() {
@@ -257,12 +321,33 @@ if (supabaseAdmin) {
       if (form) {
         form.addEventListener("submit", (e) => this.handleSubmit(e));
       }
+      document.querySelectorAll(".copy-notification-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => this.handleCopyToForm(e));
+      });
     }
 
-    async handleSubmit(e: Event) {
+    handleCopyToForm(e: Event) {
+      const btn = e.target.closest(".copy-notification-btn");
+      if (!btn) return;
+      const title = btn.getAttribute("data-title") ?? "";
+      const message = btn.getAttribute("data-message") ?? "";
+      const type = btn.getAttribute("data-type") ?? "info";
+      const priority = btn.getAttribute("data-priority") ?? "normal";
+      const actionUrl = btn.getAttribute("data-action-url") ?? "";
+      const actionText = btn.getAttribute("data-action-text") ?? "";
+      document.getElementById("title").value = title;
+      (document.getElementById("message")).value = message;
+      (document.getElementById("type")).value = type;
+      (document.getElementById("priority")).value = priority;
+      document.getElementById("actionUrl").value = actionUrl;
+      document.getElementById("actionText").value = actionText;
+      window.switchNotificationsTab?.("create");
+    }
+
+    async handleSubmit(e) {
       e.preventDefault();
 
-      const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+      const submitBtn = document.getElementById("submit-btn");
       const originalText = submitBtn?.textContent;
 
       try {
@@ -271,9 +356,9 @@ if (supabaseAdmin) {
           submitBtn.textContent = "Sending...";
         }
 
-        const form = e.target as HTMLFormElement;
+        const form = e.target;
         const formData = new FormData(form);
-        const recipientsSelect = document.getElementById("recipients") as HTMLSelectElement;
+        const recipientsSelect = document.getElementById("recipients");
         const recipients = Array.from(recipientsSelect?.selectedOptions || []);
 
         if (recipients.length === 0) {
@@ -284,18 +369,18 @@ if (supabaseAdmin) {
         }
 
         // Check for group selections
-        const groupSelections = recipients.filter((option: HTMLOptionElement) =>
+        const groupSelections = recipients.filter((option) =>
           option.value.startsWith("all-")
         );
         const individualSelections = recipients.filter(
-          (option: HTMLOptionElement) => !option.value.startsWith("all-")
+          (option) => !option.value.startsWith("all-")
         );
 
-        let notifications: any[] = [];
+        let notifications = [];
 
         if (groupSelections.length > 0) {
           // Send to groups
-          const groupPromises = groupSelections.map((option: HTMLOptionElement) => {
+          const groupPromises = groupSelections.map((option) => {
             const groupType = option.value.replace("all-", "");
             return fetch("/api/notifications/upsert", {
               method: "POST",
@@ -320,7 +405,7 @@ if (supabaseAdmin) {
           // Send to specific users
           // Filter out any invalid values like "all" that might have slipped through
           const validIndividualSelections = individualSelections.filter(
-            (option: HTMLOptionElement) => {
+            (option) => {
               const value = option.value;
               // Must be a valid UUID format (not "all" or other invalid values)
               return (
@@ -332,7 +417,7 @@ if (supabaseAdmin) {
           );
 
           const individualNotifications = validIndividualSelections.map(
-            (option: HTMLOptionElement) => ({
+            (option) => ({
               userId: option.value,
               title: formData.get("title"),
               message: formData.get("message"),
@@ -383,7 +468,7 @@ if (supabaseAdmin) {
           );
 
           if (e.target) {
-            (e.target as HTMLFormElement).reset();
+            (e.target).reset();
           }
           this.loadRecentNotifications();
         } else {
@@ -405,13 +490,26 @@ if (supabaseAdmin) {
     }
 
     async loadRecentNotifications() {
-      // Reload the page to show updated notifications
-      window.location.reload();
+      // Reload and switch to Archive tab to show the new notifications
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", "archive");
+      window.location.href = url.toString();
     }
   }
 
   // Initialize when DOM is loaded
   document.addEventListener("DOMContentLoaded", () => {
     new NotificationManager();
+
+    // Wire tab clicks to switch handler
+    const nav = document.getElementById("notifications-tab-nav");
+    if (nav) {
+      nav.addEventListener("click", (e) => {
+        const target = e.target instanceof HTMLElement ? e.target.closest("button[id]") : null;
+        if (!target || !target.id?.startsWith("tab-")) return;
+        const tab = target.id.replace(/^tab-/, "");
+        if (["create", "archive"].includes(tab)) window.switchNotificationsTab?.(tab);
+      });
+    }
   });
 </script>

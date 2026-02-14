@@ -179,14 +179,14 @@ const currentRole = currentUser?.profile?.role;
   function initializeSocket() {
     try {
       // Check if Socket.io is available
-      if (typeof (window as any).io === "undefined") {
+      if (typeof window.io === "undefined") {
         console.error("❌ [SOCKETIO-CHAT] Socket.io library not loaded");
         showConnectionStatus("Socket.io library not loaded", "error");
         return;
       }
 
       // Connect to Socket.io server
-      socket = (window as any).io("http://localhost:3001", {
+      socket = window.io("http://localhost:3001", {
         transports: ["websocket", "polling"],
         timeout: 20000,
         forceNew: true,
@@ -366,8 +366,8 @@ const currentRole = currentUser?.profile?.role;
     } catch (error) {
       console.error("🔔 [SOCKETIO-CHAT] Error sending message:", error);
       // Show error to user
-      if ((window as any).showNotice) {
-        (window as any).showNotice("Error", "Failed to send message. Please try again.", "error");
+      if (window.showNotice) {
+        window.showNotice("Error", "Failed to send message. Please try again.", "error");
       }
     } finally {
       // Re-enable input

@@ -9,7 +9,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 
-export const GET: APIRoute = async ({ cookies }) => {
+export const GET: APIRoute = async ({ cookies, request }) => {
   try {
     // Allow unauthenticated access for debugging (can restrict later)
     // const { isAuth, currentUser } = await checkAuth(cookies);
@@ -43,7 +43,7 @@ export const GET: APIRoute = async ({ cookies }) => {
         },
         environment: {
           nodeEnv: process.env.NODE_ENV,
-          railwayDomain: request ? new URL(request.url).origin : undefined,
+          railwayDomain: request?.url ? new URL(request.url).origin : undefined,
         },
         debugging: {
           allAnthropicKeys: anthropicKeys,

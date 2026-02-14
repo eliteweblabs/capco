@@ -1,4 +1,6 @@
 // API utilities and helpers
+export type { Project, ProjectWithStatus } from "./_projects";
+export { fetchProjects, getProjectsByAuthor } from "./_projects";
 
 export interface ApiResponse<T = any> {
   success: boolean;

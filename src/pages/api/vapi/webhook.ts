@@ -437,7 +437,7 @@ async function handleToolCalls(
             });
           } else {
             const name = [sub.firstName, sub.lastName].filter(Boolean).join(" ") || "Unknown";
-            const summary = `Contact submission #${sub.id}: ${name} (${sub.email}). ${sub.phone ? `Phone: ${sub.phone}. ` : ""}${sub.company ? `Company: ${sub.company}. ` : ""}${sub.address ? `Address: ${sub.address}. ` : ""}Message: ${(sub.message || "").slice(0, 200)}${(sub.message || "").length > 200 ? "..." : ""}. Submitted at ${sub.submittedAt || sub.createdAt}.`;
+            const summary = `Contact submission #${sub.id}: ${name} (${sub.email}). ${sub.phone ? `Phone: ${sub.phone}. ` : ""}${sub.company ? `Company: ${sub.company}. ` : ""}${sub.address ? `Address: ${sub.address}. ` : ""}Message: ${(sub.message || "").slice(0, 200)}${(sub.message || "").length > 200 ? "..." : ""}. Submitted at ${sub.submittedAt ?? (sub as { createdAt?: string }).createdAt ?? "unknown"}.`;
             results.push({
               toolCallId: toolCall.id,
               result: summary,

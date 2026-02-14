@@ -17,7 +17,18 @@
  */
 
 class ProjectRefreshManager {
-  constructor(options = {}) {
+  interval: number;
+  intervalId: ReturnType<typeof setInterval> | null;
+  isRunning: boolean;
+  lastPoll: Date | null;
+  projectCache: Map<string, unknown>;
+  pausedProjects: Set<string>;
+  inactivityTimeout: number;
+  lastActivity: number;
+  isPaused: boolean;
+  inactivityTimer: ReturnType<typeof setTimeout> | null;
+
+  constructor(options: { interval?: number; inactivityTimeout?: number } = {}) {
     this.interval = options.interval || 10000; // Default 10 seconds (increased from 5s)
     this.intervalId = null;
     this.isRunning = false;
@@ -567,7 +578,9 @@ class ProjectRefreshManager {
 
 // Make it globally available (for manual testing only)
 if (typeof window !== "undefined") {
-  window.ProjectRefreshManager = ProjectRefreshManager;
+  (
+    window as unknown as Window & { ProjectRefreshManager: typeof ProjectRefreshManager }
+  ).ProjectRefreshManager = ProjectRefreshManager;
 
   // AUTO-START DISABLED - Use refresh-manager.ts instead
   // window.addEventListener('load', () => {

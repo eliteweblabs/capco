@@ -510,7 +510,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 
 <script>
   // Tab switching for Project Form | PDF Data Extractor
-  (window as any).switchProjectFormTab = function (tabId: string) {
+  window.switchProjectFormTab = function (tabId) {
     const formContent = document.getElementById("form-content");
     const pdfContent = document.getElementById("pdf-content");
     if (!formContent || !pdfContent) return;
@@ -584,7 +584,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
         if (submitBtn) {
           submitBtn.disabled = true;
           const loaderIcon =
-            (window as any).SimpleIcons?.getIcon("loader-2", {
+            window.SimpleIcons?.getIcon("loader-2", {
               className: "animate-spin mr-1 inline-block w-4 h-4",
             }) || "";
           submitBtn.innerHTML = `${loaderIcon}Saving...`;
@@ -643,7 +643,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
               const project = result.project;
               const nextStatus = 10;
 
-              (window as any).updateStatus(project, nextStatus, undefined).then((data: any) => {
+              window.updateStatus(project, nextStatus, undefined).then((data) => {
                 if (data.success) {
                   // debugger;
                   if (window.handleNewStatusModalAndEmail && typeof window.handleNewStatusModalAndEmail === "function") {
@@ -664,7 +664,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
                 window.location.href = `/project/${project.id}`;
               });
 
-              // const statusResult = await (window as any).updateStatus(result.project, nextStatus, undefined);
+              // const statusResult = await window.updateStatus(result.project, nextStatus, undefined);
               // window.handleNewStatusModalAndEmail(statusResult, "PROJECT-FORM");
             } catch (statusError) {
               console.error("📝 [ProjectForm] Status update failed:", statusError);
@@ -685,8 +685,8 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
             }
           } else {
             // For existing projects, just show success and refresh
-            if ((window as any).showNotice) {
-              (window as any).showNotice(
+            if (window.showNotice) {
+              window.showNotice(
                 "success",
                 "Project Updated",
                 "Project has been updated successfully!"
@@ -717,7 +717,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
         if (submitBtn) {
           submitBtn.disabled = false;
           const saveIcon =
-            (window as any).SimpleIcons?.getIcon("save", {
+            window.SimpleIcons?.getIcon("save", {
               className: "mr-1 inline-block w-4 h-4",
             }) || "";
           submitBtn.innerHTML = `Save<span class="hidden md:inline"> Project</span> ${saveIcon}`;
@@ -732,7 +732,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
     if (!isNewProject) {
       const deleteBtn = document.getElementById("delete-project");
       deleteBtn?.addEventListener("click", () => {
-        (window as any).deleteProject(projectId);
+        window.deleteProject(projectId);
       });
     }
 
@@ -744,7 +744,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
     switch (action) {
       case "deleteProject":
         if (!isNewProject) {
-          (window as any).deleteProject(projectId);
+          window.deleteProject(projectId);
         }
         break;
       case "buildProposal":
@@ -1325,7 +1325,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 
           try {
             // Wait for PDF.js to load
-            const pdfjsLib = (window as any).pdfjsLib;
+            const pdfjsLib = window.pdfjsLib;
             if (!pdfjsLib) {
               await loadPDFJS();
             }
@@ -1334,7 +1334,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
             fileReader.onload = async function (e: any) {
               try {
                 const typedarray = new Uint8Array(e.target.result);
-                const loadedPdfjsLib = (window as any).pdfjsLib;
+                const loadedPdfjsLib = window.pdfjsLib;
                 if (!loadedPdfjsLib) {
                   throw new Error("PDF.js library not loaded");
                 }
@@ -2374,7 +2374,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 
         async function loadPDFJS() {
           return new Promise((resolve) => {
-            const pdfjsLib = (window as any).pdfjsLib;
+            const pdfjsLib = window.pdfjsLib;
             if (pdfjsLib) {
               resolve(pdfjsLib);
               return;
@@ -2389,7 +2389,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
               workerScript.defer = true;
               document.head.appendChild(workerScript);
 
-              const loadedPdfjsLib = (window as any).pdfjsLib;
+              const loadedPdfjsLib = window.pdfjsLib;
               if (loadedPdfjsLib) {
                 loadedPdfjsLib.GlobalWorkerOptions.workerSrc = "/js/pdf.worker.min.js";
               }

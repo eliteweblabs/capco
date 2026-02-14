@@ -66,9 +66,7 @@ export function parseComponentShortcodes(content: string): ComponentShortcode[] 
     );
     if (alreadyProcessed) continue;
 
-    const propsString = fullMatch
-      .slice(afterName - matchStart, fullMatch.length - 2)
-      .trim();
+    const propsString = fullMatch.slice(afterName - matchStart, fullMatch.length - 2).trim();
     const props = parseProps(propsString);
     const id = `__COMPONENT_${index}__`;
 

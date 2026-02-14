@@ -18,7 +18,7 @@ const {
   globalIconButtonClasses,
   id = "account",
 } = Astro.props;
-const currentRole = currentUser?.profile?.role;
+
 import UserProfileDropdown from "../ui/UserProfileDropdown.astro";
 
 // Get current path to determine auth link
@@ -27,8 +27,8 @@ const isLoginPage = currentPath.includes("/auth/login");
 const isRegisterPage = currentPath.includes("/auth/register");
 
 // Determine auth link and tooltip text
-const authLink = isLoginPage ? "/auth/register" : "/auth/login";
-const authTooltipText = isLoginPage ? "Register" : isRegisterPage ? "Login" : "Register / Login";
+// const authLink = isLoginPage ? "/auth/register" : "/auth/login";
+// const authTooltipText = isLoginPage ? "Register" : isRegisterPage ? "Login" : "Register / Login";
 
 // Prioritize profile.avatarUrl (Supabase Storage) over user_metadata.avatarUrl (Google CDN)
 const avatarUrl =
@@ -42,17 +42,18 @@ const avatarUrl =
   data-popover-trigger="click"
   data-popover-target={`${id}-dropdown`}
   data-avatar-url={avatarUrl}
+  data-refresh="true"
+  data-meta="avatarUrl"
+  data-meta-value={avatarUrl}
+  data-user-id={currentUser?.id}
+  data-project-id={currentUser?.projectId}
   type="button"
 >
   <span class="sr-only">Open user menu</span>
   {/* <!-- Fallback icon (visible initially, hidden if avatar loads) --> */}
   {
     avatarUrl && avatarUrl !== "" ? (
-      <SimpleIcon
-        name="user"
-        class="avatar-fallback text-black dark:text-white"
-        size="md"
-      />
+      <SimpleIcon name="user" class="avatar-fallback text-black dark:text-white" size="md" />
     ) : (
       <SimpleIcon name="user" size="md" />
     )
@@ -67,40 +68,57 @@ const avatarUrl =
   closeButton={false}
 />
 <script>
-  // Handle Google avatar loading errors and rate limiting (429 errors)
-  // Page size toggle is initialized in UserProfileDropdown.astro
-  document.addEventListener("DOMContentLoaded", () => {
-    const avatarButton = document.querySelector(".avatar-button");
+  function applyAvatarToButton(button, urlOrUndefined) {
+    const avatarUrl = urlOrUndefined != null ? urlOrUndefined : button.getAttribute("data-avatar-url");
+    const fallbackIcon = button.querySelector(".avatar-fallback");
+    if (!avatarUrl || !fallbackIcon) return;
 
-    if (avatarButton) {
-      const avatarUrl = avatarButton.getAttribute("data-avatar-url");
-      const fallbackIcon = avatarButton.querySelector(".avatar-fallback");
+    const img = new Image();
+    img.onload = () => {
+      console.log("✅ [AUTH-ICON] Avatar loaded successfully");
+      button.style.backgroundImage = `url('${avatarUrl}')`;
+      button.style.backgroundSize = "cover";
+      button.style.backgroundPosition = "center";
+      button.style.backgroundRepeat = "no-repeat";
+      fallbackIcon.style.visibility = "hidden";
+      fallbackIcon.style.opacity = "0";
+      fallbackIcon.style.pointerEvents = "none";
+      fallbackIcon.style.userSelect = "none";
+      fallbackIcon.style.webkitUserSelect = "none";
+    };
+    img.onerror = () => {
+      console.warn("⚠️ [AUTH-ICON] Avatar failed to load, keeping fallback icon");
+    };
+    img.src = avatarUrl;
+  }
 
-      if (avatarUrl && fallbackIcon) {
-        // Test if the image can load BEFORE applying it
-        const img = new Image();
-
-        img.onload = () => {
-          console.log("✅ [AUTH-ICON] Avatar loaded successfully");
-
-          // Avatar loaded successfully - apply it as background and hide fallback
-          (avatarButton as HTMLElement).style.backgroundImage = `url('${avatarUrl}')`;
-          (avatarButton as HTMLElement).style.backgroundSize = "cover";
-          (avatarButton as HTMLElement).style.backgroundPosition = "center";
-          (avatarButton as HTMLElement).style.backgroundRepeat = "no-repeat";
-          (fallbackIcon as HTMLElement).style.display = "none";
-        };
-
-        img.onerror = () => {
-          console.warn(
-            "⚠️ [AUTH-ICON] Avatar failed to load (likely Google rate limit 429), keeping fallback icon"
-          );
-          // Do nothing - fallback icon is already visible
-        };
-
-        // Start loading the image
-        img.src = avatarUrl;
+  function refreshAuthAvatar(newUrl) {
+    document.querySelectorAll(".avatar-button").forEach((btn) => {
+      const url = newUrl ?? btn.getAttribute("data-avatar-url");
+      btn.setAttribute("data-avatar-url", url || "");
+      btn.setAttribute("data-meta-value", url || "");
+      if (!url) {
+        btn.style.backgroundImage = "";
+        const fallback = btn.querySelector(".avatar-fallback");
+        if (fallback) {
+          fallback.style.visibility = "";
+          fallback.style.opacity = "";
+          fallback.style.pointerEvents = "";
+        }
+      } else {
+        applyAvatarToButton(btn, url);
       }
-    }
+    });
+  }
+
+  window.refreshAuthAvatar = refreshAuthAvatar;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".avatar-button").forEach((btn) => applyAvatarToButton(btn, undefined));
+  });
+
+  document.addEventListener("avatarUpdated", (e) => {
+    const url = (e instanceof CustomEvent && e.detail) ? e.detail.avatarUrl : undefined;
+    refreshAuthAvatar(url);
   });
 </script>

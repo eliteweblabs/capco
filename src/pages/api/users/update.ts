@@ -63,7 +63,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const { companyName, firstName, lastName, phone, smsAlerts, mobileCarrier, avatarUrl, socialNetworks } = body;
+    const {
+      companyName,
+      firstName,
+      lastName,
+      title,
+      phone,
+      bio,
+      smsAlerts,
+      mobileCarrier,
+      avatarUrl,
+      socialNetworks,
+      targetUserId,
+      role,
+    } = body;
 
     // Validate required fields when doing a full profile update (not avatar-only)
     const isAvatarOnlyUpdate =
@@ -99,7 +112,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const userId = currentUser.id;
+    // Admin can update another user via targetUserId
+    const isAdmin = currentUser?.profile?.role === "Admin";
+    const userId =
+      isAdmin && targetUserId && typeof targetUserId === "string" ? targetUserId : currentUser.id;
+
+    if (targetUserId && !isAdmin) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Only admins can update other users",
+        }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     // Prepare update payload (only allow updating certain fields for own profile)
     const updatePayload: any = {
@@ -108,8 +134,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (firstName !== undefined) updatePayload.firstName = firstName.trim();
     if (lastName !== undefined) updatePayload.lastName = lastName.trim();
+    if (isAdmin && role !== undefined)
+      updatePayload.role = ["Admin", "Staff", "Client"].includes(role) ? role : undefined;
     if (phone !== undefined) updatePayload.phone = phone?.trim() || null;
     if (companyName !== undefined) updatePayload.companyName = companyName?.trim() || "";
+    if (title !== undefined) updatePayload.title = title?.trim() || null;
+    if (bio !== undefined) updatePayload.bio = bio?.trim() || null;
 
     // Optional avatar URL (set when uploading via media API; null to clear)
     if (avatarUrl !== undefined) {

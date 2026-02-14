@@ -14,9 +14,13 @@
  *
  * @example with variant
  * <Socials links={socialLinks} variant="footer" size="lg" />
+ *
+ * @example with remove buttons (for Aside/admin)
+ * <Socials links={socialLinks} showRemove={true} dataSocialsContext="aside-company" />
  */
 
 import SimpleIcon from "../common/SimpleIcon.astro";
+import DeleteConfirmButton from "../common/DeleteConfirmButton.astro";
 
 interface SocialLink {
   url: string;
@@ -39,11 +43,17 @@ interface Props {
   // Show labels
   showLabels?: boolean;
 
+  // Show remove (X) button next to each link
+  showRemove?: boolean;
+
   // Gap between items
   gap?: "sm" | "md" | "lg";
 
   // Styling
   className?: string;
+
+  // Context ID for delete handler (e.g. "aside-company" for Aside sidebar)
+  dataSocialsContext?: string;
 }
 
 const {
@@ -51,8 +61,10 @@ const {
   size = "md",
   colorScheme = "default",
   showLabels = false,
+  showRemove = false,
   gap = "md",
   className = "",
+  dataSocialsContext,
 } = Astro.props;
 
 // Parse links if passed as JSON string
@@ -97,11 +109,18 @@ function detectSocialNetwork(url: string, labelHint?: string): { icon: string; l
     return { icon: "youtube", label: "YouTube" };
   }
   // LinkedIn: linkedin.com, lnkd.in, or any regional subdomain (e.g. uk.linkedin.com)
-  if (urlLower.includes("linkedin.com") || urlLower.includes("lnkd.in") || urlLower.includes("linkedin.co")) {
+  if (
+    urlLower.includes("linkedin.com") ||
+    urlLower.includes("lnkd.in") ||
+    urlLower.includes("linkedin.co")
+  ) {
     return { icon: "linkedin", label: "LinkedIn" };
   }
   if (urlLower.includes("slack.com")) {
     return { icon: "slack", label: "Slack" };
+  }
+  if (urlLower.includes("x.com") || urlLower.includes("twitter.com")) {
+    return { icon: "x-twitter", label: "X" };
   }
   if (urlLower.startsWith("mailto:")) {
     return { icon: "mail", label: "Email" };
@@ -113,6 +132,9 @@ function detectSocialNetwork(url: string, labelHint?: string): { icon: string; l
   // Label-based fallback: if user set "LinkedIn" as label, use linkedin icon
   if (labelLower.includes("linkedin")) {
     return { icon: "linkedin", label: "LinkedIn" };
+  }
+  if (labelLower.includes("twitter") || labelLower === "x") {
+    return { icon: "x-twitter", label: "X" };
   }
 
   // Fallback for unknown URLs
@@ -132,7 +154,8 @@ const grayscaleIconMono = "grayscale"; // mono: always grayscale, no hover revea
 
 // Build link classes
 function getLinkClasses(): string {
-  const base = "group inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-full";
+  const base =
+    "group inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-full";
 
   let variantClass = "";
   switch (variant) {
@@ -167,8 +190,10 @@ function getIconClasses(): string {
         gapClasses[gap],
         className,
       ]}
+      data-socials-links={JSON.stringify(socialLinks)}
+      data-socials-context={dataSocialsContext}
     >
-      {socialLinks.map((link) => {
+      {socialLinks.map((link, index) => {
         const network = detectSocialNetwork(link.url, link.label);
         const label = link.label || network.label;
         const iconClasses =
@@ -179,23 +204,80 @@ function getIconClasses(): string {
         const isExternal = link.url.startsWith("http");
 
         return (
-          <a
-            href={link.url}
-            target={isExternal ? "_blank" : undefined}
-            rel={isExternal ? "noopener noreferrer" : undefined}
-            class={getLinkClasses()}
-            title={label}
-            aria-label={label}
-          >
-            <SimpleIcon
-              name={network.icon}
-              size={sizeMap[size]}
-              class={iconClasses}
-            />
-            {showLabels && <span class="ml-2 text-sm">{label}</span>}
-          </a>
+          <div class="socials-item-wrapper flex items-center gap-1" data-social-index={index}>
+            <a
+              href={link.url}
+              target={isExternal ? "_blank" : undefined}
+              rel={isExternal ? "noopener noreferrer" : undefined}
+              class={getLinkClasses()}
+              title={label}
+              aria-label={label}
+            >
+              <SimpleIcon name={network.icon} size={sizeMap[size]} class={iconClasses} />
+              {showLabels && <span class="ml-2 text-sm">{label}</span>}
+            </a>
+            {showRemove && (
+              <DeleteConfirmButton
+                id={`socials-remove-${dataSocialsContext || "default"}-${index}`}
+                class="socials-remove-btn shrink-0"
+                size="xs"
+                variant="icon"
+                tooltipText="Remove link"
+              />
+            )}
+          </div>
         );
       })}
     </div>
+  )
+}
+
+{
+  showRemove && dataSocialsContext && (
+    <script define:vars={{ dataSocialsContext }}>
+      document.addEventListener("DOMContentLoaded", () => {
+        const containers = document.querySelectorAll(
+          `.socials-component[data-socials-context="${dataSocialsContext}"]`
+        );
+        containers.forEach((container) => {
+          container.querySelectorAll(".socials-remove-btn").forEach((btn) => {
+            btn.addEventListener("deleteConfirmed", async (e) => {
+              const wrapper = btn.closest(".socials-item-wrapper");
+              if (!wrapper || !container) return;
+              const index = parseInt(wrapper.getAttribute("data-social-index") ?? "-1", 10);
+              if (index < 0) return;
+
+              const linksJson = container.getAttribute("data-socials-links");
+              let links = [];
+              try {
+                links = linksJson ? JSON.parse(linksJson) : [];
+              } catch {
+                return;
+              }
+              const updated = links.filter((_, i) => i !== index);
+              const res = await fetch("/api/settings/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  settings: { socialNetworks: JSON.stringify(updated) },
+                }),
+              });
+              const data = await res.json();
+              if (data.success !== false) {
+                wrapper.remove();
+                container.setAttribute("data-socials-links", JSON.stringify(updated));
+                if (typeof window.showNotice === "function") {
+                  window.showNotice("success", "Link removed", "Social link has been removed.", 2500);
+                }
+              } else {
+                if (typeof window.showNotice === "function") {
+                  window.showNotice("error", "Remove failed", data.error || "Could not remove link.", 5000);
+                }
+              }
+            });
+          });
+        });
+      });
+    </script>
   )
 }

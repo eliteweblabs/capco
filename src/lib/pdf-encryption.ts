@@ -199,24 +199,6 @@ export async function encryptPDF(
       }
     });
     */
-
-    // Placeholder - this code won't execute due to throw above
-    const encryptedBuffer = pdfBuffer;
-
-    console.log("🔐 [PDF-ENCRYPTION] Encryption applied successfully");
-
-    console.log("🔐 [PDF-ENCRYPTION] Encrypted PDF saved, size:", encryptedBuffer.length, "bytes");
-
-    return {
-      success: true,
-      encryptedBuffer,
-      metadata: {
-        encrypted: true,
-        permissions: options.permissions,
-        hasUserPassword: !!options.userPassword,
-        hasOwnerPassword: !!options.ownerPassword,
-      },
-    };
   } catch (error) {
     console.error("❌ [PDF-ENCRYPTION] Encryption failed:", error);
     return {

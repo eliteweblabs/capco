@@ -27,11 +27,8 @@ export const GET: APIRoute = async ({ request, url }) => {
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
         query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
-      } else {
-        // If no clientId set, show all pages (both null and non-null clientId)
-        // This ensures pages aren't hidden if RAILWAY_PROJECT_NAME is not set
-        query = query;
       }
+      // If no clientId set, query already has correct scope for all pages
 
       const { data, error } = await query
         .order("clientId", { ascending: false })

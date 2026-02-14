@@ -191,20 +191,20 @@ const mergedDataAttributes = {
 
   function initDeleteConfirmButtons() {
     // Clear any timeouts from the previous page on SPA navigation so we don't run logic on detached nodes
-    const activeTimeouts = (window as any)[ACTIVE_TIMEOUTS_KEY] as Map<string, number> | undefined;
+    const activeTimeouts = window[ACTIVE_TIMEOUTS_KEY] ;
     if (activeTimeouts) {
       activeTimeouts.forEach((id) => clearTimeout(id));
       activeTimeouts.clear();
     }
 
     // Bind document click listener only once so SPA navigations don't stack listeners
-    if (!(window as any)[DELETE_CONFIRM_BOUND_KEY]) {
-      (window as any)[DELETE_CONFIRM_BOUND_KEY] = true;
-      (window as any)[ACTIVE_TIMEOUTS_KEY] = new Map<string, number>();
+    if (!window[DELETE_CONFIRM_BOUND_KEY]) {
+      window[DELETE_CONFIRM_BOUND_KEY] = true;
+      window[ACTIVE_TIMEOUTS_KEY] = new Map<string, number>();
       document.addEventListener("click", async (e) => {
         const button = (e.target as HTMLElement).closest(".delete-confirm-btn") as HTMLElement;
         if (!button) return;
-        await handleDeleteButtonClick(e, button, (window as any)[ACTIVE_TIMEOUTS_KEY]);
+        await handleDeleteButtonClick(e, button, window[ACTIVE_TIMEOUTS_KEY]);
       });
     }
   }
@@ -277,8 +277,8 @@ const mergedDataAttributes = {
       if (needsItemId && !itemId) {
         console.error("[DeleteConfirmButton] Could not extract item ID from:", buttonId);
         button.removeAttribute("disabled");
-        if ((window as any).showNotice) {
-          (window as any).showNotice("error", "Delete Failed", "Invalid item ID");
+        if (window.showNotice) {
+          window.showNotice("error", "Delete Failed", "Invalid item ID");
         }
         return;
       }
@@ -295,8 +295,8 @@ const mergedDataAttributes = {
                 "[DeleteConfirmButton] DELETE with query param but missing data-" + deleteQueryParam
               );
               button.removeAttribute("disabled");
-              if ((window as any).showNotice) {
-                (window as any).showNotice("error", "Delete Failed", "Missing " + deleteQueryParam);
+              if (window.showNotice) {
+                window.showNotice("error", "Delete Failed", "Missing " + deleteQueryParam);
               }
               return;
             }
@@ -318,12 +318,12 @@ const mergedDataAttributes = {
               : itemId;
 
           if (data.success || response.ok) {
-            if (callbackName && typeof (window as any)[callbackName] === "function") {
-              await (window as any)[callbackName](callbackArg);
+            if (callbackName && typeof window[callbackName] === "function") {
+              await window[callbackName](callbackArg);
             } else {
               // Show default success message
-              if ((window as any).showSuccess) {
-                (window as any).showSuccess(
+              if (window.showSuccess) {
+                window.showSuccess(
                   "Deleted",
                   `${itemType || "Item"} deleted successfully`,
                   3000
@@ -332,8 +332,8 @@ const mergedDataAttributes = {
             }
           } else {
             console.error("[DeleteConfirmButton] API returned error:", data.error);
-            if ((window as any).showNotice) {
-              (window as any).showNotice(
+            if (window.showNotice) {
+              window.showNotice(
                 "error",
                 "Delete Failed",
                 data.error || "Failed to delete item"
@@ -342,8 +342,8 @@ const mergedDataAttributes = {
           }
         } catch (error) {
           console.error("[DeleteConfirmButton] API call failed:", error);
-          if ((window as any).showNotice) {
-            (window as any).showNotice(
+          if (window.showNotice) {
+            window.showNotice(
               "error",
               "Delete Failed",
               "An error occurred while deleting"
@@ -353,9 +353,9 @@ const mergedDataAttributes = {
           button.removeAttribute("disabled");
         }
       } else {
-        if (callbackName && typeof (window as any)[callbackName] === "function") {
+        if (callbackName && typeof window[callbackName] === "function") {
           try {
-            await (window as any)[callbackName](itemId);
+            await window[callbackName](itemId);
           } catch (error) {
             console.error("[DeleteConfirmButton] Callback error:", error);
           }

@@ -1,5 +1,6 @@
 ---
 // 3D Mapbox Component with Threebox
+const mapboxAccessToken = import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.MAPBOX_PUBLIC_KEY || "";
 ---
 
 <!-- Mapbox GL JS -->
@@ -27,7 +28,7 @@
   }
 </style>
 
-<script>
+<script define:vars={{ mapboxAccessToken }}>
   // Declare global types for Mapbox and Threebox
   declare const mapboxgl: any;
   declare const Threebox: any;
@@ -39,8 +40,7 @@
       return;
     }
 
-    mapboxgl.accessToken =
-      "REDACTED_MAPBOX_TOKEN";
+    mapboxgl.accessToken = mapboxAccessToken || "";
 
     const map = new mapboxgl.Map({
       container: "map",
@@ -58,7 +58,7 @@
       antialias: true,
     });
 
-    const tb = ((window as any).tb = new (window as any).Threebox(
+    const tb = (window.tb = new window.Threebox(
       map,
       map.getCanvas().getContext("webgl"),
       {

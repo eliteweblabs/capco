@@ -2,22 +2,22 @@
 /**
  * `ProfileTeamSection`
  *
- * Framework for displaying team members on the profile page.
- * Pass members array or leave empty for placeholder state.
+ * Displays team members from profiles where teamMember === true.
+ * Queries Supabase directly; no props required for members.
  *
  * @example
- * <ProfileTeamSection members={teamMembers} />
- *
- * @example with empty state
- * <ProfileTeamSection members={[]} />
+ * <ProfileTeamSection />
+ * <ProfileTeamSection title="Our Team" description="Meet the crew" />
  */
 
 import SimpleIcon from "../common/SimpleIcon.astro";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 interface TeamMember {
   id: string;
   name: string;
-  role?: string;
+  title?: string;
+  bio?: string;
   avatarUrl?: string | null;
   email?: string;
 }
@@ -25,7 +25,8 @@ interface TeamMember {
 interface Props {
   title?: string;
   description?: string;
-  members?: TeamMember[];
+  /** Override: pass members to bypass the internal query (for testing or custom data) */
+  members?: TeamMember[] | null;
   emptyMessage?: string;
   emptyIcon?: string;
   className?: string;
@@ -35,13 +36,32 @@ interface Props {
 const {
   title = "Team",
   description = "People in your organization",
-  members = [],
+  members: membersProp = null,
   emptyMessage = "No team members yet. Team management coming soon.",
   emptyIcon = "users",
   className = "",
   class: classProp = "",
 } = Astro.props;
 const sectionClass = classProp || className;
+
+// Query team members (profiles where teamMember === true)
+let members: TeamMember[] = [];
+if (membersProp !== null && Array.isArray(membersProp)) {
+  members = membersProp;
+} else if (supabaseAdmin) {
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("id, firstName, lastName, title, bio, avatarUrl")
+    .eq("teamMember", true)
+    .order("firstName", { ascending: true });
+  members = (data || []).map((p: any) => ({
+    id: p.id,
+    name: [p.firstName, p.lastName].filter(Boolean).join(" ") || "Unknown",
+    title: p.title || undefined,
+    bio: p.bio || undefined,
+    avatarUrl: p.avatarUrl || null,
+  }));
+}
 
 function getInitials(name: string): string {
   return name
@@ -69,7 +89,7 @@ function getInitials(name: string): string {
     }
 
     {
-      members.length > 0 ? (
+      members?.length > 0 ? (
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {members.map((member) => (
             <div
@@ -89,8 +109,13 @@ function getInitials(name: string): string {
               </div>
               <div class="min-w-0 flex-1">
                 <p class="truncate font-medium text-gray-900 dark:text-white">{member.name}</p>
-                {member.role && (
-                  <p class="truncate text-sm text-gray-500 dark:text-gray-400">{member.role}</p>
+                {member.title && (
+                  <p class="truncate text-sm text-gray-500 dark:text-gray-400">{member.title}</p>
+                )}
+                {member.bio && (
+                  <p class="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
+                    {member.bio}
+                  </p>
                 )}
               </div>
             </div>

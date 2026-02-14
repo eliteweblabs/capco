@@ -9,7 +9,7 @@ import TypeIt from "typeit";
  * Initialize typewriter effect for elements with typewriter-text class
  */
 function initTypewriterTexts(): void {
-  console.log("[TYPEWRITER] Initializing typewriter effects...");
+  // console.log("[TYPEWRITER] Initializing typewriter effects...");
 
   // Find all elements with typewriter-text class
   const typewriterElements = document.querySelectorAll(
@@ -19,7 +19,7 @@ function initTypewriterTexts(): void {
   typewriterElements.forEach((element) => {
     // Skip if already initialized
     if (element.getAttribute("data-typewriter-ready")) {
-      console.log("[TYPEWRITER] Already initialized:", element);
+      // console.log("[TYPEWRITER] Already initialized:", element);
       return;
     }
 
@@ -36,7 +36,7 @@ function initTypewriterTexts(): void {
     // If it has session meta, mark it but DON'T initialize yet
     // It will be initialized when the step becomes active
     if (hasSessionMeta) {
-      console.log("[TYPEWRITER] Element has session meta, deferring initialization:", element);
+      // console.log("[TYPEWRITER] Element has session meta, deferring initialization:", element);
       element.setAttribute("data-typewriter-deferred", "true");
       return;
     }
@@ -45,7 +45,7 @@ function initTypewriterTexts(): void {
     initializeTypewriterInstance(element, text);
   });
 
-  console.log(`[TYPEWRITER] Initialized ${typewriterElements.length} elements`);
+  // console.log(`[TYPEWRITER] Initialized ${typewriterElements.length} elements`);
 }
 
 /**
@@ -68,7 +68,7 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
   // Inject form session meta data into the text before typewriter starts
   text = injectSessionMetaIntoText(text);
 
-  console.log("[TYPEWRITER] Initializing element with text:", text.substring(0, 50) + "...");
+  // console.log("[TYPEWRITER] Initializing element with text:", text.substring(0, 50) + "...");
 
   // Clear the element content
   element.innerHTML = "";
@@ -131,7 +131,7 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
       }
     },
     afterComplete: () => {
-      console.log("[TYPEWRITER] Animation complete, triggering content animations");
+      // console.log("[TYPEWRITER] Animation complete, triggering content animations");
       // Dispatch custom event when typewriter completes
       element.dispatchEvent(new CustomEvent("typewriter-complete", { bubbles: true }));
 
@@ -246,7 +246,7 @@ function injectSessionMetaIntoText(text: string): string {
       }
 
       replacedText = replacedText.replace(fullMatch, value);
-      console.log(`[SESSION-META] Replaced ${fieldName} with: ${value}`);
+      // console.log(`[SESSION-META] Replaced ${fieldName} with: ${value}`);
     }
   }
 
@@ -318,7 +318,7 @@ function triggerActiveStepTypewriter(): void {
     return;
   }
 
-  console.log("[TYPEWRITER] Found active step:", activeStep);
+  // console.log("[TYPEWRITER] Found active step:", activeStep);
 
   // First, check for any deferred typewriter elements that need initialization
   const deferredElements = activeStep.querySelectorAll(
@@ -326,11 +326,11 @@ function triggerActiveStepTypewriter(): void {
   ) as NodeListOf<HTMLElement>;
 
   if (deferredElements.length > 0) {
-    console.log(
-      "[TYPEWRITER] Found",
-      deferredElements.length,
-      "deferred elements, initializing now..."
-    );
+    //  console.log(
+    //   "[TYPEWRITER] Found",
+    //   deferredElements.length,
+    //   "deferred elements, initializing now..."
+    // );
 
     deferredElements.forEach((element) => {
       const text = element.getAttribute("data-text");
@@ -345,23 +345,23 @@ function triggerActiveStepTypewriter(): void {
     ".typewriter-text[data-typewriter-ready='true']"
   ) as NodeListOf<HTMLElement>;
 
-  console.log(
-    "[TYPEWRITER] Found",
-    typewriterElements.length,
-    "typewriter elements in active step"
-  );
+  // console.log(
+  //   "[TYPEWRITER] Found",
+  //   typewriterElements.length,
+  //   "typewriter elements in active step"
+  // );
 
   typewriterElements.forEach((element) => {
     // Skip if already triggered
     if (element.getAttribute("data-typewriter-triggered") === "true") {
-      console.log("[TYPEWRITER] Already triggered:", element);
+      // console.log("[TYPEWRITER] Already triggered:", element);
       return;
     }
 
     // Get the stored TypeIt instance
     const instance = (element as any).__typeItInstance;
     if (instance) {
-      console.log("[TYPEWRITER] Starting animation for element");
+      // console.log("[TYPEWRITER] Starting animation for element");
       // Start the animation
       instance.go();
       element.setAttribute("data-typewriter-triggered", "true");

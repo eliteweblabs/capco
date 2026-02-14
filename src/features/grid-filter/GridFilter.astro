@@ -76,7 +76,11 @@ const hasDropdownFilters = Object.keys(dropdownFilters).length > 0;
 const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
 ---
 
-<div class={`grid-filter-container ${containerClasses}`} data-filter-id={uniqueId} data-masonry={masonry}>
+<div
+  class={`grid-filter-container ${containerClasses}`}
+  data-filter-id={uniqueId}
+  data-masonry={masonry}
+>
   <!-- Search Input -->
   {
     showSearch && (
@@ -100,8 +104,10 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
             type="button"
             data-filter={filter}
             data-filter-type="button"
-            class={`grid-filter-btn toggle-button preserve dark:text-white font-secondary relative inline-flex items-center justify-center font-large transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-md [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-md ${
-              (!multiSelect && index === 0) || multiSelect ? "selected bg-primary dark:bg-primary-dark text-white" : ""
+            class={`grid-filter-btn toggle-button preserve font-large text-md [@media(hover:hover)]:hover:scale-101 relative inline-flex items-center justify-center rounded-full border-2 border-primary-500 px-4 py-2.5 font-secondary text-primary-500 backdrop-blur-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-primary-400 dark:text-primary-400 dark:text-white [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white [@media(hover:hover)]:hover:shadow-xl dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white ${
+              (!multiSelect && index === 0) || multiSelect
+                ? "dark:bg-primary-dark selected bg-primary text-white"
+                : ""
             }`}
           >
             {filter}
@@ -307,7 +313,9 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
     // Main filter function
     function applyFilters() {
       const root = itemsContainer ? document.querySelector(itemsContainer) : document;
-      const items = root ? root.querySelectorAll(itemSelector) : document.querySelectorAll(itemSelector);
+      const items = root
+        ? root.querySelectorAll(itemSelector)
+        : document.querySelectorAll(itemSelector);
       const searchTerm = searchInput?.value.toLowerCase() || "";
       let visibleCount = 0;
 
@@ -457,13 +465,16 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
 
     // Helper: sync "All" button with other filter states
     function syncAllButtonState() {
-      const allBtn = Array.from(filterButtons).find((btn) => isAllFilter(btn.getAttribute("data-filter")));
+      const allBtn = Array.from(filterButtons).find((btn) =>
+        isAllFilter(btn.getAttribute("data-filter"))
+      );
       if (!allBtn) return;
       const allValue = allBtn.getAttribute("data-filter");
       const nonAllFilters = Array.from(filterButtons)
         .map((btn) => btn.getAttribute("data-filter"))
         .filter((v) => v && !isAllFilter(v));
-      const allNonAllSelected = nonAllFilters.length > 0 && nonAllFilters.every((f) => selectedButtonFilters.has(f));
+      const allNonAllSelected =
+        nonAllFilters.length > 0 && nonAllFilters.every((f) => selectedButtonFilters.has(f));
       const allCurrentlySelected = selectedButtonFilters.has(allValue);
 
       if (allNonAllSelected && !allCurrentlySelected) {
@@ -493,7 +504,12 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
               // All was ON → turn everything OFF
               selectedButtonFilters.clear();
               filterButtons.forEach((btn) => {
-                btn.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+                btn.classList.remove(
+                  "selected",
+                  "bg-primary",
+                  "dark:bg-primary-dark",
+                  "text-white"
+                );
                 btn.classList.add("deselected");
               });
             } else {
@@ -509,7 +525,12 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
             // Toggling a specific filter (not All)
             if (wasSelected) {
               selectedButtonFilters.delete(filterValue);
-              button.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+              button.classList.remove(
+                "selected",
+                "bg-primary",
+                "dark:bg-primary-dark",
+                "text-white"
+              );
               button.classList.add("deselected");
               syncAllButtonState();
             } else {

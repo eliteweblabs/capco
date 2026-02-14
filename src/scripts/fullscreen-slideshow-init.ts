@@ -21,14 +21,12 @@ function initOne(root: HTMLElement) {
   if (showPagination) modules.push(Pagination);
   if (autoplayMs > 0) modules.push(Autoplay);
 
-  new Swiper(swiperEl, {
+  const options = {
     modules,
     loop: true,
     grabCursor: true,
     speed: 600,
-    ...(autoplayMs > 0
-      ? { autoplay: { delay: autoplayMs, disableOnInteraction: false } }
-      : {}),
+    ...(autoplayMs > 0 ? { autoplay: { delay: autoplayMs, disableOnInteraction: false } } : {}),
     ...(showPagination
       ? {
           pagination: {
@@ -46,7 +44,8 @@ function initOne(root: HTMLElement) {
         }
       : {}),
     keyboard: { enabled: true },
-  });
+  };
+  new Swiper(swiperEl as HTMLElement, options as any);
 }
 
 export function initFullScreenSlideshows() {

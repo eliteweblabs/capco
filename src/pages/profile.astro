@@ -22,42 +22,17 @@ const {
 } = await globalCompanyData();
 
 import { globalClasses } from "./api/global/global-classes";
-import Tooltip from "../components/common/TooltipFloating.astro";
 import Hero from "../components/common/Hero.astro";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
 import App from "../components/ui/App.astro";
-import { getCarrierKeyFromGateway } from "../lib/sms-utils";
-import SimpleIcon from "../components/common/SimpleIcon.astro";
-import Footer from "../components/ui/Footer.astro";
-import PhoneAndSMS from "../components/form/PhoneAndSMS.astro";
-import SocialMediaRepeater from "../components/form/SocialMediaRepeater.astro";
-import ProfileTeamSection from "../components/profile/ProfileTeamSection.astro";
-import Button from "../components/common/Button.astro";
-import { supabaseAdmin } from "../lib/supabase-admin";
-
+import ProfileTabForm from "../components/profile/ProfileTabForm.astro";
 const userProfile = currentUser?.profile || null;
 
-// Fetch team members (profiles with teamMember = true)
-let teamMembers: Array<{ id: string; name: string; role?: string; avatarUrl?: string | null }> = [];
-if (supabaseAdmin) {
-  const { data } = await supabaseAdmin
-    .from("profiles")
-    .select("id, firstName, lastName, role, avatarUrl")
-    .eq("teamMember", true)
-    .order("firstName", { ascending: true });
-  teamMembers = (data || []).map((p) => ({
-    id: p.id,
-    name: [p.firstName, p.lastName].filter(Boolean).join(" ") || "Unknown",
-    role: p.role || undefined,
-    avatarUrl: p.avatarUrl || null,
-  }));
-}
-
-// Get the carrier key from the stored gateway domain
-const storedCarrierKey = userProfile?.mobileCarrier
-  ? getCarrierKeyFromGateway(userProfile.mobileCarrier)
-  : null;
+// Tab state from URL
+const defaultTabParam = Astro.url.searchParams.get("tab") || "general";
+const validTabs = ["settings", "general", "social", "team"];
+const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "general";
 ---
 
 <App
@@ -80,222 +55,92 @@ const storedCarrierKey = userProfile?.mobileCarrier
 >
   <Hero
     title={`${userProfile?.companyName || userProfile?.firstName || "User"}'s Profile`}
+    titleRefreshField="companyName"
+    titleRefreshValue={userProfile?.companyName ?? null}
+    titleRefreshUserId={currentUser?.id}
+    titleRefreshSuffix="'s Profile"
     description="Manage your account information and preferences"
     primaryTextClasses="text-3xl font-bold text-gray-900 dark:text-white"
     secondaryTextClasses="text-gray-600 dark:text-gray-300"
     globalInputClasses="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
   />
+  <script src="../lib/refresh-manager.ts"></script>
+  <script define:vars={{ hasUserRefresh: !!currentUser?.id }} is:inline>
+    if (hasUserRefresh) {
+      function startProfileRefresh() {
+        const rm = window.refreshManager;
+        if (rm && !rm.isAutoRefreshActive?.()) {
+          rm.startAutoRefreshWithInterval?.(5);
+        } else if (!rm) {
+          setTimeout(startProfileRefresh, 100);
+        }
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => setTimeout(startProfileRefresh, 50));
+      } else {
+        setTimeout(startProfileRefresh, 50);
+      }
+    }
+  </script>
   <div class="XXbg-gray-100 XXshadow-sm XXmd:p-6 p-4">
     <div class="mx-auto max-w-2xl">
-      <!-- Header -->
-
-      <!-- Profile Form -->
-      <form id="profile-form" class="space-y-6">
-        <!-- Profile Picture Section -->
-        <div class="text-center">
-          <div
-            class="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700"
-          >
-            <img
-              id="profile-avatar"
-              src={userProfile?.avatarUrl || ""}
-              alt="Profile picture"
-              class="h-20 w-20 rounded-lg object-cover"
-              onerror="this.style.display='none'; const n=this.nextElementSibling; if(n) n.style.display='flex';"
-            />
-            <SimpleIcon
-              id="profile-avatar-fallback"
-              name="user"
-              style={userProfile?.avatarUrl ? "display:none;" : ""}
-              class="h-10 w-10 text-gray-400"
-            />
-          </div>
-          <div class="flex items-center justify-center gap-2">
-            <Button
-              type="button"
-              id="upload-avatar-btn"
-              variant="link"
-              size="sm"
-              class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-            >
-              Upload Photo
-            </Button>
-            <Button
-              type="button"
-              id="remove-avatar-btn"
-              variant="link"
-              size="sm"
-              class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              style={userProfile?.avatarUrl ? "" : "display: none;"}
-            >
-              Remove
-            </Button>
-          </div>
-          <input type="file" id="avatar-input" accept="image/*" class="hidden" />
-        </div>
-
-        <!-- Company Name Field -->
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
-          <div class="relative">
-            <label
-              for="company-name"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Company Name <span class="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="company-name"
-              name="company-name"
-              required
-              value={userProfile?.companyName || ""}
-              class=`${globalInputClasses}`
-              placeholder="Enter your company name"
-            />
-          </div>
-        </div>
-
-        <!-- First Name and Last Name Fields -->
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div class="relative">
-            <label
-              for="first-name"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              First Name <span class="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="first-name"
-              name="firstName"
-              value={userProfile?.firstName || ""}
-              required
-              class=`${globalInputClasses}`
-              placeholder="Enter your first name"
-            />
-          </div>
-          <div class="relative">
-            <label
-              for="last-name"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Last Name <span class="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="last-name"
-              name="lastName"
-              value={userProfile?.lastName || ""}
-              required
-              class=`${globalInputClasses}`
-              placeholder="Enter your last name"
-            />
-          </div>
-        </div>
-
-        <!-- Email Field (Read-only) -->
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-1">
-          <div class="relative">
-            <label
-              for="email"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Email Address <span class="text-red-500">*</span>
-            </label>
-            <div class="relative">
-              <input
-                type="email"
-                id="email"
-                name="email"
-                required
-                value={currentUser?.email || ""}
-                readonly
-                class=`${globalInputClasses}`
-                placeholder="Enter email address"
-              />
-              <div class="absolute right-3 top-1/2 -translate-y-1/2">
-                <Tooltip text={`Call ${globalCompanyPhone} to change email`} position="top">
-                  <SimpleIcon id="email-lock-icon" name="lock" />
-                </Tooltip>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Social Media -->
-        <div class="relative">
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Social Media
-          </label>
-          <SocialMediaRepeater
-            id="profile-socials"
-            name="socialNetworks"
-            value={userProfile?.socialNetworks || []}
-            inputClasses={globalInputClasses}
-            addButtonLabel="Add Social Link"
-            emptyMessage="No social links yet. Add your LinkedIn, Twitter, or other profiles."
-          />
-        </div>
-
-        <!-- Phone and SMS -->
-        <PhoneAndSMS
-          id="phone"
-          name="phone"
-          value={userProfile?.phone || ""}
-          placeholder="Enter your phone number"
-          showSMS={true}
-          smsChecked={userProfile?.smsAlerts || false}
-          selectedCarrier={storedCarrierKey || ""}
-          {globalInputClasses}
-        />
-
-        <!-- Action Buttons -->
-        <div class="flex gap-3 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            class="w-auto md:w-full md:flex-1"
-            id="back-button"
-            icon="chevron-left"
-            iconPosition="left"
-          >
-            <span class="hidden sm:inline"> Back </span>
-          </Button>
-          <Button
-            type="submit"
-            id="save-profile-btn"
-            variant="secondary"
-            size="sm"
-            class="flex-1 md:w-full md:flex-grow"
-            icon="save"
-            iconPosition="left"
-          >
-            Save Changes
-          </Button>
-        </div>
-      </form>
-
-      <!-- Team Section -->
-      <ProfileTeamSection
-        class="mt-8"
-        title="Team"
-        description="People in your organization"
-        members={teamMembers}
-        emptyMessage="No team members yet. Mark profiles as team members to display them here."
+      <ProfileTabForm
+        userProfile={userProfile}
+        currentUser={currentUser}
+        globalInputClasses={globalInputClasses}
+        globalCompanyPhone={globalCompanyPhone}
+        activeTab={activeTab}
+        showSettingsTab={true}
+        showSignOut={true}
       />
     </div>
   </div>
 </App>
 
-<script type="module" lang="ts">
+<script type="module">
+  function loadCropperjs() {
+    if (window.Cropper?.default) return Promise.resolve(window.Cropper.default);
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/cropperjs@2.1.0/dist/cropper.min.js";
+      script.async = true;
+      script.onload = () => resolve(window.Cropper?.default || window.Cropper);
+      script.onerror = () => reject(new Error("Failed to load Cropper.js"));
+      document.head.appendChild(script);
+    });
+  }
+
+  window.switchProfileTab = function (tab) {
+    ["settings", "general", "social", "team"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("hidden", id !== tab);
+    });
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", url.toString());
+  };
+
   function initProfile() {
     if (window.location.pathname !== "/profile") return;
+    if (typeof window.initPageSizeToggle === "function")
+      window.initPageSizeToggle({
+        buttonId: "profile-page-size-toggle",
+        labelId: "profile-page-size-toggle-label",
+      });
+    const profileTabNav = document.getElementById("profile-tab-nav");
+    if (profileTabNav) {
+      profileTabNav.addEventListener("click", (e) => {
+        const target = e.target instanceof HTMLElement ? e.target.closest("button[id]") : null;
+        if (!target || !target.id?.startsWith("tab-")) return;
+        const tab = target.id.replace(/^tab-/, "");
+        if (["settings", "general", "social", "team"].includes(tab)) window.switchProfileTab?.(tab);
+      });
+    }
     const profileForm = document.getElementById("profile-form");
     if (profileForm?.hasAttribute("data-profile-inited")) return;
     if (profileForm) profileForm.setAttribute("data-profile-inited", "true");
-    const saveProfileBtn = document.getElementById("save-profile-btn");
-    const saveProfileBtnText = saveProfileBtn?.textContent;
+    const saveProfileBtns = document.querySelectorAll(".save-profile-btn");
+    const saveProfileBtnText = "Save Changes";
     const uploadAvatarBtn = document.getElementById("upload-avatar-btn");
     const avatarInput = document.getElementById("avatar-input");
     const removeAvatarBtn = document.getElementById("remove-avatar-btn");
@@ -322,7 +167,9 @@ const storedCarrierKey = userProfile?.mobileCarrier
       const companyName = formData.get("company-name");
       const firstName = formData.get("firstName");
       const lastName = formData.get("lastName");
+      const title = formData.get("title");
       const phone = formData.get("phone");
+      const bio = formData.get("bio");
       const smsAlertsCheckbox = document.getElementById("sms-alerts-phone");
       const smsAlerts = smsAlertsCheckbox?.checked || false;
       const mobileCarrier = formData.get("mobileCarrier");
@@ -352,11 +199,11 @@ const storedCarrierKey = userProfile?.mobileCarrier
         return;
       }
 
-      // Disable button and show loading state
-      if (saveProfileBtn) {
-        saveProfileBtn.disabled = true;
-        saveProfileBtn.textContent = "Saving...";
-      }
+      // Disable buttons and show loading state
+      saveProfileBtns.forEach((btn) => {
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+      });
 
       try {
         const response = await fetch("/api/users/update", {
@@ -368,7 +215,9 @@ const storedCarrierKey = userProfile?.mobileCarrier
             companyName,
             firstName,
             lastName,
+            title: title?.toString().trim() || null,
             phone,
+            bio: bio?.toString().trim() || null,
             smsAlerts,
             mobileCarrier: smsAlerts ? mobileCarrier : null,
             socialNetworks,
@@ -428,11 +277,11 @@ const storedCarrierKey = userProfile?.mobileCarrier
           );
         }
       } finally {
-        // Re-enable button
-        if (saveProfileBtn) {
-          saveProfileBtn.disabled = false;
-          saveProfileBtn.textContent = saveProfileBtnText || "Save Changes";
-        }
+        // Re-enable buttons
+        saveProfileBtns.forEach((btn) => {
+          btn.disabled = false;
+          btn.textContent = saveProfileBtnText;
+        });
       }
     });
 
@@ -440,6 +289,112 @@ const storedCarrierKey = userProfile?.mobileCarrier
     uploadAvatarBtn?.addEventListener("click", () => {
       avatarInput?.click();
     });
+
+    let avatarCropperInstance = null;
+    let avatarCropperPendingFile = null;
+    const cropperModal = document.getElementById("profile-avatar-cropper");
+    const cropperImg = document.getElementById("avatar-cropper-image");
+    const cropperContainer = document.getElementById("avatar-cropper-container");
+    const overlay = document.getElementById("global-backdrop");
+
+    const closeAvatarCropperModal = () => {
+      if (avatarCropperInstance) {
+        avatarCropperInstance.destroy();
+        avatarCropperInstance = null;
+      }
+      avatarCropperPendingFile = null;
+      cropperModal?.classList.add("hidden");
+      cropperModal?.classList.remove("flex");
+      cropperModal?.setAttribute("aria-hidden", "true");
+      overlay?.classList.add("hidden");
+      overlay?.classList.remove("flex");
+      if (typeof window.unlockBodyScroll === "function") window.unlockBodyScroll();
+      avatarInput && (avatarInput.value = "");
+    };
+
+    const initAvatarCropperModal = () => {
+      document.querySelectorAll("[data-avatar-cropper-close]").forEach((btn) => {
+        btn.addEventListener("click", closeAvatarCropperModal);
+      });
+      overlay?.addEventListener("click", closeAvatarCropperModal);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && cropperModal && !cropperModal?.classList.contains("hidden")) {
+          closeAvatarCropperModal();
+        }
+      });
+
+      document.getElementById("avatar-cropper-apply")?.addEventListener("click", async () => {
+        if (!avatarCropperInstance || !avatarCropperPendingFile) return;
+        const canvas = avatarCropperInstance.getCropperCanvas();
+        if (!canvas) return;
+        try {
+          const outputCanvas = await canvas.$toCanvas({ width: 400, height: 400 });
+          outputCanvas.toBlob(
+            async (blob) => {
+              if (!blob) return;
+              const base64 = await new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(r.result);
+                r.onerror = reject;
+                r.readAsDataURL(blob);
+              });
+              const fileName =
+                avatarCropperPendingFile.name.replace(/[^a-zA-Z0-9.-]/g, "_") || "avatar";
+              const mediaRes = await fetch("/api/media", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  mediaData: base64,
+                  fileName,
+                  fileType: blob.type || "image/jpeg",
+                  targetLocation: "profiles",
+                }),
+              });
+              const mediaJson = await mediaRes.json();
+              if (!mediaRes.ok || !mediaJson?.file?.publicUrl) {
+                throw new Error(mediaJson?.error || "Upload failed");
+              }
+              const updateRes = await fetch("/api/users/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ avatarUrl: mediaJson.file.publicUrl }),
+              });
+              const updateJson = await updateRes.json();
+              if (!updateRes.ok) throw new Error(updateJson?.error || "Failed to update profile");
+              if (profileAvatarImg) {
+                profileAvatarImg.src = mediaJson.file.publicUrl;
+                profileAvatarImg.style.display = "";
+                if (profileAvatarFallback) profileAvatarFallback.style.display = "none";
+              }
+              if (removeAvatarBtn) removeAvatarBtn.style.display = "";
+              window.refreshAuthAvatar?.(mediaJson.file.publicUrl);
+              if (window.showNotice) {
+                window.showNotice(
+                  "success",
+                  "Photo updated",
+                  "Your profile photo has been updated.",
+                  2500
+                );
+              }
+              closeAvatarCropperModal();
+            },
+            "image/jpeg",
+            0.9
+          );
+        } catch (err) {
+          console.error("Avatar crop/upload error:", err);
+          if (window.showNotice) {
+            window.showNotice(
+              "error",
+              "Upload failed",
+              err instanceof Error ? err.message : "Failed to upload photo. Please try again.",
+              5000
+            );
+          }
+        }
+      });
+    };
+    if (cropperModal) initAvatarCropperModal();
 
     avatarInput?.addEventListener("change", async (e) => {
       const inputEl = e.target;
@@ -458,63 +413,28 @@ const storedCarrierKey = userProfile?.mobileCarrier
       const reader = new FileReader();
       reader.onload = async () => {
         const dataUrl = reader.result;
-        const base64 = typeof dataUrl === "string" ? dataUrl : "";
-        const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_") || "avatar";
-        const fileType = file.type || "image/jpeg";
+        if (typeof dataUrl !== "string" || !cropperModal || !cropperImg || !cropperContainer)
+          return;
 
-        try {
-          const mediaRes = await fetch("/api/media", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              mediaData: base64,
-              fileName,
-              fileType,
-              targetLocation: "profiles",
-            }),
-          });
-          const mediaJson = await mediaRes.json();
-          if (!mediaRes.ok || !mediaJson?.file?.publicUrl) {
-            throw new Error(mediaJson?.error || "Upload failed");
-          }
+        avatarCropperPendingFile = file;
+        cropperImg.src = dataUrl;
+        cropperImg.style.display = "block";
 
-          const updateRes = await fetch("/api/users/update", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ avatarUrl: mediaJson.file.publicUrl }),
-          });
-          const updateJson = await updateRes.json();
-          if (!updateRes.ok) {
-            throw new Error(updateJson?.error || "Failed to update profile");
-          }
+        cropperModal.classList.remove("hidden");
+        cropperModal.classList.add("flex");
+        cropperModal.setAttribute("aria-hidden", "false");
+        overlay?.classList.remove("hidden");
+        overlay?.classList.add("flex");
+        if (typeof window.lockBodyScroll === "function") window.lockBodyScroll();
 
-          if (profileAvatarImg) {
-            profileAvatarImg.src = mediaJson.file.publicUrl;
-            profileAvatarImg.style.display = "";
-            if (profileAvatarFallback) profileAvatarFallback.style.display = "none";
-          }
-          if (removeAvatarBtn) removeAvatarBtn.style.display = "";
-          if (window.showNotice) {
-            window.showNotice(
-              "success",
-              "Photo updated",
-              "Your profile photo has been updated.",
-              2500
-            );
-          }
-        } catch (err) {
-          console.error("Avatar upload error:", err);
-          if (window.showNotice) {
-            window.showNotice(
-              "error",
-              "Upload failed",
-              err instanceof Error ? err.message : "Failed to upload photo. Please try again.",
-              5000
-            );
-          }
-        } finally {
-          if (inputEl) inputEl.value = "";
-        }
+        const Cropper = await loadCropperjs();
+        avatarCropperInstance = new Cropper(cropperImg, {
+          container: cropperContainer,
+          viewMode: 1,
+          aspectRatio: 1,
+          dragMode: "move",
+          autoCropArea: 0.8,
+        });
       };
       reader.readAsDataURL(file);
     });
@@ -535,6 +455,7 @@ const storedCarrierKey = userProfile?.mobileCarrier
         }
         if (profileAvatarFallback) profileAvatarFallback.style.display = "";
         if (removeAvatarBtn) removeAvatarBtn.style.display = "none";
+        window.refreshAuthAvatar?.("");
         if (window.showNotice) {
           window.showNotice(
             "success",
@@ -553,6 +474,30 @@ const storedCarrierKey = userProfile?.mobileCarrier
             5000
           );
         }
+      }
+    });
+
+    // Handle profile logout button
+    const profileLogoutBtn = document.getElementById("profile-logout-btn");
+    profileLogoutBtn?.addEventListener("click", async () => {
+      try {
+        const response = await fetch("/api/auth/signout", { method: "POST" });
+        if (response.ok) {
+          const url = new URL(window.location.origin);
+          url.searchParams.set("message", "logout_success");
+          window.location.href = url.toString();
+        } else if (typeof window.showNotice === "function") {
+          window.showNotice(
+            "error",
+            "Logout Failed",
+            "There was an error logging out. Please try again.",
+            0
+          );
+        } else {
+          alert("There was an error logging out. Please try again.");
+        }
+      } catch (error) {
+        console.error("Profile logout error:", error);
       }
     });
 
