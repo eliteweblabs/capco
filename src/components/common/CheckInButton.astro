@@ -8,10 +8,16 @@ import SimpleIcon from "./SimpleIcon.astro";
 
 interface Props {
   globalIconButtonClasses?: string;
+  tile?: boolean;
 }
 
-const { globalIconButtonClasses = "inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none" } =
+const { globalIconButtonClasses = "inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none", tile = false } =
   Astro.props;
+
+const tileClasses =
+  "flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600 dark:hover:bg-primary-950/30";
+const buttonClass = tile ? tileClasses : globalIconButtonClasses;
+const iconSize = tile ? "xl" : "md";
 ---
 
 <button
@@ -19,15 +25,20 @@ const { globalIconButtonClasses = "inline-flex items-center rounded-full justify
   id="check-in-btn"
   title="Check in at location"
   aria-label="Check in at location"
-  class={globalIconButtonClasses}
+  class={buttonClass}
   data-state="checked_out"
 >
   <span id="check-in-icon" class="check-in-icon" aria-hidden="true">
-    <SimpleIcon name="map-pin" size="md" />
+    <SimpleIcon name="map-pin" size={iconSize} class="text-primary-500 dark:text-primary-400" />
   </span>
   <span id="check-out-icon" class="check-out-icon hidden" aria-hidden="true">
-    <SimpleIcon name="log-out" size="md" />
+    <SimpleIcon name="log-out" size={iconSize} class="text-primary-500 dark:text-primary-400" />
   </span>
+  {tile && (
+    <span id="check-in-label" class="text-sm font-medium text-gray-900 dark:text-white">
+      Check In
+    </span>
+  )}
   <span class="sr-only">Check in at location</span>
 </button>
 
@@ -74,6 +85,10 @@ const { globalIconButtonClasses = "inline-flex items-center rounded-full justify
     const srOnly = btn.querySelector(".sr-only");
     if (srOnly) {
       srOnly.textContent = isCheckedIn ? "Check out" : "Check in at location";
+    }
+    const labelEl = btn.querySelector("#check-in-label");
+    if (labelEl) {
+      labelEl.textContent = isCheckedIn ? "Check out" : "Check In";
     }
   }
 
