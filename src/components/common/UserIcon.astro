@@ -1,149 +1,131 @@
 ---
-import Tooltip from "./TooltipFloating.astro";
+import SimpleIcon from "./SimpleIcon.astro";
 
-export interface Props {
-  user?: {
-    id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    avatarUrl?: string;
-    companyName?: string;
-  };
-  users?: Array<
-    | {
-        id: string;
-        firstName?: string;
-        lastName?: string;
-        email?: string;
-        avatarUrl?: string;
-        companyName?: string;
-      }
-    | null
-    | undefined
-  >;
-  size?: "sm" | "md" | "lg";
-  showTooltip?: boolean;
-  maxDisplay?: number;
-  tooltipPosition?: "top" | "bottom" | "left" | "right";
+interface Props {
+  currentUser: any;
+  session: any;
+  isBackend?: boolean;
+  assignedProjectsCount?: number;
+  assignedProjectsPreview?: any[];
+  globalIconButtonClasses?: string;
+  id: string;
 }
 
 const {
-  user,
-  users,
-  size = "md",
-  showTooltip = true,
-  maxDisplay = 3,
-  tooltipPosition = "top",
+  currentUser,
+  session,
+  isBackend,
+  assignedProjectsCount = 0,
+  assignedProjectsPreview = [],
+  globalIconButtonClasses,
+  id = "account",
 } = Astro.props;
 
-// Determine which users to display
-const displayUsers = users || (user ? [user] : []);
-// Filter out null/undefined users and get valid users
-const validUsers = displayUsers.filter((userItem) => userItem && userItem.id) as Array<{
-  id: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  avatarUrl?: string;
-  companyName?: string;
-}>;
-const visibleUsers = validUsers.slice(0, maxDisplay);
-const remainingCount = validUsers.length - maxDisplay;
+import UserProfileDropdown from "../ui/UserProfileDropdown.astro";
 
-// Size classes
-const sizeClasses = {
-  sm: "w-6 h-6 text-xs",
-  md: "w-8 h-8 text-sm",
-  lg: "w-12 h-12 text-base",
-};
+// Get current path to determine auth link
+const currentPath = Astro.url.pathname;
+const isLoginPage = currentPath.includes("/auth/login");
+const isRegisterPage = currentPath.includes("/auth/register");
+
+if (isLoginPage || isRegisterPage) {
+  return;
+}
+
+// Determine auth link and tooltip text
+// const authLink = isLoginPage ? "/auth/register" : "/auth/login";
+// const authTooltipText = isLoginPage ? "Register" : isRegisterPage ? "Login" : "Register / Login";
+
+// Prioritize profile.avatarUrl (Supabase Storage) over user_metadata.avatarUrl (Google CDN)
+const avatarUrl =
+  currentUser?.profile?.avatarUrl ||
+  currentUser?.user_metadata?.avatarUrl ||
+  currentUser?.user_metadata?.picture;
 ---
 
-<div class="flex items-center -space-x-2">
-  {
-    validUsers.length === 0 ? (
-      <div
-        class={`${sizeClasses[size]} flex items-center justify-center rounded-full border-2 border-white bg-gray-300 font-medium text-gray-600 shadow-sm`}
-      >
-        ?
-      </div>
-    ) : (
-      visibleUsers.map((userItem, index) => {
-        const fullName =
-          `${userItem.firstName || ""} ${userItem.lastName || ""}`.trim() ||
-          userItem.companyName ||
-          "User";
-        const initials = fullName
-          .split(" ")
-          .map((name) => name.charAt(0))
-          .join("")
-          .toUpperCase()
-          .slice(0, 2);
+<button
+  class={`h-8 w-8 overflow-hidden rounded-full ${globalIconButtonClasses || ""}`.trim()}
+  data-popover-trigger="click"
+  data-popover-target={`${id}-dropdown`}
+  data-avatar-url={avatarUrl || ""}
+  data-user-id={currentUser?.id}
+  data-project-id={currentUser?.projectId}
+  type="button"
+  style="padding: 0;"
+>
+  <span class="sr-only">Open user menu</span>
+  <img
+    src={avatarUrl || undefined}
+    alt="Profile"
+    class="avatar-img h-full w-full min-w-0 object-cover object-center p-0"
+    style={!avatarUrl ? "display:none" : undefined}
+    onerror="this.style.display='none'; const f=this.nextElementSibling; if(f) { f.classList.remove('hidden'); f.classList.add('flex'); }"
+  />
+  <span
+    class:list={[
+      "avatar-fallback",
+      "h-full",
+      "w-full",
+      "items-center",
+      "justify-center",
+      avatarUrl ? "hidden" : "flex",
+    ]}
+    aria-hidden="true"
+  >
+    <SimpleIcon name="user" size="md" />
+  </span>
+</button>
 
-        const tooltipText = `${fullName}${userItem.email ? `\n${userItem.email}` : ""}`;
+<UserProfileDropdown
+  id={id}
+  {globalIconButtonClasses}
+  assignedProjectsCount={assignedProjectsCount}
+  assignedProjectsPreview={assignedProjectsPreview}
+  {currentUser}
+  closeButton={false}
+/>
+<script>
+  /**
+   * Refresh avatar img src across all [data-avatar-url] elements.
+   * Uses <img> for content manipulation; works for UserIcon and any avatar using this pattern.
+   * @param newUrl - New avatar URL, or empty string to clear. Omit to re-apply current data-avatar-url.
+   * @param userId - Optional: only update elements with matching data-user-id
+   */
+  function refreshAvatar(newUrl?: string, userId?: string) {
+    document.querySelectorAll("[data-avatar-url]").forEach((container) => {
+      if (userId && container.getAttribute("data-user-id") !== userId) return;
 
-        const avatarUrl = userItem.avatarUrl || undefined;
-        return (
-          <Tooltip
-            text={tooltipText}
-            position={tooltipPosition}
-            disabled={!showTooltip}
-            tooltipClass="whitespace-pre-line"
-          >
-            <div
-              class={`${sizeClasses[size]} overflow-hidden cursor-pointer rounded-full border-2 border-white shadow-sm`}
-              data-avatar-url={avatarUrl || ""}
-              data-user-id={userItem.id}
-              data-user-name={fullName}
-            >
-              <img
-                src={avatarUrl}
-                alt={fullName}
-                class={`avatar-img ${sizeClasses[size]} min-w-0 object-cover object-center`}
-                style={!avatarUrl ? "display:none" : undefined}
-                onerror="this.style.display='none'; const f=this.nextElementSibling; if(f) { f.classList.remove('hidden'); f.classList.add('flex'); }"
-              />
-              <span
-                class:list={[
-                  "avatar-fallback",
-                  sizeClasses[size],
-                  "flex",
-                  "items-center",
-                  "justify-center",
-                  "rounded-full",
-                  "border-2",
-                  "border-white",
-                  "bg-gradient-to-br",
-                  "from-primary-500",
-                  "to-purple-600",
-                  "font-medium",
-                  "text-white",
-                  "shadow-sm",
-                  avatarUrl ? "hidden" : "",
-                ]}
-              >
-                {initials}
-              </span>
-            </div>
-          </Tooltip>
-        );
-      })
-    )
+      const url = newUrl !== undefined ? newUrl || "" : container.getAttribute("data-avatar-url");
+      container.setAttribute("data-avatar-url", url || "");
+
+      const img = container.querySelector("img");
+      const fallback = container.querySelector(".avatar-fallback");
+
+      if (!url) {
+        if (img instanceof HTMLImageElement) {
+          img.removeAttribute("src");
+          img.style.display = "none";
+        }
+        if (fallback instanceof HTMLElement) {
+          fallback.classList.remove("hidden");
+          fallback.classList.add("flex");
+          fallback.style.display = "";
+        }
+      } else if (img instanceof HTMLImageElement) {
+        img.src = url;
+        img.style.display = "";
+        if (fallback instanceof HTMLElement) {
+          fallback.classList.add("hidden");
+          fallback.style.display = "none";
+        }
+      }
+    });
   }
 
-  {
-    remainingCount > 0 && (
-      <Tooltip
-        text={`+${remainingCount} more user${remainingCount > 1 ? "s" : ""}`}
-        position={tooltipPosition}
-        disabled={!showTooltip}
-      >
-        <div
-          class={`${sizeClasses[size]} flex cursor-pointer items-center justify-center rounded-full border-2 border-white bg-gray-500 font-medium text-white shadow-sm`}
-        >
-          +{remainingCount}
-        </div>
-      </Tooltip>
-    )
-  }
-</div>
+  (window as any).refreshAvatar = refreshAvatar;
+
+  document.addEventListener("avatarUpdated", (e) => {
+    const url = e instanceof CustomEvent && e.detail ? e.detail.avatarUrl : undefined;
+    refreshAvatar(url, undefined);
+  });
+</script>

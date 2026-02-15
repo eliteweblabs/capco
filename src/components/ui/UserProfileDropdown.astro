@@ -1,12 +1,13 @@
 ---
 /**
- * Account dropdown panel for the header avatar (AuthIcon).
+ * Account dropdown panel for the header avatar (UserIcon).
  * Flowbite: trigger uses data-dropdown-toggle="account-dropdown"; this panel has id="account-dropdown".
  * Navbar.astro attaches the logout handler to #logout-btn.
  */
 interface Props {
   currentUser: any;
-  projects: any[];
+  assignedProjectsCount?: number;
+  assignedProjectsPreview?: any[];
   globalIconButtonClasses: string;
   closeButton: boolean;
   id: string;
@@ -23,7 +24,8 @@ if (authCode && !Astro.url.pathname.startsWith("/auth/callback")) {
 
 const {
   currentUser,
-  projects,
+  assignedProjectsCount = 0,
+  assignedProjectsPreview = [],
   globalIconButtonClasses,
   closeButton = false,
   id,
@@ -31,18 +33,16 @@ const {
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
-const assignedCount = projects?.filter((p: any) => p.assignedToId === currentUser?.id).length ?? 0;
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Dropdown from "./Dropdown.astro";
 import LoginForm from "../../features/forms/components/LoginForm.astro";
 import CheckInButton from "../common/CheckInButton.astro";
 ---
 
-<!-- Account dropdown: Flowbite data-popover-target on AuthIcon trigger -->
+<!-- Account dropdown: Flowbite data-popover-target on UserIcon trigger -->
 <Dropdown
   id={id}
   {currentUser}
-  {projects}
   {globalIconButtonClasses}
   {closeButton}
   title="User Profile"
@@ -96,28 +96,6 @@ import CheckInButton from "../common/CheckInButton.astro";
               <span class="text-sm font-medium text-gray-900 dark:text-white">Dashboard</span>
             </a>
 
-            {(currentRole === "Admin" || currentRole === "Staff") && (
-              <a
-                href="/project/dashboard"
-                title="Assigned projects"
-                class="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600 dark:hover:bg-primary-950/30"
-              >
-                <span class="relative">
-                  <SimpleIcon
-                    name="folder"
-                    size="xl"
-                    class="text-primary-500 dark:text-primary-400"
-                  />
-                  {assignedCount > 0 && (
-                    <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-600">
-                      {assignedCount}
-                    </span>
-                  )}
-                </span>
-                <span class="text-sm font-medium text-gray-900 dark:text-white">Assigned</span>
-              </a>
-            )}
-
             <button
               id="logout-btn"
               type="button"
@@ -132,14 +110,23 @@ import CheckInButton from "../common/CheckInButton.astro";
               type="button"
               id="page-size-toggle"
               title="Toggle larger page elements"
-              class="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600 dark:hover:bg-primary-950/30"
+              class="relative flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600 dark:hover:bg-primary-950/30"
               aria-pressed="false"
             >
-              <SimpleIcon
-                name="zoom-in"
-                size="xl"
-                class="text-primary-500 dark:text-primary-400"
-              />
+              <span id="page-size-icon-in">
+                <SimpleIcon
+                  name="zoom-in"
+                  size="xl"
+                  class="text-primary-500 dark:text-primary-400"
+                />
+              </span>
+              <span id="page-size-icon-out" class="hidden">
+                <SimpleIcon
+                  name="zoom-out"
+                  size="xl"
+                  class="text-primary-500 dark:text-primary-400"
+                />
+              </span>
               <span id="page-size-toggle-label" class="text-sm font-medium text-gray-900 dark:text-white">
                 Larger
               </span>
@@ -149,6 +136,23 @@ import CheckInButton from "../common/CheckInButton.astro";
               <CheckInButton tile />
             )}
           </div>
+          {(currentRole === "Admin" || currentRole === "Staff") && assignedProjectsCount > 0 && (
+            <div class="mt-3 w-full border-t border-gray-200 pt-3 dark:border-gray-700">
+              <div class="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Assigned to
+              </div>
+              <div class="flex flex-wrap gap-2">
+                {assignedProjectsPreview.map((project: any) => (
+                  <a
+                    href={`/project/${project.id}`}
+                    class="inline-block rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-sm font-medium text-gray-900 transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:border-primary-600 dark:hover:bg-primary-950/30"
+                  >
+                    {project.address || project.title || "Untitled Project"}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </>
     ) : (

@@ -72,3 +72,5 @@ view-source:https://upload.wikimedia.org/wikipedia/commons/d/d5/Slack_icon_2019.
 - validate everything after writing code.
 
 - no modals
+
+- use unsplash images always in demo shortcodes

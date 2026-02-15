@@ -73,12 +73,27 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       console.error("[---AUTH-SIGNIN] Error logging failed login:", logError);
     }
 
+    // Map Supabase errors to user-friendly messages (avoid leaking security info)
+    const msg = error.message?.toLowerCase() || "";
+    let userMessage = "Invalid email or password";
+    if (msg.includes("email not confirmed")) {
+      userMessage =
+        "Please confirm your email address. Check your inbox for the confirmation link.";
+    } else if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
+      userMessage = "Invalid email or password";
+    } else if (msg.includes("too many requests") || msg.includes("rate limit")) {
+      userMessage = "Too many sign-in attempts. Please try again in a few minutes.";
+    } else if (msg.includes("email rate limit") || msg.includes("email_not_confirmed")) {
+      userMessage =
+        "Please confirm your email address. Check your inbox for the confirmation link.";
+    }
+
     // Return JSON error for fetch requests, redirect for form submissions
     if (acceptsJson) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Invalid email or password",
+          error: userMessage,
         }),
         {
           status: 401,
@@ -86,7 +101,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         }
       );
     }
-    return redirect("/auth/login?error=invalid_credentials");
+    return redirect(`/auth/login?error=invalid_credentials&message=${encodeURIComponent(userMessage)}`);
   }
 
   // Profile will be automatically created by database trigger

@@ -190,6 +190,7 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     props: {
       title: { type: "string", description: "Section title" },
       variant: { type: "string", default: "simple", description: "Style: simple, grid, marquee" },
+      marqueeDirection: { type: "string", default: "left", description: "Marquee direction: left or right (only when variant=marquee)" },
       logos: { type: "string", description: "JSON array of logos [{src, alt, href}]" },
     },
   },

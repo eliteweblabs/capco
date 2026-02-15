@@ -9,7 +9,7 @@ Commit **5a417fde** (“refactor: Enhance Prettier configuration and UI componen
 | 1 | `.prettierrc` |
 | 2 | `package-lock.json` |
 | 3 | `package.json` |
-| 4 | `src/components/common/AuthIcon.astro` |
+| 4 | `src/components/common/UserIcon.astro` |
 | 5 | `src/components/common/NotificationsModal.astro` |
 | 6 | `src/components/common/TooltipFloating.astro` |
 | 7 | `src/components/form/AuthProviders.astro` |

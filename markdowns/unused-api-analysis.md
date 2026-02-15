@@ -66,7 +66,7 @@
 
 - `/api/auth/signin` - Used in AuthForm.astro and RegisterForm.astro
 - `/api/auth/register` - Used in RegisterForm.astro
-- `/api/auth/signout` - Used in AuthIcon.astro
+- `/api/auth/signout` - Used in UserIcon.astro
 - `/api/auth/forgot-password` - Used in AuthForm.astro and profile.astro
 - `/api/auth/reset-password` - Used in reset-password.astro
 

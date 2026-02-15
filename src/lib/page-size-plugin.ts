@@ -38,21 +38,29 @@ export function togglePageSize(): PageSize {
 export interface PageSizeToggleIds {
   labelId?: string;
   buttonId?: string;
+  iconInId?: string;
+  iconOutId?: string;
 }
 
 const DEFAULT_IDS: PageSizeToggleIds = {
   labelId: "page-size-toggle-label",
   buttonId: "page-size-toggle",
+  iconInId: "page-size-icon-in",
+  iconOutId: "page-size-icon-out",
 };
 
-/** Update toggle button label and aria-pressed to match current page size. */
+/** Update toggle button label, icon, and aria-pressed to match current page size. */
 export function updatePageSizeToggleUI(ids: PageSizeToggleIds = {}): void {
-  const { labelId, buttonId } = { ...DEFAULT_IDS, ...ids };
+  const { labelId, buttonId, iconInId, iconOutId } = { ...DEFAULT_IDS, ...ids };
   const isLarge = getPageSize() === "large";
   const label = labelId ? document.getElementById(labelId) : null;
   const btn = buttonId ? document.getElementById(buttonId) : null;
+  const iconIn = iconInId ? document.getElementById(iconInId) : null;
+  const iconOut = iconOutId ? document.getElementById(iconOutId) : null;
   if (label) label.textContent = isLarge ? "Normal page elements" : "Larger page elements";
   if (btn) btn.setAttribute("aria-pressed", String(isLarge));
+  if (iconIn) (iconIn as HTMLElement).style.display = isLarge ? "none" : "";
+  if (iconOut) (iconOut as HTMLElement).style.display = isLarge ? "block" : "none";
 }
 
 /** Wire the toggle button: click handler + initial UI state. */

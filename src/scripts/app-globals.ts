@@ -351,24 +351,28 @@ if (!String.prototype.startsWith) {
   inputWrappers.forEach((wrapper) => {
     const iconName = wrapper.getAttribute("data-icon");
     if (!iconName) return;
+    const input = wrapper.querySelector("input");
+    if (!input) return;
+    const inputFontSize = getComputedStyle(input).fontSize;
+    (wrapper as HTMLElement).style.fontSize = inputFontSize;
     const iconSVG = getIcon(iconName, {
-      size: 28,
+      size: 16,
       className: "text-black dark:text-white",
     });
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = iconSVG;
     const svgElement = tempDiv.firstElementChild as SVGElement;
     if (!svgElement) return;
+    const isRight = wrapper.classList.contains("icon-right");
     svgElement.style.position = "absolute";
-    svgElement.style.left = "calc(1rem - 5px)";
-    svgElement.style.right = "";
+    svgElement.style.left = isRight ? "" : "calc(1rem - 5px)";
+    svgElement.style.right = isRight ? "calc(1rem - 5px)" : "";
     svgElement.style.top = "50%";
     svgElement.style.transform = "translateY(-50%)";
     svgElement.style.pointerEvents = "none";
     svgElement.style.zIndex = "1";
     svgElement.style.opacity = "0.5";
     svgElement.style.transition = "opacity 0.3s ease";
-    const input = wrapper.querySelector("input");
     if (input) {
       input.addEventListener("focus", () => {
         svgElement.style.opacity = "0.7";

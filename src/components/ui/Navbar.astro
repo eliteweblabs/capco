@@ -1,5 +1,5 @@
 ---
-import AuthIcon from "../common/AuthIcon.astro";
+import UserIcon from "../common/UserIcon.astro";
 import Logo from "./Logo.astro";
 import ToggleSidebar from "./ToggleSidebar.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
@@ -15,6 +15,8 @@ interface Props {
   project?: any;
   id?: string;
   projects?: any[];
+  assignedProjectsCount?: number;
+  assignedProjectsPreview?: any[];
   isBackend?: boolean;
   supabaseUrl?: string;
   globalIconButtonClasses?: string;
@@ -30,6 +32,8 @@ const {
   session,
   desktopNavigationHTML,
   projects,
+  assignedProjectsCount = 0,
+  assignedProjectsPreview = [],
   isBackend,
   project,
   globalIconButtonClasses,
@@ -104,21 +108,21 @@ const currentRole = (currentUser as any)?.profile?.role;
               id="notifications"
               closeButton={false}
               {globalIconButtonClasses}
-              {projects}
               {currentUser}
             />
           </>
         )
       }
 
-      <ThemeToggle {currentUser} {session} {isBackend} {projects} {globalIconButtonClasses} />
+      <ThemeToggle {currentUser} {session} {isBackend} {globalIconButtonClasses} />
 
-      <AuthIcon
+      <UserIcon
         id="account"
         {currentUser}
         {session}
         {isBackend}
-        {projects}
+        assignedProjectsCount={assignedProjectsCount}
+        assignedProjectsPreview={assignedProjectsPreview}
         {globalIconButtonClasses}
       />
     </div>

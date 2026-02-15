@@ -1338,7 +1338,16 @@ export function createMultiStepFormHandler(
           if (!response.ok) {
             const errorText = await response.text();
             console.error("[MULTISTEP-FORM] Response error body:", errorText);
-            throw new Error(`Submission failed: ${response.status}`);
+            let errorMessage = `Submission failed: ${response.status}`;
+            try {
+              const errorJson = JSON.parse(errorText);
+              if (typeof errorJson?.error === "string" && errorJson.error.trim()) {
+                errorMessage = errorJson.error;
+              }
+            } catch {
+              // Not JSON or parse failed - use status-based message
+            }
+            throw new Error(errorMessage);
           }
 
           const result = await response.json();

@@ -89,10 +89,30 @@ const serverTheme = themeCookie?.value || "light"; // Default to light
 
 // Debug logging
 
+// Derived properties (needed for assigned fetch)
+const currentRole = currentUser?.profile?.role;
+
+// Fetch assigned projects (count + preview) for Staff/Admin — lightweight endpoint, no profiles/files
+let assignedProjectsCount = 0;
+let assignedProjectsPreview: any[] = [];
+if (currentUser && (currentRole === "Admin" || currentRole === "Staff")) {
+  try {
+    const cookieHeader = Astro.request.headers.get("Cookie") || "";
+    const res = await fetch(`${Astro.url.origin}/api/projects/assigned-summary`, {
+      headers: { Cookie: cookieHeader },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      assignedProjectsCount = data.count ?? 0;
+      assignedProjectsPreview = data.items ?? [];
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 // Derived properties (8 props → 13 total)
 const isAuth = currentUser ? true : false;
-// const currentUserId = currentUser?.id || undefined; // Unused
-const currentRole = currentUser?.profile?.role || undefined;
 const projectId = project?.id || undefined;
 const currentUrl = Astro.url.pathname;
 
@@ -957,6 +977,8 @@ const debugData = {
         {supabaseUrl}
         {id}
         {projects}
+        assignedProjectsCount={assignedProjectsCount}
+        assignedProjectsPreview={assignedProjectsPreview}
         {isBackend}
         {project}
         pathname={Astro.url.pathname}

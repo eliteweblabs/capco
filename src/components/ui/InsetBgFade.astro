@@ -1,0 +1,97 @@
+---
+/**
+ * InsetBgFade - Fadeshow background: cycles through an array of image URLs with fade transitions.
+ * Use inside a positioned parent. No controls, loops indefinitely.
+ *
+ * @example
+ * <InsetBgFade imageUrls={["https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&auto=format", ...]} />
+ */
+
+interface Props {
+  imageUrls?: string[];
+  /** Flat props for shortcode: image1, image2, ... image12 */
+  image1?: string;
+  image2?: string;
+  image3?: string;
+  image4?: string;
+  image5?: string;
+  image6?: string;
+  image7?: string;
+  image8?: string;
+  image9?: string;
+  image10?: string;
+  image11?: string;
+  image12?: string;
+  /** Duration of each image in ms before fading to next. Default: 4000 */
+  interval?: number;
+  /** Crossfade duration in ms. Default: 1200 */
+  fadeDuration?: number;
+}
+
+const props = Astro.props;
+function getImageUrls(): string[] {
+  if (props.imageUrls) {
+    if (typeof props.imageUrls === "string") {
+      try {
+        return JSON.parse(props.imageUrls) as string[];
+      } catch {
+        return [];
+      }
+    }
+    return props.imageUrls;
+  }
+  return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    .map((i) => props[`image${i}` as keyof typeof props] as string | undefined)
+    .filter((u): u is string => Boolean(u));
+}
+const resolvedUrls = getImageUrls();
+const { interval = 4000, fadeDuration = 1200 } = props;
+---
+
+{resolvedUrls.length > 0 && (
+<div
+  class="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+  aria-hidden="true"
+  data-fadeshow
+  data-interval={interval}
+  data-fade-duration={fadeDuration}
+>
+  {resolvedUrls.map((url, i) => (
+    <div
+      class="fadeshow-layer absolute inset-0 bg-cover bg-center bg-no-repeat"
+      data-fadeshow-layer
+      data-index={i}
+      style={`background-image: url(${url}); opacity: ${i === 0 ? 1 : 0};`}
+    />
+  ))}
+</div>
+)}
+
+<style>
+  .fadeshow-layer {
+    transition: opacity var(--fadeshow-duration, 1.2s) ease-in-out;
+  }
+</style>
+
+<script>
+  function initFadeshow(root?: Document | Element) {
+    const scope = root ?? document;
+    scope.querySelectorAll("[data-fadeshow]").forEach((container) => {
+      const layers = container.querySelectorAll<HTMLElement>("[data-fadeshow-layer]");
+      if (layers.length <= 1) return;
+      const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
+      const fadeMs = parseInt(container.getAttribute("data-fade-duration") ?? "1200", 10);
+      (container as HTMLElement).style.setProperty("--fadeshow-duration", `${fadeMs}ms`);
+      let idx = 0;
+      const next = () => {
+        const prev = idx;
+        idx = (idx + 1) % layers.length;
+        layers[prev]!.style.opacity = "0";
+        layers[idx]!.style.opacity = "1";
+      };
+      setInterval(next, intervalMs);
+    });
+  }
+  initFadeshow(document);
+  document.addEventListener("astro:after-swap", () => initFadeshow(document));
+</script>

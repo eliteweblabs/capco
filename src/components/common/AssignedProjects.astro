@@ -1,56 +1,39 @@
 ---
-// User center component for header
+/**
+ * AssignedProjects - Shows count + preview of projects assigned to current user.
+ * Uses assignedProjectsCount + assignedProjectsPreview (fetched by App) — no full projects array.
+ */
 import SimpleIcon from "./SimpleIcon.astro";
 
-const { currentUser, projects } = Astro.props;
+interface Props {
+  currentUser: any;
+  /** Pre-fetched count (from App). Prefer over projects. */
+  assignedProjectsCount?: number;
+  /** Pre-fetched preview of up to 5 projects (from App). Prefer over projects. */
+  assignedProjectsPreview?: any[];
+  /** @deprecated Pass assignedProjectsCount + assignedProjectsPreview instead. Fallback only. */
+  projects?: any[];
+}
+
+const {
+  currentUser,
+  assignedProjectsCount: countProp = 0,
+  assignedProjectsPreview: previewProp = [],
+  projects = [],
+} = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 if (currentRole === "Client") {
   return null;
 }
-let assignedProjectsCount = 0;
-let assignedProjects: any[] = [];
 
-if (!projects) return null;
+let assignedProjectsCount = countProp;
+let assignedProjects = previewProp;
 
-// get the projects with assignedToId === currentUser.id
-assignedProjects = projects.filter((project: any) => project.assignedToId === currentUser.id);
-assignedProjectsCount = assignedProjects.length;
-
-// if (currentRole === "Staff" || currentRole === "Admin") {
-//   // console.log("🏗️ [APP] Fetching assigned projects for user:", currentUser.id);
-//   const baseUrl = Astro.url.origin;
-//   const fullUrl = `${baseUrl}/api/projects/get?assignedToId=${currentUser.id}`;
-//   // console.log("🏗️ [APP] Full URL:", fullUrl);
-//   try {
-//     const response = await fetch(fullUrl);
-//     if (response.ok) {
-//       const data = await response.json();
-//       // console.log("🏗️ [APP] Assigned projects:", data);
-//       assignedProjects = data.projects || [];
-//       assignedProjectsCount = data.projects.length || 0;
-//     }
-//   } catch (error) {
-//     console.error("Error fetching assigned projects:", error);
-//   }
-// } else if (currentRole === "Client") {
-//   const baseUrl = Astro.url.origin;
-//   const fullUrl = `${baseUrl}/api/projects/get?authorId=${currentUser.id}`;
-//   // console.log("🏗️ [APP] Full URL:", fullUrl);
-//   try {
-//     const response = await fetch(fullUrl);
-//     if (response.ok) {
-//       const data = await response.json();
-//       // console.log("🏗️ [APP] Assigned projects:", data);
-//       assignedProjects = data.projects || [];
-//       assignedProjectsCount = data.projects.length || 0;
-//     }
-//   } catch (error) {
-//     console.error("Error fetching assigned projects:", error);
-//   }
-// }
-
-// Fetch projects assigned to current user
+if (assignedProjectsCount === 0 && assignedProjects.length === 0 && projects?.length) {
+  assignedProjects = projects.filter((p: any) => p.assignedToId === currentUser?.id);
+  assignedProjectsCount = assignedProjects.length;
+}
 ---
 
 {
@@ -65,8 +48,6 @@ assignedProjectsCount = assignedProjects.length;
         Assigned Projects
         <span class="sr-only">View assigned projects</span>
       </SimpleIcon>
-
-      {/* <SimpleIcon name="chevron-down" class="h-4 w-4" data-sidebar-collapse-hide="" /> */}
 
       <span
         class="count-bubble dark:bg-primary-dark pulse absolute -right-2 -top-2 flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white"

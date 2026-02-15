@@ -30,6 +30,8 @@ export interface ColumnConfig<T = any> {
   colSpan?: number;
   /** When true, render cell value as HTML (use for rich content) */
   allowHtml?: boolean;
+  /** Default width in px for resizable columns */
+  width?: number;
 }
 
 interface Props<T = any> {
@@ -70,6 +72,8 @@ interface Props<T = any> {
   detailRowIdPrefix?: string;
   /** Data attributes for create row (e.g. { editorSlot: "create" } for CMS) */
   createRowDataAttrs?: Record<string, string>;
+  /** Enable resizable columns (default: true) */
+  resizable?: boolean;
 }
 
 const {
@@ -99,6 +103,7 @@ const {
   chevronClass = "accordion-chevron",
   detailRowIdPrefix,
   createRowDataAttrs,
+  resizable = true,
 } = Astro.props;
 
 const toDataAttrs = (obj: Record<string, string>) =>
@@ -129,20 +134,21 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
     )
   }
   <div class="overflow-x-auto">
-    <table class="min-w-full divide-gray-200 dark:divide-gray-700">
-      <thead class="bg-gray-50 dark:bg-gray-900">
+    <table
+      id={`${id}-table`}
+      class="w-full min-w-max table-fixed divide-gray-200 text-sm dark:divide-gray-700"
+      {...(resizable && { "data-accordion-resizable": "true", "data-table-id": id })}
+    >
+      <thead class="text-uppercase color-background text-xs">
         <tr>
-          {
-            draggable && (
-              <th class="w-12 px-2 py-3" aria-label="Reorder">
-                &nbsp;
-              </th>
-            )
-          }
           {
             columns.map((col) => (
               <th
-                class={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 ${col.headerClass || ""}`}
+                scope="col"
+                data-col-id={col.key}
+                data-col-default-width={col.width ?? 100}
+                style={resizable ? `width: ${col.width ?? 100}px; min-width: ${col.width ?? 100}px` : undefined}
+                class={`color-border-primary border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700 ${col.headerClass || ""}`}
               >
                 {col.label}
               </th>
@@ -150,7 +156,10 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
           }
           {
             hasActions && (
-              <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <th
+                scope="col"
+                class="color-border-primary border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700"
+              >
                 Actions
               </th>
             )
@@ -175,7 +184,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                 {...(createRowDataAttrs && toDataAttrs(createRowDataAttrs))}
               >
                 <td
-                  class="px-6 py-3 text-center text-sm font-medium text-primary-600 dark:text-primary-400"
+                  class="px-4 py-3 text-center text-sm font-medium text-primary-600 dark:text-primary-400"
                   colspan={columns.length + (hasActions ? 1 : 0)}
                 >
                   {createRowLabel}
@@ -203,7 +212,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
             <tr>
               <td
                 colspan={colspan}
-                class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
               >
                 {emptyMessage}
               </td>
@@ -239,19 +248,19 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                     const display = value ?? "—";
                     return col.allowHtml && typeof display === "string" ? (
                       <td
-                        class={`px-6 py-3 text-sm text-gray-900 dark:text-white ${col.cellClass || ""}`}
+                        class={`px-4 py-2 text-sm text-gray-900 dark:text-white ${col.cellClass || ""}`}
                         set:html={display}
                       />
                     ) : (
                       <td
-                        class={`px-6 py-3 text-sm text-gray-900 dark:text-white ${col.cellClass || ""}`}
+                        class={`px-4 py-2 text-sm text-gray-900 dark:text-white ${col.cellClass || ""}`}
                       >
                         {display}
                       </td>
                     );
                   })}
                   {hasActions && (
-                    <td class="whitespace-nowrap px-6 py-3 text-right">
+                    <td class="whitespace-nowrap px-4 py-2 text-right">
                       {actionsRenderer
                         ? actionsRenderer(item)
                         : actionsComponent &&
@@ -296,6 +305,12 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
     </table>
   </div>
 </div>
+
+{resizable && (
+  <script>
+    import "../../scripts/accordion-data-table-resizable-columns";
+  </script>
+)}
 
 {
   draggable && reorderCallback && (

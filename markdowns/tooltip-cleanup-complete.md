@@ -105,7 +105,7 @@ All components now use `TooltipFloating.astro`:
 - `src/components/form/AuthProviders.astro`
 - `src/components/common/UserIcon.astro`
 - `src/components/common/TutorialOverlay.astro`
-- `src/components/common/AuthIcon.astro`
+- `src/components/common/UserIcon.astro`
 - `src/pages/tests/tooltip-mobile-test.astro`
 - `src/pages/profile.astro`
 - `src/pages/admin/design.astro`
