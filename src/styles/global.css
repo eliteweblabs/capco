@@ -1230,6 +1230,20 @@ a[aria-disabled="true"] {
   pointer-events: none;
 }
 
+/* Table rows with role="button" must NOT get button styles (overflow:hidden, position:relative, ::before)
+   - These break table layout and cause dead/phantom columns */
+tr[role="button"] {
+  overflow: visible !important;
+  position: static !important;
+}
+tr[role="button"]::before {
+  display: none !important;
+}
+tr[role="button"] > * {
+  position: static !important;
+  z-index: auto !important;
+}
+
 /* Respect reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   button::before,
