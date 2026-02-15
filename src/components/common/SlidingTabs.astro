@@ -1,14 +1,16 @@
 ---
 // Sliding tabs navigation component
-import Button from "./Button.astro";
+import Button, { type Props as ButtonProps } from "./Button.astro";
 import SimpleIcon from "./SimpleIcon.astro";
 import Tooltip from "./TooltipFloating.astro";
+
+type ButtonVariant = NonNullable<ButtonProps["variant"]>;
 
 export interface NavItem {
   id?: string;
   label: string;
   icon?: string;
-  variant?: string;
+  variant?: ButtonVariant;
   dataAttributes?: Record<string, string>;
   onclick?: string;
   clientHide?: boolean;
@@ -80,7 +82,7 @@ const filteredItems = items.filter((item) => {
       const button = (
         <Button
           id={item.id}
-          variant={item.variant}
+          variant={item.variant ?? "tab"}
           size="sm"
           data-index={index}
           class={compact ? "px-4 py-2" : "px-5 py-2.5"}

@@ -178,7 +178,7 @@ export async function replacePlaceholders(
   const clientFirstName = authorProfile?.firstName || "{{BLANK}}";
   const clientLastName = authorProfile?.lastName || "{{BLANK}}";
   // Project data
-  const address = data?.project?.address || "Project Address Missing";
+  const address = data?.project?.address || "Address not provided";
   const projectTitle = data?.project?.title || data?.project?.address || "Untitled Project";
   const projectDescription = data?.project?.description || "No description provided";
   const projectSqFt = data?.project?.sqFt || "N/A";
@@ -191,8 +191,8 @@ export async function replacePlaceholders(
   // Staff/Assigned data
   const assignedStaffName = data?.project?.assignedToProfile?.companyName || "Unassigned";
   const assignedStaffEmail = data?.project?.assignedToProfile?.email || "N/A";
-  const assignedStaffFirstName = data?.project?.assignedToProfile?.firstName || "N/A";
-  const assignedStaffLastName = data?.project?.assignedToProfile?.lastName || "N/A";
+  // const assignedStaffFirstName = data?.project?.assignedToProfile?.firstName || "N/A";
+  // const assignedStaffLastName = data?.project?.assignedToProfile?.lastName || "N/A";
 
   // Status data
   const currentStatusName = data?.project?.statusName || "Status Name Missing";

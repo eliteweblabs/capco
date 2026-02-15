@@ -5,7 +5,13 @@ if (authCode) {
 }
 
 // Get redirect parameter to send user back after login
-const redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
+let redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
+
+// NEVER redirect authenticated users to auth pages (causes infinite loop)
+const authPages = ["/auth/login", "/auth/callback", "/auth/register", "/auth/reset"];
+if (authPages.some((p) => redirectUrl.startsWith(p))) {
+  redirectUrl = "/project/dashboard";
+}
 
 // Get auth data directly
 import { checkAuth } from "../../../lib/auth";
@@ -30,21 +36,10 @@ const loginFormConfig = await getLoginFormConfig();
   // Use singleton Supabase client to avoid multiple instances
   import { getSupabaseClient } from "../../../lib/supabase-client";
 
-  // Redirect logged-in users immediately (runs as soon as script loads, before DOMContentLoaded)
-  (async () => {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        const params = new URLSearchParams(window.location.search);
-        const redirectUrl = params.get("redirect") || "/project/dashboard";
-        window.location.replace(redirectUrl);
-        return;
-      }
-    }
-  })();
+  // NOTE: Do NOT add a client-side redirect for "already logged in" users.
+  // The server-side checkAuth() in this component already redirects before the page is sent.
+  // A client-side getSession() redirect caused infinite loops when localStorage had a stale
+  // session but cookies were expired/cleared (middleware uses cookies, client uses localStorage).
 
   // OAuth, error handling, etc.
   document.addEventListener("DOMContentLoaded", async () => {

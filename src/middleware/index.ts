@@ -32,7 +32,7 @@ const protectedAPIRoutes = [
   "/api/payments/delete",
   "/api/upload",
 ];
-const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify"];
+const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify", "/auth/callback(|/)"];
 
 export const onRequest = defineMiddleware(
   async ({ locals, url, cookies, redirect, request }, next) => {
@@ -113,7 +113,8 @@ export const onRequest = defineMiddleware(
       if (!accessToken || !refreshToken) {
         // If no standard tokens, check for custom session cookies
         if (!customSessionToken || !customUserEmail || !customUserId) {
-          return redirect("/auth/login");
+          const loginRedirect = `/auth/login?redirect=${encodeURIComponent(url.pathname + url.search)}`;
+          return redirect(loginRedirect);
         }
         // Custom session found, skip Supabase session validation
         return next();
@@ -126,7 +127,8 @@ export const onRequest = defineMiddleware(
 
       if (error) {
         clearAuthCookies(cookies);
-        return redirect("/auth/login");
+        const loginRedirect = `/auth/login?redirect=${encodeURIComponent(url.pathname + url.search)}`;
+        return redirect(loginRedirect);
       }
 
       // Get user role from profile (profile created automatically by trigger)

@@ -61,6 +61,12 @@ const userCounts = {
 ---
 
 <div class="admin-users-component px-4 pt-4">
+  {/_ Prevent [role="button"] overflow:hidden from breaking table layout _/}
+  <style>
+    #admin-users-tbody tr[role="button"] {
+      overflow: visible !important;
+    }
+  </style>
   <div class="mb-8">
     <h1 class="mb-2 text-3xl font-bold">User Management</h1>
     <p class="text-gray-800 dark:text-gray-200">Create, view, and manage all system users</p>
@@ -161,11 +167,6 @@ const userCounts = {
                 <thead class="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th
-                      class="w-12 px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                    >
-                      <SimpleIcon name="drag-handle-y" class="h-4 w-4" />
-                    </th>
-                    <th
                       class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
                     >
                       Name
@@ -200,7 +201,7 @@ const userCounts = {
                     users.length === 0 ? (
                       <tr>
                         <td
-                          colspan="6"
+                          colspan="5"
                           class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
                         >
                           {error
@@ -225,9 +226,6 @@ const userCounts = {
                             tabindex="0"
                             draggable
                           >
-                            <td class="w-12 cursor-grab px-2 py-3 text-center text-gray-400 active:cursor-grabbing dark:text-gray-500">
-                              <SimpleIcon name="drag-handle-y" class="mx-auto h-5 w-5" />
-                            </td>
                             <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white">
                               {displayName}
                             </td>
@@ -342,6 +340,7 @@ const userCounts = {
     setupUserRowClicks();
     setupNewUserButton();
     setupAdminFormSubmit();
+    setupAdminAvatarUpload();
     setCreateMode();
     if (typeof window.handleUserDeleted !== "function") {
       window.handleUserDeleted = handleUserDeleted;
@@ -388,7 +387,8 @@ const userCounts = {
     const form = document.getElementById("admin-profile-form");
     if (form && form instanceof HTMLFormElement) form.reset();
     const emailInput = document.getElementById("admin-email");
-    if (emailInput && emailInput instanceof HTMLInputElement) emailInput.removeAttribute("readonly");
+    if (emailInput && emailInput instanceof HTMLInputElement)
+      emailInput.removeAttribute("readonly");
     const roleSelect = document.getElementById("admin-role-select");
     if (roleSelect && roleSelect instanceof HTMLSelectElement) roleSelect.value = "Staff";
   }
@@ -404,7 +404,8 @@ const userCounts = {
     if (targetInput && targetInput instanceof HTMLInputElement) targetInput.value = userId;
     document.querySelectorAll(".save-profile-btn").forEach((b) => (b.textContent = "Update User"));
     const emailInput = document.getElementById("admin-email");
-    if (emailInput && emailInput instanceof HTMLInputElement) emailInput.setAttribute("readonly", "");
+    if (emailInput && emailInput instanceof HTMLInputElement)
+      emailInput.setAttribute("readonly", "");
   }
 
   function setupUserRowClicks() {
@@ -453,6 +454,219 @@ const userCounts = {
     document.getElementById("admin-new-user-btn")?.addEventListener("click", setCreateMode);
   }
 
+  function loadCropperjs() {
+    if (window.Cropper?.default) return Promise.resolve(window.Cropper.default);
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/cropperjs@2.1.0/dist/cropper.min.js";
+      script.async = true;
+      script.onload = () => resolve(window.Cropper?.default || window.Cropper);
+      script.onerror = () => reject(new Error("Failed to load Cropper.js"));
+      document.head.appendChild(script);
+    });
+  }
+
+  function setupAdminAvatarUpload() {
+    const prefix = "admin-";
+    const uploadBtn = document.getElementById(`${prefix}upload-avatar-btn`);
+    const avatarInput = document.getElementById(`${prefix}avatar-input`);
+    const removeBtn = document.getElementById(`${prefix}remove-avatar-btn`);
+    const profileAvatarImg = document.getElementById(`${prefix}profile-avatar`);
+    const profileAvatarFallback = document.getElementById(`${prefix}profile-avatar-fallback`);
+    const cropperModal = document.getElementById(`${prefix}profile-avatar-cropper`);
+    const cropperImg = document.getElementById(`${prefix}avatar-cropper-image`);
+    const cropperContainer = document.getElementById(`${prefix}avatar-cropper-container`);
+    const overlay = document.getElementById("global-backdrop");
+    let avatarCropperInstance = null;
+    let avatarCropperPendingFile = null;
+
+    const closeAvatarCropperModal = () => {
+      if (avatarCropperInstance) {
+        avatarCropperInstance.destroy();
+        avatarCropperInstance = null;
+      }
+      avatarCropperPendingFile = null;
+      cropperModal?.classList.add("hidden");
+      cropperModal?.classList.remove("flex");
+      cropperModal?.setAttribute("aria-hidden", "true");
+      overlay?.classList.add("hidden");
+      overlay?.classList.remove("flex");
+      if (typeof window.unlockBodyScroll === "function") window.unlockBodyScroll();
+      if (avatarInput) avatarInput.value = "";
+    };
+
+    document.querySelectorAll("[data-avatar-cropper-close]").forEach((btn) => {
+      btn.addEventListener("click", closeAvatarCropperModal);
+    });
+    overlay?.addEventListener("click", closeAvatarCropperModal);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && cropperModal && !cropperModal.classList.contains("hidden")) {
+        closeAvatarCropperModal();
+      }
+    });
+
+    uploadBtn?.addEventListener("click", () => avatarInput?.click());
+
+    document
+      .getElementById(`${prefix}avatar-cropper-apply`)
+      ?.addEventListener("click", async () => {
+        if (!avatarCropperInstance || !avatarCropperPendingFile) return;
+        const targetInput = document.getElementById(`${prefix}target-user-id`);
+        const targetUserId =
+          targetInput instanceof HTMLInputElement ? targetInput.value?.trim() : null;
+        if (!targetUserId) {
+          window.showNotice?.(
+            "error",
+            "No user selected",
+            "Select a user to update their photo.",
+            4000
+          );
+          return;
+        }
+        const cropperCanvas = avatarCropperInstance.getCropperCanvas();
+        if (!cropperCanvas) return;
+        try {
+          const outputCanvas = await cropperCanvas.$toCanvas({ width: 400, height: 400 });
+          if (!outputCanvas) return;
+          outputCanvas.toBlob(
+            async (blob) => {
+              if (!blob) return;
+              const base64 = await new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(r.result);
+                r.onerror = reject;
+                r.readAsDataURL(blob);
+              });
+              const fileName =
+                avatarCropperPendingFile.name.replace(/[^a-zA-Z0-9.-]/g, "_") || "avatar";
+              const mediaRes = await fetch("/api/media", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  mediaData: base64,
+                  fileName,
+                  fileType: blob.type || "image/jpeg",
+                  targetLocation: "profiles",
+                }),
+              });
+              const mediaJson = await mediaRes.json();
+              if (!mediaRes.ok || !mediaJson?.file?.publicUrl) {
+                throw new Error(mediaJson?.error || "Upload failed");
+              }
+              const updateRes = await fetch("/api/users/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  targetUserId,
+                  avatarUrl: mediaJson.file.publicUrl,
+                }),
+              });
+              const updateJson = await updateRes.json();
+              if (!updateRes.ok) throw new Error(updateJson?.error || "Failed to update profile");
+              if (profileAvatarImg) {
+                profileAvatarImg.src = mediaJson.file.publicUrl;
+                profileAvatarImg.style.display = "";
+                if (profileAvatarFallback) profileAvatarFallback.style.display = "none";
+              }
+              if (removeBtn) removeBtn.style.display = "";
+              window.showNotice?.("success", "Photo updated", "User photo has been updated.", 2500);
+              closeAvatarCropperModal();
+            },
+            "image/jpeg",
+            0.9
+          );
+        } catch (err) {
+          console.error("Avatar crop/upload error:", err);
+          window.showNotice?.(
+            "error",
+            "Upload failed",
+            err instanceof Error ? err.message : "Failed to upload photo. Please try again.",
+            5000
+          );
+        }
+      });
+
+    avatarInput?.addEventListener("change", async (e) => {
+      const inputEl = e.target;
+      const file = inputEl?.files?.[0];
+      if (!file) return;
+      const targetInput = document.getElementById(`${prefix}target-user-id`);
+      const targetUserId =
+        targetInput instanceof HTMLInputElement ? targetInput.value?.trim() : null;
+      if (!targetUserId) {
+        window.showNotice?.(
+          "error",
+          "Select user first",
+          "Select a user to update before uploading a photo.",
+          4000
+        );
+        if (inputEl) inputEl.value = "";
+        return;
+      }
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        window.showNotice?.("error", "File too large", "Please choose an image under 5MB.", 5000);
+        if (inputEl) inputEl.value = "";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result;
+        if (typeof dataUrl !== "string" || !cropperModal || !cropperImg || !cropperContainer)
+          return;
+        avatarCropperPendingFile = file;
+        cropperImg.src = dataUrl;
+        cropperImg.style.display = "block";
+        cropperModal.classList.remove("hidden");
+        cropperModal.classList.add("flex");
+        cropperModal.setAttribute("aria-hidden", "false");
+        overlay?.classList.remove("hidden");
+        overlay?.classList.add("flex");
+        if (typeof window.lockBodyScroll === "function") window.lockBodyScroll();
+        const Cropper = await loadCropperjs();
+        avatarCropperInstance = new Cropper(cropperImg, {
+          container: cropperContainer,
+          viewMode: 1,
+          aspectRatio: 1,
+          dragMode: "move",
+          autoCropArea: 0.8,
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    removeBtn?.addEventListener("click", async () => {
+      const targetInput = document.getElementById(`${prefix}target-user-id`);
+      const targetUserId =
+        targetInput instanceof HTMLInputElement ? targetInput.value?.trim() : null;
+      if (!targetUserId) return;
+      try {
+        const res = await fetch("/api/users/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetUserId, avatarUrl: null }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to remove photo");
+        if (profileAvatarImg) {
+          profileAvatarImg.src = "";
+          profileAvatarImg.style.display = "none";
+        }
+        if (profileAvatarFallback) profileAvatarFallback.style.display = "flex";
+        if (removeBtn) removeBtn.style.display = "none";
+        window.showNotice?.("success", "Photo removed", "User photo has been removed.", 2500);
+      } catch (err) {
+        console.error("Avatar remove error:", err);
+        window.showNotice?.(
+          "error",
+          "Remove failed",
+          err instanceof Error ? err.message : "Failed to remove photo.",
+          5000
+        );
+      }
+    });
+  }
+
   function populateAdminForm(profile) {
     const set = (id, value) => {
       const el = document.getElementById(`admin-${id}`);
@@ -481,7 +695,8 @@ const userCounts = {
     set("role-select", profile.role);
     const smsCheckboxId = `sms-alerts-${formIdPrefix}phone`;
     const smsCheckbox = document.getElementById(smsCheckboxId);
-    if (smsCheckbox && smsCheckbox instanceof HTMLInputElement) smsCheckbox.checked = !!profile.smsAlerts;
+    if (smsCheckbox && smsCheckbox instanceof HTMLInputElement)
+      smsCheckbox.checked = !!profile.smsAlerts;
     const socialInput = document.getElementById("admin-profile-socials-hidden");
     if (socialInput && socialInput instanceof HTMLInputElement) {
       socialInput.value = JSON.stringify(profile.socialNetworks || []);

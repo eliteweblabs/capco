@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Generate button HTML based on the parameters
     const buttonClasses = [
-      "inline-flex items-center justify-center rounded-md font-medium transition-colors",
+      " rounded-md font-medium transition-colors",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       "disabled:pointer-events-none disabled:opacity-50",
     ];

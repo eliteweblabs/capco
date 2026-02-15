@@ -6,7 +6,11 @@
  *
  * Example: <StandardForm config={loginFormConfig} initialData={{ redirect: "/dashboard" }} />
  */
-import type { MultiStepFormConfig, FormFieldConfig, FormStepConfig } from "../../lib/multi-step-form-config";
+import type {
+  MultiStepFormConfig,
+  FormFieldConfig,
+  FormStepConfig,
+} from "../../lib/multi-step-form-config";
 import { getButtonConfig } from "../../lib/multi-step-form-config";
 import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
@@ -42,9 +46,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
 /** Flatten all fields from all steps (skip review steps) */
 function flattenFields(steps: FormStepConfig[]): FormFieldConfig[] {
-  return steps
-    .filter((s) => !s.isReview)
-    .flatMap((s) => s.fields || []);
+  return steps.filter((s) => !s.isReview).flatMap((s) => s.fields || []);
 }
 
 /** First step that has auth providers */
@@ -86,156 +88,276 @@ function getHiddenValue(name: string): string {
     data-form-config={JSON.stringify({ formId: config.formId, formConfig: config, initialData })}
   >
     {/* Auth providers (login/register) */}
-    {authStep && (
-      <div>
-        <AuthProviders
-          mode={authStep.additionalContent === "auth-providers" ? "login" : "register"}
-        />
-        <div class="flex items-center gap-4 pb-4">
-          <div class="h-px flex-1 bg-zinc-300 dark:bg-zinc-600" />
-          <span class="text-sm uppercase text-zinc-500 dark:text-zinc-400">
-            {authStep.additionalContent === "auth-providers"
-              ? "or login with email"
-              : "or register with email"}
-          </span>
-          <div class="h-px flex-1 bg-zinc-300 dark:bg-zinc-600" />
+    {
+      authStep && (
+        <div>
+          <AuthProviders
+            mode={authStep.additionalContent === "auth-providers" ? "login" : "register"}
+          />
+          <div class="flex items-center gap-4 pb-4">
+            <div class="h-px flex-1 bg-zinc-300 dark:bg-zinc-600" />
+            <span class="text-sm uppercase text-zinc-500 dark:text-zinc-400">
+              {authStep.additionalContent === "auth-providers"
+                ? "or login with email"
+                : "or register with email"}
+            </span>
+            <div class="h-px flex-1 bg-zinc-300 dark:bg-zinc-600" />
+          </div>
         </div>
-      </div>
-    )}
+      )
+    }
 
     {/* Fields */}
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-      {allFields.map((field) => {
-        if (field.type === "hidden") {
-          return (
-            <input
-              type="hidden"
-              name={field.name}
-              value={initialData[field.name] ?? field.value ?? ""}
-            />
-          );
-        }
+      {
+        allFields.map((field) => {
+          if (field.type === "hidden") {
+            return (
+              <input
+                type="hidden"
+                name={field.name}
+                value={initialData[field.name] ?? field.value ?? ""}
+              />
+            );
+          }
 
-        const colClass = field.columns === 1 ? "md:col-span-2" : "";
-        const wrapperClass = `input-wrapper w-full ${colClass}`;
+          const colClass = field.columns === 1 ? "md:col-span-2" : "";
+          const wrapperClass = `input-wrapper w-full ${colClass}`;
 
-        // Component types
-        if (field.type === "component") {
-          if (field.component === "SlotMachineModalStaff") {
-            return (
-              <div class={wrapperClass}>
-                <SlotMachineModalStaff
-                  id={field.id}
-                  name={field.name}
-                  title={field.label || "Select an option"}
-                  options={mobileCarrierOptions}
-                  selectedValue=""
-                  globalInputClasses={appendedMultiStepInputClasses}
-                  {...field.componentProps}
-                />
-              </div>
-            );
+          // Component types
+          if (field.type === "component") {
+            if (field.component === "SlotMachineModalStaff") {
+              return (
+                <div class={wrapperClass}>
+                  <SlotMachineModalStaff
+                    id={field.id}
+                    name={field.name}
+                    title={field.label || "Select an option"}
+                    options={mobileCarrierOptions}
+                    selectedValue=""
+                    globalInputClasses={appendedMultiStepInputClasses}
+                    {...field.componentProps}
+                  />
+                </div>
+              );
+            }
+            if (field.component === "SlideToggle") {
+              return (
+                <div class={`${wrapperClass} flex items-center justify-center py-4`}>
+                  <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
+                </div>
+              );
+            }
+            if (field.component === "InlineAddressSearch") {
+              return (
+                <div class={wrapperClass}>
+                  <InlineAddressSearch
+                    id={field.id}
+                    name={field.name}
+                    globalInputClasses={appendedMultiStepInputClasses}
+                    {...field.componentProps}
+                  />
+                </div>
+              );
+            }
+            if (field.component === "UnitSlider") {
+              return (
+                <div class={wrapperClass}>
+                  <UnitSlider
+                    name={field.name}
+                    label={field.label || field.name}
+                    value={Number(field.value) || 1}
+                    required={field.required}
+                    min={field.min}
+                    max={field.max}
+                    step={field.step}
+                    {...field.componentProps}
+                  />
+                </div>
+              );
+            }
+            if (field.component === "ToggleButton") {
+              return (
+                <div class={`${wrapperClass} multi-step-toggle-group flex flex-wrap gap-3`}>
+                  {field.options?.map((option) => (
+                    <ToggleButton
+                      value={option.value}
+                      group={field.name}
+                      type={field.toggleType || "radio"}
+                      class={field.classes}
+                    >
+                      {option.label}
+                    </ToggleButton>
+                  ))}
+                </div>
+              );
+            }
+            if (field.component === "FileUpload") {
+              return (
+                <div class={wrapperClass}>
+                  <FileUpload
+                    name={field.name}
+                    label={field.label}
+                    required={field.required}
+                    accept={field.accept}
+                    multiple={field.multiple}
+                    maxFiles={field.maxFiles}
+                    maxSize={field.maxSize}
+                    {...field.componentProps}
+                  />
+                </div>
+              );
+            }
           }
-          if (field.component === "SlideToggle") {
-            return (
-              <div class={`${wrapperClass} flex items-center justify-center py-4`}>
-                <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
-              </div>
-            );
-          }
-          if (field.component === "InlineAddressSearch") {
-            return (
-              <div class={wrapperClass}>
-                <InlineAddressSearch
-                  id={field.id}
-                  name={field.name}
-                  globalInputClasses={appendedMultiStepInputClasses}
-                  {...field.componentProps}
-                />
-              </div>
-            );
-          }
-          if (field.component === "UnitSlider") {
+
+          if (field.type === "range") {
             return (
               <div class={wrapperClass}>
                 <UnitSlider
                   name={field.name}
                   label={field.label || field.name}
-                  value={Number(field.value) || 1}
+                  value={Number(field.value) || Number(field.min) || 0}
                   required={field.required}
-                  min={field.min}
-                  max={field.max}
-                  step={field.step}
-                  {...field.componentProps}
+                  min={field.min || 0}
+                  max={field.max || 100}
+                  step={field.step || 1}
                 />
               </div>
             );
           }
-          if (field.component === "ToggleButton") {
-            return (
-              <div class={`${wrapperClass} multi-step-toggle-group flex flex-wrap gap-3`}>
-                {field.options?.map((option) => (
-                  <ToggleButton
-                    value={option.value}
-                    group={field.name}
-                    type={field.toggleType || "radio"}
-                    class={field.classes}
-                  >
-                    {option.label}
-                  </ToggleButton>
-                ))}
-              </div>
-            );
-          }
-          if (field.component === "FileUpload") {
+
+          if (field.type === "textarea") {
             return (
               <div class={wrapperClass}>
-                <FileUpload
+                {field.label && (
+                  <label
+                    for={field.id}
+                    class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+                  </label>
+                )}
+                <textarea
+                  id={field.id}
                   name={field.name}
-                  label={field.label}
+                  placeholder={field.placeholder}
                   required={field.required}
-                  accept={field.accept}
-                  multiple={field.multiple}
-                  maxFiles={field.maxFiles}
-                  maxSize={field.maxSize}
-                  {...field.componentProps}
+                  rows={field.rows || 4}
+                  autocomplete={field.autocomplete}
+                  class={appendedMultiStepInputClasses}
+                  data-error={field.errorMessage}
+                  data-validate={field.validate}
+                  data-validate-message={field.validateMessage}
                 />
               </div>
             );
           }
-        }
 
-        if (field.type === "range") {
-          return (
-            <div class={wrapperClass}>
-              <UnitSlider
-                name={field.name}
-                label={field.label || field.name}
-                value={Number(field.value) || Number(field.min) || 0}
-                required={field.required}
-                min={field.min || 0}
-                max={field.max || 100}
-                step={field.step || 1}
-              />
-            </div>
-          );
-        }
+          {
+            /* Input with animated placeholders */
+          }
+          if (field.animatedPlaceholders && field.animatedPlaceholders.length > 0) {
+            return (
+              <div
+                class:list={[
+                  wrapperClass,
+                  "relative text-black dark:text-white",
+                  field.icon ? "input-with-icon" : "",
+                  field.iconPosition === "right" ? "icon-right" : "icon-left",
+                ]}
+                data-icon={field.icon}
+              >
+                <input
+                  type={field.type as "text" | "email" | "tel" | "password"}
+                  id={field.id}
+                  name={field.name}
+                  placeholder=""
+                  required={field.required}
+                  autocomplete={field.autocomplete}
+                  minlength={field.minlength}
+                  autofocus={field.autofocus}
+                  class:list={[
+                    appendedMultiStepInputClasses,
+                    field.icon && field.iconPosition === "right" ? "pr-12" : "",
+                    field.icon && field.iconPosition !== "right" ? "pl-12" : "",
+                  ]}
+                  data-error={field.errorMessage}
+                  data-validate={field.validate}
+                  data-validate-message={field.validateMessage}
+                  data-has-animated-placeholder="true"
+                  data-original-placeholder={field.placeholder}
+                  data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
+                />
+                <span
+                  class:list={[
+                    "animated-placeholder pointer-events-none absolute -top-0.5 left-0 flex h-full w-full items-center",
+                    field.animatedPlaceholderAlignment === "left"
+                      ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : "pl-3"}`
+                      : field.animatedPlaceholderAlignment === "right"
+                        ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : "pr-3"}`
+                        : "justify-center",
+                    field.icon && field.iconPosition === "right" ? "mr-1.25 pr-12" : "",
+                    field.icon && field.iconPosition !== "right" ? "ml-1.25 pl-12" : "",
+                  ]}
+                  data-for={field.id}
+                >
+                  {field.placeholder}
+                </span>
+              </div>
+            );
+          }
 
-        if (field.type === "textarea") {
+          {
+            /* Input with icon */
+          }
+          if (field.icon) {
+            return (
+              <div
+                class:list={[
+                  wrapperClass,
+                  "input-with-icon relative",
+                  field.iconPosition === "right" ? "icon-right" : "icon-left",
+                ]}
+                data-icon={field.icon}
+              >
+                <input
+                  type={field.type as "text" | "email" | "tel" | "password"}
+                  id={field.id}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  autocomplete={field.autocomplete}
+                  minlength={field.minlength}
+                  autofocus={field.autofocus}
+                  class={`${appendedMultiStepInputClasses} pl-12 pr-12`}
+                  data-error={field.errorMessage}
+                  data-validate={field.validate}
+                  data-validate-message={field.validateMessage}
+                />
+              </div>
+            );
+          }
+
+          // Plain input
           return (
             <div class={wrapperClass}>
               {field.label && (
-                <label for={field.id} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  for={field.id}
+                  class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
                 </label>
               )}
-              <textarea
+              <input
+                type={field.type as "text" | "email" | "tel" | "password"}
                 id={field.id}
                 name={field.name}
                 placeholder={field.placeholder}
                 required={field.required}
-                rows={field.rows || 4}
                 autocomplete={field.autocomplete}
+                minlength={field.minlength}
+                autofocus={field.autofocus}
                 class={appendedMultiStepInputClasses}
                 data-error={field.errorMessage}
                 data-validate={field.validate}
@@ -243,114 +365,8 @@ function getHiddenValue(name: string): string {
               />
             </div>
           );
-        }
-
-        {/* Input with animated placeholders */}
-        if (field.animatedPlaceholders && field.animatedPlaceholders.length > 0) {
-          return (
-            <div
-              class:list={[
-                wrapperClass,
-                "relative text-black dark:text-white",
-                field.icon ? "input-with-icon" : "",
-                field.iconPosition === "right" ? "icon-right" : "icon-left",
-              ]}
-              data-icon={field.icon}
-            >
-              <input
-                type={field.type as "text" | "email" | "tel" | "password"}
-                id={field.id}
-                name={field.name}
-                placeholder=""
-                required={field.required}
-                autocomplete={field.autocomplete}
-                minlength={field.minlength}
-                autofocus={field.autofocus}
-                class:list={[
-                  appendedMultiStepInputClasses,
-                  field.icon && field.iconPosition === "right" ? "pr-12" : "",
-                  field.icon && field.iconPosition !== "right" ? "pl-12" : "",
-                ]}
-                data-error={field.errorMessage}
-                data-validate={field.validate}
-                data-validate-message={field.validateMessage}
-                data-has-animated-placeholder="true"
-                data-original-placeholder={field.placeholder}
-                data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
-              />
-              <span
-                class:list={[
-                  "animated-placeholder pointer-events-none absolute -top-0.5 left-0 flex h-full w-full items-center",
-                  field.animatedPlaceholderAlignment === "left"
-                    ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : "pl-3"}`
-                    : field.animatedPlaceholderAlignment === "right"
-                      ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : "pr-3"}`
-                      : "justify-center",
-                  field.icon && field.iconPosition === "right" ? "mr-1.25 pr-12" : "",
-                  field.icon && field.iconPosition !== "right" ? "ml-1.25 pl-12" : "",
-                ]}
-                data-for={field.id}
-              >
-                {field.placeholder}
-              </span>
-            </div>
-          );
-        }
-
-        {/* Input with icon */}
-        if (field.icon) {
-          return (
-            <div
-              class:list={[
-                wrapperClass,
-                "input-with-icon relative",
-                field.iconPosition === "right" ? "icon-right" : "icon-left",
-              ]}
-              data-icon={field.icon}
-            >
-              <input
-                type={field.type as "text" | "email" | "tel" | "password"}
-                id={field.id}
-                name={field.name}
-                placeholder={field.placeholder}
-                required={field.required}
-                autocomplete={field.autocomplete}
-                minlength={field.minlength}
-                autofocus={field.autofocus}
-                class={`${appendedMultiStepInputClasses} pl-12 pr-12`}
-                data-error={field.errorMessage}
-                data-validate={field.validate}
-                data-validate-message={field.validateMessage}
-              />
-            </div>
-          );
-        }
-
-        // Plain input
-        return (
-          <div class={wrapperClass}>
-            {field.label && (
-              <label for={field.id} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-              </label>
-            )}
-            <input
-              type={field.type as "text" | "email" | "tel" | "password"}
-              id={field.id}
-              name={field.name}
-              placeholder={field.placeholder}
-              required={field.required}
-              autocomplete={field.autocomplete}
-              minlength={field.minlength}
-              autofocus={field.autofocus}
-              class={appendedMultiStepInputClasses}
-              data-error={field.errorMessage}
-              data-validate={field.validate}
-              data-validate-message={field.validateMessage}
-            />
-          </div>
-        );
-      })}
+        })
+      }
     </div>
 
     {/* Submit button */}
@@ -368,12 +384,10 @@ function getHiddenValue(name: string): string {
     </div>
 
     {/* Hidden fields from config (initialData overrides) */}
-    {config.hiddenFields?.map((field) => (
-      <input
-        type="hidden"
-        name={field.name}
-        value={getHiddenValue(field.name) || field.value}
-      />
-    ))}
+    {
+      config.hiddenFields?.map((field) => (
+        <input type="hidden" name={field.name} value={getHiddenValue(field.name) || field.value} />
+      ))
+    }
   </form>
 </div>
