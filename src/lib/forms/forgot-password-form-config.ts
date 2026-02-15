@@ -38,7 +38,6 @@ export const forgotPasswordFormConfig: MultiStepFormConfig = {
 
   steps: [
     {
-      stepNumber: 1,
       title: "",
       showIcon: false,
       expandDown: false,

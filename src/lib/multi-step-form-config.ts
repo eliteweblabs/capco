@@ -160,7 +160,8 @@ export interface FormButtonConfig {
 }
 
 export interface FormStepConfig {
-  stepNumber: number;
+  /** 1-based step index. Auto-assigned from array position if omitted (preferred). */
+  stepNumber?: number;
   title: string;
   subtitle?: string;
   icon?: string; // Icon name for the step header
@@ -270,4 +271,15 @@ export function getNextStepNumber(
   }
 
   return nextStep;
+}
+
+/**
+ * Normalizes form config: assigns stepNumber (1-based) from array index and totalSteps from steps.length.
+ * Call before passing config to MultiStepForm or StandardForm.
+ */
+export function normalizeFormConfig<T extends { steps: Array<{ stepNumber?: number }>; totalSteps?: number }>(
+  config: T
+): T {
+  const steps = config.steps.map((step, i) => ({ ...step, stepNumber: i + 1 }));
+  return { ...config, steps, totalSteps: steps.length };
 }

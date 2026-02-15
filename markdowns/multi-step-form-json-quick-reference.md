@@ -15,7 +15,6 @@ export const myFormConfig: MultiStepFormConfig = {
   
   steps: [
     {
-      stepNumber: 1,
       title: "Step 1 Title",
       fields: [
         {

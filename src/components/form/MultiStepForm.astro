@@ -1,7 +1,7 @@
 ---
 // Reusable multi-step form component that renders from JSON configuration
 import type { MultiStepFormConfig } from "../../lib/multi-step-form-config";
-import { getButtonConfig } from "../../lib/multi-step-form-config";
+import { getButtonConfig, normalizeFormConfig } from "../../lib/multi-step-form-config";
 import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Tooltip from "../common/TooltipFloating.astro";
@@ -24,11 +24,13 @@ interface Props {
 }
 
 const {
-  config,
+  config: rawConfig,
   containerClass = "min-w-sm max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full",
   initialData = {},
   testNoCascade = false,
 } = Astro.props;
+
+const config = normalizeFormConfig(rawConfig);
 
 // When first step has expandDown: false, start with centered panel (no expand-down/expand-up)
 // const firstStep = config.steps.find((s) => s.stepNumber === 1);

@@ -11,7 +11,7 @@ import type {
   FormFieldConfig,
   FormStepConfig,
 } from "../../lib/multi-step-form-config";
-import { getButtonConfig } from "../../lib/multi-step-form-config";
+import { getButtonConfig, normalizeFormConfig } from "../../lib/multi-step-form-config";
 import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import AuthProviders from "./AuthProviders.astro";
@@ -31,10 +31,12 @@ interface Props {
 }
 
 const {
-  config,
+  config: rawConfig,
   containerClass = "min-w-sm max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full",
   initialData = {},
 } = Astro.props;
+
+const config = normalizeFormConfig(rawConfig);
 
 const { multiStepInputClasses } = globalClasses();
 const appendedMultiStepInputClasses = multiStepInputClasses;

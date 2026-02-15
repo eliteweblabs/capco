@@ -30,7 +30,6 @@ export const exampleFormConfig: MultiStepFormConfig = {
   steps: [
     // Step 1: Basic Text Inputs (fullName parsed to firstName/lastName by handler)
     {
-      stepNumber: 1,
       title: "Let's start with the basics",
       subtitle: "Tell us about your project",
       fieldLayout: "grid",
@@ -59,7 +58,6 @@ export const exampleFormConfig: MultiStepFormConfig = {
 
     // Step 2: UnitSlider Component (Custom Units)
     {
-      stepNumber: 2,
       title: "How many units?",
       subtitle: "Select the number of units for your project",
       fields: [
@@ -81,7 +79,6 @@ export const exampleFormConfig: MultiStepFormConfig = {
 
     // Step 3: Range Type (Regular Slider)
     {
-      stepNumber: 3,
       title: "What's the square footage?",
       subtitle: "Approximate size of your project",
       fields: [
@@ -105,7 +102,6 @@ export const exampleFormConfig: MultiStepFormConfig = {
 
     // Step 4: ToggleButton - Radio (Single Selection)
     {
-      stepNumber: 4,
       title: "Select your project type",
       subtitle: "Choose one option that best describes your project",
       fields: [
@@ -132,7 +128,6 @@ export const exampleFormConfig: MultiStepFormConfig = {
 
     // Step 5: ToggleButton - Multi-Select
     {
-      stepNumber: 5,
       title: "Which systems are needed?",
       subtitle: "Select all that apply",
       fields: [
@@ -160,7 +155,6 @@ export const exampleFormConfig: MultiStepFormConfig = {
 
     // Step 6: FileUpload Component
     {
-      stepNumber: 6,
       title: "Upload your documents",
       subtitle: "Plans, specifications, or any relevant files",
       fields: [
@@ -185,7 +179,6 @@ export const exampleFormConfig: MultiStepFormConfig = {
 
     // Step 7: Review & Submit
     {
-      stepNumber: 7,
       title: "Review your information",
       subtitle: "Make sure everything looks good",
       isReview: true,
