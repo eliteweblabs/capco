@@ -187,17 +187,65 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     },
   };
 
-  // 1. Priority: SITE_CONFIG or SITE_CONFIG_JSON env var (full JSON)
-  const envConfig = process.env.SITE_CONFIG || process.env.SITE_CONFIG_JSON;
-  if (envConfig) {
+  // 1. Priority: env-based config (Railway limits vars to 32KB, so we support multiple methods)
+  let envConfigJson: string | null = null;
+
+  // 1a. SITE_CONFIG_URL - fetch from URL (no size limit)
+  const configUrl = process.env.SITE_CONFIG_URL;
+  if (configUrl) {
     try {
-      const jsonConfig = JSON.parse(envConfig);
+      const res = await fetch(configUrl);
+      if (res.ok) envConfigJson = await res.text();
+      else console.warn("⚠️ [CONTENT] SITE_CONFIG_URL fetch failed:", res.status);
+    } catch (error) {
+      console.warn("⚠️ [CONTENT] Error fetching SITE_CONFIG_URL:", error);
+    }
+  }
+
+  // 1b. SITE_CONFIG or SITE_CONFIG_JSON (single var, <32KB on Railway)
+  if (!envConfigJson) {
+    envConfigJson =
+      process.env.SITE_CONFIG || process.env.SITE_CONFIG_JSON || null;
+  }
+
+  // 1c. SITE_CONFIG_1, SITE_CONFIG_2, ... (chunked for Railway's 32KB limit)
+  if (!envConfigJson) {
+    const chunks: string[] = [];
+    for (let i = 1; ; i++) {
+      const chunk = process.env[`SITE_CONFIG_${i}`];
+      if (!chunk) break;
+      chunks.push(chunk);
+    }
+    if (chunks.length > 0) envConfigJson = chunks.join("");
+  }
+
+  // 1d. public/data/config.json (copied to dist/client/data/config.json at build)
+  if (!envConfigJson) {
+    const paths = [
+      join(process.cwd(), "public", "data", "config.json"),
+      join(process.cwd(), "dist", "client", "data", "config.json"),
+    ];
+    for (const p of paths) {
+      if (existsSync(p)) {
+        try {
+          envConfigJson = readFileSync(p, "utf-8");
+          break;
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+
+  if (envConfigJson) {
+    try {
+      const jsonConfig = JSON.parse(envConfigJson);
       mergeJsonConfig(config, jsonConfig);
     } catch (error) {
-      console.warn("⚠️ [CONTENT] Error parsing SITE_CONFIG/SITE_CONFIG_JSON env var:", error);
+      console.warn("⚠️ [CONTENT] Error parsing site config:", error);
     }
   } else {
-    // 2. Fallback: site-config.json file (for local dev)
+    // 3. Fallback: site-config.json file (for local dev)
     const configPath = join(process.cwd(), "site-config.json");
     if (existsSync(configPath)) {
       try {
