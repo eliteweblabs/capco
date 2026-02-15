@@ -104,11 +104,11 @@ const actionElements = formElements.filter((e) => e.type === "action");
       primaryTextClasses={primaryTextClasses}
     />
   ) : (
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-y-6">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-y-6">
       {fieldElements.map((element) => {
         const value = getValue(element.name);
         const isHalfWidth = element.columns === 2;
-        const colClass = isHalfWidth ? "" : "lg:col-span-2";
+        const colClass = isHalfWidth ? "sm:col-span-1" : "sm:col-span-2";
         const el = element as any;
         const wrapperProps = includeAllModes
           ? {
@@ -213,8 +213,14 @@ const actionElements = formElements.filter((e) => e.type === "action");
         }
 
         if (element.elementType === "email") {
-          const emailReadOnly = isCreateMode || includeAllModes ? false : (element.readOnly ?? true);
-          const showLock = !isAdminEdit && !isCreateMode && !includeAllModes && globalCompanyPhone && (element.readOnly ?? true);
+          const emailReadOnly =
+            isCreateMode || includeAllModes ? false : (element.readOnly ?? true);
+          const showLock =
+            !isAdminEdit &&
+            !isCreateMode &&
+            !includeAllModes &&
+            globalCompanyPhone &&
+            (element.readOnly ?? true);
           return (
             <div class={`relative ${colClass}`} {...wrapperProps}>
               <label
@@ -320,7 +326,7 @@ const actionElements = formElements.filter((e) => e.type === "action");
         return null;
       })}
 
-      <div class="col-span-2 flex gap-3 pt-4">
+      <div class="col-span-1 flex gap-3 pt-4 sm:col-span-2">
         {actionElements.map((action) => {
           const isSaveBtn = action.id === "save-profile-btn";
           const label =
@@ -336,19 +342,19 @@ const actionElements = formElements.filter((e) => e.type === "action");
             : {};
           return (
             <span {...actionWrapperProps}>
-            <Button
-              type={action.elementType === "submit" ? "submit" : "button"}
-              id={p(action.id)}
-              variant={
-                action.variant === "outline" ? "outline" : (action.variant as any) || "secondary"
-              }
-              size="sm"
-              class={action.cssClass || ""}
-              icon={isSaveBtn && isCreateMode ? "plus" : action.icon}
-              iconPosition={action.iconPosition}
-            >
-              <span set:html={isSaveBtn && includeAllModes ? "Create User" : label} />
-            </Button>
+              <Button
+                type={action.elementType === "submit" ? "submit" : "button"}
+                id={p(action.id)}
+                variant={
+                  action.variant === "outline" ? "outline" : (action.variant as any) || "secondary"
+                }
+                size="sm"
+                class={action.cssClass || ""}
+                icon={isSaveBtn && isCreateMode ? "plus" : action.icon}
+                iconPosition={action.iconPosition}
+              >
+                <span set:html={isSaveBtn && includeAllModes ? "Create User" : label} />
+              </Button>
             </span>
           );
         })}

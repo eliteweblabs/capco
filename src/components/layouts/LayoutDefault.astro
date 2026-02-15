@@ -3,19 +3,27 @@
  * Layout: Default
  * Standard content page with container, prose styling, and full app chrome.
  * App fetches global data (auth, company, classes) internally - no need to pass.
+ * Prose styling is disabled for backend pages (/admin, /project, /dashboard, etc.)
+ * since those use tables, forms, and dashboards that conflict with typography prose.
  */
 interface Props {
   title: string;
   description?: string;
   lastUpdated?: string;
+  /** When true, apply prose typography. Defaults to true for content pages, false for backend. */
+  prose?: boolean;
   currentUser?: any;
   session?: any;
   supabase?: any;
 }
 
-const { title, description = "", lastUpdated } = Astro.props;
+const { title, description = "", lastUpdated, prose: proseProp } = Astro.props;
 
 import App from "../ui/App.astro";
+import { isBackendPage } from "@/pages/api/utils/backend-page-check";
+
+const isBackend = isBackendPage(Astro.url.pathname);
+const useProse = proseProp ?? !isBackend;
 ---
 
 <App {title} {description} layout="default">
@@ -27,7 +35,7 @@ import App from "../ui/App.astro";
     dotColor="primary-500"
   /> -->
   <div class="">
-    <div class="prose prose-lg max-w-none dark:prose-invert">
+    <div class={useProse ? "prose prose-lg max-w-none dark:prose-invert" : ""}>
       {
         lastUpdated === "auto" && (
           <div class="dark:bg-primary-900/20 mb-8 rounded-lg border border-primary-200 bg-primary-50 p-6 dark:border-primary-800">
