@@ -2,11 +2,13 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
-import statusesData from "../../../../config/data/statuses.json";
+import { getSiteConfig } from "../../../lib/content";
 
-// Helper function to get status name by status code
-function getStatusName(statusCode: number): string {
-  const statusArray = statusesData[0]?.json_agg || [];
+// Helper function to get status name by status code (uses statuses from site-config)
+async function getStatusName(statusCode: number): Promise<string> {
+  const config = await getSiteConfig();
+  const statusesData = (config as any).statuses;
+  const statusArray = statusesData?.[0]?.json_agg || [];
   const status = statusArray.find((s: any) => s.statusCode === statusCode);
   return status?.adminStatusName || `Status ${statusCode}`;
 }
@@ -100,8 +102,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Log the status change to project activity
     try {
-      const oldStatusName = getStatusName(oldStatus);
-      const newStatusName = getStatusName(newStatus);
+      const oldStatusName = await getStatusName(oldStatus);
+      const newStatusName = await getStatusName(newStatus);
 
       console.log("📝 [UPDATE-STATUS] Logging status change:", {
         projectId,

@@ -47,7 +47,7 @@ This app is a general purpose website and admin for fire protection, contractors
 - always use CloseButton.astro for modals, etc.
 - save .sql files to /sql-queriers
 - save .sh scripts to /scripts
-- **IMPORTANT**: site-config\*.json files MUST stay in root directory (required by src/lib/content.ts)
+- **IMPORTANT**: Site config: SITE_CONFIG or SITE_CONFIG_JSON env var (full JSON), fallback site-config.json in root
 
 ## Protected Code (DO NOT MODIFY WITHOUT USER APPROVAL)
 

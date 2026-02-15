@@ -5,8 +5,10 @@
  */
 
 const fs = require('fs');
+const path = require('path');
 
-const capcoColumns = JSON.parse(fs.readFileSync('capco-columns.json', 'utf8'));
+const capcoConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'site-config-capco-design-group.json'), 'utf8'));
+const capcoColumns = capcoConfig.schemaColumns || [];
 
 const missingTables = [
   'cmsPages',

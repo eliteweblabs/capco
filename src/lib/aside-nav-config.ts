@@ -1,248 +1,167 @@
 /**
  * Aside Navigation Configuration
  * JSON-driven sidebar nav from site-config-{company-slug}.json.
- * Same pattern as navigation.main/footer in content.ts.
+ * projectListColumns-style format with parent/child support.
  */
 
 import { getSiteConfig } from "./content";
-import { getSectionNavigation } from "./feature-navigation";
-import type { NavigationItem } from "./feature-navigation";
 
-/** Built-in aside item ID */
-export type AsideNavBuiltinId =
-  | "dashboard"
-  | "settings"
-  | "design"
-  | "content"
-  | "media"
-  | "alerts"
-  | "testimonials"
-  | "global-functions"
-  | "projects"
-  | "feature-admin"
-  | "notifications"
-  | "feature-tools";
-
-/** Custom link item in aside config */
-export interface AsideNavLinkItem {
+/** Aside nav item - projectListColumns style with parent/child */
+export interface AsideNavItem {
+  id: string;
   label: string;
-  href: string;
+  type: "link" | "dropdown" | "section";
+  href?: string;
   icon?: string;
-  roles?: string[];
+  position?: number;
+  allow?: string[];
+  tooltip?: string;
+  children?: AsideNavChild[];
 }
 
-/** Custom dropdown item in aside config */
-export interface AsideNavDropdownItem {
+/** Child item - link or nested dropdown */
+export interface AsideNavChild {
+  id?: string;
   label: string;
+  href?: string;
   icon?: string;
-  roles?: string[];
-  children: Array<{ label: string; href: string }>;
+  allow?: string[];
+  children?: AsideNavChild[];
 }
 
-/** Feature nav injection (uses getSectionNavigation) */
-export interface AsideNavFeatureItem {
-  insertFeatureNav: "admin" | "tools";
-  sectionLabel?: string;
-}
-
-/** Config item: built-in ID, custom link, custom dropdown, or feature injection */
-export type AsideNavItemConfig =
-  | AsideNavBuiltinId
-  | AsideNavLinkItem
-  | AsideNavDropdownItem
-  | AsideNavFeatureItem;
-
-/** Default aside order when not in site-config */
-const DEFAULT_ASIDE_NAV: AsideNavItemConfig[] = [
-  "dashboard",
-  "settings",
-  "design",
-  "content",
-  "media",
-  "alerts",
-  "testimonials",
-  "global-functions",
-  "projects",
-  "feature-admin",
-  "notifications",
-  "feature-tools",
-];
-
-/** Resolved item for rendering: either a built-in block or a simple/dropdown link */
+/** Resolved item for rendering */
 export type AsideNavResolvedItem =
-  | { type: "link"; label: string; href: string; icon?: string; roles?: string[] }
+  | { type: "link"; label: string; href: string; icon?: string }
   | {
       type: "dropdown";
       label: string;
       icon?: string;
-      roles?: string[];
       children: Array<{ label: string; href: string }>;
-    }
-  | { type: "feature-admin"; items: NavigationItem[] }
-  | {
-      type: "feature-tools";
-      sectionLabel?: string;
-      items: NavigationItem[];
-    }
-  | { type: "section-header"; label: string };
-
-/** Get aside nav config from site-config (company-specific) */
-export async function getAsideNavConfig(): Promise<AsideNavItemConfig[]> {
-  const config = await getSiteConfig();
-  const asideNav = (config.navigation as any)?.aside ?? (config as any).asideNav;
-  if (Array.isArray(asideNav) && asideNav.length > 0) {
-    return asideNav;
-  }
-  return DEFAULT_ASIDE_NAV;
-}
-
-/** Check if user role is allowed for an item */
-function isRoleAllowed(roles: string[] | undefined, userRole?: string): boolean {
-  if (!roles || roles.length === 0) return true;
-  if (!userRole) return false;
-  return roles.some((r) => r.toLowerCase() === userRole.toLowerCase());
-}
-
-/** Resolve a single config item to renderable shape */
-async function resolveItem(
-  item: AsideNavItemConfig,
-  currentRole?: string
-): Promise<AsideNavResolvedItem | null> {
-  if (typeof item === "string") {
-    return resolveBuiltin(item, currentRole);
-  }
-  if ("insertFeatureNav" in item) {
-    return resolveFeatureNav(item, currentRole);
-  }
-  if ("children" in item) {
-    if (!isRoleAllowed(item.roles, currentRole)) return null;
-    return {
-      type: "dropdown",
-      label: item.label,
-      icon: item.icon,
-      roles: item.roles,
-      children: item.children,
     };
+
+/** Check if user role is allowed */
+function isRoleAllowed(allow: string[] | undefined, userRole?: string): boolean {
+  if (!allow || allow.length === 0) return true;
+  if (!userRole) return false;
+  return allow.some((r) => r.toLowerCase() === userRole.toLowerCase());
+}
+
+/** Resolve children, filtering by role and flattening nested dropdowns */
+function resolveChildren(
+  children: AsideNavChild[] | undefined,
+  userRole?: string
+): Array<{ label: string; href: string }> {
+  if (!children || children.length === 0) return [];
+  const out: Array<{ label: string; href: string }> = [];
+  for (const c of children) {
+    if (!isRoleAllowed(c.allow, userRole)) continue;
+    if (c.children?.length) {
+      for (const sub of resolveChildren(c.children, userRole)) {
+        out.push(sub);
+      }
+    } else if (c.href) {
+      out.push({ label: c.label, href: c.href });
+    }
   }
-  if ("href" in item) {
-    if (!isRoleAllowed(item.roles, currentRole)) return null;
+  return out;
+}
+
+/** Resolve a single config item */
+function resolveItem(
+  item: AsideNavItem,
+  userRole?: string
+): AsideNavResolvedItem | null {
+  if (!isRoleAllowed(item.allow, userRole)) return null;
+
+  if (item.type === "link" && item.href) {
     return {
       type: "link",
       label: item.label,
       href: item.href,
       icon: item.icon,
-      roles: item.roles,
     };
   }
+
+  if (item.type === "dropdown") {
+    const children = resolveChildren(item.children, userRole);
+    if (children.length === 0) return null;
+    return {
+      type: "dropdown",
+      label: item.label,
+      icon: item.icon,
+      children,
+    };
+  }
+
+  if (item.type === "section") {
+    const children = resolveChildren(item.children, userRole);
+    if (children.length === 0) return null;
+    return {
+      type: "dropdown",
+      label: item.label,
+      icon: item.icon,
+      children,
+    };
+  }
+
   return null;
 }
 
-/** Resolve built-in ID to renderable item (structure only; Aside.astro knows the hrefs/icons) */
-async function resolveBuiltin(
-  id: AsideNavBuiltinId,
-  currentRole?: string
-): Promise<AsideNavResolvedItem | null> {
-  const adminOnly = [
-    "settings",
-    "design",
-    "content",
-    "media",
-    "alerts",
-    "testimonials",
-    "global-functions",
-    "feature-admin",
-    "notifications",
-    "feature-tools",
-  ];
-  const needsAdmin = adminOnly.includes(id);
-  if (needsAdmin && currentRole !== "Admin") return null;
+/** Legacy string IDs → convert to new format (uses feature-navigation for feature-admin/feature-tools) */
+const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
+  dashboard: { label: "Dashboard", type: "link", href: "/dashboard", icon: "dashboard", position: 0 },
+  settings: { label: "Settings", type: "link", href: "/admin/settings", icon: "settings", position: 1, allow: ["Admin"] },
+  design: { label: "Design", type: "dropdown", icon: "palette", position: 2, allow: ["Admin"], children: [{ label: "Components", href: "/admin/design" }, { label: "Placeholders", href: "/admin/design/placeholders" }] },
+  content: { label: "Content", type: "link", href: "/admin/cms", icon: "dashboard", position: 3, allow: ["Admin"] },
+  media: { label: "Media", type: "link", href: "/admin/media", icon: "image", position: 4, allow: ["Admin"] },
+  alerts: { label: "Alerts", type: "link", href: "/admin/banner-alerts", icon: "alert", position: 5, allow: ["Admin"] },
+  testimonials: { label: "Testimonials", type: "link", href: "/admin/testimonials", icon: "quote", position: 6, allow: ["Admin"] },
+  "global-functions": { label: "Global Functions", type: "link", href: "/admin/global-functions", icon: "code", position: 7, allow: ["Admin"] },
+  projects: { label: "Projects", type: "dropdown", icon: "folder", position: 8, children: [{ label: "Dashboard", href: "/project/dashboard/" }, { label: "New", href: "/project/new" }, { label: "Proposals", href: "/project/proposals", allow: ["Admin"] }, { label: "Settings", href: "/project/settings", allow: ["Admin"] }] },
+  notifications: { label: "Send Notifications", type: "link", href: "/admin/notifications", icon: "zap", position: 50, allow: ["Admin"] },
+};
 
-  switch (id) {
-    case "dashboard":
-      return { type: "link", label: "Dashboard", href: "/dashboard", icon: "dashboard" };
-    case "settings":
-      return { type: "link", label: "Settings", href: "/admin/settings", icon: "settings" };
-    case "design":
-      return {
-        type: "dropdown",
-        label: "Design",
-        icon: "palette",
-        roles: ["Admin"],
-        children: [
-          { label: "Components", href: "/admin/design" },
-          { label: "Placeholders", href: "/admin/design/placeholders" },
-        ],
-      };
-    case "content":
-      return { type: "link", label: "Content", href: "/admin/cms", icon: "dashboard" };
-    case "media":
-      return { type: "link", label: "Media", href: "/admin/media", icon: "image" };
-    case "alerts":
-      return { type: "link", label: "Alerts", href: "/admin/banner-alerts", icon: "alert" };
-    case "testimonials":
-      return { type: "link", label: "Testimonials", href: "/admin/testimonials", icon: "quote" };
-    case "global-functions":
-      return {
-        type: "link",
-        label: "Global Functions",
-        href: "/admin/global-functions",
-        icon: "code",
-      };
-    case "projects":
-      return {
-        type: "dropdown",
-        label: "Projects",
-        icon: "folder",
-        children: [
-          { label: "Dashboard", href: "/project/dashboard/" },
-          { label: "New", href: "/project/new" },
-          ...(currentRole === "Admin"
-            ? [
-                { label: "Proposals", href: "/project/proposals" },
-                { label: "Settings", href: "/project/settings" },
-              ]
-            : []),
-        ],
-      };
-    case "notifications":
-      return {
-        type: "link",
-        label: "Send Notifications",
-        href: "/admin/notifications",
-        icon: "zap",
-        roles: ["Admin"],
-      };
-    case "feature-admin": {
-      const items = await getSectionNavigation("admin", currentRole);
-      return { type: "feature-admin", items };
+/** Get aside nav from site-config (new object format or legacy string array) */
+async function getAsideNavItems(userRole?: string): Promise<AsideNavItem[]> {
+  const config = await getSiteConfig();
+  const asideNav = (config.navigation as any)?.aside ?? (config as any).asideNav;
+  if (Array.isArray(asideNav) && asideNav.length > 0) {
+    const first = asideNav[0];
+    if (typeof first === "object" && first !== null && "id" in first && "type" in first) {
+      return asideNav
+        .filter((x: any) => typeof x === "object" && x?.id && x?.type)
+        .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999));
     }
-    case "feature-tools": {
-      const items = await getSectionNavigation("tools", currentRole);
-      return { type: "feature-tools", sectionLabel: "Tools", items };
+    if (typeof first === "string") {
+      const items: AsideNavItem[] = [];
+      let pos = 0;
+      for (const id of asideNav) {
+        if (id === "feature-admin" || id === "feature-tools") {
+          const { getSectionNavigation } = await import("./feature-navigation");
+          const section = id === "feature-admin" ? "admin" : "tools";
+          const navItems = await getSectionNavigation(section, userRole);
+          const children = navItems.map((n) => ({ label: n.label, href: n.href, icon: n.icon, allow: n.roles }));
+          if (children.length > 0) {
+            items.push({ id: `feature-${section}`, label: section === "tools" ? "Tools" : "Admin", type: "dropdown", icon: section === "admin" ? "settings" : "wrench", position: pos++, allow: ["Admin"], children });
+          }
+        } else if (LEGACY_BUILTIN[id]) {
+          items.push({ id, ...LEGACY_BUILTIN[id] } as AsideNavItem);
+        }
+      }
+      return items.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
     }
-    default:
-      return null;
   }
+  return [];
 }
 
-async function resolveFeatureNav(
-  item: AsideNavFeatureItem,
+/** Get resolved aside nav items for rendering */
+export async function getResolvedAsideNav(
   currentRole?: string
-): Promise<AsideNavResolvedItem | null> {
-  const section = item.insertFeatureNav;
-  const items = await getSectionNavigation(section, currentRole);
-  if (section === "tools") {
-    return { type: "feature-tools", sectionLabel: item.sectionLabel ?? "Tools", items };
-  }
-  return { type: "feature-admin", items };
-}
-
-/** Get resolved aside nav items for rendering (filters by role, injects feature nav) */
-export async function getResolvedAsideNav(currentRole?: string): Promise<AsideNavResolvedItem[]> {
-  const config = await getAsideNavConfig();
+): Promise<AsideNavResolvedItem[]> {
+  const items = await getAsideNavItems(currentRole);
   const resolved: AsideNavResolvedItem[] = [];
-  for (const item of config) {
-    const r = await resolveItem(item, currentRole);
+  for (const item of items) {
+    const r = resolveItem(item, currentRole);
     if (r) resolved.push(r);
   }
   return resolved;

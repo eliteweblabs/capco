@@ -10,6 +10,7 @@ interface Props {
 }
 
 const { mode = "login" } = Astro.props;
+const btnClasses = "provider-btn w-8 object-contain opacity-60 sm:w-12 md:w-14";
 ---
 
 <div
@@ -18,7 +19,7 @@ const { mode = "login" } = Astro.props;
   <!-- Phone OTP -->
   <button
     type="button"
-    class="provider-btn hidden w-10 object-contain dark:invert"
+    class={btnClasses + " hidden"}
     data-provider="phone"
     title="Sign in with Phone OTP"
     aria-label="Sign in with Phone OTP"
@@ -36,13 +37,13 @@ const { mode = "login" } = Astro.props;
       <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
       <line x1="12" y1="18" x2="12.01" y2="18"></line>
     </svg>
-    <span class="provider-label hidden md:block">Phone</span>
+    <span class="sr-only">Phone</span>
   </button>
 
   <!-- Email OTP -->
   <button
     type="button"
-    class="provider-btn hidden w-10 object-contain dark:invert"
+    class={btnClasses + " hidden"}
     data-provider="email"
     title="Sign in with Email OTP"
     aria-label="Sign in with Email OTP"
@@ -60,20 +61,20 @@ const { mode = "login" } = Astro.props;
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
       <polyline points="22,6 12,13 2,6"></polyline>
     </svg>
-    <span class="provider-label hidden md:block">Email</span>
+    <span class="sr-only">Email</span>
   </button>
 
   <!-- Google: OAuth via handleGoogleSignup (login/register) or redirect to login page (dropdown/popper) -->
   <Tooltip text="Sign in with Google" position="top" mobileClickable={false} touchable={false}>
     <button
       type="button"
-      class="provider-btn w-10 object-contain"
+      class={btnClasses}
       data-provider="google"
       title="Sign in with Google"
       aria-label="Sign in with Google"
     >
-      <SimpleIcon name="google" size="xl" class="provider-icon provider-icon-color" />
-      <span class="provider-label hidden md:block">Google</span>
+      <SimpleIcon name="google" size="md" class="provider-icon provider-icon-color" />
+      <span class="sr-only">Google</span>
     </button>
   </Tooltip>
 
@@ -81,14 +82,14 @@ const { mode = "login" } = Astro.props;
   <Tooltip text="soon" position="top" mobileClickable={true}>
     <button
       type="button"
-      class="provider-btn w-10 object-contain opacity-60"
+      class={btnClasses + " grayscale"}
       data-provider="apple"
       title="Coming soon"
       aria-label="Apple sign in coming soon"
       disabled
     >
-      <SimpleIcon name="apple" size="xl" class="provider-icon provider-icon-color" />
-      <span class="provider-label hidden md:block">Apple</span>
+      <SimpleIcon name="apple" size="md" class="provider-icon provider-icon-color" />
+      <span class="sr-only">Apple</span>
     </button>
   </Tooltip>
 
@@ -96,15 +97,15 @@ const { mode = "login" } = Astro.props;
   <Tooltip text="soon" position="top" mobileClickable={true}>
     <button
       type="button"
-      class="provider-btn w-10 object-contain opacity-60 grayscale"
+      class={btnClasses + " grayscale"}
       data-provider="facebook"
       title="Coming soon"
       aria-label="Facebook sign in coming soon"
       disabled
     >
-      <SimpleIcon name="facebook" size="xl" class="provider-icon provider-icon-color" />
+      <SimpleIcon name="facebook" size="md" class="provider-icon provider-icon-color" />
 
-      <span class="provider-label hidden md:block">Slack</span>
+      <span class="sr-only">Slack</span>
     </button>
   </Tooltip>
 
@@ -112,15 +113,15 @@ const { mode = "login" } = Astro.props;
   <Tooltip text="soon" position="top" mobileClickable={true}>
     <button
       type="button"
-      class="provider-btn w-10 object-contain opacity-60 grayscale dark:invert"
+      class={btnClasses + " grayscale"}
       data-provider="slack"
       title="Coming soon"
       aria-label="Slack sign in coming soon"
       disabled
     >
-      <SimpleIcon name="slack" size="xl" class="provider-icon provider-icon-color" />
+      <SimpleIcon name="slack" size="md" class="provider-icon provider-icon-color" />
 
-      <span class="provider-label hidden md:block">Slack</span>
+      <span class="sr-only">Slack</span>
     </button>
   </Tooltip>
 
@@ -128,172 +129,18 @@ const { mode = "login" } = Astro.props;
   <Tooltip text="soon" position="top" mobileClickable={true}>
     <button
       type="button"
-      class="provider-btn w-10 object-contain opacity-60 dark:invert"
+      class={btnClasses + " grayscale"}
       data-provider="github"
       title="Coming soon"
       aria-label="GitHub sign in coming soon"
       disabled
     >
-      <SimpleIcon name="github" size="xl" class="provider-icon provider-icon-color" />
+      <SimpleIcon name="github" size="md" class="provider-icon provider-icon-color" />
 
-      <span class="provider-label hidden md:block">GitHub</span>
+      <span class="sr-only">GitHub</span>
     </button>
   </Tooltip>
 </div>
-
-<style>
-  .auth-providers {
-    width: 100%;
-  }
-
-  @media (max-width: 639px) {
-    .auth-providers {
-      gap: 0.375rem;
-    }
-  }
-
-  .provider-btn {
-    position: relative;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    border: 2px solid transparent;
-    border-radius: 1rem;
-    background: transparent;
-    padding: 0.875rem;
-    width: 4.5rem;
-    min-width: 4.5rem;
-    overflow: hidden;
-  }
-
-  .provider-btn::before {
-    position: absolute;
-    opacity: 0;
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    transition: opacity 0.3s;
-    inset: 0;
-    border-radius: 1rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
-    padding: 2px;
-    content: "";
-  }
-
-  .provider-btn:hover::before,
-  .provider-btn:focus::before {
-    opacity: 1;
-  }
-
-  .provider-btn:hover:not(:disabled),
-  .provider-btn:focus:not(:disabled) {
-    transform: translateY(-2px);
-    border-color: rgba(59, 130, 246, 0.2);
-    background: rgba(59, 130, 246, 0.05);
-  }
-
-  .provider-btn:disabled {
-    opacity: 0.75;
-    cursor: not-allowed;
-  }
-
-  .provider-icon {
-    flex-shrink: 0;
-    width: 1.75rem;
-    height: 1.75rem;
-    /* filter: grayscale(100%) opacity(0.6);
-    transition: filter 0.3s cubic-bezier(0.4, 0, 0.2, 1); */
-  }
-
-  .provider-btn:hover:not(:disabled) .provider-icon,
-  .provider-btn:focus:not(:disabled) .provider-icon {
-    filter: grayscale(0%) opacity(1);
-  }
-
-  .provider-btn:disabled .provider-icon {
-    filter: grayscale(100%) opacity(0.6);
-  }
-
-  /* For monochrome icons (phone, email) - show color by default like Google */
-  .provider-btn[data-provider="phone"] .provider-icon,
-  .provider-btn[data-provider="email"] .provider-icon {
-    filter: grayscale(0%) opacity(0.6);
-    color: #4b5563;
-  }
-
-  .provider-btn[data-provider="phone"]:hover:not(:disabled) .provider-icon,
-  .provider-btn[data-provider="phone"]:focus:not(:disabled) .provider-icon {
-    color: #3b82f6;
-  }
-
-  .provider-btn[data-provider="email"]:hover:not(:disabled) .provider-icon,
-  .provider-btn[data-provider="email"]:focus:not(:disabled) .provider-icon {
-    color: #8b5cf6;
-  }
-
-  /* Dark mode for GitHub icon */
-  :global(.dark) .provider-btn[data-provider="github"] .provider-icon path {
-    fill: #ffffff;
-  }
-
-  :global(.dark) .provider-btn[data-provider="github"]:hover .provider-icon path,
-  :global(.dark) .provider-btn[data-provider="github"]:focus .provider-icon path {
-    fill: #ffffff;
-  }
-
-  .provider-label {
-    transition: color 0.3s;
-    max-width: 100%;
-    overflow: hidden;
-    color: rgb(107, 114, 128);
-    font-weight: 500;
-    font-size: 0.7rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .provider-btn:hover:not(:disabled) .provider-label,
-  .provider-btn:focus:not(:disabled) .provider-label {
-    color: rgb(59, 130, 246);
-  }
-
-  .provider-btn:disabled .provider-label {
-    opacity: 0.5;
-  }
-
-  :global(.dark) .provider-label {
-    color: rgb(156, 163, 175);
-  }
-
-  :global(.dark) .provider-btn:hover:not(:disabled) .provider-label,
-  :global(.dark) .provider-btn:focus:not(:disabled) .provider-label {
-    color: rgb(147, 197, 253);
-  }
-
-  /* Size down icons and spacing for < sm */
-  @media (max-width: 639px) {
-    .provider-btn {
-      gap: 0.25rem;
-      padding: 0.5rem;
-      width: 3rem;
-      min-width: 3rem;
-    }
-
-    .provider-icon {
-      width: 1.25rem;
-      height: 1.25rem;
-    }
-
-    .provider-label {
-      font-size: 0.625rem;
-    }
-  }
-</style>
 
 <script>
   // Handle provider button clicks
@@ -305,11 +152,11 @@ const { mode = "login" } = Astro.props;
         const target = e.currentTarget;
 
         // Don't handle clicks on disabled buttons
-        if (target.disabled) {
+        if ((target as HTMLButtonElement).disabled) {
           return;
         }
 
-        const provider = target.dataset.provider;
+        const provider = (target as HTMLButtonElement).dataset.provider;
         console.log(`🔐 Auth provider clicked: ${provider}`);
 
         // Handle specific providers
@@ -321,7 +168,7 @@ const { mode = "login" } = Astro.props;
             window.location.href = "/auth/otp-login";
             break;
           case "google": {
-            const handleGoogle = window.handleGoogleSignup;
+            const handleGoogle = (window as any).handleGoogleSignup;
             if (typeof handleGoogle === "function") {
               handleGoogle(e);
             } else {

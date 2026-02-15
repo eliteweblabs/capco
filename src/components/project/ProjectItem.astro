@@ -539,8 +539,8 @@ const statusColor = currentStatusColor || "gray";
 
   <script>
     // Set up a global listener for all deleteConfirmed events (runs once)
-    if (!window.__projectDeleteListenerInitialized) {
-      window.__projectDeleteListenerInitialized = true;
+    if (!(window as any).__projectDeleteListenerInitialized) {
+      (window as any).__projectDeleteListenerInitialized = true;
 
       console.log("[ProjectItem] Setting up GLOBAL deleteConfirmed listener");
 
@@ -671,8 +671,8 @@ const statusColor = currentStatusColor || "gray";
     // Render file icons for this project using global function
     // Wait for global script to load if not ready yet
     const tryRenderFileIcons = () => {
-      if (window.renderFileIcons) {
-        window.renderFileIcons();
+      if ((window as any).renderFileIcons) {
+        (window as any).renderFileIcons();
       } else {
         // Global script not loaded yet, try again after a small delay
         setTimeout(tryRenderFileIcons, 50);
@@ -684,7 +684,7 @@ const statusColor = currentStatusColor || "gray";
     // This just calls the global updateStaffIcon function with the projectId
     if (projectId) {
       window[`updateStaffIcon_${projectId}`] = function (result, assignedToId, staffName) {
-        window.updateStaffIcon(projectId, result, assignedToId, staffName);
+        (window as any).updateStaffIcon(projectId, result, assignedToId, staffName);
       };
     }
   </script>

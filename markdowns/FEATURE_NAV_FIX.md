@@ -68,7 +68,7 @@ Store the entire site config in the database, keyed by `clientId` or `RAILWAY_PR
 
 ## What I Did
 
-1. ✅ Copied `config/data/site-config-capco-design-group.json` to project root
+1. ✅ Copied `site-config-capco-design-group.json (project root)` to project root
 2. ✅ Verified the slugification matches: `"CAPCO Design Group"` → `"capco-design-group"`
 3. ✅ Confirmed file is identical to `site-config.json`
 
@@ -157,4 +157,4 @@ console.log('Expected file:', \`site-config-\${slug}.json\`);
 - `src/lib/content.ts` - Site config loading logic
 - `src/lib/feature-navigation.ts` - Feature navigation generation
 - `src/components/ui/Aside.astro` - Sidebar component
-- `config/data/site-config-capco-design-group.json` - Original location (should be synced with root)
+- `site-config-capco-design-group.json (project root)` - Original location (should be synced with root)

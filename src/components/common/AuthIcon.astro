@@ -26,6 +26,10 @@ const currentPath = Astro.url.pathname;
 const isLoginPage = currentPath.includes("/auth/login");
 const isRegisterPage = currentPath.includes("/auth/register");
 
+if (isLoginPage || isRegisterPage) {
+  return;
+}
+
 // Determine auth link and tooltip text
 // const authLink = isLoginPage ? "/auth/register" : "/auth/login";
 // const authTooltipText = isLoginPage ? "Register" : isRegisterPage ? "Login" : "Register / Login";
@@ -45,12 +49,13 @@ const avatarUrl =
   data-user-id={currentUser?.id}
   data-project-id={currentUser?.projectId}
   type="button"
+  style="padding: 0;"
 >
   <span class="sr-only">Open user menu</span>
   <img
     src={avatarUrl || undefined}
     alt="Profile"
-    class="avatar-img h-full min-h-full w-full min-w-full scale-110 object-cover p-0"
+    class="avatar-img h-full object-cover p-0"
     style={!avatarUrl ? "display:none" : undefined}
     onerror="this.style.display='none'; const f=this.nextElementSibling; if(f) { f.classList.remove('hidden'); f.classList.add('flex'); }"
   />

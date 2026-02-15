@@ -23,6 +23,7 @@
  */
 
 import fs from 'fs';
+import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
 const CAPCO_PROJECT_REF = 'qudlxlryegnainztkrtk';
@@ -294,17 +295,41 @@ async function main() {
   const rothcoColumnsFile = args.find(arg => arg.startsWith('--rothco-columns='))?.split('=')[1];
   const outputFile = args.find(arg => arg.startsWith('--output='))?.split('=')[1] || 'sync-migration.sql';
 
-  if (capcoTablesFile && capcoColumnsFile && rothcoTablesFile && rothcoColumnsFile) {
-    // Load from files
+  const rootDir = process.cwd();
+  const capcoConfigPath = path.join(rootDir, 'site-config-capco-design-group.json');
+  const rothcoConfigPath = path.join(rootDir, 'site-config-rothco-built.json');
+
+  function loadSchema(fromPath) {
+    const data = JSON.parse(fs.readFileSync(fromPath, 'utf8'));
+    if (data.schemaTables && data.schemaColumns) {
+      return { tables: data.schemaTables, columns: data.schemaColumns };
+    }
+    return { tables: data, columns: data }; // Legacy: raw arrays
+  }
+
+  const hasFileArgs = capcoTablesFile && capcoColumnsFile && rothcoTablesFile && rothcoColumnsFile;
+
+  let capcoSchema, rothcoSchema;
+
+  if (hasFileArgs) {
+    // Load from explicit file paths (site-config or raw schema files)
     log('📂 Loading schemas from files...', 'cyan');
-    const capcoTables = JSON.parse(fs.readFileSync(capcoTablesFile, 'utf8'));
-    const capcoColumns = JSON.parse(fs.readFileSync(capcoColumnsFile, 'utf8'));
-    const rothcoTables = JSON.parse(fs.readFileSync(rothcoTablesFile, 'utf8'));
-    const rothcoColumns = JSON.parse(fs.readFileSync(rothcoColumnsFile, 'utf8'));
+    const toTables = (d) => (Array.isArray(d) ? d : d?.schemaTables || []);
+    const toColumns = (d) => (Array.isArray(d) ? d : d?.schemaColumns || []);
+    const capcoT = JSON.parse(fs.readFileSync(capcoTablesFile, 'utf8'));
+    const capcoC = JSON.parse(fs.readFileSync(capcoColumnsFile, 'utf8'));
+    const rothcoT = JSON.parse(fs.readFileSync(rothcoTablesFile, 'utf8'));
+    const rothcoC = JSON.parse(fs.readFileSync(rothcoColumnsFile, 'utf8'));
+    capcoSchema = { tables: toTables(capcoT), columns: toColumns(capcoT.schemaColumns != null ? capcoT : capcoC) };
+    rothcoSchema = { tables: toTables(rothcoT), columns: toColumns(rothcoT.schemaColumns != null ? rothcoT : rothcoC) };
+  } else if (fs.existsSync(capcoConfigPath) && fs.existsSync(rothcoConfigPath)) {
+    // Default: load from site-config (one file per company)
+    log('📂 Loading schemas from site-config...', 'cyan');
+    capcoSchema = loadSchema(capcoConfigPath);
+    rothcoSchema = loadSchema(rothcoConfigPath);
+  }
 
-    const capcoSchema = { tables: capcoTables, columns: capcoColumns };
-    const rothcoSchema = { tables: rothcoTables, columns: rothcoColumns };
-
+  if (capcoSchema && rothcoSchema) {
     const { migrationSQL, issues } = compareAndGenerateMigration(capcoSchema, rothcoSchema);
 
     // Write migration SQL
@@ -322,13 +347,15 @@ async function main() {
   } else {
     // Need to query databases - provide instructions
     log('\n📝 To use this script:', 'cyan');
-    log('   1. Export schemas from both databases using SQL queries', 'blue');
-    log('   2. Run this script with file paths:', 'blue');
+    log('   By default, reads from site-config-capco-design-group.json and site-config-rothco-built.json', 'blue');
+    log('   (schemaTables + schemaColumns). Ensure those files exist in project root.', 'blue');
+    log('', 'blue');
+    log('   Or pass explicit file paths:', 'blue');
     log('      node scripts/sync-rothco-to-capco-schema.js \\', 'blue');
-    log('        --capco-tables capco-tables.json \\', 'blue');
-    log('        --capco-columns capco-columns.json \\', 'blue');
-    log('        --rothco-tables rothco-tables.json \\', 'blue');
-    log('        --rothco-columns rothco-columns.json \\', 'blue');
+    log('        --capco-tables site-config-capco-design-group.json \\', 'blue');
+    log('        --capco-columns site-config-capco-design-group.json \\', 'blue');
+    log('        --rothco-tables site-config-rothco-built.json \\', 'blue');
+    log('        --rothco-columns site-config-rothco-built.json \\', 'blue');
     log('        --output sync-migration.sql', 'blue');
     log('\n   Or use the SQL queries in sql-queriers/compare-capco-rothco-schema.sql', 'cyan');
   }

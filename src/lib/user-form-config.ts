@@ -39,8 +39,8 @@ export const USER_FORM_ELEMENTS: FormElementConfig[] = [
     columns: 1,
   },
   {
-    id: "company-name",
-    name: "company-name",
+    id: "companyName",
+    name: "companyName",
     type: "field",
     elementType: "text",
     label: "Company Name",
@@ -50,7 +50,7 @@ export const USER_FORM_ELEMENTS: FormElementConfig[] = [
     columns: 1,
   },
   {
-    id: "first-name",
+    id: "firstName",
     name: "firstName",
     type: "field",
     elementType: "text",
@@ -61,7 +61,7 @@ export const USER_FORM_ELEMENTS: FormElementConfig[] = [
     columns: 2,
   },
   {
-    id: "last-name",
+    id: "lastName",
     name: "lastName",
     type: "field",
     elementType: "text",

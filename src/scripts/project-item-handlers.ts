@@ -370,12 +370,14 @@
     // Clear existing content
     container.innerHTML = "";
 
-    // Create file icons with native browser tooltips
+    // Create file icons with native browser tooltips (parent <a> in ProjectItem wraps container)
     projectFiles.forEach((file: any) => {
       const fileIconContainer = document.createElement("div");
-      fileIconContainer.className = "cursor-pointer";
-      fileIconContainer.title = file.title || file.fileName; // Native browser tooltip
-      fileIconContainer.innerHTML = (window as any).getFileIcon(file.fileType);
+      fileIconContainer.className = "cursor-pointer inline-flex";
+      const fileName = file.title || file.fileName || file.file_name || "File";
+      const fileType = file.fileType || file.file_type || "";
+      fileIconContainer.title = fileName;
+      fileIconContainer.innerHTML = (window as any).getFileIcon(fileType);
 
       container.appendChild(fileIconContainer);
     });
@@ -512,6 +514,13 @@ document.addEventListener("change", async (e) => {
     if ((window as any).showNotice) {
       (window as any).showNotice("error", "Update Failed", "Failed to update featured.", 3000);
     }
+  }
+});
+
+// Ensure file icons render when DOM is ready (project-files-* containers)
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof (window as any).renderFileIcons === "function") {
+    (window as any).renderFileIcons();
   }
 });
 

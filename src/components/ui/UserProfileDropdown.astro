@@ -14,7 +14,12 @@ interface Props {
   onOpen?: string;
 }
 
-// OAuth ?code= redirect is handled in middleware (before any page renders) to avoid "response already sent"
+// Redirect to API callback only when code is on a page that shouldn't handle it
+// /auth/callback must render so client-side JS can exchange the code - do NOT redirect there
+const authCode = Astro.url.searchParams.get("code");
+if (authCode && !Astro.url.pathname.startsWith("/auth/callback")) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+}
 
 const {
   currentUser,

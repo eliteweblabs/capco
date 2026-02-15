@@ -49,7 +49,7 @@ Added a `generateUpdateLogMessage()` helper function that:
 ### 2. Enhanced Status Change Logging (`/src/pages/api/status/upsert.ts`)
 
 Added a `getStatusName()` helper function that:
-- Looks up human-readable status names from `/config/data/statuses.json`
+- Looks up human-readable status names from `site-config-{company}.json (statuses key)`
 - Maps status codes to their `adminStatusName` values
 - Handles status "refreshes" (when status doesn't actually change)
 
@@ -72,7 +72,7 @@ The status names are pulled from the existing status configuration:
 2. `/src/pages/api/status/upsert.ts` - Status change logging
 
 ### Data Sources
-- Status names: `/config/data/statuses.json`
+- Status names: `site-config-{company}.json (statuses key)`
 - Logging system: `/src/lib/simple-logging.ts` (SimpleProjectLogger)
 - Activity display: `/src/components/project/SimpleProjectLog.astro`
 
@@ -107,4 +107,4 @@ To test the improvements:
 - Project Update API: `/src/pages/api/projects/_[id].ts`
 - Status Update API: `/src/pages/api/status/upsert.ts`
 - Logging Library: `/src/lib/simple-logging.ts`
-- Status Configuration: `/config/data/statuses.json`
+- Status Configuration: `site-config-{company}.json (statuses key)`

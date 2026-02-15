@@ -6,12 +6,26 @@
  */
 
 const fs = require('fs');
+const path = require('path');
 
-// Load schemas
-const capcoTables = JSON.parse(fs.readFileSync('capco-tables.json', 'utf8'));
-const capcoColumns = JSON.parse(fs.readFileSync('capco-columns.json', 'utf8'));
-const rothcoTables = JSON.parse(fs.readFileSync('rothco-schema-tables.json', 'utf8'));
-const rothcoColumns = JSON.parse(fs.readFileSync('rothco-schema-columns.json', 'utf8'));
+const rootDir = path.resolve(__dirname, '..');
+
+// Load schemas from site-config (one file per company)
+function loadSchemaFromSiteConfig(configPath) {
+  const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  return {
+    tables: cfg.schemaTables || [],
+    columns: cfg.schemaColumns || [],
+  };
+}
+
+const capco = loadSchemaFromSiteConfig(path.join(rootDir, 'site-config-capco-design-group.json'));
+const rothco = loadSchemaFromSiteConfig(path.join(rootDir, 'site-config-rothco-built.json'));
+
+const capcoTables = capco.tables;
+const capcoColumns = capco.columns;
+const rothcoTables = rothco.tables;
+const rothcoColumns = rothco.columns;
 
 console.log('🔍 Comprehensive Schema Comparison: Capco (Master) vs Rothco');
 console.log('='.repeat(70));

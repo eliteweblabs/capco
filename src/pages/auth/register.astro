@@ -44,7 +44,7 @@ const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalC
 import App from "../../components/ui/App.astro";
 import { getRegisterFormConfig } from "../../lib/forms/form-config-from-site";
 import MultiStepForm from "../../components/form/MultiStepForm.astro";
-
+import ConfigForm from "../../components/form/ConfigForm.astro";
 const registerFormConfig = await getRegisterFormConfig();
 import LayoutTwoColumn from "../../components/layouts/LayoutTwoColumn.astro";
 import DotGrid from "../../components/ui/DotGrid.astro";
@@ -65,11 +65,7 @@ import DotGrid from "../../components/ui/DotGrid.astro";
     />
   </div>
   <div slot="right" class="color-background max-w-md">
-    <MultiStepForm
-      config={registerFormConfig}
-      initialData={{ redirect: "/project/dashboard" }}
-      containerClass="max-w-md"
-    />
+    <ConfigForm config={registerFormConfig} />
   </div>
 </LayoutTwoColumn>
 
@@ -79,7 +75,8 @@ import DotGrid from "../../components/ui/DotGrid.astro";
   async function triggerGoogleOAuth(e?: Event) {
     if (e) e.preventDefault();
     const redirectDestination =
-      document.querySelector('input[name="redirect"]')?.value || "/project/dashboard";
+      (document.querySelector('input[name="redirect"]') as HTMLInputElement)?.value ||
+      "/project/dashboard";
     const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
     if (supabaseUrl) {
       const supabaseProjectRef = supabaseUrl.split("//")[1].split(".")[0];
@@ -115,14 +112,14 @@ import DotGrid from "../../components/ui/DotGrid.astro";
     }
   }
 
-  window.handleGoogleSignup = triggerGoogleOAuth;
+  (window as any).handleGoogleSignup = triggerGoogleOAuth;
   document.addEventListener("auth-google-request", () => triggerGoogleOAuth());
 
   document.addEventListener(
     "click",
     (e) => {
-      const btn = e.target.closest?.('.provider-btn[data-provider="google"]');
-      if (btn && !btn.disabled) {
+      const btn = (e.target as HTMLElement).closest?.('.provider-btn[data-provider="google"]');
+      if (btn && !(btn as HTMLButtonElement).disabled) {
         e.stopImmediatePropagation();
         triggerGoogleOAuth(e);
       }

@@ -1,7 +1,9 @@
 ---
 import Button from "../common/Button.astro";
 import UserIcon from "../common/UserIcon.astro";
-// StaffSelectTooltip: staff picker in dropdown (no modal; inject slot-machine HTML into dropdown panel)
+import SimpleIcon from "../common/SimpleIcon.astro";
+import Dropdown from "../ui/Dropdown.astro";
+// StaffSelectTooltip: staff picker using Flowbite Dropdown; inject slot-machine content on open
 
 interface Props {
   id: string; // Required: Unique identifier for this picker instance
@@ -112,10 +114,11 @@ const selectedOption = optionsArray.find((option) => option.value === selectedVa
 const displayText = buttonText || selectedOption?.label || placeholder;
 ---
 
-<div class="staff-select-dropdown relative inline-flex" data-staff-dropdown-id={id}>
+<div class="relative inline-flex" data-staff-dropdown-id={id}>
   {
     buttonType === "icon" ? (
-      <a
+      <button
+        type="button"
         {id}
         data-refresh={name}
         data-project-id={projectId}
@@ -123,6 +126,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         data-meta-value={selectedValue}
         class="inline-flex items-center justify-center"
         title={title || "Assign to Staff"}
+        data-dropdown-toggle={`${id}-dropdown`}
+        data-dropdown-trigger="click"
+        aria-haspopup="true"
+        aria-expanded="false"
       >
         {project?.assignedToProfile ? (
           <UserIcon {...componentProps} />
@@ -140,24 +147,20 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         ) : (
           <span class="group relative inline-block h-8 w-8">
             <span class="sr-only">Open user menu</span>
-            <svg
-              class="avatar-fallback inline-block"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M7.5 6.5C7.5 8.981 9.519 11 12 11s4.5-2.019 4.5-4.5S14.481 2 12 2 7.5 4.019 7.5 6.5zM20 21h1v-1c0-3.859-3.141-7-7-7h-4c-3.86 0-7 3.141-7 7v1h17z" />
-            </svg>
+            <SimpleIcon name="user" class="avatar-fallback inline-block h-6 w-6" />
           </span>
         )}
-      </a>
+      </button>
     ) : (
       <Button
         {id}
         variant={buttonVariant || "outline"}
         class={buttonClass || ""}
         data-refresh={name}
+        dataAttributes={{
+          "data-dropdown-toggle": `${id}-dropdown`,
+          "data-dropdown-trigger": "click",
+        }}
         size="sm"
         icon={icon || "chevron-down"}
         iconPosition="right"
@@ -167,14 +170,10 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       </Button>
     )
   }
-  <!-- Dropdown panel: slot-machine content injected here on open (fixed so Floating UI x/y work) -->
-  <div
-    class="staff-select-dropdown-panel fixed z-50 hidden min-w-[20rem] max-w-2xl rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
-    data-staff-dropdown-panel
-    role="dialog"
-    aria-label={title}
-  >
-  </div>
+  <Dropdown id={id} title={title} closeButton={false} onOpenCallback={`staffSelectInject_${id}`}>
+    <div class="min-w-[20rem] max-w-2xl" data-staff-dropdown-panel role="dialog" aria-label={title}>
+    </div>
+  </Dropdown>
 </div>
 
 <!-- Hidden input to store the selected value -->
@@ -219,54 +218,23 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 >
   // Debug logging in script
 
-  // Initialize the slot machine picker
+  // Register onOpenCallback: Flowbite opens dropdown, we inject slot machine when it opens
   document.addEventListener("DOMContentLoaded", function () {
-    // Debug: Log how many slot machines are on the page
-
-    const trigger = document.getElementById(id);
     const hiddenInput = document.getElementById(`${id}-value`);
-
-    if (!trigger || !hiddenInput) {
-      console.error(`🎰 [SLOT-MACHINE-${id}] Trigger button with ID '${id}' not found`);
+    if (!hiddenInput) {
+      console.error(`🎰 [SLOT-MACHINE-${id}] Hidden input not found`);
       return;
     }
 
-    // Dropdown panel for this instance (inject slot-machine content here)
-    const dropdownWrap = document.querySelector(`[data-staff-dropdown-id="${id}"]`);
-    const dropdownPanel = dropdownWrap?.querySelector("[data-staff-dropdown-panel]");
+    const dropdownPanel = document.querySelector(`#${id}-dropdown [data-staff-dropdown-panel]`);
+    if (!dropdownPanel) {
+      console.error(`🎰 [SLOT-MACHINE-${id}] Dropdown panel not found`);
+      return;
+    }
 
-    // function closeDropdown() {
-    //   if (dropdownPanel) {
-    //     dropdownPanel.classList.add("hidden");
-    //     dropdownPanel.innerHTML = "";
-    //   }
-    // }
-
-    // Set up click handler: open dropdown, inject content, run slot machine in panel
-    trigger.addEventListener("click", async function (e) {
-      e.stopPropagation();
-      const currentValue = hiddenInput ? hiddenInput.value : selectedValue;
-
-      if (dropdownPanel) {
-        dropdownPanel.classList.remove("hidden");
-        dropdownPanel.innerHTML = "";
-
-        // Position panel below trigger (no dynamic import so inline script works on dashboard/SPA)
-        const rect = trigger.getBoundingClientRect();
-        const gap = 8;
-        let top = rect.bottom + gap;
-        let left = rect.left;
-        const panelHeight = 320;
-        const viewportBottom = window.scrollY + window.innerHeight;
-        if (top + panelHeight > viewportBottom && rect.top - gap - panelHeight >= window.scrollY) {
-          top = rect.top - gap - panelHeight;
-        }
-        if (left + 336 > window.innerWidth) left = Math.max(8, window.innerWidth - 336);
-        if (left < 8) left = 8;
-        dropdownPanel.style.left = left + "px";
-        dropdownPanel.style.top = top + "px";
-      }
-
+    window[`staffSelectInject_${id}`] = function () {
+      const currentValue = hiddenInput.value;
+      dropdownPanel.innerHTML = "";
       showSlotMachineModalStaff({
         id: id,
         title: title,
@@ -275,8 +243,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         showCloseButton: showCloseButton,
         showCancelButton: showCancelButton,
         globalInputClasses: globalInputClasses,
-        containerElement: dropdownPanel || undefined,
-        // onCloseDropdown: closeDropdown,
+        containerElement: dropdownPanel,
         onSelect: (value, label) => {
           if (hiddenInput) hiddenInput.value = value;
           if (saveApiEndpoint) saveToAPI(saveApiEndpoint, value, label, projectId);
@@ -294,53 +261,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         fetchOnLoad: fetchOnLoad,
         noResultsText: noResultsText,
       });
-    });
-
-    // Click outside to close dropdown
-    // document.addEventListener("click", function (e) {
-    //   if (
-    //     !dropdownWrap?.contains(e.target) &&
-    //     dropdownPanel &&
-    //     !dropdownPanel.classList.contains("hidden")
-    //   ) {
-    //     closeDropdown();
-    //   }
-    // });
-
-    // // Check for URL parameters to auto-open this specific picker
-    // function checkUrlParameters() {
-    //   const urlParams = new URLSearchParams(window.location.search);
-    //   const modalParam = urlParams.get("modal");
-
-    //   console.log(`🎰 [SLOT-MACHINE] Checking URL parameters for ID '${id}':`, {
-    //     modalParam,
-    //     componentId: id,
-    //     match: modalParam === id,
-    //   });
-
-    //   if (modalParam === id) {
-    //     // console.log(`🎰 [SLOT-MACHINE] URL parameter detected: modal=${id}`);
-
-    //     // Wait for DOM to be ready, then trigger the picker
-    //     setTimeout(() => {
-    //       if (trigger) {
-    //         // console.log(`🎰 [SLOT-MACHINE] Auto-opening picker for ID: ${id}`);
-    //         trigger.click();
-
-    //         // Clean up the URL parameter
-    //         const newUrl = new URL(window.location);
-    //         newUrl.searchParams.delete("modal");
-    //         window.history.replaceState({}, "", newUrl);
-    //         // console.log(`🎰 [SLOT-MACHINE] URL cleaned up: ${newUrl.href}`);
-    //       } else {
-    //         console.error(`🎰 [SLOT-MACHINE] Trigger button not found for auto-open`);
-    //       }
-    //     }, 100);
-    //   }
-    // }
-
-    // Check URL parameters on load
-    // checkUrlParameters();
+    };
   });
 
   // Auto-save function that uses saveApiEndpoint or falls back to component ID
@@ -700,46 +621,18 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       console.log(`🔍 [SLOT-MACHINE] Sample option structure:`, originalOptions[0]);
     }
 
-    // Helper function to create LI elements consistently
+    // Helper function to create LI elements consistently (uses Tailwind, inherits from Dropdown)
     function createOptionElement(option, index, isSelected = false) {
       const li = document.createElement("li");
-      li.className = liClassName;
-
-      // Base styles
-      let baseStyles = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        padding: 12px 16px;
-        user-select: none;
-        position: relative;
-      `;
-
-      // Add selected styling if needed
+      li.className =
+        liClassName +
+        " flex items-center justify-center text-center font-medium cursor-pointer transition-all p-3 h-12 select-none relative";
       if (isSelected) {
-        baseStyles += `
-          background: bg-primary-500 !important;
-          color: white !important; 
-          border-radius: 8px !important;
-          margin: 0 8px !important;
-        `;
-        li.classList.add("selected");
+        li.classList.add("selected", "bg-primary-500", "text-white", "rounded-lg", "mx-2");
       }
 
-      li.style.cssText = baseStyles;
-
       const span = document.createElement("span");
-      span.className = spanClassName;
-      span.style.cssText = `
-        text-align: center;
-        font-weight: 500;
-        transition: all 0.2s;
-        width: 100%;
-      `;
+      span.className = spanClassName + " text-center font-medium transition-all w-full";
 
       // Set content and data attributes
       span.textContent =
@@ -757,14 +650,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Helper function to create message LI elements
     function createMessageElement(message, isError = false) {
       const li = document.createElement("li");
-      li.className = `${liClassName} ${isError ? "error-message" : "info-message"}`;
-      li.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-style: italic;
-      `;
+      li.className = `${liClassName} flex items-center justify-center text-center italic ${
+        isError ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"
+      }`;
       li.textContent = message;
       return li;
     }
@@ -907,9 +795,19 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     let modal;
 
     if (containerElement) {
-      // Dropdown mode: inject only the inner content (no backdrop)
+      // Dropdown mode: inject only the inner content (no backdrop), inherit Dropdown.astro styles
       const innerContent = fullModal.querySelector(".slot-machine-modal-content");
       if (innerContent) {
+        innerContent.classList.remove(
+          "outer-shadow",
+          "outer-shadow-white/10",
+          "bg-white",
+          "shadow-xl",
+          "backdrop-blur-md",
+          "dark:bg-black"
+        );
+        innerContent.className =
+          "slot-machine-modal-content w-full max-w-2xl overflow-y-auto max-h-[70vh] rounded-lg";
         containerElement.appendChild(innerContent);
         modal = innerContent;
       } else {
@@ -1030,42 +928,25 @@ const displayText = buttonText || selectedOption?.label || placeholder;
 
           // If search is cleared, restore all original options
           if (query.length === 0) {
-            if (optionsList) {
-              optionsList.innerHTML = "";
-              originalOptions.forEach((option, index) => {
-                const li = document.createElement("li");
-                li.className = spanClassName;
-                li.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        padding: 12px 16px;
-        user-select: none;
-        position: relative;
-      `;
+          if (optionsList) {
+            optionsList.innerHTML = "";
+            originalOptions.forEach((option, index) => {
+              const li = document.createElement("li");
+              li.className =
+                spanClassName +
+                " flex items-center justify-center text-center font-medium cursor-pointer transition-all p-3 h-12 select-none relative";
 
-                const span = document.createElement("span");
-                span.className = spanClassName;
-                span.style.cssText = `
-        text-align: center;
-        font-weight: 500;
-        transition: all 0.2s;
-        width: 100%;
-      `;
+              const span = document.createElement("span");
+              span.className = spanClassName + " text-center font-medium transition-all w-full";
+              span.textContent = option.label;
+              span.dataset.value = option.value;
+              span.dataset.label = option.label;
+              span.dataset.index = index;
 
-                span.textContent = option.label;
-                span.dataset.value = option.value;
-                span.dataset.label = option.label;
-                span.dataset.index = index;
-
-                li.appendChild(span);
-                optionsList.appendChild(li);
-              });
-            }
+              li.appendChild(span);
+              optionsList.appendChild(li);
+            });
+          }
             return;
           }
 
@@ -1410,20 +1291,9 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       }
 
       const checkmark = document.createElement("div");
-      checkmark.className = "checkmark";
+      checkmark.className =
+        "checkmark absolute right-2 top-1/2 -translate-y-1/2 transition-all text-white font-bold text-base z-10";
       checkmark.innerHTML = "✓";
-      checkmark.style.cssText = `
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        transition: all 0.2s ease-out;
-        color: #ffffff;
-        font-weight: bold;
-        font-size: 16px;
-        animation: checkmarkPulse 1.5s ease-in-out infinite;
-        z-index: 10;
-      `;
 
       item.appendChild(checkmark);
     }
@@ -1439,41 +1309,17 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Update selection styling (only for clicked items)
     function updateSelection() {
       const items = optionsList.querySelectorAll("li");
+      const baseClasses =
+        "flex items-center justify-center text-center font-medium cursor-pointer transition-all p-3 h-12 select-none relative";
       items.forEach((item, index) => {
         if (index === selectedIndex && selectedIndex >= 0) {
+          item.className = liClassName + " " + baseClasses + " font-semibold rounded-lg mx-2";
           item.classList.add("selected", "bg-primary-500", "text-white");
-          // Reset and apply selected styles
-          item.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            padding: 12px 16px;
-            user-select: none;
-            position: relative;
-            border-radius: 8px;
-            margin: 0 8px;
-
-            `;
           addCheckmark(item);
           if (selectButton) selectButton.disabled = false;
         } else {
+          item.className = liClassName + " " + baseClasses;
           item.classList.remove("selected", "bg-primary-500", "text-white");
-          item.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            padding: 12px 16px;
-            user-select: none;
-            position: relative;
-          `;
           removeCheckmark(item);
         }
       });
@@ -1488,14 +1334,12 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     function updateCentering() {
       const items = optionsList.querySelectorAll("li");
       items.forEach((item, index) => {
-        // Only update the centering, not the selection styling
         if (index === selectedIndex && selectedIndex >= 0) {
-          // Just center the item visually, don't apply selected styling
-          item.style.transform = "scale(1.05)";
-          item.style.transition = "transform 0.2s ease-out";
+          item.classList.add("scale-105");
+          item.classList.remove("scale-100");
         } else {
-          item.style.transform = "scale(1)";
-          item.style.transition = "transform 0.2s ease-out";
+          item.classList.add("scale-100");
+          item.classList.remove("scale-105");
         }
       });
     }
@@ -1799,128 +1643,3 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   // };
 </script>
 
-<style>
-  /* Prevent text selection in modal */
-  .slot-machine-item {
-    touch-action: pan-y !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-    -webkit-touch-callout: none !important;
-  }
-
-  /* Improve touch targets for mobile */
-  @media (max-width: 768px) {
-    .slot-machine-item {
-      padding: 16px !important;
-      height: 56px !important;
-      min-height: 56px !important;
-      font-size: 16px !important;
-    }
-
-    .slot-machine-item-text {
-      font-size: 16px !important;
-    }
-  }
-
-  .slot-machine-item > span {
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-  }
-
-  /* Smooth transitions */
-  .transition-transform {
-    transition-duration: 300ms;
-    transition-property: transform;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Slot machine container styling */
-  .slot-machine-container {
-    display: block !important;
-    height: 12rem !important;
-    min-height: 12rem !important;
-    max-height: 12rem !important;
-  }
-
-  /* Ensure the slot machine list takes full height */
-  .slot-machine-container ul {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    height: 100% !important;
-    min-height: 12rem !important;
-  }
-
-  /* Ensure slot machine items are visible */
-  .slot-machine-item {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    transition: all 0.2s ease-in-out;
-    height: 3rem !important;
-    min-height: 3rem !important;
-  }
-
-  /* Ensure selected items have white text */
-  .slot-machine-item.selected {
-    color: white !important;
-  }
-
-  .slot-machine-item.selected span {
-    color: white !important;
-  }
-
-  /* Default option text color */
-  .slot-machine-item {
-    color: #111827;
-  }
-
-  /* Checkmark pulse animation */
-  @keyframes checkmarkPulse {
-    0%,
-    100% {
-      transform: translateY(-50%) scale(1);
-      opacity: 1;
-      text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
-    }
-    50% {
-      transform: translateY(-50%) scale(1.1);
-      opacity: 0.8;
-      text-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
-    }
-  }
-
-  @keyframes checkmarkPulseDark {
-    0%,
-    100% {
-      transform: translateY(-50%) scale(1);
-      opacity: 1;
-      text-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
-    }
-    50% {
-      transform: translateY(-50%) scale(1.1);
-      opacity: 0.9;
-      text-shadow: 0 0 16px rgba(16, 185, 129, 1);
-    }
-  }
-
-  /* Empty state styling */
-  .slot-empty-state {
-    transition: opacity 0.3s ease-in-out;
-  }
-
-  /* Message element styling */
-  .error-message {
-    color: #ef4444 !important;
-  }
-
-  .info-message {
-    color: #6b7280 !important;
-  }
-</style>

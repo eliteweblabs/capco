@@ -108,6 +108,12 @@ declare global {
 
     // Project management
     deleteProject?: (projectId: any) => void;
+    updateStaffIcon?: (
+      projectId: string | number,
+      result: any,
+      assignedToId: string | null,
+      staffName?: string
+    ) => void;
 
     // Notification management
     requestPushNotificationPermission?: () => void;

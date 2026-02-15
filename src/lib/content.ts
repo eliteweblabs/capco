@@ -47,7 +47,7 @@ export interface SiteConfig {
       label: string;
       href: string;
     }>;
-    /** Aside sidebar nav. Company-specific via site-config-{slug}.json. See aside-nav-config.ts */
+    /** Aside sidebar nav. From SITE_CONFIG or site-config.json. See aside-nav-config.ts */
     aside?: (string | Record<string, unknown>)[];
   };
   features: {
@@ -92,25 +92,39 @@ export interface PageContent {
 }
 
 /**
- * Helper function to slugify company name (same as project-form-config.ts)
- * Converts company name to a slug for file naming: "CAPCo Design Group" → "capco-design-group"
- * This matches the pattern used for project-form-config-{company-slug}.ts files
+ * Merge JSON config into base config (handles navigation, features, projectListColumns, etc.)
  */
-function slugifyCompanyName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-    .trim();
+function mergeJsonConfig(config: SiteConfig & Record<string, any>, jsonConfig: Record<string, any>): void {
+  if (jsonConfig.navigation) {
+    config.navigation = { ...config.navigation, ...jsonConfig.navigation };
+  }
+  if (jsonConfig.features) {
+    config.features = jsonConfig.features;
+  }
+  if (jsonConfig.asideNav) {
+    (config.navigation as any).aside = jsonConfig.asideNav;
+  } else if (jsonConfig.navigation?.aside) {
+    (config.navigation as any).aside = jsonConfig.navigation.aside;
+  }
+  if (Array.isArray(jsonConfig.projectListColumns)) {
+    config.projectListColumns = jsonConfig.projectListColumns;
+  }
+  if (jsonConfig.projectForm) config.projectForm = jsonConfig.projectForm;
+  if (jsonConfig.registerForm) config.registerForm = jsonConfig.registerForm;
+  if (jsonConfig.loginForm) config.loginForm = jsonConfig.loginForm;
+  if (jsonConfig.mepForm) config.mepForm = jsonConfig.mepForm;
+  if (jsonConfig.contactForm) config.contactForm = jsonConfig.contactForm;
+  if (Array.isArray(jsonConfig.userForm)) config.userForm = jsonConfig.userForm;
+  if (jsonConfig.statuses) config.statuses = jsonConfig.statuses;
+  if (jsonConfig.site) config.site = { ...config.site, ...jsonConfig.site };
+  if (jsonConfig.branding) config.branding = { ...config.branding, ...jsonConfig.branding };
 }
 
 /**
  * Get site configuration
- * Reads from database first, then environment variables as fallback, merges with JSON for structure
- * Uses same company slug logic as project-form-config.ts to load site-config-{company-slug}.json
+ * Priority: SITE_CONFIG or SITE_CONFIG_JSON env var > site-config.json file > minimal defaults
+ * DB values still provide runtime overrides for site/branding when not in env config
  */
-
 export async function getSiteConfig(): Promise<SiteConfig> {
   const cacheKey = "site-config";
 
@@ -119,36 +133,21 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     return cache.get(cacheKey);
   }
 
-  // Get company data from database (same logic as project-form-config.ts)
+  // Get company data from database for site/branding defaults
   let companyData;
-  let companyName = "";
   try {
     const { globalCompanyData } = await import("../pages/api/global/global-company-data");
     companyData = await globalCompanyData();
-    companyName = companyData?.globalCompanyName || process.env.RAILWAY_PROJECT_NAME || "";
   } catch (error) {
     console.warn(
       "[CONTENT] Failed to load company data from database, using env fallbacks:",
       error
     );
     companyData = null;
-    companyName = process.env.RAILWAY_PROJECT_NAME || "";
-  }
-
-  // Slugify company name (same as project-form-config.ts)
-  const companySlug = slugifyCompanyName(companyName);
-
-  // Try client-specific config file: site-config-{company-slug}.json
-  // This matches the pattern: project-form-config-{company-slug}.ts
-  let configPath = join(process.cwd(), `site-config-${companySlug}.json`);
-
-  // If client-specific doesn't exist, try generic fallback
-  if (!existsSync(configPath)) {
-    configPath = join(process.cwd(), "site-config.json");
   }
 
   // Start with defaults from database, then environment variables
-  const config: SiteConfig = {
+  const config: SiteConfig & Record<string, any> = {
     site: {
       name:
         companyData?.globalCompanyName ||
@@ -188,118 +187,29 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     },
   };
 
-  // Try to read and merge with site-config.json (for navigation and features)
-  if (existsSync(configPath)) {
+  // 1. Priority: SITE_CONFIG or SITE_CONFIG_JSON env var (full JSON)
+  const envConfig = process.env.SITE_CONFIG || process.env.SITE_CONFIG_JSON;
+  if (envConfig) {
     try {
-      const fileContent = readFileSync(configPath, "utf-8");
-      const jsonConfig = JSON.parse(fileContent);
-
-      // Merge navigation and features from JSON file
-      if (jsonConfig.navigation) {
-        config.navigation = { ...config.navigation, ...jsonConfig.navigation };
-      }
-      if (jsonConfig.features) {
-        config.features = jsonConfig.features;
-      }
-      if (jsonConfig.asideNav) {
-        (config.navigation as any).aside = jsonConfig.asideNav;
-      } else if (jsonConfig.navigation?.aside) {
-        (config.navigation as any).aside = jsonConfig.navigation.aside;
-      }
-      if (Array.isArray(jsonConfig.projectListColumns)) {
-        (config as any).projectListColumns = jsonConfig.projectListColumns;
-      }
-      if (jsonConfig.projectForm) {
-        (config as any).projectForm = jsonConfig.projectForm;
-      }
-      if (jsonConfig.registerForm) {
-        (config as any).registerForm = jsonConfig.registerForm;
-      }
-      if (jsonConfig.loginForm) {
-        (config as any).loginForm = jsonConfig.loginForm;
-      }
-      if (jsonConfig.mepForm) {
-        (config as any).mepForm = jsonConfig.mepForm;
-      }
-      if (jsonConfig.contactForm) {
-        (config as any).contactForm = jsonConfig.contactForm;
-      }
-      if (Array.isArray(jsonConfig.userForm)) {
-        (config as any).userForm = jsonConfig.userForm;
-      }
-
-      // When using company-specific file, merge missing form configs from site-config.json
-      const defaultConfigPath = join(process.cwd(), "site-config.json");
-      if (
-        configPath !== defaultConfigPath &&
-        existsSync(defaultConfigPath)
-      ) {
-        try {
-          const defaultJson = JSON.parse(readFileSync(defaultConfigPath, "utf-8"));
-          if (!(config as any).projectForm && defaultJson.projectForm)
-            (config as any).projectForm = defaultJson.projectForm;
-          if (!(config as any).registerForm && defaultJson.registerForm)
-            (config as any).registerForm = defaultJson.registerForm;
-          if (!(config as any).loginForm && defaultJson.loginForm)
-            (config as any).loginForm = defaultJson.loginForm;
-          if (!(config as any).mepForm && defaultJson.mepForm)
-            (config as any).mepForm = defaultJson.mepForm;
-          if (!(config as any).contactForm && defaultJson.contactForm)
-            (config as any).contactForm = defaultJson.contactForm;
-          if (!(config as any).userForm && defaultJson.userForm)
-            (config as any).userForm = defaultJson.userForm;
-        } catch (_e) {
-          /* ignore */
-        }
-      }
-
-      const featureCount = Object.keys(config.features || {}).length;
-      const configFileName = configPath.split("/").pop() || "site-config.json";
-      // console.log(`✅ [CONTENT] Loaded ${configFileName} (navigation & features) - ${featureCount} features enabled`);
+      const jsonConfig = JSON.parse(envConfig);
+      mergeJsonConfig(config, jsonConfig);
     } catch (error) {
-      console.warn("⚠️ [CONTENT] Error reading site-config.json, using defaults:", error);
+      console.warn("⚠️ [CONTENT] Error parsing SITE_CONFIG/SITE_CONFIG_JSON env var:", error);
     }
   } else {
-    // File doesn't exist - try environment variable fallback
-    const envConfig = process.env.SITE_CONFIG_JSON;
-    if (envConfig) {
+    // 2. Fallback: site-config.json file (for local dev)
+    const configPath = join(process.cwd(), "site-config.json");
+    if (existsSync(configPath)) {
       try {
-        const jsonConfig = JSON.parse(envConfig);
-        if (jsonConfig.navigation) {
-          config.navigation = { ...config.navigation, ...jsonConfig.navigation };
-        }
-        if (jsonConfig.features) {
-          config.features = jsonConfig.features;
-        }
-        if (jsonConfig.asideNav) {
-          (config.navigation as any).aside = jsonConfig.asideNav;
-        } else if (jsonConfig.navigation?.aside) {
-          (config.navigation as any).aside = jsonConfig.navigation.aside;
-        }
-        if (Array.isArray(jsonConfig.projectListColumns)) {
-          (config as any).projectListColumns = jsonConfig.projectListColumns;
-        }
-        if (jsonConfig.projectForm) (config as any).projectForm = jsonConfig.projectForm;
-        if (jsonConfig.registerForm) (config as any).registerForm = jsonConfig.registerForm;
-        if (jsonConfig.loginForm) (config as any).loginForm = jsonConfig.loginForm;
-        if (jsonConfig.mepForm) (config as any).mepForm = jsonConfig.mepForm;
-        if (jsonConfig.contactForm) (config as any).contactForm = jsonConfig.contactForm;
-        if (Array.isArray(jsonConfig.userForm)) (config as any).userForm = jsonConfig.userForm;
-        const featureCount = Object.keys(config.features || {}).length;
-        // console.log(`✅ [CONTENT] Loaded site-config from SITE_CONFIG_JSON env var - ${featureCount} features enabled`);
+        const fileContent = readFileSync(configPath, "utf-8");
+        const jsonConfig = JSON.parse(fileContent);
+        mergeJsonConfig(config, jsonConfig);
       } catch (error) {
-        console.warn("⚠️ [CONTENT] Error parsing SITE_CONFIG_JSON env var:", error);
+        console.warn("⚠️ [CONTENT] Error reading site-config.json, using defaults:", error);
       }
     } else {
       console.warn(
-        `⚠️ [CONTENT] No site-config file found (tried: site-config-${companySlug}.json, site-config.json) and SITE_CONFIG_JSON env var not set`
-      );
-      console.warn(
-        `⚠️ [CONTENT] Using minimal defaults. This will result in missing sidebar items.`
-      );
-      console.warn(`⚠️ [CONTENT] Company: "${companyName}" → slug: "${companySlug}"`);
-      console.warn(
-        `⚠️ [CONTENT] Fix: Create site-config-${companySlug}.json (matches project-form-config-${companySlug}.ts pattern) or set SITE_CONFIG_JSON env var.`
+        "⚠️ [CONTENT] No SITE_CONFIG env var and no site-config.json. Using minimal defaults."
       );
     }
   }

@@ -5,10 +5,10 @@
  * Navbar.astro attaches the logout handler to #logout-btn.
  */
 interface Props {
-  currentUser: any;
-  projects: any[];
-  globalIconButtonClasses: string;
   id: string;
+  currentUser?: any;
+  projects?: any[];
+  globalIconButtonClasses?: string;
   title?: string;
   closeButton?: boolean;
   /** Name of global function to call when dropdown opens (e.g. for lazy load or refresh) */
@@ -70,6 +70,8 @@ const { id, title = "", closeButton = true, onOpenCallback, focusSelector } = As
       var selectors =
         "[data-dropdown-toggle='" + panelId + "'], [data-popover-target='" + panelId + "']";
       document.querySelectorAll(selectors).forEach(function (trigger) {
+        if (trigger.hasAttribute("data-onopen-bound")) return;
+        trigger.setAttribute("data-onopen-bound", "true");
         trigger.addEventListener("click", function () {
           // Sync focus in same click (required for iOS keypad)
           if (focusSel && panel) {
@@ -77,13 +79,13 @@ const { id, title = "", closeButton = true, onOpenCallback, focusSelector } = As
             if (el && typeof el.focus === "function") el.focus();
           }
           setTimeout(function () {
-            if (panel && !panel.classList.contains("hidden")) {
-              panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out");
+            if (panel) {
+              panel.classList.remove("opacity-0", "transition-opacity", "duration-300", "ease-out", "invisible", "hidden");
               if (onOpen && typeof window[onOpen] === "function") {
                 window[onOpen]();
               }
             }
-          }, 10);
+          }, 50);
         });
       });
     });
