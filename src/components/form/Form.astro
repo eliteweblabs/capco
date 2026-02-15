@@ -157,6 +157,43 @@ const actionElements = formElements.filter((e) => e.type === "action");
                 </Button>
               </div>
               <input type="file" id={p("avatar-input")} accept="image/*" class="hidden" />
+              {/* Inline cropper (no modal) */}
+              <div
+                id={p("profile-avatar-cropper")}
+                class="mt-4 hidden rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800"
+                role="region"
+                aria-label="Crop photo"
+              >
+                <p class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Crop Photo</p>
+                <div
+                  id={p("avatar-cropper-container")}
+                  class="mx-auto h-[280px] w-[280px] overflow-hidden rounded bg-gray-100 dark:bg-gray-700"
+                >
+                  <img
+                    id={p("avatar-cropper-image")}
+                    src=""
+                    alt="Crop"
+                    class="block max-h-full max-w-full"
+                    style="display: none"
+                  />
+                </div>
+                <div class="mt-3 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    data-avatar-cropper-close
+                    class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    id={p("avatar-cropper-apply")}
+                    class="rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 dark:bg-primary-600 dark:hover:bg-primary-700"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
             </div>
           );
         }
@@ -305,15 +342,8 @@ const actionElements = formElements.filter((e) => e.type === "action");
               >
                 {element.label}
               </label>
-              <textarea
-                id={p(element.id)}
-                name={element.name}
-                rows="4"
-                class={`${globalInputClasses} resize-y`}
-                placeholder={element.placeholder}
-              >
-                {value}
-              </textarea>
+              {/* prettier-ignore */}
+              <textarea id={p(element.id)} name={element.name} rows="4" class={`${globalInputClasses} resize-y`} placeholder={element.placeholder}>{value}</textarea>
               {element.id === "bio" && (
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Short description shown on your team profile

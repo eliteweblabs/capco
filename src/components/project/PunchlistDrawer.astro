@@ -1,7 +1,7 @@
 ---
 import SimpleIcon from "../common/SimpleIcon.astro";
-import CloseButton from "../ui/CloseButton.astro";
 import Button from "../common/Button.astro";
+import Drawer from "../form/drawer.astro";
 
 interface Props {
   currentUser?: any;
@@ -10,8 +10,7 @@ interface Props {
   globalIconButtonClasses?: string;
 }
 
-const { currentUser, project, supabaseUrl, globalIconButtonClasses } = Astro.props;
-const id = Astro.params.id;
+const { currentUser, project, supabaseUrl } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 
@@ -25,60 +24,44 @@ if (!currentUser || !currentUser.id || currentRole === "Client" || !project) {
   return null;
 }
 
-// console.log("🔍 [TabPunchlist] props:", Astro.props);
+const drawerId = "punchlist-drawer";
+const drawerTitle = (project.title || project.address || "Project") + " Punchlist";
 ---
 
-<div
-  id="punchlist-drawer"
-  class="bg-neutral-primary-soft fixed right-0 top-0 h-screen w-full translate-x-full overflow-y-auto transition-transform sm:w-96"
-  style="will-change: transform; z-index: 10002;"
->
-  <div class="flex h-full flex-col">
-    {/* Header */}
-    <div
-      class="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-600 dark:bg-gray-700"
-    >
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        {project.title || project.address || "Project"} Punchlist
-      </h3>
-      <CloseButton id="punchlist-drawer-close" tooltipText="Close drawer" position="left" />
-    </div>
-
-    {/* Content */}
-    <div class="color-background flex-1 overflow-y-auto p-4">
-      <div id="content-punchlist">
-        <div>
-          <div id="punchlist-container" data-project-id={projectId}>
-            {/* Add Punchlist Item Button - Admin Only */}
-            {
-              currentRole === "Admin" && (
-                <div class="mb-4">
-                  <Button
-                    id="add-punchlist-item-btn"
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    class="w-full"
-                  >
-                    <SimpleIcon name="plus" class="mr-2 h-4 w-4" />
-                    Add Punchlist Item
-                  </Button>
-                </div>
-              )
-            }
-
-            <div class="mb-6">
-              {/* <!-- Punchlist Items List --> */}
-              <div id="punchlist-items-list" class="space-y-4">
-                {/* <!-- Punchlist items will be dynamically loaded here --> */}
+<Drawer id={drawerId} title={drawerTitle} placement="right" size="md">
+  <div class="flex h-full flex-col" data-dynamic-height="minHeight">
+    <div id="content-punchlist">
+      <div>
+        <div id="punchlist-container" data-project-id={projectId}>
+          {/* Add Punchlist Item Button - Admin Only */}
+          {
+            currentRole === "Admin" && (
+              <div class="mb-4">
+                <Button
+                  id="add-punchlist-item-btn"
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  class="w-full"
+                >
+                  <SimpleIcon name="plus" class="mr-2 h-4 w-4" />
+                  Add Punchlist Item
+                </Button>
               </div>
+            )
+          }
+
+          <div class="mb-6">
+            {/* Punchlist Items List */}
+            <div id="punchlist-items-list" class="space-y-4">
+              {/* <!-- Punchlist items will be dynamically loaded here --> */}
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+</Drawer>
 
 <script
   define:vars={{
@@ -137,34 +120,7 @@ if (!currentUser || !currentUser.id || currentRole === "Client" || !project) {
     }
   }
 
-  // Drawer functions
-  function openDrawer() {
-    const drawer = document.getElementById("punchlist-drawer");
-    const backdrop = document.getElementById("global-backdrop");
-
-    if (drawer && backdrop) {
-      backdrop.classList.remove("hidden");
-      setTimeout(() => {
-        backdrop.classList.add("opacity-100");
-        drawer.classList.remove("translate-x-full");
-      }, 10);
-    }
-  }
-
-  function closeDrawer() {
-    const drawer = document.getElementById("punchlist-drawer");
-    const backdrop = document.getElementById("global-backdrop");
-
-    if (drawer && backdrop) {
-      drawer.classList.add("translate-x-full");
-      backdrop.classList.remove("opacity-100");
-      setTimeout(() => {
-        backdrop.classList.add("hidden");
-      }, 300);
-    }
-  }
-
-  // Update incomplete punchlist items count in the punchlist tab
+  // Update incomplete punchlist items count on the drawer trigger button
   async function updateIncompletePunchlistItemsCount() {
     const incompleteCount = punchlistItems.filter((item) => !item.markCompleted).length;
 
@@ -421,85 +377,6 @@ if (!currentUser || !currentUser.id || currentRole === "Client" || !project) {
 
     // Initialize delete confirm buttons
     initDeleteConfirmButtons();
-
-    // Setup drawer toggle button
-    const drawerToggle = document.getElementById("punchlist-drawer-toggle");
-    if (drawerToggle) {
-      drawerToggle.addEventListener("click", openDrawer);
-    }
-
-    // Setup drawer close button
-    const drawerClose = document.getElementById("punchlist-drawer-close");
-    if (drawerClose) {
-      drawerClose.addEventListener("click", closeDrawer);
-    }
-
-    // Setup backdrop click to close
-    const backdrop = document.getElementById("global-backdrop");
-    if (backdrop) {
-      backdrop.addEventListener("click", closeDrawer);
-    }
-
-    // Close drawer on Escape key
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        closeDrawer();
-      }
-    });
-
-    // Swipe to close functionality for punchlist drawer
-    const drawer = document.getElementById("punchlist-drawer");
-    if (drawer) {
-      let touchStartX = 0;
-      let touchStartY = 0;
-      let touchEndX = 0;
-      let touchEndY = 0;
-      let isDragging = false;
-      let currentTranslateX = 0;
-
-      drawer.addEventListener("touchstart", (e) => {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        isDragging = true;
-        drawer.style.transition = "none";
-      });
-
-      drawer.addEventListener("touchmove", (e) => {
-        if (!isDragging) return;
-
-        const touchCurrentX = e.touches[0].clientX;
-        const touchCurrentY = e.touches[0].clientY;
-        const deltaX = touchCurrentX - touchStartX;
-        const deltaY = touchCurrentY - touchStartY;
-
-        // Only respond to horizontal swipes (right, to close)
-        if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX > 0) {
-          currentTranslateX = deltaX;
-          drawer.style.transform = `translateX(${deltaX}px)`;
-        }
-      });
-
-      drawer.addEventListener("touchend", (e) => {
-        if (!isDragging) return;
-
-        isDragging = false;
-        drawer.style.transition = "";
-        drawer.style.transform = "";
-
-        const swipeThreshold = 100; // minimum swipe distance in pixels
-
-        // If swiped right more than threshold, close drawer
-        if (currentTranslateX > swipeThreshold) {
-          closeDrawer();
-        }
-
-        currentTranslateX = 0;
-        touchStartX = 0;
-        touchStartY = 0;
-        touchEndX = 0;
-        touchEndY = 0;
-      });
-    }
 
     // Add Punchlist Item functionality (Admin only)
     const addPunchlistBtn = document.getElementById("add-punchlist-item-btn");

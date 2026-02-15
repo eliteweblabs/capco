@@ -196,7 +196,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       allProfileIds.length > 0
         ? supabaseAdmin
             .from("profiles")
-            .select("id, firstName, lastName, companyName, email, role")
+            .select("id, firstName, lastName, companyName, email, role, avatarUrl")
             .in("id", allProfileIds)
         : Promise.resolve({ data: [] }),
 

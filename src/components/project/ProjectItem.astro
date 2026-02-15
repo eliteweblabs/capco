@@ -390,18 +390,28 @@ const statusColor = currentStatusColor || "gray";
           }
 
           if (col.type === "files") {
+            const displayOpts = col.displayProjectFiles ?? {
+              field: col.field ?? "projectFiles",
+              size: "sm",
+              tooltips: true,
+              emptyText: "No files",
+            };
+            const files = (project as any)[displayOpts.field ?? "projectFiles"] ?? [];
+            const hasFiles = Array.isArray(files) && files.length > 0;
             return (
               <td class="block min-w-0 overflow-hidden whitespace-nowrap px-4 py-2 text-center">
                 <div class="flex justify-center">
                   <a href={`/project/${project.id}?status=files`} class="text-sm text-gray-600">
-                    {project.projectFiles?.length && project.projectFiles?.length > 0 ? (
+                    {hasFiles ? (
                       <div
                         class="flex flex-wrap items-center gap-2"
                         id={`project-files-${project.id}`}
-                        data-project-files={JSON.stringify(project.projectFiles || [])}
+                        data-project-files={JSON.stringify(files)}
+                        data-file-size={displayOpts.size ?? "sm"}
+                        data-file-tooltips={displayOpts.tooltips !== false ? "true" : "false"}
                       />
                     ) : (
-                      <span class="text-gray-600">No files</span>
+                      <span class="text-gray-600">{displayOpts.emptyText ?? "No files"}</span>
                     )}
                   </a>
                 </div>

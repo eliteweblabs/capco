@@ -1,28 +1,11 @@
 ---
-const authCode = Astro.url.searchParams.get("code");
-if (authCode) {
-  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+// Redirect logic moved to login.astro (page level) to avoid ResponseSentError.
+// The page runs redirects before LayoutTwoColumn/App render; this component runs
+// in a slot after App has started sending the response.
+interface Props {
+  redirectUrl?: string;
 }
-
-// Get redirect parameter to send user back after login
-let redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
-
-// NEVER redirect authenticated users to auth pages (causes infinite loop)
-const authPages = ["/auth/login", "/auth/callback", "/auth/register", "/auth/reset"];
-if (authPages.some((p) => redirectUrl.startsWith(p))) {
-  redirectUrl = "/project/dashboard";
-}
-
-// Get auth data directly
-import { checkAuth } from "../../../lib/auth";
-const authResult = await checkAuth(Astro.cookies);
-const { isAuth } = authResult;
-
-// Redirect authenticated users to specified URL or dashboard
-if (isAuth) {
-  console.log("🔐 [LOGIN] User is authenticated, redirecting to:", redirectUrl);
-  return Astro.redirect(redirectUrl);
-}
+const { redirectUrl = "/project/dashboard" } = Astro.props;
 
 import ConfigForm from "../../../components/form/ConfigForm.astro";
 import { getLoginFormConfig } from "../../../lib/forms/form-config-from-site";
@@ -37,7 +20,7 @@ const loginFormConfig = await getLoginFormConfig();
   import { getSupabaseClient } from "../../../lib/supabase-client";
 
   // NOTE: Do NOT add a client-side redirect for "already logged in" users.
-  // The server-side checkAuth() in this component already redirects before the page is sent.
+  // The page (login.astro) runs checkAuth and redirects before any layout renders.
   // A client-side getSession() redirect caused infinite loops when localStorage had a stale
   // session but cookies were expired/cleared (middleware uses cookies, client uses localStorage).
 

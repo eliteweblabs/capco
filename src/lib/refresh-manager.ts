@@ -52,24 +52,26 @@ export class RefreshManager {
 
   /**
    * Update a specific field across all elements with matching data-refresh attribute
+   * @param projectId - When provided, only update elements for that project
+   * @param userId - When provided, only update elements for that user (e.g. admin users table)
    */
-  public updateField(fieldName: string, newValue: any, projectId?: string | number): void {
-    // console.log(
-    //   `🔄 [REFRESH-MANAGER] Updating field '${fieldName}' to:`,
-    //   newValue,
-    //   projectId ? `for project ${projectId}` : ""
-    // );
-
-    // Find all elements with matching data-refresh attribute
+  public updateField(
+    fieldName: string,
+    newValue: any,
+    projectId?: string | number,
+    userId?: string
+  ): void {
     let elements: NodeListOf<Element>;
 
     if (projectId) {
-      // If projectId is specified, only update elements for that specific project
       elements = document.querySelectorAll(
         `[data-refresh="${fieldName}"][data-project-id="${projectId}"]`
       );
+    } else if (userId) {
+      elements = document.querySelectorAll(
+        `[data-refresh="${fieldName}"][data-user-id="${userId}"]`
+      );
     } else {
-      // Update all elements with matching data-refresh attribute
       elements = document.querySelectorAll(`[data-refresh="${fieldName}"]`);
     }
 
@@ -110,12 +112,17 @@ export class RefreshManager {
 
   /**
    * Update multiple fields at once
+   * @param updates - Field names and values to update
+   * @param projectId - Optional. When provided, only updates elements for that project
+   * @param userId - Optional. When provided, only updates elements for that user
    */
-  public updateFields(updates: Record<string, any>): void {
-    // console.log(`🔄 [REFRESH-MANAGER] Updating multiple fields:`, updates);
-
+  public updateFields(
+    updates: Record<string, any>,
+    projectId?: string | number,
+    userId?: string
+  ): void {
     Object.entries(updates).forEach(([fieldName, value]) => {
-      this.updateField(fieldName, value);
+      this.updateField(fieldName, value, projectId, userId);
     });
   }
 
@@ -281,52 +288,63 @@ export class RefreshManager {
    */
   private registerDefaultCallbacks(): void {
     // Status field - update text and potentially styling
-    this.registerCallback("status", (value: number) => {
-      const element = this as any;
-      element.textContent = String(value);
-
-      // Add status-specific styling if needed
-      element.classList.remove("status-10", "status-20", "status-30", "status-40", "status-50");
-      element.classList.add(`status-${value}`);
+    // IMPORTANT: Use regular function (not arrow) so callback.call(element, newValue) sets this=element
+    this.registerCallback("status", function (this: any, value: number) {
+      this.textContent = String(value);
+      this.classList.remove("status-10", "status-20", "status-30", "status-40", "status-50");
+      this.classList.add(`status-${value}`);
     });
 
-    // Admin status name - update text content
-    this.registerCallback("adminStatusName", (value: string) => {
-      const element = this as any;
-      element.textContent = value;
+    this.registerCallback("adminStatusName", function (this: any, value: string) {
+      this.textContent = value;
     });
 
-    // Project title - update text content
-    this.registerCallback("title", (value: string) => {
-      const element = this as any;
-      element.textContent = value;
+    this.registerCallback("title", function (this: any, value: string) {
+      this.textContent = value;
     });
 
-    // Project address - update text content
-    this.registerCallback("address", (value: string) => {
-      const element = this as any;
-      element.textContent = value;
+    this.registerCallback("address", function (this: any, value: string) {
+      this.textContent = value;
     });
 
-    // User name/company name - update text content (supports data-refresh-suffix for e.g. "'s Profile")
-    this.registerCallback("companyName", (value: string) => {
-      const element = this as any;
-      const suffix = element.getAttribute("data-refresh-suffix");
+    this.registerCallback("companyName", function (this: any, value: string) {
+      const suffix = this.getAttribute("data-refresh-suffix");
       const displayValue = value || (suffix ? "User" : "");
-      element.textContent = suffix ? `${displayValue}${suffix}` : displayValue;
+      this.textContent = suffix ? `${displayValue}${suffix}` : (displayValue || "—");
+      this.setAttribute("data-meta-value", value || "");
+      this.closest("tr")?.setAttribute("data-company", (value || "").toLowerCase());
     });
 
-    // Project count - format with singular/plural
-    this.registerCallback("projectCount", (value: number) => {
-      const element = this as any;
+    this.registerCallback("displayName", function (this: any, value: string) {
+      const display = value || "Unknown User";
+      this.textContent = display;
+      this.setAttribute("data-meta-value", display);
+      this.closest("tr")?.setAttribute("data-name", display.toLowerCase());
+    });
+
+    this.registerCallback("email", function (this: any, value: string) {
+      const email = value || "";
+      this.textContent = email;
+      this.setAttribute("data-meta-value", email);
+      this.closest("tr")?.setAttribute("data-email", email.toLowerCase());
+    });
+
+    this.registerCallback("role", function (this: any, value: string) {
+      const role = value || "";
+      this.textContent = role;
+      this.setAttribute("data-meta-value", role);
+      this.closest("tr")?.setAttribute("data-role", role);
+    });
+
+    this.registerCallback("projectCount", function (this: any, value: number) {
       const count = Number(value) || 0;
 
       if (count === 0) {
-        element.innerHTML = "New<span class='hidden sm:inline'> Project</span>";
+        this.innerHTML = "New<span class='hidden sm:inline'> Project</span>";
       } else if (count === 1) {
-        element.innerHTML = "1 Active Project";
+        this.innerHTML = "1 Active Project";
       } else {
-        element.innerHTML = `${count} Active Projects`;
+        this.innerHTML = `${count} Active Projects`;
       }
     });
   }
@@ -358,28 +376,19 @@ export class RefreshManager {
    * Start the automatic refresh cycle
    */
   public startAutoRefresh(): void {
-    if (this.isActive) {
-      // console.log(`🔄 [REFRESH-MANAGER] Auto-refresh is already active`);
-      return;
-    }
+    if (this.isActive) return;
 
     this.isActive = true;
     const intervalSeconds = this.refreshIntervalMs / 1000;
     const startTime = new Date().toLocaleTimeString();
-    // console.log(
-    //   `🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Starting auto-refresh cycle every ${intervalSeconds} seconds (${this.refreshIntervalMs}ms)`
-    // );
+    console.log(
+      `🔄 [REFRESH-MANAGER] [${startTime}] Polling enabled - interval ${intervalSeconds}s`
+    );
 
-    // Run the first cycle immediately
-    // console.log(`🔄 [REFRESH-MANAGER] ⏰ [${startTime}] Running initial refresh cycle immediately`);
     this.cycleAndRefresh();
 
-    // Then set up the interval for subsequent cycles
     this.refreshInterval = setInterval(() => {
-      const tickTime = new Date().toLocaleTimeString();
-      console.log(
-        `🔄 [REFRESH-MANAGER] ⏰⏰⏰ [${tickTime}] INTERVAL TICK (every ${intervalSeconds}s) - starting cycle now`
-      );
+      console.log(`🔄 [REFRESH-MANAGER] Polling tick - starting cycle`);
       this.cycleAndRefresh();
     }, this.refreshIntervalMs);
 
@@ -431,13 +440,11 @@ export class RefreshManager {
    */
   private async cycleAndRefresh(): Promise<void> {
     const cycleStartTime = new Date().toLocaleTimeString();
-    // console.log(`🔄 [REFRESH-MANAGER] 🟢 [${cycleStartTime}] cycleAndRefresh() called`);
+    console.log(`🔄 [REFRESH-MANAGER] [${cycleStartTime}] Polling started`);
 
     // Prevent concurrent refresh cycles
     if (this.isRefreshing) {
-      // console.log(
-      //   `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - already in progress`
-      // );
+      console.log(`🔄 [REFRESH-MANAGER] ⏭️ Skipping - already in progress`);
       return;
     }
 
@@ -445,37 +452,45 @@ export class RefreshManager {
     const now = Date.now();
     const timeSinceLastRefresh = now - this.lastRefreshTime;
     if (timeSinceLastRefresh < this.minRefreshGap) {
-      // console.log(
-      //   `🔄 [REFRESH-MANAGER] ⏭️  [${cycleStartTime}] Skipping refresh cycle - too soon (${timeSinceLastRefresh}ms since last refresh, minimum ${this.minRefreshGap}ms)`
-      // );
+      console.log(
+        `🔄 [REFRESH-MANAGER] ⏭️ Skipping - too soon (${timeSinceLastRefresh}ms since last, min ${this.minRefreshGap}ms)`
+      );
       return;
     }
 
     this.isRefreshing = true;
     this.lastRefreshTime = now;
 
-    const timestamp = new Date().toLocaleTimeString();
-    // console.log(`🔄 [REFRESH-MANAGER] ⏰ [${timestamp}] Starting refresh cycle...`);
-
     const elements = this.getRefreshableElements();
     if (elements.length === 0) {
-      // console.log(`🔄 [REFRESH-MANAGER] No refreshable elements found`);
+      console.log(`🔄 [REFRESH-MANAGER] Polling finished - no refreshable elements`);
       this.isRefreshing = false;
       return;
     }
 
-    // console.log(`🔄 [REFRESH-MANAGER] Found ${elements.length} refreshable elements to check`);
-
-    // Group elements by project/user and field type for efficient API calls
     const groupedElements = this.groupElementsByContext(elements);
-    // console.log(`🔄 [REFRESH-MANAGER] Grouped into ${groupedElements.size} unique contexts`);
+    console.log(
+      `🔄 [REFRESH-MANAGER] Polling ${elements.length} elements across ${groupedElements.size} contexts`
+    );
+
+    const results: { context: string; fetched: boolean; updates: number }[] = [];
 
     // Process each group
     for (const [contextKey, fieldGroups] of groupedElements.entries()) {
-      await this.refreshContextGroup(contextKey, fieldGroups);
+      const updateCount = await this.refreshContextGroup(contextKey, fieldGroups);
+      results.push({
+        context: contextKey,
+        fetched: updateCount !== null,
+        updates: updateCount ?? 0,
+      });
     }
 
-    // console.log(`🔄 [REFRESH-MANAGER] ⏰ [${timestamp}] Refresh cycle completed`);
+    const cycleEndTime = new Date().toLocaleTimeString();
+    const totalUpdates = results.reduce((s, r) => s + r.updates, 0);
+    console.log(
+      `🔄 [REFRESH-MANAGER] [${cycleEndTime}] Polling finished - ${totalUpdates} updates across ${results.length} contexts`,
+      results
+    );
     this.isRefreshing = false;
   }
 
@@ -522,11 +537,12 @@ export class RefreshManager {
 
   /**
    * Refresh a group of elements for a specific context
+   * @returns Number of element updates made, or null if fetch failed
    */
   private async refreshContextGroup(
     contextKey: string,
     fieldGroups: Map<string, Element[]>
-  ): Promise<void> {
+  ): Promise<number | null> {
     const [contextType, contextId] = contextKey.split(":");
 
     // console.log(
@@ -552,12 +568,14 @@ export class RefreshManager {
             row.remove();
           }
         } else {
-          console.log(`🔄 [REFRESH-MANAGER] No data found for ${contextKey}`);
+          console.log(`🔄 [REFRESH-MANAGER] ${contextKey}: No data (404/error)`);
         }
-        return;
+        return null;
       }
 
-      // Update each field group
+      let updateCount = 0;
+      const fieldsChecked: string[] = [];
+
       for (const [fieldName, elements] of fieldGroups.entries()) {
         // Skip fields that are computed client-side
         if (this.COMPUTED_FIELDS.includes(fieldName)) {
@@ -568,10 +586,9 @@ export class RefreshManager {
         }
 
         const currentValue = currentData[fieldName];
-        if (currentValue === undefined) {
-          // console.log(`🔄 [REFRESH-MANAGER] ⚠️  Field ${fieldName} not in API response`);
-          continue;
-        }
+        if (currentValue === undefined) continue;
+
+        fieldsChecked.push(fieldName);
 
         // Check if any element needs updating
         let needsUpdateCount = 0;
@@ -629,20 +646,26 @@ export class RefreshManager {
         });
 
         if (needsUpdateCount > 0) {
-          // console.log(
-          //   `🔄 [REFRESH-MANAGER] Updating ${fieldName} (${needsUpdateCount} elements changed)`
-          // );
+          updateCount += needsUpdateCount;
           this.updateField(
             fieldName,
             currentValue,
-            contextType === "project" ? contextId : undefined
+            contextType === "project" ? contextId : undefined,
+            contextType === "user" ? contextId : undefined
           );
-        } else {
-          // console.log(`🔄 [REFRESH-MANAGER] ✓ Field ${fieldName} up to date`);
         }
       }
+
+      if (updateCount > 0) {
+        console.log(`🔄 [REFRESH-MANAGER] ${contextKey}: ${updateCount} updates`, {
+          fields: fieldsChecked,
+          data: currentData,
+        });
+      }
+      return updateCount;
     } catch (error) {
       console.error(`🔄 [REFRESH-MANAGER] Error refreshing ${contextKey}:`, error);
+      return null;
     }
   }
 

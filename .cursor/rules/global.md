@@ -70,3 +70,5 @@ view-source:https://upload.wikimedia.org/wikipedia/commons/d/d5/Slack_icon_2019.
 - always add curly braces around html comments for astro to format correctly. {/_ ... _/} and {<!-- ... -->}
 
 - validate everything after writing code.
+
+- no modals

@@ -61,7 +61,6 @@ const userCounts = {
 ---
 
 <div class="admin-users-component px-4 pt-4">
-  {/_ Prevent [role="button"] overflow:hidden from breaking table layout _/}
   <style>
     #admin-users-tbody tr[role="button"] {
       overflow: visible !important;
@@ -142,7 +141,7 @@ const userCounts = {
               <input
                 type="text"
                 id="user-search"
-                placeholder="Search by name or email..."
+                placeholder="Search by name, email, or company..."
                 class={`${globalInputClasses} w-full pl-10 pr-4`}
               />
             </div>
@@ -184,6 +183,11 @@ const userCounts = {
                     <th
                       class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
                     >
+                      Company
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                    >
                       Created
                     </th>
                     <th
@@ -201,7 +205,7 @@ const userCounts = {
                     users.length === 0 ? (
                       <tr>
                         <td
-                          colspan="5"
+                          colspan="6"
                           class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
                         >
                           {error
@@ -222,18 +226,42 @@ const userCounts = {
                             data-name={(displayName || "unknown").toLowerCase()}
                             data-email={(u.email || "").toLowerCase()}
                             data-role={u.role || ""}
+                            data-company={(u.companyName || "").toLowerCase()}
                             role="button"
                             tabindex="0"
                             draggable
                           >
-                            <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white">
+                            <td
+                              class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white"
+                              data-refresh="displayName"
+                              data-user-id={u.id}
+                              data-meta-value={displayName}
+                            >
                               {displayName}
                             </td>
-                            <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white">
+                            <td
+                              class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white"
+                              data-refresh="email"
+                              data-user-id={u.id}
+                              data-meta-value={u.email || ""}
+                            >
                               {u.email}
                             </td>
-                            <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white">
+                            <td
+                              class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white"
+                              data-refresh="role"
+                              data-user-id={u.id}
+                              data-meta-value={u.role || ""}
+                            >
                               {u.role}
+                            </td>
+                            <td
+                              class="whitespace-nowrap px-6 py-3 text-sm text-gray-900 dark:text-white"
+                              data-refresh="companyName"
+                              data-user-id={u.id}
+                              data-meta-value={u.companyName || ""}
+                            >
+                              {u.companyName || "—"}
                             </td>
                             <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-500 dark:text-gray-400">
                               {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
@@ -331,6 +359,10 @@ const userCounts = {
   document.addEventListener("DOMContentLoaded", initAdminUsers);
 
   function initAdminUsers() {
+    // Start refresh manager for polling name, email, role
+    if (window.refreshManager && document.querySelectorAll("[data-refresh][data-user-id]").length > 0) {
+      window.refreshManager.startAutoRefreshWithInterval?.(5);
+    }
     const searchInput = document.getElementById("user-search");
     const roleFilter = document.getElementById("role-filter");
     if (searchInput) searchInput.value = "";
@@ -364,8 +396,13 @@ const userCounts = {
     document.querySelectorAll("tr.user-row[data-user-id]").forEach((row) => {
       const name = (row.dataset.name || "").toLowerCase();
       const email = (row.dataset.email || "").toLowerCase();
+      const company = (row.dataset.company || "").toLowerCase();
       const role = row.dataset.role || "";
-      const matchSearch = !searchTerm || name.includes(searchTerm) || email.includes(searchTerm);
+      const matchSearch =
+        !searchTerm ||
+        name.includes(searchTerm) ||
+        email.includes(searchTerm) ||
+        company.includes(searchTerm);
       const matchRole = !roleVal || role === roleVal;
       row.style.display = matchSearch && matchRole ? "" : "none";
     });
@@ -456,14 +493,28 @@ const userCounts = {
 
   function loadCropperjs() {
     if (window.Cropper?.default) return Promise.resolve(window.Cropper.default);
-    return new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/cropperjs@2.1.0/dist/cropper.min.js";
-      script.async = true;
-      script.onload = () => resolve(window.Cropper?.default || window.Cropper);
-      script.onerror = () => reject(new Error("Failed to load Cropper.js"));
-      document.head.appendChild(script);
-    });
+    const loadCss = () => {
+      if (document.querySelector('link[href*="cropper.min.css"]')) return Promise.resolve();
+      return new Promise((resolve) => {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = "https://cdn.jsdelivr.net/npm/cropperjs@2.1.0/dist/cropper.min.css";
+        link.onload = () => resolve();
+        link.onerror = () => resolve();
+        document.head.appendChild(link);
+      });
+    };
+    return loadCss().then(
+      () =>
+        new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/cropperjs@2.1.0/dist/cropper.min.js";
+          script.async = true;
+          script.onload = () => resolve(window.Cropper?.default || window.Cropper);
+          script.onerror = () => reject(new Error("Failed to load Cropper.js"));
+          document.head.appendChild(script);
+        })
+    );
   }
 
   function setupAdminAvatarUpload() {
@@ -473,35 +524,28 @@ const userCounts = {
     const removeBtn = document.getElementById(`${prefix}remove-avatar-btn`);
     const profileAvatarImg = document.getElementById(`${prefix}profile-avatar`);
     const profileAvatarFallback = document.getElementById(`${prefix}profile-avatar-fallback`);
-    const cropperModal = document.getElementById(`${prefix}profile-avatar-cropper`);
+    const cropperBlock = document.getElementById(`${prefix}profile-avatar-cropper`);
     const cropperImg = document.getElementById(`${prefix}avatar-cropper-image`);
     const cropperContainer = document.getElementById(`${prefix}avatar-cropper-container`);
-    const overlay = document.getElementById("global-backdrop");
     let avatarCropperInstance = null;
     let avatarCropperPendingFile = null;
 
-    const closeAvatarCropperModal = () => {
+    const closeAvatarCropper = () => {
       if (avatarCropperInstance) {
         avatarCropperInstance.destroy();
         avatarCropperInstance = null;
       }
       avatarCropperPendingFile = null;
-      cropperModal?.classList.add("hidden");
-      cropperModal?.classList.remove("flex");
-      cropperModal?.setAttribute("aria-hidden", "true");
-      overlay?.classList.add("hidden");
-      overlay?.classList.remove("flex");
-      if (typeof window.unlockBodyScroll === "function") window.unlockBodyScroll();
+      cropperBlock?.classList.add("hidden");
       if (avatarInput) avatarInput.value = "";
     };
 
     document.querySelectorAll("[data-avatar-cropper-close]").forEach((btn) => {
-      btn.addEventListener("click", closeAvatarCropperModal);
+      btn.addEventListener("click", closeAvatarCropper);
     });
-    overlay?.addEventListener("click", closeAvatarCropperModal);
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && cropperModal && !cropperModal.classList.contains("hidden")) {
-        closeAvatarCropperModal();
+      if (e.key === "Escape" && cropperBlock && !cropperBlock.classList.contains("hidden")) {
+        closeAvatarCropper();
       }
     });
 
@@ -523,10 +567,10 @@ const userCounts = {
           );
           return;
         }
-        const cropperCanvas = avatarCropperInstance.getCropperCanvas();
-        if (!cropperCanvas) return;
+        const cropperSelection = avatarCropperInstance.getCropperSelection();
+        if (!cropperSelection) return;
         try {
-          const outputCanvas = await cropperCanvas.$toCanvas({ width: 400, height: 400 });
+          const outputCanvas = await cropperSelection.$toCanvas({ width: 400, height: 400 });
           if (!outputCanvas) return;
           outputCanvas.toBlob(
             async (blob) => {
@@ -570,7 +614,7 @@ const userCounts = {
               }
               if (removeBtn) removeBtn.style.display = "";
               window.showNotice?.("success", "Photo updated", "User photo has been updated.", 2500);
-              closeAvatarCropperModal();
+              closeAvatarCropper();
             },
             "image/jpeg",
             0.9
@@ -612,25 +656,24 @@ const userCounts = {
       const reader = new FileReader();
       reader.onload = async () => {
         const dataUrl = reader.result;
-        if (typeof dataUrl !== "string" || !cropperModal || !cropperImg || !cropperContainer)
+        if (typeof dataUrl !== "string" || !cropperBlock || !cropperImg || !cropperContainer)
           return;
         avatarCropperPendingFile = file;
         cropperImg.src = dataUrl;
         cropperImg.style.display = "block";
-        cropperModal.classList.remove("hidden");
-        cropperModal.classList.add("flex");
-        cropperModal.setAttribute("aria-hidden", "false");
-        overlay?.classList.remove("hidden");
-        overlay?.classList.add("flex");
-        if (typeof window.lockBodyScroll === "function") window.lockBodyScroll();
+        cropperBlock.classList.remove("hidden");
         const Cropper = await loadCropperjs();
         avatarCropperInstance = new Cropper(cropperImg, {
           container: cropperContainer,
-          viewMode: 1,
-          aspectRatio: 1,
-          dragMode: "move",
-          autoCropArea: 0.8,
         });
+        const sel = avatarCropperInstance.getCropperSelection();
+        if (sel) {
+          sel.aspectRatio = 1;
+          sel.initialAspectRatio = 1;
+          sel.initialCoverage = 0.8;
+          sel.movable = true;
+          sel.resizable = true;
+        }
       };
       reader.readAsDataURL(file);
     });
@@ -832,7 +875,22 @@ const userCounts = {
           window.showNotice?.("success", "Profile Updated", "User profile saved.", 2500);
           const userRes = await fetch(`/api/users/get?id=${targetUserId}`);
           const userJson = await userRes.json();
-          if (userJson?.data) populateAdminForm(userJson.data);
+          if (userJson?.data) {
+            const d = userJson.data;
+            populateAdminForm(d);
+            const fullName = `${d.firstName || ""} ${d.lastName || ""}`.trim();
+            const displayName = fullName || d.companyName || "Unknown User";
+            window.refreshManager?.updateFields(
+              {
+                displayName,
+                email: d.email || "",
+                role: d.role || "",
+                companyName: d.companyName || "",
+              },
+              undefined,
+              targetUserId
+            );
+          }
         } else {
           window.showNotice?.("error", "Update Failed", result?.error || "Failed to save.", 5000);
         }
@@ -855,6 +913,5 @@ const userCounts = {
     }
     const row = document.querySelector(`tr.user-row[data-user-id="${userId}"]`);
     if (row) row.remove();
-    setTimeout(() => window.location.reload(), 1500);
   }
 </script>

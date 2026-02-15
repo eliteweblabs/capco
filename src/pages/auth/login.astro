@@ -1,4 +1,24 @@
 ---
+// CRITICAL: Run redirects BEFORE any layout renders to avoid ResponseSentError.
+// App.astro (via LayoutTwoColumn) starts sending the response; LoginForm runs in a
+// slot after that, so redirects there come too late.
+const authCode = Astro.url.searchParams.get("code");
+if (authCode) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+}
+
+let redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
+const authPages = ["/auth/login", "/auth/callback", "/auth/register", "/auth/reset"];
+if (authPages.some((p) => redirectUrl.startsWith(p))) {
+  redirectUrl = "/project/dashboard";
+}
+
+import { checkAuth } from "../../lib/auth";
+const { isAuth } = await checkAuth(Astro.cookies);
+if (isAuth) {
+  return Astro.redirect(redirectUrl);
+}
+
 import LayoutTwoColumn from "../../components/layouts/LayoutTwoColumn.astro";
 import DotGrid from "../../components/ui/DotGrid.astro";
 import LoginForm from "../../features/forms/components/LoginForm.astro";
@@ -20,6 +40,6 @@ import LoginForm from "../../features/forms/components/LoginForm.astro";
     />
   </div>
   <div slot="right" class="">
-    <LoginForm />
+    <LoginForm redirectUrl={redirectUrl} />
   </div>
 </LayoutTwoColumn>

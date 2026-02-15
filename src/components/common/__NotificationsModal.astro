@@ -1,0 +1,96 @@
+---
+/**
+ * NotificationsModal Component
+ * Flowbite: trigger uses data-dropdown-toggle="notification-dropdown"; close uses data-dismiss-target (no custom JS).
+ */
+
+export interface Props {
+  currentUser?: any;
+  id?: "notification";
+  globalIconButtonClasses: string;
+  projects: any[];
+}
+
+const { currentUser, id = "notification", globalIconButtonClasses, projects } = Astro.props;
+
+// Return null if no user or client
+if (!currentUser) {
+  return null;
+}
+
+import CloseButton from "../ui/CloseButton.astro";
+import Dropdown from "../ui/Dropdown.astro";
+import LoadingSpinner from "../ui/LoadingSpinner.astro";
+---
+
+<Dropdown {id} title="Notifications" {currentUser} {projects} {globalIconButtonClasses}>
+  <!-- Notifications dropdown: Flowbite data-dropdown-toggle="notification-dropdown" on trigger(s) -->
+
+  <!-- Panel header -->
+  <!-- <div
+    class="flex items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700 shrink-0"
+  >
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
+    <CloseButton data-dismiss-target="#notification-dropdown" tooltipText="Close" />
+  </div> -->
+
+  <!-- Panel body -->
+  <div class="min-h-0 flex-1 overflow-y-auto p-3">
+    <!-- Header with Mark all read button -->
+    <div
+      class="align-center flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+    >
+      <h3>Notifications</h3>
+      <button
+        id="mark-all-read"
+        class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+      >
+        Mark all read
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="notification-loading2" class="p-4 text-center">
+      <LoadingSpinner
+        size="sm"
+        loadingText="Loading notifications..."
+        className="!flex-row !space-x-2 !space-y-0"
+      />
+    </div>
+
+    <!-- Empty State -->
+    <div id="notification-empty" class="hidden p-6 text-center">
+      <svg
+        class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+        ></path>
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+        No recent notifications
+      </h3>
+    </div>
+
+    <!-- Notifications List -->
+    <div id="notification-list" class="max-h-96 overflow-y-auto scrollbar-hide">
+      <!-- Notifications will be populated here -->
+    </div>
+
+    <!-- Footer with auto-loading indicator -->
+    <div class="shrink-0 border-t border-gray-200 px-4 py-2 dark:border-gray-700">
+      <div
+        id="loading-indicator"
+        class="hidden text-center text-sm text-gray-500 dark:text-gray-400"
+      >
+        Loading more notifications...
+      </div>
+    </div>
+  </div>
+</Dropdown>

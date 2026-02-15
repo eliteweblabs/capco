@@ -30,13 +30,12 @@ const {
   onOpen,
 } = Astro.props;
 
-const redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
-
 const currentRole = currentUser?.profile?.role;
 import SimpleIcon from "../common/SimpleIcon.astro";
 import AssignedProjects from "../common/AssignedProjects.astro";
 import Dropdown from "./Dropdown.astro";
 import LoginForm from "../../features/forms/components/LoginForm.astro";
+import CheckInButton from "../common/CheckInButton.astro";
 ---
 
 <!-- Account dropdown: Flowbite data-popover-target on AuthIcon trigger -->
@@ -116,6 +115,10 @@ import LoginForm from "../../features/forms/components/LoginForm.astro";
                 </button>
               </li>
             </ul>
+
+            {currentUser && (currentRole === "Admin" || currentRole === "Staff") && (
+              <CheckInButton {globalIconButtonClasses} />
+            )}
           </div>
         </div>
       </>

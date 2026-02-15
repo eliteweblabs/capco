@@ -100,14 +100,28 @@ const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "gener
 <script type="module" define:vars={{ currentUserId: currentUser?.id }}>
   function loadCropperjs() {
     if (window.Cropper?.default) return Promise.resolve(window.Cropper.default);
-    return new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/cropperjs@2.1.0/dist/cropper.min.js";
-      script.async = true;
-      script.onload = () => resolve(window.Cropper?.default || window.Cropper);
-      script.onerror = () => reject(new Error("Failed to load Cropper.js"));
-      document.head.appendChild(script);
-    });
+    const loadCss = () => {
+      if (document.querySelector('link[href*="cropper.min.css"]')) return Promise.resolve();
+      return new Promise((resolve) => {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = "https://cdn.jsdelivr.net/npm/cropperjs@2.1.0/dist/cropper.min.css";
+        link.onload = () => resolve();
+        link.onerror = () => resolve();
+        document.head.appendChild(link);
+      });
+    };
+    return loadCss().then(
+      () =>
+        new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/cropperjs@2.1.0/dist/cropper.min.js";
+          script.async = true;
+          script.onload = () => resolve(window.Cropper?.default || window.Cropper);
+          script.onerror = () => reject(new Error("Failed to load Cropper.js"));
+          document.head.appendChild(script);
+        })
+    );
   }
 
   window.switchProfileTab = function (tab) {
@@ -292,43 +306,36 @@ const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "gener
 
     let avatarCropperInstance = null;
     let avatarCropperPendingFile = null;
-    const cropperModal = document.getElementById("profile-avatar-cropper");
+    const cropperBlock = document.getElementById("profile-avatar-cropper");
     const cropperImg = document.getElementById("avatar-cropper-image");
     const cropperContainer = document.getElementById("avatar-cropper-container");
-    const overlay = document.getElementById("global-backdrop");
 
-    const closeAvatarCropperModal = () => {
+    const closeAvatarCropper = () => {
       if (avatarCropperInstance) {
         avatarCropperInstance.destroy();
         avatarCropperInstance = null;
       }
       avatarCropperPendingFile = null;
-      cropperModal?.classList.add("hidden");
-      cropperModal?.classList.remove("flex");
-      cropperModal?.setAttribute("aria-hidden", "true");
-      overlay?.classList.add("hidden");
-      overlay?.classList.remove("flex");
-      if (typeof window.unlockBodyScroll === "function") window.unlockBodyScroll();
+      cropperBlock?.classList.add("hidden");
       avatarInput && (avatarInput.value = "");
     };
 
-    const initAvatarCropperModal = () => {
+    const initAvatarCropper = () => {
       document.querySelectorAll("[data-avatar-cropper-close]").forEach((btn) => {
-        btn.addEventListener("click", closeAvatarCropperModal);
+        btn.addEventListener("click", closeAvatarCropper);
       });
-      overlay?.addEventListener("click", closeAvatarCropperModal);
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && cropperModal && !cropperModal?.classList.contains("hidden")) {
-          closeAvatarCropperModal();
+        if (e.key === "Escape" && cropperBlock && !cropperBlock?.classList.contains("hidden")) {
+          closeAvatarCropper();
         }
       });
 
       document.getElementById("avatar-cropper-apply")?.addEventListener("click", async () => {
         if (!avatarCropperInstance || !avatarCropperPendingFile) return;
-        const canvas = avatarCropperInstance.getCropperCanvas();
-        if (!canvas) return;
+        const cropperSelection = avatarCropperInstance.getCropperSelection();
+        if (!cropperSelection) return;
         try {
-          const outputCanvas = await canvas.$toCanvas({ width: 400, height: 400 });
+          const outputCanvas = await cropperSelection.$toCanvas({ width: 400, height: 400 });
           outputCanvas.toBlob(
             async (blob) => {
               if (!blob) return;
@@ -376,7 +383,7 @@ const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "gener
                   2500
                 );
               }
-              closeAvatarCropperModal();
+              closeAvatarCropper();
             },
             "image/jpeg",
             0.9
@@ -394,7 +401,7 @@ const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "gener
         }
       });
     };
-    if (cropperModal) initAvatarCropperModal();
+    if (cropperBlock) initAvatarCropper();
 
     avatarInput?.addEventListener("change", async (e) => {
       const inputEl = e.target;
@@ -413,28 +420,26 @@ const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "gener
       const reader = new FileReader();
       reader.onload = async () => {
         const dataUrl = reader.result;
-        if (typeof dataUrl !== "string" || !cropperModal || !cropperImg || !cropperContainer)
+        if (typeof dataUrl !== "string" || !cropperBlock || !cropperImg || !cropperContainer)
           return;
 
         avatarCropperPendingFile = file;
         cropperImg.src = dataUrl;
         cropperImg.style.display = "block";
-
-        cropperModal.classList.remove("hidden");
-        cropperModal.classList.add("flex");
-        cropperModal.setAttribute("aria-hidden", "false");
-        overlay?.classList.remove("hidden");
-        overlay?.classList.add("flex");
-        if (typeof window.lockBodyScroll === "function") window.lockBodyScroll();
+        cropperBlock.classList.remove("hidden");
 
         const Cropper = await loadCropperjs();
         avatarCropperInstance = new Cropper(cropperImg, {
           container: cropperContainer,
-          viewMode: 1,
-          aspectRatio: 1,
-          dragMode: "move",
-          autoCropArea: 0.8,
         });
+        const sel = avatarCropperInstance.getCropperSelection();
+        if (sel) {
+          sel.aspectRatio = 1;
+          sel.initialAspectRatio = 1;
+          sel.initialCoverage = 0.8;
+          sel.movable = true;
+          sel.resizable = true;
+        }
       };
       reader.readAsDataURL(file);
     });

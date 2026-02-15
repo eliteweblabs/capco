@@ -13,6 +13,8 @@ export interface Props {
   mobileClickable?: boolean;
   /** When false, tooltip is disabled on no-hover devices (e.g. touch-only). Default true. */
   touchable?: boolean;
+  /** When true, hide tooltip popup on screens &lt; 768px (reliable mobile hide vs hover media). Default false. */
+  hideOnMobile?: boolean;
   html?: boolean; // Whether to render text as HTML
   /** When false, use flex instead of inline-flex (avoids nav/flex layout issues). Default true for backwards compat. */
   inline?: boolean;
@@ -28,6 +30,7 @@ const {
   dismissable = false,
   mobileClickable = false,
   touchable = true,
+  hideOnMobile = false,
   html = false,
   inline = true,
 } = Astro.props;
@@ -41,6 +44,7 @@ const contentClasses = [
   dismissable ? "opacity-100" : open ? "opacity-100" : "opacity-0",
   dismissable ? "pointer-events-auto" : "pointer-events-none",
   "whitespace-nowrap transition-opacity duration-300",
+  hideOnMobile ? "max-md:!hidden" : "",
   tooltipClass,
   disabled ? "hidden" : "",
 ]

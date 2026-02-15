@@ -16,7 +16,8 @@ export interface ButtonStyleConfig {
     | "icon"
     | "selected"
     | "anchor"
-    | "tab";
+    | "tab"
+    | "antispam";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   fullWidth?: boolean;
   className?: string;
@@ -36,7 +37,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
 
   // Base classes for all buttons
   const baseClasses =
-    "font-secondary relative inline-flex items-center justify-center font-large transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
+    "font-secondary relative inline-flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
 
   // Icon buttons: square dimensions so they stay perfectly round (rounded-full)
   const isIconButton = icon || variant === "icon";
@@ -81,6 +82,8 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     anchor:
       "text-gray-800 dark:text-gray-200 [@media(hover:hover)]:hover:text-primary dark:[@media(hover:hover)]:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 [@media(hover:hover)]:hover:shadow-none opacity-100 transition-all duration-200",
     tab: "tab-button sliding-tabs-item",
+    antispam:
+      "antispam-button rounded-full border-2 border-primary-500 bg-primary-500 text-white dark:bg-primary-500 shadow-lg overflow-hidden [@media(hover:hover)]:hover:bg-primary-600 [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5",
   };
 
   // Focus classes with dashed outline

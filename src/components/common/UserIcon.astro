@@ -1,6 +1,5 @@
 ---
 import Tooltip from "./TooltipFloating.astro";
-import { validateAvatarUrl, getSafeAvatarUrl } from "../../lib/avatar-utils";
 
 export interface Props {
   user?: {
@@ -83,6 +82,7 @@ const sizeClasses = {
 
         const tooltipText = `${fullName}${userItem.email ? `\n${userItem.email}` : ""}`;
 
+        const avatarUrl = userItem.avatarUrl || undefined;
         return (
           <Tooltip
             text={tooltipText}
@@ -90,35 +90,41 @@ const sizeClasses = {
             disabled={!showTooltip}
             tooltipClass="whitespace-pre-line"
           >
-            {(() => {
-              const safeAvatarUrl = getSafeAvatarUrl(userItem.avatarUrl);
-              const shouldShowAvatar =
-                safeAvatarUrl && !validateAvatarUrl(safeAvatarUrl).shouldUseFallback;
-
-              if (shouldShowAvatar) {
-                return (
-                  <div
-                    class={`${sizeClasses[size]} user-icon-avatar cursor-pointer rounded-full border-2 border-white shadow-sm`}
-                    data-avatar-url={safeAvatarUrl}
-                    data-user-name={fullName}
-                  >
-                    <div
-                      class={`${sizeClasses[size]} user-icon-fallback flex items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-primary-500 to-purple-600 font-medium text-white shadow-sm`}
-                    >
-                      {initials}
-                    </div>
-                  </div>
-                );
-              } else {
-                return (
-                  <div
-                    class={`${sizeClasses[size]} flex cursor-pointer items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-primary-500 to-purple-600 font-medium text-white shadow-sm`}
-                  >
-                    {initials}
-                  </div>
-                );
-              }
-            })()}
+            <div
+              class={`${sizeClasses[size]} overflow-hidden cursor-pointer rounded-full border-2 border-white shadow-sm`}
+              data-avatar-url={avatarUrl || ""}
+              data-user-id={userItem.id}
+              data-user-name={fullName}
+            >
+              <img
+                src={avatarUrl}
+                alt={fullName}
+                class={`avatar-img ${sizeClasses[size]} min-w-0 object-cover object-center`}
+                style={!avatarUrl ? "display:none" : undefined}
+                onerror="this.style.display='none'; const f=this.nextElementSibling; if(f) { f.classList.remove('hidden'); f.classList.add('flex'); }"
+              />
+              <span
+                class:list={[
+                  "avatar-fallback",
+                  sizeClasses[size],
+                  "flex",
+                  "items-center",
+                  "justify-center",
+                  "rounded-full",
+                  "border-2",
+                  "border-white",
+                  "bg-gradient-to-br",
+                  "from-primary-500",
+                  "to-purple-600",
+                  "font-medium",
+                  "text-white",
+                  "shadow-sm",
+                  avatarUrl ? "hidden" : "",
+                ]}
+              >
+                {initials}
+              </span>
+            </div>
           </Tooltip>
         );
       })
@@ -141,39 +147,3 @@ const sizeClasses = {
     )
   }
 </div>
-
-<script>
-  // Handle avatar loading errors for UserIcon components
-  document.addEventListener("DOMContentLoaded", () => {
-    const avatarContainers = document.querySelectorAll(".user-icon-avatar");
-
-    avatarContainers.forEach((container) => {
-      const avatarUrl = container.getAttribute("data-avatar-url");
-      const fallbackIcon = container.querySelector(".user-icon-fallback");
-
-      if (avatarUrl && fallbackIcon) {
-        // Test if the image can load BEFORE applying it
-        const img = new Image();
-
-        img.onload = () => {
-          console.log("✅ [USER-ICON] Avatar loaded successfully:", avatarUrl);
-
-          // Avatar loaded successfully - apply it as background and hide fallback
-          (container as HTMLElement).style.backgroundImage = `url('${avatarUrl}')`;
-          (container as HTMLElement).style.backgroundSize = "cover";
-          (container as HTMLElement).style.backgroundPosition = "center";
-          (container as HTMLElement).style.backgroundRepeat = "no-repeat";
-          (fallbackIcon as HTMLElement).style.display = "none";
-        };
-
-        img.onerror = () => {
-          console.warn("⚠️ [USER-ICON] Avatar failed to load, keeping fallback icon:", avatarUrl);
-          // Do nothing - fallback icon is already visible
-        };
-
-        // Start loading the image
-        img.src = avatarUrl;
-      }
-    });
-  });
-</script>

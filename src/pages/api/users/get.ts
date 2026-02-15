@@ -80,9 +80,12 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         });
       }
 
+      const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+      const displayName = fullName || user.companyName || "Unknown User";
+
       return new Response(
         JSON.stringify({
-          data: user,
+          data: { ...user, displayName },
           pagination: { limit: 1, offset: 0, total: 1, hasMore: false },
         }),
         { status: 200, headers: { "Content-Type": "application/json" } }

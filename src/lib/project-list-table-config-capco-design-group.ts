@@ -57,7 +57,12 @@ export const PROJECT_LIST_COLUMNS: ProjectListColumnConfig[] = [
     id: "files",
     label: "Files",
     type: "files",
-    field: "projectFiles",
+    displayProjectFiles: {
+      field: "projectFiles",
+      size: "sm",
+      tooltips: true,
+      emptyText: "No files",
+    },
     width: 200,
   },
   {

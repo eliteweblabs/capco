@@ -43,7 +43,6 @@ Implemented Astro-native lazy loading for all images throughout the project to i
 11. **FooterBlock.astro** - Footer logos ✅
 
 #### 🔄 Intentionally Skipped:
-- **UserAvatar.astro** - Has custom loading logic, keep as is
 - **Lightbox images** - Dynamically loaded via JavaScript, functioning correctly
 
 #### 📝 Remaining Components (if any):

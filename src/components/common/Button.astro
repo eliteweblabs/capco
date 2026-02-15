@@ -20,7 +20,8 @@ export interface Props {
     | "anchor"
     | "selected"
     | "icon"
-    | "tab";
+    | "tab"
+    | "antispam";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   href?: string;
   target?: "_blank" | "_self" | "_parent" | "_top";
@@ -140,6 +141,9 @@ const selectedDataAttr = selectedClasses ? { "data-selected-classes": selectedCl
 // Determine if this should be a link or button
 const isLink = href && !disabled;
 
+// Antispam: only for buttons (not links), adds hold-for-5s on mobile
+const isAntispam = variant === "antispam" && !isLink;
+
 // Build attributes object
 const attributes = {
   class: buttonClasses,
@@ -153,6 +157,10 @@ const attributes = {
   ...dataAttrs,
   ...selectedDataAttr,
   ...(style && { style }),
+  ...(isAntispam && {
+    "data-antispam": "true",
+    "data-antispam-hold": "5000",
+  }),
 };
 ---
 
@@ -197,6 +205,7 @@ const attributes = {
     </a>
   ) : (
     <button type={type as "button" | "submit" | "reset"} {...attributes}>
+      {isAntispam && <span class="antispam-progress" aria-hidden="true" />}
       {loading && (
         <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle
@@ -315,4 +324,97 @@ const attributes = {
   .dark .sliding-tabs-item[data-active="true"]:hover {
     color: white !important;
   } */
+
+  /* Antispam: horizontal color transition progress bar */
+  .antispam-button {
+    --antispam-progress: 0;
+  }
+
+  .antispam-progress {
+    position: absolute;
+    inset: 0;
+    left: 0;
+    width: calc(var(--antispam-progress, 0) * 100%);
+    background: linear-gradient(
+      90deg,
+      var(--color-primary-300, #b099e6) 0%,
+      var(--color-primary-500, #825bdd) 50%,
+      var(--color-success-500, #22c55e) 100%
+    );
+    border-radius: inherit;
+    pointer-events: none;
+    transition: width 0.05s linear;
+    z-index: 0;
+  }
+
+  .antispam-button > *:not(.antispam-progress) {
+    position: relative;
+    z-index: 1;
+  }
 </style>
+
+{isAntispam && (
+  <script>
+    (function initAntispam() {
+      if ((window as any).__antispamInited) return;
+      (window as any).__antispamInited = true;
+
+      const isTouchDevice = () => window.matchMedia("(hover: none)").matches();
+      if (!isTouchDevice()) return;
+
+      document.querySelectorAll<HTMLButtonElement>("[data-antispam]").forEach((btn) => {
+        if (btn.dataset.antispamInited) return;
+        btn.dataset.antispamInited = "true";
+
+        const holdMs = parseInt(btn.dataset.antispamHold ?? "5000", 10) || 5000;
+        let holdTimer: ReturnType<typeof setTimeout> | null = null;
+        let progressInterval: ReturnType<typeof setInterval> | null = null;
+        let startTime = 0;
+
+        const reset = () => {
+          if (holdTimer) clearTimeout(holdTimer);
+          if (progressInterval) clearInterval(progressInterval);
+          holdTimer = null;
+          progressInterval = null;
+          btn.style.setProperty("--antispam-progress", "0");
+        };
+
+        const complete = () => {
+          reset();
+          btn.style.setProperty("--antispam-progress", "1");
+          const el = btn as HTMLButtonElement & { dataset: { antispamAllowed?: string } };
+          el.dataset.antispamAllowed = "true";
+          btn.click();
+          delete el.dataset.antispamAllowed;
+        };
+
+        const startHold = () => {
+          if (btn.disabled) return;
+          startTime = Date.now();
+          progressInterval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / holdMs, 1);
+            btn.style.setProperty("--antispam-progress", String(progress));
+          }, 50);
+          holdTimer = setTimeout(complete, holdMs);
+        };
+
+        btn.addEventListener(
+          "click",
+          (e) => {
+            const el = btn as HTMLButtonElement & { dataset: { antispamAllowed?: string } };
+            if (!el.dataset.antispamAllowed) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          },
+          { capture: true }
+        );
+
+        btn.addEventListener("touchstart", startHold, { passive: true });
+        btn.addEventListener("touchend", reset, { passive: true });
+        btn.addEventListener("touchcancel", reset, { passive: true });
+      });
+    })();
+  </script>
+)}

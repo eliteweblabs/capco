@@ -1,0 +1,181 @@
+---
+/**
+ * CheckInButton: Check in / Check out at location for Admin and Staff.
+ * Sends a notification to all Admins with the user's geolocation.
+ * Toggles between "Check in" and "Check out" after each click.
+ */
+import SimpleIcon from "./SimpleIcon.astro";
+
+interface Props {
+  globalIconButtonClasses?: string;
+}
+
+const { globalIconButtonClasses = "inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none" } =
+  Astro.props;
+---
+
+<button
+  type="button"
+  id="check-in-btn"
+  title="Check in at location"
+  aria-label="Check in at location"
+  class={globalIconButtonClasses}
+  data-state="checked_out"
+>
+  <span id="check-in-icon" class="check-in-icon" aria-hidden="true">
+    <SimpleIcon name="map-pin" size="md" />
+  </span>
+  <span id="check-out-icon" class="check-out-icon hidden" aria-hidden="true">
+    <SimpleIcon name="log-out" size="md" />
+  </span>
+  <span class="sr-only">Check in at location</span>
+</button>
+
+<style>
+  .check-out-icon.hidden {
+    display: none;
+  }
+  #check-in-btn[data-state="checked_in"] .check-in-icon {
+    display: none;
+  }
+  #check-in-btn[data-state="checked_in"] .check-out-icon {
+    display: inline;
+  }
+</style>
+
+<script>
+  const STORAGE_KEY = "location-checkin-state";
+
+  function getState(): "checked_in" | "checked_out" {
+    try {
+      const s = sessionStorage.getItem(STORAGE_KEY);
+      return s === "checked_in" ? "checked_in" : "checked_out";
+    } catch {
+      return "checked_out";
+    }
+  }
+
+  function setState(state: "checked_in" | "checked_out") {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, state);
+    } catch (_) {}
+  }
+
+  function updateButton(state: "checked_in" | "checked_out") {
+    const btn = document.getElementById("check-in-btn") as HTMLButtonElement | null;
+    if (!btn) return;
+
+    const isCheckedIn = state === "checked_in";
+    btn.dataset.state = state;
+    btn.title = isCheckedIn ? "Check out" : "Check in at location";
+    btn.setAttribute("aria-label", isCheckedIn ? "Check out" : "Check in at location");
+    btn.disabled = false;
+
+    const srOnly = btn.querySelector(".sr-only");
+    if (srOnly) {
+      srOnly.textContent = isCheckedIn ? "Check out" : "Check in at location";
+    }
+  }
+
+  function getPosition(): Promise<{ lat: number; lng: number; accuracy?: number }> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation not supported"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) =>
+          resolve({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          }),
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    });
+  }
+
+  async function handleClick() {
+    const btn = document.getElementById("check-in-btn") as HTMLButtonElement | null;
+    if (!btn || btn.disabled) return;
+
+    const state = getState();
+    const isCheckIn = state === "checked_out";
+
+    btn.disabled = true;
+
+    try {
+      let lat: number;
+      let lng: number;
+      let accuracy: number | undefined;
+
+      if (isCheckIn) {
+        const pos = await getPosition();
+        lat = pos.lat;
+        lng = pos.lng;
+        accuracy = pos.accuracy;
+      } else {
+        const pos = await getPosition();
+        lat = pos.lat;
+        lng = pos.lng;
+        accuracy = pos.accuracy;
+      }
+
+      const res = await fetch("/api/location/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: isCheckIn ? "check_in" : "check_out",
+          lat,
+          lng,
+          accuracy,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Request failed");
+      }
+
+      const newState = isCheckIn ? "checked_in" : "checked_out";
+      setState(newState);
+      updateButton(newState);
+
+      if (typeof (window as any).showNotice === "function") {
+        (window as any).showNotice(
+          "success",
+          isCheckIn ? "Checked in" : "Checked out",
+          isCheckIn ? "Admins have been notified of your location." : "Admins have been notified.",
+          3000
+        );
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to get location";
+      if (typeof (window as any).showNotice === "function") {
+        (window as any).showNotice("error", "Location Error", msg, 5000);
+      } else {
+        alert(msg);
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function init() {
+    const btn = document.getElementById("check-in-btn") as HTMLButtonElement | null;
+    if (!btn) return;
+
+    const state = getState();
+    updateButton(state);
+
+    btn.addEventListener("click", handleClick);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+</script>

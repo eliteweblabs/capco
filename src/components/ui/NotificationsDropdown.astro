@@ -1,41 +1,54 @@
 ---
 /**
- * NotificationsModal Component
- * Flowbite: trigger uses data-dropdown-toggle="notification-dropdown"; close uses data-dismiss-target (no custom JS).
+ * Account dropdown panel for the header avatar (AuthIcon).
+ * Flowbite: trigger uses data-dropdown-toggle="account-dropdown"; this panel has id="account-dropdown".
+ * Navbar.astro attaches the logout handler to #logout-btn.
  */
-
-export interface Props {
-  currentUser?: any;
-  id?: "notification";
-  globalIconButtonClasses: string;
+interface Props {
+  currentUser: any;
   projects: any[];
+  globalIconButtonClasses: string;
+  closeButton: boolean;
+  id: string;
+  /** Name of global function to call when dropdown opens (e.g. for refresh). Expose as window.refreshUserProfile. */
+  onOpen?: string;
 }
 
-const { currentUser, id = "notification", globalIconButtonClasses, projects } = Astro.props;
-
-// Return null if no user or client
-if (!currentUser) {
-  return null;
+// Redirect to API callback only when code is on a page that shouldn't handle it
+// /auth/callback must render so client-side JS can exchange the code - do NOT redirect there
+const authCode = Astro.url.searchParams.get("code");
+if (authCode && !Astro.url.pathname.startsWith("/auth/callback")) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
 }
 
-import CloseButton from "../ui/CloseButton.astro";
-import Dropdown from "../ui/Dropdown.astro";
-import LoadingSpinner from "../ui/LoadingSpinner.astro";
+const {
+  currentUser,
+  projects,
+  globalIconButtonClasses,
+  closeButton = false,
+  id,
+  onOpen,
+} = Astro.props;
+
+const redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
+
+const currentRole = currentUser?.profile?.role;
+import Dropdown from "./Dropdown.astro";
+import LoadingSpinner from "./LoadingSpinner.astro";
 ---
 
-<Dropdown {id} title="Notifications" {currentUser} {projects} {globalIconButtonClasses}>
-  <!-- Notifications dropdown: Flowbite data-dropdown-toggle="notification-dropdown" on trigger(s) -->
-
-  <!-- Panel header -->
-  <!-- <div
-    class="flex items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700 shrink-0"
-  >
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
-    <CloseButton data-dismiss-target="#notification-dropdown" tooltipText="Close" />
-  </div> -->
-
-  <!-- Panel body -->
-  <div class="min-h-0 flex-1 overflow-y-auto p-3">
+<!-- Account dropdown: Flowbite data-popover-target on AuthIcon trigger -->
+<Dropdown
+  id={id}
+  {currentUser}
+  {projects}
+  {globalIconButtonClasses}
+  {closeButton}
+  title="Notifications"
+  onOpenCallback={onOpen}
+>
+  <!-- Panel body: data-dropdown-id passed so script can find panel/triggers (Navbar uses id="notifications") -->
+  <div class="min-h-0 flex-1 overflow-y-auto p-3" data-dropdown-id={id}>
     <!-- Header with Mark all read button -->
     <div
       class="align-center flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -50,7 +63,7 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
     </div>
 
     <!-- Loading State -->
-    <div id="notification-loading2" class="p-4 text-center">
+    <div id="notification-loading" class="p-4 text-center">
       <LoadingSpinner
         size="sm"
         loadingText="Loading notifications..."
@@ -103,8 +116,11 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
     pollingInterval: NodeJS.Timeout | null = null;
     isLoadingMore: boolean = false;
     hasMore: boolean = true;
+    panelId: string;
 
     constructor() {
+      const dropdownId = document.querySelector("[data-dropdown-id]")?.getAttribute("data-dropdown-id");
+      this.panelId = dropdownId ? `${dropdownId}-dropdown` : "notifications-dropdown";
       this.init();
     }
 
@@ -116,12 +132,12 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
     }
 
     bindEvents() {
-      const panel = document.getElementById("notification-dropdown");
+      const panel = document.getElementById(this.panelId);
       const markAllRead = document.getElementById("mark-all-read");
 
       // When dropdown is opened (bell trigger), load notifications; when closed, mark as viewed
       // Also remove Dismiss-added classes (opacity-0, transition) so panel is visible again after closing once
-      document.querySelectorAll('[data-dropdown-toggle="notification-dropdown"]').forEach((el) => {
+      document.querySelectorAll(`[data-dropdown-toggle="${this.panelId}"]`).forEach((el) => {
         el.addEventListener("click", () => {
           setTimeout(() => {
             if (panel && !panel.classList.contains("hidden")) {
@@ -137,7 +153,7 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
       });
 
       // Close button: Flowbite Dismiss (data-dismiss-target) handles hide; sync state and mark viewed
-      document.querySelectorAll('[data-dismiss-target="#notification-dropdown"]').forEach((el) => {
+      document.querySelectorAll(`[data-dismiss-target="#${this.panelId}"]`).forEach((el) => {
         el.addEventListener("click", () => {
           setTimeout(() => {
             this.isOpen = false;
@@ -168,7 +184,7 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
     }
 
     closeDropdown() {
-      const panel = document.getElementById("notification-dropdown");
+      const panel = document.getElementById(this.panelId);
       if (panel) {
         panel.classList.add("hidden");
         this.isOpen = false;
@@ -587,8 +603,8 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
     updateBadge(count: number) {
       console.log("🔍 [NOTIFICATIONS] updateBadge called with count:", count);
 
-      if (window.updateNotificationBellCount) {
-        window.updateNotificationBellCount(count);
+      if ((window as any).updateNotificationBellCount) {
+        (window as any).updateNotificationBellCount(count);
       } else {
         console.warn("🔍 [NOTIFICATIONS] Global notification count updater not available");
       }
@@ -672,10 +688,10 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
   // Initialize notification manager
   // console.log("🔍 [NOTIFICATIONS] Initializing notification manager");
   const notificationManager = new NotificationManager();
-  window.notificationManager = notificationManager;
+  (window as any).notificationManager = notificationManager;
 
   // Global callback for delete confirmation (called by DeleteConfirmButton)
-  window.handleNotificationDelete = async (notificationId) => {
+  (window as any).handleNotificationDelete = async (notificationId) => {
     console.log(
       "🔍 [NOTIFICATIONS] Global handleNotificationDelete called for ID:",
       notificationId

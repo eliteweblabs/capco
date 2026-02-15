@@ -5,11 +5,8 @@ import ToggleSidebar from "./ToggleSidebar.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import ThemeToggle from "./ThemeToggle.astro";
-import MultiStepForm from "../form/MultiStepForm.astro";
-import { getLoginFormConfig } from "../../lib/forms/form-config-from-site";
-
-const redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
-const loginFormConfig = await getLoginFormConfig();
+import NotificationsDropdown from "./NotificationsDropdown.astro";
+import CheckInButton from "../common/CheckInButton.astro";
 
 interface Props {
   currentUser?: any;
@@ -34,14 +31,12 @@ const {
   desktopNavigationHTML,
   projects,
   isBackend,
-  supabaseUrl,
   project,
   globalIconButtonClasses,
   pathname,
-  template = "default",
   hideFooter = false,
 } = Astro.props;
-const currentRole = currentUser?.profile?.role;
+const currentRole = (currentUser as any)?.profile?.role;
 ---
 
 <nav
@@ -59,7 +54,6 @@ const currentRole = currentUser?.profile?.role;
   >
     <div class="flex min-w-0 flex-shrink-0 items-center gap-1">
       <ToggleSidebar {currentUser} />
-
       <Logo link="/" file="svg" className="mr-2 flex md:mr-4" />
     </div>
 
@@ -76,11 +70,15 @@ const currentRole = currentUser?.profile?.role;
 
     <div class="flex flex-shrink-0 items-center gap-2">
       {
-        currentUser && currentUser.id && currentRole !== "Client" && project && (
+        currentUser && currentRole !== "Client" && project && (
           <button
             type="button"
             id="punchlist-drawer-toggle"
             title="View Punchlist"
+            data-drawer-target="punchlist-drawer"
+            data-drawer-show="punchlist-drawer"
+            data-drawer-placement="right"
+            aria-controls="punchlist-drawer"
             class={globalIconButtonClasses}
           >
             <SimpleIcon name="menu-check" size="md" />
@@ -90,17 +88,26 @@ const currentRole = currentUser?.profile?.role;
       }
       {
         currentUser && (
-          <button
-            type="button"
-            title="Notifications"
-            data-dropdown-toggle="notification-dropdown"
-            data-dropdown-trigger="hover"
-            class={globalIconButtonClasses}
-            aria-label="View notifications"
-          >
-            <SimpleIcon name="notification-bell" size="md" />
-            <span class="sr-only">Notifications</span>
-          </button>
+          <>
+            <button
+              type="button"
+              title="Notifications"
+              data-dropdown-toggle="notifications-dropdown"
+              data-dropdown-trigger="hover"
+              class={globalIconButtonClasses}
+              aria-label="View notifications"
+            >
+              <SimpleIcon name="notification-bell" size="md" />
+              <span class="sr-only">Notifications</span>
+            </button>
+            <NotificationsDropdown
+              id="notifications"
+              closeButton={false}
+              {globalIconButtonClasses}
+              {projects}
+              {currentUser}
+            />
+          </>
         )
       }
 

@@ -27,6 +27,17 @@ export interface ProjectListColumnConfig {
     | "dueDate";
   /** Project field for text/value types (e.g. "address", "createdAt") */
   field?: string;
+  /** Display options for type "files" column. Replaces flat field: "projectFiles" */
+  displayProjectFiles?: {
+    /** Project property holding file list. Default "projectFiles" */
+    field?: string;
+    /** Icon size: sm, md, lg. Default "sm" */
+    size?: "sm" | "md" | "lg";
+    /** Show tooltips on file icons. Default true */
+    tooltips?: boolean;
+    /** Text when no files. Default "No files" */
+    emptyText?: string;
+  };
   /** Roles that can see this column (Admin, Staff, Client). Omit = all roles */
   allow?: string[];
   /** Default width in px for resizable columns */
