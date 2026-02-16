@@ -1,0 +1,124 @@
+---
+/**
+ * SearchInput - Reusable search field with icon, clear button, and optional autosuggest
+ * Based on InlineAddressSearch pattern.
+ *
+ * Filter mode (default): fires input events. Parent handles filtering (e.g. filterUserRows).
+ * Autosuggest mode: set fetchApiEndpoint for API-backed dropdown (like address search).
+ *
+ * @example
+ *   <SearchInput id="user-search" placeholder="Search by name, email..." />
+ *   <SearchInput id="addr" fetchApiEndpoint="/api/google/places-autocomplete" />
+ */
+import SimpleIcon from "./SimpleIcon.astro";
+
+interface Props {
+  id: string;
+  name?: string;
+  placeholder?: string;
+  globalInputClasses?: string;
+  /** API endpoint for autosuggest. If omitted, filter mode only. */
+  fetchApiEndpoint?: string;
+  apiParams?: Record<string, any>;
+  valueField?: string;
+  labelField?: string;
+  noResultsText?: string;
+}
+
+const {
+  id,
+  name = id,
+  placeholder = "Search...",
+  globalInputClasses = "",
+  fetchApiEndpoint,
+  apiParams = {},
+  valueField = "description",
+  labelField = "description",
+  noResultsText = "Type to search...",
+} = Astro.props;
+
+const hasAutosuggest = !!fetchApiEndpoint;
+---
+
+<div class="search-input-wrapper relative">
+  {hasAutosuggest && <input type="hidden" id={`${id}-value`} name={name} value="" />}
+  <div class="relative">
+    <SimpleIcon
+      name="search"
+      class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+    />
+    <input
+      type="text"
+      id={hasAutosuggest ? `${id}-search-input` : id}
+      placeholder={placeholder}
+      autocomplete="off"
+      class={`${globalInputClasses} w-full pl-10 pr-10`}
+    />
+    <button
+      type="button"
+      id={`${id}-clear-btn`}
+      class="search-input-clear absolute right-2 top-1/2 hidden -translate-y-1/2 p-1.5 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+      title="Clear search"
+      aria-label="Clear search"
+    >
+      <SimpleIcon name="x" class="h-4 w-4" />
+    </button>
+  </div>
+
+  {hasAutosuggest && (
+    <div
+      id={`${id}-dropdown`}
+      class="search-input-dropdown color-background absolute left-0 right-0 top-full z-50 mt-1 hidden max-h-60 divide-y divide-gray-100 overflow-y-auto rounded-lg border border-gray-200 shadow-lg dark:divide-gray-700 dark:border-gray-600"
+    >
+      <ul id={`${id}-results-list`} class="py-2 text-sm text-gray-700 dark:text-gray-200" />
+      <div id={`${id}-empty-state`} class="hidden px-4 py-6 text-center">
+        <p class="text-sm text-gray-500 dark:text-gray-400">{noResultsText}</p>
+      </div>
+    </div>
+  )}
+</div>
+
+<script define:vars={{ id, hasAutosuggest, fetchApiEndpoint, apiParams, valueField, labelField }}>
+  document.addEventListener("DOMContentLoaded", initSearchInput);
+  document.addEventListener("astro:page-load", initSearchInput);
+
+  function initSearchInput() {
+    const inputId = hasAutosuggest ? `${id}-search-input` : id;
+    const input = document.getElementById(inputId) as HTMLInputElement;
+    const clearBtn = document.getElementById(`${id}-clear-btn`) as HTMLButtonElement;
+    if (!input || !clearBtn) return;
+
+    function toggleClear() {
+      clearBtn.classList.toggle("hidden", !input.value.trim());
+    }
+
+    input.addEventListener("input", toggleClear);
+
+    clearBtn.addEventListener("click", () => {
+      input.value = "";
+      toggleClear();
+      input.focus();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      const dropdown = document.getElementById(`${id}-dropdown`);
+      if (dropdown) dropdown.classList.add("hidden");
+    });
+
+    toggleClear();
+  }
+
+  if (hasAutosuggest && fetchApiEndpoint) {
+    import("/js/inline-address-search.js")
+      .then((mod) => {
+        const input = document.getElementById(`${id}-search-input`);
+        if (!input) return;
+        mod.initializeAddressSearch({
+          id,
+          fetchApiEndpoint,
+          apiParams: apiParams || {},
+          valueField,
+          labelField,
+        });
+      })
+      .catch(() => {});
+  }
+</script>

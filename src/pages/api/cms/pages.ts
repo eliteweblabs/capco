@@ -233,7 +233,7 @@ export const POST: APIRoute = async ({ request }) => {
         updatedAt: new Date().toISOString(),
       };
 
-      // Only set display_order if column exists (check by trying to get max value)
+      // Only set displayOrder if column exists (check by trying to get max value)
       // For now, we'll let it default to NULL if column doesn't exist
       // The migration will set initial values
 
@@ -340,12 +340,9 @@ export const PUT: APIRoute = async ({ request }) => {
       });
     }
 
-    // Update displayOrder for each page (accept both snake_case and camelCase from request)
-    const updatePromises = orders.map(
-      (item: { id: string; display_order?: number; displayOrder?: number }) => {
-        const displayOrder = item.displayOrder ?? item.display_order ?? 0;
-        return supabaseAdmin.from("cmsPages").update({ displayOrder }).eq("id", item.id);
-      }
+    // Update displayOrder for each page
+    const updatePromises = orders.map((item: { id: string; displayOrder: number }) =>
+      supabaseAdmin.from("cmsPages").update({ displayOrder: item.displayOrder }).eq("id", item.id)
     );
 
     const results = await Promise.all(updatePromises);

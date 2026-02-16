@@ -474,25 +474,20 @@ const debugData = {
           console.log("[THEME-CLIENT] Theme cookie value:", cookies.theme);
         }
 
+        function applyTheme(mode) {
+          if (mode === "dark") {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+          localStorage.setItem("color-theme", mode);
+          setThemeCookie(mode);
+        }
+
         if (hasExplicitPreference) {
-          var theme = localStorage.getItem("color-theme");
-          if (theme === "dark") {
-            document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
-            setThemeCookie("dark");
-          } else {
-            document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
-            setThemeCookie("light");
-          }
+          applyTheme(localStorage.getItem("color-theme") || "light");
         } else {
-          if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-            document.documentElement.classList.add("dark", "zD1iTsv7EQco3GO_szee");
-            localStorage.setItem("color-theme", "dark");
-            setThemeCookie("dark");
-          } else {
-            document.documentElement.classList.remove("dark", "zD1iTsv7EQco3GO_szee");
-            localStorage.setItem("color-theme", "light");
-            setThemeCookie("light");
-          }
+          applyTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
         }
 
         window.isDarkMode = function() {

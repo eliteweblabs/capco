@@ -219,6 +219,8 @@ export interface MultiStepFormConfig {
   // Submission handling
   onSubmitSuccess?: string; // Function name or redirect URL
   onSubmitError?: string; // Function name
+  /** How to display form response: "toast" (default) or "inline" (Alert above form) */
+  responseType?: "toast" | "inline";
   // Hidden fields (e.g., role)
   hiddenFields?: Array<{ name: string; value: string }>;
 }

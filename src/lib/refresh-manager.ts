@@ -24,6 +24,7 @@ export class RefreshManager {
   private isRefreshing: boolean = false; // Prevent concurrent refresh cycles
   private lastRefreshTime: number = 0; // Track last refresh time
   private minRefreshGap: number = 3000; // Minimum 3 seconds between refreshes
+  private dragInProgress: boolean = false; // Skip refresh during drag (prevents DOM updates mid-drag)
 
   // Fields that are computed client-side and don't need server polling
   private COMPUTED_FIELDS = ["updatedAt", "createdAt"];
@@ -436,9 +437,21 @@ export class RefreshManager {
   }
 
   /**
+   * Pause/resume polling during drag. Call from accordion-reorder-init to prevent DOM updates mid-drag.
+   */
+  public setDragInProgress(inProgress: boolean): void {
+    this.dragInProgress = inProgress;
+  }
+
+  /**
    * Cycle through all refreshable elements and check for updates
    */
   private async cycleAndRefresh(): Promise<void> {
+    if (this.dragInProgress) {
+      console.log(`🔄 [REFRESH-MANAGER] ⏭️ Skipping - drag in progress`);
+      return;
+    }
+
     const cycleStartTime = new Date().toLocaleTimeString();
     console.log(`🔄 [REFRESH-MANAGER] [${cycleStartTime}] Polling started`);
 
@@ -507,15 +520,12 @@ export class RefreshManager {
       const projectId = element.getAttribute("data-project-id");
       const userId = element.getAttribute("data-user-id");
 
-      // Create context key
-      let contextKey: string;
-      if (projectId) {
-        contextKey = `project:${projectId}`;
-      } else if (userId) {
-        contextKey = `user:${userId}`;
-      } else {
-        contextKey = "global";
-      }
+      // Skip elements without context; global refresh is not implemented
+      if (!projectId && !userId) return;
+
+      const contextKey = projectId
+        ? `project:${projectId}`
+        : `user:${userId}`;
 
       // Initialize context group if not exists
       if (!grouped.has(contextKey)) {
@@ -558,16 +568,21 @@ export class RefreshManager {
       );
 
       if (!currentData) {
-        // Check if it's a 404 (project was deleted)
+        // Check if it's a 404 (project/user was deleted)
         if (contextType === "project") {
-          // console.log(`🔄 [REFRESH-MANAGER] 🗑️  Project ${contextId} not found (likely deleted)`);
-          // Find and remove the row from the DOM
           const row = document.querySelector(`tr[data-project-id="${contextId}"]`);
+          if (row) row.remove();
+        } else if (contextType === "user") {
+          const row = document.querySelector(`tr[data-user-id="${contextId}"]`);
           if (row) {
-            // console.log(`🔄 [REFRESH-MANAGER] 🗑️  Removing deleted project row from DOM`);
+            const detail = row.nextElementSibling;
+            if (detail?.classList.contains("accordion-detail") || detail?.hasAttribute("data-slot")) {
+              detail.remove();
+            }
             row.remove();
           }
-        } else {
+        } else if (contextType !== "global") {
+          // Only log for unexpected failures; global context is not implemented
           console.log(`🔄 [REFRESH-MANAGER] ${contextKey}: No data (404/error)`);
         }
         return null;

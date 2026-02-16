@@ -57,6 +57,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     class={config.progressBar ? "" : ""}
     data-form-config={JSON.stringify({ formId: config.formId, formConfig: config, initialData })}
   >
+    {config.responseType === "inline" && (
+      <div
+        id={`${config.formId}-response-alert`}
+        class="hidden mb-4"
+        aria-live="polite"
+        aria-atomic="true"
+      />
+    )}
     <div
       class:list={[
         "multi-step-form-steps relative min-w-96 p-4 scrollbar-hide sm:p-6 md:p-8 lg:p-10",
@@ -164,7 +172,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                 class:list={[
                   "step-form-fields-wrapper",
                   step.fieldLayout === "grid"
-                    ? "grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6"
+                    ? "grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6"
                     : "",
                   step.response ? "" : "",
                 ]}
@@ -288,8 +296,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           autofocus={field.autofocus}
                           class:list={[
                             appendedMultiStepInputClasses,
-                            field.icon && field.iconPosition === "right" ? "pr-12" : "",
-                            field.icon && field.iconPosition !== "right" ? "pl-12" : "",
+                            field.icon && field.iconPosition === "right" ? "pr-8" : "",
+                            field.icon && field.iconPosition !== "right" ? "pl-8" : "",
                           ]}
                           data-error={field.errorMessage}
                           data-validate={field.validate}
@@ -300,14 +308,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         />
                         <span
                           class:list={[
-                            "animated-placeholder pointer-events-none absolute -top-0.5 left-0 flex h-full w-full items-center",
+                            "animated-placeholder pointer-events-none absolute left-0 top-[calc(0.125rem-2px)] flex h-full w-full items-center",
                             field.animatedPlaceholderAlignment === "left"
                               ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : "pl-3"}`
                               : field.animatedPlaceholderAlignment === "right"
                                 ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : "pr-3"}`
                                 : "justify-center",
-                            field.icon && field.iconPosition === "right" ? "mr-1.25 pr-12" : "",
-                            field.icon && field.iconPosition !== "right" ? "ml-1.25 pl-12" : "",
+                            field.icon && field.iconPosition === "right" ? "mr-1.25 pr-8" : "",
+                            field.icon && field.iconPosition !== "right" ? "ml-1.25 pl-8" : "",
                           ]}
                           data-for={field.id}
                           tabindex="-1"
@@ -368,7 +376,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           autofocus={field.autofocus}
                           class:list={[
                             appendedMultiStepInputClasses,
-                            field.iconPosition === "right" ? "pl-12 pr-12" : "pl-12 pr-12",
+                            field.iconPosition === "right" ? "pl-8 pr-8" : "pl-8 pr-8",
                           ]}
                           data-error={field.errorMessage}
                           data-validate={field.validate}
@@ -688,59 +696,10 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 </style>
 
 <style>
-  /* Wrapper: fixed. Initial top at 50dvh, expands down; when bottom would hit 4rem we switch to expand-up (class swap). */
-  /* flex-start so step-content divs stack from top and user can scroll up through previous steps. */
-  .multi-step-form-steps {
-    /* position: fixed;
-    top: 0;
-    left: 50%; */
-    /* transform: translateX(-50%); */
-    /* max-height: calc(100vh - 5rem);
-    max-height: calc(100dvh - 5rem);
-    max-width: var(--multi-step-form-width, 42rem); */
-    /* box-sizing: border-box;
-    min-height: 0;
-    overflow-x: hidden; */
-
-    /* overflow-y: auto; */
-
-    /* -webkit-overflow-scrolling: touch; */
-  }
-
-  /* Expand down: top at 50dvh, panel grows downward until it would hit the limit */
-  .multi-step-form-steps.expand-down {
-    /* top: 26.5dvh; */
-    /* bottom: auto; */
-  }
-
-  /* Expand up: bottom at 4rem, panel grows upward after hitting the limit */
-  .multi-step-form-steps.expand-up {
-    /* top: auto; */
-    /* bottom: 26.5dvh; */
-  }
-
-  /* Centered: when expandDown is false for current step, keep panel vertically centered */
-  .multi-step-form-steps.centered {
-    /* top: 50%;
-    bottom: auto;
-    justify-content: center;
-    transform: translate(-50%, -50%); */
-  }
-
   /* Hide steps that are neither completed nor active so we don't scroll to blank content */
   .multi-step-form-steps .step-content:not(.completed):not(.active) {
     display: none;
   }
-
-  /* Completed and active steps: block layout inside the wrapper */
-
-  /* First step starts below cursor so it can slide up into view on load */
-  .step-content.first-step {
-    /* opacity: 0; */
-    /* transform: translateY(60vh); */
-  }
-
-  /* Override default slide-in when going backward - panel comes from above */
 
   /* Step indicator states */
   .step-indicator {
@@ -769,17 +728,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     background-color: var(--color-success-600);
   }
 
-  /* Typewriter/Terminal style layout - fixed cursor line */
-  [data-multi-step-form] {
-    /* position: absolute;
-    inset: 0;
-    overflow: hidden; */
-    /* display: flex;
-    flex-direction: column;
-    padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right)); */
-  }
-
   /* Form is the scroll container; .multi-step-form-steps is the single scrollable content block */
   [data-multi-step-form] form {
     position: relative;
@@ -789,67 +737,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     scroll-behavior: smooth;
     /* padding-top: 40vh; */
   }
-
-  [data-multi-step-form] form .first-step {
-    /* padding-top: 30vh; */
-  }
-
-  /* Responsive padding adjustments */
-  /* @media (min-width: 640px) {
-    [data-multi-step-form] {
-      padding-left: max(2rem, env(safe-area-inset-left));
-      padding-right: max(2rem, env(safe-area-inset-right));
-    }
-  } */
-
-  /* @media (min-width: 768px) {
-    [data-multi-step-form] {
-      padding-left: max(3rem, env(safe-area-inset-left));
-      padding-right: max(3rem, env(safe-area-inset-right));
-    }
-  } */
-
-  /* @media (min-width: 1024px) {
-    [data-multi-step-form] {
-      padding-left: max(4rem, env(safe-area-inset-left));
-      padding-right: max(4rem, env(safe-area-inset-right));
-    }
-  } */
-
-  /* Visual cursor line indicator (optional, can be removed) */
-  [data-multi-step-form]::before {
-    /* content: ""; */
-    /* position: fixed;
-    top: 40vh;
-    right: max(1rem, env(safe-area-inset-right));
-    left: max(1rem, env(safe-area-inset-left));
-    opacity: 0.1;
-    z-index: 100;
-    background: linear-gradient(90deg, transparent, var(--color-primary-500) 50%, transparent);
-    height: 2px;
-    pointer-events: none; */
-  }
-
-  /* @media (min-width: 640px) {
-    [data-multi-step-form]::before {
-      left: max(2rem, env(safe-area-inset-left));
-      right: max(2rem, env(safe-area-inset-right));
-    }
-  }
-
-  @media (min-width: 768px) {
-    [data-multi-step-form]::before {
-      left: max(3rem, env(safe-area-inset-left));
-      right: max(3rem, env(safe-area-inset-right));
-    }
-  }
-
-  @media (min-width: 1024px) {
-    [data-multi-step-form]::before {
-      left: max(4rem, env(safe-area-inset-left));
-      right: max(4rem, env(safe-area-inset-right));
-    }
-  } */
 
   .step-content.completed .step-form-buttons-wrapper {
     /* margin-top: 0 !important; */
@@ -1253,7 +1140,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             setTimeout(() => {
               data.index = (data.index + 1) % data.values.length;
               span.textContent = data.values[data.index];
-              span.style.animation = "slideInDown 400ms ease-out forwards";
+              span.style.animation = "slideInDownPlaceholder 400ms ease-out forwards";
             }, 400);
           }, staggerDelay);
         }
@@ -1318,7 +1205,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           setTimeout(() => {
             data.index = 0;
             span.textContent = data.values[0];
-            span.style.animation = "slideInDown 400ms ease-out forwards";
+            span.style.animation = "slideInDownPlaceholder 400ms ease-out forwards";
           }, staggerDelay);
         }
       });
@@ -1627,154 +1514,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       runMultiStepInit();
     }
   });
-
-  // Forgot password modal handler (for login form)
-  // Only initialize if we're on the login form
-  // if (document.getElementById("multi-step-login-form")) {
-  //   const forgotPasswordBtn = document.getElementById("forgot-password-btn");
-
-  //   // Modal open/close functionality
-  //   async function openForgotPasswordModal() {
-  //     try {
-  //       const headers = new Headers();
-  //       const globalInputClasses =
-  //         document.querySelector('input:not([type="hidden"])')?.className || "";
-  //       headers.set("x-global-input-classes", globalInputClasses);
-
-  //       const response = await fetch("/partials/forgot-password-form", {
-  //         headers: headers,
-  //       });
-
-  //       if (!response.ok) {
-  //         console.error("Failed to fetch forgot password form partial:", response.status);
-  //         return;
-  //       }
-
-  //       const formHTML = await response.text();
-
-  //       const modalId = await (window as any).showNotice({
-  //         type: "",
-  //         title: "Forgot Password",
-  //         message: formHTML,
-  //         modal: true,
-  //       });
-
-  //       // Set up cancel button handler and focus email input when modal opens
-  //       setTimeout(() => {
-  //         const emailInput = document.querySelector(
-  //           '#forgot-password-form input[name="email"]'
-  //         ) as HTMLInputElement;
-  //         emailInput?.focus();
-
-  //         // Add cancel button click handler
-  //         const cancelBtn = document.getElementById("cancel-forgot");
-  //         if (cancelBtn) {
-  //           cancelBtn.addEventListener("click", () => {
-  //             if ((window as any).toastNotificationManager && modalId) {
-  //               (window as any).toastNotificationManager.hide(modalId);
-  //             }
-  //           });
-  //         }
-  //       }, 100);
-  //     } catch (error) {
-  //       console.error("Failed to load forgot password form:", error);
-  //       alert("Failed to load password reset form. Please try again.");
-  //     }
-  //   }
-
-  //   // Event listeners for modal
-  //   forgotPasswordBtn?.addEventListener("click", (e) => {
-  //     e.preventDefault();
-  //     openForgotPasswordModal();
-  //   });
-
-  //   // Handle form submission using event delegation (since form will be in modal)
-  //   document.addEventListener("submit", async (e) => {
-  //     const target = e.target as HTMLFormElement;
-  //     if (target.id === "forgot-password-form") {
-  //       e.preventDefault();
-
-  //       const emailInput = target.querySelector('input[name="email"]') as HTMLInputElement;
-  //       const email = emailInput?.value.trim();
-
-  //       if (!email) {
-  //         if ((window as any).showNotice) {
-  //           (window as any).showNotice({
-  //             type: "error",
-  //             title: "Validation Error",
-  //             message: "Please enter your email address.",
-  //             persist: true,
-  //             modal: true,
-  //           });
-  //         }
-  //         return;
-  //       }
-
-  //       const sendResetLinkBtn = target.querySelector('button[type="submit"]') as HTMLButtonElement;
-
-  //       if (sendResetLinkBtn) {
-  //         sendResetLinkBtn.disabled = true;
-  //         sendResetLinkBtn.textContent = "Sending...";
-  //       }
-
-  //       try {
-  //         const response = await fetch("/api/auth/forgot-password", {
-  //           method: "POST",
-  //           headers: {
-  //             "Content-Type": "application/json",
-  //           },
-  //           body: JSON.stringify({ email }),
-  //         });
-
-  //         const result = await response.json();
-
-  //         if (response.ok) {
-  //           if ((window as any).showNotice) {
-  //             (window as any).showNotice({
-  //               type: "success",
-  //               title: "Reset Link Sent",
-  //               message:
-  //                 "If an account with that email exists, you will receive a password reset link shortly.",
-  //               redirect: { url: "/", delay: 3500, showCountdown: true },
-  //               modal: true,
-  //             });
-  //           }
-
-  //           const closeBtn = document.querySelector(
-  //             '[data-modal-hide="forgot-password-modal"]'
-  //           ) as HTMLElement;
-  //           if (closeBtn) closeBtn.click();
-  //         } else {
-  //           if ((window as any).showNotice) {
-  //             (window as any).showNotice({
-  //               type: "error",
-  //               title: "Error",
-  //               message: result.error || "Failed to send reset link. Please try again.",
-  //               persist: true,
-  //               modal: true,
-  //             });
-  //           }
-  //         }
-  //       } catch (error) {
-  //         console.error("Forgot password error:", error);
-  //         if ((window as any).showNotice) {
-  //           (window as any).showNotice({
-  //             type: "error",
-  //             title: "Network Error",
-  //             message: "Failed to send reset link. Please check your connection and try again.",
-  //             persist: true,
-  //             modal: true,
-  //           });
-  //         }
-  //       } finally {
-  //         if (sendResetLinkBtn) {
-  //           sendResetLinkBtn.disabled = false;
-  //           sendResetLinkBtn.textContent = "Send Reset Link";
-  //         }
-  //       }
-  //     }
-  //   });
-  // }
 
   // Helper function to check if all fields in current step are valid
   function checkAllFieldsValid() {

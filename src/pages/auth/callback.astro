@@ -11,8 +11,20 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
   title="Signing you in..."
   description="Please wait while we complete authentication"
 >
-  <div class="flex w-full items-center justify-center" data-dynamic-height="true">
+  <div id="loading-container" class="flex w-full flex-col items-center justify-center gap-6" data-dynamic-height="true">
     <LoadingSpinner size="lg" color="primary" loadingText="Signing you in..." />
+    <div id="taking-too-long" class="hidden max-w-sm text-center">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Taking longer than expected? This can happen if the server is starting up or the network is slow.
+      </p>
+      <a
+        href="/auth/login"
+        class="mt-3 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+      >
+        <SimpleIcon name="arrow-left" />
+        Back to Login
+      </a>
+    </div>
   </div>
 
   <div
@@ -45,6 +57,12 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
 </LayoutAuthCallback>
 
 <script>
+  // Show "Taking too long?" escape hatch after 8s (avoids stuck loading when DB/network is slow)
+  const slowTimeout = setTimeout(() => {
+    const el = document.getElementById("taking-too-long");
+    if (el) el.classList.remove("hidden");
+  }, 8000);
+
   // CRITICAL: Capture and restore code IMMEDIATELY before ANY imports or client initialization
   // Supabase's detectSessionInUrl checks the URL when the client is created, so the code MUST be present
   const initialUrl = window.location.href;
@@ -182,6 +200,7 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
       });
 
       if (response.ok) {
+        clearTimeout(slowTimeout);
         console.log("[AUTH-CALLBACK] Authentication successful, redirecting...");
         await new Promise((resolve) => setTimeout(resolve, 300));
         const redirectUrl = capturedRedirect || "/project/dashboard";
@@ -493,6 +512,7 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
         Object.fromEntries(response.headers.entries())
       );
 
+      clearTimeout(slowTimeout);
       // Small delay to ensure cookies are set before redirect
       // This is especially important for localhost development
       // Increased delay to ensure browser has time to process Set-Cookie headers
@@ -513,6 +533,7 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
   }
 
   function showError(message: string) {
+    clearTimeout(slowTimeout);
     const errorContainer = document.getElementById("error");
     const errorMessage = document.getElementById("error-message");
     const backLink = document.getElementById("back-link");

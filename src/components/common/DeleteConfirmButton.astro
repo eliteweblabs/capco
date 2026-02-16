@@ -60,10 +60,16 @@ const buttonVariant = "ghost";
 const timerRingSizeMap = { xs: 24, sm: 32, md: 40, lg: 48, xl: 56 } as const;
 const timerRingSize = timerRingSizeMap[size] ?? 32;
 
+// Icon size (matches SimpleIcon: xs=12, sm=16, md=20, lg=24, xl=32)
+const iconSizeMap = { xs: 12, sm: 16, md: 20, lg: 24, xl: 32 } as const;
+const iconSizePx = iconSizeMap[size] ?? 16;
+
 // Merge custom data attributes with internal ones
 const mergedDataAttributes = {
   "data-state": "trash",
   "data-timeout": timeout.toString(),
+  "data-icon-size": String(iconSizePx),
+  "data-original-title": tooltipText,
   ...(itemType && { "data-item-type": itemType }),
   ...(apiEndpoint && { "data-api-endpoint": apiEndpoint }),
   ...(deleteMethod && { "data-delete-method": deleteMethod }),
@@ -237,9 +243,13 @@ const mergedDataAttributes = {
       button.setAttribute("data-state", "confirm");
       button.title = "Click again to confirm deletion";
 
-      const iconElement = button.querySelector(".delete-confirm-icon") as SVGElement;
+      const iconElement = button.querySelector(".delete-confirm-icon") as HTMLElement;
       if (iconElement) {
-        iconElement.outerHTML = `<svg class="inline-block stopwatch-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        if (!button.dataset.originalIconHtml) {
+          button.dataset.originalIconHtml = iconElement.outerHTML;
+        }
+        const px = button.dataset.iconSize || "16";
+        iconElement.outerHTML = `<svg class="inline-block stopwatch-icon text-red-500 dark:text-red-500" width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="13" r="8"/>
           <path d="M12 9v4l2 2"/>
           <path d="M10 2h4"/>
@@ -366,15 +376,9 @@ const mergedDataAttributes = {
   function resetButton(button: HTMLElement) {
     button.setAttribute("data-state", "trash");
     button.title = button.dataset.originalTitle || "Delete";
-    const stopwatchIcon = button.querySelector(".stopwatch-icon") as SVGElement;
-    if (stopwatchIcon) {
-      stopwatchIcon.outerHTML = `<svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 6h18"></path>
-        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-        <path d="M10 11v6"></path>
-        <path d="M14 11v6"></path>
-      </svg>`;
+    const stopwatchIcon = button.querySelector(".stopwatch-icon") as HTMLElement;
+    if (stopwatchIcon && button.dataset.originalIconHtml) {
+      stopwatchIcon.outerHTML = button.dataset.originalIconHtml;
     }
   }
 

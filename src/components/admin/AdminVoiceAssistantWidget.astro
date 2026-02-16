@@ -241,6 +241,35 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       }
     }
 
+    /** Format ISO timestamp for spoken announcement (e.g. "2:30 PM" or "today at 2:30 PM") */
+    function formatTimeForSpeech(isoStr) {
+      if (!isoStr) return "";
+      try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return "";
+        const now = new Date();
+        const isToday = d.toDateString() === now.toDateString();
+        const timeStr = d.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+        return isToday ? `at ${timeStr}` : `on ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })} at ${timeStr}`;
+      } catch (e) {
+        return "";
+      }
+    }
+
+    /** Build VAPI announcement: user name, action, time, project name (if applicable) */
+    function buildAnnouncement({ userName, action, timeIso, projectName, address }) {
+      const timePart = formatTimeForSpeech(timeIso);
+      const timePhrase = timePart ? ` ${timePart}` : "";
+      const parts = [`Read aloud: ${userName} ${action}${timePhrase}`];
+      if (projectName) parts.push(`Project: ${projectName}`);
+      if (address) parts.push(`Address: ${address}`);
+      return parts.join(". ") + ".";
+    }
+
     async function pollNewSubmissions() {
       if (!lastPollTime) lastPollTime = new Date().toISOString();
       const url = `/api/admin/new-submissions?since=${encodeURIComponent(lastPollTime)}`;
@@ -265,9 +294,13 @@ const currentUserRole = currentUser?.profile?.role || "Client";
           const key = `contact-${c.id}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          const name = [c.firstName, c.lastName].filter(Boolean).join(" ") || "Someone";
-          const msg = `Read aloud: New contact form submission from ${name}.`;
-          console.log(LOG, "pollNewSubmissions new contact", { id: c.id, name, msg });
+          const userName = [c.firstName, c.lastName].filter(Boolean).join(" ") || "Someone";
+          const msg = buildAnnouncement({
+            userName,
+            action: "submitted a new contact form",
+            timeIso: c.submittedAt || c.createdAt,
+          });
+          console.log(LOG, "pollNewSubmissions new contact", { id: c.id, userName, msg });
           announceToAgent(msg);
         }
 
@@ -275,12 +308,18 @@ const currentUserRole = currentUser?.profile?.role || "Client";
           const key = `mep-${p.id}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          const clientName = p.clientName || "a client";
-          const addr = p.address || "no address given";
-          const msg = `Read aloud: New MEP project submitted by ${clientName}, address ${addr}.`;
+          const userName = p.clientName || "A client";
+          const msg = buildAnnouncement({
+            userName,
+            action: "submitted a new MEP project",
+            timeIso: p.createdAt,
+            projectName: p.title || undefined,
+            address: p.address || undefined,
+          });
           console.log(LOG, "pollNewSubmissions new MEP", {
             id: p.id,
-            clientName,
+            userName,
+            title: p.title,
             address: p.address,
             msg,
           });

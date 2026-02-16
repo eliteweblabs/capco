@@ -204,11 +204,8 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const promises = orders.map(
-      (item: { id: string; display_order?: number; displayOrder?: number }) => {
-        const displayOrder = item.displayOrder ?? item.display_order ?? 0;
-        return supabaseAdmin.from("testimonials").update({ displayOrder }).eq("id", item.id);
-      }
+    const promises = orders.map((item: { id: string; displayOrder: number }) =>
+      supabaseAdmin.from("testimonials").update({ displayOrder: item.displayOrder }).eq("id", item.id)
     );
 
     const results = await Promise.all(promises);

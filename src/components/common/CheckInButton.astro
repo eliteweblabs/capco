@@ -11,8 +11,10 @@ interface Props {
   tile?: boolean;
 }
 
-const { globalIconButtonClasses = "inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none", tile = false } =
-  Astro.props;
+const {
+  globalIconButtonClasses = "inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
+  tile = false,
+} = Astro.props;
 
 const tileClasses =
   "flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600 dark:hover:bg-primary-950/30";
@@ -34,11 +36,13 @@ const iconSize = tile ? "xl" : "md";
   <span id="check-out-icon" class="check-out-icon hidden" aria-hidden="true">
     <SimpleIcon name="log-out" size={iconSize} class="text-primary-500 dark:text-primary-400" />
   </span>
-  {tile && (
-    <span id="check-in-label" class="text-sm font-medium text-gray-900 dark:text-white">
-      Check In
-    </span>
-  )}
+  {
+    tile && (
+      <span id="check-in-label" class="text-sm font-medium text-gray-900 dark:text-white">
+        Check In
+      </span>
+    )
+  }
   <span class="sr-only">Check in at location</span>
 </button>
 
@@ -159,10 +163,13 @@ const iconSize = tile ? "xl" : "md";
       updateButton(newState);
 
       if (typeof (window as any).showNotice === "function") {
+        const loc = data.address ?? data.location ?? "your location";
         (window as any).showNotice(
           "success",
           isCheckIn ? "Checked in" : "Checked out",
-          isCheckIn ? "Admins have been notified of your location." : "Admins have been notified.",
+          isCheckIn
+            ? `Successfully checked in at ${loc}.`
+            : `Successfully checked out from ${loc}.`,
           3000
         );
       }

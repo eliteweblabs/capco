@@ -14,9 +14,9 @@ The voice assistant (VAPI) is available as an **admin-only** floating widget. Wh
   1. Admin clicks the mic FAB → panel opens with "Start Voice Assistant".
   2. On Start, VAPI call begins and **submission polling** starts (every 30s).
   3. When polling finds new **contact** or **MEP** submissions, the widget sends a system message to the agent with the text to speak. The agent should **read that message out loud** (see prompt below).
-  4. Example announcements the agent will receive and should read aloud:
-     - *"Read aloud: New MEP project submitted by Client Joe, address 123 Main St."*
-     - *"Read aloud: New contact form submission from Jane Doe."*
+  4. Example announcements the agent will receive and should read aloud (format: user name, action, time, project/address when applicable):
+     - *"Read aloud: Jane Doe submitted a new contact form at 2:30 PM."*
+     - *"Read aloud: Client Joe submitted a new MEP project at 2:35 PM. Project: MEP Project - Warehouse. Address: 123 Main St."*
   5. After the agent reads them out, the assistant can then:
      - **Read it** → use tool `getContactSubmission(submissionId)` to get details.
      - **Create project** → use tool `createProjectFromContactSubmission(submissionId)` (creates user if needed, then project).
@@ -33,7 +33,7 @@ The voice assistant (VAPI) is available as an **admin-only** floating widget. Wh
 
 ## Agent: read announcements out loud
 
-The widget sends system messages that start with **`Read aloud:`** when new submissions are detected. So the agent speaks them only if the assistant is instructed to.
+The widget sends system messages that start with **`Read aloud:`** when new submissions are detected. Each announcement includes: **user name**, **action/change**, **time**, and **project name** (or address) when applicable.
 
 In the **VAPI dashboard** → your assistant → **System prompt** (or instructions), add:
 

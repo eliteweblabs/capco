@@ -321,6 +321,10 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
         return Math.max(0, Math.min(maxScroll, scrollEl.scrollTop));
       }
 
+      function maxScroll() {
+        return Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+      }
+
       function setSidebarPosition(translateYVal) {
         const side = document.getElementById("sidebar");
         if (!side) return;
@@ -338,6 +342,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
 
       function updateTranslate() {
         const scrollTop = clampedScrollTop();
+        const curMaxScroll = maxScroll();
 
         if (!isMobile()) {
           scrollEl.style.transform = "";
@@ -347,10 +352,19 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
           syncNavbarAtTop(0);
           return;
         }
-        const deltaY = scrollTop - prevScrollTop;
+        // When at bottom: keep full reveal (translateY = maxPx). Opening the nav/sidebar
+        // sets body overflow:hidden and triggers layout shifts (e.g. iOS viewport resize).
+        // That shrinks maxScroll and clamps scrollTop, producing negative deltaY and
+        // incorrectly reducing translateY. Fix: if we're at bottom, always use maxPx().
+        const atBottom = curMaxScroll <= 1 || scrollTop >= curMaxScroll - 2;
+        if (atBottom) {
+          translateY = maxPx();
+        } else {
+          const deltaY = scrollTop - prevScrollTop;
+          translateY += deltaY;
+          translateY = Math.max(0, Math.min(maxPx(), translateY));
+        }
         prevScrollTop = scrollTop;
-        translateY += deltaY;
-        translateY = Math.max(0, Math.min(maxPx(), translateY));
         scrollEl.style.transform = `translateY(-${translateY}px)`;
         setSidebarPosition(translateY);
         syncNavbarAtTop(translateY);
@@ -392,6 +406,19 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
         observe(topContainer);
         observe(bottomContainer);
         window.addEventListener("resize", updateBannerOffsets);
+        // Recalc translateY when nav/sidebar opens/closes (main-content gets overflow-hidden).
+        // That triggers layout shifts that can reduce scrollTop; without this we'd stay at wrong translateY.
+        const mainContent = document.getElementById("main-content");
+        if (mainContent && isMobile()) {
+          const mo = new MutationObserver(() => {
+            requestAnimationFrame(() => {
+              prevScrollTop = clampedScrollTop();
+              translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
+              updateTranslate();
+            });
+          });
+          mo.observe(mainContent, { attributes: true, attributeFilter: ["class"] });
+        }
       }
       // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(updateBannerOffsets));
 

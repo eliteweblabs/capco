@@ -52,38 +52,35 @@ import Button from "../common/Button.astro";
 
     {
       !currentUser && (
-        <>
-          <Tooltip
-            position="left"
-            text="Register"
-            className="speed-dial-tooltip"
-            dismissable={false}
+        <Tooltip position="left" text="Register" className="speed-dial-tooltip" dismissable={false}>
+          <button
+            id="register-toggle-btn"
+            type="button"
+            title="Login"
+            aria-label="Login"
+            onclick="window.location.href='/auth/register'"
+            class={buttonClasses}
           >
-            <button
-              id="register-toggle-btn"
-              type="button"
-              title="Login"
-              aria-label="Login"
-              onclick="window.location.href='/auth/register'"
-              class={buttonClasses}
-            >
-              <SimpleIcon name="user-plus" size="lg" />
-            </button>
-          </Tooltip>
+            <SimpleIcon name="user-plus" size="lg" />
+          </button>
+        </Tooltip>
+      )
+    }
 
-          <Tooltip position="left" text="Login" className="speed-dial-tooltip" dismissable={false}>
-            <button
-              id="login-toggle-btn"
-              type="button"
-              title="Login"
-              aria-label="Login"
-              onclick="window.location.href='/auth/login'"
-              class={buttonClasses}
-            >
-              <SimpleIcon name="user" size="lg" />
-            </button>
-          </Tooltip>
-        </>
+    {
+      currentUser && (
+        <Tooltip position="left" text="Login" className="speed-dial-tooltip" dismissable={false}>
+          <button
+            id="login-toggle-btn"
+            type="button"
+            title="Login"
+            aria-label="Login"
+            onclick="window.location.href='/auth/login'"
+            class={buttonClasses}
+          >
+            <SimpleIcon name="user" size="lg" />
+          </button>
+        </Tooltip>
       )
     }
 
@@ -146,6 +143,8 @@ import Button from "../common/Button.astro";
 </div>
 
 <script>
+  import type { Placement } from "@floating-ui/dom";
+
   const tutorials = document.querySelectorAll("[data-welcome]");
   const tutorialButton = document.getElementById("tutorial-trigger");
 
@@ -200,7 +199,7 @@ import Button from "../common/Button.astro";
                     // Show tooltip
                     tooltipContent.classList.remove("opacity-0");
                     tooltipContent.classList.add("opacity-100");
-                    tooltipContent.style.pointerEvents = "auto";
+                    (tooltipContent as HTMLElement).style.pointerEvents = "auto";
 
                     // Manually trigger FloatingUI position calculation
                     const trigger = tooltipWrapper.firstElementChild;
@@ -225,20 +224,26 @@ import Button from "../common/Button.astro";
 
                       const { x, y, placement, middlewareData } = await computePosition(
                         trigger,
-                        tooltipContent,
+                        tooltipContent as HTMLElement,
                         {
-                          placement: preferredPosition,
+                          placement: preferredPosition as Placement,
                           middleware,
                         }
                       );
 
-                      Object.assign(tooltipContent.style, { left: `${x}px`, top: `${y}px` });
-                      tooltipContent.setAttribute("data-popper-placement", placement);
+                      Object.assign((tooltipContent as HTMLElement).style, {
+                        left: `${x}px`,
+                        top: `${y}px`,
+                      });
+                      (tooltipContent as HTMLElement).setAttribute(
+                        "data-popper-placement",
+                        placement
+                      );
 
                       // Position arrow
                       if (arrowElement && middlewareData.arrow) {
                         const { x: arrowX, y: arrowY } = middlewareData.arrow;
-                        Object.assign(arrowElement.style, {
+                        Object.assign((arrowElement as HTMLElement).style, {
                           left: arrowX != null ? `${arrowX}px` : "",
                           top: arrowY != null ? `${arrowY}px` : "",
                         });
@@ -255,8 +260,8 @@ import Button from "../common/Button.astro";
         const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip .tooltip-content");
         tooltips?.forEach((tooltip) => {
           tooltip.classList.remove("opacity-100");
-          tooltip.classList.add("opacity-0");
-          tooltip.style.pointerEvents = "none";
+          (tooltip as HTMLElement).classList.add("opacity-0");
+          (tooltip as HTMLElement).style.pointerEvents = "none";
         });
 
         speedDialMenu?.classList.remove("speed-dial-open");
@@ -278,8 +283,8 @@ import Button from "../common/Button.astro";
         const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip .tooltip-content");
         tooltips?.forEach((tooltip) => {
           tooltip.classList.remove("opacity-100");
-          tooltip.classList.add("opacity-0");
-          tooltip.style.pointerEvents = "none";
+          (tooltip as HTMLElement).classList.add("opacity-0");
+          (tooltip as HTMLElement).style.pointerEvents = "none";
         });
 
         speedDialMenu?.classList.add("hidden");
@@ -388,7 +393,7 @@ import Button from "../common/Button.astro";
 
       // If it's a button or link, let the browser handle it naturally
       const target = e.target;
-      const button = target.closest("button, a");
+      const button = (target as HTMLElement).closest("button, a") as HTMLElement;
 
       if (button) {
         // Let the button's onclick or href work naturally
@@ -416,7 +421,7 @@ import Button from "../common/Button.astro";
 <style>
   /* Staggered animation for menu items when dial opens */
   .speed-dial-menu .speed-dial-tooltip {
-    transform: scale(0.8) translateY(4px);
+    transform: scale(0.2) translateY(4px);
     opacity: 0;
     transition:
       opacity 0.2s ease,

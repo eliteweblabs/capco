@@ -32,6 +32,8 @@ export interface ColumnConfig<T = any> {
   allowHtml?: boolean;
   /** Default width in px for resizable columns */
   width?: number;
+  /** Data attributes for the cell (e.g. data-refresh, data-user-id for refresh-manager) */
+  getCellDataAttrs?: (item: T) => Record<string, string>;
 }
 
 interface Props<T = any> {
@@ -60,7 +62,7 @@ interface Props<T = any> {
   globalInputClasses?: string;
   /** When draggable, ID for reorder API (defaults to getItemId). Rows get data-reorder-id. */
   getReorderId?: (item: T) => string;
-  /** Window function name to call on reorder: (order: {id:string,display_order:number}[]) => void */
+  /** Window function name to call on reorder: (order: {id:string,displayOrder:number}[]) => void */
   reorderCallback?: string;
   /** Override trigger/detail/slot class names for CMS compatibility */
   triggerClass?: string;
@@ -139,8 +141,11 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
       class="w-full min-w-max table-fixed divide-gray-200 text-sm dark:divide-gray-700"
       {...(resizable && { "data-accordion-resizable": "true", "data-table-id": id })}
     >
-      <thead class="text-uppercase color-background text-xs">
+      <thead class="select-none text-uppercase color-background text-xs">
         <tr>
+          {draggable && (
+            <th class="w-10 px-2 py-3" aria-label="Drag to reorder">&nbsp;</th>
+          )}
           {
             columns.map((col) => (
               <th
@@ -175,7 +180,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
           showCreateRow && (
             <>
               <tr
-                class={`${triggerClass} border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700`}
+                class={`${triggerClass} select-none border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700`}
                 data-slot={createSlotId}
                 role="button"
                 tabindex="0"
@@ -183,6 +188,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                 aria-controls={detailRowId(createSlotId)}
                 {...(createRowDataAttrs && toDataAttrs(createRowDataAttrs))}
               >
+                {draggable && <td class="w-10 px-2 py-3">&nbsp;</td>}
                 <td
                   class="px-4 py-3 text-center text-sm font-medium text-primary-600 dark:text-primary-400"
                   colspan={columns.length + (hasActions ? 1 : 0)}
@@ -226,7 +232,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
               const detailDataAttrs = getDetailRowDataAttrs?.(item) || {};
               return [
                 <tr
-                  class={`${triggerClass} border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700`}
+                  class={`${triggerClass} select-none border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 ${draggable ? "cursor-grab" : ""}`}
                   data-slot={itemId}
                   data-item-id={itemId}
                   data-reorder-id={draggable && reorderId ? reorderId : undefined}
@@ -243,17 +249,36 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                     ))}
                   draggable={draggable || undefined}
                 >
+                  {draggable && (
+                    <td
+                      class="accordion-drag-handle w-10 px-2 py-3 align-middle text-gray-400 dark:text-gray-500"
+                      aria-hidden="true"
+                    >
+                      <SimpleIcon name="grip-dots" class="h-5 w-5" />
+                    </td>
+                  )}
                   {columns.map((col) => {
                     const value = col.getValue ? col.getValue(item) : (item as any)[col.key];
                     const display = value ?? "—";
+                    const cellDataAttrs = col.getCellDataAttrs?.(item);
+                    const attrs = cellDataAttrs
+                      ? Object.fromEntries(
+                          Object.entries(cellDataAttrs).map(([k, v]) => [
+                            `data-${k.replace(/([A-Z])/g, (m: string) => "-" + m.toLowerCase())}`,
+                            v,
+                          ])
+                        )
+                      : {};
                     return col.allowHtml && typeof display === "string" ? (
                       <td
                         class={`px-4 py-2 text-sm text-gray-900 dark:text-white ${col.cellClass || ""}`}
                         set:html={display}
+                        {...attrs}
                       />
                     ) : (
                       <td
                         class={`px-4 py-2 text-sm text-gray-900 dark:text-white ${col.cellClass || ""}`}
+                        {...attrs}
                       >
                         {display}
                       </td>

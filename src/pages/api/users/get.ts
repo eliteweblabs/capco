@@ -65,9 +65,16 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       });
     }
 
-    // Check if requesting specific user
+    // Check if requesting specific user (use supabaseAdmin to bypass RLS for admin/refresh-manager)
     if (filters.id) {
-      const { data: user, error } = await supabase
+      const client = supabaseAdmin ?? supabase;
+      if (!client) {
+        return new Response(JSON.stringify({ error: "Database connection not available" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      const { data: user, error } = await client
         .from("profiles")
         .select("*")
         .eq("id", filters.id)

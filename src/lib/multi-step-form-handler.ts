@@ -36,6 +36,41 @@ export function createMultiStepFormHandler(
 
   const form = document.getElementById(formId) as HTMLFormElement;
 
+  /** Show form response inline above form (Alert-style) when responseType is "inline" */
+  function showInlineFormResponse(type: "success" | "error", title: string, description: string) {
+    const container = document.getElementById(`${formId}-response-alert`);
+    if (!container) return;
+    const cfg =
+      type === "success"
+        ? {
+            bgClass: "bg-green-50 dark:bg-green-900/20",
+            borderClass: "border border-green-200 dark:border-green-800",
+            textClass: "text-green-800 dark:text-green-400",
+            icon: "check-circle",
+          }
+        : {
+            bgClass: "bg-red-50 dark:bg-red-900/20",
+            borderClass: "border border-red-200 dark:border-red-800",
+            textClass: "text-red-800 dark:text-red-400",
+            icon: "x-circle",
+          };
+    const escaped = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    container.className = `w-100 p-2 mb-4 ${cfg.bgClass} ${cfg.borderClass}`;
+    container.innerHTML = `
+      <div class="flex items-start">
+        <svg class="mr-2 mt-0.5 h-5 w-5 shrink-0 ${cfg.textClass}" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          ${cfg.icon === "check-circle"
+            ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />'
+            : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />'}
+        </svg>
+        <div class="mr-8 flex-1">
+          <div class="text-base ${cfg.textClass}">${escaped(title)}</div>
+          ${description ? `<div class="mt-1 text-sm ${cfg.textClass}">${escaped(description)}</div>` : ""}
+        </div>
+      </div>`;
+    container.classList.remove("hidden");
+  }
+
   // Update progress bar
   function updateProgress() {
     const stepper = document.getElementById(`${formId}-stepper`);
@@ -1308,7 +1343,8 @@ export function createMultiStepFormHandler(
       }
       console.log("[MULTISTEP-FORM] Form data keys:", Array.from(formData.keys()));
 
-      if ((window as any).showNotice) {
+      const responseType = options.formConfig?.responseType || "toast";
+      if (responseType === "toast" && (window as any).showNotice) {
         (window as any).showNotice(
           "info",
           "Submitting...",
@@ -1357,7 +1393,9 @@ export function createMultiStepFormHandler(
             throw new Error(result.error || "Submission failed");
           }
 
-          if ((window as any).showNotice) {
+          if (responseType === "inline") {
+            showInlineFormResponse("success", "Success!", result.message || "Form submitted successfully");
+          } else if ((window as any).showNotice) {
             (window as any).showNotice(
               "success",
               "Success!",
@@ -1376,13 +1414,11 @@ export function createMultiStepFormHandler(
         }
       } catch (error) {
         console.error("[MULTISTEP-FORM] Submission error:", error);
-        if ((window as any).showNotice) {
-          (window as any).showNotice(
-            "error",
-            "Submission Failed",
-            error instanceof Error ? error.message : "An unexpected error occurred",
-            8000
-          );
+        const errMsg = error instanceof Error ? error.message : "An unexpected error occurred";
+        if (responseType === "inline") {
+          showInlineFormResponse("error", "Submission Failed", errMsg);
+        } else if ((window as any).showNotice) {
+          (window as any).showNotice("error", "Submission Failed", errMsg, 8000);
         }
       } finally {
         console.log("[MULTISTEP-FORM] Submission complete, resetting state");
