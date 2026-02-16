@@ -337,13 +337,15 @@ const contactFormConfig = await getContactFormConfig(globalCompanyName, virtualA
     // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    // Form was hidden on load; typewriter/TypeIt waits for visibility. Re-init and trigger
+    // Form was hidden on load; typewriter is triggered by MutationObserver in typewriter-text.ts
+    // when form-container loses .hidden. Fallback trigger in case observer fires before attach:
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const formContainer = document.getElementById("form-container");
         if (typeof window.initTypewriterTexts === "function") window.initTypewriterTexts();
         if (formContainer && typeof window.triggerActiveStepTypewriter === "function") {
-          setTimeout(() => window.triggerActiveStepTypewriter(formContainer), 100);
+          const form = formContainer.querySelector("form#multi-step-contact-form") ?? formContainer;
+          setTimeout(() => window.triggerActiveStepTypewriter(form), 150);
         }
       });
     });

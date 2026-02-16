@@ -319,14 +319,23 @@ function isStepInHiddenContainer(step: Element): boolean {
 function triggerActiveStepTypewriter(root?: Element | null): void {
   const scope = root || document;
 
-  const allActiveSteps = scope.querySelectorAll(".step-content.active");
+  // On CMS contact page there's no form-container; contact form is inline.
+  // Prefer contact form over login (dropdown) when both have active steps.
   let activeStep: Element | null = null;
-  for (const step of allActiveSteps) {
-    if (!root && isStepInHiddenContainer(step)) {
-      continue;
+  if (!root) {
+    const contactForm = document.getElementById("multi-step-contact-form");
+    const contactActive = contactForm?.querySelector(".step-content.active");
+    if (contactActive && !isStepInHiddenContainer(contactActive)) {
+      activeStep = contactActive;
     }
-    activeStep = step;
-    break;
+  }
+  if (!activeStep) {
+    const allActiveSteps = scope.querySelectorAll(".step-content.active");
+    for (const step of allActiveSteps) {
+      if (!root && isStepInHiddenContainer(step)) continue;
+      activeStep = step;
+      break;
+    }
   }
 
   if (!activeStep) return;
