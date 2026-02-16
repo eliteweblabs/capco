@@ -337,12 +337,13 @@ const contactFormConfig = await getContactFormConfig(globalCompanyName, virtualA
     // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    // Typewriter runs on DOMContentLoaded but form was hidden; TypeIt uses waitUntilVisible.
-    // Re-trigger typewriter scoped to form-container so we don't trigger the wrong form (e.g. login).
+    // Form was hidden on load; typewriter/TypeIt waits for visibility. Re-init and trigger
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (typeof window.triggerActiveStepTypewriter === "function") {
-          window.triggerActiveStepTypewriter(document.getElementById("form-container"));
+        const formContainer = document.getElementById("form-container");
+        if (typeof window.initTypewriterTexts === "function") window.initTypewriterTexts();
+        if (formContainer && typeof window.triggerActiveStepTypewriter === "function") {
+          setTimeout(() => window.triggerActiveStepTypewriter(formContainer), 100);
         }
       });
     });

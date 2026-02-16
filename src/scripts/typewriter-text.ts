@@ -9,17 +9,12 @@ import TypeIt from "typeit";
  * Initialize typewriter effect for elements with typewriter-text class
  */
 function initTypewriterTexts(): void {
-  // console.log("[TYPEWRITER] Initializing typewriter effects...");
-
-  // Find all elements with typewriter-text class
   const typewriterElements = document.querySelectorAll(
     ".typewriter-text"
   ) as NodeListOf<HTMLElement>;
 
   typewriterElements.forEach((element) => {
-    // Skip if already initialized
     if (element.getAttribute("data-typewriter-ready")) {
-      // console.log("[TYPEWRITER] Already initialized:", element);
       return;
     }
 
@@ -36,16 +31,12 @@ function initTypewriterTexts(): void {
     // If it has session meta, mark it but DON'T initialize yet
     // It will be initialized when the step becomes active
     if (hasSessionMeta) {
-      // console.log("[TYPEWRITER] Element has session meta, deferring initialization:", element);
       element.setAttribute("data-typewriter-deferred", "true");
       return;
     }
 
-    // Initialize immediately for elements without session meta
     initializeTypewriterInstance(element, text);
   });
-
-  // console.log(`[TYPEWRITER] Initialized ${typewriterElements.length} elements`);
 }
 
 /**
@@ -62,15 +53,9 @@ function decodeHtmlEntities(str: string): string {
 }
 
 function initializeTypewriterInstance(element: HTMLElement, text: string): void {
-  // Decode HTML entities only - do NOT use textarea.innerHTML/value (it strips tags like <br> and <span>)
   text = decodeHtmlEntities(text);
-
-  // Inject form session meta data into the text before typewriter starts
   text = injectSessionMetaIntoText(text);
 
-  // console.log("[TYPEWRITER] Initializing element with text:", text.substring(0, 50) + "...");
-
-  // Clear the element content
   element.innerHTML = "";
 
   // Mark as initialized
@@ -80,11 +65,15 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
   // Parse text for custom pause spans
   const segments = parseTextWithPauses(text);
 
+  // If element is in a hidden container, skip waitUntilVisible so .go() works when we reveal it
+  const isInHidden = element.closest(".hidden, [hidden], [aria-hidden='true']");
+  const waitUntilVisible = !isInHidden;
+
   // Create TypeIt instance
   const instance = new TypeIt(element, {
     speed: 10, // 50% faster than previous 20ms
     cursor: true, // Show blinking cursor
-    waitUntilVisible: true,
+    waitUntilVisible,
     html: true, // Enable HTML parsing for <br> tags
     lifeLike: true, // Add natural typing variations
     afterStep: () => {
@@ -309,31 +298,44 @@ function parseTextWithPauses(
  * Trigger typewriter animation for active step
  * @param root - Optional: scope search to this element (e.g. form-container when revealing hidden form)
  */
+/** Skip step if it's inside a hidden container (dropdown, modal, or .hidden) */
+function isStepInHiddenContainer(step: Element): boolean {
+  const form = step.closest("form");
+  if (!form) return false;
+  let el: Element | null = form;
+  while (el && el !== document.body) {
+    if (
+      el.classList.contains("hidden") ||
+      el.hasAttribute("hidden") ||
+      el.getAttribute("aria-hidden") === "true"
+    ) {
+      return true;
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+
 function triggerActiveStepTypewriter(root?: Element | null): void {
   const scope = root || document;
-  console.log("[TYPEWRITER] Checking for active step...", root ? "(scoped)" : "");
 
-  // Find active step (within scope to avoid picking wrong form when multiple exist)
-  const activeStep = scope.querySelector(".step-content.active");
-  if (!activeStep) {
-    console.log("[TYPEWRITER] No active step found");
-    return;
+  const allActiveSteps = scope.querySelectorAll(".step-content.active");
+  let activeStep: Element | null = null;
+  for (const step of allActiveSteps) {
+    if (!root && isStepInHiddenContainer(step)) {
+      continue;
+    }
+    activeStep = step;
+    break;
   }
 
-  // console.log("[TYPEWRITER] Found active step:", activeStep);
+  if (!activeStep) return;
 
-  // First, check for any deferred typewriter elements that need initialization
   const deferredElements = activeStep.querySelectorAll(
     ".typewriter-text[data-typewriter-deferred='true']"
   ) as NodeListOf<HTMLElement>;
 
   if (deferredElements.length > 0) {
-    //  console.log(
-    //   "[TYPEWRITER] Found",
-    //   deferredElements.length,
-    //   "deferred elements, initializing now..."
-    // );
-
     deferredElements.forEach((element) => {
       const text = element.getAttribute("data-text");
       if (text) {
@@ -342,33 +344,19 @@ function triggerActiveStepTypewriter(root?: Element | null): void {
     });
   }
 
-  // Find typewriter elements in active step (now initialized)
   const typewriterElements = activeStep.querySelectorAll(
     ".typewriter-text[data-typewriter-ready='true']"
   ) as NodeListOf<HTMLElement>;
 
-  // console.log(
-  //   "[TYPEWRITER] Found",
-  //   typewriterElements.length,
-  //   "typewriter elements in active step"
-  // );
-
   typewriterElements.forEach((element) => {
-    // Skip if already triggered
-    if (element.getAttribute("data-typewriter-triggered") === "true") {
-      // console.log("[TYPEWRITER] Already triggered:", element);
-      return;
-    }
+    if (element.getAttribute("data-typewriter-triggered") === "true") return;
 
-    // Get the stored TypeIt instance
     const instance = (element as any).__typeItInstance;
     if (instance) {
-      // console.log("[TYPEWRITER] Starting animation for element");
-      // Start the animation
       instance.go();
       element.setAttribute("data-typewriter-triggered", "true");
     } else {
-      console.warn("[TYPEWRITER] No TypeIt instance found for element:", element);
+      console.warn("[TYPEWRITER] No TypeIt instance for element:", element);
     }
   });
 }
@@ -407,15 +395,29 @@ observer.observe(document.body, {
   subtree: true,
 });
 
-// Trigger typewriter when step becomes active
+document.addEventListener("multistep-step-change", () => {
+  triggerActiveStepTypewriter();
+});
+
 document.addEventListener("DOMContentLoaded", () => {
-  // Initial trigger for .step-content.active
+  initTypewriterTexts();
   triggerActiveStepTypewriter();
 
-  // Only react when the active step changes (no need to observe all step elements)
-  document.addEventListener("multistep-step-change", () => {
-    triggerActiveStepTypewriter();
-  });
+  // When contact form container is revealed (loses .hidden), trigger typewriter
+  const formContainer = document.getElementById("form-container");
+  if (formContainer) {
+    const revealObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.attributeName === "class" && !formContainer.classList.contains("hidden")) {
+          initTypewriterTexts();
+          const contactForm = formContainer.querySelector("form#multi-step-contact-form") ?? formContainer;
+          setTimeout(() => triggerActiveStepTypewriter(contactForm), 150);
+          break;
+        }
+      }
+    });
+    revealObserver.observe(formContainer, { attributes: true, attributeFilter: ["class"] });
+  }
 });
 
 export { initTypewriterTexts, triggerActiveStepTypewriter };

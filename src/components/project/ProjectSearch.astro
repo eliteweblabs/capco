@@ -1,37 +1,28 @@
 ---
-import SimpleIcon from "../common/SimpleIcon.astro";
-import Button from "../common/Button.astro";
+import SearchInput from "../common/SearchInput.astro";
+
 const { class: className, id = "project-search" } = Astro.props;
+const inputClasses =
+  "rounded-full border border-gray-300 bg-gray-100 py-2.5 pl-6 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-600";
 ---
 
-<div class="relative hidden w-full max-w-xl">
-  <input
-    type="text"
-    {id}
-    placeholder="Search active projects... OLD, Overdue, 30"
-    class="w-full rounded-full border border-gray-300 bg-gray-100 py-2.5 pl-6 pr-10 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-600"
-    autocomplete="off"
-  />
-  <SimpleIcon
-    id={`${id}-clear`}
-    name="x"
-    size="sm"
-    class="absolute right-2 top-1/2 hidden -translate-y-1/2 transform cursor-pointer p-1 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-  />
-
-  <!-- Auto-suggest dropdown -->
+<SearchInput
+  id={id}
+  placeholder="Search active projects... OLD, Overdue, 30"
+  globalInputClasses={inputClasses}
+  wrapperClass={`hidden w-full max-w-xl ${className || ""}`.trim()}
+>
   <div
+    slot="suggestions"
     id={`${id}-suggestions`}
     class="color-background absolute left-0 right-0 top-full z-50 hidden max-h-60 overflow-y-auto rounded-lg border border-gray-300 bg-gray-100 shadow-lg dark:border-gray-600"
   >
     <!-- Suggestions will be populated by JavaScript -->
   </div>
-</div>
-<script is:inline define:vars={{ id }} is:inline>
+</SearchInput>
+<script is:inline define:vars={{ id }}>
   // Project search functionality
   function filterProjectsBySearch(searchTerm) {
-    const clearBtn = document.getElementById(`${id}-clear`);
-
     const projectList = document.getElementById("project-list");
     if (!projectList) {
       console.log("Project list not found");
@@ -43,7 +34,6 @@ const { class: className, id = "project-search" } = Astro.props;
     let visibleCount = 0;
 
     projects.forEach((project) => {
-      // Get only text from elements marked as searchable
       const searchableElements = project.querySelectorAll("[data-searchable]");
       const searchableText = Array.from(searchableElements)
         .map((el) => el.textContent || "")
@@ -66,7 +56,6 @@ const { class: className, id = "project-search" } = Astro.props;
 
     console.log(`Filtered projects: ${visibleCount} visible out of ${projects.length} total`);
 
-    // Update count bubbles based on search results (with small delay to ensure functions are available)
     setTimeout(() => {
       if (searchTerm.length > 0) {
         if (window.updateCountBubblesForSearch) {
@@ -76,7 +65,6 @@ const { class: className, id = "project-search" } = Astro.props;
           console.log("❌ updateCountBubblesForSearch function not available");
         }
       } else {
-        // No search term, restore original counts
         if (window.restoreOriginalCountBubbles) {
           console.log("🔄 Restoring original count bubbles...");
           window.restoreOriginalCountBubbles();
@@ -85,16 +73,8 @@ const { class: className, id = "project-search" } = Astro.props;
         }
       }
     }, 10);
-
-    // Show/hide clear button
-    if (searchTerm.length > 0) {
-      clearBtn.classList.remove("hidden");
-    } else {
-      clearBtn.classList.add("hidden");
-    }
   }
 
-  // Clear search function
   function clearProjectSearch() {
     const searchInput = document.getElementById(id);
     if (searchInput) {
@@ -102,111 +82,12 @@ const { class: className, id = "project-search" } = Astro.props;
       filterProjectsBySearch("");
       hideSuggestions();
 
-      // Restore original count bubbles when search is cleared
       if (window.restoreOriginalCountBubbles) {
         window.restoreOriginalCountBubbles();
       }
     }
   }
 
-  // Event listeners
-  document.addEventListener("DOMContentLoaded", function () {
-    const searchInput = document.getElementById(id);
-    const clearBtn = document.getElementById(`${id}-clear`);
-
-    if (searchInput) {
-      searchInput.addEventListener("input", function () {
-        const searchTerm = this.value;
-        filterProjectsBySearch(searchTerm);
-
-        // Show suggestions if there's a search term
-        if (searchTerm.length > 0) {
-          showSuggestions(searchTerm);
-        } else {
-          hideSuggestions();
-        }
-      });
-
-      // Hide suggestions when input loses focus (with a small delay for clicks)
-      searchInput.addEventListener("blur", function () {
-        setTimeout(() => hideSuggestions(), 150);
-      });
-
-      // Handle keyboard navigation
-      searchInput.addEventListener("keydown", function (e) {
-        const suggestionsDiv = document.getElementById(`${id}-suggestions`);
-        if (!suggestionsDiv || suggestionsDiv.classList.contains("hidden")) return;
-
-        const suggestions = suggestionsDiv.querySelectorAll(".suggestion-item");
-        const currentActive = suggestionsDiv.querySelector(".suggestion-item.bg-gray-100");
-        let activeIndex = -1;
-
-        if (currentActive) {
-          activeIndex = Array.from(suggestions).indexOf(currentActive);
-        }
-
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          activeIndex = Math.min(activeIndex + 1, suggestions.length - 1);
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          activeIndex = Math.max(activeIndex - 1, -1);
-        } else if (e.key === "Enter" && activeIndex >= 0) {
-          e.preventDefault();
-          const activeSuggestion = suggestions[activeIndex];
-          if (activeSuggestion) {
-            const suggestion = activeSuggestion.getAttribute("data-suggestion");
-            this.value = suggestion;
-            filterProjectsBySearch(suggestion);
-            hideSuggestions();
-          }
-          return;
-        } else if (e.key === "Escape") {
-          hideSuggestions();
-          return;
-        }
-
-        // Update active suggestion highlight
-        suggestions.forEach((item, index) => {
-          if (index === activeIndex) {
-            item.classList.add("bg-gray-100", "dark:bg-gray-700");
-          } else {
-            item.classList.remove("bg-gray-100", "dark:bg-gray-700");
-          }
-        });
-      });
-    }
-
-    if (clearBtn) {
-      clearBtn.addEventListener("click", clearProjectSearch);
-    }
-
-    // Build initial suggestions list
-    setTimeout(() => {
-      const projectList = document.getElementById("project-list");
-      const projects = projectList ? projectList.querySelectorAll("[data-project-id]") : [];
-      console.log("🔍 Initial check: Found", projects.length, "projects in list");
-
-      // Build suggestions from searchable elements
-      buildSuggestionsList();
-
-      // Watch for changes to the project list to rebuild suggestions
-      if (projectList) {
-        const observer = new MutationObserver(() => {
-          // Rebuild suggestions when projects are added/removed/changed
-          setTimeout(() => buildSuggestionsList(), 100);
-        });
-
-        observer.observe(projectList, {
-          childList: true,
-          subtree: true,
-          characterData: true,
-        });
-      }
-    }, 500);
-  });
-
-  // Auto-suggest functionality
   let allSuggestions = [];
 
   function buildSuggestionsList() {
@@ -221,7 +102,6 @@ const { class: className, id = "project-search" } = Astro.props;
       searchableElements.forEach((element) => {
         const text = element.textContent?.trim();
         if (text && text.length > 2) {
-          // Only add the complete text, no word splitting
           suggestions.add(text);
         }
       });
@@ -244,7 +124,7 @@ const { class: className, id = "project-search" } = Astro.props;
           suggestion.toLowerCase().includes(searchTerm.toLowerCase()) &&
           suggestion.toLowerCase() !== searchTerm.toLowerCase()
       )
-      .slice(0, 8); // Limit to 8 suggestions
+      .slice(0, 8);
 
     if (filteredSuggestions.length === 0) {
       hideSuggestions();
@@ -255,7 +135,7 @@ const { class: className, id = "project-search" } = Astro.props;
       .map(
         (suggestion) => `
         <div class="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 suggestion-item" 
-             data-suggestion="${suggestion}">
+             data-suggestion="${suggestion.replace(/"/g, "&quot;")}">
           ${highlightMatch(suggestion, searchTerm)}
         </div>
       `
@@ -264,7 +144,6 @@ const { class: className, id = "project-search" } = Astro.props;
 
     suggestionsDiv.classList.remove("hidden");
 
-    // Add click listeners to suggestions
     suggestionsDiv.querySelectorAll(".suggestion-item").forEach((item) => {
       item.addEventListener("click", () => {
         const suggestion = item.getAttribute("data-suggestion");
@@ -291,17 +170,15 @@ const { class: className, id = "project-search" } = Astro.props;
     return text.replace(regex, '<strong class="font-semibold">$1</strong>');
   }
 
-  // Event listeners
-  document.addEventListener("DOMContentLoaded", function () {
+  function initProjectSearch() {
     const searchInput = document.getElementById(id);
-    const clearBtn = document.getElementById(`${id}-clear`);
+    const clearBtn = document.getElementById(`${id}-clear-btn`);
 
     if (searchInput) {
       searchInput.addEventListener("input", function () {
         const searchTerm = this.value;
         filterProjectsBySearch(searchTerm);
 
-        // Show suggestions if there's a search term
         if (searchTerm.length > 0) {
           showSuggestions(searchTerm);
         } else {
@@ -309,12 +186,10 @@ const { class: className, id = "project-search" } = Astro.props;
         }
       });
 
-      // Hide suggestions when input loses focus (with a small delay for clicks)
       searchInput.addEventListener("blur", function () {
         setTimeout(() => hideSuggestions(), 150);
       });
 
-      // Handle keyboard navigation
       searchInput.addEventListener("keydown", function (e) {
         const suggestionsDiv = document.getElementById(`${id}-suggestions`);
         if (!suggestionsDiv || suggestionsDiv.classList.contains("hidden")) return;
@@ -348,7 +223,6 @@ const { class: className, id = "project-search" } = Astro.props;
           return;
         }
 
-        // Update active suggestion highlight
         suggestions.forEach((item, index) => {
           if (index === activeIndex) {
             item.classList.add("bg-gray-100", "dark:bg-gray-700");
@@ -363,19 +237,14 @@ const { class: className, id = "project-search" } = Astro.props;
       clearBtn.addEventListener("click", clearProjectSearch);
     }
 
-    // Build initial suggestions list
     setTimeout(() => {
       const projectList = document.getElementById("project-list");
-      const projects = projectList ? projectList.querySelectorAll("[data-project-id]") : [];
-      console.log("🔍 Initial check: Found", projects.length, "projects in list");
+      console.log("🔍 Initial check: Found", projectList ? projectList.querySelectorAll("[data-project-id]").length : 0, "projects in list");
 
-      // Build suggestions from searchable elements
       buildSuggestionsList();
 
-      // Watch for changes to the project list to rebuild suggestions
       if (projectList) {
         const observer = new MutationObserver(() => {
-          // Rebuild suggestions when projects are added/removed/changed
           setTimeout(() => buildSuggestionsList(), 100);
         });
 
@@ -386,9 +255,11 @@ const { class: className, id = "project-search" } = Astro.props;
         });
       }
     }, 500);
-  });
+  }
 
-  // Make functions globally available for other components
+  document.addEventListener("DOMContentLoaded", initProjectSearch);
+  document.addEventListener("astro:page-load", initProjectSearch);
+
   window.filterProjectsBySearch = filterProjectsBySearch;
   window.clearProjectSearch = clearProjectSearch;
 </script>

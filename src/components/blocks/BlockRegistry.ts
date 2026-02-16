@@ -281,6 +281,57 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     },
   },
 
+  WhatSetsUsApartBlock: {
+    name: "WhatSetsUsApartBlock",
+    description: "What Sets Us Apart section with icon/text blocks or numbered list + supporting image",
+    props: {
+      title: { type: "string", default: "What Sets Us Apart", description: "Section headline" },
+      description: { type: "string", description: "Optional section description" },
+      variant: {
+        type: "string",
+        default: "icons",
+        description: "Layout: icons (icon + text blocks) | numbered (numbered list)",
+      },
+      imageSrc: { type: "string", description: "Supporting image URL (QC walk, safety briefing)" },
+      imageAlt: { type: "string", description: "Image alt text" },
+      imagePosition: {
+        type: "string",
+        default: "right",
+        description: "Image position: left | right",
+      },
+      item1Title: { type: "string" },
+      item1Icon: { type: "string" },
+      item1Description: { type: "string" },
+      // ... repeat for items 2-6
+    },
+  },
+
+  TwoColumnFadeShowBlock: {
+    name: "TwoColumnFadeShowBlock",
+    description: "Left: image fadeshow, Right: content. Use image1..image12, interval, fadeDuration, rightContent.",
+    props: {
+      image1: { type: "string" },
+      image2: { type: "string" },
+      image3: { type: "string" },
+      image4: { type: "string" },
+      image5: { type: "string" },
+      image6: { type: "string" },
+      image7: { type: "string" },
+      image8: { type: "string" },
+      image9: { type: "string" },
+      image10: { type: "string" },
+      image11: { type: "string" },
+      image12: { type: "string" },
+      interval: { type: "string", default: "4000", description: "Ms per image" },
+      fadeDuration: { type: "string", default: "1200", description: "Crossfade ms" },
+      rightContent: { type: "string", description: "Right column HTML" },
+      ratio: { type: "string", default: "1:1" },
+      maxWidth: { type: "string", default: "full" },
+      gap: { type: "string", default: "medium" },
+      padding: { type: "string", default: "medium" },
+    },
+  },
+
   ListBlock: {
     name: "ListBlock",
     description: "Simple list with line breaks and tab indentation for nesting",

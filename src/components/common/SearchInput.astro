@@ -17,6 +17,8 @@ interface Props {
   name?: string;
   placeholder?: string;
   globalInputClasses?: string;
+  /** Extra classes for the outer wrapper div */
+  wrapperClass?: string;
   /** API endpoint for autosuggest. If omitted, filter mode only. */
   fetchApiEndpoint?: string;
   apiParams?: Record<string, any>;
@@ -30,6 +32,7 @@ const {
   name = id,
   placeholder = "Search...",
   globalInputClasses = "",
+  wrapperClass = "",
   fetchApiEndpoint,
   apiParams = {},
   valueField = "description",
@@ -40,7 +43,7 @@ const {
 const hasAutosuggest = !!fetchApiEndpoint;
 ---
 
-<div class="search-input-wrapper relative">
+<div class={`search-input-wrapper relative ${wrapperClass}`.trim()}>
   {hasAutosuggest && <input type="hidden" id={`${id}-value`} name={name} value="" />}
   <div class="relative">
     <SimpleIcon
@@ -50,6 +53,7 @@ const hasAutosuggest = !!fetchApiEndpoint;
     <input
       type="text"
       id={hasAutosuggest ? `${id}-search-input` : id}
+      name={!hasAutosuggest ? name : undefined}
       placeholder={placeholder}
       autocomplete="off"
       class={`${globalInputClasses} w-full pl-10 pr-10`}
@@ -76,6 +80,7 @@ const hasAutosuggest = !!fetchApiEndpoint;
       </div>
     </div>
   )}
+  <slot name="suggestions" />
 </div>
 
 <script define:vars={{ id, hasAutosuggest, fetchApiEndpoint, apiParams, valueField, labelField }}>
@@ -84,8 +89,8 @@ const hasAutosuggest = !!fetchApiEndpoint;
 
   function initSearchInput() {
     const inputId = hasAutosuggest ? `${id}-search-input` : id;
-    const input = document.getElementById(inputId) as HTMLInputElement;
-    const clearBtn = document.getElementById(`${id}-clear-btn`) as HTMLButtonElement;
+    const input = document.getElementById(inputId);
+    const clearBtn = document.getElementById(`${id}-clear-btn`);
     if (!input || !clearBtn) return;
 
     function toggleClear() {

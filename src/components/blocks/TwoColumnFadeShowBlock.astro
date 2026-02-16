@@ -1,0 +1,221 @@
+---
+/**
+ * TwoColumnFadeShowBlock - Left: image fadeshow, Right: content
+ *
+ * Left column displays a cycling fade slideshow of images.
+ * Right column displays prose content.
+ *
+ * @example CMS usage (props only):
+ * <TwoColumnFadeShowBlock
+ *   image1="https://example.com/1.jpg"
+ *   image2="https://example.com/2.jpg"
+ *   image3="https://example.com/3.jpg"
+ *   interval="5000"
+ *   fadeDuration="1200"
+ *   rightContent="<h2>Built With Discipline.</h2><p>More content</p>"
+ *   ratio="1:1"
+ *   maxWidth="full"
+ * />
+ *
+ * @example With right slot:
+ * <TwoColumnFadeShowBlock image1="..." image2="..." interval="5000">
+ *   <div slot="right"><h2>Title</h2><p>Content</p></div>
+ * </TwoColumnFadeShowBlock>
+ */
+
+interface Props {
+  /** Image URLs for fadeshow: image1, image2, ... image12 */
+  image1?: string;
+  image2?: string;
+  image3?: string;
+  image4?: string;
+  image5?: string;
+  image6?: string;
+  image7?: string;
+  image8?: string;
+  image9?: string;
+  image10?: string;
+  image11?: string;
+  image12?: string;
+  /** Duration per image in ms (default 4000) */
+  interval?: number | string;
+  /** Crossfade duration in ms (default 1200) */
+  fadeDuration?: number | string;
+  /** Right column content (HTML string for CMS) */
+  rightContent?: string;
+  /** Column ratio */
+  ratio?: "1:1" | "2:1" | "1:2" | "3:1" | "1:3" | "3:2" | "2:3";
+  /** Max width */
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+  /** Gap between columns */
+  gap?: "none" | "small" | "medium" | "large";
+  /** Padding */
+  padding?: "none" | "small" | "medium" | "large";
+  /** Mobile stack order */
+  mobileStack?: "left-first" | "right-first";
+  /** Min height for left fadeshow panel */
+  minHeight?: string;
+  /** Background size for fadeshow images */
+  imageSize?: "cover" | "contain";
+  /** Extra class */
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const imageUrls = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  .map((i) => props[`image${i}` as keyof typeof props] as string | undefined)
+  .filter((u): u is string => Boolean(u));
+
+const interval = Math.max(1000, parseInt(String(props.interval ?? 4000), 10) || 4000);
+const fadeDuration = Math.max(200, parseInt(String(props.fadeDuration ?? 1200), 10) || 1200);
+const ratio = props.ratio ?? "1:1";
+const maxWidth = props.maxWidth ?? "full";
+const gap = props.gap ?? "medium";
+const padding = props.padding ?? "medium";
+const mobileStack = props.mobileStack ?? "left-first";
+const minHeight = props.minHeight ?? "min-h-[20rem] sm:min-h-[28rem]";
+const imageSize = props.imageSize ?? "cover";
+
+const ratioClasses: Record<string, { left: string; right: string }> = {
+  "1:1": { left: "lg:col-span-6", right: "lg:col-span-6" },
+  "2:1": { left: "lg:col-span-8", right: "lg:col-span-4" },
+  "1:2": { left: "lg:col-span-4", right: "lg:col-span-8" },
+  "3:1": { left: "lg:col-span-9", right: "lg:col-span-3" },
+  "1:3": { left: "lg:col-span-3", right: "lg:col-span-9" },
+  "3:2": { left: "lg:col-span-7", right: "lg:col-span-5" },
+  "2:3": { left: "lg:col-span-5", right: "lg:col-span-7" },
+};
+const cols = ratioClasses[ratio] ?? ratioClasses["1:1"];
+
+const gapClasses = { none: "gap-0", small: "gap-4", medium: "gap-8", large: "gap-12" };
+const paddingClasses = {
+  none: "",
+  small: "py-8",
+  medium: "py-12 md:py-16",
+  large: "py-16 md:py-24",
+};
+const maxWidthClasses = {
+  sm: "max-w-screen-sm",
+  md: "max-w-screen-md",
+  lg: "max-w-screen-lg",
+  xl: "max-w-screen-xl",
+  "2xl": "max-w-7xl",
+  full: "max-w-full",
+};
+const mobileOrder =
+  mobileStack === "right-first"
+    ? { left: "order-2 lg:order-1", right: "order-1 lg:order-2" }
+    : { left: "order-1", right: "order-2" };
+---
+
+<section
+  id={props.id}
+  class:list={[
+    "two-column-fadeshow-block",
+    paddingClasses[padding],
+    props.className || "",
+  ]}
+>
+  <div
+    class:list={[
+      "mx-auto px-4 sm:px-6 lg:px-8",
+      maxWidth !== "full" && maxWidthClasses[maxWidth],
+      maxWidth === "full" && "w-full max-w-full",
+    ]}
+  >
+    <div
+      class:list={[
+        "grid grid-cols-1 lg:grid-cols-12",
+        gapClasses[gap],
+        "items-stretch",
+      ]}
+    >
+      <!-- Left: Fadeshow -->
+      <div
+        class:list={[
+          "col-span-1 relative overflow-hidden rounded-lg",
+          cols.left,
+          mobileOrder.left,
+          minHeight,
+        ]}
+      >
+        {imageUrls.length > 0 ? (
+          <div
+            class="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+            aria-hidden="true"
+            data-fadeshow
+            data-interval={interval}
+            data-fade-duration={fadeDuration}
+          >
+            {imageUrls.map((url, i) => (
+              <div
+                class="fadeshow-layer absolute inset-0 bg-center bg-no-repeat"
+                class:list={[
+                  imageSize === "cover" && "bg-cover",
+                  imageSize === "contain" && "bg-contain",
+                ]}
+                data-fadeshow-layer
+                data-index={i}
+                style={`background-image: url(${url}); opacity: ${i === 0 ? 1 : 0};`}
+              />
+            ))}
+          </div>
+        ) : null}
+        {/* Spacer so column has height when no images */}
+        <div class="h-full min-h-[12rem]" aria-hidden="true" />
+      </div>
+
+      <!-- Right: Content -->
+      <div
+        class:list={[
+          "col-span-1 flex flex-col justify-center",
+          cols.right,
+          mobileOrder.right,
+          "prose prose-lg max-w-none dark:prose-invert",
+        ]}
+      >
+        {props.rightContent ? (
+          <Fragment set:html={props.rightContent} />
+        ) : (
+          <slot name="right" />
+        )}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .fadeshow-layer {
+    transition: opacity var(--fadeshow-duration, 1.2s) ease-in-out;
+  }
+</style>
+
+<script>
+  function initFadeshow(root?: Document | Element) {
+    const scope = root ?? document;
+    scope.querySelectorAll("[data-fadeshow]").forEach((container) => {
+      if ((container as HTMLElement).dataset.fadeshowInit) return;
+      (container as HTMLElement).dataset.fadeshowInit = "1";
+      const layers = container.querySelectorAll<HTMLElement>("[data-fadeshow-layer]");
+      if (layers.length <= 1) return;
+      const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
+      const fadeMs = parseInt(container.getAttribute("data-fade-duration") ?? "1200", 10);
+      (container as HTMLElement).style.setProperty("--fadeshow-duration", `${fadeMs}ms`);
+      let idx = 0;
+      const next = () => {
+        const prev = idx;
+        idx = (idx + 1) % layers.length;
+        layers[prev]!.style.opacity = "0";
+        layers[idx]!.style.opacity = "1";
+      };
+      setInterval(next, intervalMs);
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => initFadeshow(document));
+  } else {
+    initFadeshow(document);
+  }
+  document.addEventListener("astro:after-swap", () => initFadeshow(document));
+</script>
