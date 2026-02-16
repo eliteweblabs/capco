@@ -82,6 +82,13 @@ function getHiddenValue(name: string): string {
 ---
 
 <div data-standard-form class={containerClass}>
+  {config.responseType === "inline" && (
+    <div
+      id={`${config.formId}-response-alert`}
+      class="hidden w-100 p-2 mb-4"
+      role="alert"
+    />
+  )}
   <form
     id={config.formId}
     action={config.formAction}
@@ -246,60 +253,6 @@ function getHiddenValue(name: string): string {
           }
 
           {
-            /* Input with animated placeholders */
-          }
-          if (field.animatedPlaceholders && field.animatedPlaceholders.length > 0) {
-            return (
-              <div
-                class:list={[
-                  wrapperClass,
-                  "relative text-black dark:text-white",
-                  field.icon ? "input-with-icon" : "",
-                  field.iconPosition === "right" ? "icon-right" : "icon-left",
-                ]}
-                data-icon={field.icon}
-              >
-                <input
-                  type={field.type as "text" | "email" | "tel" | "password"}
-                  id={field.id}
-                  name={field.name}
-                  placeholder=""
-                  required={field.required}
-                  autocomplete={field.autocomplete}
-                  minlength={field.minlength}
-                  autofocus={field.autofocus}
-                  class:list={[
-                    appendedMultiStepInputClasses,
-                    field.icon && field.iconPosition === "right" ? "pr-12" : "",
-                    field.icon && field.iconPosition !== "right" ? "pl-12" : "",
-                  ]}
-                  data-error={field.errorMessage}
-                  data-validate={field.validate}
-                  data-validate-message={field.validateMessage}
-                  data-has-animated-placeholder="true"
-                  data-original-placeholder={field.placeholder}
-                  data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
-                />
-                <span
-                  class:list={[
-                    "animated-placeholder pointer-events-none absolute -top-0.5 left-0 flex h-full w-full items-center",
-                    field.animatedPlaceholderAlignment === "left"
-                      ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : "pl-3"}`
-                      : field.animatedPlaceholderAlignment === "right"
-                        ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : "pr-3"}`
-                        : "justify-center",
-                    field.icon && field.iconPosition === "right" ? "mr-1.25 pr-12" : "",
-                    field.icon && field.iconPosition !== "right" ? "ml-1.25 pl-12" : "",
-                  ]}
-                  data-for={field.id}
-                >
-                  {field.placeholder}
-                </span>
-              </div>
-            );
-          }
-
-          {
             /* Input with icon */
           }
           if (field.icon) {
@@ -383,3 +336,34 @@ function getHiddenValue(name: string): string {
     }
   </form>
 </div>
+
+<script>
+  import { initializeStandardForm } from "../../lib/multi-step-form-handler";
+
+  function runStandardFormInit() {
+    const wrapper = document.querySelector("[data-standard-form]");
+    const form = wrapper?.querySelector("form[data-form-config]") as HTMLFormElement | null;
+    if (!form) return;
+
+    let formId: string;
+    let formConfig: any;
+    let initialData: Record<string, any> = {};
+    try {
+      const parsed = JSON.parse(form.getAttribute("data-form-config") ?? "{}");
+      formId = parsed.formId;
+      formConfig = parsed.formConfig;
+      initialData = parsed.initialData ?? {};
+    } catch {
+      return;
+    }
+    if (!formId || !formConfig) return;
+
+    initializeStandardForm(form, { initialData, formConfig });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runStandardFormInit);
+  } else {
+    runStandardFormInit();
+  }
+</script>

@@ -1,0 +1,356 @@
+---
+/**
+ * PixelGrid – Individually controlled dot grid for jumbotron backgrounds.
+ *
+ * Each cell is 1rem × 1rem. Every dot can have its own color.
+ * API: setDot(col, row, color), setFromImage(img, primaryTone), setAnimation(name), draw().
+ *
+ * Use for: hero/jumbotron backgrounds, image-to-dot art, animated patterns.
+ */
+interface Props {
+  id?: string;
+  /** Cell size in CSS (1rem = one "pixel"). Default "1rem". */
+  cellSize?: string;
+  /** Base color when idle. Default primary-500. */
+  baseColor?: string;
+  /** CSS class for wrapper. */
+  class?: string;
+}
+
+const {
+  id = "pixelGrid",
+  cellSize = "1rem",
+  baseColor = "primary-500",
+  class: className = "",
+} = Astro.props;
+---
+
+<div
+  class={`pixel-grid-wrapper ${className}`}
+  aria-hidden="true"
+  data-pixel-grid-id={id}
+  data-cell-size={cellSize}
+  data-base-color={baseColor}>
+  <canvas
+    id={id}
+    class="pixel-grid-canvas block h-full min-h-[1px] w-full"
+    width="1"
+    height="1"
+  ></canvas>
+</div>
+
+<script define:vars={{ id, cellSize, baseColor }}>
+  (function () {
+    const canvas = document.getElementById(id);
+    const wrapper = canvas?.closest(".pixel-grid-wrapper");
+    if (!canvas || !wrapper) return;
+
+    const CELL_SIZE = cellSize;
+
+    function parseCellSizePx() {
+      const raw = wrapper?.getAttribute("data-cell-size") || "1rem";
+      if (/^\d+(\.\d+)?px$/.test(raw)) return parseFloat(raw);
+      const rem = parseFloat(raw);
+      if ((raw.endsWith("rem") || raw === "1rem") && !Number.isNaN(rem)) {
+        const root = getComputedStyle(document.documentElement).fontSize;
+        const rootPx = parseFloat(root) || 16;
+        return rem * rootPx;
+      }
+      return 16;
+    }
+
+    function getPrimaryColor() {
+      const key = wrapper?.getAttribute("data-base-color") || "primary-500";
+      if (key.startsWith("#")) return key;
+      const varName = `--color-${key}`;
+      let val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+      if (val) return val;
+      val = getComputedStyle(document.documentElement).getPropertyValue("--color-primary-500").trim();
+      return val || "#825BDD";
+    }
+
+    function hexToRgb(hex) {
+      const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+      return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [130, 91, 221];
+    }
+
+    function rgbToHex(r, g, b) {
+      return "#" + [r, g, b].map((x) => ("0" + Math.round(x).toString(16)).slice(-2)).join("");
+    }
+
+    let cols = 0;
+    let rows = 0;
+    let cellPx = 16;
+    /** Uint32Array: 0xRRGGBB per dot (alpha = 255 implied) */
+    let pixels = null;
+    let animationName = "";
+    let animationFrame = 0;
+    let rafId = null;
+    let primaryHex = "";
+    let primaryRgb = [0, 0, 0];
+
+    function ensureBuffer() {
+      cellPx = parseCellSizePx();
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      if (w <= 0 || h <= 0) return;
+      cols = Math.ceil(w / cellPx) + 1;
+      rows = Math.ceil(h / cellPx) + 1;
+      const len = cols * rows;
+      if (!pixels || pixels.length !== len) {
+        pixels = new Uint32Array(len);
+        pixels.fill(0);
+      }
+    }
+
+    function setPixel(idx, r, g, b) {
+      if (!pixels || idx < 0 || idx >= pixels.length) return;
+      pixels[idx] = (r << 16) | (g << 8) | b;
+    }
+
+    function getPixel(idx) {
+      if (!pixels || idx < 0 || idx >= pixels.length) return [0, 0, 0];
+      const v = pixels[idx];
+      return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+    }
+
+    function draw() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      if (w <= 0 || h <= 0) return;
+      ensureBuffer();
+      if (!pixels) return;
+
+      canvas.width = Math.ceil(w * dpr);
+      canvas.height = Math.ceil(h * dpr);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+
+      const halfCell = cellPx / 2;
+
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+          const idx = j * cols + i;
+          const v = pixels[idx];
+          if (v === 0) continue;
+          const r = (v >> 16) & 255;
+          const g = (v >> 8) & 255;
+          const b = v & 255;
+          const x = i * cellPx + halfCell;
+          const y = j * cellPx + halfCell;
+          ctx.fillStyle = `rgb(${r},${g},${b})`;
+          ctx.fillRect(x - 0.5, y - 0.5, 1, 1);
+        }
+      }
+    }
+
+    function setDot(col, row, color) {
+      ensureBuffer();
+      if (!pixels) return;
+      if (col < 0 || col >= cols || row < 0 || row >= rows) return;
+      let r, g, b;
+      if (typeof color === "string") {
+        const parsed = hexToRgb(color);
+        r = parsed[0];
+        g = parsed[1];
+        b = parsed[2];
+      } else if (Array.isArray(color) && color.length >= 3) {
+        [r, g, b] = color;
+      } else {
+        return;
+      }
+      setPixel(row * cols + col, r, g, b);
+      draw();
+    }
+
+    function fill(base = null) {
+      ensureBuffer();
+      if (!pixels) return;
+      primaryHex = getPrimaryColor();
+      primaryRgb = hexToRgb(primaryHex);
+      const [pr, pg, pb] = base ?? primaryRgb;
+      for (let i = 0; i < pixels.length; i++) {
+        setPixel(i, pr, pg, pb);
+      }
+      draw();
+    }
+
+    function clear() {
+      ensureBuffer();
+      if (!pixels) return;
+      pixels.fill(0);
+      draw();
+    }
+
+    /** Map luminance (0–1) to primary shade (darker = lower luminance) */
+    function luminanceToPrimary(lum) {
+      const [r, g, b] = primaryRgb;
+      const factor = Math.max(0, Math.min(1, lum));
+      return [
+        Math.round(r * factor),
+        Math.round(g * factor),
+        Math.round(b * factor),
+      ];
+    }
+
+    function setFromImage(img, usePrimaryTone = true) {
+      if (!img || !img.complete) return;
+      ensureBuffer();
+      if (!pixels) return;
+      primaryHex = getPrimaryColor();
+      primaryRgb = hexToRgb(primaryHex);
+
+      const tmp = document.createElement("canvas");
+      tmp.width = cols;
+      tmp.height = rows;
+      const tctx = tmp.getContext("2d");
+      if (!tctx) return;
+      tctx.drawImage(img, 0, 0, cols, rows);
+      const idata = tctx.getImageData(0, 0, cols, rows);
+      const data = idata.data;
+
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+          const idx = (j * cols + i) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const a = data[idx + 3] / 255;
+          if (usePrimaryTone) {
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            const norm = lum / 255;
+            const [pr, pg, pb] = luminanceToPrimary(norm * a);
+            setPixel(j * cols + i, pr, pg, pb);
+          } else {
+            setPixel(j * cols + i, r, g, b);
+          }
+        }
+      }
+      draw();
+    }
+
+    function stopAnimation() {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      animationName = "";
+    }
+
+    function runAnimation(name) {
+      stopAnimation();
+      animationName = name;
+      primaryHex = getPrimaryColor();
+      primaryRgb = hexToRgb(primaryHex);
+
+      function animate(t) {
+        if (animationName !== name) return;
+        animationFrame = t * 0.001;
+        ensureBuffer();
+        if (!pixels) {
+          rafId = requestAnimationFrame(animate);
+          return;
+        }
+
+        const cx = cols / 2;
+        const cy = rows / 2;
+        const maxDist = Math.hypot(cx, cy);
+
+        for (let j = 0; j < rows; j++) {
+          for (let i = 0; i < cols; i++) {
+            const idx = j * cols + i;
+            const x = i - cx;
+            const y = j - cy;
+            const dist = Math.hypot(x, y);
+            let lum = 0;
+
+            if (name === "rings" || name === "water-drop") {
+              const ringPeriod = 36;
+              const ring = (dist - animationFrame * 50) % ringPeriod;
+              const inRing = ring < 12;
+              lum = inRing ? 0.25 + 0.7 * (1 - ring / 12) : 0.08;
+            } else if (name === "cartography") {
+              const contourFreq = 0.04;
+              const height = Math.sin(dist * contourFreq + animationFrame * 2) * 0.5 + 0.5;
+              const bands = Math.floor(height * 6) / 6;
+              lum = 0.15 + bands * 0.8;
+            } else if (name === "lavalamp") {
+              const blob1 = Math.sin(i * 0.08 + animationFrame) * Math.cos(j * 0.06 + animationFrame * 0.7);
+              const blob2 = Math.sin((i - 20) * 0.06 + animationFrame * 1.2) * Math.cos((j - 15) * 0.07 + animationFrame * 0.9);
+              const mixed = (blob1 + blob2) * 0.5 + 0.5;
+              lum = 0.1 + mixed * 0.85;
+            } else if (name === "equalizer") {
+              const band = Math.floor(i / Math.max(1, cols / 12));
+              const wave = Math.sin(animationFrame * 4 + band * 0.5) * 0.5 + 0.5;
+              const barHeight = Math.floor(rows * (0.1 + wave * 0.8));
+              const fromBottom = rows - 1 - j;
+              lum = fromBottom < barHeight ? 0.2 + (1 - fromBottom / barHeight) * 0.8 : 0.08;
+            } else {
+              lum = 0.2;
+            }
+
+            const [r, g, b] = luminanceToPrimary(lum);
+            setPixel(idx, r, g, b);
+          }
+        }
+        draw();
+        rafId = requestAnimationFrame(animate);
+      }
+      rafId = requestAnimationFrame(animate);
+    }
+
+    const api = {
+      setDot,
+      fill,
+      clear,
+      setFromImage,
+      setAnimation: runAnimation,
+      stopAnimation,
+      draw,
+      get cols() {
+        ensureBuffer();
+        return cols;
+      },
+      get rows() {
+        ensureBuffer();
+        return rows;
+      },
+      get cellSizePx() {
+        return parseCellSizePx();
+      },
+    };
+
+    window[id] = api;
+
+    function resize() {
+      ensureBuffer();
+      if (animationName) {
+        runAnimation(animationName);
+      } else {
+        draw();
+      }
+    }
+
+    new ResizeObserver(resize).observe(canvas);
+
+    function runWhenReady() {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          fill();
+        });
+      });
+    }
+    runWhenReady();
+    if (document.readyState === "complete") {
+      setTimeout(() => fill(), 80);
+    } else {
+      window.addEventListener("load", () => setTimeout(() => fill(), 80));
+    }
+    setTimeout(() => fill(), 200);
+  })();
+</script>

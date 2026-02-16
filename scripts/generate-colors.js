@@ -96,7 +96,7 @@ const cssContent = `/* Global Color System - CSS Custom Properties */
   --color-danger-900: #7f1d1d;
   --color-danger-950: #450a0a;
 
-  /* Neutral Colors */
+  /* Neutral Colors (Tailwind gray equivalents) */
   --color-neutral-50: #fafafa;
   --color-neutral-100: #f5f5f5;
   --color-neutral-200: #e5e5e5;
@@ -108,6 +108,19 @@ const cssContent = `/* Global Color System - CSS Custom Properties */
   --color-neutral-800: #262626;
   --color-neutral-900: #171717;
   --color-neutral-950: #0a0a0a;
+
+  /* Gray aliases (used by Dropdown, Flowbite, etc. – do not remove) */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #d4d4d4;
+  --color-gray-400: #a3a3a3;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
+  --color-gray-950: #0a0a0a;
 
   /* Light Theme Colors */
   --color-background: #ffffff;

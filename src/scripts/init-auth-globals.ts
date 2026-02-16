@@ -1,5 +1,5 @@
 /**
- * Expose auth/profile helpers on window so inline scripts (UserProfileDropdown, PhoneAndSMS)
+ * Expose auth/profile helpers on window so inline scripts (UserDropdown, PhoneAndSMS)
  * can use them without importing. Prevents 404s when SPA merges HTML and browser
  * tries to resolve raw import paths like /lib/page-size-plugin.
  */

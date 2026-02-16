@@ -1,0 +1,36 @@
+---
+/**
+ * Account dropdown (popover) for non-authenticated users. AuthIcon uses this when !currentUser.
+ * When authenticated, AuthIcon opens AccountDrawer instead.
+ */
+interface Props {
+  currentUser: any;
+  assignedProjectsCount?: number;
+  assignedProjectsPreview?: any[];
+  globalIconButtonClasses: string;
+  id: string;
+  /** Name of global function to call when dropdown opens (e.g. for refresh). */
+  onOpen?: string;
+}
+
+// Redirect to API callback only when code is on a page that shouldn't handle it
+const authCode = Astro.url.searchParams.get("code");
+if (authCode && !Astro.url.pathname.startsWith("/auth/callback")) {
+  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+}
+
+const { globalIconButtonClasses, id, onOpen } = Astro.props;
+
+import Dropdown from "./Dropdown.astro";
+import LoginForm from "../../features/forms/components/LoginForm.astro";
+---
+
+<!-- Login popover: AuthIcon uses data-popover-target when not authenticated -->
+<Dropdown id={id} {globalIconButtonClasses} title="" onOpenCallback={onOpen}>
+  <LoginForm />
+</Dropdown>
+<script is:inline>
+  document.addEventListener("DOMContentLoaded", function () {
+    if (typeof window.initPageSizeToggle === "function") window.initPageSizeToggle();
+  });
+</script>

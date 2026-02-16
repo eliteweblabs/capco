@@ -1,6 +1,6 @@
 ---
 /**
- * Account dropdown panel for the header avatar (UserIcon).
+ * Account dropdown panel for the header avatar (AuthIcon).
  * Flowbite: trigger uses data-dropdown-toggle="account-dropdown"; this panel has id="account-dropdown".
  * Navbar.astro attaches the logout handler to #logout-btn.
  */
@@ -21,35 +21,29 @@ import CloseButton from "../ui/CloseButton.astro";
 const { id, title = "", closeButton = true, onOpenCallback, focusSelector } = Astro.props;
 ---
 
-<!-- Account dropdown: Flowbite data-dropdown-toggle="account-dropdown" on UserIcon trigger -->
+{/* Account dropdown: Flowbite data-dropdown-toggle / data-popover-target on AuthIcon trigger */}
 <div
   id={`${id}-dropdown`}
   data-popover
   role="tooltip"
   {...onOpenCallback ? { "data-on-open": onOpenCallback } : {}}
   {...focusSelector ? { "data-focus-on-open": focusSelector } : {}}
-  class="invisible absolute z-10 inline-block w-full max-w-md overflow-visible rounded-b-lg border border-gray-200 bg-white text-body text-sm opacity-0 shadow-lg transition-opacity duration-300 dark:border-gray-700 dark:bg-gray-900"
+  class="invisible absolute z-[150] inline-block w-full max-w-md overflow-visible rounded-b-lg border-t border-gray-200 bg-white text-body text-sm opacity-0 shadow-lg transition-opacity duration-300 dark:border-gray-700 dark:bg-gray-900 sm:border sm:border-t-0"
 >
   <!-- <div class="flex max-h-[85vh] flex-col overflow-hidden">
     <div class="relative flex min-h-0 flex-1 flex-col"> -->
   <div class="relative z-1" data-popper-arrow></div>
 
-  <div class="p-3">
-    <div class="flex">
-      {
-        closeButton && (
-          <div class="flex shrink-0 items-center justify-between border-b border-gray-200 p-3 dark:border-gray-700">
-            <slot name="title">
-              {title && (
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white" set:html={title} />
-              )}
-            </slot>
-            <CloseButton data-dismiss-target={`#${id}-dropdown`} tooltipText="Close" />
-          </div>
-        )
-      }
-      <slot />
-    </div>
+  <div class="border-b border-gray-200 p-8 dark:border-gray-700">
+    {
+      title && (
+        <div class="p-3">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white" set:html={title} />
+        </div>
+      )
+    }
+
+    <slot />
   </div>
 </div>
 
@@ -57,7 +51,7 @@ const { id, title = "", closeButton = true, onOpenCallback, focusSelector } = As
   // Flowbite adds opacity/transition classes when closing; when reopening, only 'hidden' is
   // removed so the panel can stay invisible. Remove those classes on trigger click so dropdowns
   // (account, notifications) reopen correctly after being closed.
-  // Supports both data-dropdown-toggle and data-popover-target (UserIcon uses popover).
+  // Supports both data-dropdown-toggle and data-popover-target (AuthIcon uses popover).
   // iOS keypad: focus() must run in same user gesture as click, so we focus synchronously first.
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("[id$='-dropdown']").forEach(function (panel) {
@@ -91,6 +85,27 @@ const { id, title = "", closeButton = true, onOpenCallback, focusSelector } = As
               }
             }
           }, 50);
+        });
+      });
+
+      // Close button: use Flowbite Popover.hide() when available so state stays in sync.
+      // Falls back to Dismiss-style hide (opacity-0, invisible, hidden) if no Popover instance.
+      panel.querySelectorAll("[data-dropdown-close]").forEach(function (btn) {
+        if (btn.hasAttribute("data-close-bound")) return;
+        btn.setAttribute("data-close-bound", "true");
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          var popoverId = panelId; // e.g. "account-dropdown"
+          var inst =
+            window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", popoverId);
+          if (inst && typeof inst.hide === "function") {
+            inst.hide();
+          } else {
+            panel.classList.add("opacity-0", "invisible");
+            setTimeout(function () {
+              panel.classList.add("hidden");
+            }, 150);
+          }
         });
       });
     });

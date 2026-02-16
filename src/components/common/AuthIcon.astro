@@ -1,0 +1,129 @@
+---
+import UserIcon from "./UserIcon.astro";
+import UserDropdown from "../ui/UserDropdown.astro";
+import UserDrawer from "../ui/UserDrawer.astro";
+
+/**
+ * Auth/profile icon for the navbar. Combines UserIcon (visual) with UserDropdown.
+ * Use UserIcon.astro elsewhere when you need only the visual avatar (e.g. project dashboard).
+ */
+interface Props {
+  currentUser: any;
+  session: any;
+  isBackend?: boolean;
+  assignedProjectsCount?: number;
+  assignedProjectsPreview?: any[];
+  globalIconButtonClasses?: string;
+  id: string;
+}
+
+const {
+  currentUser,
+  session,
+  isBackend,
+  assignedProjectsCount = 0,
+  assignedProjectsPreview = [],
+  globalIconButtonClasses,
+  id = "account",
+} = Astro.props;
+
+const currentPath = Astro.url.pathname;
+const isLoginPage = currentPath.includes("/auth/login");
+const isRegisterPage = currentPath.includes("/auth/register");
+
+if (isLoginPage || isRegisterPage) {
+  return;
+}
+
+const avatarUrl =
+  currentUser?.profile?.avatarUrl ||
+  currentUser?.user_metadata?.avatarUrl ||
+  currentUser?.user_metadata?.picture;
+---
+
+<button
+  class={`h-10 w-10 overflow-hidden rounded-full ${globalIconButtonClasses || ""}`.trim()}
+  {...currentUser
+    ? {
+        "data-drawer-target": "user",
+        "data-drawer-show": "user",
+        "data-drawer-placement": "right",
+        "aria-controls": "user",
+      }
+    : {
+        "data-popover-trigger": "click",
+        "data-popover-target": `${id}-dropdown`,
+        "data-popover-placement": "bottom",
+      }}
+  data-avatar-url={avatarUrl || ""}
+  data-user-id={currentUser?.id}
+  data-project-id={currentUser?.projectId}
+  type="button"
+  style="padding: 0;"
+>
+  <span class="sr-only">Open user menu</span>
+  <UserIcon user={currentUser} class="h-full w-full" />
+</button>
+
+{
+  !currentUser ? (
+    <UserDropdown
+      id={id}
+      {globalIconButtonClasses}
+      assignedProjectsCount={assignedProjectsCount}
+      assignedProjectsPreview={assignedProjectsPreview}
+      {currentUser}
+    />
+  ) : (
+    <UserDrawer
+      {currentUser}
+      assignedProjectsCount={assignedProjectsCount}
+      assignedProjectsPreview={assignedProjectsPreview}
+    />
+  )
+}
+<script>
+  /**
+   * Refresh avatar img src across all [data-avatar-url] elements.
+   * Uses <img> for content manipulation; works for AuthIcon and any avatar using this pattern.
+   * @param newUrl - New avatar URL, or empty string to clear. Omit to re-apply current data-avatar-url.
+   * @param userId - Optional: only update elements with matching data-user-id
+   */
+  function refreshAvatar(newUrl?: string, userId?: string) {
+    document.querySelectorAll("[data-avatar-url]").forEach((container) => {
+      if (userId && container.getAttribute("data-user-id") !== userId) return;
+
+      const url = newUrl !== undefined ? newUrl || "" : container.getAttribute("data-avatar-url");
+      container.setAttribute("data-avatar-url", url || "");
+
+      const img = container.querySelector("img");
+      const fallback = container.querySelector(".avatar-fallback");
+
+      if (!url) {
+        if (img instanceof HTMLImageElement) {
+          img.removeAttribute("src");
+          img.style.display = "none";
+        }
+        if (fallback instanceof HTMLElement) {
+          fallback.classList.remove("hidden");
+          fallback.classList.add("flex");
+          fallback.style.display = "";
+        }
+      } else if (img instanceof HTMLImageElement) {
+        img.src = url;
+        img.style.display = "";
+        if (fallback instanceof HTMLElement) {
+          fallback.classList.add("hidden");
+          fallback.style.display = "none";
+        }
+      }
+    });
+  }
+
+  (window as any).refreshAvatar = refreshAvatar;
+
+  document.addEventListener("avatarUpdated", (e) => {
+    const url = e instanceof CustomEvent && e.detail ? e.detail.avatarUrl : undefined;
+    refreshAvatar(url, undefined);
+  });
+</script>

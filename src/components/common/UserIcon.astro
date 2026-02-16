@@ -1,62 +1,48 @@
 ---
 import SimpleIcon from "./SimpleIcon.astro";
 
+/**
+ * Simple visual user avatar. Use for project dashboard, staff pickers, etc.
+ * For the auth/navbar area with UserDropdown, use AuthIcon.astro instead.
+ *
+ * Props (avatar resolved in order):
+ * - avatarUrl: direct URL
+ * - user: currentUser shape (profile.avatarUrl, user_metadata.picture)
+ * - profile: profile shape (avatarUrl)
+ * - users: array, uses first item as profile
+ */
 interface Props {
-  currentUser: any;
-  session: any;
-  isBackend?: boolean;
-  assignedProjectsCount?: number;
-  assignedProjectsPreview?: any[];
-  globalIconButtonClasses?: string;
-  id: string;
+  avatarUrl?: string;
+  user?: any;
+  profile?: any;
+  users?: any[];
+  class?: string;
 }
 
-const {
-  currentUser,
-  session,
-  isBackend,
-  assignedProjectsCount = 0,
-  assignedProjectsPreview = [],
-  globalIconButtonClasses,
-  id = "account",
-} = Astro.props;
+const { avatarUrl: avatarUrlProp, user, profile, users, class: className = "" } = Astro.props;
 
-import UserProfileDropdown from "../ui/UserProfileDropdown.astro";
-
-// Get current path to determine auth link
-const currentPath = Astro.url.pathname;
-const isLoginPage = currentPath.includes("/auth/login");
-const isRegisterPage = currentPath.includes("/auth/register");
-
-if (isLoginPage || isRegisterPage) {
-  return;
+function resolveAvatarUrl(): string | undefined {
+  if (avatarUrlProp) return avatarUrlProp;
+  if (user) {
+    return (
+      user?.profile?.avatarUrl || user?.user_metadata?.avatarUrl || user?.user_metadata?.picture
+    );
+  }
+  const p = profile || users?.[0];
+  return p?.avatarUrl;
 }
 
-// Determine auth link and tooltip text
-// const authLink = isLoginPage ? "/auth/register" : "/auth/login";
-// const authTooltipText = isLoginPage ? "Register" : isRegisterPage ? "Login" : "Register / Login";
-
-// Prioritize profile.avatarUrl (Supabase Storage) over user_metadata.avatarUrl (Google CDN)
-const avatarUrl =
-  currentUser?.profile?.avatarUrl ||
-  currentUser?.user_metadata?.avatarUrl ||
-  currentUser?.user_metadata?.picture;
+const avatarUrl = resolveAvatarUrl();
 ---
 
-<button
-  class={`h-8 w-8 overflow-hidden rounded-full ${globalIconButtonClasses || ""}`.trim()}
-  data-popover-trigger="click"
-  data-popover-target={`${id}-dropdown`}
-  data-avatar-url={avatarUrl || ""}
-  data-user-id={currentUser?.id}
-  data-project-id={currentUser?.projectId}
-  type="button"
-  style="padding: 0;"
+<span
+  class={`inline-block h-8 w-8 overflow-hidden rounded-full ${className}`.trim()}
+  role="img"
+  aria-hidden="true"
 >
-  <span class="sr-only">Open user menu</span>
   <img
     src={avatarUrl || undefined}
-    alt="Profile"
+    alt="User avatar"
     class="avatar-img h-full w-full min-w-0 object-cover object-center p-0"
     style={!avatarUrl ? "display:none" : undefined}
     onerror="this.style.display='none'; const f=this.nextElementSibling; if(f) { f.classList.remove('hidden'); f.classList.add('flex'); }"
@@ -70,62 +56,7 @@ const avatarUrl =
       "justify-center",
       avatarUrl ? "hidden" : "flex",
     ]}
-    aria-hidden="true"
   >
     <SimpleIcon name="user" size="md" />
   </span>
-</button>
-
-<UserProfileDropdown
-  id={id}
-  {globalIconButtonClasses}
-  assignedProjectsCount={assignedProjectsCount}
-  assignedProjectsPreview={assignedProjectsPreview}
-  {currentUser}
-  closeButton={false}
-/>
-<script>
-  /**
-   * Refresh avatar img src across all [data-avatar-url] elements.
-   * Uses <img> for content manipulation; works for UserIcon and any avatar using this pattern.
-   * @param newUrl - New avatar URL, or empty string to clear. Omit to re-apply current data-avatar-url.
-   * @param userId - Optional: only update elements with matching data-user-id
-   */
-  function refreshAvatar(newUrl?: string, userId?: string) {
-    document.querySelectorAll("[data-avatar-url]").forEach((container) => {
-      if (userId && container.getAttribute("data-user-id") !== userId) return;
-
-      const url = newUrl !== undefined ? newUrl || "" : container.getAttribute("data-avatar-url");
-      container.setAttribute("data-avatar-url", url || "");
-
-      const img = container.querySelector("img");
-      const fallback = container.querySelector(".avatar-fallback");
-
-      if (!url) {
-        if (img instanceof HTMLImageElement) {
-          img.removeAttribute("src");
-          img.style.display = "none";
-        }
-        if (fallback instanceof HTMLElement) {
-          fallback.classList.remove("hidden");
-          fallback.classList.add("flex");
-          fallback.style.display = "";
-        }
-      } else if (img instanceof HTMLImageElement) {
-        img.src = url;
-        img.style.display = "";
-        if (fallback instanceof HTMLElement) {
-          fallback.classList.add("hidden");
-          fallback.style.display = "none";
-        }
-      }
-    });
-  }
-
-  (window as any).refreshAvatar = refreshAvatar;
-
-  document.addEventListener("avatarUpdated", (e) => {
-    const url = e instanceof CustomEvent && e.detail ? e.detail.avatarUrl : undefined;
-    refreshAvatar(url, undefined);
-  });
-</script>
+</span>

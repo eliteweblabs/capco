@@ -235,7 +235,9 @@ function injectSessionMetaIntoText(text: string, element?: HTMLElement): string 
       }
 
       replacedText = replacedText.replace(fullMatch, value);
-      console.log(`[SESSION-META] Replaced ${fieldName} with: "${value}" (form: ${form.id || "unknown"})`);
+      console.log(
+        `[SESSION-META] Replaced ${fieldName} with: "${value}" (form: ${form.id || "unknown"})`
+      );
     }
   }
 
@@ -419,7 +421,8 @@ document.addEventListener("DOMContentLoaded", () => {
       for (const m of mutations) {
         if (m.attributeName === "class" && !formContainer.classList.contains("hidden")) {
           initTypewriterTexts();
-          const contactForm = formContainer.querySelector("form#multi-step-contact-form") ?? formContainer;
+          const contactForm =
+            formContainer.querySelector("form#multi-step-contact-form") ?? formContainer;
           setTimeout(() => triggerActiveStepTypewriter(contactForm), 150);
           break;
         }

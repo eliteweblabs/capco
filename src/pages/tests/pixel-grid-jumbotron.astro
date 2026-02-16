@@ -1,0 +1,154 @@
+---
+/**
+ * Pixel Grid Jumbotron – Test page for dynamic dot grid with per-pixel control.
+ * Animations: rings/water-drop, cartography, lavalamp, equalizer.
+ * Supports image upload → primary-tone dot art.
+ */
+import App from "../../components/ui/App.astro";
+import PixelGrid from "../../components/ui/PixelGrid.astro";
+import Button from "../../components/common/Button.astro";
+import { checkAuth } from "../../lib/auth";
+import { globalCompanyData } from "../api/global/global-company-data";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+const {
+  globalCompanyName,
+  globalCompanyAddress,
+  globalCompanyPhone,
+  globalCompanyEmail,
+  globalCompanyWebsite,
+  globalCompanyLogo,
+} = await globalCompanyData();
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<App
+  title="Pixel Grid Jumbotron"
+  description="Dynamic dot grid with per-pixel control, animations, and image mapping"
+  {currentUser}
+  {session}
+  {supabase}
+  {globalInputClasses}
+  {primaryTextClasses}
+  {secondaryTextClasses}
+  {globalCompanyName}
+  {globalCompanyAddress}
+  {globalCompanyPhone}
+  {globalCompanyEmail}
+  {globalCompanyWebsite}
+  {globalCompanyLogo}
+>
+  <div class="relative min-h-screen">
+    {/* Jumbotron with inset pixel grid */}
+    <section class="relative min-h-[70vh] overflow-hidden">
+      <PixelGrid
+        id="pixelGrid"
+        class="absolute inset-0 -z-10"
+        cellSize="0.5rem"
+        baseColor="primary-500"
+      />
+      <div class="relative z-10 flex min-h-[70vh] flex-col items-center justify-center px-4 py-16">
+        <h1 class="mb-4 text-4xl font-bold tracking-tight md:text-5xl">Pixel Grid Jumbotron</h1>
+        <p class="mb-8 max-w-xl text-center text-lg text-gray-600 dark:text-gray-400">
+          Each dot is 1px × 1px within 0.5rem cells, individually controlled. Map images to primary-tone dot art or run
+          preset animations.
+        </p>
+      </div>
+    </section>
+
+    {/* Controls */}
+    <div class="container relative mx-auto max-w-2xl px-4 py-8">
+      <section class="mb-8">
+        <h2 class="mb-4 text-xl font-semibold">Animation / Pattern</h2>
+        <select
+          id="animation-select"
+          class="color-background w-full max-w-xs rounded-lg border border-gray-300 px-4 py-2 text-base focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-800"
+          aria-label="Select animation pattern">
+          <option value="">Static (fill)</option>
+          <option value="rings">Rings / Water drop</option>
+          <option value="cartography">Cartography / Contour</option>
+          <option value="lavalamp">Lava lamp</option>
+          <option value="equalizer">Equalizer</option>
+        </select>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="mb-4 text-xl font-semibold">Image to dots</h2>
+        <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">
+          Upload an image to convert it to primary-tone dot art.
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+          <input
+            type="file"
+            id="image-upload"
+            accept="image/*"
+            class="block w-full max-w-xs text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-primary-100 file:px-4 file:py-2 file:text-primary-700 hover:file:bg-primary-200 dark:text-gray-400 dark:file:bg-primary-900/40 dark:file:text-primary-300"
+            aria-label="Upload image" />
+          <Button id="clear-image" variant="outline" size="sm">Clear</Button>
+        </div>
+      </section>
+
+      <section
+        class="rounded-lg border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+        <h2 class="mb-2 text-lg font-semibold">API</h2>
+        <pre
+          class="overflow-x-auto text-xs text-gray-700 dark:text-gray-300"><code>window.pixelGrid.setDot(col, row, '#hex' | [r,g,b])
+window.pixelGrid.fill()
+window.pixelGrid.clear()
+window.pixelGrid.setFromImage(imgElement, usePrimaryTone=true)
+window.pixelGrid.setAnimation('rings' | 'cartography' | 'lavalamp' | 'equalizer')
+window.pixelGrid.stopAnimation()
+window.pixelGrid.draw()</code></pre>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        const api = (
+          window as Window & {
+            pixelGrid?: {
+              setFromImage: (img: HTMLImageElement, primary?: boolean) => void;
+              setAnimation: (name: string) => void;
+              stopAnimation: () => void;
+              fill: () => void;
+              clear: () => void;
+            };
+          }
+        ).pixelGrid;
+        if (!api) return;
+
+        const select = document.getElementById("animation-select") as HTMLSelectElement;
+        const fileInput = document.getElementById("image-upload") as HTMLInputElement;
+        const clearBtn = document.getElementById("clear-image");
+
+        select?.addEventListener("change", () => {
+          const val = select.value;
+          if (val) {
+            api.setAnimation(val === "water-drop" ? "rings" : val);
+          } else {
+            api.stopAnimation();
+            api.fill();
+          }
+        });
+
+        fileInput?.addEventListener("change", (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (!file) return;
+          const img = new Image();
+          img.onload = () => {
+            api.stopAnimation();
+            api.setFromImage(img, true);
+          };
+          img.src = URL.createObjectURL(file);
+        });
+
+        clearBtn?.addEventListener("click", () => {
+          fileInput.value = "";
+          api.stopAnimation();
+          api.fill();
+        });
+      })();
+    </script>
+  </div>
+</App>

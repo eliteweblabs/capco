@@ -1509,35 +1509,36 @@ export function createMultiStepFormHandler(
     // Show first step and update progress
     showStep(currentStep);
 
-    // Phone button data-next: valid dest from config, never overwrite with skip dest when invalid
-    const phoneStepNum = phoneInputs.length
-      ? parseInt(
-          (phoneInputs[0] as HTMLInputElement).closest(".step-content")?.getAttribute("data-step") || "0",
-          10
-        )
-      : 0;
-    const phoneBtnConfig = options.formConfig?.steps?.find(
-      (s: any) => s.stepNumber === phoneStepNum
-    )?.buttons?.find((b: any) => b.type === "next");
-    const validDest = phoneBtnConfig?.dataNext;
+    // Phone step: only apply validation-based routing when next button has dataSkip (conditional next)
+    const phoneStep =
+      phoneInputs.length > 0
+        ? ((phoneInputs[0] as HTMLInputElement).closest(".step-content") as HTMLElement)
+        : null;
+    const phoneBtnConfig = phoneStep
+      ? options.formConfig?.steps?.find(
+          (s: any) => s.stepNumber === parseInt(phoneStep.getAttribute("data-step") || "0", 10)
+        )?.buttons?.find((b: any) => b.type === "next" && b.dataSkip != null)
+      : null;
 
-    phoneInputs.forEach((phoneInput) => {
-      const input = phoneInput as HTMLInputElement;
-      const phoneValue = input.value?.trim() || "";
-      const phoneButton = form.querySelector(`.next-step-phone`) as HTMLElement;
+    if (phoneBtnConfig && phoneStep) {
+      const validDest = phoneBtnConfig.dataNext;
+      const conditionalNextButton = phoneStep.querySelector("[data-skip]") as HTMLElement;
 
-      if (phoneButton && validDest != null) {
+      if (conditionalNextButton && validDest != null) {
+        const phoneValue =
+          (phoneInputs[0] as HTMLInputElement)?.value?.trim() || "";
         if (phoneValue) {
-          const isValid = phoneValue.replace(/\D/g, "").length >= 10 && validatePhone(phoneValue);
+          const isValid =
+            phoneValue.replace(/\D/g, "").length >= 10 && validatePhone(phoneValue);
           if (isValid) {
-            phoneButton.setAttribute("data-next", String(validDest));
+            conditionalNextButton.setAttribute("data-next", String(validDest));
           }
           // When invalid: never overwrite data-next; click handler uses data-skip when validation fails
         } else {
-          phoneButton.setAttribute("data-next", String(validDest));
+          conditionalNextButton.setAttribute("data-next", String(validDest));
         }
       }
-    });
+    }
 
     // Focus first input when first step has no typewriter (otherwise typewriter-complete will focus)
     // Use .typewriter-text in DOM so we don't depend on has-typewriter class being set before init
@@ -1698,4 +1699,239 @@ export function initializeMultiStepForm(
     handler;
 
   return handler;
+}
+
+/** Validate a flat form container (used by StandardForm). Same validation logic as validateStep. */
+async function validateFormContainer(
+  container: HTMLElement,
+  formConfig?: any
+): Promise<boolean> {
+  const inputs = container.querySelectorAll("input[required], textarea[required]");
+  for (const input of inputs) {
+    const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
+    if (!inputEl.checkValidity()) {
+      inputEl.classList.add("touched");
+      if ((window as any).showNotice) {
+        const errorMsg =
+          inputEl.getAttribute("data-error") || "Please fill in this field correctly";
+        (window as any).showNotice("error", "Validation Error", errorMsg, 3000);
+      }
+      return false;
+    }
+  }
+
+  // Phone validation
+  const phoneInput = container.querySelector('input[type="tel"]') as HTMLInputElement;
+  if (phoneInput) {
+    const phoneValue = phoneInput.value?.trim() || "";
+    if (phoneInput.required && !phoneValue) {
+      if ((window as any).showNotice) {
+        (window as any).showNotice("error", "Phone Number Required", "Please enter a phone number", 3000);
+      }
+      phoneInput.classList.add("touched");
+      return false;
+    }
+    if (phoneValue && !validatePhone(phoneValue)) {
+      const digitsOnly = phoneValue.replace(/\D/g, "");
+      if (digitsOnly.length < 10) {
+        if ((window as any).showNotice) {
+          (window as any).showNotice("error", "Invalid Phone Number", "Please enter a complete 10-digit phone number", 3000);
+        }
+      } else if ((window as any).showNotice) {
+        (window as any).showNotice("error", "Invalid Phone Number", "Please enter a valid US phone number", 3000);
+      }
+      phoneInput.classList.add("touched");
+      return false;
+    }
+  }
+
+  // Email uniqueness (register forms)
+  const shouldCheckEmailUniqueness = formConfig?.registerUser === true;
+  if (shouldCheckEmailUniqueness) {
+    const emailInput = container.querySelector('input[type="email"]') as HTMLInputElement;
+    if (emailInput?.value) {
+      try {
+        const response = await fetch("/api/auth/check-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailInput.value }),
+        });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.available === false) {
+            emailInput.classList.add("touched");
+            const loginUrl = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+            if ((window as any).showNotice) {
+              (window as any).showNotice(
+                "warning",
+                "Email Already Registered",
+                `This email is already registered. <a href="${loginUrl}" class="text-primary-600 underline">Log in</a>`,
+                10000
+              );
+            }
+            return false;
+          }
+        }
+      } catch {
+        /* allow on error */
+      }
+    }
+  }
+
+  // data-validate exists rule
+  const validateInputs = container.querySelectorAll("input[data-validate], textarea[data-validate]");
+  for (const input of validateInputs) {
+    const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
+    const rule = inputEl.getAttribute("data-validate")?.trim();
+    const validateMessage = inputEl.getAttribute("data-validate-message")?.trim();
+    if (!rule || !inputEl.value?.trim()) continue;
+    if (rule.startsWith("exists:")) {
+      const match = rule.match(/^exists:([^,]+),([^,]+)$/);
+      if (!match) continue;
+      const [, , column] = match;
+      if (column?.toLowerCase() === "email" && inputEl.type === "email") {
+        try {
+          const response = await fetch("/api/auth/check-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: inputEl.value.trim() }),
+          });
+          if (response.ok) {
+            const result = await response.json();
+            if (result.available !== false) {
+              inputEl.classList.add("touched");
+              if ((window as any).showNotice && validateMessage) {
+                (window as any).showNotice("warning", "Not found", validateMessage, 10000);
+              }
+              return false;
+            }
+          }
+        } catch {
+          /* allow on error */
+        }
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Initialize StandardForm (single-page flat form) with validation and submit handling.
+ * Uses the same validation logic as MultiStepForm.
+ */
+export function initializeStandardForm(
+  form: HTMLFormElement,
+  options: { initialData?: Record<string, any>; formConfig?: any } = {}
+) {
+  const { initialData = {}, formConfig } = options;
+  const formId = form.id;
+
+  // Pre-fill initial data
+  Object.entries(initialData || {}).forEach(([key, value]) => {
+    const input = form.querySelector(`[name="${key}"]`) as HTMLInputElement;
+    if (input && value != null) input.value = String(value);
+  });
+
+  // Touched class on blur/input
+  form.querySelectorAll("input[required], textarea[required]").forEach((input) => {
+    input.addEventListener("blur", () => (input as HTMLElement).classList.add("touched"));
+    input.addEventListener("input", () => (input as HTMLElement).classList.add("touched"));
+  });
+
+  let isSubmitting = false;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    if (isSubmitting) return;
+    if (!(await validateFormContainer(form, formConfig))) return;
+
+    isSubmitting = true;
+    const submitBtn = form.querySelector(
+      'button[type="submit"], button.submit-step'
+    ) as HTMLButtonElement | null;
+    if (submitBtn) submitBtn.disabled = true;
+
+    const responseType = formConfig?.responseType || "toast";
+    if (responseType === "toast" && (window as any).showNotice) {
+      (window as any).showNotice("info", "Submitting...", "Sending your information.", 10000);
+    }
+
+    try {
+      const formData = new FormData(form);
+      const fullNameRaw = formData.get("fullName")?.toString()?.trim();
+      if (fullNameRaw) {
+        const { firstName, lastName } = parseFullNameToFirstAndLast(fullNameRaw);
+        formData.set("firstName", firstName);
+        formData.set("lastName", lastName);
+      }
+
+      const response = await fetch(form.action, {
+        method: form.method,
+        body: formData,
+        headers: { Accept: "application/json" },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `Submission failed: ${response.status}`;
+        try {
+          const err = JSON.parse(errorText);
+          if (typeof err?.error === "string" && err.error.trim()) errorMessage = err.error;
+        } catch {
+          /* ignore */
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      if (result.success === false || result.error) throw new Error(result.error || "Submission failed");
+
+      if (responseType === "inline") {
+        const container = document.getElementById(`${formId}-response-alert`);
+        if (container) {
+          const escaped = (s: string) =>
+            s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+          container.className =
+            "w-100 p-2 mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800";
+          container.innerHTML = `
+            <div class="flex items-start">
+              <svg class="mr-2 mt-0.5 h-5 w-5 shrink-0 text-green-800 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              <div class="mr-8 flex-1 text-base text-green-800 dark:text-green-400">${escaped(result.message || "Form submitted successfully")}</div>
+            </div>`;
+          container.classList.remove("hidden");
+        }
+      } else if ((window as any).showNotice) {
+        (window as any).showNotice("success", "Success!", result.message || "Form submitted successfully", 3000);
+      }
+
+      if (result.redirect) {
+        setTimeout(() => (window.location.href = result.redirect), 2000);
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : "An unexpected error occurred";
+      if (formConfig?.responseType === "inline") {
+        const container = document.getElementById(`${formId}-response-alert`);
+        if (container) {
+          const escaped = (s: string) =>
+            s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+          container.className =
+            "w-100 p-2 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800";
+          container.innerHTML = `
+            <div class="flex items-start">
+              <svg class="mr-2 mt-0.5 h-5 w-5 shrink-0 text-red-800 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+              <div class="mr-8 flex-1 text-base text-red-800 dark:text-red-400">${escaped(errMsg)}</div>
+            </div>`;
+          container.classList.remove("hidden");
+        }
+      } else if ((window as any).showNotice) {
+        (window as any).showNotice("error", "Submission Failed", errMsg, 8000);
+      }
+    } finally {
+      isSubmitting = false;
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
 }
