@@ -144,7 +144,8 @@ export interface FormButtonConfig {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   icon?: string;
   iconPosition?: "left" | "right";
-  dataNext?: number; // Step number to go to on click
+  dataNext?: number; // Step number to go to on click (when valid)
+  dataSkip?: number; // Step number to go to when clicking "skip" (invalid) - for label="skip" validLabel="next" buttons
   dataPrev?: number; // Step number to go back to on click
   dataValue?: string; // For choice buttons (e.g., SMS consent)
   classes?: string; // Additional CSS classes

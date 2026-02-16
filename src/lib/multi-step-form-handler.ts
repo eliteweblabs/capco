@@ -770,6 +770,7 @@ export function createMultiStepFormHandler(
 
           const nextButtons = currentStepEl.querySelectorAll("button.next-step");
           nextButtons.forEach((btn) => {
+            const btnEl = btn as HTMLElement;
             const buttonText = btn.querySelector(".button-text");
             if (buttonText) {
               const defaultLabel = btn.getAttribute("data-default-label");
@@ -777,13 +778,20 @@ export function createMultiStepFormHandler(
               if (defaultLabel && validLabel) {
                 if (!target.value?.trim()) {
                   buttonText.textContent = defaultLabel;
-                  updateButtonIcon(btn as HTMLElement, false);
+                  updateButtonIcon(btnEl, false);
                 } else if (isValid) {
                   buttonText.textContent = validLabel;
-                  updateButtonIcon(btn as HTMLElement, true);
+                  updateButtonIcon(btnEl, true);
+                  // Valid: data-next = valid dest (dataSkip is for invalid; never overwrite data-next with skip dest)
+                  const validDest = options.formConfig?.steps?.find(
+                    (s: any) => s.stepNumber === parseInt(currentStepEl.getAttribute("data-step") || "0")
+                  )?.buttons?.find((b: any) => b.type === "next")?.dataNext;
+                  if (validDest != null) {
+                    btnEl.setAttribute("data-next", String(validDest));
+                  }
                 } else {
                   buttonText.textContent = defaultLabel;
-                  updateButtonIcon(btn as HTMLElement, false);
+                  updateButtonIcon(btnEl, false);
                 }
               }
             }
@@ -1222,8 +1230,18 @@ export function createMultiStepFormHandler(
         (nextBtn as HTMLButtonElement).disabled = true;
 
         try {
-          if (await validateStep(currentStep)) {
+          const valid = await validateStep(currentStep);
+          if (valid) {
             await showStep(nextStep);
+          } else {
+            // Validation failed – if button has data-skip (skip mode: label="skip" validLabel="next"), advance to skip step
+            const skipStep = nextBtn.getAttribute("data-skip");
+            if (skipStep) {
+              const skipStepNum = parseInt(skipStep, 10);
+              if (!isNaN(skipStepNum)) {
+                await showStep(skipStepNum);
+              }
+            }
           }
         } finally {
           (nextBtn as HTMLButtonElement).disabled = false;
@@ -1491,23 +1509,32 @@ export function createMultiStepFormHandler(
     // Show first step and update progress
     showStep(currentStep);
 
-    // Initialize phone button data-next based on current phone value
-    // Reuse the phoneInputs already queried above
+    // Phone button data-next: valid dest from config, never overwrite with skip dest when invalid
+    const phoneStepNum = phoneInputs.length
+      ? parseInt(
+          (phoneInputs[0] as HTMLInputElement).closest(".step-content")?.getAttribute("data-step") || "0",
+          10
+        )
+      : 0;
+    const phoneBtnConfig = options.formConfig?.steps?.find(
+      (s: any) => s.stepNumber === phoneStepNum
+    )?.buttons?.find((b: any) => b.type === "next");
+    const validDest = phoneBtnConfig?.dataNext;
+
     phoneInputs.forEach((phoneInput) => {
       const input = phoneInput as HTMLInputElement;
       const phoneValue = input.value?.trim() || "";
-      const phoneButton = form.querySelector(`.next-step-phone`);
+      const phoneButton = form.querySelector(`.next-step-phone`) as HTMLElement;
 
-      if (phoneButton && phoneValue) {
-        const digitsOnly = phoneValue.replace(/\D/g, "");
-        const isValid = digitsOnly.length >= 10 && validatePhone(phoneValue);
-
-        if (isValid) {
-          phoneButton.setAttribute("data-next", "4");
-          console.log("[PHONE-INIT] Pre-filled valid phone - data-next set to 4");
+      if (phoneButton && validDest != null) {
+        if (phoneValue) {
+          const isValid = phoneValue.replace(/\D/g, "").length >= 10 && validatePhone(phoneValue);
+          if (isValid) {
+            phoneButton.setAttribute("data-next", String(validDest));
+          }
+          // When invalid: never overwrite data-next; click handler uses data-skip when validation fails
         } else {
-          phoneButton.setAttribute("data-next", "6");
-          console.log("[PHONE-INIT] Pre-filled invalid phone - data-next set to 6");
+          phoneButton.setAttribute("data-next", String(validDest));
         }
       }
     });

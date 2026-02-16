@@ -14,9 +14,11 @@ interface Props {
   hideFooter?: boolean;
   /** Current pathname (e.g. from Astro.url.pathname). Used to filter banners by targetPages. */
   pathname?: string;
+  /** Page template/layout. When "fullform", skip the scroll-driven translateY reveal effect. */
+  template?: string;
 }
 
-const { position = "all", width = "full", pathname, hideFooter = false } = Astro.props;
+const { position = "all", width = "full", pathname, template, hideFooter = false } = Astro.props;
 
 // Fetch active banner alerts
 let banners: any[] = [];
@@ -147,7 +149,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
   )
 }
 
-<script define:vars={{ pathname: pathname ?? "", MOBILE_MEDIA_QUERY }}>
+<script define:vars={{ pathname: pathname ?? "", template: template ?? "", MOBILE_MEDIA_QUERY }}>
   (function () {
     const isAuthPath = typeof pathname === "string" && pathname.startsWith("/auth");
     const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -305,6 +307,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
 
     let prevScrollTop = 0;
     let translateY = 0;
+    const skipReveal = typeof template === "string" && template === "fullform";
 
     function run() {
       const scrollEl = document.getElementById("reveal-scroll");
@@ -341,6 +344,12 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
       }
 
       function updateTranslate() {
+        if (skipReveal) {
+          scrollEl.style.transform = "";
+          setSidebarPosition(0);
+          syncNavbarAtTop(0);
+          return;
+        }
         const scrollTop = clampedScrollTop();
         const curMaxScroll = maxScroll();
 
@@ -372,7 +381,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
 
       updateBannerOffsets();
 
-      if (!isMobile()) {
+      if (!isMobile() || skipReveal) {
         scrollEl.style.transform = "";
         translateY = 0;
         setSidebarPosition(0);
@@ -388,10 +397,9 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
         function recalcAfterBannerDismissed() {
           setTimeout(() => {
             updateBannerOffsets();
-            setSidebarPosition(translateY);
+            if (!skipReveal) setSidebarPosition(translateY);
           }, 350);
         }
-
         const topContainer = document.getElementById("top-banner-container");
         const bottomContainer = document.getElementById("bottom-banner-container");
         const observe = (el) => {
@@ -406,18 +414,19 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
         observe(topContainer);
         observe(bottomContainer);
         window.addEventListener("resize", updateBannerOffsets);
-        // Recalc translateY when nav/sidebar opens/closes (main-content gets overflow-hidden).
-        // That triggers layout shifts that can reduce scrollTop; without this we'd stay at wrong translateY.
-        const mainContent = document.getElementById("main-content");
-        if (mainContent && isMobile()) {
-          const mo = new MutationObserver(() => {
-            requestAnimationFrame(() => {
-              prevScrollTop = clampedScrollTop();
-              translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
-              updateTranslate();
+        // Reveal-only: scroll-driven translateY and main-content observer (skip on fullform – form layout conflicts)
+        if (!skipReveal) {
+          const mainContent = document.getElementById("main-content");
+          if (mainContent && isMobile()) {
+            const mo = new MutationObserver(() => {
+              requestAnimationFrame(() => {
+                prevScrollTop = clampedScrollTop();
+                translateY = Math.max(0, Math.min(maxPx(), prevScrollTop));
+                updateTranslate();
+              });
             });
-          });
-          mo.observe(mainContent, { attributes: true, attributeFilter: ["class"] });
+            mo.observe(mainContent, { attributes: true, attributeFilter: ["class"] });
+          }
         }
       }
       // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(updateBannerOffsets));
@@ -433,13 +442,13 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
       //   requestAnimationFrame(applyDismissStylesFromStorage);
       // });
 
-      if (isMobile() && !isAuthPath) {
+      if (isMobile() && !isAuthPath && !skipReveal) {
         prevScrollTop = clampedScrollTop();
         translateY = Math.min(prevScrollTop, maxPx());
         updateTranslate();
       }
 
-      if (!isAuthPath) {
+      if (!isAuthPath && !skipReveal) {
         if (!scrollEl.dataset.revealInit) {
           scrollEl.dataset.revealInit = "true";
           window.addEventListener("resize", () => {
@@ -456,6 +465,9 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
           scrollEl.dataset.revealScrollAdded = "true";
           scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
         }
+      }
+      if (skipReveal) {
+        scrollEl.style.transform = "";
       }
     }
 

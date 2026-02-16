@@ -54,7 +54,7 @@ function decodeHtmlEntities(str: string): string {
 
 function initializeTypewriterInstance(element: HTMLElement, text: string): void {
   text = decodeHtmlEntities(text);
-  text = injectSessionMetaIntoText(text);
+  text = injectSessionMetaIntoText(text, element);
 
   element.innerHTML = "";
 
@@ -199,21 +199,21 @@ function parseFullName(fullName: string): { firstName: string; lastName: string 
  * Inject form session meta data into text by replacing spans with data-form-session-meta
  * Replaces with plain text (no HTML) since TypeIt will handle it as content
  * Supports firstName/lastName from direct inputs or parsed from fullName
+ * Uses form from element's tree (not document-first-form) so contact form works when login also on page
  */
-function injectSessionMetaIntoText(text: string): string {
+function injectSessionMetaIntoText(text: string, element?: HTMLElement): string {
   // Find all spans with data-form-session-meta attribute
   const metaRegex =
     /<span[^>]*data-form-session-meta=['"]([^'"]+)['"][^>]*data-default=['"]([^'"]+)['"][^>]*>([^<]*)<\/span>/gi;
 
   let replacedText = text;
   let match;
+  const form = (element?.closest("form") ?? document.querySelector("form")) as HTMLFormElement;
 
   while ((match = metaRegex.exec(text)) !== null) {
     const fullMatch = match[0];
     const fieldName = match[1];
     const defaultValue = match[2];
-
-    const form = document.querySelector("form") as HTMLFormElement;
     if (form) {
       let value = defaultValue;
       if (fieldName === "firstName" || fieldName === "lastName") {
@@ -235,7 +235,7 @@ function injectSessionMetaIntoText(text: string): string {
       }
 
       replacedText = replacedText.replace(fullMatch, value);
-      // console.log(`[SESSION-META] Replaced ${fieldName} with: ${value}`);
+      console.log(`[SESSION-META] Replaced ${fieldName} with: "${value}" (form: ${form.id || "unknown"})`);
     }
   }
 

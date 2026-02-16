@@ -57,28 +57,31 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     class={config.progressBar ? "" : ""}
     data-form-config={JSON.stringify({ formId: config.formId, formConfig: config, initialData })}
   >
-    {config.responseType === "inline" && (
-      <div
-        id={`${config.formId}-response-alert`}
-        class="hidden mb-4"
-        aria-live="polite"
-        aria-atomic="true"
-      />
-    )}
+    {
+      config.responseType === "inline" && (
+        <div
+          id={`${config.formId}-response-alert`}
+          class="mb-4 hidden"
+          aria-live="polite"
+          aria-atomic="true"
+        />
+      )
+    }
     <div
       class:list={[
-        "multi-step-form-steps relative min-w-96 p-4 scrollbar-hide sm:p-6 md:p-8 lg:p-10",
-        initialCentered ? "centered" : "expand-down",
+        "multi-step-form-steps relative flex flex-col items-center justify-center p-4 scrollbar-hide sm:p-6 md:p-8 lg:p-10",
+        // initialCentered ? "centered" : "expand-down",
         containerClass,
       ]}
       id={`${config.formId}-steps`}
+      data-dynamic-height="height"
       tabindex="-1"
     >
       {
         config.steps.map((step) => (
           <div
             class:list={[
-              "step-content space-y-8 overflow-y-visible sm:space-y-8", // leave mt-20 for tooltips
+              "step-content my-4 min-w-96 max-w-96 space-y-8 overflow-y-visible sm:space-y-8", // leave mt-20 for tooltips
               step.stepNumber === 1 ? "first-step" : "",
             ]}
             data-step={step.stepNumber}
@@ -491,6 +494,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         ...(button.dataNext !== undefined && {
                           "data-next": button.dataNext.toString(),
                         }),
+                        ...(button.dataSkip !== undefined && {
+                          "data-skip": button.dataSkip.toString(),
+                        }),
                         ...(button.dataPrev !== undefined && {
                           "data-prev": button.dataPrev.toString(),
                         }),
@@ -594,6 +600,26 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 }
 
 <style is:global>
+  /* Expand down: top at 50dvh, panel grows downward until it would hit the limit */
+  .multi-step-form-steps.expand-down {
+    top: 26.5dvh;
+    bottom: auto;
+  }
+
+  /* Expand up: bottom at 4rem, panel grows upward after hitting the limit */
+  .multi-step-form-steps.expand-up {
+    top: auto;
+    bottom: 26.5dvh;
+  }
+
+  /* Centered: when expandDown is false for current step, keep panel vertically centered */
+  .multi-step-form-steps.centered {
+    top: 50%;
+    bottom: auto;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+  }
+
   /* Title scroll container with max height */
   .title-scroll-container {
     display: flex;
@@ -905,6 +931,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     document.addEventListener("typewriter-complete", (e) => {
       const target = e.target as HTMLElement;
       const stepContent = target.closest(".step-content");
+      const stepNum = stepContent?.getAttribute("data-step");
+      console.log("[TYPEWRITER-COMPLETE] Step", stepNum, "animations finished");
       if (stepContent) {
         // Add the class to trigger wrapper cascade (fields at 250ms, buttons at 500ms)
         stepContent.classList.add("typewriter-complete");
@@ -921,19 +949,45 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           if (focusDone) return;
           focusDone = true;
           const focusFirstIn = (window as any).focusFirstInputIn;
-          if (typeof focusFirstIn === "function") focusFirstIn(stepContent);
+          const ok = typeof focusFirstIn === "function" && focusFirstIn(stepContent);
+          console.log("[FOCUS] Step", stepNum, "focusFirstInputIn:", ok ? "ok" : "no-focus");
         };
 
+        // Prefer fields-wrapper transition (250ms) so we focus as soon as input is visible
+        const fieldsWrapper = stepContent.querySelector(".step-form-fields-wrapper");
         const buttonsWrapper = stepContent.querySelector(".step-form-buttons-wrapper");
-        if (buttonsWrapper) {
-          const onCascadeEnd = (e: TransitionEvent) => {
-            if (e.target !== buttonsWrapper || e.propertyName !== "opacity") return;
-            buttonsWrapper.removeEventListener("transitionend", onCascadeEnd as EventListener);
-            setTimeout(runFocus, FOCUS_DELAY_AFTER_ANIMATIONS_MS);
-          };
-          buttonsWrapper.addEventListener("transitionend", onCascadeEnd as EventListener);
+        const onTransitionEnd = (e: Event) => {
+          const te = e as TransitionEvent;
+          if (te.propertyName !== "opacity") return;
+          (te.target as HTMLElement).removeEventListener("transitionend", onTransitionEnd);
+          console.log(
+            "[FOCUS] Step",
+            stepNum,
+            "transitionend (opacity), scheduling focus in",
+            FOCUS_DELAY_AFTER_ANIMATIONS_MS,
+            "ms"
+          );
+          setTimeout(runFocus, FOCUS_DELAY_AFTER_ANIMATIONS_MS);
+        };
+        if (fieldsWrapper) {
+          fieldsWrapper.addEventListener("transitionend", onTransitionEnd);
+          console.log("[FOCUS] Step", stepNum, "listening for fields-wrapper transitionend");
+        } else if (buttonsWrapper) {
+          buttonsWrapper.addEventListener("transitionend", onTransitionEnd);
+          console.log(
+            "[FOCUS] Step",
+            stepNum,
+            "listening for buttons-wrapper transitionend (no fields-wrapper)"
+          );
+        } else {
+          console.log("[FOCUS] Step", stepNum, "no wrapper found, relying on fallback setTimeout");
         }
-        setTimeout(runFocus, CASCADE_END_MS + FOCUS_DELAY_AFTER_ANIMATIONS_MS + 200);
+        // Fallback: always run focus after cascade completes (handles missing wrapper or transitionend not firing)
+        const fallbackMs = CASCADE_END_MS + FOCUS_DELAY_AFTER_ANIMATIONS_MS + 200;
+        setTimeout(() => {
+          console.log("[FOCUS] Step", stepNum, "fallback setTimeout fired at", fallbackMs, "ms");
+          runFocus();
+        }, fallbackMs);
       }
     });
 
@@ -1090,9 +1144,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     });
 
     function rotatePlaceholders() {
-      // Find the active step to determine which inputs are visible
-      const activeStep = document.querySelector(".step-content.active");
-
       animatedInputs.forEach((input, index) => {
         const span = document.querySelector(
           `.animated-placeholder[data-for="${input.id}"]`
@@ -1115,14 +1166,16 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         // );
 
         if (span && data && !hasValue && !isAutofilled && span.style.display !== "none") {
-          // Check if this input is in the active step
+          // Scope to this input's form (contact form vs login form when both on page)
+          const form = input.closest("form");
+          const activeStep = form?.querySelector(".step-content.active");
           const isInActiveStep = activeStep?.contains(input);
 
           if (!isInActiveStep) return;
 
           // Find the index of this input within the active step
           const activeStepInputs = Array.from(
-            activeStep.querySelectorAll('input[data-has-animated-placeholder="true"]')
+            activeStep!.querySelectorAll('input[data-has-animated-placeholder="true"]')
           );
           const stepIndex = activeStepInputs.indexOf(input);
 
@@ -1150,9 +1203,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     // Reset and restart placeholder animation
     function resetPlaceholderAnimation() {
       // console.log(`[ANIMATED-PLACEHOLDER] 🔄 Resetting placeholder animation`);
-
-      // Find the active step to apply stagger delay correctly
-      const activeStep = document.querySelector(".step-content.active");
 
       animatedInputs.forEach((input) => {
         const span = document.querySelector(
@@ -1183,7 +1233,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         }
 
         if (span && data) {
-          // Check if this input is in the active step
+          // Scope to this input's form (contact form vs login form when both on page)
+          const form = input.closest("form");
+          const activeStep = form?.querySelector(".step-content.active");
           const isInActiveStep = activeStep?.contains(input);
 
           if (!isInActiveStep) {
@@ -1195,7 +1247,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
           // Find the index of this input within the active step for stagger delay
           const activeStepInputs = Array.from(
-            activeStep.querySelectorAll('input[data-has-animated-placeholder="true"]')
+            activeStep!.querySelectorAll('input[data-has-animated-placeholder="true"]')
           );
           const stepIndex = activeStepInputs.indexOf(input);
 
