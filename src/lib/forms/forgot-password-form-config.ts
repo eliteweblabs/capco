@@ -32,7 +32,7 @@ export const forgotPasswordFormConfig: MultiStepFormConfig = {
       size: "md",
       icon: "mail",
       iconPosition: "right",
-      label: "send reset link",
+      label: "get link",
     },
   },
 
@@ -60,7 +60,7 @@ export const forgotPasswordFormConfig: MultiStepFormConfig = {
       buttons: [
         {
           type: "prev",
-          label: "back to login",
+          label: "",
           variant: "anchor",
           size: "xs",
           href: "/auth/login",
@@ -69,7 +69,7 @@ export const forgotPasswordFormConfig: MultiStepFormConfig = {
         },
         {
           type: "submit",
-          label: "send reset link",
+          label: "get link",
         },
       ],
     },

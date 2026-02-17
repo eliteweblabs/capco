@@ -842,8 +842,21 @@ let isDeleting = false; // Flag to prevent multiple delete operations
  * - 0–100: normal scroll (0 = top, 100 = bottom)
  * - >100: overscroll past bottom (e.g. 100.1, 105, 120, 130)
  * - <0: overscroll past top (e.g. -5, -10)
+ * Uses #reveal-scroll when present (layout scroll container), otherwise window/document.
  */
 (window as any).getOverscrollPercent = function (): number {
+  const scrollEl = document.getElementById("reveal-scroll");
+  const useEl = scrollEl && scrollEl.scrollHeight > scrollEl.clientHeight;
+
+  if (useEl && scrollEl) {
+    const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+    if (maxScroll <= 0) return 100;
+    const top = scrollEl.scrollTop;
+    if (top > maxScroll) return 100 + ((top - maxScroll) / scrollEl.clientHeight) * 100;
+    if (top < 0) return (top / scrollEl.clientHeight) * 100;
+    return (top / maxScroll) * 100;
+  }
+
   const doc = document.documentElement;
   const scrollHeight = doc.scrollHeight;
   const clientHeight = window.innerHeight;
@@ -853,14 +866,10 @@ let isDeleting = false; // Flag to prevent multiple delete operations
   if (maxScroll <= 0) return 100;
 
   if (scrollY > maxScroll) {
-    // Overscroll past bottom: 100 + extra as % of viewport
     const over = scrollY - maxScroll;
     return 100 + (over / clientHeight) * 100;
   }
-  if (scrollY < 0) {
-    // Overscroll past top
-    return (scrollY / clientHeight) * 100;
-  }
+  if (scrollY < 0) return (scrollY / clientHeight) * 100;
   return (scrollY / maxScroll) * 100;
 };
 

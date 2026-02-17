@@ -22,10 +22,12 @@ interface Props {
   image10?: string;
   image11?: string;
   image12?: string;
-  /** Duration of each image in ms before fading to next. Default: 4000 */
+  /** Duration of each image in ms before fading to next. Default: 4000. Ignored when scrollMode. */
   interval?: number;
   /** Crossfade duration in ms. Default: 1200 */
   fadeDuration?: number;
+  /** When true, images advance by scroll position instead of time. For md/single-col: each image visible when its scroll segment is in 15%-85% viewport zone. */
+  scrollMode?: boolean | string;
 }
 
 const props = Astro.props;
@@ -45,7 +47,8 @@ function getImageUrls(): string[] {
     .filter((u): u is string => Boolean(u));
 }
 const resolvedUrls = getImageUrls();
-const { interval = 4000, fadeDuration = 1200 } = props;
+const { interval = 4000, fadeDuration = 1200, scrollMode = false } = props;
+const useScrollMode = scrollMode === true || scrollMode === "true";
 ---
 
 {
@@ -54,7 +57,8 @@ const { interval = 4000, fadeDuration = 1200 } = props;
       class="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       aria-hidden="true"
       data-fadeshow
-      data-interval={interval}
+      data-fadeshow-scroll={useScrollMode ? "true" : undefined}
+      data-interval={!useScrollMode ? interval : undefined}
       data-fade-duration={fadeDuration}
     >
       {resolvedUrls.map((url, i) => (
@@ -79,21 +83,60 @@ const { interval = 4000, fadeDuration = 1200 } = props;
   function initFadeshow(root?: Document | Element) {
     const scope = root ?? document;
     scope.querySelectorAll("[data-fadeshow]").forEach((container) => {
+      if ((container as HTMLElement).dataset.fadeshowInit) return;
+      (container as HTMLElement).dataset.fadeshowInit = "1";
+
       const layers = container.querySelectorAll<HTMLElement>("[data-fadeshow-layer]");
       if (layers.length <= 1) return;
-      const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
+
       const fadeMs = parseInt(container.getAttribute("data-fade-duration") ?? "1200", 10);
       (container as HTMLElement).style.setProperty("--fadeshow-duration", `${fadeMs}ms`);
-      let idx = 0;
-      const next = () => {
-        const prev = idx;
-        idx = (idx + 1) % layers.length;
-        layers[prev]!.style.opacity = "0";
-        layers[idx]!.style.opacity = "1";
-      };
-      setInterval(next, intervalMs);
+
+      const scrollMode = container.getAttribute("data-fadeshow-scroll") === "true";
+
+      if (scrollMode) {
+        const scrollEl = document.getElementById("reveal-scroll") ?? document.documentElement;
+        const updateFromScroll = () => {
+          const maxScroll =
+            scrollEl === document.documentElement
+              ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+              : Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+          if (maxScroll <= 0) {
+            layers[0]!.style.opacity = "1";
+            for (let j = 1; j < layers.length; j++) layers[j]!.style.opacity = "0";
+            return;
+          }
+          const scrollTop =
+            scrollEl === document.documentElement ? window.scrollY : scrollEl.scrollTop;
+          const progress = Math.max(0, Math.min(1, scrollTop / maxScroll));
+          const idx = Math.min(
+            layers.length - 1,
+            Math.floor(progress * layers.length)
+          );
+          layers.forEach((l, i) => {
+            l.style.opacity = i === idx ? "1" : "0";
+          });
+        };
+        updateFromScroll();
+        scrollEl.addEventListener("scroll", updateFromScroll, { passive: true });
+        window.addEventListener("resize", updateFromScroll);
+      } else {
+        const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
+        let idx = 0;
+        const next = () => {
+          const prev = idx;
+          idx = (idx + 1) % layers.length;
+          layers[prev]!.style.opacity = "0";
+          layers[idx]!.style.opacity = "1";
+        };
+        setInterval(next, intervalMs);
+      }
     });
   }
-  initFadeshow(document);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => initFadeshow(document));
+  } else {
+    initFadeshow(document);
+  }
   document.addEventListener("astro:after-swap", () => initFadeshow(document));
 </script>

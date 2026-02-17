@@ -34,6 +34,16 @@ const protectedAPIRoutes = [
 ];
 const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify", "/auth/callback(|/)"];
 
+/** Paths that are safe to cache (hashed static assets). Skip no-cache for these. */
+const STATIC_CACHE_PATTERNS = [
+  /^\/_astro\//,           /* Astro built JS/CSS (content-hashed) */
+  /\.(js|css|woff2?|ttf|ico|png|jpg|jpeg|gif|webp|svg)(\?|$)/,
+];
+
+function isStaticAsset(pathname: string): boolean {
+  return STATIC_CACHE_PATTERNS.some((p) => p.test(pathname));
+}
+
 /** Disable browser cache while allowing CDN/proxy caches. Browsers must revalidate every time; shared caches may store. */
 function withNoBrowserCache(response: Response): Response {
   const headers = new Headers(response.headers);
@@ -45,6 +55,15 @@ function withNoBrowserCache(response: Response): Response {
     statusText: response.statusText,
     headers,
   });
+}
+
+/** Apply no-cache to HTML/API; skip for static assets (let them use default/long cache). */
+async function respondWithCachePolicy(
+  pathname: string,
+  next: () => Promise<Response>
+): Promise<Response> {
+  const res = await next();
+  return isStaticAsset(pathname) ? res : withNoBrowserCache(res);
 }
 
 export const onRequest = defineMiddleware(
@@ -63,7 +82,7 @@ export const onRequest = defineMiddleware(
 
     // Skip middleware if Supabase is not configured
     if (!supabase) {
-      return withNoBrowserCache(await next());
+      return respondWithCachePolicy(url.pathname, next);
     }
 
     // Handle Cloudflare cookie domain issues
@@ -74,17 +93,17 @@ export const onRequest = defineMiddleware(
       url.pathname.includes(".gif")
     ) {
       // Skip middleware for image requests to avoid cookie issues
-      return withNoBrowserCache(await next());
+      return respondWithCachePolicy(url.pathname, next);
     }
 
     // Skip middleware for auth callback routes to avoid interference with PKCE flow
     if (micromatch.isMatch(url.pathname, authCallbackRoutes)) {
-      return withNoBrowserCache(await next());
+      return respondWithCachePolicy(url.pathname, next);
     }
 
     // Skip middleware for dev bypass routes (development only)
     if (micromatch.isMatch(url.pathname, devBypassRoutes)) {
-      return withNoBrowserCache(await next());
+      return respondWithCachePolicy(url.pathname, next);
     }
 
     // Restore session and company data for optional-auth routes (e.g. /mep-form) so pages avoid top-level await
@@ -130,7 +149,7 @@ export const onRequest = defineMiddleware(
           return redirect(loginRedirect);
         }
         // Custom session found, skip Supabase session validation
-        return withNoBrowserCache(await next());
+        return respondWithCachePolicy(url.pathname, next);
       }
 
       const { data, error } = await supabase.auth.setSession({
@@ -265,7 +284,7 @@ export const onRequest = defineMiddleware(
       // Allow public access to featured projects endpoint
       if (url.pathname === "/api/projects/get" && url.searchParams.get("featured") === "true") {
         // Skip auth check for featured projects - handled in API route
-        return withNoBrowserCache(await next());
+        return respondWithCachePolicy(url.pathname, next);
       }
 
       const accessToken = cookies.get("sb-access-token");
@@ -302,6 +321,6 @@ export const onRequest = defineMiddleware(
       }
     }
 
-    return withNoBrowserCache(await next());
+    return respondWithCachePolicy(url.pathname, next);
   }
 );

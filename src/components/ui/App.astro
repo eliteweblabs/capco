@@ -999,10 +999,13 @@ const debugData = {
       {mobileNavigationHTML}
     />
 
-      <!-- Scrolling pane: flex-1 min-h-0 constrains height so this is the scroll container (not body). translateY on mobile for reveal effect. -->
+      <!-- Scrolling pane: flex-1 min-h-0 constrains height so this is the scroll container (not body). translateY on mobile for reveal effect. fullform: overscroll-none to prevent pullable rubber-band. -->
       <div
         id="reveal-scroll"
-        class="scrollbar-hide relative z-50 flex-1 min-h-0 overflow-y-auto overscroll-y-contain bg-gray-100 dark:bg-gray-900"
+        class:list={[
+          "scrollbar-hide relative z-50 flex-1 min-h-0 overflow-y-auto bg-gray-100 dark:bg-gray-900",
+          layout === "fullform" ? "overscroll-none" : "overscroll-y-contain",
+        ]}
       >
 
 
@@ -1083,7 +1086,7 @@ const debugData = {
       {hideFooter}
     />
 
-    <div id="action-buttons" class="fixed bottom-8 right-4 hide-on-form-focus z-50">
+    <div id="action-buttons" class="fixed bottom-8 right-4 hide-on-form-focus z-[500]">
     {isAdmin ? (
       <AdminVoiceAssistantWidget
         {currentUser}
@@ -1163,7 +1166,8 @@ const debugData = {
         }
 
         function init() {
-          window.addEventListener("scroll", onScrollOrWheel, { passive: true });
+          var scrollTarget = document.getElementById("reveal-scroll") || window;
+          scrollTarget.addEventListener("scroll", onScrollOrWheel, { passive: true });
           window.addEventListener("wheel", onScrollOrWheel, { passive: true });
           applyOverscrollScale();
         }

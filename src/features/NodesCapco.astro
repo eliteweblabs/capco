@@ -799,32 +799,32 @@ const { currentUser } = await checkAuth(Astro.cookies);
       });
     }
 
-    // Method to remove nodes that have scrolled off the left side
-    removeOffscreenNodes() {
-      const nodesToRemove: string[] = [];
+    /** Node approximate width for wrap calculation */
+    static NODE_WIDTH = 280;
+    /** When node scrolls past this left threshold, wrap to right */
+    static WRAP_THRESHOLD = -320;
 
+    /** Loop: move nodes that scroll off left to the right of the rightmost node */
+    loopOffscreenNodes() {
       this.nodes.forEach((node, nodeId) => {
-        // Remove nodes that are well off the left side of the screen
-        if (node.x < -1000) {
-          // Much larger buffer to keep nodes and arrows visible longer
-          nodesToRemove.push(nodeId);
-        }
-      });
+        if (nodeId === this.draggedNode?.id) return;
+        if ((node.x ?? 0) >= NodeEditor.WRAP_THRESHOLD) return;
 
-      // Remove nodes and their DOM elements
-      nodesToRemove.forEach((nodeId) => {
+        let rightmost = 0;
+        this.nodes.forEach((n, id) => {
+          if (id === nodeId) return;
+          const x = n.x ?? 0;
+          const nodeEl = document.querySelector(`[data-node-id="${id}"]`);
+          const w = nodeEl?.getBoundingClientRect?.()?.width ?? NodeEditor.NODE_WIDTH;
+          rightmost = Math.max(rightmost, x + w);
+        });
+        const wrapX = rightmost + 48;
+        node.x = wrapX;
         const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
         if (nodeElement) {
-          nodeElement.remove();
+          (nodeElement as HTMLElement).style.left = `${wrapX}px`;
         }
-        this.nodes.delete(nodeId);
       });
-
-      // Don't remove connections - keep arrows visible even if nodes are off-screen
-      // This ensures arrows stay visible during the timeline
-      // this.connections = this.connections.filter((connection) => {
-      //   return this.nodes.has(connection.from) && this.nodes.has(connection.to);
-      // });
     }
 
     // Method to add a node with center maintenance and smooth animation
@@ -958,6 +958,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
     startDrag(node: NodeOptions, e: MouseEvent | TouchEvent) {
       this.draggedNode = node;
+      this.stopContinuousScroll();
       const rect = (e.target as HTMLElement).closest(".node-card")?.getBoundingClientRect() || {
         left: 0,
         top: 0,
@@ -1118,6 +1119,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
         document.querySelectorAll(".node-card").forEach((card) => {
           card.classList.remove("dragging");
         });
+        this.startContinuousScroll();
       }
 
       if (this.connecting && this.connectionStart) {
@@ -1404,13 +1406,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
     // Start continuous smooth scrolling
     startContinuousScroll() {
       this.isScrolling = true;
-      this.scrollSpeed = 3; // pixels per frame - adjust this value to change speed
+      this.scrollSpeed = 0.7; // pixels per frame - slow autoreplay
       this.scrollInterval = null;
 
       const scroll = () => {
         if (this.isScrolling) {
-          // Move all nodes left smoothly
+          // Move all nodes left smoothly (skip dragged node)
           this.nodes.forEach((node, nodeId) => {
+            if (nodeId === this.draggedNode?.id) return;
             node.x -= this.scrollSpeed;
 
             const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
@@ -1422,8 +1425,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
           // Update connections every frame to maintain arrows
           this.updateConnections();
 
-          // Remove offscreen nodes
-          this.removeOffscreenNodes();
+          // Loop nodes that scroll off left to the right
+          this.loopOffscreenNodes();
 
           // Continue scrolling
           this.scrollInterval = requestAnimationFrame(scroll);
