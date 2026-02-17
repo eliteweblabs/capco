@@ -1,12 +1,11 @@
 ---
-import App from "../components/ui/App.astro";
 import SimpleIcon from "../components/common/SimpleIcon.astro";
 import { getPageContent } from "../lib/content";
-import LayoutFullscreen from "@/components/layouts/LayoutFullscreen.astro";
+import LayoutFullForm from "@/components/layouts/LayoutFullForm.astro";
 
 const pageContent = await getPageContent("404");
 
-// Fallback if no 404.md exists
+// Fallbacks for 404-specific fields (CMS only stores title, description, content)
 const fallbackContent = {
   title: "404 - Page Not Found",
   description: "The page you're looking for doesn't exist",
@@ -15,20 +14,20 @@ const fallbackContent = {
   buttonText: "Go Home",
 };
 
-const content = pageContent || fallbackContent;
+const content = { ...fallbackContent, ...pageContent };
 ---
 
-<LayoutFullscreen title={content.title} description={content.description}>
+<LayoutFullForm title={content.title} description={content.description}>
   <div class="mb-12 flex content-center items-center justify-center">
     <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{content.code}</h1>
   </div>
-  <div class="flex content-center items-center justify-center">
-    <a
-      href={content.buttonHref}
-      class="inline-flex items-center rounded-full bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
-    >
-      <SimpleIcon name="arrow-left" />
-      {content.buttonText}
-    </a>
-  </div>
-</LayoutFullscreen>
+  <!-- <div class="flex content-center items-center justify-center"> -->
+  <a
+    href={content.buttonHref}
+    class="inline-flex items-center rounded-full bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
+  >
+    <SimpleIcon name="arrow-left" />
+    {content.buttonText}
+  </a>
+  <!-- </div> -->
+</LayoutFullForm>

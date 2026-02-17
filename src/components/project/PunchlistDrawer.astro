@@ -8,9 +8,10 @@ interface Props {
   project: any;
   supabaseUrl?: string;
   globalIconButtonClasses?: string;
+  id?: string;
 }
 
-const { currentUser, project, supabaseUrl } = Astro.props;
+const { currentUser, project, supabaseUrl, id } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 
@@ -20,11 +21,7 @@ if (!project || !project.id || currentRole === "Client") {
 
 const projectId = project.id;
 
-if (!currentUser || !currentUser.id || currentRole === "Client" || !project) {
-  return null;
-}
-
-const drawerId = "punchlist-drawer";
+const drawerId = id || "punchlist-drawer";
 const drawerTitle = (project.title || project.address || "Project") + " Punchlist";
 ---
 

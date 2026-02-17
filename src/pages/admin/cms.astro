@@ -218,6 +218,18 @@ const componentShortcodes: Record<string, string> = {
   stat4Icon="award"
   variant="simple"
 />`,
+  CountUpBlock: `<CountUpBlock
+  title="Rothco Built by the Numbers..."
+  stat1Value="2.5M"
+  stat1Label="Sq Ft developed"
+  stat1Color="pink"
+  stat2Value="105"
+  stat2Label="years of management expertise"
+  stat2Color="cyan"
+  stat3Value="12"
+  stat3Label="satisfied clients"
+  stat3Color="orange"
+/>`,
   TimelineBlock: `<TimelineBlock
   title="Our Process"
   description="How we deliver solutions"
@@ -1354,6 +1366,7 @@ You can embed components:
     };
 
     // Delete page - Custom delete handler for CMS pages (uses slugs)
+    // Remove the row from DOM instead of refreshing the page
     window.handleCmsPageDeleted = async function (slug) {
       console.log("[CMS] Page deleted callback:", slug);
 
@@ -1361,7 +1374,14 @@ You can embed components:
         window.showSuccess("Page Deleted", "Page deleted successfully", 2000);
       }
 
-      setTimeout(() => location.reload(), 500);
+      // Remove trigger row and its detail row from the DOM
+      const tbody = document.querySelector("#cms-pages-tbody");
+      if (tbody) {
+        const triggerRow = tbody.querySelector(`tr.cms-accordion-trigger[data-slot="${slug}"]`);
+        const detailRow = tbody.querySelector(`tr.cms-accordion-detail[data-editor-slot="${slug}"]`);
+        if (triggerRow) triggerRow.remove();
+        if (detailRow) detailRow.remove();
+      }
     };
 
     // Handle delete button clicks

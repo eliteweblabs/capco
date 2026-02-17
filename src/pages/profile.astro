@@ -25,7 +25,7 @@ import { globalClasses } from "./api/global/global-classes";
 import Hero from "../components/common/Hero.astro";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 
-import App from "../components/ui/App.astro";
+import LayoutDefault from "../components/layouts/LayoutDefault.astro";
 import ProfileTabForm from "../components/profile/ProfileTabForm.astro";
 const userProfile = currentUser?.profile || null;
 
@@ -35,24 +35,7 @@ const validTabs = ["settings", "general", "social", "team"];
 const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "general";
 ---
 
-<App
-  title="User Profile"
-  description="Manage your account information and preferences"
-  {currentUser}
-  session={session || undefined}
-  project={undefined}
-  {supabase}
-  {globalCompanyName}
-  {globalCompanySlogan}
-  {primaryTextClasses}
-  {secondaryTextClasses}
-  {globalInputClasses}
-  {globalCompanyAddress}
-  {globalCompanyPhone}
-  {globalCompanyEmail}
-  {globalCompanyWebsite}
-  {globalCompanyLogo}
->
+<LayoutDefault title="User Profile" description="Manage your account information and preferences">
   <Hero
     title={`${userProfile?.companyName || userProfile?.firstName || "User"}'s Profile`}
     titleRefreshField="companyName"
@@ -83,19 +66,17 @@ const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "gener
     }
   </script>
   <div class="XXbg-gray-100 XXshadow-sm XXmd:p-6 p-4">
-    <div class="mx-auto max-w-2xl">
-      <ProfileTabForm
-        userProfile={userProfile}
-        currentUser={currentUser}
-        globalInputClasses={globalInputClasses}
-        globalCompanyPhone={globalCompanyPhone}
-        activeTab={activeTab}
-        showSettingsTab={true}
-        showSignOut={true}
-      />
-    </div>
+    <ProfileTabForm
+      userProfile={userProfile}
+      currentUser={currentUser}
+      globalInputClasses={globalInputClasses}
+      globalCompanyPhone={globalCompanyPhone}
+      activeTab={activeTab}
+      showSettingsTab={true}
+      showSignOut={true}
+    />
   </div>
-</App>
+</LayoutDefault>
 
 <script type="module" define:vars={{ currentUserId: currentUser?.id }}>
   function loadCropperjs() {

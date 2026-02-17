@@ -52,6 +52,9 @@ Navigate to `/your-page` (the slug matches the filename without `.md`)
 ### Layout
 - `<LandingProduct/>` - Product landing section
 
+### Block Components
+- `<CountUpBlock title="..." stat1Value="2.5M" stat1Label="Sq Ft developed" stat1Color="pink" stat2Value="105" stat2Label="years of expertise" stat2Color="cyan" stat3Value="12" stat3Label="satisfied clients" stat3Color="orange"/>` - Animated odometer-style stats (numbers roll from 0 when in view)
+
 ## ⚠️ Nested Shortcodes
 
 **Shortcodes cannot be nested inside other shortcodes.** The parser only extracts top-level component tags. If you pass something like `leftContent="<ImageBlock/>"` to TwoColumnBlock, it will be output as raw text/HTML—the inner component is never parsed or rendered.

@@ -141,29 +141,45 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
       const text = segment.content!;
 
       // Add natural pauses at punctuation and line breaks
-      const words = text.split(/(<br>|[.,!?;:])/gi);
+      const tokens = text.split(/(<br>|[.,!?;:])/gi);
 
-      words.forEach((word, wordIndex) => {
-        if (!word) return;
+      tokens.forEach((token, tokenIndex) => {
+        if (!token) return;
 
         // Type each character in a span so we can animate opacity (100% -> 40% over 600ms)
-        if (/^<[^>]+>$/i.test(word)) {
-          instance.type(word);
+        // Wrap each word (split by whitespace) in typewriter-word so line breaks happen between words, not mid-word
+        // Preserve spaces between words by outputting them outside typewriter-word
+        if (/^<[^>]+>$/i.test(token)) {
+          instance.type(token);
         } else {
-          for (const char of word) {
-            instance.type(`<span class="typewriter-char">${escapeHtml(char)}</span>`);
-          }
+          // Split token into words and spaces: " what is" -> ["", "what", " ", "is"]
+          const parts = token.split(/(\s+)/);
+          parts.forEach((part) => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) {
+              // Spaces: output each to preserve them
+              for (const char of part) {
+                instance.type(`<span class="typewriter-char">${escapeHtml(char)}</span>`);
+              }
+            } else {
+              // Word: wrap in typewriter-word to prevent mid-word breaks
+              instance.type('<span class="typewriter-word">');
+              for (const char of part) {
+                instance.type(`<span class="typewriter-char">${escapeHtml(char)}</span>`);
+              }
+              instance.type("</span>");
+            }
+          });
         }
 
         // Add natural pauses after punctuation
-        if (word.match(/[.,!?;:]/)) {
+        if (token.match(/[.,!?;:]/)) {
           instance.pause(+Math.random() * 300); // 200-500ms pause
-        } else if (word === "<br>") {
+        } else if (token === "<br>") {
           instance.pause(Math.random() * 400); // 300-700ms pause for line breaks
-        } else if (wordIndex < words.length - 1 && words[wordIndex + 1] !== "<br>") {
+        } else if (tokenIndex < tokens.length - 1 && tokens[tokenIndex + 1] !== "<br>") {
           // Small pause between words (human hesitation)
           if (Math.random() > 0.5) {
-            // 30% chance of slight hesitation
             instance.pause(50 + Math.random() * 100);
           }
         }
@@ -198,15 +214,27 @@ function buildFullTypewriterHtml(text: string, element: HTMLElement): string {
   segments.forEach((segment) => {
     if (segment.type === "text") {
       const segText = segment.content!;
-      const words = segText.split(/(<br>|[.,!?;:])/gi);
-      words.forEach((word) => {
-        if (!word) return;
-        if (/^<[^>]+>$/i.test(word)) {
-          html += word;
+      const tokens = segText.split(/(<br>|[.,!?;:])/gi);
+      tokens.forEach((token) => {
+        if (!token) return;
+        if (/^<[^>]+>$/i.test(token)) {
+          html += token;
         } else {
-          for (const char of word) {
-            html += `<span class="typewriter-char">${escapeHtml(char)}</span>`;
-          }
+          const parts = token.split(/(\s+)/);
+          parts.forEach((part) => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) {
+              for (const char of part) {
+                html += `<span class="typewriter-char">${escapeHtml(char)}</span>`;
+              }
+            } else {
+              html += '<span class="typewriter-word">';
+              for (const char of part) {
+                html += `<span class="typewriter-char">${escapeHtml(char)}</span>`;
+              }
+              html += "</span>";
+            }
+          });
         }
       });
     }

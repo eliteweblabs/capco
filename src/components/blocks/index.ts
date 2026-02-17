@@ -13,6 +13,7 @@ export { default as FeatureGridBlock } from "./FeatureGridBlock.astro";
 export { default as TestimonialBlock } from "./TestimonialBlock.astro";
 export { default as FAQBlock } from "./FAQBlock.astro";
 export { default as StatsBlock } from "./StatsBlock.astro";
+export { default as CountUpBlock } from "./CountUpBlock.astro";
 export { default as TeamBlock } from "./TeamBlock.astro";
 export { default as ContentBlock } from "./ContentBlock.astro";
 export { default as TimelineBlock } from "./TimelineBlock.astro";

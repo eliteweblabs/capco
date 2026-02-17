@@ -1,6 +1,7 @@
 /**
  * Resizable columns for AccordionDataTable.
- * Uses same formatting as project-list-resizable-columns.
+ * Uses linked resize: dragging adjusts the current column and its neighbor so total table width stays constant.
+ * Prevents crushing columns (min width) and overflow (no net growth).
  * Persists per table to localStorage (key: accordion-table-column-widths-{tableId}).
  */
 
@@ -51,25 +52,32 @@ function initResizableColumns() {
       return def ? parseInt(def, 10) : 100;
     }
 
-    function applyWidth(th: HTMLElement, colId: string, widthPx: number) {
+    function getWidth(colId: string, th: HTMLElement): number {
+      return savedWidths[colId] ?? (parseInt(th.style.width || String(getDefaultWidth(th)), 10) || getDefaultWidth(th));
+    }
+
+    function applyWidthToTh(th: HTMLElement, widthPx: number) {
       const w = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, widthPx));
       th.style.width = `${w}px`;
       th.style.minWidth = `${w}px`;
       th.style.maxWidth = `${w}px`;
-      savedWidths[colId] = w;
+      return w;
     }
 
     headers.forEach((th) => {
       const colId = th.getAttribute("data-col-id");
       if (colId) {
         const w = savedWidths[colId] ?? getDefaultWidth(th);
-        applyWidth(th, colId, w);
+        savedWidths[colId] = applyWidthToTh(th, w);
       }
     });
 
-    headers.forEach((th) => {
+    headers.forEach((th, index) => {
       const colId = th.getAttribute("data-col-id");
       if (!colId) return;
+
+      const nextTh = headers[index + 1] as HTMLElement | undefined;
+      const nextColId = nextTh?.getAttribute("data-col-id");
 
       const handle = document.createElement("div");
       handle.className =
@@ -79,17 +87,32 @@ function initResizableColumns() {
       th.style.position = "relative";
       th.appendChild(handle);
 
-      let startX = 0;
-      let startW = 0;
-
       handle.addEventListener("mousedown", (e) => {
         e.preventDefault();
-        startX = e.clientX;
-        startW = savedWidths[colId] ?? parseInt(th.style.width || String(getDefaultWidth(th)), 10);
+        const startX = e.clientX;
+        const startW = getWidth(colId, th);
+        const startNextW = nextTh && nextColId ? getWidth(nextColId, nextTh) : 0;
 
         const onMove = (moveEvent: MouseEvent) => {
-          const delta = moveEvent.clientX - startX;
-          applyWidth(th, colId, startW + delta);
+          let delta = moveEvent.clientX - startX;
+
+          if (nextTh && nextColId) {
+            // Linked resize: current grows by delta, neighbor shrinks. Clamp so neither goes out of bounds.
+            const maxGrow = MAX_WIDTH - startW;
+            const maxShrink = startW - MIN_WIDTH;
+            const maxTakeFromNext = startNextW - MIN_WIDTH;
+            const maxGiveToNext = MAX_WIDTH - startNextW;
+            const clampMax = delta >= 0 ? Math.min(delta, maxGrow, maxTakeFromNext) : Math.max(delta, -maxShrink, -maxGiveToNext);
+            delta = clampMax;
+
+            const currFinal = startW + delta;
+            const nextFinal = startNextW - delta;
+            savedWidths[colId] = applyWidthToTh(th, currFinal);
+            savedWidths[nextColId] = applyWidthToTh(nextTh, nextFinal);
+          } else {
+            const w = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startW + delta));
+            savedWidths[colId] = applyWidthToTh(th, w);
+          }
           saveWidths(tableId, { ...savedWidths });
         };
 

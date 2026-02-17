@@ -1,0 +1,254 @@
+---
+/**
+ * CountUpBlock - "By the Numbers" animated statistics section
+ *
+ * Layout like MySudo: title on left, large colored stats on right.
+ * Numbers animate odometer-style (digits roll vertically from 0 to target) when in view.
+ * Plain numbers only - no tumbler/casing styling.
+ *
+ * @example Shortcode:
+ * <CountUpBlock
+ *   title="Rothco Built by the Numbers..."
+ *   stat1Value="2.5M"
+ *   stat1Label="Sq Ft developed"
+ *   stat1Color="pink"
+ *   stat2Value="105"
+ *   stat2Label="years of management expertise"
+ *   stat2Color="cyan"
+ *   stat3Value="12"
+ *   stat3Label="satisfied clients"
+ *   stat3Color="orange"
+ * />
+ */
+import { buildArrayFromFlatProps } from "./BlockRegistry";
+
+interface Stat {
+  value: string;
+  label: string;
+  color?: string;
+}
+
+interface Props {
+  title?: string;
+
+  // Flat props for up to 6 stats
+  stat1Value?: string;
+  stat1Label?: string;
+  stat1Color?: string;
+  stat2Value?: string;
+  stat2Label?: string;
+  stat2Color?: string;
+  stat3Value?: string;
+  stat3Label?: string;
+  stat3Color?: string;
+  stat4Value?: string;
+  stat4Label?: string;
+  stat4Color?: string;
+  stat5Value?: string;
+  stat5Label?: string;
+  stat5Color?: string;
+  stat6Value?: string;
+  stat6Label?: string;
+  stat6Color?: string;
+
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const {
+  title = "Rothco Built by the Numbers...",
+  className = "",
+  id,
+} = props;
+
+const statItems: Stat[] = buildArrayFromFlatProps<Stat>(
+  props,
+  "stat",
+  ["value", "label", "color"],
+  6
+);
+
+// Default stats if none provided
+const defaultStats: Stat[] = [
+  { value: "2.5M", label: "Sq Ft developed", color: "pink" },
+  { value: "105", label: "years of management expertise", color: "cyan" },
+  { value: "12", label: "satisfied clients", color: "orange" },
+];
+
+const stats = statItems.length > 0 ? statItems : defaultStats;
+
+const colorClasses: Record<string, string> = {
+  pink: "text-pink-400",
+  magenta: "text-pink-400",
+  cyan: "text-cyan-400",
+  blue: "text-blue-400",
+  orange: "text-orange-400",
+  peach: "text-orange-400",
+  green: "text-green-400",
+  purple: "text-purple-400",
+  primary: "text-primary-400",
+};
+const getColorClass = (color?: string) =>
+  (color && colorClasses[color.toLowerCase()]) || "text-primary-400";
+---
+
+<section
+  {id}
+  class:list={[
+    "count-up-block relative overflow-hidden py-16 md:py-20",
+    "bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700",
+    className,
+  ]}
+>
+  <div class="relative z-10 mx-auto flex max-w-7xl flex-col gap-12 px-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-16 lg:px-8">
+    {/* Left: Title */}
+    <div class="flex-shrink-0">
+      <h2 class="whitespace-pre-line text-3xl font-bold leading-tight text-white md:text-4xl">
+        {title}
+      </h2>
+    </div>
+
+    {/* Right: Animated stats */}
+    <div class="flex flex-1 flex-wrap items-center justify-center gap-8 md:gap-12 lg:justify-end">
+      {stats.map((stat, i) => (
+        <div class="count-up-stat flex flex-col items-center text-center lg:items-end lg:text-right">
+          <div
+            class={`count-up-value mb-1 text-4xl font-bold md:text-5xl ${getColorClass(stat.color)}`}
+            data-value={stat.value}
+            data-index={i}
+          >
+            <span class="count-up-inner" aria-hidden="true">{stat.value}</span>
+          </div>
+          <div class="text-sm font-medium text-white/90 md:text-base">{stat.label}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .count-up-block .count-up-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Odometer: window = fixed height + overflow hidden; rail = sliding content */
+  .count-up-block :global(.odo-window) {
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+    vertical-align: bottom;
+    line-height: 1;
+  }
+  .count-up-block :global(.odo-rail) {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+    will-change: transform;
+  }
+  .count-up-block :global(.odo-cell) {
+    flex-shrink: 0;
+    height: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .count-up-block :global(.odo-static) {
+    display: inline-block;
+    line-height: 1;
+  }
+</style>
+
+<script>
+  const DIGITS = "0123456789";
+
+  function parseValue(
+    val: string
+  ): Array<{ type: "digit"; target: number } | { type: "static"; char: string }> {
+    const result: Array<
+      { type: "digit"; target: number } | { type: "static"; char: string }
+    > = [];
+    for (let i = 0; i < val.length; i++) {
+      const c = val[i];
+      const d = parseInt(c, 10);
+      if (!isNaN(d) && c === String(d)) {
+        result.push({ type: "digit", target: d });
+      } else {
+        result.push({ type: "static", char: c });
+      }
+    }
+    return result;
+  }
+
+  function runOdometerAnimation(el: HTMLElement) {
+    const rails = el.querySelectorAll<HTMLElement>(".odo-rail");
+    rails.forEach((rail, idx) => {
+      const target = parseInt(rail.dataset.target || "0", 10);
+      const cells = rail.querySelectorAll(".odo-cell");
+      const cellHeight = cells[0]?.getBoundingClientRect().height ?? 0;
+
+      rail.style.transition = `transform 0.6s ease-out ${idx * 0.08}s`;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const offset = target * cellHeight;
+          rail.style.transform = `translateY(-${offset}px)`;
+        });
+      });
+    });
+  }
+
+  function initCountUp() {
+    const els = document.querySelectorAll<HTMLElement>(".count-up-value[data-value]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target as HTMLElement;
+          observer.unobserve(el);
+          runOdometerAnimation(el);
+        });
+      },
+      { rootMargin: "0px 0px -80px 0px", threshold: 0.1 }
+    );
+
+    els.forEach((el) => {
+      const val = el.dataset.value || "0";
+      const inner = el.querySelector(".count-up-inner");
+      if (inner) {
+        inner.innerHTML = "";
+        const parts = parseValue(val);
+        parts.forEach((p) => {
+          if (p.type === "static") {
+            const s = document.createElement("span");
+            s.className = "odo-static";
+            s.textContent = p.char;
+            inner.appendChild(s);
+          } else {
+            const window = document.createElement("span");
+            window.className = "odo-window";
+            const rail = document.createElement("span");
+            rail.className = "odo-rail";
+            rail.dataset.target = String(p.target);
+            rail.style.transform = "translateY(0)";
+            rail.innerHTML = DIGITS.split("")
+              .map((d) => `<span class="odo-cell">${d}</span>`)
+              .join("");
+            window.appendChild(rail);
+            inner.appendChild(window);
+          }
+        });
+      }
+      observer.observe(el);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initCountUp);
+  } else {
+    initCountUp();
+  }
+</script>

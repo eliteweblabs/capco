@@ -135,6 +135,23 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     },
   },
 
+  CountUpBlock: {
+    name: "CountUpBlock",
+    description: "Animated odometer-style statistics (title left, stats right)",
+    props: {
+      title: { type: "string", default: "Rothco Built by the Numbers...", description: "Section title" },
+      stat1Value: { type: "string", description: "First stat value (e.g. 2.5M)" },
+      stat1Label: { type: "string", description: "First stat label" },
+      stat1Color: { type: "string", description: "Color: pink, cyan, orange, blue, green, purple" },
+      stat2Value: { type: "string" },
+      stat2Label: { type: "string" },
+      stat2Color: { type: "string" },
+      stat3Value: { type: "string" },
+      stat3Label: { type: "string" },
+      stat3Color: { type: "string" },
+    },
+  },
+
   TeamBlock: {
     name: "TeamBlock",
     description: "Team member cards",

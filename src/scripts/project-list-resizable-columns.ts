@@ -1,10 +1,12 @@
 /**
  * Resizable columns for project dashboard table.
+ * Uses linked resize: dragging adjusts the current column and its neighbor so total table width stays constant.
  * Persists column widths to localStorage (key: project-dashboard-column-widths).
  */
 
 const STORAGE_KEY = "project-dashboard-column-widths";
 const MIN_WIDTH = 48;
+const MAX_WIDTH = 600;
 const DEFAULT_WIDTHS: Record<string, number> = {
   delete: 48,
   edit: 48,
@@ -54,12 +56,16 @@ function initResizableColumns() {
 
   let savedWidths = loadSavedWidths();
 
-  function applyWidth(th: HTMLElement, colId: string, widthPx: number) {
-    const w = Math.max(MIN_WIDTH, widthPx);
+  function getWidth(colId: string, th: HTMLElement): number {
+    return savedWidths[colId] ?? parseInt(th.style.width || "100", 10);
+  }
+
+  function applyWidthToTh(th: HTMLElement, widthPx: number): number {
+    const w = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, widthPx));
     th.style.width = `${w}px`;
     th.style.minWidth = `${w}px`;
     th.style.maxWidth = `${w}px`;
-    savedWidths[colId] = w;
+    return w;
   }
 
   // Apply saved widths
@@ -67,14 +73,17 @@ function initResizableColumns() {
     const colId = th.getAttribute("data-col-id");
     if (colId) {
       const w = savedWidths[colId] ?? DEFAULT_WIDTHS[colId] ?? 100;
-      applyWidth(th, colId, w);
+      savedWidths[colId] = applyWidthToTh(th, w);
     }
   });
 
-  // Add resize handles and drag logic
+  // Add resize handles and drag logic (linked resize with neighbor)
   headers.forEach((th, index) => {
     const colId = th.getAttribute("data-col-id");
     if (!colId) return;
+
+    const nextTh = headers[index + 1] as HTMLElement | undefined;
+    const nextColId = nextTh?.getAttribute("data-col-id");
 
     const handle = document.createElement("div");
     handle.className =
@@ -84,17 +93,31 @@ function initResizableColumns() {
     th.style.position = "relative";
     th.appendChild(handle);
 
-    let startX = 0;
-    let startW = 0;
-
     handle.addEventListener("mousedown", (e) => {
       e.preventDefault();
-      startX = e.clientX;
-      startW = savedWidths[colId] ?? parseInt(th.style.width || "100", 10);
+      const startX = e.clientX;
+      const startW = getWidth(colId, th);
+      const startNextW = nextTh && nextColId ? getWidth(nextColId, nextTh) : 0;
 
       const onMove = (moveEvent: MouseEvent) => {
-        const delta = moveEvent.clientX - startX;
-        applyWidth(th, colId, startW + delta);
+        let delta = moveEvent.clientX - startX;
+
+        if (nextTh && nextColId) {
+          const maxGrow = MAX_WIDTH - startW;
+          const maxShrink = startW - MIN_WIDTH;
+          const maxTakeFromNext = startNextW - MIN_WIDTH;
+          const maxGiveToNext = MAX_WIDTH - startNextW;
+          const clampMax =
+            delta >= 0
+              ? Math.min(delta, maxGrow, maxTakeFromNext)
+              : Math.max(delta, -maxShrink, -maxGiveToNext);
+          delta = clampMax;
+
+          savedWidths[colId] = applyWidthToTh(th, startW + delta);
+          savedWidths[nextColId] = applyWidthToTh(nextTh, startNextW - delta);
+        } else {
+          savedWidths[colId] = applyWidthToTh(th, startW + delta);
+        }
         saveWidths({ ...savedWidths });
       };
 

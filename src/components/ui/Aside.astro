@@ -11,21 +11,11 @@ import { globalCompanyData } from "../../pages/api/global/global-company-data";
 
 interface Props {
   currentUser: any;
-  globalInputClasses: string;
   primaryTextClasses: string;
-  projects?: any[];
   mobileNavigationHTML?: string;
-  globalIconButtonClasses?: string;
 }
 
-const {
-  currentUser,
-  globalInputClasses,
-  primaryTextClasses,
-  projects = [],
-  mobileNavigationHTML,
-  globalIconButtonClasses,
-} = Astro.props;
+const { currentUser, primaryTextClasses, mobileNavigationHTML } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 
@@ -146,8 +136,8 @@ function slugifyId(s: string) {
               </li>
             );
           }
-          if (item.type === "feature-admin") {
-            return item.items.map((nav) => (
+          if ((item as any).type === "feature-admin") {
+            return (item as any).items.map((nav: any) => (
               <li>
                 <a
                   href={nav.href}
@@ -165,17 +155,18 @@ function slugifyId(s: string) {
               </li>
             ));
           }
-          if (item.type === "feature-tools") {
+          if ((item as any).type === "feature-tools") {
             return (
               <>
-                {item.items.length > 0 && item.sectionLabel && (
-                  <li class="pb-2 pt-4">
-                    <span class="text-xs uppercase text-gray-500 dark:text-gray-400">
-                      {item.sectionLabel}
-                    </span>
-                  </li>
-                )}
-                {item.items.map((nav) =>
+                {((item as any).items as any[]).length > 0 &&
+                  ((item as any).sectionLabel as string | undefined) && (
+                    <li class="pb-2 pt-4">
+                      <span class="text-xs uppercase text-gray-500 dark:text-gray-400">
+                        {(item as any).sectionLabel}
+                      </span>
+                    </li>
+                  )}
+                {((item as any).items as any[]).map((nav: any) =>
                   nav.children?.length ? (
                     <li>
                       <button

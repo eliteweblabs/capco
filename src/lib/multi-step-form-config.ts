@@ -186,7 +186,7 @@ export interface FormStepConfig {
   hideProgressBar?: boolean; // Hide progress bar for this specific step (useful for intro/welcome steps)
   // Animation effects
   effect?: "reveal-text" | "typewriter" | "none"; // Text animation effect for title (defaults to "typewriter")
-  /** Tooltip shown via question-circle icon inline with title. Supports HTML (e.g. data-form-session-meta spans). */
+  /** Tooltip shown via info-circle icon at end of title. Supports HTML (e.g. data-form-session-meta spans). */
   moreInfoTooltip?: string;
   // Chat-style layout: when true, indent fields and buttons (ml-8) like a user response in a chat
   response?: boolean;

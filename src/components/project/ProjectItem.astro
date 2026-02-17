@@ -2,6 +2,8 @@
 import SimpleIcon from "../common/SimpleIcon.astro";
 import DeleteConfirmButton from "../ui/DeleteConfirmButton.astro";
 import StaffSelectTooltip from "../form/StaffSelectTooltip.astro";
+import Tooltip from "../ui/Tooltip.astro";
+import { getFileIconSvg, getFileName } from "../../lib/file-icon";
 import Stepper from "../form/Stepper.astro";
 import SlideToggle from "../form/SlideToggle.astro";
 import type { ProjectListColumnConfig } from "../../lib/project-list-table-config";
@@ -396,6 +398,8 @@ const statusColor = currentStatusColor || "gray";
             };
             const files = (project as any)[displayOpts.field ?? "projectFiles"] ?? [];
             const hasFiles = Array.isArray(files) && files.length > 0;
+            const showTooltips = displayOpts.tooltips !== false;
+            const iconSize = (displayOpts.size ?? "sm") as "sm" | "md" | "lg";
             return (
               <td class="block min-w-0 overflow-hidden whitespace-nowrap px-4 py-2 text-center">
                 <div class="flex justify-center">
@@ -404,10 +408,26 @@ const statusColor = currentStatusColor || "gray";
                       <div
                         class="flex flex-wrap items-center gap-2"
                         id={`project-files-${project.id}`}
-                        data-project-files={JSON.stringify(files)}
-                        data-file-size={displayOpts.size ?? "sm"}
-                        data-file-tooltips={displayOpts.tooltips !== false ? "true" : "false"}
-                      />
+                        data-project-files={showTooltips ? undefined : JSON.stringify(files)}
+                        data-file-size={iconSize}
+                        data-file-tooltips={showTooltips ? "true" : "false"}
+                        data-prerendered={showTooltips ? "true" : undefined}
+                      >
+                        {showTooltips &&
+                          files.map((file: any) => {
+                            const fileName = getFileName(file);
+                            const fileType = file.fileType || file.file_type || "";
+                            const iconHtml = getFileIconSvg(fileType, iconSize);
+                            return (
+                              <Tooltip text={fileName} position="top">
+                                <span
+                                  class="cursor-pointer inline-flex"
+                                  set:html={iconHtml}
+                                />
+                              </Tooltip>
+                            );
+                          })}
+                      </div>
                     ) : (
                       <span class="text-gray-600">{displayOpts.emptyText ?? "No files"}</span>
                     )}

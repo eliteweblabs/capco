@@ -56,7 +56,7 @@ export function createMultiStepFormHandler(
           };
     const escaped = (s: string) =>
       s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    container.className = `w-100 p-2 mb-4 ${cfg.bgClass} ${cfg.borderClass}`;
+    container.className = `p-2 mb-4 self-stretch ${cfg.bgClass} ${cfg.borderClass}`;
     container.innerHTML = `
       <div class="flex items-start">
         <svg class="mr-2 mt-0.5 h-5 w-5 shrink-0 ${cfg.textClass}" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -1457,18 +1457,14 @@ export function createMultiStepFormHandler(
 
     // Handle Enter key
     form.addEventListener("keypress", (e) => {
-      if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
-        // If typewriter is running, skip it instead of advancing (avoids "please enter full name" validation)
-        const skipTypewriter = (window as any).skipActiveTypewriterToEnd as
-          | (() => boolean)
-          | undefined;
-        if (typeof skipTypewriter === "function" && skipTypewriter()) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
+      if (e.key !== "Enter") return;
+      const target = e.target as HTMLElement;
+      const tag = target?.tagName;
 
-        const target = e.target as HTMLElement;
+      // Input/textarea/select focused: Enter = advance (next input or next button)
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+        if (tag === "TEXTAREA") return; // Let textarea handle its own Enter
+        e.preventDefault();
         if (multistepDebug) {
           console.log("[MULTISTEP-CLICK-DEBUG] form keypress Enter", {
             formId: form.id,
@@ -1476,7 +1472,6 @@ export function createMultiStepFormHandler(
             targetId: target?.id,
           });
         }
-        e.preventDefault();
         const currentStepEl = form.querySelector(`.step-content[data-step="${currentStep}"]`);
 
         // Check if target is an input field
@@ -1522,6 +1517,16 @@ export function createMultiStepFormHandler(
         } else if (multistepDebug) {
           console.log("[MULTISTEP-CLICK-DEBUG] Enter → no next button in current step");
         }
+        return;
+      }
+
+      // Not in form field (e.g. typewriter showing): Enter = speed up / skip typewriter
+      const skipTypewriter = (window as any).skipActiveTypewriterToEnd as
+        | (() => boolean)
+        | undefined;
+      if (typeof skipTypewriter === "function" && skipTypewriter()) {
+        e.preventDefault();
+        e.stopPropagation();
       }
     });
 
@@ -1934,7 +1939,7 @@ export function initializeStandardForm(
               .replace(/>/g, "&gt;")
               .replace(/"/g, "&quot;");
           container.className =
-            "w-100 p-2 mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800";
+            "w-full p-2 mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800";
           container.innerHTML = `
             <div class="flex items-start">
               <svg class="mr-2 mt-0.5 h-5 w-5 shrink-0 text-green-800 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -1966,7 +1971,7 @@ export function initializeStandardForm(
               .replace(/>/g, "&gt;")
               .replace(/"/g, "&quot;");
           container.className =
-            "w-100 p-2 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800";
+            "w-full p-2 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800";
           container.innerHTML = `
             <div class="flex items-start">
               <svg class="mr-2 mt-0.5 h-5 w-5 shrink-0 text-red-800 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
