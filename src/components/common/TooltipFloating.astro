@@ -155,6 +155,7 @@ const contentClasses = [
 
 <script>
   import { computePosition, flip, shift, offset, arrow } from "@floating-ui/dom";
+  import type { Placement } from "@floating-ui/dom";
 
   const initialized = new WeakSet();
 
@@ -194,13 +195,13 @@ const contentClasses = [
           middleware.push(arrow({ element: arrowElement }));
         }
 
-        const { x, y, placement, middlewareData } = await computePosition(trigger, tooltip, {
-          placement: preferredPosition,
+        const { x, y, placement, middlewareData } = await computePosition(trigger as HTMLElement, tooltip as HTMLElement, {
+          placement: preferredPosition as Placement,
           middleware,
         });
 
-        Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
-        tooltip.setAttribute("data-popper-placement", placement);
+        Object.assign((tooltip as HTMLElement).style, { left: `${x}px`, top: `${y}px` });
+        (tooltip as HTMLElement).setAttribute("data-popper-placement", placement);
 
         // Position arrow (Floating UI sets only one axis per placement; set static axis and clear others per Flowbite/Popper)
         if (arrowElement && middlewareData.arrow) {
@@ -222,7 +223,7 @@ const contentClasses = [
           else if (staticSide === "top") arrowStyle.top = staticValue;
           if (staticSide === "right") arrowStyle.right = staticValue;
           if (staticSide === "bottom") arrowStyle.bottom = staticValue;
-          Object.assign(arrowElement.style, arrowStyle);
+          Object.assign((arrowElement as HTMLElement).style, arrowStyle);
         }
       }
 
@@ -230,14 +231,14 @@ const contentClasses = [
       const show = () => {
         tooltip.classList.remove("opacity-0");
         tooltip.classList.add("opacity-100");
-        tooltip.style.pointerEvents = "auto";
+        (tooltip as HTMLElement).style.pointerEvents = "auto";
         updatePosition();
       };
 
       const hide = () => {
         tooltip.classList.remove("opacity-100");
         tooltip.classList.add("opacity-0");
-        tooltip.style.pointerEvents = "none";
+        (tooltip as HTMLElement).style.pointerEvents = "none";
       };
 
       // Event handlers
@@ -245,11 +246,11 @@ const contentClasses = [
         // Mobile: click to toggle
         const handleClick = (e: Event) => {
           e.stopPropagation();
-          const isVisible = tooltip.classList.contains("opacity-100");
+          const isVisible = (tooltip as HTMLElement).classList.contains("opacity-100");
 
           // Close all other tooltips
           document.querySelectorAll(".tooltip-content.opacity-100").forEach((other) => {
-            if (other !== tooltip) {
+            if (other !== (tooltip as HTMLElement)) {
               other.classList.remove("opacity-100");
               other.classList.add("opacity-0");
             }
@@ -259,7 +260,7 @@ const contentClasses = [
         };
 
         const handleOutsideClick = (e: Event) => {
-          if (!wrapper.contains(e.target) && tooltip.classList.contains("opacity-100")) {
+          if (!wrapper.contains((e.target as Node)) && (tooltip as HTMLElement).classList.contains("opacity-100")) {
             hide();
           }
         };
@@ -279,7 +280,7 @@ const contentClasses = [
       window.addEventListener("resize", updatePosition, { passive: true });
 
       // Close button
-      const closeBtn = tooltip.querySelector(".tooltip-close-btn");
+      const closeBtn = (tooltip as HTMLElement).querySelector(".tooltip-close-btn");
       closeBtn?.addEventListener("click", (e) => {
         e.stopPropagation();
         hide();

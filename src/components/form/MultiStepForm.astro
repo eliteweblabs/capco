@@ -32,11 +32,6 @@ const {
 
 const config = normalizeFormConfig(rawConfig);
 
-// When first step has expandDown: false, start with centered panel (no expand-down/expand-up)
-// const firstStep = config.steps.find((s) => s.stepNumber === 1);
-// const initialCentered = firstStep?.expandDown === false;
-const initialCentered = true;
-
 const { globalInputClasses, multiStepInputClasses } = globalClasses();
 const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
 /** Typewriter-agent style for all JSON config form inputs (no shadow, color-background overwrites dot pattern, blinking caret) */
@@ -69,8 +64,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
     <div
       class:list={[
-        "multi-step-form-steps relative flex w-full flex-col items-center justify-center scrollbar-hide",
-        // initialCentered ? "centered" : "expand-down",
+        "multi-step-form-steps relative flex w-full flex-col items-center justify-center scrollbar-hide expand-down",
         containerClass,
       ]}
       id={`${config.formId}-steps`}
@@ -86,7 +80,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             ]}
             data-step={step.stepNumber}
             data-hide-progress-bar={step.hideProgressBar ? "true" : "false"}
-            data-expand-down={step.expandDown === false ? "false" : "true"}
             tabindex="-1"
           >
             {/* Step Header */}
@@ -94,14 +87,30 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {step.title || step.subtitle ? (
               <div class="step-title" tabindex="-1">
                 {step.title && (
-                  <h2
-                    class={`inline ${
-                      step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
-                    }`}
-                    data-text={step.title}
-                    set:html={step.title || ""}
-                    tabindex="-1"
-                  />
+                  <h2 class="flex flex-wrap items-center gap-1.5 sm:gap-2" tabindex="-1">
+                    <span
+                      class={`inline ${
+                        step.effect === "typewriter" || !step.effect ? "typewriter-text" : ""
+                      }`}
+                      data-text={step.title}
+                      set:html={step.title || ""}
+                    />
+                    {step.moreInfoTooltip && (
+                      <Tooltip
+                        text={step.moreInfoTooltip}
+                        html={true}
+                        position="top"
+                        className="shrink-0"
+                        mobileClickable={true}
+                        tooltipClass="whitespace-normal"
+                      >
+                        <SimpleIcon
+                          name="question-circle"
+                          class="h-4 w-4 text-gray-500 dark:text-gray-400 sm:h-5 sm:w-5"
+                        />
+                      </Tooltip>
+                    )}
+                  </h2>
                 )}
                 {step.subtitle && (
                   <p
@@ -600,26 +609,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 }
 
 <style is:global>
-  /* Expand down: top at 50dvh, panel grows downward until it would hit the limit */
-  :not([role="tooltip"]) .multi-step-form-steps.expand-down {
-    top: 26.5dvh;
-    bottom: auto;
-  }
-
-  /* Expand up: bottom at 4rem, panel grows upward after hitting the limit */
-  :not([role="tooltip"]) .multi-step-form-steps.expand-up {
-    top: auto;
-    bottom: 26.5dvh;
-  }
-
-  /* Centered: when expandDown is false for current step, keep panel vertically centered */
-  :not([role="tooltip"]) .multi-step-form-steps.centered {
-    /* top: 50%;
-    bottom: auto;
-    justify-content: center;
-    transform: translate(-50%, -50%); */
-  }
-
   /* Title scroll container with max height */
   .title-scroll-container {
     display: flex;
@@ -754,6 +743,20 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     background-color: var(--color-success-600);
   }
 
+  /* Steps: scroll internally so user can scroll up to see completed steps */
+  .multi-step-form-steps {
+    overflow-y: auto;
+  }
+  /* Default: content centered, grows down */
+  .multi-step-form-steps.expand-down {
+    justify-content: center;
+  }
+  /* When bottom would hit threshold: lock at current gap (no jump), content grows up; user scrolls up to see completed */
+  .multi-step-form-steps.expand-up {
+    justify-content: flex-end;
+    padding-bottom: var(--steps-bottom-gap, 20dvh);
+  }
+
   /* Form is the scroll container; .multi-step-form-steps is the single scrollable content block */
   [data-multi-step-form] form {
     position: relative;
@@ -826,104 +829,43 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       true
     );
 
-    // Panel position: only .multi-step-form-steps height matters (spacer removed)
-    let updateStepsPanelBottomRef: (() => void) | null = null;
-    /** Run panel bottom update every frame for the given duration (e.g. during typewriter/cascade). */
-    let runPanelBottomLoopRef: ((durationMs: number) => void) | null = null;
-    const stepsEl = document.querySelector(".multi-step-form-steps") as HTMLElement | null;
+    // Expand-up/expand-down: measure the expanding step content; when it reaches ~70% of viewport, fix bottom and expand up
+    const VIEWPORT_THRESHOLD = 0.7; /* content height >= 70% viewport = within 30% of filling it */
+    function updateStepsExpandMode() {
+      const stepsEl = document.querySelector(".multi-step-form-steps") as HTMLElement | null;
+      if (!stepsEl) return;
+      const active = stepsEl.querySelector(".step-content.active") as HTMLElement | null;
+      const contentHeight = active?.offsetHeight ?? 0;
+      const viewportHeight = window.innerHeight;
+      const useExpandUp = contentHeight >= viewportHeight * VIEWPORT_THRESHOLD;
+      if (useExpandUp) {
+        const rect = stepsEl.getBoundingClientRect();
+        const contentBottom = rect.top + stepsEl.scrollTop + stepsEl.scrollHeight;
+        const gapPx = Math.max(viewportHeight * 0.1, viewportHeight - contentBottom);
+        stepsEl.style.setProperty("--steps-bottom-gap", `${gapPx}px`);
+        stepsEl.classList.remove("expand-down");
+        stepsEl.classList.add("expand-up");
+      } else {
+        stepsEl.style.removeProperty("--steps-bottom-gap");
+        stepsEl.classList.remove("expand-up");
+        stepsEl.classList.add("expand-down");
+      }
+    }
+
+    const stepsEl = document.querySelector(".multi-step-form-steps");
     if (stepsEl) {
-      // console.log("[MULTISTEP-DEBUG] steps panel found, setting up");
-      const BOTTOM_MIN_PX = 4 * 16; // 4rem cutoff
-      const THROTTLE_MS = 80;
-      let lastPanelBottomRun = 0;
-
-      function updateStepsPanelBottom(caller?: string) {
-        const activeStep = stepsEl.querySelector(".step-content.active");
-        const expandDownForStep = activeStep?.getAttribute("data-expand-down") !== "false";
-
-        if (!expandDownForStep) {
-          stepsEl.classList.add("centered");
-          stepsEl.classList.remove("expand-down", "expand-up");
-          // console.log("[MULTISTEP-DEBUG] updateStepsPanelBottom", {
-          //   caller: caller ?? "unknown",
-          //   mode: "centered",
-          // });
-          return;
-        }
-
-        stepsEl.classList.remove("centered");
-        const stepsHeight = stepsEl.scrollHeight;
-        const clientHeight = stepsEl.clientHeight;
-        const offsetHeight = stepsEl.offsetHeight;
-        const viewportHeight = window.innerHeight;
-        const fiftyDvhPx = viewportHeight * 0.5;
-        // Switch when panel bottom would hit limit: 50dvh + height >= viewport - 4rem => height >= 50dvh - 4rem
-        const thresholdPx = fiftyDvhPx - BOTTOM_MIN_PX;
-        const expandUp = stepsHeight >= thresholdPx;
-        if (expandUp) {
-          stepsEl.classList.add("expand-up");
-          stepsEl.classList.remove("expand-down");
-        } else {
-          stepsEl.classList.add("expand-down");
-          stepsEl.classList.remove("expand-up");
-        }
-        // console.log("[MULTISTEP-DEBUG] updateStepsPanelBottom", {
-        //   caller: caller ?? "unknown",
-        //   scrollHeight: stepsHeight,
-        //   clientHeight,
-        //   offsetHeight,
-        //   fiftyDvhPx,
-        //   thresholdPx,
-        //   expandUp,
-        // });
-      }
-
-      function throttledUpdateStepsPanelBottom(caller?: string) {
-        const now = performance.now();
-        const allowed = now - lastPanelBottomRun >= THROTTLE_MS;
-        if (allowed) {
-          lastPanelBottomRun = now;
-          updateStepsPanelBottom(caller ?? "throttled");
-        } else {
-          // console.log("[MULTISTEP-DEBUG] throttledUpdateStepsPanelBottom skipped (throttle)", {
-          //   caller: caller ?? "unknown",
-          //   elapsed: now - lastPanelBottomRun,
-          //   THROTTLE_MS,
-          // });
-        }
-      }
-
-      updateStepsPanelBottomRef = () => throttledUpdateStepsPanelBottom("ref");
-
-      runPanelBottomLoopRef = (durationMs: number) => {
-        // console.log("[MULTISTEP-DEBUG] runPanelBottomLoopRef started", { durationMs });
-        const start = performance.now();
-        const tick = () => {
-          throttledUpdateStepsPanelBottom("loop");
-          if (performance.now() - start < durationMs) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
+      updateStepsExpandMode();
+      const resizeObserver = new ResizeObserver(() => updateStepsExpandMode());
+      const observeActiveStep = () => {
+        const active = stepsEl.querySelector(".step-content.active");
+        resizeObserver.disconnect();
+        if (active) resizeObserver.observe(active);
       };
-
-      updateStepsPanelBottom("DOMContentLoaded");
-
-      window.addEventListener("resize", () => {
-        // console.log("[MULTISTEP-DEBUG] resize → throttledUpdateStepsPanelBottom");
-        throttledUpdateStepsPanelBottom("resize");
-      });
-
-      const resizeObserver = new ResizeObserver(() => {
-        // console.log("[MULTISTEP-DEBUG] ResizeObserver → requestAnimationFrame(throttled)");
-        requestAnimationFrame(() => throttledUpdateStepsPanelBottom("ResizeObserver"));
-      });
-      resizeObserver.observe(stepsEl);
-
+      observeActiveStep();
+      window.addEventListener("resize", updateStepsExpandMode);
       document.addEventListener("multistep-step-change", () => {
-        // console.log("[MULTISTEP-DEBUG] multistep-step-change → updateStepsPanelBottom + loop 15s");
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => updateStepsPanelBottom("multistep-step-change"))
-        );
-        runPanelBottomLoopRef?.(5000);
+        observeActiveStep();
+        requestAnimationFrame(() => updateStepsExpandMode());
       });
     }
 
@@ -936,11 +878,6 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       if (stepContent) {
         // Add the class to trigger wrapper cascade (fields at 250ms, buttons at 500ms)
         stepContent.classList.add("typewriter-complete");
-
-        // Panel bottom: update every frame while wrappers expand so position tracks in real time
-        requestAnimationFrame(() => requestAnimationFrame(updateStepsPanelBottomRef ?? (() => {})));
-        const CASCADE_END_MS = 750; /* 500ms buttons delay + ~250ms opacity/expand */
-        runPanelBottomLoopRef?.(CASCADE_END_MS + 600);
 
         // Focus first input after cascade (for desktop; on iOS, user taps the field to open keypad)
         const FOCUS_DELAY_AFTER_ANIMATIONS_MS = 150;
@@ -983,6 +920,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
           console.log("[FOCUS] Step", stepNum, "no wrapper found, relying on fallback setTimeout");
         }
         // Fallback: always run focus after cascade completes (handles missing wrapper or transitionend not firing)
+        const CASCADE_END_MS = 750; /* 500ms buttons delay + ~250ms opacity/expand */
         const fallbackMs = CASCADE_END_MS + FOCUS_DELAY_AFTER_ANIMATIONS_MS + 200;
         setTimeout(() => {
           console.log("[FOCUS] Step", stepNum, "fallback setTimeout fired at", fallbackMs, "ms");

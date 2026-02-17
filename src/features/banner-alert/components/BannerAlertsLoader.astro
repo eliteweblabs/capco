@@ -329,13 +329,19 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
       }
 
       function setSidebarPosition(translateYVal) {
-        const side = document.getElementById("sidebar");
-        if (!side) return;
         const off = window.__revealSidebarOffsets;
         const topPx = off?.topPx ?? 4 * remPx();
         const topBannersOnlyPx = off?.topBannersOnlyPx ?? 0;
-        side.style.bottom = "";
-        side.style.top = (translateYVal <= THRESH ? topPx : topBannersOnlyPx) + "px";
+        const topVal = translateYVal <= THRESH ? topPx : topBannersOnlyPx;
+        const topStr = topVal + "px";
+        const side = document.getElementById("sidebar");
+        if (side) {
+          side.style.bottom = "";
+          side.style.top = topStr;
+        }
+        document.querySelectorAll("[data-drawer-top-offset]").forEach(function (el) {
+          if (el instanceof HTMLElement) el.style.top = topStr;
+        });
       }
 
       function syncNavbarAtTop(translateYVal) {

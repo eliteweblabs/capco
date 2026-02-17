@@ -303,7 +303,7 @@ export const navigation = async (
           : buttonStyleMap[item.buttonStyle] || buttonStyleMap.primary;
         const baseClasses =
           "font-secondary relative inline-flex items-center justify-center font-medium transition-all duration-200";
-        const sizeClasses = "px-5 py-2.5 text-sm";
+        const sizeClasses = "px-4 py-1 text-sm";
 
         return `<li class="${mobileClass}"><a href="${item.href}" class="${baseClasses} ${sizeClasses} ${styleClasses}">${item.label}</a></li>`;
       }

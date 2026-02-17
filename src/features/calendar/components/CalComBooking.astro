@@ -8,6 +8,9 @@ interface Props {
 }
 
 const { calLink = "capco/30min", currentUser } = Astro.props;
+const calComBaseUrl =
+  import.meta.env.PUBLIC_CALCOM_BASE_URL ||
+  "https://calcom-web-app-production-0b16.up.railway.app";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.astro";
 ---
 
@@ -18,7 +21,7 @@ import LoadingSpinner from "../../../components/ui/LoadingSpinner.astro";
   </div>
 </div>
 
-<script define:vars={{ calLink, currentUser }} type="module">
+<script define:vars={{ calLink, currentUser, calComBaseUrl }} type="module">
   document.addEventListener("DOMContentLoaded", function () {
     const calEmbedContainer = document.getElementById("cal-com-embed");
 
@@ -44,8 +47,8 @@ import LoadingSpinner from "../../../components/ui/LoadingSpinner.astro";
         hideEventTypeDetails: false,
         hideLandingPageDetails: false,
       },
-      // Self-hosted Cal.com instance
-      baseUrl: "https://calcom-web-app-production-0b16.up.railway.app",
+      // Self-hosted Cal.com instance (PUBLIC_CALCOM_BASE_URL)
+      baseUrl: calComBaseUrl,
       // Optional: Pre-fill form data if user is logged in
       prefill: {
         name: currentUser?.profile?.firstName + " " + currentUser?.profile?.lastName || "",

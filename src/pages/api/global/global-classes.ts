@@ -9,7 +9,7 @@ export const globalClasses = () => {
     secondaryTextClasses: "text-gray-800 dark:text-gray-200",
     // Flowbite-standard icon-only button (gray/secondary)
     globalIconButtonClasses:
-      "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
+      "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 md:focus:ring-4 md:focus:ring-gray-200 md:focus:ring-gray-200 dark:hover:bg-gray-700 md:dark:text-gray-400 dark:focus:ring-gray-700 focus:outline-none",
   };
 };
 

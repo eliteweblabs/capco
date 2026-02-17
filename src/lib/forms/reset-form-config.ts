@@ -41,7 +41,6 @@ export const resetFormConfig: MultiStepFormConfig = {
       stepNumber: 1,
       title: "",
       showIcon: false,
-      expandDown: false,
       response: false,
       fields: [
         {
