@@ -356,19 +356,19 @@ const attributes = {
 {isAntispam && (
   <script>
     (function initAntispam() {
-      if ((window as any).__antispamInited) return;
-      (window as any).__antispamInited = true;
+      if (window.__antispamInited) return;
+      window.__antispamInited = true;
 
       const isTouchDevice = () => window.matchMedia("(hover: none)").matches;
       if (!isTouchDevice()) return;
 
-      document.querySelectorAll<HTMLButtonElement>("[data-antispam]").forEach((btn) => {
-        if (btn.dataset.antispamInited) return;
-        btn.dataset.antispamInited = "true";
+      document.querySelectorAll("[data-antispam]").forEach((btn) => {
+        if (btn.getAttribute("data-antispam-inited")) return;
+        btn.setAttribute("data-antispam-inited", "true");
 
         const holdMs = parseInt(btn.dataset.antispamHold ?? "5000", 10) || 5000;
-        let holdTimer: ReturnType<typeof setTimeout> | null = null;
-        let progressInterval: ReturnType<typeof setInterval> | null = null;
+        let holdTimer = null;
+        let progressInterval = null;
         let startTime = 0;
 
         const reset = () => {
@@ -382,10 +382,9 @@ const attributes = {
         const complete = () => {
           reset();
           btn.style.setProperty("--antispam-progress", "1");
-          const el = btn as HTMLButtonElement & { dataset: { antispamAllowed?: string } };
-          el.dataset.antispamAllowed = "true";
+          btn.setAttribute("data-antispam-allowed", "true");
           btn.click();
-          delete el.dataset.antispamAllowed;
+          btn.removeAttribute("data-antispam-allowed");
         };
 
         const startHold = () => {
@@ -402,8 +401,7 @@ const attributes = {
         btn.addEventListener(
           "click",
           (e) => {
-            const el = btn as HTMLButtonElement & { dataset: { antispamAllowed?: string } };
-            if (!el.dataset.antispamAllowed) {
+            if (!btn.getAttribute("data-antispam-allowed")) {
               e.preventDefault();
               e.stopPropagation();
             }

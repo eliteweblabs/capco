@@ -17,7 +17,15 @@ function initAccordionReorder(): boolean {
     const triggerClass = el.getAttribute("data-trigger-class") || "accordion-trigger";
     const detailClass = el.getAttribute("data-detail-class") || "accordion-detail";
     const reorderCallbackName = el.getAttribute("data-reorder-callback");
-    console.log(LOG, "tableId:", tableId, "triggerClass:", triggerClass, "callback:", reorderCallbackName);
+    console.log(
+      LOG,
+      "tableId:",
+      tableId,
+      "triggerClass:",
+      triggerClass,
+      "callback:",
+      reorderCallbackName
+    );
 
     if (!tableId || !reorderCallbackName) {
       console.warn(LOG, "missing tableId or callback, skipping");
@@ -32,7 +40,13 @@ function initAccordionReorder(): boolean {
 
     const cb = (window as unknown as Record<string, unknown>)[reorderCallbackName];
     if (typeof cb !== "function") {
-      console.warn(LOG, "callback not found on window:", reorderCallbackName, "available:", Object.keys(window).filter((k) => k.includes("Reorder") || k.includes("handle")));
+      console.warn(
+        LOG,
+        "callback not found on window:",
+        reorderCallbackName,
+        "available:",
+        Object.keys(window).filter((k) => k.includes("Reorder") || k.includes("handle"))
+      );
       allOk = false;
       return;
     }
@@ -41,7 +55,9 @@ function initAccordionReorder(): boolean {
     // Support multiple classes: "accordion-trigger user-row" -> "tr.accordion-trigger.user-row"
     const triggerClassSel = triggerClass.trim().split(/\s+/).filter(Boolean).join(".");
     const getTriggerRows = () =>
-      Array.from(tbody.querySelectorAll<HTMLElement>("tr." + triggerClassSel + "[data-reorder-id]"));
+      Array.from(
+        tbody.querySelectorAll<HTMLElement>("tr." + triggerClassSel + "[data-reorder-id]")
+      );
 
     const rows = getTriggerRows();
     console.log(LOG, "attaching to", rows.length, "rows for table", tableId);
@@ -57,8 +73,18 @@ function initAccordionReorder(): boolean {
         (detailRow.classList.contains(detailClass) || detailRow.hasAttribute("data-slot"));
 
       row.addEventListener("dragstart", (e) => {
-        console.log(LOG, "dragstart", tableId, "row", index, "id:", row.getAttribute("data-reorder-id"));
-        (window as { refreshManager?: { setDragInProgress: (v: boolean) => void } }).refreshManager?.setDragInProgress?.(true);
+        console.log(
+          LOG,
+          "dragstart",
+          tableId,
+          "row",
+          index,
+          "id:",
+          row.getAttribute("data-reorder-id")
+        );
+        (
+          window as { refreshManager?: { setDragInProgress: (v: boolean) => void } }
+        ).refreshManager?.setDragInProgress?.(true);
         draggedEl = row;
         draggedDetail = isDetailRow ? detailRow : null;
         draggedIdx = index;
@@ -70,7 +96,9 @@ function initAccordionReorder(): boolean {
       });
 
       row.addEventListener("dragend", () => {
-        (window as { refreshManager?: { setDragInProgress: (v: boolean) => void } }).refreshManager?.setDragInProgress?.(false);
+        (
+          window as { refreshManager?: { setDragInProgress: (v: boolean) => void } }
+        ).refreshManager?.setDragInProgress?.(false);
         if (draggedEl) draggedEl.classList.remove("opacity-50", "cursor-grabbing");
         getTriggerRows().forEach((r) => r.classList.remove("border-t-2", "border-primary-500"));
         draggedEl = null;

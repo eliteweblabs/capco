@@ -190,7 +190,11 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     props: {
       title: { type: "string", description: "Section title" },
       variant: { type: "string", default: "simple", description: "Style: simple, grid, marquee" },
-      marqueeDirection: { type: "string", default: "left", description: "Marquee direction: left or right (only when variant=marquee)" },
+      marqueeDirection: {
+        type: "string",
+        default: "left",
+        description: "Marquee direction: left or right (only when variant=marquee)",
+      },
       logos: { type: "string", description: "JSON array of logos [{src, alt, href}]" },
     },
   },
@@ -283,7 +287,8 @@ export const blockRegistry: Record<string, BlockDefinition> = {
 
   WhatSetsUsApartBlock: {
     name: "WhatSetsUsApartBlock",
-    description: "What Sets Us Apart section with icon/text blocks or numbered list + supporting image",
+    description:
+      "What Sets Us Apart section with icon/text blocks or numbered list + supporting image",
     props: {
       title: { type: "string", default: "What Sets Us Apart", description: "Section headline" },
       description: { type: "string", description: "Optional section description" },
@@ -308,7 +313,8 @@ export const blockRegistry: Record<string, BlockDefinition> = {
 
   TwoColumnFadeShowBlock: {
     name: "TwoColumnFadeShowBlock",
-    description: "Left: image fadeshow, Right: content. Use image1..image12, interval, fadeDuration, rightContent.",
+    description:
+      "Left: image fadeshow, Right: content. Use image1..image12, interval, fadeDuration, rightContent.",
     props: {
       image1: { type: "string" },
       image2: { type: "string" },

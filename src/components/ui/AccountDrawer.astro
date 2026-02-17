@@ -13,11 +13,7 @@ interface Props {
   assignedProjectsPreview?: any[];
 }
 
-const {
-  currentUser,
-  assignedProjectsCount = 0,
-  assignedProjectsPreview = [],
-} = Astro.props;
+const { currentUser, assignedProjectsCount = 0, assignedProjectsPreview = [] } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 const drawerId = "account-drawer";
@@ -48,11 +44,7 @@ const drawerId = "account-drawer";
         title="Profile"
         class="dark:hover:bg-primary-950/30 group flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600"
       >
-        <SimpleIcon
-          name="user-edit"
-          size="xl"
-          class="text-primary-500 dark:text-primary-400"
-        />
+        <SimpleIcon name="user-edit" size="xl" class="text-primary-500 dark:text-primary-400" />
         <span class="text-sm font-medium text-gray-900 dark:text-white">Profile</span>
       </a>
 
@@ -61,11 +53,7 @@ const drawerId = "account-drawer";
         title="Dashboard"
         class="dark:hover:bg-primary-950/30 group flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600"
       >
-        <SimpleIcon
-          name="dashboard"
-          size="xl"
-          class="text-primary-500 dark:text-primary-400"
-        />
+        <SimpleIcon name="dashboard" size="xl" class="text-primary-500 dark:text-primary-400" />
         <span class="text-sm font-medium text-gray-900 dark:text-white">Dashboard</span>
       </a>
 
@@ -87,23 +75,12 @@ const drawerId = "account-drawer";
         aria-pressed="false"
       >
         <span id="page-size-icon-in">
-          <SimpleIcon
-            name="zoom-in"
-            size="xl"
-            class="text-primary-500 dark:text-primary-400"
-          />
+          <SimpleIcon name="zoom-in" size="xl" class="text-primary-500 dark:text-primary-400" />
         </span>
         <span id="page-size-icon-out" class="hidden">
-          <SimpleIcon
-            name="zoom-out"
-            size="xl"
-            class="text-primary-500 dark:text-primary-400"
-          />
+          <SimpleIcon name="zoom-out" size="xl" class="text-primary-500 dark:text-primary-400" />
         </span>
-        <span
-          id="page-size-toggle-label"
-          class="text-sm font-medium text-gray-900 dark:text-white"
-        >
+        <span id="page-size-toggle-label" class="text-sm font-medium text-gray-900 dark:text-white">
           Larger
         </span>
       </button>
@@ -111,23 +88,25 @@ const drawerId = "account-drawer";
       {(currentRole === "Admin" || currentRole === "Staff") && <CheckInButton tile />}
     </div>
 
-    {(currentRole === "Admin" || currentRole === "Staff") && assignedProjectsCount > 0 && (
-      <div class="mt-3 w-full border-t border-gray-200 pt-3 dark:border-gray-700">
-        <div class="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          Your Projects:
+    {
+      (currentRole === "Admin" || currentRole === "Staff") && assignedProjectsCount > 0 && (
+        <div class="mt-3 w-full border-t border-gray-200 pt-3 dark:border-gray-700">
+          <div class="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            Your Projects:
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {assignedProjectsPreview.map((project: any) => (
+              <a
+                href={`/project/${project.id}`}
+                class="dark:hover:bg-primary-950/30 inline-block rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-sm font-medium text-gray-900 transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:border-primary-600"
+              >
+                {project.address || project.title || "Untitled Project"}
+              </a>
+            ))}
+          </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-          {assignedProjectsPreview.map((project: any) => (
-            <a
-              href={`/project/${project.id}`}
-              class="dark:hover:bg-primary-950/30 inline-block rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-sm font-medium text-gray-900 transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:border-primary-600"
-            >
-              {project.address || project.title || "Untitled Project"}
-            </a>
-          ))}
-        </div>
-      </div>
-    )}
+      )
+    }
   </div>
 </Drawer>
 

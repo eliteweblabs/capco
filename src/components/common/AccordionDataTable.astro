@@ -139,20 +139,28 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
     <table
       id={`${id}-table`}
       class="w-full min-w-max table-fixed divide-gray-200 text-sm dark:divide-gray-700"
-      {...(resizable && { "data-accordion-resizable": "true", "data-table-id": id })}
+      {...resizable && { "data-accordion-resizable": "true", "data-table-id": id }}
     >
-      <thead class="select-none text-uppercase color-background text-xs">
+      <thead class="text-uppercase color-background select-none text-xs">
         <tr>
-          {draggable && (
-            <th class="w-10 px-2 py-3" aria-label="Drag to reorder">&nbsp;</th>
-          )}
+          {
+            draggable && (
+              <th class="w-10 px-2 py-3" aria-label="Drag to reorder">
+                &nbsp;
+              </th>
+            )
+          }
           {
             columns.map((col) => (
               <th
                 scope="col"
                 data-col-id={col.key}
                 data-col-default-width={col.width ?? 100}
-                style={resizable ? `width: ${col.width ?? 100}px; min-width: ${col.width ?? 100}px` : undefined}
+                style={
+                  resizable
+                    ? `width: ${col.width ?? 100}px; min-width: ${col.width ?? 100}px`
+                    : undefined
+                }
                 class={`color-border-primary border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700 ${col.headerClass || ""}`}
               >
                 {col.label}
@@ -331,11 +339,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
   </div>
 </div>
 
-{resizable && (
-  <script>
-    import "../../scripts/accordion-data-table-resizable-columns";
-  </script>
-)}
+{resizable && <script>import "../../scripts/accordion-data-table-resizable-columns";</script>}
 
 {
   draggable && reorderCallback && (

@@ -19,12 +19,14 @@ Just use the form - if the table doesn't exist, you'll get a helpful message wit
 Run the SQL script to create the `contact_submissions` table:
 
 **Option 1 - Supabase Dashboard:**
+
 1. Go to your Supabase project
 2. Navigate to SQL Editor
 3. Copy and paste the contents of `sql-queriers/create-contact-submissions-table.sql`
 4. Click "Run"
 
 **Option 2 - Command Line:**
+
 ```bash
 psql -f sql-queriers/create-contact-submissions-table.sql
 ```
@@ -63,7 +65,7 @@ See `/src/pages/contact.astro` for a complete example.
 ## Features
 
 - **6-step form** with progress bar
-- **Field validation** with error messages  
+- **Field validation** with error messages
 - **Google Places** address autocomplete (SlotMachine)
 - **AOS animations** for smooth transitions
 - **Mobile-responsive** design
@@ -89,7 +91,7 @@ Form submits to `/api/contact/submit` with the following data:
   email: string;
   phone: string;
   company: string;
-  "contact-address": string; // Address from SlotMachine
+  contactAddress: string; // Address from SlotMachine (key: "contact-address")
   message: string;
 }
 ```
@@ -98,19 +100,19 @@ Form submits to `/api/contact/submit` with the following data:
 
 Submissions are stored in the `contact_submissions` table:
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | SERIAL | Primary key |
-| first_name | TEXT | First name (required) |
-| last_name | TEXT | Last name (required) |
-| email | TEXT | Email address (required) |
-| phone | TEXT | Phone number (optional) |
-| company | TEXT | Company name (optional) |
-| address | TEXT | Google Places address (optional) |
-| message | TEXT | Message content (required) |
-| submitted_at | TIMESTAMP | Submission timestamp |
-| created_at | TIMESTAMP | Record creation timestamp |
-| updated_at | TIMESTAMP | Record update timestamp |
+| Column       | Type      | Description                      |
+| ------------ | --------- | -------------------------------- |
+| id           | SERIAL    | Primary key                      |
+| first_name   | TEXT      | First name (required)            |
+| last_name    | TEXT      | Last name (required)             |
+| email        | TEXT      | Email address (required)         |
+| phone        | TEXT      | Phone number (optional)          |
+| company      | TEXT      | Company name (optional)          |
+| address      | TEXT      | Google Places address (optional) |
+| message      | TEXT      | Message content (required)       |
+| submitted_at | TIMESTAMP | Submission timestamp             |
+| created_at   | TIMESTAMP | Record creation timestamp        |
+| updated_at   | TIMESTAMP | Record update timestamp          |
 
 ## WordPress-Style Auto-Detection
 
@@ -133,6 +135,7 @@ This provides the convenience of auto-detection with the security of manual appr
 ## Styling
 
 Uses the same design system as `MultiStepRegisterForm`:
+
 - Large centered text for questions
 - Primary color accents
 - Smooth step transitions

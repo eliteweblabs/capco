@@ -65,17 +65,30 @@ const avatarUrl =
   <span class="auth-icon-default flex h-full w-full items-center justify-center" aria-hidden="true">
     <UserIcon user={currentUser} class="h-full w-full" />
   </span>
-  {!currentUser && (
-    <span
-      class="auth-icon-close absolute inset-0 flex items-center justify-center transition-opacity"
-      aria-hidden="true"
-      style="opacity: 0; pointer-events: none;"
-    >
-      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </span>
-  )}
+  {
+    !currentUser && (
+      <span
+        class="auth-icon-close absolute inset-0 flex items-center justify-center transition-opacity"
+        aria-hidden="true"
+        style="opacity: 0; pointer-events: none;"
+      >
+        <svg
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </span>
+    )
+  }
 </button>
 
 {
@@ -88,11 +101,7 @@ const avatarUrl =
       {currentUser}
     />
   ) : (
-    <UserDrawer
-      {currentUser}
-      {assignedProjectsCount}
-      {assignedProjectsPreview}
-    />
+    <UserDrawer {currentUser} {assignedProjectsCount} {assignedProjectsPreview} />
   )
 }
 <script>
@@ -142,53 +151,53 @@ const avatarUrl =
 
   // When popover is open, show X on trigger; when closed, show avatar. Wire X to close popover.
   function wireAuthIconClose() {
-  document.querySelectorAll(".auth-icon-close").forEach((closeEl) => {
-    const trigger = closeEl.closest("[data-popover-target]");
-    if (!trigger || !(closeEl instanceof HTMLElement)) return;
-    const panelId = trigger.getAttribute("data-popover-target");
-    const panel = panelId ? document.getElementById(panelId) : null;
-    if (!panel) return;
+    document.querySelectorAll(".auth-icon-close").forEach((closeEl) => {
+      const trigger = closeEl.closest("[data-popover-target]");
+      if (!trigger || !(closeEl instanceof HTMLElement)) return;
+      const panelId = trigger.getAttribute("data-popover-target");
+      const panel = panelId ? document.getElementById(panelId) : null;
+      if (!panel) return;
 
-    function closePopover() {
-      const inst =
-        (window as any).FlowbiteInstances?.getInstance?.("Popover", panelId);
-      if (inst && typeof inst.hide === "function") {
-        inst.hide();
-      } else {
-        panel.classList.add("opacity-0", "invisible");
-        setTimeout(() => panel.classList.add("hidden"), 150);
-      }
-    }
-
-    closeEl.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closePopover();
-    });
-
-    function updateTrigger(isOpen: boolean) {
-      const defaultEl = trigger.querySelector(".auth-icon-default");
-      if (defaultEl instanceof HTMLElement && closeEl instanceof HTMLElement) {
-        if (isOpen) {
-          defaultEl.style.opacity = "0";
-          defaultEl.style.pointerEvents = "none";
-          closeEl.style.opacity = "1";
-          closeEl.style.pointerEvents = "auto";
+      function closePopover() {
+        const inst = (window as any).FlowbiteInstances?.getInstance?.("Popover", panelId);
+        if (inst && typeof inst.hide === "function") {
+          inst.hide();
         } else {
-          defaultEl.style.opacity = "1";
-          defaultEl.style.pointerEvents = "auto";
-          closeEl.style.opacity = "0";
-          closeEl.style.pointerEvents = "none";
+          panel.classList.add("opacity-0", "invisible");
+          setTimeout(() => panel.classList.add("hidden"), 150);
         }
       }
-    }
-    const observer = new MutationObserver(() => {
-      const isOpen = !panel.classList.contains("hidden") && !panel.classList.contains("invisible");
-      updateTrigger(isOpen);
+
+      closeEl.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closePopover();
+      });
+
+      function updateTrigger(isOpen: boolean) {
+        const defaultEl = trigger.querySelector(".auth-icon-default");
+        if (defaultEl instanceof HTMLElement && closeEl instanceof HTMLElement) {
+          if (isOpen) {
+            defaultEl.style.opacity = "0";
+            defaultEl.style.pointerEvents = "none";
+            closeEl.style.opacity = "1";
+            closeEl.style.pointerEvents = "auto";
+          } else {
+            defaultEl.style.opacity = "1";
+            defaultEl.style.pointerEvents = "auto";
+            closeEl.style.opacity = "0";
+            closeEl.style.pointerEvents = "none";
+          }
+        }
+      }
+      const observer = new MutationObserver(() => {
+        const isOpen =
+          !panel.classList.contains("hidden") && !panel.classList.contains("invisible");
+        updateTrigger(isOpen);
+      });
+      observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
+      updateTrigger(!panel.classList.contains("hidden") && !panel.classList.contains("invisible"));
     });
-    observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
-    updateTrigger(!panel.classList.contains("hidden") && !panel.classList.contains("invisible"));
-  });
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", wireAuthIconClose);

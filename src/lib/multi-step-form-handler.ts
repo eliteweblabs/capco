@@ -54,14 +54,17 @@ export function createMultiStepFormHandler(
             textClass: "text-red-800 dark:text-red-400",
             icon: "x-circle",
           };
-    const escaped = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const escaped = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     container.className = `w-100 p-2 mb-4 ${cfg.bgClass} ${cfg.borderClass}`;
     container.innerHTML = `
       <div class="flex items-start">
         <svg class="mr-2 mt-0.5 h-5 w-5 shrink-0 ${cfg.textClass}" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-          ${cfg.icon === "check-circle"
-            ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />'
-            : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />'}
+          ${
+            cfg.icon === "check-circle"
+              ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />'
+              : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />'
+          }
         </svg>
         <div class="mr-8 flex-1">
           <div class="text-base ${cfg.textClass}">${escaped(title)}</div>
@@ -783,9 +786,12 @@ export function createMultiStepFormHandler(
                   buttonText.textContent = validLabel;
                   updateButtonIcon(btnEl, true);
                   // Valid: data-next = valid dest (dataSkip is for invalid; never overwrite data-next with skip dest)
-                  const validDest = options.formConfig?.steps?.find(
-                    (s: any) => s.stepNumber === parseInt(currentStepEl.getAttribute("data-step") || "0")
-                  )?.buttons?.find((b: any) => b.type === "next")?.dataNext;
+                  const validDest = options.formConfig?.steps
+                    ?.find(
+                      (s: any) =>
+                        s.stepNumber === parseInt(currentStepEl.getAttribute("data-step") || "0")
+                    )
+                    ?.buttons?.find((b: any) => b.type === "next")?.dataNext;
                   if (validDest != null) {
                     btnEl.setAttribute("data-next", String(validDest));
                   }
@@ -1412,7 +1418,11 @@ export function createMultiStepFormHandler(
           }
 
           if (responseType === "inline") {
-            showInlineFormResponse("success", "Success!", result.message || "Form submitted successfully");
+            showInlineFormResponse(
+              "success",
+              "Success!",
+              result.message || "Form submitted successfully"
+            );
           } else if ((window as any).showNotice) {
             (window as any).showNotice(
               "success",
@@ -1449,7 +1459,9 @@ export function createMultiStepFormHandler(
     form.addEventListener("keypress", (e) => {
       if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
         // If typewriter is running, skip it instead of advancing (avoids "please enter full name" validation)
-        const skipTypewriter = (window as any).skipActiveTypewriterToEnd as (() => boolean) | undefined;
+        const skipTypewriter = (window as any).skipActiveTypewriterToEnd as
+          | (() => boolean)
+          | undefined;
         if (typeof skipTypewriter === "function" && skipTypewriter()) {
           e.preventDefault();
           e.stopPropagation();
@@ -1523,9 +1535,11 @@ export function createMultiStepFormHandler(
         ? ((phoneInputs[0] as HTMLInputElement).closest(".step-content") as HTMLElement)
         : null;
     const phoneBtnConfig = phoneStep
-      ? options.formConfig?.steps?.find(
-          (s: any) => s.stepNumber === parseInt(phoneStep.getAttribute("data-step") || "0", 10)
-        )?.buttons?.find((b: any) => b.type === "next" && b.dataSkip != null)
+      ? options.formConfig?.steps
+          ?.find(
+            (s: any) => s.stepNumber === parseInt(phoneStep.getAttribute("data-step") || "0", 10)
+          )
+          ?.buttons?.find((b: any) => b.type === "next" && b.dataSkip != null)
       : null;
 
     if (phoneBtnConfig && phoneStep) {
@@ -1533,11 +1547,9 @@ export function createMultiStepFormHandler(
       const conditionalNextButton = phoneStep.querySelector("[data-skip]") as HTMLElement;
 
       if (conditionalNextButton && validDest != null) {
-        const phoneValue =
-          (phoneInputs[0] as HTMLInputElement)?.value?.trim() || "";
+        const phoneValue = (phoneInputs[0] as HTMLInputElement)?.value?.trim() || "";
         if (phoneValue) {
-          const isValid =
-            phoneValue.replace(/\D/g, "").length >= 10 && validatePhone(phoneValue);
+          const isValid = phoneValue.replace(/\D/g, "").length >= 10 && validatePhone(phoneValue);
           if (isValid) {
             conditionalNextButton.setAttribute("data-next", String(validDest));
           }
@@ -1710,10 +1722,7 @@ export function initializeMultiStepForm(
 }
 
 /** Validate a flat form container (used by StandardForm). Same validation logic as validateStep. */
-async function validateFormContainer(
-  container: HTMLElement,
-  formConfig?: any
-): Promise<boolean> {
+async function validateFormContainer(container: HTMLElement, formConfig?: any): Promise<boolean> {
   const inputs = container.querySelectorAll("input[required], textarea[required]");
   for (const input of inputs) {
     const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
@@ -1734,7 +1743,12 @@ async function validateFormContainer(
     const phoneValue = phoneInput.value?.trim() || "";
     if (phoneInput.required && !phoneValue) {
       if ((window as any).showNotice) {
-        (window as any).showNotice("error", "Phone Number Required", "Please enter a phone number", 3000);
+        (window as any).showNotice(
+          "error",
+          "Phone Number Required",
+          "Please enter a phone number",
+          3000
+        );
       }
       phoneInput.classList.add("touched");
       return false;
@@ -1743,10 +1757,20 @@ async function validateFormContainer(
       const digitsOnly = phoneValue.replace(/\D/g, "");
       if (digitsOnly.length < 10) {
         if ((window as any).showNotice) {
-          (window as any).showNotice("error", "Invalid Phone Number", "Please enter a complete 10-digit phone number", 3000);
+          (window as any).showNotice(
+            "error",
+            "Invalid Phone Number",
+            "Please enter a complete 10-digit phone number",
+            3000
+          );
         }
       } else if ((window as any).showNotice) {
-        (window as any).showNotice("error", "Invalid Phone Number", "Please enter a valid US phone number", 3000);
+        (window as any).showNotice(
+          "error",
+          "Invalid Phone Number",
+          "Please enter a valid US phone number",
+          3000
+        );
       }
       phoneInput.classList.add("touched");
       return false;
@@ -1787,7 +1811,9 @@ async function validateFormContainer(
   }
 
   // data-validate exists rule
-  const validateInputs = container.querySelectorAll("input[data-validate], textarea[data-validate]");
+  const validateInputs = container.querySelectorAll(
+    "input[data-validate], textarea[data-validate]"
+  );
   for (const input of validateInputs) {
     const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
     const rule = inputEl.getAttribute("data-validate")?.trim();
@@ -1895,13 +1921,18 @@ export function initializeStandardForm(
       }
 
       const result = await response.json();
-      if (result.success === false || result.error) throw new Error(result.error || "Submission failed");
+      if (result.success === false || result.error)
+        throw new Error(result.error || "Submission failed");
 
       if (responseType === "inline") {
         const container = document.getElementById(`${formId}-response-alert`);
         if (container) {
           const escaped = (s: string) =>
-            s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            s
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;");
           container.className =
             "w-100 p-2 mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800";
           container.innerHTML = `
@@ -1912,7 +1943,12 @@ export function initializeStandardForm(
           container.classList.remove("hidden");
         }
       } else if ((window as any).showNotice) {
-        (window as any).showNotice("success", "Success!", result.message || "Form submitted successfully", 3000);
+        (window as any).showNotice(
+          "success",
+          "Success!",
+          result.message || "Form submitted successfully",
+          3000
+        );
       }
 
       if (result.redirect) {
@@ -1924,7 +1960,11 @@ export function initializeStandardForm(
         const container = document.getElementById(`${formId}-response-alert`);
         if (container) {
           const escaped = (s: string) =>
-            s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            s
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;");
           container.className =
             "w-100 p-2 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800";
           container.innerHTML = `

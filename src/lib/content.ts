@@ -94,7 +94,10 @@ export interface PageContent {
 /**
  * Merge JSON config into base config (handles navigation, features, projectListColumns, etc.)
  */
-function mergeJsonConfig(config: SiteConfig & Record<string, any>, jsonConfig: Record<string, any>): void {
+function mergeJsonConfig(
+  config: SiteConfig & Record<string, any>,
+  jsonConfig: Record<string, any>
+): void {
   if (jsonConfig.navigation) {
     config.navigation = { ...config.navigation, ...jsonConfig.navigation };
   }
@@ -204,8 +207,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
 
   // 1b. SITE_CONFIG or SITE_CONFIG_JSON (single var, <32KB on Railway)
   if (!envConfigJson) {
-    envConfigJson =
-      process.env.SITE_CONFIG || process.env.SITE_CONFIG_JSON || null;
+    envConfigJson = process.env.SITE_CONFIG || process.env.SITE_CONFIG_JSON || null;
   }
 
   // 1c. SITE_CONFIG_1, SITE_CONFIG_2, ... (chunked for Railway's 32KB limit)

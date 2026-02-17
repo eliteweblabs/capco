@@ -55,7 +55,14 @@ console.log(
 
 // Fetch shared data once when components need it (avoids duplicate queries)
 const needsFeaturedProjects = components.some((c) => c.name === "DynamicProjectsMap");
-let featuredProjectsForMap: Array<{ data: { title: string; location?: string; excerpt?: string; coordinates?: { lat: number; lng: number } } }> = [];
+let featuredProjectsForMap: Array<{
+  data: {
+    title: string;
+    location?: string;
+    excerpt?: string;
+    coordinates?: { lat: number; lng: number };
+  };
+}> = [];
 
 if (needsFeaturedProjects) {
   try {
@@ -73,7 +80,9 @@ if (needsFeaturedProjects) {
           title: p.title || p.address || "Project",
           location: p.address || p.title || "",
           excerpt: p.description || "",
-          coordinates: p.coordinates ?? (p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : undefined),
+          coordinates:
+            p.coordinates ??
+            (p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : undefined),
         },
       }));
     }
@@ -99,7 +108,8 @@ const htmlContent = marked.parse(markdownContent) as string;
 const placeholderRegex = new RegExp(`<!-- ${PLACEHOLDER_PREFIX}(\\d+)__ -->`, "g");
 const parts = htmlContent.split(placeholderRegex);
 // parts: [html0, "0", html1, "1", ...] - alternating HTML and component index
-const segments: Array<{ type: "html"; content: string } | { type: "component"; index: number }> = [];
+const segments: Array<{ type: "html"; content: string } | { type: "component"; index: number }> =
+  [];
 for (let i = 0; i < parts.length; i++) {
   if (i % 2 === 0) {
     if (parts[i]) segments.push({ type: "html", content: parts[i] as string });
@@ -179,7 +189,11 @@ const componentModules = await Promise.all(
         if (!mod) return null;
         const { component, Component } = mod;
         const props = { ...component.props };
-        if (component.name === "DynamicProjectsMap" && !props.projects && featuredProjectsForMap.length > 0) {
+        if (
+          component.name === "DynamicProjectsMap" &&
+          !props.projects &&
+          featuredProjectsForMap.length > 0
+        ) {
           props.projects = featuredProjectsForMap;
         }
         return (

@@ -101,7 +101,9 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         }
       );
     }
-    return redirect(`/auth/login?error=invalid_credentials&message=${encodeURIComponent(userMessage)}`);
+    return redirect(
+      `/auth/login?error=invalid_credentials&message=${encodeURIComponent(userMessage)}`
+    );
   }
 
   // Profile will be automatically created by database trigger

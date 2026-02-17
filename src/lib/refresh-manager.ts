@@ -311,7 +311,7 @@ export class RefreshManager {
     this.registerCallback("companyName", function (this: any, value: string) {
       const suffix = this.getAttribute("data-refresh-suffix");
       const displayValue = value || (suffix ? "User" : "");
-      this.textContent = suffix ? `${displayValue}${suffix}` : (displayValue || "—");
+      this.textContent = suffix ? `${displayValue}${suffix}` : displayValue || "—";
       this.setAttribute("data-meta-value", value || "");
       this.closest("tr")?.setAttribute("data-company", (value || "").toLowerCase());
     });
@@ -523,9 +523,7 @@ export class RefreshManager {
       // Skip elements without context; global refresh is not implemented
       if (!projectId && !userId) return;
 
-      const contextKey = projectId
-        ? `project:${projectId}`
-        : `user:${userId}`;
+      const contextKey = projectId ? `project:${projectId}` : `user:${userId}`;
 
       // Initialize context group if not exists
       if (!grouped.has(contextKey)) {
@@ -576,7 +574,10 @@ export class RefreshManager {
           const row = document.querySelector(`tr[data-user-id="${contextId}"]`);
           if (row) {
             const detail = row.nextElementSibling;
-            if (detail?.classList.contains("accordion-detail") || detail?.hasAttribute("data-slot")) {
+            if (
+              detail?.classList.contains("accordion-detail") ||
+              detail?.hasAttribute("data-slot")
+            ) {
               detail.remove();
             }
             row.remove();

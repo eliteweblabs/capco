@@ -61,13 +61,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const { action, lat, lng, accuracy } = body;
 
     if (!action || typeof lat !== "number" || typeof lng !== "number") {
-      return new Response(
-        JSON.stringify({ error: "action, lat, and lng are required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "action, lat, and lng are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const userName =

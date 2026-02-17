@@ -195,10 +195,14 @@ const contentClasses = [
           middleware.push(arrow({ element: arrowElement }));
         }
 
-        const { x, y, placement, middlewareData } = await computePosition(trigger as HTMLElement, tooltip as HTMLElement, {
-          placement: preferredPosition as Placement,
-          middleware,
-        });
+        const { x, y, placement, middlewareData } = await computePosition(
+          trigger as HTMLElement,
+          tooltip as HTMLElement,
+          {
+            placement: preferredPosition as Placement,
+            middleware,
+          }
+        );
 
         Object.assign((tooltip as HTMLElement).style, { left: `${x}px`, top: `${y}px` });
         (tooltip as HTMLElement).setAttribute("data-popper-placement", placement);
@@ -260,7 +264,10 @@ const contentClasses = [
         };
 
         const handleOutsideClick = (e: Event) => {
-          if (!wrapper.contains((e.target as Node)) && (tooltip as HTMLElement).classList.contains("opacity-100")) {
+          if (
+            !wrapper.contains(e.target as Node) &&
+            (tooltip as HTMLElement).classList.contains("opacity-100")
+          ) {
             hide();
           }
         };

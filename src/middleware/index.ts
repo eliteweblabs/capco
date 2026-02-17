@@ -37,10 +37,7 @@ const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify", "/auth
 /** Disable browser cache while allowing CDN/proxy caches. Browsers must revalidate every time; shared caches may store. */
 function withNoBrowserCache(response: Response): Response {
   const headers = new Headers(response.headers);
-  headers.set(
-    "Cache-Control",
-    "public, s-maxage=3600, max-age=0, must-revalidate"
-  );
+  headers.set("Cache-Control", "public, s-maxage=3600, max-age=0, must-revalidate");
   headers.set("Pragma", "no-cache");
   headers.set("Expires", "0");
   return new Response(response.body, {

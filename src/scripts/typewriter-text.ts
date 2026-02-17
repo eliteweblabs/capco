@@ -228,8 +228,7 @@ function skipActiveTypewriterToEnd(): boolean {
   let skipped = false;
   typewriterEls.forEach((el) => {
     const instance = (el as any).__typeItInstance;
-    if (!instance || (typeof instance.is === "function" && instance.is("complete")))
-      return;
+    if (!instance || (typeof instance.is === "function" && instance.is("complete"))) return;
 
     const text = el.getAttribute("data-text");
     if (!text) return;

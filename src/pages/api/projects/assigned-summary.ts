@@ -61,7 +61,6 @@ export const GET: APIRoute = async ({ cookies }) => {
       address: p.address,
     }));
 
-
     return new Response(JSON.stringify({ count, items }), {
       status: 200,
       headers: {

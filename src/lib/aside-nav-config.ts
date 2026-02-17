@@ -67,10 +67,7 @@ function resolveChildren(
 }
 
 /** Resolve a single config item */
-function resolveItem(
-  item: AsideNavItem,
-  userRole?: string
-): AsideNavResolvedItem | null {
+function resolveItem(item: AsideNavItem, userRole?: string): AsideNavResolvedItem | null {
   if (!isRoleAllowed(item.allow, userRole)) return null;
 
   if (item.type === "link" && item.href) {
@@ -109,16 +106,92 @@ function resolveItem(
 
 /** Legacy string IDs → convert to new format (uses feature-navigation for feature-admin/feature-tools) */
 const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
-  dashboard: { label: "Dashboard", type: "link", href: "/dashboard", icon: "dashboard", position: 0 },
-  settings: { label: "Settings", type: "link", href: "/admin/settings", icon: "settings", position: 1, allow: ["Admin"] },
-  design: { label: "Design", type: "dropdown", icon: "palette", position: 2, allow: ["Admin"], children: [{ label: "Components", href: "/admin/design" }, { label: "Placeholders", href: "/admin/design/placeholders" }] },
-  content: { label: "Content", type: "link", href: "/admin/cms", icon: "dashboard", position: 3, allow: ["Admin"] },
-  media: { label: "Media", type: "link", href: "/admin/media", icon: "image", position: 4, allow: ["Admin"] },
-  alerts: { label: "Alerts", type: "link", href: "/admin/banner-alerts", icon: "alert", position: 5, allow: ["Admin"] },
-  testimonials: { label: "Testimonials", type: "link", href: "/admin/testimonials", icon: "quote", position: 6, allow: ["Admin"] },
-  "global-functions": { label: "Global Functions", type: "link", href: "/admin/global-functions", icon: "code", position: 7, allow: ["Admin"] },
-  projects: { label: "Projects", type: "dropdown", icon: "folder", position: 8, children: [{ label: "Dashboard", href: "/project/dashboard/" }, { label: "New", href: "/project/new" }, { label: "Proposals", href: "/project/proposals", allow: ["Admin"] }, { label: "Settings", href: "/project/settings", allow: ["Admin"] }] },
-  notifications: { label: "Send Notifications", type: "link", href: "/admin/notifications", icon: "zap", position: 50, allow: ["Admin"] },
+  dashboard: {
+    label: "Dashboard",
+    type: "link",
+    href: "/dashboard",
+    icon: "dashboard",
+    position: 0,
+  },
+  settings: {
+    label: "Settings",
+    type: "link",
+    href: "/admin/settings",
+    icon: "settings",
+    position: 1,
+    allow: ["Admin"],
+  },
+  design: {
+    label: "Design",
+    type: "dropdown",
+    icon: "palette",
+    position: 2,
+    allow: ["Admin"],
+    children: [
+      { label: "Components", href: "/admin/design" },
+      { label: "Placeholders", href: "/admin/design/placeholders" },
+    ],
+  },
+  content: {
+    label: "Content",
+    type: "link",
+    href: "/admin/cms",
+    icon: "dashboard",
+    position: 3,
+    allow: ["Admin"],
+  },
+  media: {
+    label: "Media",
+    type: "link",
+    href: "/admin/media",
+    icon: "image",
+    position: 4,
+    allow: ["Admin"],
+  },
+  alerts: {
+    label: "Alerts",
+    type: "link",
+    href: "/admin/banner-alerts",
+    icon: "alert",
+    position: 5,
+    allow: ["Admin"],
+  },
+  testimonials: {
+    label: "Testimonials",
+    type: "link",
+    href: "/admin/testimonials",
+    icon: "quote",
+    position: 6,
+    allow: ["Admin"],
+  },
+  "global-functions": {
+    label: "Global Functions",
+    type: "link",
+    href: "/admin/global-functions",
+    icon: "code",
+    position: 7,
+    allow: ["Admin"],
+  },
+  projects: {
+    label: "Projects",
+    type: "dropdown",
+    icon: "folder",
+    position: 8,
+    children: [
+      { label: "Dashboard", href: "/project/dashboard/" },
+      { label: "New", href: "/project/new" },
+      { label: "Proposals", href: "/project/proposals", allow: ["Admin"] },
+      { label: "Settings", href: "/project/settings", allow: ["Admin"] },
+    ],
+  },
+  notifications: {
+    label: "Send Notifications",
+    type: "link",
+    href: "/admin/notifications",
+    icon: "zap",
+    position: 50,
+    allow: ["Admin"],
+  },
 };
 
 /** Get aside nav from site-config (new object format or legacy string array) */
@@ -140,9 +213,22 @@ async function getAsideNavItems(userRole?: string): Promise<AsideNavItem[]> {
           const { getSectionNavigation } = await import("./feature-navigation");
           const section = id === "feature-admin" ? "admin" : "tools";
           const navItems = await getSectionNavigation(section, userRole);
-          const children = navItems.map((n) => ({ label: n.label, href: n.href, icon: n.icon, allow: n.roles }));
+          const children = navItems.map((n) => ({
+            label: n.label,
+            href: n.href,
+            icon: n.icon,
+            allow: n.roles,
+          }));
           if (children.length > 0) {
-            items.push({ id: `feature-${section}`, label: section === "tools" ? "Tools" : "Admin", type: "dropdown", icon: section === "admin" ? "settings" : "wrench", position: pos++, allow: ["Admin"], children });
+            items.push({
+              id: `feature-${section}`,
+              label: section === "tools" ? "Tools" : "Admin",
+              type: "dropdown",
+              icon: section === "admin" ? "settings" : "wrench",
+              position: pos++,
+              allow: ["Admin"],
+              children,
+            });
           }
         } else if (LEGACY_BUILTIN[id]) {
           items.push({ id, ...LEGACY_BUILTIN[id] } as AsideNavItem);
@@ -155,9 +241,7 @@ async function getAsideNavItems(userRole?: string): Promise<AsideNavItem[]> {
 }
 
 /** Get resolved aside nav items for rendering */
-export async function getResolvedAsideNav(
-  currentRole?: string
-): Promise<AsideNavResolvedItem[]> {
+export async function getResolvedAsideNav(currentRole?: string): Promise<AsideNavResolvedItem[]> {
   const items = await getAsideNavItems(currentRole);
   const resolved: AsideNavResolvedItem[] = [];
   for (const item of items) {
