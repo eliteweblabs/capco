@@ -10,7 +10,7 @@ export function initCalComEmbed(): void {
     const calLink = calEmbedContainer.dataset.calLink ?? "capco/30min";
     const calComBaseUrl =
       calEmbedContainer.dataset.calBaseUrl ??
-      "https://calcom-web-app-production-0b16.up.railway.app";
+      (import.meta.env.PUBLIC_CALCOM_BASE_URL || "https://calcom-web-app-production-0b16.up.railway.app");
     let prefill: Record<string, string> | null = null;
     try {
       const raw = calEmbedContainer.dataset.prefill;
