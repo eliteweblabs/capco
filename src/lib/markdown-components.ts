@@ -24,11 +24,27 @@ export function parseComponentShortcodes(content: string): ComponentShortcode[] 
   let index = 0;
 
   // First pass: Match components with closing tags (may have children/slots)
-  const componentWithChildrenRegex = /<([A-Z][a-zA-Z0-9]*)\s*([^>]*?)>([^]*?)<\/\1>/g;
+  // Use findOpeningTagEnd to handle attributes whose values contain ">" (e.g. rightContent="<h2>Title</h2>")
+  const componentStartRegex = /<([A-Z][a-zA-Z0-9]*)(\s|$)/g;
 
   let match;
-  while ((match = componentWithChildrenRegex.exec(content)) !== null) {
-    const [fullMatch, componentName, propsString, children] = match;
+  while ((match = componentStartRegex.exec(content)) !== null) {
+    const componentName = match[1];
+    const tagStart = match.index;
+    const afterName = tagStart + match[0].length;
+    const openTagEnd = findOpeningTagEnd(content, afterName);
+    if (openTagEnd === -1) continue;
+
+    // Skip self-closing tags (handled by second pass)
+    if (content[openTagEnd - 1] === "/") continue;
+
+    const closingTag = `</${componentName}>`;
+    const closeIndex = content.indexOf(closingTag, openTagEnd);
+    if (closeIndex === -1) continue;
+
+    const propsString = content.substring(afterName, openTagEnd).trim();
+    const children = content.substring(openTagEnd + 1, closeIndex);
+    const fullMatch = content.substring(tagStart, closeIndex + closingTag.length);
     const props = parseProps(propsString);
     const id = `__COMPONENT_${index}__`;
 
@@ -44,7 +60,7 @@ export function parseComponentShortcodes(content: string): ComponentShortcode[] 
       id,
     });
 
-    processedRanges.push({ start: match.index, end: match.index + fullMatch.length });
+    processedRanges.push({ start: tagStart, end: tagStart + fullMatch.length });
     index++;
   }
 
@@ -90,21 +106,49 @@ export function parseComponentShortcodes(content: string): ComponentShortcode[] 
 /**
  * Extract slot content from children HTML
  * Converts <div slot="name">content</div> to nameContent props
+ * Handles nested divs by matching the correct closing tag.
  */
 function extractSlotContent(children: string): Record<string, string> {
   const slotProps: Record<string, string> = {};
-
-  // Match slot divs: <div slot="slotName">...content...</div>
-  const slotRegex = /<div\s+slot=["']([^"']+)["'][^>]*>([^]*?)<\/div>/gi;
+  // Match <div ... slot="name" ...> (slot can be any attribute)
+  const slotOpenRegex = /<div[^>]*\sslot=["']([^"']+)["'][^>]*>/gi;
 
   let match;
-  while ((match = slotRegex.exec(children)) !== null) {
-    const [, slotName, slotContent] = match;
+  while ((match = slotOpenRegex.exec(children)) !== null) {
+    const slotName = match[1];
+    const startIndex = match.index + match[0].length;
 
-    // Convert slot name to content prop name
-    // "left" -> "leftContent", "col1" -> "col1Content", "content" -> "mainContent", "sidebar" -> "sidebarContent"
-    const propName = slotNameToPropName(slotName);
-    slotProps[propName] = slotContent.trim();
+    // Find matching </div> by counting nested <div> depth
+    let depth = 1;
+    let i = startIndex;
+    let endIndex = -1;
+
+    while (i < children.length) {
+      const nextOpen = children.substring(i).toLowerCase().indexOf("<div");
+      const nextClose = children.substring(i).toLowerCase().indexOf("</div>");
+      const absOpen = nextOpen === -1 ? -1 : i + nextOpen;
+      const absClose = nextClose === -1 ? -1 : i + nextClose;
+
+      if (absClose === -1) break;
+
+      if (absOpen !== -1 && absOpen < absClose) {
+        depth++;
+        i = absOpen + 4;
+      } else {
+        depth--;
+        if (depth === 0) {
+          endIndex = absClose;
+          break;
+        }
+        i = absClose + 6;
+      }
+    }
+
+    if (endIndex !== -1) {
+      const slotContent = children.substring(startIndex, endIndex).trim();
+      const propName = slotNameToPropName(slotName);
+      slotProps[propName] = slotContent;
+    }
   }
 
   return slotProps;
@@ -125,6 +169,41 @@ function slotNameToPropName(slotName: string): string {
   };
 
   return slotMapping[slotName] || `${slotName}Content`;
+}
+
+/**
+ * Find the index of the first ">" that closes an opening tag (outside quoted attribute values).
+ */
+function findOpeningTagEnd(content: string, startIndex: number): number {
+  let i = startIndex;
+  let inDouble = false;
+  let inSingle = false;
+  while (i < content.length) {
+    const c = content[i];
+    if (inDouble) {
+      if (c === '"') inDouble = false;
+      i++;
+      continue;
+    }
+    if (inSingle) {
+      if (c === "'") inSingle = false;
+      i++;
+      continue;
+    }
+    if (c === '"') {
+      inDouble = true;
+      i++;
+      continue;
+    }
+    if (c === "'") {
+      inSingle = true;
+      i++;
+      continue;
+    }
+    if (c === ">") return i;
+    i++;
+  }
+  return -1;
 }
 
 /**
@@ -177,15 +256,16 @@ function parseProps(propsString: string): Record<string, string> {
     return props;
   }
 
-  // Regex to properly handle quoted strings with spaces
-  // Matches: key="value with spaces" or key='value' or key=value
-  const propRegex = /(\w+)=(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
+  // Match key="value" (value can contain \" for escaped quotes), key='value', or key=unquoted
+  const propRegex = /(\w+)=(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|([^\s>]+))/g;
 
   let match;
   while ((match = propRegex.exec(propsString)) !== null) {
     const [, key, doubleQuoted, singleQuoted, unquoted] = match;
-    // Use whichever capture group matched
-    const value = doubleQuoted ?? singleQuoted ?? unquoted;
+    let value = doubleQuoted ?? singleQuoted ?? unquoted ?? "";
+    if (doubleQuoted != null || singleQuoted != null) {
+      value = value.replace(/\\(.)/g, "$1"); // unescape \"
+    }
     props[key] = value;
   }
 

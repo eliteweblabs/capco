@@ -82,16 +82,32 @@ if (needsFeaturedProjects) {
   }
 }
 
-// Replace components with placeholders
+// Replace components with inline markers (rendered server-side, no client replacement needed)
+const PLACEHOLDER_PREFIX = "__MARKDOWNPAGE_COMPONENT_";
 let markdownContent = pageContent.content;
-for (const component of components) {
+for (let i = 0; i < components.length; i++) {
   markdownContent = markdownContent.replace(
-    component.fullMatch,
-    `\n\n<div id="${component.id}" data-component-placeholder="${component.name}"></div>\n\n`
+    components[i]!.fullMatch,
+    `\n\n<!-- ${PLACEHOLDER_PREFIX}${i}__ -->\n\n`
   );
 }
 
-const htmlContent = marked.parse(markdownContent);
+const htmlContent = marked.parse(markdownContent) as string;
+
+// Split HTML by component placeholders and build segments for inline rendering
+// Components render in the correct position from the start (no client-side replacement)
+const placeholderRegex = new RegExp(`<!-- ${PLACEHOLDER_PREFIX}(\\d+)__ -->`, "g");
+const parts = htmlContent.split(placeholderRegex);
+// parts: [html0, "0", html1, "1", ...] - alternating HTML and component index
+const segments: Array<{ type: "html"; content: string } | { type: "component"; index: number }> = [];
+for (let i = 0; i < parts.length; i++) {
+  if (i % 2 === 0) {
+    if (parts[i]) segments.push({ type: "html", content: parts[i] as string });
+  } else {
+    const idx = parseInt(parts[i] as string, 10);
+    if (!Number.isNaN(idx)) segments.push({ type: "component", index: idx });
+  }
+}
 
 // Component name aliases (e.g. markdown uses ProjectsList but file is ProjectList.astro)
 const componentAliases: Record<string, string> = {
@@ -142,9 +158,7 @@ const componentModules = await Promise.all(
   })
 );
 
-const validComponentModules = componentModules.filter(
-  (m): m is { component: ComponentShortcode; Component: any } => m !== null
-);
+// Keep same order as components for segment index lookup (null = failed to load)
 ---
 
 <Layout
@@ -155,37 +169,25 @@ const validComponentModules = componentModules.filter(
   {session}
   {supabase}
 >
-  <div set:html={htmlContent} />
-
-  {
-    validComponentModules.map(({ component, Component }) => {
-      const props = { ...component.props };
-      if (component.name === "DynamicProjectsMap" && !props.projects && featuredProjectsForMap.length > 0) {
-        props.projects = featuredProjectsForMap;
-      }
-      return (
-        <div id={`component-${component.id}`} data-component-name={component.name}>
-          <Component {...props} />
-        </div>
-      );
-    })
-  }
+  <div class="markdown-page-content">
+    {
+      segments.map((seg) => {
+        if (seg.type === "html") {
+          return <Fragment set:html={seg.content} />;
+        }
+        const mod = componentModules[seg.index];
+        if (!mod) return null;
+        const { component, Component } = mod;
+        const props = { ...component.props };
+        if (component.name === "DynamicProjectsMap" && !props.projects && featuredProjectsForMap.length > 0) {
+          props.projects = featuredProjectsForMap;
+        }
+        return (
+          <div data-component-name={component.name}>
+            <Component {...props} />
+          </div>
+        );
+      })
+    }
+  </div>
 </Layout>
-
-<script>
-  function replaceComponentPlaceholders() {
-    const placeholders = document.querySelectorAll("[data-component-placeholder]");
-
-    placeholders.forEach((placeholder) => {
-      const componentId = placeholder.id;
-      const renderedComponent = document.querySelector(`[id="component-${componentId}"]`);
-
-      if (renderedComponent && placeholder.parentNode) {
-        placeholder.parentNode.replaceChild(renderedComponent, placeholder);
-      }
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", replaceComponentPlaceholders);
-  // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(replaceComponentPlaceholders));
-</script>

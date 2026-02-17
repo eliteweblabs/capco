@@ -1448,6 +1448,14 @@ export function createMultiStepFormHandler(
     // Handle Enter key
     form.addEventListener("keypress", (e) => {
       if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+        // If typewriter is running, skip it instead of advancing (avoids "please enter full name" validation)
+        const skipTypewriter = (window as any).skipActiveTypewriterToEnd as (() => boolean) | undefined;
+        if (typeof skipTypewriter === "function" && skipTypewriter()) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
         const target = e.target as HTMLElement;
         if (multistepDebug) {
           console.log("[MULTISTEP-CLICK-DEBUG] form keypress Enter", {

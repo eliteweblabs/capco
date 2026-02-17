@@ -34,6 +34,22 @@ const protectedAPIRoutes = [
 ];
 const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify", "/auth/callback(|/)"];
 
+/** Disable browser cache while allowing CDN/proxy caches. Browsers must revalidate every time; shared caches may store. */
+function withNoBrowserCache(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set(
+    "Cache-Control",
+    "public, s-maxage=3600, max-age=0, must-revalidate"
+  );
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export const onRequest = defineMiddleware(
   async ({ locals, url, cookies, redirect, request }, next) => {
     // Force HTTPS redirect in production (Railway handles SSL termination)
@@ -50,7 +66,7 @@ export const onRequest = defineMiddleware(
 
     // Skip middleware if Supabase is not configured
     if (!supabase) {
-      return next();
+      return withNoBrowserCache(await next());
     }
 
     // Handle Cloudflare cookie domain issues
@@ -61,17 +77,17 @@ export const onRequest = defineMiddleware(
       url.pathname.includes(".gif")
     ) {
       // Skip middleware for image requests to avoid cookie issues
-      return next();
+      return withNoBrowserCache(await next());
     }
 
     // Skip middleware for auth callback routes to avoid interference with PKCE flow
     if (micromatch.isMatch(url.pathname, authCallbackRoutes)) {
-      return next();
+      return withNoBrowserCache(await next());
     }
 
     // Skip middleware for dev bypass routes (development only)
     if (micromatch.isMatch(url.pathname, devBypassRoutes)) {
-      return next();
+      return withNoBrowserCache(await next());
     }
 
     // Restore session and company data for optional-auth routes (e.g. /mep-form) so pages avoid top-level await
@@ -117,7 +133,7 @@ export const onRequest = defineMiddleware(
           return redirect(loginRedirect);
         }
         // Custom session found, skip Supabase session validation
-        return next();
+        return withNoBrowserCache(await next());
       }
 
       const { data, error } = await supabase.auth.setSession({
@@ -252,7 +268,7 @@ export const onRequest = defineMiddleware(
       // Allow public access to featured projects endpoint
       if (url.pathname === "/api/projects/get" && url.searchParams.get("featured") === "true") {
         // Skip auth check for featured projects - handled in API route
-        return next();
+        return withNoBrowserCache(await next());
       }
 
       const accessToken = cookies.get("sb-access-token");
@@ -289,6 +305,6 @@ export const onRequest = defineMiddleware(
       }
     }
 
-    return next();
+    return withNoBrowserCache(await next());
   }
 );

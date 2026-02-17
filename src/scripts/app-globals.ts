@@ -99,6 +99,7 @@ declare global {
     runSimpleTypewriterOnSelector?: (selector: string) => void;
     initTypewriterTexts?: () => void;
     triggerActiveStepTypewriter?: (root?: Element | null) => void;
+    skipActiveTypewriterToEnd?: () => boolean;
     // Sticky Actions Portal System
     initializeStickyActionsPortal?: () => void;
     showStickyActions?: (instanceIdOrElement: string | HTMLElement) => void;

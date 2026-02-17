@@ -161,6 +161,7 @@ import Button from "../common/Button.astro";
     let isOpen = false;
     let isTouchDevice = false;
     let touchHandled = false;
+    let openedAt = 0; // Timestamp when dial was opened (to ignore same-tap outside click on mobile)
 
     // Detect if device supports touch
     if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
@@ -173,6 +174,7 @@ import Button from "../common/Button.astro";
       const svg = speedDialButton?.querySelector("svg");
 
       if (isOpen) {
+        openedAt = Date.now();
         speedDialMenu?.classList.remove("hidden");
         speedDialButton?.setAttribute("aria-expanded", "true");
         if (svg) {
@@ -300,39 +302,36 @@ import Button from "../common/Button.astro";
 
     // Handle button interaction - works for both touch and click
     if (speedDialButton) {
-      // Touch event handler for mobile
-      speedDialButton.addEventListener(
-        "touchstart",
-        function (e) {
-          touchHandled = true;
-          e.stopPropagation();
-          e.preventDefault(); // Prevent click from firing
-          toggleSpeedDial();
-          // Reset flag after a delay to allow click as fallback if needed
-          setTimeout(() => {
-            touchHandled = false;
-          }, 400);
-        },
-        { passive: false }
-      );
-
-      // Click event handler for mobile only (fallback if touchstart doesn't work)
-      // Desktop uses hover, so we skip click handler on non-touch devices
       if (isTouchDevice) {
+        // Touch-only: use touchstart to avoid double-fire from touch + synthetic click
+        speedDialButton.addEventListener(
+          "touchstart",
+          function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            touchHandled = true;
+            toggleSpeedDial();
+            setTimeout(() => {
+              touchHandled = false;
+            }, 450);
+          },
+          { passive: false }
+        );
+        // Block synthetic click from toggling again - capture and swallow it
         speedDialButton.addEventListener(
           "click",
           function (e) {
-            // If touch was just handled, ignore this click to prevent double-firing
-            if (touchHandled) {
-              e.preventDefault();
-              e.stopPropagation();
-              return;
-            }
+            e.preventDefault();
             e.stopPropagation();
-            toggleSpeedDial();
           },
           true
-        ); // Use capture phase to handle before document click
+        );
+      } else {
+        // Desktop: click to toggle (hover also opens/closes)
+        speedDialButton.addEventListener("click", function (e) {
+          e.stopPropagation();
+          toggleSpeedDial();
+        });
       }
     }
 
@@ -360,6 +359,11 @@ import Button from "../common/Button.astro";
     document.addEventListener("click", function (e) {
       // Don't close if touch was just handled (prevents immediate close on mobile)
       if (touchHandled) {
+        return;
+      }
+      // Ignore outside clicks for 400ms after opening - prevents synthetic click from same tap closing dial on mobile
+      const IGNORE_OUTSIDE_CLICK_MS = 400;
+      if (openedAt && Date.now() - openedAt < IGNORE_OUTSIDE_CLICK_MS) {
         return;
       }
       if (!speedDial?.contains(e.target as Node)) {
