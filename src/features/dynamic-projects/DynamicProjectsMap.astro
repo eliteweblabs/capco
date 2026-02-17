@@ -1,0 +1,169 @@
+---
+// Dynamic 3D Mapbox Component that reads from CMS and geocodes addresses
+interface Props {
+  projects: any[];
+  height?: string;
+  mapboxToken?: string;
+}
+
+const { 
+  projects, 
+  height = '500px',
+  mapboxToken = import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.MAPBOX_PUBLIC_KEY || '',
+} = Astro.props;
+
+// Serialize projects data for client-side use
+const projectsData = JSON.stringify(projects.map(p => ({
+  title: p.data.title,
+  location: p.data.location,
+  excerpt: p.data.excerpt,
+  coordinates: p.data.coordinates,
+})));
+---
+
+<!-- Mapbox GL JS -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.css" rel="stylesheet" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.js"></script>
+
+<div 
+  id="dynamic-projects-map" 
+  data-height={height}
+  data-projects={projectsData}
+  data-mapbox-token={mapboxToken}
+></div>
+
+<style>
+  #dynamic-projects-map {
+    width: 100%;
+    height: var(--map-height, 500px);
+    border-radius: 0.5rem;
+  }
+</style>
+
+<script>
+  // Geocoding function using Mapbox Geocoding API
+  async function geocodeAddress(address: string, accessToken: string): Promise<[number, number] | null> {
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${accessToken}&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        const [lng, lat] = data.features[0].center;
+        return [lng, lat];
+      }
+      return null;
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      return null;
+    }
+  }
+
+  // Initialize map
+  async function initDynamicProjectsMap() {
+    if (typeof mapboxgl === "undefined") {
+      setTimeout(initDynamicProjectsMap, 100);
+      return;
+    }
+
+    const mapContainer = document.getElementById("dynamic-projects-map");
+    if (!mapContainer) return;
+
+    const height = mapContainer.getAttribute("data-height") || "500px";
+    mapContainer.style.setProperty("--map-height", height);
+
+    const projectsData = JSON.parse(mapContainer.getAttribute("data-projects") || "[]");
+    const mapboxToken = mapContainer.getAttribute("data-mapbox-token") || "";
+
+    mapboxgl.accessToken = mapboxToken;
+
+    // Center on New England (Boston area)
+    const map = new mapboxgl.Map({
+      container: "dynamic-projects-map",
+      style: "mapbox://styles/mapbox/standard",
+      config: {
+        basemap: {
+          theme: "monochrome",
+          show3dObjects: true,
+        },
+      },
+      center: { lng: -71.0589, lat: 42.3601 },
+      zoom: 9,
+      pitch: 45,
+      bearing: 0,
+      antialias: true,
+    });
+
+    // Add navigation controls
+    map.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+    // Wait for map to load
+    map.on('load', async () => {
+      const bounds = new mapboxgl.LngLatBounds();
+      let markersAdded = 0;
+
+      // Process each project
+      for (const project of projectsData) {
+        if (!project.location && !project.coordinates) continue;
+
+        let coordinates: [number, number] | null = null;
+
+        // Use existing coordinates if available
+        if (project.coordinates?.lng && project.coordinates?.lat) {
+          coordinates = [project.coordinates.lng, project.coordinates.lat];
+        } 
+        // Otherwise, geocode the location
+        else if (project.location) {
+          console.log(`🗺️ Geocoding: ${project.location}`);
+          coordinates = await geocodeAddress(project.location, mapboxToken);
+          
+          if (coordinates) {
+            console.log(`✓ Found coordinates for ${project.title}:`, coordinates);
+          } else {
+            console.warn(`✗ Could not geocode: ${project.location}`);
+          }
+        }
+
+        // Add marker if we have coordinates
+        if (coordinates) {
+          const marker = new mapboxgl.Marker({
+            color: "#D4A574", // Rothco Built primary color
+          })
+            .setLngLat(coordinates)
+            .setPopup(
+              new mapboxgl.Popup({ offset: 25 }).setHTML(
+                `<div style="padding: 8px;">
+                  <h3 style="font-weight: bold; margin-bottom: 4px; font-size: 16px;">${project.title}</h3>
+                  ${project.location ? `<p style="margin: 4px 0; font-size: 13px; color: #666;">${project.location}</p>` : ''}
+                  ${project.excerpt ? `<p style="margin: 4px 0; font-size: 14px;">${project.excerpt}</p>` : ''}
+                </div>`
+              )
+            )
+            .addTo(map);
+
+          bounds.extend(coordinates);
+          markersAdded++;
+        }
+      }
+
+      // Fit map to show all markers
+      if (markersAdded > 0) {
+        map.fitBounds(bounds, {
+          padding: { top: 50, bottom: 50, left: 50, right: 50 },
+          maxZoom: 12,
+        });
+      }
+
+      console.log(`🗺️ [ROTHCO DYNAMIC MAP] Loaded ${markersAdded} project locations`);
+    });
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDynamicProjectsMap);
+  } else {
+    initDynamicProjectsMap();
+  }
+</script>
+

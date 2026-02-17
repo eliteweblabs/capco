@@ -48,28 +48,20 @@ import ConfigForm from "../../components/form/ConfigForm.astro";
 const registerFormConfig = await getRegisterFormConfig();
 import LayoutTwoColumn from "../../components/layouts/LayoutTwoColumn.astro";
 import DotGrid from "../../components/ui/DotGrid.astro";
+import LayoutFullForm from "../../components/layouts/LayoutFullForm.astro";
 ---
 
-<LayoutTwoColumn
+<LayoutFullForm
   title="Register A New Account"
   description="Create your account with our step-by-step registration"
-  ratio="2/3"
 >
-  <div slot="left" class="hidden max-w-md md:block">
-    <DotGrid
-      id="dotGrid"
-      class="absolute inset-0 -z-10 min-h-full w-full"
-      spacing="1rem"
-      baseOpacity={0.35}
-      dotColor="primary-500"
-    />
-  </div>
-  <div slot="right" class="color-background max-w-md">
-    <ConfigForm config={registerFormConfig} />
-  </div>
-</LayoutTwoColumn>
+  <ConfigForm config={registerFormConfig} />
+</LayoutFullForm>
 
 <script>
+  // remove padding classes from, role="main"
+  document.querySelector('div[role="main"]')?.classList.remove("p-4", "md:p-8");
+
   import { getSupabaseClient } from "../../lib/supabase-client";
 
   async function triggerGoogleOAuth(e?: Event) {
