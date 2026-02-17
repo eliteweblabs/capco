@@ -92,11 +92,7 @@ function getHiddenValue(name: string): string {
 }
 ---
 
-<div
-  data-standard-form
-  class={containerClass}
-  data-skip-init={wrapInForm}
->
+<div data-standard-form class={containerClass} data-skip-init={wrapInForm}>
   {
     !wrapInForm && config.responseType === "inline" && (
       <div id={`${config.formId}-response-alert`} class="w-100 mb-4 hidden p-2" role="alert" />
@@ -105,9 +101,11 @@ function getHiddenValue(name: string): string {
   <FormOrDiv
     id={!wrapInForm ? config.formId : undefined}
     action={!wrapInForm ? config.formAction : undefined}
-    method={!wrapInForm ? (config.formMethod || "post") : undefined}
+    method={!wrapInForm ? config.formMethod || "post" : undefined}
     class="space-y-6"
-    data-form-config={!wrapInForm ? JSON.stringify({ formId: config.formId, formConfig: config, initialData }) : undefined}
+    data-form-config={!wrapInForm
+      ? JSON.stringify({ formId: config.formId, formConfig: config, initialData })
+      : undefined}
   >
     {
       authStep && (
@@ -347,7 +345,7 @@ function getHiddenValue(name: string): string {
                   autocomplete={field.autocomplete}
                   minlength={field.minlength}
                   autofocus={field.autofocus}
-                  class={`${appendedMultiStepInputClasses} pl-12 pr-12`}
+                  class={`${appendedMultiStepInputClasses} pl-10`}
                   data-error={field.errorMessage}
                   data-validate={field.validate}
                   data-validate-message={field.validateMessage}
@@ -391,21 +389,8 @@ function getHiddenValue(name: string): string {
       }
     </div>
 
-    {/* Submit button */}
+    {/* Submit button - prev/back buttons are ignored */}
     <div class="flex gap-3 pt-4">
-      {config.steps[0]?.buttons?.filter((b) => b.type === "prev").map((btn) => (
-        <Button
-          type="button"
-          variant={btn.variant}
-          size={btn.size}
-          icon={btn.icon}
-          iconPosition={btn.iconPosition}
-          class={btn.classes}
-          id={fid("back-button")}
-        >
-          <span set:html={btn.label} />
-        </Button>
-      ))}
       <Button
         type="submit"
         variant={submitConfig.variant}
