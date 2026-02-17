@@ -166,9 +166,6 @@ if (currentUser || isContactPage) {
           </div>
 
           <div class="flex flex-wrap gap-2 pt-2">
-            <Button id="save-preferences-btn" variant="primary" size="sm">
-              Save Preferences
-            </Button>
             <Button
               id="accept-all-preferences-btn"
               variant="secondary"
@@ -176,7 +173,7 @@ if (currentUser || isContactPage) {
               icon="check"
               iconPosition="right"
             >
-              Accept
+              Accept All
             </Button>
           </div>
         </div>
@@ -197,7 +194,6 @@ if (currentUser || isContactPage) {
     const rejectAllBtn = document.getElementById("reject-all-btn");
     const declineAllBtn = document.getElementById("decline-all-btn");
     const managePreferencesBtn = document.getElementById("manage-preferences-btn");
-    const savePreferencesBtn = document.getElementById("save-preferences-btn");
     const acceptAllPreferencesBtn = document.getElementById("accept-all-preferences-btn");
 
     // Check if user has already made a choice
@@ -308,8 +304,8 @@ if (currentUser || isContactPage) {
       }
     }
 
-    // Save Custom Preferences
-    function saveCustomPreferences() {
+    // Read current preferences from toggles and save (auto-save on toggle change)
+    function savePreferencesFromToggles() {
       const analytics = document.getElementById("analytics-cookies") as HTMLInputElement;
       const marketing = document.getElementById("marketing-cookies") as HTMLInputElement;
       const functional = document.getElementById("functional-cookies") as HTMLInputElement;
@@ -323,20 +319,10 @@ if (currentUser || isContactPage) {
       };
 
       localStorage.setItem("cookie-consent", JSON.stringify(consent));
-      hideBanner();
-      hidePreferencesPanel();
-
-      // Initialize services based on preferences
       initializeServices(consent);
 
-      // Show success message
       if (window.showNotice) {
-        window.showNotice(
-          "success",
-          "Preferences Saved",
-          "Your cookie preferences have been updated.",
-          1500
-        );
+        window.showNotice("success", "Preferences saved", "", 1000);
       }
     }
 
@@ -418,12 +404,18 @@ if (currentUser || isContactPage) {
     rejectAllBtn?.addEventListener("click", rejectAllCookies);
     declineAllBtn?.addEventListener("click", rejectAllCookies);
 
+
+
     managePreferencesBtn?.addEventListener("click", () => {
       loadPreferencesIntoModal();
       showPreferencesPanel();
     });
-    savePreferencesBtn?.addEventListener("click", saveCustomPreferences);
     acceptAllPreferencesBtn?.addEventListener("click", acceptAllCookies);
+
+    // Auto-save when toggles change
+    ["analytics-cookies", "marketing-cookies", "functional-cookies"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("change", savePreferencesFromToggles);
+    });
 
     // Initialize services on page load if consent already exists
     if (cookieConsent) {

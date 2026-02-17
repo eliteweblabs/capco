@@ -119,6 +119,8 @@ const useScrollMode = scrollMode === true || scrollMode === "true";
         };
         updateFromScroll();
         scrollEl.addEventListener("scroll", updateFromScroll, { passive: true });
+        scrollEl.addEventListener("scrollend", updateFromScroll); /* catch momentum scroll end on mobile */
+        scrollEl.addEventListener("touchend", updateFromScroll, { passive: true }); /* iOS: update after touch lift */
         window.addEventListener("resize", updateFromScroll);
       } else {
         const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
