@@ -1116,6 +1116,114 @@ You can embed components:
     }
 
     let openSlotId = null;
+    /** Cache form state per slot so edits are preserved when switching accordions */
+    const formStateCache = Object.create(null);
+
+    function getFormState() {
+      const s = document.getElementById("page-slug");
+      const t = document.getElementById("page-title");
+      const d = document.getElementById("page-description");
+      const tmpl = document.getElementById("page-template");
+      const content = document.getElementById("page-content");
+      const incNav = document.getElementById("page-include-in-navigation");
+      const navType = document.getElementById("page-nav-page-type");
+      const navStyle = document.getElementById("page-nav-button-style");
+      const navDesktop = document.getElementById("page-nav-desktop-only");
+      const navHideAuth = document.getElementById("page-nav-hide-when-auth");
+      const navRoles = Array.from(document.querySelectorAll('input[name="nav_roles"]:checked'))
+        .map((cb) => (cb instanceof HTMLInputElement ? cb.value : ""))
+        .filter(Boolean);
+      return {
+        slug: s && s instanceof HTMLInputElement ? s.value : "",
+        title: t && t instanceof HTMLInputElement ? t.value : "",
+        description: d && d instanceof HTMLInputElement ? d.value : "",
+        template: tmpl && tmpl instanceof HTMLSelectElement ? tmpl.value : "default",
+        content: content && content instanceof HTMLTextAreaElement ? content.value : "",
+        includeInNavigation:
+          incNav && incNav instanceof HTMLInputElement ? incNav.checked : false,
+        navPageType:
+          navType && navType instanceof HTMLSelectElement ? navType.value : "frontend",
+        navButtonStyle:
+          navStyle && navStyle instanceof HTMLSelectElement ? navStyle.value : "",
+        navDesktopOnly:
+          navDesktop && navDesktop instanceof HTMLInputElement ? navDesktop.checked : false,
+        navHideWhenAuth:
+          navHideAuth && navHideAuth instanceof HTMLInputElement ? navHideAuth.checked : false,
+        navRoles: navRoles.length > 0 ? navRoles : ["any"],
+      };
+    }
+
+    function setFormState(state) {
+      const s = document.getElementById("page-slug");
+      const t = document.getElementById("page-title");
+      const d = document.getElementById("page-description");
+      const tmpl = document.getElementById("page-template");
+      const content = document.getElementById("page-content");
+      const incNav = document.getElementById("page-include-in-navigation");
+      const navType = document.getElementById("page-nav-page-type");
+      const navStyle = document.getElementById("page-nav-button-style");
+      const navDesktop = document.getElementById("page-nav-desktop-only");
+      const navHideAuth = document.getElementById("page-nav-hide-when-auth");
+      if (s && s instanceof HTMLInputElement) s.value = state.slug ?? "";
+      if (t && t instanceof HTMLInputElement) t.value = state.title ?? "";
+      if (d && d instanceof HTMLInputElement) d.value = state.description ?? "";
+      if (tmpl && tmpl instanceof HTMLSelectElement)
+        tmpl.value = state.template ?? "default";
+      if (content && content instanceof HTMLTextAreaElement)
+        content.value = state.content ?? "";
+      if (incNav && incNav instanceof HTMLInputElement) {
+        incNav.checked = state.includeInNavigation ?? false;
+        incNav.dispatchEvent(new Event("change"));
+      }
+      if (navType && navType instanceof HTMLSelectElement)
+        navType.value = state.navPageType ?? "frontend";
+      if (navStyle && navStyle instanceof HTMLSelectElement)
+        navStyle.value = state.navButtonStyle ?? "";
+      if (navDesktop && navDesktop instanceof HTMLInputElement)
+        navDesktop.checked = state.navDesktopOnly ?? false;
+      if (navHideAuth && navHideAuth instanceof HTMLInputElement)
+        navHideAuth.checked = state.navHideWhenAuth ?? false;
+      const roles = state.navRoles ?? ["any"];
+      document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
+        if (cb instanceof HTMLInputElement) cb.checked = roles.includes(cb.value);
+      });
+    }
+
+    function applyPageToForm(page) {
+      const s = document.getElementById("page-slug");
+      const t = document.getElementById("page-title");
+      const d = document.getElementById("page-description");
+      const tmpl = document.getElementById("page-template");
+      const content = document.getElementById("page-content");
+      const incNav = document.getElementById("page-include-in-navigation");
+      const navType = document.getElementById("page-nav-page-type");
+      const navStyle = document.getElementById("page-nav-button-style");
+      const navDesktop = document.getElementById("page-nav-desktop-only");
+      const navHideAuth = document.getElementById("page-nav-hide-when-auth");
+      if (s && s instanceof HTMLInputElement) s.value = page.slug || "";
+      if (t && t instanceof HTMLInputElement) t.value = page.title || "";
+      if (d && d instanceof HTMLInputElement) d.value = page.description || "";
+      if (tmpl && tmpl instanceof HTMLSelectElement)
+        tmpl.value = page.template || "default";
+      if (content && content instanceof HTMLTextAreaElement)
+        content.value = page.content || "";
+      if (incNav && incNav instanceof HTMLInputElement) {
+        incNav.checked = page.includeInNavigation || false;
+        incNav.dispatchEvent(new Event("change"));
+      }
+      if (navType && navType instanceof HTMLSelectElement)
+        navType.value = page.navPageType || page.nav_page_type || "frontend";
+      if (navStyle && navStyle instanceof HTMLSelectElement)
+        navStyle.value = page.navButtonStyle || page.nav_button_style || "";
+      if (navDesktop && navDesktop instanceof HTMLInputElement)
+        navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
+      if (navHideAuth && navHideAuth instanceof HTMLInputElement)
+        navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
+      const navRoles = page.navRoles || page.nav_roles || ["any"];
+      document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
+        if (cb instanceof HTMLInputElement) cb.checked = navRoles.includes(cb.value);
+      });
+    }
 
     function getDetailRow(slotId) {
       return (
@@ -1130,6 +1238,7 @@ You can embed components:
 
     function closeEditor() {
       if (!openSlotId) return;
+      formStateCache[openSlotId] = getFormState();
       const detailRow = getDetailRow(openSlotId);
       const triggerRow = getTriggerRow(openSlotId);
       if (detailRow) {
@@ -1196,12 +1305,13 @@ You can embed components:
       toggleNavProperties(); // Initial state
     }
 
-    // Create button: open create row and reset form
+    // Create button: open create row and reset form (clear any cached draft)
     if (createBtn) {
       createBtn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         editingSlug = null;
+        delete formStateCache["create"];
         form.reset();
         const incNav = document.getElementById("page-include-in-navigation");
         if (incNav && incNav instanceof HTMLInputElement) incNav.checked = false;
@@ -1210,7 +1320,7 @@ You can embed components:
       });
     }
 
-    // Edit button: open that row and load page data
+    // Edit button: open that row and load page data (or restore from cache)
     document.querySelectorAll(".edit-page-btn").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
@@ -1219,44 +1329,17 @@ You can embed components:
         if (!slug) return;
         editingSlug = slug;
         if (pageEditorTitle) pageEditorTitle.textContent = `Edit Page: ${slug}`;
+        const cached = formStateCache[slug];
+        if (cached) {
+          setFormState(cached);
+          openEditor(slug, slug);
+          return;
+        }
         try {
           const response = await fetch(`/api/cms/pages?slug=${slug}`);
           const data = await response.json();
           const page = data.page;
-          if (page) {
-            const s = document.getElementById("page-slug");
-            const t = document.getElementById("page-title");
-            const d = document.getElementById("page-description");
-            const tmpl = document.getElementById("page-template");
-            const content = document.getElementById("page-content");
-            const incNav = document.getElementById("page-include-in-navigation");
-            const navType = document.getElementById("page-nav-page-type");
-            const navStyle = document.getElementById("page-nav-button-style");
-            const navDesktop = document.getElementById("page-nav-desktop-only");
-            const navHideAuth = document.getElementById("page-nav-hide-when-auth");
-            if (s && s instanceof HTMLInputElement) s.value = page.slug || "";
-            if (t && t instanceof HTMLInputElement) t.value = page.title || "";
-            if (d && d instanceof HTMLInputElement) d.value = page.description || "";
-            if (tmpl && tmpl instanceof HTMLSelectElement) tmpl.value = page.template || "default";
-            if (content && content instanceof HTMLTextAreaElement)
-              content.value = page.content || "";
-            if (incNav && incNav instanceof HTMLInputElement) {
-              incNav.checked = page.includeInNavigation || false;
-              incNav.dispatchEvent(new Event("change"));
-            }
-            if (navType && navType instanceof HTMLSelectElement)
-              navType.value = page.navPageType || page.nav_page_type || "frontend";
-            if (navStyle && navStyle instanceof HTMLSelectElement)
-              navStyle.value = page.navButtonStyle || page.nav_button_style || "";
-            if (navDesktop && navDesktop instanceof HTMLInputElement)
-              navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
-            if (navHideAuth && navHideAuth instanceof HTMLInputElement)
-              navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
-            const navRoles = page.navRoles || page.nav_roles || ["any"];
-            document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
-              if (cb instanceof HTMLInputElement) cb.checked = navRoles.includes(cb.value);
-            });
-          }
+          if (page) applyPageToForm(page);
           openEditor(slug, slug);
         } catch (err) {
           console.error("Error loading page:", err);
@@ -1283,54 +1366,31 @@ You can embed components:
         }
         if (slotId === "create") {
           editingSlug = null;
-          form.reset();
-          const incNav = document.getElementById("page-include-in-navigation");
-          if (incNav && incNav instanceof HTMLInputElement) incNav.checked = false;
+          const cached = formStateCache["create"];
+          if (cached) {
+            setFormState(cached);
+          } else {
+            form.reset();
+            const incNav = document.getElementById("page-include-in-navigation");
+            if (incNav && incNav instanceof HTMLInputElement) incNav.checked = false;
+          }
           if (pageEditorTitle) pageEditorTitle.textContent = "Create New Page";
           openEditor("create");
           return;
         }
         editingSlug = slotId;
         if (pageEditorTitle) pageEditorTitle.textContent = `Edit Page: ${slotId}`;
+        const cached = formStateCache[slotId];
+        if (cached) {
+          setFormState(cached);
+          openEditor(slotId, slotId);
+          return;
+        }
         fetch(`/api/cms/pages?slug=${slotId}`)
           .then((r) => r.json())
           .then((data) => {
             const page = data.page;
-            if (page) {
-              const s = document.getElementById("page-slug");
-              const t = document.getElementById("page-title");
-              const d = document.getElementById("page-description");
-              const tmpl = document.getElementById("page-template");
-              const content = document.getElementById("page-content");
-              const incNav = document.getElementById("page-include-in-navigation");
-              const navType = document.getElementById("page-nav-page-type");
-              const navStyle = document.getElementById("page-nav-button-style");
-              const navDesktop = document.getElementById("page-nav-desktop-only");
-              const navHideAuth = document.getElementById("page-nav-hide-when-auth");
-              if (s && s instanceof HTMLInputElement) s.value = page.slug || "";
-              if (t && t instanceof HTMLInputElement) t.value = page.title || "";
-              if (d && d instanceof HTMLInputElement) d.value = page.description || "";
-              if (tmpl && tmpl instanceof HTMLSelectElement)
-                tmpl.value = page.template || "default";
-              if (content && content instanceof HTMLTextAreaElement)
-                content.value = page.content || "";
-              if (incNav && incNav instanceof HTMLInputElement) {
-                incNav.checked = page.includeInNavigation || false;
-                incNav.dispatchEvent(new Event("change"));
-              }
-              if (navType && navType instanceof HTMLSelectElement)
-                navType.value = page.navPageType || page.nav_page_type || "frontend";
-              if (navStyle && navStyle instanceof HTMLSelectElement)
-                navStyle.value = page.navButtonStyle || page.nav_button_style || "";
-              if (navDesktop && navDesktop instanceof HTMLInputElement)
-                navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
-              if (navHideAuth && navHideAuth instanceof HTMLInputElement)
-                navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
-              const navRoles = page.navRoles || page.nav_roles || ["any"];
-              document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
-                if (cb instanceof HTMLInputElement) cb.checked = navRoles.includes(cb.value);
-              });
-            }
+            if (page) applyPageToForm(page);
             openEditor(slotId, slotId);
           })
           .catch((err) => {

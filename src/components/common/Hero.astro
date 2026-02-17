@@ -30,6 +30,10 @@ interface Props {
   backgroundImage?: string;
   backgroundOverlay?: boolean | string;
   overlayOpacity?: number | string;
+  /** When set, uses adaptive video as background. Use base name (e.g. "uhd_30fps") for local /videos/, or full URL (e.g. Supabase) for remote. */
+  backgroundVideoSource?: string;
+  backgroundVideoPoster?: string;
+  backgroundVideoAlt?: string;
   // Object-based button props (for direct Astro usage)
   leftButton?: ButtonProps;
   rightButton?: ButtonProps;
@@ -64,6 +68,9 @@ const {
   secondaryTextClasses,
   globalInputClasses,
   backgroundImage,
+  backgroundVideoSource,
+  backgroundVideoPoster = backgroundImage || "/hero.png",
+  backgroundVideoAlt = "Hero background",
 } = props;
 
 // Handle boolean/string conversion for shortcode compatibility
@@ -98,41 +105,51 @@ const rightButton: ButtonProps | undefined =
     : undefined);
 
 const hasButtons = leftButton || rightButton;
+const hasBackground = backgroundImage || backgroundVideoSource;
 
-const getButtonClasses = (variant: string = "primary") => {
-  const baseClasses =
-    "inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200";
-
-  switch (variant) {
-    case "primary":
-      return `${baseClasses} bg-primary-600 text-white hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 dark:focus:ring-primary-800`;
-    case "secondary":
-      return `${baseClasses} bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600`;
-    case "outline":
-      return `${baseClasses} border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-400 dark:hover:text-gray-900`;
-    default:
-      return `${baseClasses} bg-primary-600 text-white hover:bg-primary-700`;
-  }
-};
 ---
 
 <div
-  class={`col-span-12 rounded-md py-8 md:py-12 w-max-w-7xl mx-auto relative ${backgroundImage ? "min-h-[400px] flex items-center" : ""}`}
-  style={backgroundImage
+  class={`col-span-12 rounded-md py-8 md:py-12 w-max-w-7xl mx-auto relative overflow-hidden ${hasBackground ? "min-h-[400px] flex items-center" : ""}`}
+  style={backgroundImage && !backgroundVideoSource
     ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
     : ""}
 >
+  {/* Adaptive video background when backgroundVideoSource is set */}
   {
-    backgroundImage && backgroundOverlay && (
+    backgroundVideoSource && (
+      <div class="hero-adaptive-video-container absolute inset-0 h-full w-full">
+        <video
+          class="hero-adaptive-video absolute inset-0 h-full w-full object-cover"
+          data-video-source={backgroundVideoSource}
+          data-poster={backgroundVideoPoster}
+          data-alt={backgroundVideoAlt}
+          autoplay
+          muted
+          loop
+          playsinline
+          poster={backgroundVideoPoster}
+        >
+          <img
+            src={backgroundVideoPoster}
+            alt={backgroundVideoAlt}
+            class="absolute inset-0 h-full w-full object-cover"
+          />
+        </video>
+      </div>
+    )
+  }
+  {
+    (backgroundImage || backgroundVideoSource) && backgroundOverlay && (
       <div class="absolute inset-0 rounded-md bg-black" style={`opacity: ${overlayOpacity};`} />
     )
   }
 
-  <div class={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${backgroundImage ? "relative" : ""}`}>
+  <div class={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${hasBackground ? "relative z-10" : ""}`}>
     <div class="text-center">
       <!-- Main Headline -->
       <h1
-        class={`${primaryTextClasses || ""} md:text-6xl sm:text-3xl text-2xl font-bold ${backgroundImage ? "text-white" : ""}`}
+        class={`${primaryTextClasses || ""} md:text-6xl sm:text-3xl text-2xl font-bold ${hasBackground ? "text-white" : ""}`}
         {...titleRefreshField && {
           "data-refresh": titleRefreshField,
           "data-meta-value": titleRefreshValue ?? title ?? "",
@@ -147,7 +164,7 @@ const getButtonClasses = (variant: string = "primary") => {
         description && (
           <h2
             id="page-subtitle"
-            class={`mt-6 text-xl ${backgroundImage ? "text-gray-200" : "text-black dark:text-white"}`}
+            class={`mt-6 text-xl ${hasBackground ? "text-gray-200" : "text-black dark:text-white"}`}
             set:html={description}
           />
         )
@@ -172,3 +189,97 @@ const getButtonClasses = (variant: string = "primary") => {
     </div>
   </div>
 </div>
+
+{
+  backgroundVideoSource && (
+    <script is:inline>
+      (function () {
+        const initHeroAdaptiveVideo = async (videoEl) => {
+          if (videoEl.dataset.heroVideoInitialized === "true") return;
+          videoEl.dataset.heroVideoInitialized = "true";
+
+          const videoSource = videoEl.getAttribute("data-video-source") || "uhd_30fps";
+          const posterUrl = videoEl.getAttribute("data-poster") || "/hero.png";
+
+          const isFullUrl = videoSource.startsWith("http://") || videoSource.startsWith("https://");
+          const videoQualities = isFullUrl
+            ? { low: videoSource, medium: videoSource, high: videoSource, original: videoSource }
+            : {
+                low: `/videos/${videoSource}_low.mp4`,
+                medium: `/videos/${videoSource}_medium.mp4`,
+                high: `/videos/${videoSource}_high.mp4`,
+                original: `/videos/${videoSource}.mp4`,
+              };
+
+          let connectionSpeed = "unknown";
+          try {
+            if ("connection" in navigator) {
+              const conn = navigator.connection;
+              switch (conn.effectiveType) {
+                case "slow-2g":
+                case "2g":
+                  connectionSpeed = "slow";
+                  break;
+                case "3g":
+                  connectionSpeed = "medium";
+                  break;
+                case "4g":
+                  connectionSpeed = "fast";
+                  break;
+              }
+            } else {
+              const start = performance.now();
+              const r = await fetch("/hero.png", { method: "HEAD", cache: "no-cache" });
+              if (r.ok) {
+                const dur = performance.now() - start;
+                connectionSpeed = dur < 100 ? "fast" : dur < 500 ? "medium" : "slow";
+              }
+            }
+          } catch (_) {}
+
+          const isMobile =
+            (typeof window.isAnyMobile === "function" && window.isAnyMobile()) ||
+            window.innerWidth < 768;
+          let quality;
+          if (isMobile) {
+            quality =
+              connectionSpeed === "fast"
+                ? "medium"
+                : connectionSpeed === "medium"
+                  ? "low"
+                  : "low";
+          } else {
+            quality =
+              connectionSpeed === "fast"
+                ? "high"
+                : connectionSpeed === "medium"
+                  ? "medium"
+                  : connectionSpeed === "slow"
+                    ? "low"
+                    : "medium";
+          }
+
+          const src = videoQualities[quality];
+          if (!src) return;
+          const source = document.createElement("source");
+          source.src = src;
+          source.type = "video/mp4";
+          videoEl.innerHTML = "";
+          videoEl.appendChild(source);
+          const img = document.createElement("img");
+          img.src = posterUrl;
+          img.alt = videoEl.getAttribute("data-alt") || "Hero background";
+          img.className = "absolute inset-0 h-full w-full object-cover";
+          videoEl.appendChild(img);
+          videoEl.load();
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+          document.querySelectorAll(".hero-adaptive-video").forEach((el) => {
+            initHeroAdaptiveVideo(el);
+          });
+        });
+      })();
+    </script>
+  )
+}

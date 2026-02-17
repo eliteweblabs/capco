@@ -1,7 +1,7 @@
 ---
 // Adaptive video player that serves different qualities based on connection speed
 export interface Props {
-  videoSource?: string; // Base video name (e.g., "uhd_30fps" or "uhd_30fps-2")
+  videoSource?: string; // Base video name (e.g., "uhd_30fps") or full URL (e.g. Supabase storage)
   poster?: string; // Poster image URL
   alt?: string; // Alt text for fallback image
 }
@@ -41,13 +41,15 @@ const {
       this.connectionSpeed = "unknown";
       this.videoSource = videoSource;
 
-      // Dynamically generate video qualities based on source
-      this.videoQualities = {
-        low: `/videos/${videoSource}_low.mp4`,
-        medium: `/videos/${videoSource}_medium.mp4`,
-        high: `/videos/${videoSource}_high.mp4`,
-        original: `/videos/${videoSource}.mp4`,
-      };
+      const isFullUrl = videoSource.startsWith("http://") || videoSource.startsWith("https://");
+      this.videoQualities = isFullUrl
+        ? { low: videoSource, medium: videoSource, high: videoSource, original: videoSource }
+        : {
+            low: `/videos/${videoSource}_low.mp4`,
+            medium: `/videos/${videoSource}_medium.mp4`,
+            high: `/videos/${videoSource}_high.mp4`,
+            original: `/videos/${videoSource}.mp4`,
+          };
 
       this.init();
     }

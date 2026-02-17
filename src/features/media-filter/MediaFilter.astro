@@ -259,13 +259,18 @@ const stats = includeGrid ? {
     const fileType = f.fileType || f.file_type;
     return fileType?.includes("pdf") || fileType?.includes("document");
   }).length,
+  videos: allFiles.filter((f: any) => {
+    const fileType = f.fileType || f.file_type;
+    const name = f.fileName || "";
+    return fileType?.startsWith("video/") || /\.(mp4|webm|mov|ogv|avi|mkv)$/i.test(name);
+  }).length,
 } : null;
 ---
 
 <div class="media-filter-component" data-filter-id={uniqueId}>
   {includeGrid && stats && (
     // <!-- Stats Cards -->
-    <div class="grid grid-cols-3 md:grid-cols-5 gap-4 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6">
       <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
         <div class="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</div>
         <div class="text-sm text-gray-500 dark:text-gray-400">Total Files</div>
@@ -285,6 +290,10 @@ const stats = includeGrid ? {
       <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
         <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.documents}</div>
         <div class="text-sm text-gray-500 dark:text-gray-400">Documents</div>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+        <div class="text-2xl font-bold text-red-600 dark:text-red-400">{stats.videos}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Videos</div>
       </div>
     </div>
   )}
@@ -369,7 +378,7 @@ const stats = includeGrid ? {
       <Button id={`${uniqueId}-upload-btn`} variant="primary" icon="upload" class="w-full sm:w-auto">
         Upload File
       </Button>
-      <input type="file" id={`${uniqueId}-file-input`} class="hidden" multiple accept="image/*,image/webp,image/avif,image/svg+xml,application/pdf,.doc,.docx,.xls,.xlsx" />
+      <input type="file" id={`${uniqueId}-file-input`} class="hidden" multiple accept="image/*,image/webp,image/avif,image/svg+xml,video/*,.mp4,.webm,.mov,.ogv,.avi,.mkv,application/pdf,.doc,.docx,.xls,.xlsx" />
     </div>
   </div>
 
@@ -416,11 +425,19 @@ const stats = includeGrid ? {
             >
               <div class="h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
                 {(file.fileType?.startsWith("image/") || file.fileName?.match(/\.(webp|avif|svg|png|jpg|jpeg|gif)$/i)) && file.publicUrl ? (
-                  <img 
+                  <img
                     data-src={file.publicUrl}
                     alt={file.fileName}
                     class="lazyload w-full h-full object-cover blur-sm"
                     loading="lazy"
+                  />
+                ) : (file.fileType?.startsWith("video/") || file.fileName?.match(/\.(mp4|webm|mov|ogv|avi|mkv)$/i)) && file.publicUrl ? (
+                  <video
+                    src={file.publicUrl}
+                    muted
+                    playsinline
+                    preload="metadata"
+                    class="w-full h-full object-cover"
                   />
                 ) : (
                   <SimpleIcon name={getFileIcon(file.fileType, file.fileName)} class="w-12 h-12 text-gray-400" />
@@ -606,9 +623,13 @@ const stats = includeGrid ? {
           const fileType = card.dataset.fileType?.toLowerCase() || "";
           
           if (selectedFilters.type === "images" && !fileType.startsWith("image/")) show = false;
+          else if (selectedFilters.type === "videos") {
+            const isVideo = fileType.startsWith("video/") || /\.(mp4|webm|mov|ogv|avi|mkv)$/i.test(card.dataset.fileName || "");
+            if (!isVideo) show = false;
+          }
           else if (selectedFilters.type === "pdfs" && !fileType.includes("pdf")) show = false;
           else if (selectedFilters.type === "documents" && !fileType.includes("word") && !fileType.includes("document") && !fileType.includes("excel")) show = false;
-          else if (selectedFilters.type === "other" && (fileType.startsWith("image/") || fileType.includes("pdf") || fileType.includes("document"))) show = false;
+          else if (selectedFilters.type === "other" && (fileType.startsWith("image/") || fileType.startsWith("video/") || fileType.includes("pdf") || fileType.includes("document") || /\.(mp4|webm|mov|ogv|avi|mkv)$/i.test(card.dataset.fileName || ""))) show = false;
         }
 
         card.style.display = show ? "" : "none";
@@ -725,6 +746,14 @@ const stats = includeGrid ? {
         const files = fileInput.files;
         if (!files || files.length === 0) return;
 
+        // Immediate feedback as soon as user selects files
+        const count = files.length;
+        const label = count === 1 ? files[0].name : `${count} files`;
+        if (window.showNotice) {
+          window.showNotice("info", "Uploading...", label, 15000);
+        }
+        if (uploadBtn) uploadBtn.disabled = true;
+
         let successCount = 0;
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
@@ -772,6 +801,7 @@ const stats = includeGrid ? {
         }
 
         fileInput.value = "";
+        if (uploadBtn) uploadBtn.disabled = false;
       });
 
       // Copy URL and delete handlers

@@ -138,6 +138,7 @@ const mobileOrder =
               data-fadeshow
               data-interval={interval}
               data-fade-duration={fadeDuration}
+              data-fadeshow-scroll-mobile="true"
             >
               {imageUrls.map((url, i) => (
                 <div
@@ -180,6 +181,8 @@ const mobileOrder =
 </style>
 
 <script>
+  const MD_BREAKPOINT = 768;
+
   function initFadeshow(root?: Document | Element) {
     const scope = root ?? document;
     scope.querySelectorAll("[data-fadeshow]").forEach((container) => {
@@ -187,17 +190,80 @@ const mobileOrder =
       (container as HTMLElement).dataset.fadeshowInit = "1";
       const layers = container.querySelectorAll<HTMLElement>("[data-fadeshow-layer]");
       if (layers.length <= 1) return;
-      const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
       const fadeMs = parseInt(container.getAttribute("data-fade-duration") ?? "1200", 10);
       (container as HTMLElement).style.setProperty("--fadeshow-duration", `${fadeMs}ms`);
-      let idx = 0;
-      const next = () => {
-        const prev = idx;
-        idx = (idx + 1) % layers.length;
-        layers[prev]!.style.opacity = "0";
-        layers[idx]!.style.opacity = "1";
+
+      const scrollMobile = container.getAttribute("data-fadeshow-scroll-mobile") === "true";
+
+      const runTimer = () => {
+        const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
+        let idx = 0;
+        const next = () => {
+          const prev = idx;
+          idx = (idx + 1) % layers.length;
+          layers[prev]!.style.opacity = "0";
+          layers[idx]!.style.opacity = "1";
+        };
+        return setInterval(next, intervalMs);
       };
-      setInterval(next, intervalMs);
+
+      const runScrollMobile = () => {
+        const zoneStart = 0.1;
+        const zoneEnd = 0.9;
+
+        const update = () => {
+          const vh = window.innerHeight;
+          const topPx = (container as HTMLElement).getBoundingClientRect().top;
+          const topVh = topPx / vh;
+          const progress = Math.max(
+            0,
+            Math.min(1, (zoneEnd - topVh) / (zoneEnd - zoneStart))
+          );
+          const idx = Math.min(
+            layers.length - 1,
+            Math.floor(progress * layers.length)
+          );
+          layers.forEach((l, i) => {
+            l.style.opacity = i === idx ? "1" : "0";
+          });
+        };
+        update();
+        window.addEventListener("scroll", update, { passive: true });
+        window.addEventListener("resize", update);
+        return () => {
+          window.removeEventListener("scroll", update);
+          window.removeEventListener("resize", update);
+        };
+      };
+
+      let timerId: ReturnType<typeof setInterval> | null = null;
+      let teardownScroll: (() => void) | null = null;
+
+      const applyMode = () => {
+        const isMobile = window.innerWidth < MD_BREAKPOINT;
+        const useScroll = scrollMobile && isMobile;
+
+        if (useScroll) {
+          if (timerId != null) {
+            clearInterval(timerId);
+            timerId = null;
+          }
+          teardownScroll?.();
+          teardownScroll = runScrollMobile();
+        } else {
+          teardownScroll?.();
+          teardownScroll = null;
+          timerId = runTimer();
+        }
+      };
+
+      applyMode();
+      window.addEventListener("resize", () => {
+        const isMobile = window.innerWidth < MD_BREAKPOINT;
+        const useScroll = scrollMobile && isMobile;
+        const wasScroll = teardownScroll != null;
+        if (useScroll !== wasScroll) applyMode();
+      });
     });
   }
   if (document.readyState === "loading") {

@@ -47,9 +47,9 @@ const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "gener
     secondaryTextClasses="text-gray-600 dark:text-gray-300"
     globalInputClasses="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
   />
-  <script src="../lib/refresh-manager.ts"></script>
-  <script define:vars={{ hasUserRefresh: !!currentUser?.id }} is:inline>
-    if (hasUserRefresh) {
+  {/* refresh-manager loaded in App.astro for Staff/Admin only */}
+  <script define:vars={{ isStaffOrAdmin: currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "Staff" }} is:inline>
+    if (isStaffOrAdmin) {
       function startProfileRefresh() {
         const rm = window.refreshManager;
         if (rm && !rm.isAutoRefreshActive?.()) {

@@ -9,6 +9,8 @@ interface Props {
   description?: string;
   lastUpdated?: string;
   mainClasses?: string;
+  /** When true, apply prose typography. Defaults to true for content pages, false for backend. */
+  prose?: boolean;
   projects?: any;
   statusData?: any;
   currentUser?: any;
@@ -21,11 +23,16 @@ const {
   description = "",
   lastUpdated,
   mainClasses = "",
+  prose: proseProp,
   projects,
   statusData,
 } = Astro.props;
 
 import App from "../ui/App.astro";
+import { isBackendPage } from "@/pages/api/utils/backend-page-check";
+
+const isBackend = isBackendPage(Astro.url.pathname);
+const useProse = proseProp ?? !isBackend;
 ---
 
 <App {title} {description} layout="fullwidth" {mainClasses} {projects} {statusData}>
@@ -38,7 +45,10 @@ import App from "../ui/App.astro";
       </div>
     )
   }
-  <div class="mx-auto w-full" data-dynamic-height="minHeight">
+  <div
+    class={useProse ? "prose prose-lg max-w-none dark:prose-invert mx-auto w-full" : "mx-auto w-full"}
+    data-dynamic-height="minHeight"
+  >
     <slot />
   </div>
 </App>

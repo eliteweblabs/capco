@@ -156,8 +156,7 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
   />
 </LayoutFullWidth>
 
-<script src="../../lib/refresh-manager.ts"></script>
-
+{/* refresh-manager loaded in App.astro for Staff/Admin */}
 <script
   define:vars={{ currentUserId: currentUser?.id, currentUserRole: currentUser?.profile?.role }}
   is:inline
@@ -208,9 +207,10 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
     });
   }
 
-  // Run init on both first load and SPA navigation (astro:page-load)
+  // Run init only for Staff/Admin (refresh-manager loaded in App.astro for them only)
   async function runDashboardInit() {
     if (!window.location.pathname.startsWith("/project")) return;
+    if (currentUserRole !== "Admin" && currentUserRole !== "Staff") return;
     console.log("🔄 [DASHBOARD] runDashboardInit (path:", window.location.pathname + ")");
     try {
       const refreshManager = await waitForRefreshManager();
