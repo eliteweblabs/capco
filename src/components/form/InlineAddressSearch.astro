@@ -1,5 +1,5 @@
 ---
-import SimpleIcon from "../common/SimpleIcon.astro";
+import SearchInput from "./SearchInput.astro";
 
 interface Props {
   id: string;
@@ -29,124 +29,42 @@ const {
 ---
 
 <div class="inline-address-search-wrapper">
-  <!-- Hidden input to store the selected value -->
-  <input type="hidden" id={`${id}-value`} {name} value="" />
-
-  <!-- Search Input -->
-  <div class="relative">
-    <input
-      type="text"
-      id={`${id}-search-input`}
-      {placeholder}
-      autocomplete="off"
-      class={`${globalInputClasses} text-center pr-10`}
-    />
-    <!-- Location/Search Button -->
-    {
-      currentLocation ? (
-        <button
-          type="button"
-          id={`${id}-use-location-btn`}
-          class="location-btn pointer-events-auto absolute right-2 top-0 transform p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
-          title="Use my current location"
-        >
-          <SimpleIcon
-            name="pin-location"
-            size="sm"
-            backgroundColor="primary"
-            style="fill: var(--color-primary-500);"
-          />
-        </button>
-      ) : (
-        <button
-          type="button"
-          id={`${id}-location-btn`}
-          class="location-btn pointer-events-auto absolute right-2 top-0 transform p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
-          title="Search for address"
-        >
-          <SimpleIcon
-            name="pin-location"
-            size="sm"
-            backgroundColor="primary"
-            style="fill: var(--color-primary-500);"
-          />
-        </button>
-      )
-    }
-
-    <!-- Clear Button (hidden by default) -->
-    <button
-      type="button"
-      id={`${id}-clear-btn`}
-      class="clear-btn pointer-events-auto absolute right-2 top-1 hidden transform p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
-      title="Clear address"
-    >
-      <SimpleIcon
-        name="x"
-        size="sm"
-        backgroundColor="primary"
-        style="fill: var(--color-primary-500);"
-      />
-    </button>
-
-    <!-- Dropdown Results Container -->
-    <div
-      id={`${id}-dropdown`}
-      class="inline-address-results-container dark:color-background-50 color-background-50 mt-2 hidden w-full divide-y divide-gray-100 rounded-lg bg-white shadow-lg backdrop-blur-md"
-    >
-      <ul
-        id={`${id}-results-list`}
-        class="address-results-list max-h-60 overflow-y-auto py-2 text-center text-sm text-gray-700 dark:text-gray-200"
-      >
-        <!-- Results will be populated dynamically -->
-      </ul>
-
-      <!-- Empty state when no results -->
-      <div id={`${id}-empty-state`} class="hidden px-4 py-8 text-center">
-        <SimpleIcon
-          name="map-pin"
-          class="mx-auto mb-2 h-8 w-8 text-gray-400 opacity-50 dark:text-gray-500"
-        />
-        <p class="text-sm text-gray-500 dark:text-gray-400">{noResultsText}</p>
-      </div>
-    </div>
-  </div>
+  <SearchInput
+    {id}
+    {name}
+    {placeholder}
+    {globalInputClasses}
+    {fetchApiEndpoint}
+    {apiParams}
+    {valueField}
+    {labelField}
+    {noResultsText}
+    {currentLocation}
+  />
 </div>
 
-<script define:vars={{ id, fetchApiEndpoint, apiParams, valueField, labelField, currentLocation }}>
-  // Initialize address search inline
-  import("/js/inline-address-search.js")
-    .then((module) => {
-      const initWhenReady = () => {
-        const searchInput = document.getElementById(`${id}-search-input`);
+<style>
+  .inline-address-results-container {
+    max-width: 100%;
+  }
 
-        if (!searchInput) {
-          console.log(`[INLINE-ADDRESS] Waiting for elements for ${id}...`);
-          setTimeout(initWhenReady, 100);
-          return;
-        }
+  .inline-address-result-item {
+    transform: translateY(-10px);
+    opacity: 0;
+    animation: slideInResult 0.3s ease-out forwards;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
 
-        console.log(`[INLINE-ADDRESS] Initializing address search for ${id}`);
-        module.initializeAddressSearch({
-          id: id,
-          fetchApiEndpoint: fetchApiEndpoint,
-          apiParams: apiParams,
-          valueField: valueField,
-          labelField: labelField,
-          currentLocation: currentLocation,
-        });
-      };
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initWhenReady);
-      } else {
-        initWhenReady();
-      }
-    })
-    .catch((err) => {
-      console.error("[INLINE-ADDRESS] Failed to load module:", err);
-    });
-</script>
+  @keyframes slideInResult {
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+</style>
 
 <style>
   .inline-address-results-container {

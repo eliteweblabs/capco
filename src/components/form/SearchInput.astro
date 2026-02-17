@@ -25,6 +25,8 @@ interface Props {
   valueField?: string;
   labelField?: string;
   noResultsText?: string;
+  /** Address mode: pin icon, text-center, location button. Pass true to enable "use my location" geolocation. */
+  currentLocation?: boolean;
 }
 
 const {
@@ -38,6 +40,7 @@ const {
   valueField = "description",
   labelField = "description",
   noResultsText = "Type to search...",
+  currentLocation = false,
 } = Astro.props;
 
 const hasAutosuggest = !!fetchApiEndpoint;
@@ -46,26 +49,47 @@ const hasAutosuggest = !!fetchApiEndpoint;
 <div class={`search-input-wrapper relative ${wrapperClass}`.trim()}>
   {hasAutosuggest && <input type="hidden" id={`${id}-value`} name={name} value="" />}
   <div class="relative">
-    <SimpleIcon
-      name="search"
-      class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-    />
+    {
+      !hasAutosuggest && (
+        <SimpleIcon
+          name="search"
+          class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+        />
+      )
+    }
     <input
       type="text"
       id={hasAutosuggest ? `${id}-search-input` : id}
       name={!hasAutosuggest ? name : undefined}
       placeholder={placeholder}
       autocomplete="off"
-      class={`${globalInputClasses} w-full pl-10 pr-10`}
+      class={`${globalInputClasses} w-full ${hasAutosuggest ? "text-center pr-10 pl-4" : "pl-10 pr-10"}`}
     />
+    {
+      hasAutosuggest && (
+        <button
+          type="button"
+          id={currentLocation ? `${id}-use-location-btn` : `${id}-location-btn`}
+          class="location-btn pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+          title={currentLocation ? "Use my current location" : "Search for address"}
+        >
+          <SimpleIcon
+            name="pin-location"
+            size="sm"
+            backgroundColor="primary"
+            style="fill: var(--color-primary-500);"
+          />
+        </button>
+      )
+    }
     <button
       type="button"
       id={`${id}-clear-btn`}
-      class="search-input-clear absolute right-2 top-1/2 hidden -translate-y-1/2 p-1.5 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+      class="search-input-clear absolute right-2 top-1/2 -translate-y-1/2 hidden p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
       title="Clear search"
       aria-label="Clear search"
     >
-      <SimpleIcon name="x" class="h-4 w-4" />
+      <SimpleIcon name="x" size="sm" backgroundColor="primary" style="fill: var(--color-primary-500);" />
     </button>
   </div>
 
@@ -73,10 +97,13 @@ const hasAutosuggest = !!fetchApiEndpoint;
     hasAutosuggest && (
       <div
         id={`${id}-dropdown`}
-        class="search-input-dropdown color-background absolute left-0 right-0 top-full z-50 mt-1 hidden max-h-60 divide-y divide-gray-100 overflow-y-auto rounded-lg border border-gray-200 shadow-lg dark:divide-gray-700 dark:border-gray-600"
+        class="inline-address-results-container search-input-dropdown dark:color-background-50 color-background-50 absolute left-0 right-0 top-full z-50 mt-2 hidden w-full divide-y divide-gray-100 overflow-y-auto rounded-lg bg-white shadow-lg backdrop-blur-md dark:divide-gray-700"
       >
-        <ul id={`${id}-results-list`} class="py-2 text-sm text-gray-700 dark:text-gray-200" />
-        <div id={`${id}-empty-state`} class="hidden px-4 py-6 text-center">
+        <ul
+          id={`${id}-results-list`}
+          class="address-results-list max-h-60 overflow-y-auto py-2 text-center text-sm text-gray-700 dark:text-gray-200"
+        />
+        <div id={`${id}-empty-state`} class="hidden px-4 py-8 text-center">
           <p class="text-sm text-gray-500 dark:text-gray-400">{noResultsText}</p>
         </div>
       </div>
@@ -85,7 +112,7 @@ const hasAutosuggest = !!fetchApiEndpoint;
   <slot name="suggestions" />
 </div>
 
-<script define:vars={{ id, hasAutosuggest, fetchApiEndpoint, apiParams, valueField, labelField }}>
+<script define:vars={{ id, hasAutosuggest, fetchApiEndpoint, apiParams, valueField, labelField, currentLocation }}>
   document.addEventListener("DOMContentLoaded", initSearchInput);
   document.addEventListener("astro:page-load", initSearchInput);
 
@@ -124,6 +151,7 @@ const hasAutosuggest = !!fetchApiEndpoint;
           apiParams: apiParams || {},
           valueField,
           labelField,
+          currentLocation,
         });
       })
       .catch(() => {});

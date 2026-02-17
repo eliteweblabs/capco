@@ -356,8 +356,8 @@ const attributes = {
 {isAntispam && (
   <script>
     (function initAntispam() {
-      if (window.__antispamInited) return;
-      window.__antispamInited = true;
+      if ((window as any).__antispamInited) return;
+      (window as any).__antispamInited = true;
 
       const isTouchDevice = () => window.matchMedia("(hover: none)").matches;
       if (!isTouchDevice()) return;
@@ -366,7 +366,7 @@ const attributes = {
         if (btn.getAttribute("data-antispam-inited")) return;
         btn.setAttribute("data-antispam-inited", "true");
 
-        const holdMs = parseInt(btn.dataset.antispamHold ?? "5000", 10) || 5000;
+        const holdMs = parseInt((btn as any).dataset.antispamHold ?? "5000", 10) || 5000;
         let holdTimer = null;
         let progressInterval = null;
         let startTime = 0;
@@ -376,24 +376,24 @@ const attributes = {
           if (progressInterval) clearInterval(progressInterval);
           holdTimer = null;
           progressInterval = null;
-          btn.style.setProperty("--antispam-progress", "0");
+          (btn as any).style.setProperty("--antispam-progress", "0");
         };
 
         const complete = () => {
           reset();
-          btn.style.setProperty("--antispam-progress", "1");
+          (btn as any).style.setProperty("--antispam-progress", "1");
           btn.setAttribute("data-antispam-allowed", "true");
-          btn.click();
+          (btn as any).click();
           btn.removeAttribute("data-antispam-allowed");
         };
 
         const startHold = () => {
-          if (btn.disabled) return;
+          if ((btn as any).disabled) return;
           startTime = Date.now();
           progressInterval = setInterval(() => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / holdMs, 1);
-            btn.style.setProperty("--antispam-progress", String(progress));
+            (btn as any).style.setProperty("--antispam-progress", String(progress));
           }, 50);
           holdTimer = setTimeout(complete, holdMs);
         };
