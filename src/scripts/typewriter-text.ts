@@ -135,15 +135,6 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
     },
   });
 
-  // Escape HTML so a single character can be wrapped in a span safely
-  const escapeHtml = (c: string): string =>
-    c
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-
   // Build the typing sequence with pauses and natural variations
   segments.forEach((segment, index) => {
     if (segment.type === "text") {
@@ -184,6 +175,80 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
 
   // Store instance on element for later use
   (element as any).__typeItInstance = instance;
+}
+
+const escapeHtml = (c: string): string =>
+  c
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+/**
+ * Build the full typewriter HTML (same structure as TypeIt would produce at the end).
+ * Used when skipping the typewriter via Enter key.
+ */
+function buildFullTypewriterHtml(text: string, element: HTMLElement): string {
+  text = decodeHtmlEntities(text);
+  text = injectSessionMetaIntoText(text, element);
+  const segments = parseTextWithPauses(text);
+  let html = "";
+
+  segments.forEach((segment) => {
+    if (segment.type === "text") {
+      const segText = segment.content!;
+      const words = segText.split(/(<br>|[.,!?;:])/gi);
+      words.forEach((word) => {
+        if (!word) return;
+        if (/^<[^>]+>$/i.test(word)) {
+          html += word;
+        } else {
+          for (const char of word) {
+            html += `<span class="typewriter-char">${escapeHtml(char)}</span>`;
+          }
+        }
+      });
+    }
+  });
+  return html;
+}
+
+/**
+ * Skip active typewriter(s) to end and show full text. Called on Enter key.
+ */
+function skipActiveTypewriterToEnd(): boolean {
+  const activeStep = document.querySelector(".step-content.active");
+  if (!activeStep) return false;
+
+  const typewriterEls = activeStep.querySelectorAll(
+    ".typewriter-text[data-typewriter-ready='true']"
+  ) as NodeListOf<HTMLElement>;
+
+  let skipped = false;
+  typewriterEls.forEach((el) => {
+    const instance = (el as any).__typeItInstance;
+    if (!instance || (typeof instance.is === "function" && instance.is("complete")))
+      return;
+
+    const text = el.getAttribute("data-text");
+    if (!text) return;
+
+    el.innerHTML = buildFullTypewriterHtml(text, el);
+    try {
+      instance.destroy(true);
+    } catch (_) {}
+    (el as any).__typeItInstance = null;
+    el.setAttribute("data-typewriter-triggered", "true");
+
+    const cursor = el.querySelector(".ti-cursor");
+    if (cursor) cursor.remove();
+
+    el.dispatchEvent(new CustomEvent("typewriter-complete", { bubbles: true }));
+    skipped = true;
+  });
+
+  return skipped;
 }
 
 /** Parse full name string into first and last (matches multi-step-form-config logic) */
@@ -414,6 +479,27 @@ document.addEventListener("DOMContentLoaded", () => {
   initTypewriterTexts();
   triggerActiveStepTypewriter();
 
+  // Enter key: skip typewriter to end and show full text immediately (don't intercept when user is in an input)
+  // Use capture phase so we run before form submit; handle both keydown and keypress
+  const handleEnterSkip = (e: KeyboardEvent) => {
+    if (e.key !== "Enter") return;
+    const active = document.activeElement as HTMLElement;
+    if (
+      active &&
+      (active.tagName === "INPUT" ||
+        active.tagName === "TEXTAREA" ||
+        active.tagName === "SELECT" ||
+        active.isContentEditable)
+    )
+      return;
+    if (skipActiveTypewriterToEnd()) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+  document.addEventListener("keydown", handleEnterSkip, true);
+  document.addEventListener("keypress", handleEnterSkip, true);
+
   // When contact form container is revealed (loses .hidden), trigger typewriter
   const formContainer = document.getElementById("form-container");
   if (formContainer) {
@@ -432,4 +518,4 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-export { initTypewriterTexts, triggerActiveStepTypewriter };
+export { initTypewriterTexts, triggerActiveStepTypewriter, skipActiveTypewriterToEnd };

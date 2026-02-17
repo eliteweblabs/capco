@@ -48,6 +48,9 @@ const {
   hideFooter = false,
 } = Astro.props;
 
+const stripHtml = (s: string | undefined | null): string =>
+  (s ?? "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+
 // Derive layout behavior from layout prop only
 
 
@@ -73,6 +76,9 @@ const {
   ogImage,
   customCss,
 } = await globalCompanyData();
+
+const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
+const safeDescription = stripHtml(description || globalCompanySlogan || "");
 
 import { checkAuth } from "../../lib/auth";
 const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
@@ -734,9 +740,9 @@ const debugData = {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <title>
-      {(title || Astro.url.pathname.replace(/\//g, " ").trim()) + " → " + globalCompanyName}
+      {safeTitle + " → " + globalCompanyName}
     </title>
-    <meta name="description" content={description} />
+    <meta name="description" content={safeDescription} />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content={primaryColor} />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -750,8 +756,8 @@ const debugData = {
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={globalCompanyName} />
     <meta property="og:url" content={Astro.url.href} />
-    <meta property="og:title" content={(title || "Home") + " → " + globalCompanyName} />
-    <meta property="og:description" content={description || globalCompanySlogan || ""} />
+    <meta property="og:title" content={safeTitle + " → " + globalCompanyName} />
+    <meta property="og:description" content={safeDescription} />
     {
       ogImageSrc && (
         <>
@@ -762,7 +768,7 @@ const debugData = {
           <meta property="og:image:height" content="630" />
           <meta
             property="og:image:alt"
-            content={globalCompanyName + " - " + (description || globalCompanySlogan || "")}
+            content={globalCompanyName + " - " + safeDescription}
           />
         </>
       )
@@ -770,14 +776,14 @@ const debugData = {
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={(title || "Home") + " → " + globalCompanyName} />
-    <meta name="twitter:description" content={description || globalCompanySlogan || ""} />
+    <meta name="twitter:title" content={safeTitle + " → " + globalCompanyName} />
+    <meta name="twitter:description" content={safeDescription} />
     {ogImageSrc && <meta name="twitter:image" content={ogImageSrc} />}
     {
       ogImageSrc && (
         <meta
           name="twitter:image:alt"
-          content={globalCompanyName + " - " + (description || globalCompanySlogan || "")}
+          content={globalCompanyName + " - " + safeDescription}
         />
       )
     }

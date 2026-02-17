@@ -1,0 +1,153 @@
+---
+// Stat Card with inline mini line chart
+// Based on: https://codepen.io/ScottWindon/pen/GRZjbaG (Tailwind & ChartJS: Dashboard Statistic Cards)
+
+interface Props {
+  title: string;
+  value: string | number;
+  change?: {
+    value: string;
+    type: "increase" | "decrease";
+  };
+  /** Chart data points for the sparkline (e.g. [1, 2, 1, 3, 5, 4, 7]) */
+  chartData?: number[];
+  /** Chart line/accent color. Default "blue" */
+  chartColor?: "blue" | "pink" | "orange" | "green" | "purple";
+  /** Unique id for the canvas (required when multiple cards on same page) */
+  id?: string;
+}
+
+const {
+  title,
+  value,
+  change,
+  chartData = [1, 2, 1, 3, 5, 4, 7],
+  chartColor = "blue",
+  id = `stat-chart-${Math.random().toString(36).slice(2, 11)}`,
+} = Astro.props;
+
+const chartColorRgba = {
+  blue: { fill: "rgba(101, 116, 205, 0.1)", border: "rgba(101, 116, 205, 0.8)" },
+  pink: { fill: "rgba(246, 109, 155, 0.1)", border: "rgba(246, 109, 155, 0.8)" },
+  orange: { fill: "rgba(246, 153, 63, 0.1)", border: "rgba(246, 153, 63, 0.8)" },
+  green: { fill: "rgba(34, 197, 94, 0.1)", border: "rgba(34, 197, 94, 0.8)" },
+  purple: { fill: "rgba(168, 85, 247, 0.1)", border: "rgba(168, 85, 247, 0.8)" },
+}[chartColor];
+
+const changeSymbol = change?.type === "increase" ? "▲" : "▼";
+const changeColorClass =
+  change?.type === "increase"
+    ? "text-green-500 dark:text-green-400"
+    : "text-red-500 dark:text-red-400";
+---
+
+<div
+  class="relative overflow-hidden rounded-lg bg-white shadow-lg dark:bg-gray-800 md:shadow-xl"
+  data-stat-chart-id={id}
+  data-chart-data={JSON.stringify(chartData)}
+  data-chart-fill={chartColorRgba.fill}
+  data-chart-border={chartColorRgba.border}
+>
+  <div class="relative z-10 px-3 pt-8 pb-10 text-center">
+    <h4 class="text-sm uppercase leading-tight text-gray-500 dark:text-gray-400">{title}</h4>
+    <h3 class="my-3 text-3xl font-semibold leading-tight text-gray-700 dark:text-gray-200">
+      {value}
+    </h3>
+    {
+      change && (
+        <p class={`text-xs leading-tight ${changeColorClass}`}>
+          {changeSymbol} {change.value}
+        </p>
+      )
+    }
+  </div>
+  <div class="absolute bottom-0 left-0 right-0 h-16" aria-hidden="true">
+    <canvas id={id} class="h-full w-full" height="64"></canvas>
+  </div>
+</div>
+
+<script>
+  import Chart from "chart.js/auto";
+
+  const chartOptions = {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false },
+    },
+    elements: {
+      point: { radius: 0 },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { display: false },
+      },
+      y: {
+        grid: { display: false },
+        ticks: { display: false },
+        min: 0,
+        max: 10,
+      },
+    },
+  };
+
+  function initStatCharts() {
+    document.querySelectorAll("[data-stat-chart-id]").forEach((wrapper) => {
+      const chartId = (wrapper as HTMLElement).dataset.statChartId;
+      const dataJson = (wrapper as HTMLElement).dataset.chartData;
+      const fillColor = (wrapper as HTMLElement).dataset.chartFill;
+      const borderColor = (wrapper as HTMLElement).dataset.chartBorder;
+
+      if (!chartId || !dataJson) return;
+
+      const canvas = document.getElementById(chartId) as HTMLCanvasElement;
+      if (!canvas || canvas.dataset.initialized === "true") return;
+
+      let data: number[];
+      try {
+        data = JSON.parse(dataJson) as number[];
+      } catch {
+        data = [1, 2, 1, 3, 5, 4, 7];
+      }
+
+      const maxVal = Math.max(...data, 1);
+      const yMax = Math.ceil(maxVal * 1.2) || 10;
+
+      new Chart(canvas, {
+        type: "line",
+        data: {
+          labels: data.map((_, i) => i),
+          datasets: [
+            {
+              backgroundColor: fillColor || "rgba(101, 116, 205, 0.1)",
+              borderColor: borderColor || "rgba(101, 116, 205, 0.8)",
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              data,
+            },
+          ],
+        },
+        options: {
+          ...chartOptions,
+          scales: {
+            ...chartOptions.scales,
+            y: {
+              ...chartOptions.scales.y,
+              max: yMax,
+            },
+          },
+        },
+      });
+
+      canvas.dataset.initialized = "true";
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initStatCharts);
+  } else {
+    initStatCharts();
+  }
+</script>

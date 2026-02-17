@@ -53,6 +53,35 @@ console.log(
   components.map((c) => c.name)
 );
 
+// Fetch shared data once when components need it (avoids duplicate queries)
+const needsFeaturedProjects = components.some((c) => c.name === "DynamicProjectsMap");
+let featuredProjectsForMap: Array<{ data: { title: string; location?: string; excerpt?: string; coordinates?: { lat: number; lng: number } } }> = [];
+
+if (needsFeaturedProjects) {
+  try {
+    const baseUrl = Astro.url.origin;
+    const response = await fetch(`${baseUrl}/api/projects/get?featured=true`, {
+      headers: { Cookie: Astro.request.headers.get("Cookie") || "" },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      const projects = (data.projects || []).filter(
+        (p: any) => p.featured === true || p.featured === "yes"
+      );
+      featuredProjectsForMap = projects.map((p: any) => ({
+        data: {
+          title: p.title || p.address || "Project",
+          location: p.address || p.title || "",
+          excerpt: p.description || "",
+          coordinates: p.coordinates ?? (p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : undefined),
+        },
+      }));
+    }
+  } catch (err) {
+    console.warn("[MarkdownPage] Could not fetch featured projects for DynamicProjectsMap:", err);
+  }
+}
+
 // Replace components with placeholders
 let markdownContent = pageContent.content;
 for (const component of components) {
@@ -129,11 +158,17 @@ const validComponentModules = componentModules.filter(
   <div set:html={htmlContent} />
 
   {
-    validComponentModules.map(({ component, Component }) => (
-      <div id={`component-${component.id}`} data-component-name={component.name}>
-        <Component {...component.props} />
-      </div>
-    ))
+    validComponentModules.map(({ component, Component }) => {
+      const props = { ...component.props };
+      if (component.name === "DynamicProjectsMap" && !props.projects && featuredProjectsForMap.length > 0) {
+        props.projects = featuredProjectsForMap;
+      }
+      return (
+        <div id={`component-${component.id}`} data-component-name={component.name}>
+          <Component {...props} />
+        </div>
+      );
+    })
   }
 </Layout>
 

@@ -81,17 +81,17 @@ const avatarUrl =
 {
   !currentUser ? (
     <UserDropdown
-      id={id}
+      {id}
       {globalIconButtonClasses}
-      assignedProjectsCount={assignedProjectsCount}
-      assignedProjectsPreview={assignedProjectsPreview}
+      {assignedProjectsCount}
+      {assignedProjectsPreview}
       {currentUser}
     />
   ) : (
     <UserDrawer
       {currentUser}
-      assignedProjectsCount={assignedProjectsCount}
-      assignedProjectsPreview={assignedProjectsPreview}
+      {assignedProjectsCount}
+      {assignedProjectsPreview}
     />
   )
 }
@@ -140,14 +140,34 @@ const avatarUrl =
     refreshAvatar(url, undefined);
   });
 
-  // When account-dropdown popover is open, show X on trigger; when closed, show avatar
-  const panelId = "account-dropdown";
-  const panel = document.getElementById(panelId);
-  const trigger = document.querySelector(`[data-popover-target="${panelId}"]`);
-  if (panel && trigger) {
+  // When popover is open, show X on trigger; when closed, show avatar. Wire X to close popover.
+  function wireAuthIconClose() {
+  document.querySelectorAll(".auth-icon-close").forEach((closeEl) => {
+    const trigger = closeEl.closest("[data-popover-target]");
+    if (!trigger || !(closeEl instanceof HTMLElement)) return;
+    const panelId = trigger.getAttribute("data-popover-target");
+    const panel = panelId ? document.getElementById(panelId) : null;
+    if (!panel) return;
+
+    function closePopover() {
+      const inst =
+        (window as any).FlowbiteInstances?.getInstance?.("Popover", panelId);
+      if (inst && typeof inst.hide === "function") {
+        inst.hide();
+      } else {
+        panel.classList.add("opacity-0", "invisible");
+        setTimeout(() => panel.classList.add("hidden"), 150);
+      }
+    }
+
+    closeEl.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closePopover();
+    });
+
     function updateTrigger(isOpen: boolean) {
       const defaultEl = trigger.querySelector(".auth-icon-default");
-      const closeEl = trigger.querySelector(".auth-icon-close");
       if (defaultEl instanceof HTMLElement && closeEl instanceof HTMLElement) {
         if (isOpen) {
           defaultEl.style.opacity = "0";
@@ -167,7 +187,12 @@ const avatarUrl =
       updateTrigger(isOpen);
     });
     observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
-    // Initial state
     updateTrigger(!panel.classList.contains("hidden") && !panel.classList.contains("invisible"));
+  });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", wireAuthIconClose);
+  } else {
+    wireAuthIconClose();
   }
 </script>

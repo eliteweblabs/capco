@@ -4,8 +4,10 @@
 // in a slot after App has started sending the response.
 interface Props {
   redirectUrl?: string;
+  id?: string;
 }
-const { redirectUrl = "/project/dashboard" } = Astro.props;
+
+const { redirectUrl = "/project/dashboard", id } = Astro.props;
 
 import ConfigForm from "../../../components/form/ConfigForm.astro";
 import { getLoginFormConfig } from "../../../lib/forms/form-config-from-site";
@@ -15,10 +17,12 @@ const loginFormConfig = await getLoginFormConfig();
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 ---
 
-<div class="relative flex min-h-[300px] flex-col pb-24">
+<div id={id} class="relative flex min-h-[300px] flex-col pb-24">
   <ConfigForm config={loginFormConfig} initialData={{ redirect: redirectUrl }} />
 
-  <div class="absolute bottom-0 left-0 right-0 flex border-t border-gray-200 pt-3 dark:border-gray-700">
+  <div
+    class="absolute bottom-0 left-0 right-0 flex border-t border-gray-200 pt-3 dark:border-gray-700"
+  >
     <a
       href="/auth/forgot-password"
       class="flex w-1/2 flex-col items-center justify-center gap-2 rounded-lg py-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"

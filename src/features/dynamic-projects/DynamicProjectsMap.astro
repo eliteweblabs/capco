@@ -1,36 +1,58 @@
 ---
 // Dynamic 3D Mapbox Component that reads from CMS and geocodes addresses
+// Supports shortcode: <DynamicProjectsMap /> or <DynamicProjectsMap height="600px" />
+// When used as shortcode with no projects prop, MarkdownPage injects featured projects (single query).
 interface Props {
-  projects: any[];
+  projects?: any[] | string;
   height?: string;
   mapboxToken?: string;
 }
 
-const { 
-  projects, 
-  height = '500px',
-  mapboxToken = import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.MAPBOX_PUBLIC_KEY || '',
+const {
+  projects: rawProjects,
+  height = "500px",
+  mapboxToken = import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN ||
+    import.meta.env.MAPBOX_PUBLIC_KEY ||
+    "",
 } = Astro.props;
 
+// Normalize projects: support CMS shape (p.data), API shape (p.title/p.address), or JSON string from shortcode
+const projects = (() => {
+  let arr = rawProjects;
+  if (typeof arr === "string") {
+    try {
+      arr = JSON.parse(arr);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(arr)) return [];
+  return arr.map((p: any) => ({
+    title: p.data?.title ?? p.title ?? p.address ?? "Project",
+    location: p.data?.location ?? p.address ?? p.title ?? "",
+    excerpt: p.data?.excerpt ?? p.description ?? "",
+    coordinates:
+      p.data?.coordinates ??
+      p.coordinates ??
+      (p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : undefined),
+  }));
+})();
+
 // Serialize projects data for client-side use
-const projectsData = JSON.stringify(projects.map(p => ({
-  title: p.data.title,
-  location: p.data.location,
-  excerpt: p.data.excerpt,
-  coordinates: p.data.coordinates,
-})));
+const projectsData = JSON.stringify(projects);
 ---
 
 <!-- Mapbox GL JS -->
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.css" rel="stylesheet" />
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.js"></script>
 
-<div 
-  id="dynamic-projects-map" 
+<div
+  id="dynamic-projects-map"
   data-height={height}
   data-projects={projectsData}
   data-mapbox-token={mapboxToken}
-></div>
+>
+</div>
 
 <style>
   #dynamic-projects-map {
@@ -42,27 +64,30 @@ const projectsData = JSON.stringify(projects.map(p => ({
 
 <script>
   // Geocoding function using Mapbox Geocoding API
-  async function geocodeAddress(address: string, accessToken: string): Promise<[number, number] | null> {
+  async function geocodeAddress(
+    address: string,
+    accessToken: string
+  ): Promise<[number, number] | null> {
     try {
       const response = await fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${accessToken}&limit=1`
       );
       const data = await response.json();
-      
+
       if (data.features && data.features.length > 0) {
         const [lng, lat] = data.features[0].center;
         return [lng, lat];
       }
       return null;
     } catch (error) {
-      console.error('Geocoding error:', error);
+      console.error("Geocoding error:", error);
       return null;
     }
   }
 
   // Initialize map
   async function initDynamicProjectsMap() {
-    if (typeof mapboxgl === "undefined") {
+    if (typeof (window as any).mapboxgl === "undefined") {
       setTimeout(initDynamicProjectsMap, 100);
       return;
     }
@@ -76,10 +101,10 @@ const projectsData = JSON.stringify(projects.map(p => ({
     const projectsData = JSON.parse(mapContainer.getAttribute("data-projects") || "[]");
     const mapboxToken = mapContainer.getAttribute("data-mapbox-token") || "";
 
-    mapboxgl.accessToken = mapboxToken;
+    (window as any).mapboxgl.accessToken = mapboxToken;
 
     // Center on New England (Boston area)
-    const map = new mapboxgl.Map({
+    const map = new (window as any).mapboxgl.Map({
       container: "dynamic-projects-map",
       style: "mapbox://styles/mapbox/standard",
       config: {
@@ -96,11 +121,11 @@ const projectsData = JSON.stringify(projects.map(p => ({
     });
 
     // Add navigation controls
-    map.addControl(new mapboxgl.NavigationControl(), "top-right");
+    map.addControl(new (window as any).mapboxgl.NavigationControl(), "top-right");
 
     // Wait for map to load
-    map.on('load', async () => {
-      const bounds = new mapboxgl.LngLatBounds();
+    map.on("load", async () => {
+      const bounds = new (window as any).mapboxgl.LngLatBounds();
       let markersAdded = 0;
 
       // Process each project
@@ -112,12 +137,12 @@ const projectsData = JSON.stringify(projects.map(p => ({
         // Use existing coordinates if available
         if (project.coordinates?.lng && project.coordinates?.lat) {
           coordinates = [project.coordinates.lng, project.coordinates.lat];
-        } 
+        }
         // Otherwise, geocode the location
         else if (project.location) {
           console.log(`🗺️ Geocoding: ${project.location}`);
           coordinates = await geocodeAddress(project.location, mapboxToken);
-          
+
           if (coordinates) {
             console.log(`✓ Found coordinates for ${project.title}:`, coordinates);
           } else {
@@ -127,16 +152,16 @@ const projectsData = JSON.stringify(projects.map(p => ({
 
         // Add marker if we have coordinates
         if (coordinates) {
-          const marker = new mapboxgl.Marker({
+          const marker = new (window as any).mapboxgl.Marker({
             color: "#D4A574", // Rothco Built primary color
           })
             .setLngLat(coordinates)
             .setPopup(
-              new mapboxgl.Popup({ offset: 25 }).setHTML(
+              new (window as any).mapboxgl.Popup({ offset: 25 }).setHTML(
                 `<div style="padding: 8px;">
                   <h3 style="font-weight: bold; margin-bottom: 4px; font-size: 16px;">${project.title}</h3>
-                  ${project.location ? `<p style="margin: 4px 0; font-size: 13px; color: #666;">${project.location}</p>` : ''}
-                  ${project.excerpt ? `<p style="margin: 4px 0; font-size: 14px;">${project.excerpt}</p>` : ''}
+                  ${project.location ? `<p style="margin: 4px 0; font-size: 13px; color: #666;">${project.location}</p>` : ""}
+                  ${project.excerpt ? `<p style="margin: 4px 0; font-size: 14px;">${project.excerpt}</p>` : ""}
                 </div>`
               )
             )
@@ -166,4 +191,3 @@ const projectsData = JSON.stringify(projects.map(p => ({
     initDynamicProjectsMap();
   }
 </script>
-

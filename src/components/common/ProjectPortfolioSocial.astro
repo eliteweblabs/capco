@@ -1,0 +1,318 @@
+---
+/**
+ * ProjectPortfolioSocial - Social card style project portfolio (CodePen-inspired)
+ * Copy of ProjectPortfolio styled like https://codepen.io/frankuxui/pen/xxXgBxZ
+ * Includes placeholder likes and comments.
+ */
+import SimpleIcon from "./SimpleIcon.astro";
+import Button from "./Button.astro";
+import GridFilter from "../../features/grid-filter/GridFilter.astro";
+
+interface Project {
+  id: number;
+  title: string;
+  address: string;
+  description?: string;
+  squareFootage: number | null;
+  isNewConstruction: boolean | null;
+  completedAt: string;
+  featured: boolean;
+  featuredImageUrl: string | null;
+  featuredImageId: number | null;
+  createdAt: string;
+}
+
+const PLACEHOLDER_NAMES = [
+  "Leslie Alexander",
+  "Tina Mills",
+  "Ronald Richards",
+  "Natalia Jímenez",
+  "Eduardo",
+  "Shawn",
+  "Dianne Russell",
+  "Jerome Bell",
+  "Eleanor Pena",
+  "Joseph Diaz",
+  "Annette Black",
+  "Kristin Watson",
+  "Melvin D. Goodman",
+  "Erik Moore",
+  "Marylin B. Bechtol",
+];
+
+const PLACEHOLDER_TIMES = [
+  "25 minutes ago",
+  "3 minutes ago",
+  "2 days ago",
+  "5 minutes ago",
+  "1 hour ago",
+];
+
+const PLACEHOLDER_COMMENTS = [
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+  "Dolor sit ameteiusmod consectetur adipiscing elit.",
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.",
+  "Great work on this fire protection system!",
+  "Professional installation, very impressed.",
+  "Clean design and thorough documentation.",
+];
+
+function getPlaceholderComments(projectId: number) {
+  const count = 2 + ((projectId * 7 + 3) % 3);
+  const comments = [];
+  for (let i = 0; i < count; i++) {
+    const nameIdx = (projectId + i * 5) % PLACEHOLDER_NAMES.length;
+    const timeIdx = (projectId + i * 3) % PLACEHOLDER_TIMES.length;
+    const textIdx = (projectId + i * 11) % PLACEHOLDER_COMMENTS.length;
+    const replyCount = (projectId + i) % 5;
+    comments.push({
+      author: PLACEHOLDER_NAMES[nameIdx],
+      timeAgo: PLACEHOLDER_TIMES[timeIdx],
+      text: PLACEHOLDER_COMMENTS[textIdx],
+      replyCount,
+    });
+  }
+  return comments;
+}
+
+function getRandomLikes(projectId: number): number {
+  return ((projectId * 17 + 13) % 195) + 12;
+}
+
+let featuredProjects: Project[] = [];
+let error: string | null = null;
+
+try {
+  const baseUrl = Astro.url.origin;
+  const apiUrl = `${baseUrl}/api/projects/get?featured=true`;
+  const response = await fetch(apiUrl, {
+    headers: { Cookie: Astro.request.headers.get("cookie") || "" },
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    const projects = data.projects || [];
+
+    featuredProjects = await Promise.all(
+      (projects || [])
+        .filter((project: any) => project.featured === true || project.featured === "yes")
+        .map(async (project: any) => {
+          let featuredImageUrl = project.featuredImageUrl || null;
+
+          if (!featuredImageUrl && project.featuredImageId) {
+            try {
+              const imageResponse = await fetch(
+                `${baseUrl}/api/files/get?projectId=${project.id}&targetLocation=marketing&bucketName=project-marketing`,
+                { headers: { Cookie: Astro.request.headers.get("cookie") || "" } }
+              );
+              if (imageResponse.ok) {
+                const imageData = await imageResponse.json();
+                const images = imageData.data || [];
+                const featuredImage = images.find(
+                  (img: any) => img.id === parseInt(project.featuredImageId)
+                );
+                if (featuredImage?.publicUrl) featuredImageUrl = featuredImage.publicUrl;
+              }
+            } catch (_) {}
+          }
+
+          return {
+            id: project.id,
+            title: project.title || project.address,
+            address: project.address,
+            description: project.description,
+            squareFootage: project.sqFt,
+            isNewConstruction: project.newConstruction,
+            completedAt: project.completedAt || project.updatedAt,
+            featured: project.featured,
+            featuredImageUrl,
+            featuredImageId: project.featuredImageId,
+            createdAt: project.createdAt,
+          };
+        })
+    );
+  } else {
+    error = `Failed to load featured projects (${response.status})`;
+  }
+} catch (err) {
+  console.error("[ProjectPortfolioSocial] Exception:", err);
+  error = "Unable to load featured projects";
+}
+
+function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return "N/A";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+const categories = ["All Projects", "New Construction", "Renovation"];
+---
+
+<div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8 lg:px-10 text-black dark:text-slate-100 bg-slate-200 dark:bg-slate-900 min-h-screen py-10">
+  {
+    error ? (
+      <div class="py-16 text-center">
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+          <SimpleIcon name="alert-circle" class="text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Projects Found</h2>
+        <p class="mb-6 text-gray-800 dark:text-gray-200">{error}</p>
+        <Button onclick="window.location.reload()" variant="danger" icon="refresh" iconPosition="left">
+          Try Again
+        </Button>
+      </div>
+    ) : featuredProjects.length === 0 ? (
+      <div class="py-16 text-center">
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+          <SimpleIcon name="building" class="h-8 w-8 text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Featured Projects Yet</h2>
+        <p class="mb-6 text-gray-600 dark:text-gray-300">
+          We're working on exciting fire protection projects. Check back soon!
+        </p>
+        <Button href="/" variant="primary" icon="home" iconPosition="left">
+          Back to Home
+        </Button>
+      </div>
+    ) : (
+      <div class="projects-container projects-container-social">
+        <GridFilter
+          filters={categories}
+          itemSelector=".project-item"
+          dataAttribute="data-category"
+          multiSelect={true}
+          masonry={false}
+          itemsContainer=".projects-container-social"
+        />
+
+        <div id="projects-grid-social" class="social-cards-columns gap-4">
+          {featuredProjects.map((project) => {
+            const likes = getRandomLikes(project.id);
+            const comments = getPlaceholderComments(project.id);
+            const commentCount = comments.length;
+
+            return (
+              <article
+                class="project-item social-card break-inside-avoid mb-4 rounded-2xl overflow-hidden shadow-lg bg-white dark:bg-slate-800 transition-shadow duration-300 hover:shadow-xl"
+                data-category={project.isNewConstruction ? "New Construction" : "Renovation"}
+              >
+                <div class="flex items-center gap-3 p-4 pb-0">
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700">
+                    <SimpleIcon name="building" class="h-5 w-5 text-slate-600 dark:text-slate-300" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-gray-900 dark:text-white truncate">{project.address}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{formatDate(project.completedAt)}</p>
+                  </div>
+                </div>
+
+                <div class="px-4 pt-2">
+                  <h3 class="font-semibold text-gray-900 dark:text-white">{project.title || project.address}</h3>
+                </div>
+
+                {project.featuredImageUrl ? (
+                  <div class="relative mt-3 mx-4 rounded-xl overflow-hidden aspect-[4/3] bg-slate-100 dark:bg-slate-700">
+                    <img
+                      src={project.featuredImageUrl}
+                      alt={`Featured image for ${project.address}`}
+                      class="h-full w-full object-cover"
+                      loading="lazy"
+                      referrerpolicy="strict-origin-when-cross-origin"
+                      crossorigin="anonymous"
+                    />
+                  </div>
+                ) : (
+                  <div class="mt-3 mx-4 rounded-xl aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center">
+                    <SimpleIcon name="image" class="h-12 w-12 text-slate-400 dark:text-slate-500" />
+                  </div>
+                )}
+
+                <div class="px-4 pt-4">
+                  <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
+                    {project.description || "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."}
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-4 px-4 pt-3 pb-2 border-b border-gray-100 dark:border-slate-700">
+                  <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <SimpleIcon name="heart" class="h-5 w-5" />
+                    <span class="text-sm font-medium">{likes}</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <SimpleIcon name="message-circle" class="h-5 w-5" />
+                    <span class="text-sm font-medium">{commentCount} comments</span>
+                  </div>
+                </div>
+
+                <div class="px-4 py-3 space-y-3">
+                  {comments.map((c) => (
+                    <div class="flex gap-3">
+                      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-600 text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {c.author.charAt(0)}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-baseline gap-2 flex-wrap">
+                          <span class="font-semibold text-sm text-gray-900 dark:text-white">{c.author}</span>
+                          <span class="text-xs text-gray-500 dark:text-gray-400">{c.timeAgo}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{c.text}</p>
+                        {c.replyCount > 0 && (
+                          <button type="button" class="text-xs text-primary-600 dark:text-primary-400 font-medium mt-1 hover:underline">
+                            Reply
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <button type="button" class="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">
+                    Show more comments
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .social-cards-columns {
+    column-count: 1;
+    column-gap: 1rem;
+  }
+  @media (min-width: 640px) {
+    .social-cards-columns {
+      column-count: 2;
+    }
+  }
+  @media (min-width: 1024px) {
+    .social-cards-columns {
+      column-count: 3;
+    }
+  }
+
+  .break-inside {
+    -moz-column-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .project-item {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .project-item[style*="display: none"] {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+</style>
