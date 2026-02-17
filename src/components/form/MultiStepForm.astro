@@ -829,6 +829,43 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       true
     );
 
+    // Shrink-to-fit: when multi-step input text overflows, reduce font size until it fits
+    const MIN_FONT_PX = 12;
+    function shrinkToFit(el: HTMLInputElement | HTMLTextAreaElement) {
+      if (!el.classList.contains("shrink-to-fit")) return;
+      if (!el.value) {
+        el.style.fontSize = "";
+        return;
+      }
+      el.style.fontSize = ""; /* reset so we measure at base size */
+      const basePx = parseFloat(getComputedStyle(el).fontSize) || 24;
+      if (el.scrollWidth <= el.clientWidth) {
+        el.style.fontSize = "";
+        return;
+      }
+      let px = basePx;
+      while (px >= MIN_FONT_PX && el.scrollWidth > el.clientWidth) {
+        px -= 2;
+        el.style.fontSize = `${px}px`;
+      }
+    }
+    document.addEventListener(
+      "input",
+      (e) => {
+        const el = e.target as HTMLInputElement | HTMLTextAreaElement;
+        if (el?.nodeName === "INPUT" || el?.nodeName === "TEXTAREA") shrinkToFit(el);
+      },
+      true
+    );
+    document.querySelectorAll(".shrink-to-fit").forEach((el) => {
+      shrinkToFit(el as HTMLInputElement | HTMLTextAreaElement);
+    });
+    window.addEventListener("resize", () => {
+      document.querySelectorAll(".shrink-to-fit").forEach((el) => {
+        shrinkToFit(el as HTMLInputElement | HTMLTextAreaElement);
+      });
+    });
+
     // Expand-up/expand-down: measure the expanding step content; when it reaches ~70% of viewport, fix bottom and expand up
     const VIEWPORT_THRESHOLD = 0.7; /* content height >= 70% viewport = within 30% of filling it */
     function updateStepsExpandMode() {
