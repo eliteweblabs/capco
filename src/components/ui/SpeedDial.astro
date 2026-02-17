@@ -13,7 +13,7 @@ import Button from "../common/Button.astro";
 // Speed dial component for quick actions
 ---
 
-<div id="speed-dial" class="group">
+<div id="speed-dial" data-dial-init class="group">
   <div
     id="speed-dial-menu"
     class="speed-dial-menu mb-4 flex hidden flex-col items-center space-y-2"
@@ -52,35 +52,38 @@ import Button from "../common/Button.astro";
 
     {
       !currentUser && (
-        <Tooltip position="left" text="Register" className="speed-dial-tooltip" dismissable={false}>
-          <button
-            id="register-toggle-btn"
-            type="button"
-            title="Login"
-            aria-label="Login"
-            onclick="window.location.href='/auth/register'"
-            class={buttonClasses}
+        <>
+          <Tooltip
+            position="left"
+            text="Register"
+            className="speed-dial-tooltip"
+            dismissable={false}
           >
-            <SimpleIcon name="user-plus" size="lg" />
-          </button>
-        </Tooltip>
-      )
-    }
+            <button
+              id="register-toggle-btn"
+              type="button"
+              title="Login"
+              aria-label="Login"
+              onclick="window.location.href='/auth/register'"
+              class={buttonClasses}
+            >
+              <SimpleIcon name="user-plus" size="lg" />
+            </button>
+          </Tooltip>
 
-    {
-      currentUser && (
-        <Tooltip position="left" text="Login" className="speed-dial-tooltip" dismissable={false}>
-          <button
-            id="login-toggle-btn"
-            type="button"
-            title="Login"
-            aria-label="Login"
-            onclick="window.location.href='/auth/login'"
-            class={buttonClasses}
-          >
-            <SimpleIcon name="user" size="lg" />
-          </button>
-        </Tooltip>
+          <Tooltip position="left" text="Login" className="speed-dial-tooltip" dismissable={false}>
+            <button
+              id="login-toggle-btn"
+              type="button"
+              title="Login"
+              aria-label="Login"
+              onclick="window.location.href='/auth/login'"
+              class={buttonClasses}
+            >
+              <SimpleIcon name="user" size="lg" />
+            </button>
+          </Tooltip>
+        </>
       )
     }
 
@@ -143,8 +146,6 @@ import Button from "../common/Button.astro";
 </div>
 
 <script>
-  import type { Placement } from "@floating-ui/dom";
-
   const tutorials = document.querySelectorAll("[data-welcome]");
   const tutorialButton = document.getElementById("tutorial-trigger");
 
@@ -161,7 +162,6 @@ import Button from "../common/Button.astro";
     let isOpen = false;
     let isTouchDevice = false;
     let touchHandled = false;
-    let openedAt = 0; // Timestamp when dial was opened (to ignore same-tap outside click on mobile)
 
     // Detect if device supports touch
     if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
@@ -174,7 +174,6 @@ import Button from "../common/Button.astro";
       const svg = speedDialButton?.querySelector("svg");
 
       if (isOpen) {
-        openedAt = Date.now();
         speedDialMenu?.classList.remove("hidden");
         speedDialButton?.setAttribute("aria-expanded", "true");
         if (svg) {
@@ -201,7 +200,7 @@ import Button from "../common/Button.astro";
                     // Show tooltip
                     tooltipContent.classList.remove("opacity-0");
                     tooltipContent.classList.add("opacity-100");
-                    (tooltipContent as HTMLElement).style.pointerEvents = "auto";
+                    tooltipContent.style.pointerEvents = "auto";
 
                     // Manually trigger FloatingUI position calculation
                     const trigger = tooltipWrapper.firstElementChild;
@@ -226,26 +225,20 @@ import Button from "../common/Button.astro";
 
                       const { x, y, placement, middlewareData } = await computePosition(
                         trigger,
-                        tooltipContent as HTMLElement,
+                        tooltipContent,
                         {
-                          placement: preferredPosition as Placement,
+                          placement: preferredPosition,
                           middleware,
                         }
                       );
 
-                      Object.assign((tooltipContent as HTMLElement).style, {
-                        left: `${x}px`,
-                        top: `${y}px`,
-                      });
-                      (tooltipContent as HTMLElement).setAttribute(
-                        "data-popper-placement",
-                        placement
-                      );
+                      Object.assign(tooltipContent.style, { left: `${x}px`, top: `${y}px` });
+                      tooltipContent.setAttribute("data-popper-placement", placement);
 
                       // Position arrow
                       if (arrowElement && middlewareData.arrow) {
                         const { x: arrowX, y: arrowY } = middlewareData.arrow;
-                        Object.assign((arrowElement as HTMLElement).style, {
+                        Object.assign(arrowElement.style, {
                           left: arrowX != null ? `${arrowX}px` : "",
                           top: arrowY != null ? `${arrowY}px` : "",
                         });
@@ -262,8 +255,8 @@ import Button from "../common/Button.astro";
         const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip .tooltip-content");
         tooltips?.forEach((tooltip) => {
           tooltip.classList.remove("opacity-100");
-          (tooltip as HTMLElement).classList.add("opacity-0");
-          (tooltip as HTMLElement).style.pointerEvents = "none";
+          tooltip.classList.add("opacity-0");
+          tooltip.style.pointerEvents = "none";
         });
 
         speedDialMenu?.classList.remove("speed-dial-open");
@@ -285,8 +278,8 @@ import Button from "../common/Button.astro";
         const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip .tooltip-content");
         tooltips?.forEach((tooltip) => {
           tooltip.classList.remove("opacity-100");
-          (tooltip as HTMLElement).classList.add("opacity-0");
-          (tooltip as HTMLElement).style.pointerEvents = "none";
+          tooltip.classList.add("opacity-0");
+          tooltip.style.pointerEvents = "none";
         });
 
         speedDialMenu?.classList.add("hidden");
@@ -302,36 +295,39 @@ import Button from "../common/Button.astro";
 
     // Handle button interaction - works for both touch and click
     if (speedDialButton) {
+      // Touch event handler for mobile
+      speedDialButton.addEventListener(
+        "touchstart",
+        function (e) {
+          touchHandled = true;
+          e.stopPropagation();
+          e.preventDefault(); // Prevent click from firing
+          toggleSpeedDial();
+          // Reset flag after a delay to allow click as fallback if needed
+          setTimeout(() => {
+            touchHandled = false;
+          }, 400);
+        },
+        { passive: false }
+      );
+
+      // Click event handler for mobile only (fallback if touchstart doesn't work)
+      // Desktop uses hover, so we skip click handler on non-touch devices
       if (isTouchDevice) {
-        // Touch-only: use touchstart to avoid double-fire from touch + synthetic click
-        speedDialButton.addEventListener(
-          "touchstart",
-          function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            touchHandled = true;
-            toggleSpeedDial();
-            setTimeout(() => {
-              touchHandled = false;
-            }, 450);
-          },
-          { passive: false }
-        );
-        // Block synthetic click from toggling again - capture and swallow it
         speedDialButton.addEventListener(
           "click",
           function (e) {
-            e.preventDefault();
+            // If touch was just handled, ignore this click to prevent double-firing
+            if (touchHandled) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
             e.stopPropagation();
+            toggleSpeedDial();
           },
           true
-        );
-      } else {
-        // Desktop: click to toggle (hover also opens/closes)
-        speedDialButton.addEventListener("click", function (e) {
-          e.stopPropagation();
-          toggleSpeedDial();
-        });
+        ); // Use capture phase to handle before document click
       }
     }
 
@@ -361,12 +357,7 @@ import Button from "../common/Button.astro";
       if (touchHandled) {
         return;
       }
-      // Ignore outside clicks for 400ms after opening - prevents synthetic click from same tap closing dial on mobile
-      const IGNORE_OUTSIDE_CLICK_MS = 400;
-      if (openedAt && Date.now() - openedAt < IGNORE_OUTSIDE_CLICK_MS) {
-        return;
-      }
-      if (!speedDial?.contains(e.target as Node)) {
+      if (!speedDial?.contains(e.target)) {
         hideSpeedDial();
       }
     });
@@ -397,7 +388,7 @@ import Button from "../common/Button.astro";
 
       // If it's a button or link, let the browser handle it naturally
       const target = e.target;
-      const button = (target as HTMLElement).closest("button, a") as HTMLElement;
+      const button = target.closest("button, a");
 
       if (button) {
         // Let the button's onclick or href work naturally
@@ -425,7 +416,7 @@ import Button from "../common/Button.astro";
 <style>
   /* Staggered animation for menu items when dial opens */
   .speed-dial-menu .speed-dial-tooltip {
-    transform: scale(0.2) translateY(4px);
+    transform: scale(0.8) translateY(4px);
     opacity: 0;
     transition:
       opacity 0.2s ease,

@@ -16,6 +16,10 @@ interface Props {
   baseColor?: string;
   /** CSS class for wrapper. */
   class?: string;
+  /** Start this animation on load (e.g. "plasma", "heatmap"). */
+  initialAnimation?: string;
+  /** Apply circular white-to-transparent mask (contain). */
+  circularMask?: boolean;
 }
 
 const {
@@ -23,11 +27,13 @@ const {
   cellSize = "1rem",
   baseColor = "primary-500",
   class: className = "",
+  initialAnimation,
+  circularMask = false,
 } = Astro.props;
 ---
 
 <div
-  class={`pixel-grid-wrapper ${className}`}
+  class={`pixel-grid-wrapper ${className} ${circularMask ? "pixel-grid-circular-mask" : ""}`}
   aria-hidden="true"
   data-pixel-grid-id={id}
   data-cell-size={cellSize}
@@ -37,7 +43,7 @@ const {
   ></canvas>
 </div>
 
-<script define:vars={{ id, cellSize, baseColor }}>
+<script define:vars={{ id, cellSize, baseColor, initialAnimation }}>
   (function () {
     const canvas = document.getElementById(id);
     const wrapper = canvas?.closest(".pixel-grid-wrapper");
@@ -399,16 +405,32 @@ const {
     function runWhenReady() {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          fill();
+          if (initialAnimation) runAnimation(initialAnimation);
+          else fill();
         });
       });
     }
     runWhenReady();
     if (document.readyState === "complete") {
-      setTimeout(() => fill(), 80);
+      setTimeout(() => (initialAnimation ? runAnimation(initialAnimation) : fill()), 80);
     } else {
-      window.addEventListener("load", () => setTimeout(() => fill(), 80));
+      window.addEventListener("load", () =>
+        setTimeout(() => (initialAnimation ? runAnimation(initialAnimation) : fill()), 80)
+      );
     }
-    setTimeout(() => fill(), 200);
+    setTimeout(() => (initialAnimation ? runAnimation(initialAnimation) : fill()), 200);
   })();
 </script>
+
+<style>
+  .pixel-grid-circular-mask {
+    mask-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.33) 0%, transparent 35%, white 70%);
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: 50% 50%;
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.33) 0%, transparent 35%, white 70%);
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: 50% 50%;
+  }
+</style>

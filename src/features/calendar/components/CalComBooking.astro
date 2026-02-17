@@ -30,6 +30,43 @@ import LoadingSpinner from "../../../components/ui/LoadingSpinner.astro";
 </div>
 
 <script type="module">
-  import { initCalComEmbed } from "../cal-com-embed";
-  initCalComEmbed();
+  (function () {
+    document.addEventListener("DOMContentLoaded", function () {
+      const el = document.getElementById("cal-com-embed");
+      if (!el) return;
+      const calLink = el.dataset.calLink ?? "capco/30min";
+      const baseUrl =
+        (typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_CALCOM_BASE_URL) ||
+        "https://calcom-web-app-production-0b16.up.railway.app";
+      let prefill = {};
+      try {
+        const raw = el.dataset.prefill;
+        if (raw) prefill = JSON.parse(raw);
+      } catch (_) {}
+      const theme =
+        document.documentElement.classList.contains("dark") ||
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+      el.innerHTML = "";
+      const iframe = document.createElement("iframe");
+      iframe.src =
+        baseUrl +
+        "/" +
+        calLink +
+        "?embed=true&layout=month_view&theme=" +
+        theme;
+      iframe.style.cssText = "width:100%;height:600px;border:none;border-radius:8px";
+      iframe.allow = "camera; microphone; geolocation";
+      iframe.setAttribute(
+        "sandbox",
+        "allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+      );
+      iframe.onerror = function () {
+        el.innerHTML =
+          '<div class="text-center py-12"><h3 class="text-lg font-medium mb-2">Calendar Unavailable</h3><p class="mb-4">Please contact us to schedule your demo.</p><a href="mailto:support@capcofire.com" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg">Email Us</a></div>';
+      };
+      el.appendChild(iframe);
+    });
+  })();
 </script>
