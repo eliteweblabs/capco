@@ -20,7 +20,8 @@
  *   {globalInputClasses}
  * />
  */
-import Form from "../form/__Form.astro";
+import ConfigForm from "../../features/forms/components/ConfigForm.astro";
+import { getProfileFormConfig } from "../../lib/forms/form-config-from-site";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Button from "../common/Button.astro";
 import SlidingTabs from "../common/SlidingTabs.astro";
@@ -69,6 +70,27 @@ const switchHandler =
 const displayEmail = emailDisplay ?? currentUser?.email ?? userProfile?.email ?? "";
 
 const p = (id: string) => (formIdPrefix ? `${formIdPrefix}${id}` : id);
+
+const userRole = currentUser?.profile?.role ?? userProfile?.role ?? null;
+const profileFormConfig = await getProfileFormConfig(
+  userRole,
+  isAdminEdit,
+  includeAllModes
+);
+const profileInitialData = {
+  companyName: userProfile?.companyName ?? "",
+  firstName: userProfile?.firstName ?? "",
+  lastName: userProfile?.lastName ?? "",
+  title: userProfile?.title ?? "",
+  email: displayEmail,
+  phone: userProfile?.phone ?? "",
+  bio: userProfile?.bio ?? "",
+  role: userProfile?.role ?? "",
+  avatarUrl: userProfile?.avatarUrl ?? "",
+  smsAlerts: userProfile?.smsAlerts ?? false,
+  mobileCarrier: userProfile?.mobileCarrier ?? "",
+  _avatarIdPrefix: formIdPrefix,
+};
 
 const validTabs = ["general", "social", "team", ...(showSettingsTab ? ["settings"] : [])];
 const tabIndex = validTabs.indexOf(activeTab) >= 0 ? validTabs.indexOf(activeTab) : 0;
@@ -190,16 +212,12 @@ const tabIndex = validTabs.indexOf(activeTab) >= 0 ? validTabs.indexOf(activeTab
       role={generalOnly ? undefined : "tabpanel"}
       aria-labelledby={generalOnly ? undefined : "tab-general"}
     >
-      <Form
-        type="user"
-        userProfile={userProfile}
-        currentUser={currentUser}
-        formIdPrefix={formIdPrefix}
-        isAdminEdit={isAdminEdit}
-        includeAllModes={includeAllModes}
-        globalInputClasses={globalInputClasses}
-        globalCompanyPhone={globalCompanyPhone}
-        emailDisplay={displayEmail}
+      <ConfigForm
+        config={profileFormConfig}
+        initialData={profileInitialData}
+        wrapInForm={true}
+        containerClass=""
+        fieldIdPrefix={formIdPrefix}
       />
     </div>
 

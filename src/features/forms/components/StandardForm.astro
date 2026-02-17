@@ -21,6 +21,8 @@ import ToggleButton from "../../../components/form/ToggleButton.astro";
 import FileUpload from "../../../components/form/FileUpload.astro";
 import SlideToggle from "../../../components/form/SlideToggle.astro";
 import SlotMachineModalStaff from "../../../components/form/SlotMachineModalStaff.astro";
+import PhoneAndSMS from "../../../components/form/PhoneAndSMS.astro";
+import ProfileAvatarBlock from "../../../components/profile/ProfileAvatarBlock.astro";
 import { SMS_UTILS } from "../../../lib/sms-utils";
 import { globalClasses } from "../../../pages/api/global/global-classes";
 
@@ -28,15 +30,24 @@ interface Props {
   config: MultiStepFormConfig;
   containerClass?: string;
   initialData?: Record<string, any>;
+  /** When true, render fields without form tag (embed in parent form). Skips StandardForm init. */
+  wrapInForm?: boolean;
+  /** Prefix for field ids (e.g. "admin-" for admin form) */
+  fieldIdPrefix?: string;
 }
 
 const {
   config: rawConfig,
   containerClass = "min-w-sm max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full",
   initialData = {},
+  wrapInForm = false,
+  fieldIdPrefix = "",
 } = Astro.props;
 
+const fid = (id: string) => (fieldIdPrefix ? `${fieldIdPrefix}${id}` : id);
+
 const config = normalizeFormConfig(rawConfig);
+const FormOrDiv = wrapInForm ? "div" : "form";
 
 const { multiStepInputClasses } = globalClasses();
 const appendedMultiStepInputClasses = multiStepInputClasses;
@@ -81,20 +92,23 @@ function getHiddenValue(name: string): string {
 }
 ---
 
-<div data-standard-form class={containerClass}>
+<div
+  data-standard-form
+  class={containerClass}
+  data-skip-init={wrapInForm}
+>
   {
-    config.responseType === "inline" && (
+    !wrapInForm && config.responseType === "inline" && (
       <div id={`${config.formId}-response-alert`} class="w-100 mb-4 hidden p-2" role="alert" />
     )
   }
-  <form
-    id={config.formId}
-    action={config.formAction}
-    method={config.formMethod || "post"}
+  <FormOrDiv
+    id={!wrapInForm ? config.formId : undefined}
+    action={!wrapInForm ? config.formAction : undefined}
+    method={!wrapInForm ? (config.formMethod || "post") : undefined}
     class="space-y-6"
-    data-form-config={JSON.stringify({ formId: config.formId, formConfig: config, initialData })}
+    data-form-config={!wrapInForm ? JSON.stringify({ formId: config.formId, formConfig: config, initialData }) : undefined}
   >
-    {/* Auth providers (login/register) */}
     {
       authStep && (
         <div>
@@ -133,11 +147,69 @@ function getHiddenValue(name: string): string {
 
           // Component types
           if (field.type === "component") {
+            if (field.component === "ProfileAvatar") {
+              return (
+                <div class={wrapperClass}>
+                  <ProfileAvatarBlock
+                    idPrefix={initialData._avatarIdPrefix ?? ""}
+                    avatarUrl={initialData.avatarUrl ?? initialData.avatar ?? ""}
+                    label={field.label}
+                  />
+                </div>
+              );
+            }
+            if (field.component === "PhoneAndSMS") {
+              return (
+                <div class={wrapperClass}>
+                  <PhoneAndSMS
+                    id={fid(field.id)}
+                    name={field.name}
+                    value={initialData[field.name] ?? initialData.phone ?? ""}
+                    placeholder={field.placeholder}
+                    required={field.required}
+                    showSMS={field.componentProps?.showSMS ?? true}
+                    smsChecked={initialData.smsAlerts ?? false}
+                    selectedCarrier={initialData.mobileCarrier ?? ""}
+                    globalInputClasses={appendedMultiStepInputClasses}
+                  />
+                </div>
+              );
+            }
+            if (field.component === "Select") {
+              const opts = field.options || [];
+              const val = initialData[field.name] ?? "";
+              const selId = fid(field.id);
+              return (
+                <div class={wrapperClass}>
+                  {field.label && (
+                    <label
+                      for={selId}
+                      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+                    </label>
+                  )}
+                  <select
+                    id={selId}
+                    name={field.name}
+                    required={field.required}
+                    class={appendedMultiStepInputClasses}
+                  >
+                    <option value="">{field.placeholder || "Select..."}</option>
+                    {opts.map((o: { value: string; label: string }) => (
+                      <option value={o.value} selected={o.value === val}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            }
             if (field.component === "SlotMachineModalStaff") {
               return (
                 <div class={wrapperClass}>
                   <SlotMachineModalStaff
-                    id={field.id}
+                    id={fid(field.id)}
                     name={field.name}
                     title={field.label || "Select an option"}
                     options={mobileCarrierOptions}
@@ -151,7 +223,7 @@ function getHiddenValue(name: string): string {
             if (field.component === "SlideToggle") {
               return (
                 <div class={`${wrapperClass} flex items-center justify-center py-4`}>
-                  <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
+                  <SlideToggle id={fid(field.id)} name={field.name} {...field.componentProps} />
                 </div>
               );
             }
@@ -159,7 +231,7 @@ function getHiddenValue(name: string): string {
               return (
                 <div class={wrapperClass}>
                   <InlineAddressSearch
-                    id={field.id}
+                    id={fid(field.id)}
                     name={field.name}
                     globalInputClasses={appendedMultiStepInputClasses}
                     {...field.componentProps}
@@ -234,18 +306,20 @@ function getHiddenValue(name: string): string {
           }
 
           if (field.type === "textarea") {
+            const textareaVal = initialData[field.name] ?? "";
+            const txtId = fid(field.id);
             return (
               <div class={wrapperClass}>
                 {field.label && (
                   <label
-                    for={field.id}
+                    for={txtId}
                     class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
                   </label>
                 )}
                 {/* prettier-ignore */}
-                <textarea id={field.id} name={field.name} placeholder={field.placeholder} required={field.required} rows={field.rows || 4} autocomplete={field.autocomplete} class={appendedMultiStepInputClasses} data-error={field.errorMessage} data-validate={field.validate} data-validate-message={field.validateMessage}>{""}</textarea>
+                <textarea id={txtId} name={field.name} placeholder={field.placeholder} required={field.required} rows={field.rows || 4} autocomplete={field.autocomplete} class={appendedMultiStepInputClasses} data-error={field.errorMessage} data-validate={field.validate} data-validate-message={field.validateMessage}>{textareaVal}</textarea>
               </div>
             );
           }
@@ -254,6 +328,7 @@ function getHiddenValue(name: string): string {
             /* Input with icon */
           }
           if (field.icon) {
+            const iconId = fid(field.id);
             return (
               <div
                 class:list={[
@@ -265,7 +340,7 @@ function getHiddenValue(name: string): string {
               >
                 <input
                   type={field.type as "text" | "email" | "tel" | "password"}
-                  id={field.id}
+                  id={iconId}
                   name={field.name}
                   placeholder={field.placeholder}
                   required={field.required}
@@ -282,11 +357,13 @@ function getHiddenValue(name: string): string {
           }
 
           // Plain input
+          const inputVal = initialData[field.name] ?? field.value ?? "";
+          const inpId = fid(field.id);
           return (
             <div class={wrapperClass}>
               {field.label && (
                 <label
-                  for={field.id}
+                  for={inpId}
                   class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
@@ -294,13 +371,15 @@ function getHiddenValue(name: string): string {
               )}
               <input
                 type={field.type as "text" | "email" | "tel" | "password"}
-                id={field.id}
+                id={inpId}
                 name={field.name}
+                value={inputVal}
                 placeholder={field.placeholder}
                 required={field.required}
                 autocomplete={field.autocomplete}
                 minlength={field.minlength}
                 autofocus={field.autofocus}
+                readOnly={(field.componentProps as any)?.readOnly}
                 class={appendedMultiStepInputClasses}
                 data-error={field.errorMessage}
                 data-validate={field.validate}
@@ -313,14 +392,27 @@ function getHiddenValue(name: string): string {
     </div>
 
     {/* Submit button */}
-    <div class="flex justify-end pt-4">
+    <div class="flex gap-3 pt-4">
+      {config.steps[0]?.buttons?.filter((b) => b.type === "prev").map((btn) => (
+        <Button
+          type="button"
+          variant={btn.variant}
+          size={btn.size}
+          icon={btn.icon}
+          iconPosition={btn.iconPosition}
+          class={btn.classes}
+          id={fid("back-button")}
+        >
+          <span set:html={btn.label} />
+        </Button>
+      ))}
       <Button
         type="submit"
         variant={submitConfig.variant}
         size={submitConfig.size}
         icon={submitConfig.icon}
         iconPosition={submitConfig.iconPosition}
-        class="submit-step"
+        class={`submit-step save-profile-btn ${(submitConfig as any).classes || ""}`}
       >
         {submitConfig.label && <span set:html={submitConfig.label} />}
       </Button>
@@ -332,7 +424,7 @@ function getHiddenValue(name: string): string {
         <input type="hidden" name={field.name} value={getHiddenValue(field.name) || field.value} />
       ))
     }
-  </form>
+  </FormOrDiv>
 </div>
 
 <script>
@@ -340,6 +432,7 @@ function getHiddenValue(name: string): string {
 
   function runStandardFormInit() {
     const wrapper = document.querySelector("[data-standard-form]");
+    if (wrapper?.hasAttribute("data-skip-init")) return;
     const form = wrapper?.querySelector("form[data-form-config]") as HTMLFormElement | null;
     if (!form) return;
 

@@ -458,7 +458,7 @@ If you have any questions about this Privacy Policy or our data practices, pleas
 *This Privacy Policy may be updated from time to time. We will notify you of any material changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.*', '{}', 'default', NULL, true, '2026-01-26 04:44:55.576309+00', '2026-01-26 04:44:55.391+00', false, '{any}', 'frontend', NULL, false, false, NULL),
 	('171ddf85-1168-46dc-9772-2ed070d5f540', '/', 'Welcome to Fire Protection Services', 'Professional fire protection plan review and approval', '<NodesCapco />
 
-<LandingProductCapco />', '{}', 'fullwidth', NULL, true, '2026-01-21 01:22:51.978972+00', '2026-01-27 21:17:49.086+00', false, '{any}', 'frontend', NULL, false, false, 0);
+<LayoutProductCapco />', '{}', 'fullwidth', NULL, true, '2026-01-21 01:22:51.978972+00', '2026-01-27 21:17:49.086+00', false, '{any}', 'frontend', NULL, false, false, 0);
 
 
 --
@@ -1632,4 +1632,3 @@ ON CONFLICT (id) DO UPDATE
       "lastName" = EXCLUDED."lastName",
       phone = EXCLUDED.phone,
       "updatedAt" = NOW();
-

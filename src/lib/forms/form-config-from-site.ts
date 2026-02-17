@@ -3,7 +3,12 @@
  * Replaces standalone TS config files (register-form-config, login-form-config, etc.)
  */
 
-import type { MultiStepFormConfig } from "../multi-step-form-config";
+import type {
+  MultiStepFormConfig,
+  FormFieldConfig,
+} from "../multi-step-form-config";
+import type { FormElementConfig } from "../project-form-config";
+import { getFilteredUserFormElements } from "../user-form-config";
 import { getSiteConfig } from "../content";
 
 function replacePlaceholders(obj: any, vars: Record<string, string>): any {
@@ -140,4 +145,112 @@ export async function getMepFormConfig(
     assistantName: virtualAssistantName || "Leah",
   };
   return replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
+}
+
+/** Map FormElementConfig to FormFieldConfig for StandardForm */
+function mapUserElementToField(el: FormElementConfig): FormFieldConfig | null {
+  if (el.type === "action") return null;
+  const base: FormFieldConfig = {
+    id: el.id,
+    name: el.name,
+    type: "text",
+    label: el.label,
+    placeholder: el.placeholder,
+    required: el.required,
+    columns: (el.columns as 1 | 2) || 1,
+    componentProps: { ...(el.componentProps || {}), readOnly: (el as any).readOnly },
+  };
+  switch (el.elementType) {
+    case "avatar":
+      return { ...base, type: "component", component: "ProfileAvatar" };
+    case "select":
+      return {
+        ...base,
+        type: "component",
+        component: "Select",
+        options: (el.options || []).map((o: any) => ({ value: o.value, label: o.label })),
+      };
+    case "text":
+      return { ...base, type: "text" };
+    case "email":
+      return { ...base, type: "email" };
+    case "password":
+      return { ...base, type: "password" };
+    case "phone-sms":
+      return {
+        ...base,
+        type: "component",
+        component: "PhoneAndSMS",
+        componentProps: { ...(el.componentProps || {}), showSMS: true },
+      };
+    case "textarea":
+      return { ...base, type: "textarea" };
+    default:
+      return { ...base, type: "text" };
+  }
+}
+
+/**
+ * Build MultiStepFormConfig for profile form (General tab).
+ * Used by ProfileTabForm with ConfigForm layout="standard".
+ */
+export async function getProfileFormConfig(
+  userRole?: string | null,
+  isAdminEdit?: boolean,
+  includeAllModes?: boolean
+): Promise<MultiStepFormConfig> {
+  const elements = await getFilteredUserFormElements(
+    userRole,
+    isAdminEdit,
+    false,
+    includeAllModes
+  );
+  const fields: FormFieldConfig[] = [];
+  for (const el of elements) {
+    const field = mapUserElementToField(el);
+    if (field) fields.push(field);
+  }
+  const backBtn = elements.find((e: any) => e.type === "action" && e.action === "back");
+  const saveBtn = elements.find((e: any) => e.type === "action" && e.elementType === "submit");
+  return {
+    formId: "profile-form",
+    formAction: "/api/users/update",
+    formMethod: "post",
+    layout: "standard",
+    totalSteps: 1,
+    progressBar: false,
+    responseType: "toast",
+    steps: [
+      {
+        title: "Profile",
+        fields,
+        buttons: [
+          ...(backBtn
+            ? [
+                {
+                  type: "prev" as const,
+                  label: backBtn.label,
+                  icon: backBtn.icon,
+                  iconPosition: (backBtn.iconPosition as "left" | "right") || "left",
+                  variant: "outline" as const,
+                  classes: backBtn.cssClass,
+                },
+              ]
+            : []),
+          ...(saveBtn
+            ? [
+                {
+                  type: "submit" as const,
+                  label: saveBtn.label || "Save Changes",
+                  icon: saveBtn.icon || "save",
+                  iconPosition: (saveBtn.iconPosition as "left" | "right") || "left",
+                  variant: "secondary" as const,
+                  classes: saveBtn.cssClass,
+                },
+              ]
+            : []),
+        ],
+      },
+    ],
+  };
 }

@@ -1,0 +1,114 @@
+---
+/**
+ * ProfileAvatarBlock - Avatar upload UI for profile form.
+ * Renders the expected structure for profile.astro and AdminUsers avatar handlers.
+ * IDs use idPrefix for admin context (e.g. "admin-").
+ */
+interface Props {
+  idPrefix?: string;
+  avatarUrl?: string | null;
+  label?: string;
+}
+
+const { idPrefix = "", avatarUrl = "", label = "Profile Picture" } = Astro.props;
+const p = (id: string) => (idPrefix ? `${idPrefix}${id}` : id);
+const hasAvatar = !!avatarUrl;
+---
+
+<div class="input-wrapper w-full md:col-span-2">
+  {label && (
+    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+      {label}
+    </label>
+  )}
+  <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+    <div
+      class="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600"
+      data-avatar-url={avatarUrl || ""}
+    >
+      <img
+        id={p("profile-avatar")}
+        src={avatarUrl || ""}
+        alt="Profile"
+        class="avatar-img h-full w-full min-w-0 object-cover object-center"
+        style={!hasAvatar ? "display:none" : undefined}
+      />
+      <span
+        id={p("profile-avatar-fallback")}
+        class={`avatar-fallback flex h-full w-full items-center justify-center text-gray-500 dark:text-gray-400 ${hasAvatar ? "hidden" : ""}`}
+        aria-hidden="true"
+      >
+        <i class="bx bx-user text-3xl" />
+      </span>
+    </div>
+    <div class="flex flex-col gap-2">
+      <input
+        type="file"
+        id={p("avatar-input")}
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        class="hidden"
+      />
+      <button
+        type="button"
+        id={p("upload-avatar-btn")}
+        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+      >
+        <i class="bx bx-upload text-lg" />
+        {hasAvatar ? "Change photo" : "Add photo"}
+      </button>
+      <button
+        type="button"
+        id={p("remove-avatar-btn")}
+        class={`inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 ${hasAvatar ? "" : "hidden"}`}
+      >
+        <i class="bx bx-trash text-lg" />
+        Remove
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Cropper modal -->
+<div
+  id={p("profile-avatar-cropper")}
+  class="fixed inset-0 z-50 flex hidden items-center justify-center bg-black/60 p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby={p("avatar-cropper-title")}
+>
+  <div class="color-background max-h-[90vh] w-full max-w-lg overflow-hidden rounded-lg shadow-xl">
+    <div class="border-b border-gray-200 p-4 dark:border-gray-700">
+      <h2 id={p("avatar-cropper-title")} class="text-lg font-semibold">
+        Crop photo
+      </h2>
+    </div>
+    <div
+      id={p("avatar-cropper-container")}
+      class="relative flex min-h-[300px] items-center justify-center bg-gray-100 dark:bg-gray-800"
+    >
+      <img
+        id={p("avatar-cropper-image")}
+        src=""
+        alt="Crop preview"
+        class="max-h-[50vh] max-w-full"
+        style="display: none"
+      />
+    </div>
+    <div class="flex justify-end gap-2 border-t border-gray-200 p-4 dark:border-gray-700">
+      <button
+        type="button"
+        data-avatar-cropper-close
+        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        id={p("avatar-cropper-apply")}
+        class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+      >
+        Apply
+      </button>
+    </div>
+  </div>
+</div>

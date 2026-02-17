@@ -15,16 +15,18 @@ interface Props {
   config: MultiStepFormConfig;
   initialData?: Record<string, any>;
   containerClass?: string;
+  wrapInForm?: boolean;
+  fieldIdPrefix?: string;
 }
 
-const { config, initialData = {}, containerClass } = Astro.props;
+const { config, initialData = {}, containerClass, wrapInForm = false, fieldIdPrefix = "" } = Astro.props;
 
 const layout: FormLayout = config.layout || "multi-step";
 ---
 
 {
   layout === "standard" ? (
-    <StandardForm config={config} initialData={initialData} containerClass={containerClass} />
+    <StandardForm config={config} initialData={initialData} containerClass={containerClass} wrapInForm={wrapInForm} fieldIdPrefix={fieldIdPrefix} />
   ) : (
     <MultiStepForm config={config} initialData={initialData} containerClass={containerClass} />
   )
