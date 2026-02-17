@@ -11,130 +11,29 @@ const { calLink = "capco/30min", currentUser } = Astro.props;
 const calComBaseUrl =
   import.meta.env.PUBLIC_CALCOM_BASE_URL ||
   "https://calcom-web-app-production-0b16.up.railway.app";
+const prefillData = currentUser
+  ? {
+      name: [currentUser?.profile?.firstName, currentUser?.profile?.lastName].filter(Boolean).join(" ") || "",
+      email: currentUser?.email || "",
+      company: currentUser?.profile?.companyName || "",
+    }
+  : null;
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.astro";
 ---
 
 <!-- Cal.com Embed Container -->
-<div id="cal-com-embed" class="min-h-[600px]">
+<div
+  id="cal-com-embed"
+  class="min-h-[600px]"
+  data-cal-link={calLink}
+  data-cal-base-url={calComBaseUrl}
+  data-prefill={prefillData ? JSON.stringify(prefillData) : ""}>
   <div class="color-background flex h-64 items-center justify-center rounded-lg">
     <LoadingSpinner size="lg" color="primary" className="mx-auto mb-4" />
   </div>
 </div>
 
-<script define:vars={{ calLink, currentUser, calComBaseUrl }} type="module">
-  document.addEventListener("DOMContentLoaded", function () {
-    const calEmbedContainer = document.getElementById("cal-com-embed");
-
-    if (!calEmbedContainer) {
-      console.error("Cal.com embed container not found");
-      return;
-    }
-
-    // Get calLink from data attribute
-
-    // Check for dark mode preference
-    const isDarkMode =
-      document.documentElement.classList.contains("dark") ||
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    // Cal.com configuration
-    const calConfig = {
-      calLink: calLink,
-      layout: "month_view",
-      theme: isDarkMode ? "dark" : "light", // Dynamic theme based on user preference
-      branding: {
-        brandColor: "#825BDD", // Your brand color
-        hideEventTypeDetails: false,
-        hideLandingPageDetails: false,
-      },
-      // Self-hosted Cal.com instance (PUBLIC_CALCOM_BASE_URL)
-      baseUrl: calComBaseUrl,
-      // Optional: Pre-fill form data if user is logged in
-      prefill: {
-        name: currentUser?.profile?.firstName + " " + currentUser?.profile?.lastName || "",
-        email: currentUser?.email || "",
-        company: currentUser?.profile?.companyName || "",
-      },
-    };
-
-    // Load Cal.com embed - using direct iframe approach for self-hosted instances
-    function loadCalComEmbed() {
-      console.log("🔧 Loading Cal.com embed via iframe method");
-      initializeCalEmbed();
-    }
-
-    function initializeCalEmbed() {
-      try {
-        // Clear loading state
-        if (calEmbedContainer) {
-          calEmbedContainer.innerHTML = "";
-        }
-
-        // Use direct iframe approach for self-hosted Cal.com instances
-        console.log("🔧 Creating Cal.com iframe embed");
-
-        const iframe = document.createElement("iframe");
-        iframe.src = `${calConfig.baseUrl}/${calConfig.calLink}?embed=true&layout=${calConfig.layout}&theme=${calConfig.theme}`;
-        iframe.style.width = "100%";
-        iframe.style.height = "600px";
-        iframe.style.border = "none";
-        iframe.style.borderRadius = "8px";
-        iframe.allow = "camera; microphone; geolocation";
-        iframe.setAttribute(
-          "sandbox",
-          "allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-        );
-
-        // Add loading state
-        iframe.onload = () => {
-          console.log("✅ Cal.com iframe loaded successfully");
-        };
-
-        iframe.onerror = () => {
-          console.error("❌ Failed to load Cal.com iframe");
-          showFallbackBooking();
-        };
-
-        calEmbedContainer?.appendChild(iframe);
-        console.log("✅ Cal.com iframe embed initialized");
-      } catch (error) {
-        console.error("❌ Error initializing Cal.com embed:", error);
-        showFallbackBooking();
-      }
-    }
-
-    function showFallbackBooking() {
-      if (calEmbedContainer) {
-        calEmbedContainer.innerHTML = `
-        <div class="text-center py-12">
-          <div class="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
-            </svg>
-          </div>
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Calendar Unavailable</h3>
-          <p class="text-gray-600 dark:text-gray-400 mb-4">We're having trouble loading our booking calendar.</p>
-          <div class="space-y-2">
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Please contact us directly to schedule your demo:
-            </p>
-            <div class="flex flex-col sm:flex-row gap-2 justify-center">
-              <a href="mailto:support@capcofire.com" 
-                 class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                📧 Email Us
-              </a>
-              <a href="tel:+1-555-0123" 
-                 class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                📞 Call Us
-              </a>
-            </div>
-          </div>
-        </div>
-      `;
-      }
-    }
-
-    // Start loading Cal.com embed
-    loadCalComEmbed();
-  });
+<script type="module">
+  import { initCalComEmbed } from "../cal-com-embed";
+  initCalComEmbed();
 </script>
