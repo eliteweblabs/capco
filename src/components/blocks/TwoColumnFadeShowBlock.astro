@@ -210,6 +210,7 @@ const mobileOrder =
       };
 
       const runScrollMobile = () => {
+        let logTick = 0;
         const update = () => {
           const vh = window.innerHeight;
           const rect = (container as HTMLElement).getBoundingClientRect();
@@ -220,14 +221,19 @@ const mobileOrder =
           const scrollRange = vh + blockHeight;
           const progress = Math.max(0, Math.min(1, (vh - blockTop) / scrollRange));
           const idx = Math.min(layers.length - 1, Math.floor(progress * layers.length));
+          if (logTick++ % 20 === 0) {
+            console.log("[fadeshow] scroll update", { vh, blockTop, blockHeight, progress: progress.toFixed(2), idx });
+          }
           layers.forEach((l, i) => {
             l.style.opacity = i === idx ? "1" : "0";
           });
         };
+        console.log("[fadeshow] runScrollMobile started, adding scroll listener");
         update();
         window.addEventListener("scroll", update, { passive: true });
         window.addEventListener("resize", update);
         return () => {
+          console.log("[fadeshow] runScrollMobile teardown");
           window.removeEventListener("scroll", update);
           window.removeEventListener("resize", update);
         };
@@ -239,6 +245,7 @@ const mobileOrder =
       const applyMode = () => {
         const isMobile = window.innerWidth < MD_BREAKPOINT;
         const useScroll = scrollMobile && isMobile;
+        console.log("[fadeshow] applyMode", { innerWidth: window.innerWidth, isMobile, scrollMobile, useScroll });
 
         if (useScroll) {
           if (timerId != null) {
