@@ -213,6 +213,10 @@ export const blockRegistry: Record<string, BlockDefinition> = {
         description: "Marquee direction: left or right (only when variant=marquee)",
       },
       logos: { type: "string", description: "JSON array of logos [{src, alt, href}]" },
+      wrapperClass: {
+        type: "string",
+        description: "Extra classes on the section (e.g. flex sm:hidden pt-0)",
+      },
     },
   },
 

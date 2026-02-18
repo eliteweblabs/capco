@@ -115,6 +115,8 @@ interface Props {
   
   // Styling
   className?: string;
+  /** Extra classes on the section (e.g. "flex sm:hidden pt-0") */
+  wrapperClass?: string;
   id?: string;
   
   // Animation (note: stagger disabled for LogoCloudBlock to preserve grayscale filters)
@@ -128,6 +130,7 @@ const {
   description,
   variant = 'simple',
   className = '',
+  wrapperClass,
   id,
   marqueeDirection = 'left',
 } = props;
@@ -172,13 +175,13 @@ const gridClass = columnClasses[columns] || columnClasses[6];
 
 <section 
   id={id} 
-  class:list={['logo-cloud-block skip py-12 md:py-16', className]}
+  class:list={['logo-cloud-block skip py-12 md:py-16', className, wrapperClass]}
   data-animate={animationType || undefined}
   data-animate-delay={animateDelay || undefined}
 >
-  <div class="w-full px-4 sm:px-6 lg:px-8">
+  <div class="">
     {(title || description) && (
-      <div class="mb-10 text-center">
+      <div class="w-full mb-10 text-center px-4 sm:px-6 lg:px-8">
         {title && (
           <h2 class="text-lg font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
             {title}
@@ -192,14 +195,14 @@ const gridClass = columnClasses[columns] || columnClasses[6];
       </div>
     )}
     
-    {variant === 'marquee' ? (
-      <div class="relative overflow-hidden">
+    {(variant === 'marquee' || variant === 'simple') ? (
+      <div class="logo-cloud-marquee relative overflow-hidden" style="--marquee-gap: 3rem;">
         {/* Fade edges */}
-        <div class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10" />
-        <div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10" />
+        {/* <div class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" /> */}
+        {/* <div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" /> */}
         
-        <div class:list={['flex animate-marquee gap-16', marqueeDirection === 'right' && 'animate-marquee--right']}>
-          {[...logoItems, ...logoItems].map((logo) => (
+        <div class:list={['flex flex-nowrap animate-marquee gap-[var(--marquee-gap)]', marqueeDirection === 'right' && 'animate-marquee--right']}>
+          {[...logoItems, ...logoItems, ...logoItems].map((logo) => (
             logo.href ? (
               <a 
                 href={logo.href}
@@ -219,13 +222,13 @@ const gridClass = columnClasses[columns] || columnClasses[6];
                   />
                 ) : (
                   <img 
-                    data-src={logo.src} 
+                    src={logo.src} 
                     alt={logo.alt}
                     width={logo.width || 160}
                     height="40"
                     class:list={[
-                      'lazyload blur-sm h-10 w-auto object-contain',
-                      grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all dark:invert',
+                      'h-10 w-auto object-contain flex-shrink-0 mix-blend-multiply dark:invert dark:mix-blend-normal',
+                      grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
                     ]}
                   />
                 )}
@@ -242,13 +245,13 @@ const gridClass = columnClasses[columns] || columnClasses[6];
               />
             ) : (
               <img 
-                data-src={logo.src} 
+                src={logo.src} 
                 alt={logo.alt}
                 width={logo.width || 160}
                 height="40"
                 class:list={[
-                  'lazyload blur-sm h-10 w-auto object-contain flex-shrink-0 dark:invert',
-                  grayscale && 'grayscale opacity-60',
+                  'h-10 w-auto object-contain flex-shrink-0 mix-blend-multiply dark:invert dark:mix-blend-normal',
+                  grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
                 ]}
               />
             )
@@ -256,7 +259,7 @@ const gridClass = columnClasses[columns] || columnClasses[6];
         </div>
       </div>
     ) : variant === 'centered' ? (
-      <div class="flex flex-wrap items-center justify-evenly gap-y-8">
+      <div class="flex flex-nowrap items-center justify-start gap-x-12 gap-y-8 overflow-x-auto scrollbar-hide">
         {logoItems.map((logo) => (
           logo.href ? (
             <a 
@@ -280,8 +283,8 @@ const gridClass = columnClasses[columns] || columnClasses[6];
                   src={logo.src} 
                   alt={logo.alt}
                   class:list={[
-                    'h-10 w-auto object-contain',
-                    grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all dark:invert',
+                    'h-10 w-auto object-contain mix-blend-multiply dark:invert dark:mix-blend-normal',
+                    grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
                   ]}
                   width={logo.width || 160}
                 />
@@ -302,8 +305,8 @@ const gridClass = columnClasses[columns] || columnClasses[6];
               src={logo.src} 
               alt={logo.alt}
               class:list={[
-                'h-10 w-auto object-contain',
-                grayscale && 'grayscale opacity-60 dark:invert',
+                'h-10 w-auto object-contain mix-blend-multiply dark:invert dark:mix-blend-normal',
+                grayscale && 'grayscale opacity-60',
               ]}
               width={logo.width || 160}
             />
@@ -311,7 +314,7 @@ const gridClass = columnClasses[columns] || columnClasses[6];
         ))}
       </div>
     ) : (
-      <div class="flex flex-wrap items-center justify-evenly gap-y-8">
+      <div class="flex flex-nowrap items-center justify-start gap-x-12 gap-y-8 overflow-x-auto scrollbar-hide">
         {logoItems.map((logo) => (
           logo.href ? (
             <a 
@@ -335,8 +338,8 @@ const gridClass = columnClasses[columns] || columnClasses[6];
                   src={logo.src} 
                   alt={logo.alt}
                   class:list={[
-                    'h-10 w-auto object-contain',
-                    grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all dark:invert',
+                    'h-10 w-auto object-contain mix-blend-multiply dark:invert dark:mix-blend-normal',
+                    grayscale && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all',
                   ]}
                   width={logo.width || 160}
                 />
@@ -357,8 +360,8 @@ const gridClass = columnClasses[columns] || columnClasses[6];
               src={logo.src} 
               alt={logo.alt}
               class:list={[
-                'h-10 w-auto object-contain',
-                grayscale && 'grayscale opacity-60 dark:invert',
+                'h-10 w-auto object-contain mix-blend-multiply dark:invert dark:mix-blend-normal',
+                grayscale && 'grayscale opacity-60',
               ]}
               width={logo.width || 160}
             />
@@ -369,27 +372,36 @@ const gridClass = columnClasses[columns] || columnClasses[6];
   </div>
 </section>
 
-{variant === 'marquee' && (
-  <style>
-    @keyframes marquee {
+{(variant === 'marquee' || variant === 'simple') && (
+  <style is:global>
+    @keyframes logo-cloud-marquee {
       0% {
-        transform: translateX(0);
+        transform: translate3d(0, 0, 0);
       }
       100% {
-        transform: translateX(-50%);
+        transform: translate3d(calc(-100% / 3), 0, 0);
       }
     }
-    
-    .animate-marquee {
-      animation: marquee 30s linear infinite;
+
+    .logo-cloud-block .animate-marquee {
+      animation: logo-cloud-marquee 10s linear infinite;
+      will-change: transform;
+      contain: layout;
+      backface-visibility: hidden;
     }
 
-    .animate-marquee--right {
+    .logo-cloud-block .animate-marquee--right {
       animation-direction: reverse;
     }
-    
-    .animate-marquee:hover {
+
+    .logo-cloud-block .animate-marquee:hover {
       animation-play-state: paused;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .logo-cloud-block .animate-marquee {
+        animation: none;
+      }
     }
   </style>
 )}

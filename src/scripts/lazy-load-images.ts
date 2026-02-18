@@ -23,6 +23,10 @@ export function initLazyLoading() {
 
             if (src) {
               img.src = src;
+              const srcset = img.getAttribute("data-srcset");
+              if (srcset) {
+                img.srcset = srcset;
+              }
               img.classList.add("lazyloading");
 
               img.onload = () => {
@@ -50,8 +54,13 @@ export function initLazyLoading() {
   } else {
     // Fallback for older browsers - load all images immediately
     lazyImages.forEach((img) => {
-      const src = (img as HTMLImageElement).getAttribute("data-src");
-      if (src) (img as HTMLImageElement).src = src;
+      const el = img as HTMLImageElement;
+      const src = el.getAttribute("data-src");
+      if (src) {
+        el.src = src;
+        const srcset = el.getAttribute("data-srcset");
+        if (srcset) el.srcset = srcset;
+      }
     });
   }
 }

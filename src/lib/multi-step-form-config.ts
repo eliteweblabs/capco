@@ -227,7 +227,7 @@ export interface MultiStepFormConfig {
 }
 
 // Helper function to get button config with defaults
-// Priority: individual button config > form-specific buttonDefaults > GLOBAL_BUTTON_DEFAULTS
+// Priority: individual button config > form buttonDefaults (form-specific) > global (config.formButtonDefaults) > GLOBAL_BUTTON_DEFAULTS
 export function getButtonConfig(
   button: FormButtonConfig,
   formDefaults?: Partial<FormButtonConfig>

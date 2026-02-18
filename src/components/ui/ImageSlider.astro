@@ -1,6 +1,7 @@
 ---
 /**
  * ImageSlider - Grid-Based Multi-Directional Image Slider with Hero Overlay
+ * Retina-aware: uses 2x resolution for sharp display on high-DPI screens.
  * ==========================================================================
  * A dynamic grid slider where multiple images are visible and slide
  * in different directions at different times. Creates a Ken Burns-like effect.
@@ -40,6 +41,7 @@
  */
 
 import Button from "../common/Button.astro";
+import { getRetinaImageUrl, getRetinaSrcSet } from "../../lib/image-retina";
 
 interface SlideData {
   src: string;
@@ -137,10 +139,10 @@ const rightButton: ButtonProps | undefined =
 const hasButtons = leftButton || rightButton;
 const hasOverlayContent = title || description || hasButtons;
 
-// Default demo images
+// Default demo images (2x resolution for retina)
 const defaultImages: SlideData[] = [
   {
-    src: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format",
+    src: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1600&auto=format",
     alt: "Construction site",
     direction: "left",
     delay: 0,
@@ -148,7 +150,7 @@ const defaultImages: SlideData[] = [
     gridArea: "1 / 1 / 2 / 3",
   },
   {
-    src: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&auto=format",
+    src: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1600&auto=format",
     alt: "Industrial work",
     direction: "right",
     delay: 2000,
@@ -156,7 +158,7 @@ const defaultImages: SlideData[] = [
     gridArea: "2 / 1 / 3 / 2",
   },
   {
-    src: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format",
+    src: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&auto=format",
     alt: "Equipment",
     direction: "up",
     delay: 1000,
@@ -164,7 +166,7 @@ const defaultImages: SlideData[] = [
     gridArea: "2 / 2 / 3 / 3",
   },
   {
-    src: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format",
+    src: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1600&auto=format",
     alt: "Commercial building",
     direction: "down",
     delay: 3000,
@@ -263,6 +265,8 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
           const delay = slide.delay || 0;
           const duration = slide.duration || 20000;
           const gridArea = slide.gridArea || "auto";
+          const srcset = getRetinaSrcSet(slide.src, 800);
+          const dataSrc = srcset ? slide.src : getRetinaImageUrl(slide.src);
 
           return (
             <div
@@ -274,11 +278,12 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
               id={`${gridId}-${slideId}`}
             >
               <img
-                data-src={slide.src}
+                data-src={dataSrc}
+                data-srcset={srcset || undefined}
                 alt={slide.alt}
                 class="lazyload slide-image blur-sm"
-                width="800"
-                height="600"
+                width="1600"
+                height="1200"
               />
             </div>
           );
@@ -369,6 +374,7 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
     z-index: 1;
   }
 
+  /* Retina: ensure image fills at least 100% of container; 130% for Ken Burns pan effect */
   .slide-image {
     position: absolute;
     top: 50%;
@@ -376,11 +382,13 @@ const gridId = `grid-slider-${Math.random().toString(36).substr(2, 9)}`;
     transform: translate(-50%, -50%);
     will-change: transform;
     width: 130%;
-    min-width: 130%;
+    min-width: 100%;
     height: 130%;
-    min-height: 130%;
+    min-height: 100%;
     object-fit: cover;
     object-position: center;
+    /* Prevent retina downscaling artifacts */
+    image-rendering: auto;
   }
 
   /* Animation keyframes for different directions */

@@ -12,6 +12,7 @@
  * @prop {string} globalInputClasses - Tailwind classes for inputs
  */
 
+import Button from "../../components/common/Button.astro";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 
 export interface DropdownOption {
@@ -100,18 +101,17 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
     hasButtonFilters && (
       <div class="mb-4 flex flex-wrap justify-start gap-2">
         {filters.map((filter, index) => (
-          <button
+          <Button
             type="button"
-            data-filter={filter}
-            data-filter-type="button"
-            class={`grid-filter-btn toggle-button preserve font-large text-md [@media(hover:hover)]:hover:scale-101 relative inline-flex items-center justify-center rounded-full border-2 border-primary-500 px-4 py-2.5 font-secondary text-primary-500 backdrop-blur-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-primary-400 dark:text-primary-400 dark:text-white [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white [@media(hover:hover)]:hover:shadow-xl dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white ${
-              (!multiSelect && index === 0) || multiSelect
-                ? "dark:bg-primary-dark selected bg-primary text-white"
-                : ""
-            }`}
+            variant={(!multiSelect && index === 0) || multiSelect ? "selected" : "outline"}
+            class="grid-filter-btn toggle-button preserve font-large text-md"
+            dataAttributes={{
+              "data-filter": filter,
+              "data-filter-type": "button",
+            }}
           >
             {filter}
-          </button>
+          </Button>
         ))}
       </div>
     )
@@ -605,6 +605,7 @@ const uniqueId = `grid-filter-${Math.random().toString(36).substring(7)}`;
   .dropdown-menu {
     max-height: 300px;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .dropdown-menu::-webkit-scrollbar {

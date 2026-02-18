@@ -25,7 +25,7 @@ interface Props {
 
 const {
   config: rawConfig,
-  containerClass = "min-w-sm max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full",
+  containerClass = "min-w-md max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full",
   initialData = {},
   testNoCascade = false,
 } = Astro.props;
@@ -42,6 +42,9 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   value: carrier.id,
   label: carrier.name,
 }));
+
+const iconLeftPadding = "pl-14 sm:pl-16 md:pl-18 lg:pl-20";
+const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
 ---
 
 <div data-multi-step-form tabindex="-1">
@@ -64,7 +67,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
     <div
       class:list={[
-        "multi-step-form-steps expand-down relative flex w-full flex-col items-stretch justify-center scrollbar-hide",
+        "multi-step-form-steps expand-down relative flex w-full flex-col items-stretch justify-center pb-16 scrollbar-hide",
         containerClass,
       ]}
       id={`${config.formId}-steps`}
@@ -75,7 +78,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         config.steps.map((step) => (
           <div
             class:list={[
-              "step-content my-4 w-full min-w-full space-y-8 overflow-y-visible p-2 text-xl sm:space-y-8 sm:p-4 md:my-0 md:text-2xl lg:text-3xl", // leave mt-20 for tooltips MUST MATGCG INPUTD,
+              "step-content md:lg-text-4xl w-full min-w-full space-y-8 overflow-y-visible p-2 text-2xl sm:space-y-8 sm:p-4 sm:text-3xl md:my-0 lg:text-5xl", // leave mt-20 for tooltips MUST MATGCG INPUTD,
               step.stepNumber === 1 ? "first-step" : "",
             ]}
             data-step={step.stepNumber}
@@ -182,7 +185,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             ) : step.fields?.length ? (
               <div
                 class:list={[
-                  "step-form-fields-wrapper pl-10 md:pl-12",
+                  "step-form-fields-wrapper",
                   step.fieldLayout === "grid"
                     ? "grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6"
                     : "",
@@ -308,8 +311,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           autofocus={field.autofocus}
                           class:list={[
                             appendedMultiStepInputClasses,
-                            field.icon && field.iconPosition === "right" ? "pr-10 md:pr-12" : "",
-                            field.icon && field.iconPosition !== "right" ? "pl-10 md:pl-12" : "",
+                            field.icon && field.iconPosition === "right" ? iconRightPadding : "",
+                            field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
                           ]}
                           data-error={field.errorMessage}
                           data-validate={field.validate}
@@ -320,14 +323,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                         />
                         <span
                           class:list={[
-                            "animated-placeholder pointer-events-none absolute left-2 top-[calc(0.125rem-2px)] flex h-full w-full items-center",
+                            "animated-placeholder pointer-events-none absolute left-0 top-[calc(0.125rem-2px)] flex h-full w-full items-center",
                             field.animatedPlaceholderAlignment === "left"
-                              ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : "pl-10"}`
+                              ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : iconLeftPadding}`
                               : field.animatedPlaceholderAlignment === "right"
-                                ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : "pr-10"}`
+                                ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : iconRightPadding}`
                                 : "justify-center",
-                            field.icon && field.iconPosition === "right" ? "pr-10 md:pr-12" : "",
-                            field.icon && field.iconPosition !== "right" ? "pl-10 md:pl-12" : "",
+                            field.icon && field.iconPosition === "right" ? iconRightPadding : "",
+                            field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
                           ]}
                           data-for={field.id}
                           tabindex="-1"
@@ -388,7 +391,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
                           autofocus={field.autofocus}
                           class:list={[
                             appendedMultiStepInputClasses,
-                            field.iconPosition === "right" ? "pr-10" : "pl-10",
+                            field.iconPosition === "right" ? iconRightPadding : iconLeftPadding,
                           ]}
                           data-error={field.errorMessage}
                           data-validate={field.validate}
@@ -459,7 +462,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
             {/* Navigation buttons (prev, next, submit, skip) */}
             <div
               class:list={[
-                "step-form-buttons-wrapper pl-10 md:pl-12",
+                "step-form-buttons-wrapper",
                 "flex",
                 "gap-3",
                 step.buttons.filter((b) => b.type !== "choice").length === 1
@@ -908,6 +911,22 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
 
     // scrollToBottom: keeps content visible during step transitions (typewriter, cascade). Uses #reveal-scroll when present, else window.
+    // Only run when form.config.layout === "multi-step" and form is NOT in a dropdown (login popover, etc.)
+    function shouldSkipScrollToBottom(stepsEl: Element): boolean {
+      const form = stepsEl.closest("form");
+      if (!form) return true;
+      const configJson = form.getAttribute("data-form-config");
+      if (!configJson) return true;
+      try {
+        const parsed = JSON.parse(configJson);
+        const layout = parsed?.formConfig?.layout;
+        if (layout !== undefined && layout !== "multi-step") return true;
+      } catch {
+        return true;
+      }
+      return !!stepsEl.closest("[data-popover], [role='tooltip'], [id$='-dropdown']");
+    }
+
     function scrollToBottom() {
       const revealScroll = document.getElementById("reveal-scroll");
       if (revealScroll && revealScroll.scrollHeight > revealScroll.clientHeight) {
@@ -942,14 +961,18 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     }
 
     let stepScrollObserverRef: { mutation: MutationObserver; resize: ResizeObserver } | null = null;
-    function observeStepContentForScroll(active: HTMLElement | null) {
+    function observeStepContentForScroll(active: HTMLElement | null, stepsEl: Element) {
       if (stepScrollObserverRef) {
         stepScrollObserverRef.mutation.disconnect();
         stepScrollObserverRef.resize.disconnect();
         stepScrollObserverRef = null;
       }
       if (!active) return;
-      const onChange = () => throttledScrollToBottom();
+      if (shouldSkipScrollToBottom(stepsEl)) return; // Skip dropdown forms (login, etc.)
+      const onChange = () => {
+        if (shouldSkipScrollToBottom(stepsEl)) return;
+        throttledScrollToBottom();
+      };
       const mutationObs = new MutationObserver(onChange);
       mutationObs.observe(active, {
         childList: true,
@@ -967,7 +990,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
     if (stepsElForScroll) {
       const syncScrollObserver = () => {
         const active = stepsElForScroll.querySelector(".step-content.active") as HTMLElement | null;
-        observeStepContentForScroll(active);
+        observeStepContentForScroll(active, stepsElForScroll);
       };
       syncScrollObserver();
       document.addEventListener("multistep-step-change", syncScrollObserver);
@@ -1723,8 +1746,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
   /** Mark invalid/empty required fields with is-invalid so icons turn red. Call on submit attempt when form is invalid. */
   function showValidationErrorsForForm(formEl?: HTMLFormElement | null) {
-    const form =
-      formEl ?? document.querySelector("[data-multi-step-form] form");
+    const form = formEl ?? document.querySelector("[data-multi-step-form] form");
     if (!form?.closest("[data-multi-step-form]")) return;
     const activeStep = form.querySelector(".step-content.active");
     if (!activeStep) return;

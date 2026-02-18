@@ -3,7 +3,7 @@
  * TwoColumnFadeShowBlock - Left: image fadeshow, Right: content
  *
  * Left column displays a cycling fade slideshow of images.
- * Right column displays prose content.
+ * Right column displays content.
  *
  * @example CMS usage (props only):
  * <TwoColumnFadeShowBlock
@@ -138,7 +138,6 @@ const mobileOrder =
               data-fadeshow
               data-interval={interval}
               data-fade-duration={fadeDuration}
-              data-fadeshow-scroll-mobile="true"
             >
               {imageUrls.map((url, i) => (
                 <div
@@ -162,10 +161,9 @@ const mobileOrder =
       <!-- Right: Content -->
       <div
         class:list={[
-          "col-span-1 flex flex-col justify-center",
+          "col-span-1 flex flex-col justify-center prose prose-lg max-w-none dark:prose-invert",
           cols.right,
           mobileOrder.right,
-          "prose prose-lg max-w-none dark:prose-invert",
         ]}
       >
         {props.rightContent ? <Fragment set:html={props.rightContent} /> : <slot name="right" />}
@@ -181,93 +179,25 @@ const mobileOrder =
 </style>
 
 <script>
-  const MD_BREAKPOINT = 768;
-
   function initFadeshow(root?: Document | Element) {
     const scope = root ?? document;
     const containers = scope.querySelectorAll("[data-fadeshow]");
-    console.log("[fadeshow] init, containers found:", containers.length);
-    containers.forEach((container, cIdx) => {
+    containers.forEach((container) => {
       if ((container as HTMLElement).dataset.fadeshowInit) return;
       (container as HTMLElement).dataset.fadeshowInit = "1";
       const layers = container.querySelectorAll<HTMLElement>("[data-fadeshow-layer]");
       if (layers.length <= 1) return;
-      const scrollMobile = container.getAttribute("data-fadeshow-scroll-mobile") === "true";
-      console.log("[fadeshow]", cIdx, "layers:", layers.length, "scrollMobile:", scrollMobile);
       const fadeMs = parseInt(container.getAttribute("data-fade-duration") ?? "1200", 10);
       (container as HTMLElement).style.setProperty("--fadeshow-duration", `${fadeMs}ms`);
 
-      const runTimer = () => {
-        const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
-        let idx = 0;
-        const next = () => {
-          const prev = idx;
-          idx = (idx + 1) % layers.length;
-          layers[prev]!.style.opacity = "0";
-          layers[idx]!.style.opacity = "1";
-        };
-        return setInterval(next, intervalMs);
-      };
-
-      const runScrollMobile = () => {
-        let logTick = 0;
-        const update = () => {
-          const vh = window.innerHeight;
-          const rect = (container as HTMLElement).getBoundingClientRect();
-          const blockTop = rect.top;
-          const blockHeight = rect.height;
-          // Progress 0 = block just entering (bottom at viewport bottom)
-          // Progress 1 = block just exiting (top at viewport top)
-          const scrollRange = vh + blockHeight;
-          const progress = Math.max(0, Math.min(1, (vh - blockTop) / scrollRange));
-          const idx = Math.min(layers.length - 1, Math.floor(progress * layers.length));
-          if (logTick++ % 20 === 0) {
-            console.log("[fadeshow] scroll update", { vh, blockTop, blockHeight, progress: progress.toFixed(2), idx });
-          }
-          layers.forEach((l, i) => {
-            l.style.opacity = i === idx ? "1" : "0";
-          });
-        };
-        console.log("[fadeshow] runScrollMobile started, adding scroll listener");
-        update();
-        window.addEventListener("scroll", update, { passive: true });
-        window.addEventListener("resize", update);
-        return () => {
-          console.log("[fadeshow] runScrollMobile teardown");
-          window.removeEventListener("scroll", update);
-          window.removeEventListener("resize", update);
-        };
-      };
-
-      let timerId: ReturnType<typeof setInterval> | null = null;
-      let teardownScroll: (() => void) | null = null;
-
-      const applyMode = () => {
-        const isMobile = window.innerWidth < MD_BREAKPOINT;
-        const useScroll = scrollMobile && isMobile;
-        console.log("[fadeshow] applyMode", { innerWidth: window.innerWidth, isMobile, scrollMobile, useScroll });
-
-        if (useScroll) {
-          if (timerId != null) {
-            clearInterval(timerId);
-            timerId = null;
-          }
-          teardownScroll?.();
-          teardownScroll = runScrollMobile();
-        } else {
-          teardownScroll?.();
-          teardownScroll = null;
-          timerId = runTimer();
-        }
-      };
-
-      applyMode();
-      window.addEventListener("resize", () => {
-        const isMobile = window.innerWidth < MD_BREAKPOINT;
-        const useScroll = scrollMobile && isMobile;
-        const wasScroll = teardownScroll != null;
-        if (useScroll !== wasScroll) applyMode();
-      });
+      const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
+      let idx = 0;
+      setInterval(() => {
+        const prev = idx;
+        idx = (idx + 1) % layers.length;
+        layers[prev]!.style.opacity = "0";
+        layers[idx]!.style.opacity = "1";
+      }, intervalMs);
     });
   }
   if (document.readyState === "loading") {

@@ -1,6 +1,12 @@
 ---
-const { currentUser } = Astro.props;
-// Mapbox Widget Component with Scroll Effects
+interface Props {
+  currentUser?: any;
+  /** When true, zoom/camera and markers animate based on scroll. Default false. */
+  scrollTo?: boolean;
+}
+
+const { currentUser, scrollTo = false } = Astro.props;
+// Mapbox Widget Component with optional Scroll Effects
 // Note: Widget will still render even without currentUser - adjust if needed
 ---
 
@@ -10,6 +16,7 @@ const { currentUser } = Astro.props;
   data-mapbox-token={import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN ||
     import.meta.env.MAPBOX_PUBLIC_KEY ||
     ""}
+  data-scroll-to={scrollTo ? "true" : "false"}
 >
   <!-- Navigation Tabs with Counts -->
   <div class="mapbox-nav">
@@ -579,8 +586,10 @@ const { currentUser } = Astro.props;
 </style>
 
 <script is:inline>
-  // Mapbox configuration - token from env via data attribute
-  const MAPBOX_ACCESS_TOKEN = document.getElementById("mapbox-widget")?.dataset?.mapboxToken || "";
+  // Mapbox configuration - token and scrollTo from data attributes
+  const widgetEl = document.getElementById("mapbox-widget");
+  const MAPBOX_ACCESS_TOKEN = widgetEl?.dataset?.mapboxToken || "";
+  const SCROLL_TO_ENABLED = widgetEl?.dataset?.scrollTo === "true";
 
   // Global zoom configuration
   const MIN_ZOOM = 4;
@@ -602,7 +611,7 @@ const { currentUser } = Astro.props;
       return;
     }
 
-    console.log("✅ [MAPBOX] Mapbox GL JS loaded, initializing...");
+    console.log("✅ [MAPBOX] Mapbox GL JS loaded, initializing... (scrollTo:", SCROLL_TO_ENABLED + ")");
 
     // Check if map container exists
     const mapContainer = document.getElementById("map");
@@ -612,7 +621,9 @@ const { currentUser } = Astro.props;
     }
 
     initializeMap();
-    setupScrollEffects();
+    if (SCROLL_TO_ENABLED) {
+      setupScrollEffects();
+    }
     setupNavigation();
     setupCounterAnimations();
 
@@ -749,6 +760,24 @@ const { currentUser } = Astro.props;
 
       // Add coverage markers
       addCoverageMarkers(map);
+
+      const mapContainerEl = document.getElementById("map");
+      if (SCROLL_TO_ENABLED && mapContainerEl) {
+        // Scroll mode: trigger initial visibility (scroll handler only fires on scroll)
+        requestAnimationFrame(() => updateMapAnimation(mapContainerEl));
+      } else {
+        // No scroll: show all markers and set camera to final position
+        updateMarkerVisibility(100);
+        if (map.isStyleLoaded()) {
+          map.easeTo({
+            zoom: MAX_ZOOM,
+            pitch: 75,
+            bearing: 360,
+            center: [-71.0589, 42.3601],
+            duration: 0,
+          });
+        }
+      }
     });
   }
 

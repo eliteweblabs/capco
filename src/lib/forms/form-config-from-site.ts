@@ -7,9 +7,35 @@ import type {
   MultiStepFormConfig,
   FormFieldConfig,
 } from "../multi-step-form-config";
+import { GLOBAL_BUTTON_DEFAULTS } from "../multi-step-form-config";
 import type { FormElementConfig } from "../project-form-config";
 import { getFilteredUserFormElements } from "../user-form-config";
 import { getSiteConfig } from "../content";
+
+/**
+ * Merge button defaults: global (from site config.formButtonDefaults) + form (form-specific).
+ * Form defaults override global. GLOBAL_BUTTON_DEFAULTS is the TS fallback when config has no key.
+ */
+function mergeFormButtonDefaults(
+  siteConfig: any,
+  formConfig: any
+): MultiStepFormConfig["buttonDefaults"] {
+  const global = siteConfig?.formButtonDefaults || {};
+  const form = formConfig?.buttonDefaults || {};
+  const allTypes = new Set([
+    ...Object.keys(GLOBAL_BUTTON_DEFAULTS),
+    ...Object.keys(global),
+    ...Object.keys(form),
+  ]) as Set<keyof typeof GLOBAL_BUTTON_DEFAULTS>;
+  const result: NonNullable<MultiStepFormConfig["buttonDefaults"]> = {};
+  for (const t of allTypes) {
+    const base = (GLOBAL_BUTTON_DEFAULTS as Record<string, any>)[t] || {};
+    const g = (global as Record<string, any>)[t] || {};
+    const f = (form as Record<string, any>)[t] || {};
+    result[t as keyof typeof result] = { ...base, ...g, ...f };
+  }
+  return result;
+}
 
 function replacePlaceholders(obj: any, vars: Record<string, string>): any {
   if (typeof obj === "string") {
@@ -33,7 +59,10 @@ function replacePlaceholders(obj: any, vars: Record<string, string>): any {
 export async function getRegisterFormConfig(): Promise<MultiStepFormConfig> {
   const config = await getSiteConfig();
   const json = (config as any).registerForm;
-  if (json) return json as MultiStepFormConfig;
+  if (json) {
+    const merged = mergeFormButtonDefaults(config, json);
+    return { ...json, buttonDefaults: merged } as MultiStepFormConfig;
+  }
   // Fallback: minimal default (matches original structure)
   return {
     formId: "multi-step-register-form",
@@ -77,7 +106,10 @@ export async function getRegisterFormConfig(): Promise<MultiStepFormConfig> {
 export async function getLoginFormConfig(): Promise<MultiStepFormConfig> {
   const config = await getSiteConfig();
   const json = (config as any).loginForm;
-  if (json) return json as MultiStepFormConfig;
+  if (json) {
+    const merged = mergeFormButtonDefaults(config, json);
+    return { ...json, buttonDefaults: merged } as MultiStepFormConfig;
+  }
   return {
     formId: "multi-step-login-form",
     formAction: "/api/auth/signin",
@@ -129,7 +161,9 @@ export async function getContactFormConfig(
     virtualAssistantName: virtualAssistantName || "Leah",
     assistantName: virtualAssistantName || "Leah",
   };
-  return replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
+  const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
+  result.buttonDefaults = mergeFormButtonDefaults(config, result);
+  return result;
 }
 
 export async function getMepFormConfig(
@@ -144,7 +178,9 @@ export async function getMepFormConfig(
     virtualAssistantName: virtualAssistantName || "Leah",
     assistantName: virtualAssistantName || "Leah",
   };
-  return replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
+  const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
+  result.buttonDefaults = mergeFormButtonDefaults(config, result);
+  return result;
 }
 
 /** Map FormElementConfig to FormFieldConfig for StandardForm */
