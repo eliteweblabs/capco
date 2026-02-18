@@ -1119,6 +1119,8 @@ You can embed components:
     let openSlotId = null;
     /** Cache form state per slot so edits are preserved when switching accordions */
     const formStateCache = Object.create(null);
+    /** Ignore stale fetch results when user opened a different accordion before fetch completed */
+    let pendingSlotId = null;
 
     function getFormState() {
       const s = document.getElementById("page-slug");
@@ -1328,6 +1330,7 @@ You can embed components:
         e.stopPropagation();
         const slug = btn.getAttribute("data-slug");
         if (!slug) return;
+        pendingSlotId = slug;
         editingSlug = slug;
         if (pageEditorTitle) pageEditorTitle.textContent = `Edit Page: ${slug}`;
         const cached = formStateCache[slug];
@@ -1337,14 +1340,16 @@ You can embed components:
           return;
         }
         try {
-          const response = await fetch(`/api/cms/pages?slug=${slug}`);
+          const response = await fetch(`/api/cms/pages?slug=${encodeURIComponent(slug)}`);
           const data = await response.json();
+          if (pendingSlotId !== slug) return;
           const page = data.page;
           if (page) applyPageToForm(page);
           openEditor(slug, slug);
         } catch (err) {
           console.error("Error loading page:", err);
-          if (window.showError) window.showError("Load Failed", "Failed to load page data", 0);
+          if (pendingSlotId === slug && window.showError)
+            window.showError("Load Failed", "Failed to load page data", 0);
         }
       });
     });
@@ -1365,6 +1370,7 @@ You can embed components:
           closeEditor();
           return;
         }
+        pendingSlotId = slotId;
         if (slotId === "create") {
           editingSlug = null;
           const cached = formStateCache["create"];
@@ -1387,16 +1393,19 @@ You can embed components:
           openEditor(slotId, slotId);
           return;
         }
-        fetch(`/api/cms/pages?slug=${slotId}`)
+        const fetchForSlot = slotId;
+        fetch(`/api/cms/pages?slug=${encodeURIComponent(fetchForSlot)}`)
           .then((r) => r.json())
           .then((data) => {
+            if (pendingSlotId !== fetchForSlot) return;
             const page = data.page;
             if (page) applyPageToForm(page);
-            openEditor(slotId, slotId);
+            openEditor(fetchForSlot, fetchForSlot);
           })
           .catch((err) => {
             console.error("Error loading page:", err);
-            if (window.showError) window.showError("Load Failed", "Failed to load page data", 0);
+            if (pendingSlotId === fetchForSlot && window.showError)
+              window.showError("Load Failed", "Failed to load page data", 0);
           });
       });
     });

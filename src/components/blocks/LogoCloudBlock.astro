@@ -122,6 +122,8 @@ interface Props {
   // Animation (note: stagger disabled for LogoCloudBlock to preserve grayscale filters)
   animate?: boolean | string | 'fade-blur-scale' | 'fade-blur' | 'fade-scale' | 'fade-up' | 'fade-up-blur' | 'zoom-blur' | 'fade';
   animateDelay?: string;
+  /** Set to "override" to run marquee even when user has prefers-reduced-motion (e.g. for testing). Default: "respect" */
+  marqueeReduceMotion?: 'respect' | 'override';
 }
 
 const props = Astro.props;
@@ -133,6 +135,7 @@ const {
   wrapperClass,
   id,
   marqueeDirection = 'left',
+  marqueeReduceMotion = 'respect',
 } = props;
 
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 6);
@@ -175,9 +178,14 @@ const gridClass = columnClasses[columns] || columnClasses[6];
 
 <section 
   id={id} 
-  class:list={['logo-cloud-block skip py-12 md:py-16 overflow-x-hidden', className, wrapperClass]}
-  data-animate={animationType || undefined}
-  data-animate-delay={animateDelay || undefined}
+  class:list={[
+    'logo-cloud-block skip py-12 md:py-16 overflow-x-hidden',
+    (variant === 'marquee' || variant === 'simple') && marqueeReduceMotion === 'override' && 'logo-cloud-marquee-force',
+    className,
+    wrapperClass,
+  ]}
+  data-animate={(variant === 'marquee' || variant === 'simple') ? undefined : (animationType || undefined)}
+  data-animate-delay={(variant === 'marquee' || variant === 'simple') ? undefined : (animateDelay || undefined)}
 >
   <div class="">
     {(title || description) && (
@@ -373,59 +381,34 @@ const gridClass = columnClasses[columns] || columnClasses[6];
 </section>
 
 {(variant === 'marquee' || variant === 'simple') && (
-  <>
-    <style is:global>
-      .logo-cloud-block .animate-marquee {
-        will-change: transform;
-        -webkit-backface-visibility: hidden;
-        backface-visibility: hidden;
+  <style is:global>
+    /* CSS animation runs on compositor thread – more reliable on real mobile devices than rAF */
+    @keyframes logo-cloud-marquee {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-33.333%, 0, 0); }
+    }
+
+    .logo-cloud-block .animate-marquee {
+      animation: logo-cloud-marquee 10s linear infinite;
+      -webkit-animation: logo-cloud-marquee 10s linear infinite;
+      will-change: transform;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+
+    .logo-cloud-block .animate-marquee--right {
+      animation-direction: reverse;
+    }
+
+    .logo-cloud-block .logo-cloud-marquee:hover .animate-marquee {
+      animation-play-state: paused;
+    }
+
+    /* Respect reduced motion; .logo-cloud-marquee-force overrides for testing */
+    @media (prefers-reduced-motion: reduce) {
+      .logo-cloud-block:not(.logo-cloud-marquee-force) .animate-marquee {
+        animation: none;
       }
-    </style>
-    <script>
-      (function initLogoCloudMarquee() {
-        if (typeof document === "undefined") return;
-        const run = () => {
-          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-          const containers = document.querySelectorAll(".logo-cloud-block .logo-cloud-marquee");
-        const duration = 10000; // 10s per full cycle
-
-        containers.forEach((container) => {
-          const track = container.querySelector(".animate-marquee") as HTMLElement;
-          if (!track) return;
-
-          const isRight = track.classList.contains("animate-marquee--right");
-          let startTime: number | null = null;
-          let rafId: number;
-
-          const animate = (time: number) => {
-            if (startTime === null) startTime = time;
-            const elapsed = (time - startTime) % duration;
-            const t = elapsed / duration;
-            // t 0→1; left: offset 0→W/3; right: offset W/3→0 (seamless loop, 3 copies)
-            const trackWidth = track.scrollWidth;
-            const offset = isRight ? ((1 - t) * trackWidth) / 3 : (t * trackWidth) / 3;
-            track.style.transform = `translate3d(${-offset}px, 0, 0)`;
-            rafId = requestAnimationFrame(animate);
-          };
-
-          rafId = requestAnimationFrame(animate);
-
-          const pause = () => cancelAnimationFrame(rafId);
-          const resume = () => {
-            startTime = null;
-            rafId = requestAnimationFrame(animate);
-          };
-          container.addEventListener("mouseenter", pause);
-          container.addEventListener("mouseleave", resume);
-        });
-        };
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", run);
-        } else {
-          run();
-        }
-      })();
-    </script>
-  </>
+    }
+  </style>
 )}

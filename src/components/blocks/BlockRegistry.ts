@@ -212,6 +212,11 @@ export const blockRegistry: Record<string, BlockDefinition> = {
         default: "left",
         description: "Marquee direction: left or right (only when variant=marquee)",
       },
+      marqueeReduceMotion: {
+        type: "string",
+        default: "respect",
+        description: "Override prefers-reduced-motion for marquee on devices with Reduce Motion (use 'override' to test)",
+      },
       logos: { type: "string", description: "JSON array of logos [{src, alt, href}]" },
       wrapperClass: {
         type: "string",
