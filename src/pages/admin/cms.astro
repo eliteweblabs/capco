@@ -1788,6 +1788,18 @@ You can embed components:
         console.error("CMS page save error:", error);
       }
     });
+
+    // Cmd+S / Ctrl+S to save when page editor is visible
+    document.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        const formEl = document.getElementById("page-form");
+        const formContainerEl = document.getElementById("page-editor-form-container");
+        if (formEl && formContainerEl && formContainerEl.offsetParent !== null) {
+          e.preventDefault();
+          formEl.requestSubmit();
+        }
+      }
+    });
   }
 
   // Initialize on DOM ready

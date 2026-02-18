@@ -10,11 +10,17 @@
  * - Add data-animate-delay="200" for custom delays
  * - Add data-animate-duration="slow" for slower animations
  *
+ * Auto main content: p, h1-h6, li, img, blockquote, figcaption, b, i inside
+ * <main> are automatically tagged with data-animate="fade-up-subtle" (unless
+ * they already have data-animate). Skip with data-animate-main="false" on main.
+ * Add class "skip" to elements or their container to opt out (e.g. logos with grayscale).
+ *
  * Animation types:
  * - fade-blur-scale (default): Blur + scale + fade
  * - fade-blur: Blur + fade
  * - fade-scale: Scale + fade
  * - fade-up: Slide up + fade
+ * - fade-up-subtle: Slight slide up + fade (12px)
  * - fade-up-blur: Slide up + blur + fade
  * - fade-left: Slide from left + fade
  * - fade-right: Slide from right + fade
@@ -45,10 +51,32 @@ class ScrollAnimations {
   }
 
   /**
+   * Tag content elements inside main with data-animate for automatic
+   * slide-up fade-in. Skips main with data-animate-main="false".
+   */
+  private tagMainContentForAnimation(): void {
+    const main = document.querySelector("main");
+    if (!main || main.getAttribute("data-animate-main") === "false") return;
+
+    const selector =
+      "p, h1, h2, h3, h4, h5, h6, li, img, blockquote, figcaption, b, i";
+    const elements = main.querySelectorAll(selector);
+
+    elements.forEach((el) => {
+      if (el.hasAttribute("data-animate")) return;
+      const htmlEl = el as HTMLElement;
+      if (htmlEl.classList?.contains("skip") || htmlEl.closest(".skip")) return;
+      htmlEl.dataset.animate = "fade-up-subtle";
+    });
+  }
+
+  /**
    * Initialize the scroll animations
    */
   init(): void {
     if (this.initialized) return;
+
+    this.tagMainContentForAnimation();
 
     // Check for reduced motion preference
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -131,6 +159,7 @@ class ScrollAnimations {
    * Refresh observer for dynamically added elements
    */
   refresh(): void {
+    this.tagMainContentForAnimation();
     if (this.observer) {
       this.observeElements();
     }

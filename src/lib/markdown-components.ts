@@ -246,8 +246,8 @@ function findSelfClosingTagEnd(content: string, startIndex: number): number {
 
 /**
  * Parse props from attribute string
- * Example: 'lat="37.7749" lng="-122.4194" zoom="12"'
- * Supports: key="value with spaces" key='value' key=value
+ * Example: 'lat="37.7749" lng="-122.4194" cal-link="rothco/30min"'
+ * Supports: key="value" key='value' key=value, kebab-case (cal-link) → camelCase (calLink)
  */
 function parseProps(propsString: string): Record<string, string> {
   const props: Record<string, string> = {};
@@ -256,8 +256,8 @@ function parseProps(propsString: string): Record<string, string> {
     return props;
   }
 
-  // Match key="value" (value can contain \" for escaped quotes), key='value', or key=unquoted
-  const propRegex = /(\w+)=(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|([^\s>]+))/g;
+  // Match key="value" - key can include hyphens (cal-link), value can contain \" for escaped quotes
+  const propRegex = /([\w-]+)=(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|([^\s>]+))/g;
 
   let match;
   while ((match = propRegex.exec(propsString)) !== null) {
@@ -266,7 +266,8 @@ function parseProps(propsString: string): Record<string, string> {
     if (doubleQuoted != null || singleQuoted != null) {
       value = value.replace(/\\(.)/g, "$1"); // unescape \"
     }
-    props[key] = value;
+    const camelKey = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    props[camelKey] = value;
   }
 
   return props;

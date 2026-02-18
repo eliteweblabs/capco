@@ -157,9 +157,9 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
           parts.forEach((part) => {
             if (!part) return;
             if (/^\s+$/.test(part)) {
-              // Spaces: output each to preserve them
-              for (const char of part) {
-                instance.type(`<span class="typewriter-char">${escapeHtml(char)}</span>`);
+              // Spaces: output as &nbsp; without span - wrapping in typewriter-char causes visible blocks/underscores
+              for (let i = 0; i < part.length; i++) {
+                instance.type("&nbsp;");
               }
             } else {
               // Word: wrap in typewriter-word to prevent mid-word breaks
@@ -224,8 +224,8 @@ function buildFullTypewriterHtml(text: string, element: HTMLElement): string {
           parts.forEach((part) => {
             if (!part) return;
             if (/^\s+$/.test(part)) {
-              for (const char of part) {
-                html += `<span class="typewriter-char">${escapeHtml(char)}</span>`;
+              for (let i = 0; i < part.length; i++) {
+                html += "&nbsp;";
               }
             } else {
               html += '<span class="typewriter-word">';

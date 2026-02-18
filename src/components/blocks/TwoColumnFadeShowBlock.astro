@@ -11,7 +11,7 @@
  *   image2="https://example.com/2.jpg"
  *   image3="https://example.com/3.jpg"
  *   interval="5000"
- *   fadeDuration="1200"
+ *   fadeDuration="1500"
  *   rightContent="<h2>Built With Discipline.</h2><p>More content</p>"
  *   ratio="1:1"
  *   maxWidth="full"
@@ -39,7 +39,7 @@ interface Props {
   image12?: string;
   /** Duration per image in ms (default 4000) */
   interval?: number | string;
-  /** Crossfade duration in ms (default 1200) */
+  /** Crossfade duration in ms (default 1500) */
   fadeDuration?: number | string;
   /** Right column content (HTML string for CMS) */
   rightContent?: string;
@@ -67,8 +67,8 @@ const imageUrls = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
   .map((i) => props[`image${i}` as keyof typeof props] as string | undefined)
   .filter((u): u is string => Boolean(u));
 
-const interval = Math.max(1000, parseInt(String(props.interval ?? 4000), 10) || 4000);
-const fadeDuration = Math.max(200, parseInt(String(props.fadeDuration ?? 1200), 10) || 1200);
+const interval = Math.max(1000, parseInt(String(props.interval ?? 2000), 10) || 2000);
+const fadeDuration = Math.max(200, parseInt(String(props.fadeDuration ?? 1500), 10) || 1500);
 const ratio = props.ratio ?? "1:1";
 const maxWidth = props.maxWidth ?? "full";
 const gap = props.gap ?? "medium";
@@ -215,14 +215,8 @@ const mobileOrder =
           const vh = window.innerHeight;
           const topPx = (container as HTMLElement).getBoundingClientRect().top;
           const topVh = topPx / vh;
-          const progress = Math.max(
-            0,
-            Math.min(1, (zoneEnd - topVh) / (zoneEnd - zoneStart))
-          );
-          const idx = Math.min(
-            layers.length - 1,
-            Math.floor(progress * layers.length)
-          );
+          const progress = Math.max(0, Math.min(1, (zoneEnd - topVh) / (zoneEnd - zoneStart)));
+          const idx = Math.min(layers.length - 1, Math.floor(progress * layers.length));
           layers.forEach((l, i) => {
             l.style.opacity = i === idx ? "1" : "0";
           });
