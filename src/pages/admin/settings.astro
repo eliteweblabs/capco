@@ -89,6 +89,9 @@ const settings = {
   // Custom CSS (advanced customization)
   customCss: companyData.customCss || "",
 
+  // Custom Footer HTML (injected into footer)
+  customFooterHtml: companyData.customFooterHtml || "",
+
   // Logo Classes (for styling the logo)
   logoClasses: companyData.logoClasses || "",
 };
@@ -425,6 +428,52 @@ const settings = {
             <p class="mt-1 text-xs text-gray-500">
               Enter custom CSS rules. Changes take effect immediately after saving. Use CSS
               variables like <code>var(--color-primary-500)</code> for consistent theming.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Footer HTML -->
+      <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-900">
+        <h2 class="mb-2 text-xl font-semibold">Custom Footer HTML</h2>
+        <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+          Inject custom HTML into the footer. Use for scripts, tracking pixels, or extra links.
+        </p>
+        <div
+          class="mb-4 rounded border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-900/20"
+        >
+          <p class="text-xs text-yellow-800 dark:text-yellow-200">
+            <strong>⚠️ Advanced:</strong> Only use trusted HTML. Malicious script injection can
+            compromise your site. HTML is rendered as-is.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label for="custom_footer_html" class="mb-2 block text-sm font-medium">
+              Custom Footer HTML
+              {
+                isFromDatabase("customFooterHtml") && (
+                  <span
+                    class="ml-2 text-xs text-green-600 dark:text-green-400"
+                    title="Stored in database"
+                  >
+                    💾
+                  </span>
+                )
+              }
+            </label>
+            <textarea
+              id="custom_footer_html"
+              name="custom_footer_html"
+              rows="6"
+              class={globalInputClasses + " font-mono text-xs"}
+              placeholder={`<!-- Example: Extra links -->
+<div class="text-center text-xs text-gray-500">
+  <a href="/privacy">Privacy</a> • <a href="/terms">Terms</a>
+</div>`}>{settings.customFooterHtml}</textarea
+            >
+            <p class="mt-1 text-xs text-gray-500">
+              HTML is injected inside the footer. Changes take effect immediately after saving.
             </p>
           </div>
         </div>
@@ -1344,6 +1393,7 @@ const settings = {
       plausible_tracking_script: "plausibleTrackingScript",
       social_networks: "socialNetworks",
       custom_css: "customCss",
+      custom_footer_html: "customFooterHtml",
     };
 
     // Validation errors

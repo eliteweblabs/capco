@@ -130,6 +130,9 @@ export const globalCompanyData = async () => {
     // Custom CSS (allows per-client CSS overrides and customization)
     customCss: get("customCss") || "",
 
+    // Custom Footer HTML (injected into footer)
+    customFooterHtml: get("customFooterHtml") || "",
+
     // Virtual assistant name (contact form, voice, etc.)
     virtualAssistantName: get("virtualAssistantName") || "",
   };

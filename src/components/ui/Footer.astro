@@ -17,6 +17,7 @@ interface Props {
   isContactPageResult?: boolean;
   currentUser?: any;
   hideFooter?: boolean;
+  customFooterHtml?: string;
   // socialNetworks?: SocialLink[];
 }
 
@@ -30,12 +31,13 @@ const {
   isAuthPageResult,
   isContactPageResult,
   currentUser,
+  customFooterHtml,
 } = Astro.props;
 ---
 
 <footer
   id="reveal-footer"
-  class="color-background fixed bottom-0 left-0 right-0 flex h-16 items-center justify-center border-t border-gray-200 px-4 dark:border-gray-800"
+  class="color-background fixed bottom-0 left-0 right-0 flex items-center justify-center border-t border-gray-200 px-4 dark:border-gray-800"
   data-app-footer
 >
   <span
@@ -79,6 +81,11 @@ const {
   )} -->
 
   <div class="align-center w-full justify-center space-x-3">
+    {
+      customFooterHtml && customFooterHtml.trim() && (
+        <div class="custom-footer-html w-full" set:html={customFooterHtml} />
+      )
+    }
     <div class="flex flex-wrap items-center justify-center gap-4 md:justify-end">
       <!-- Certificate images temporarily disabled to fix console errors -->
       <img

@@ -27,7 +27,15 @@ interface Props {
   statusOptions?: Array<{ value: string; label: string }>;
   mainClasses?: string;
   /** Layout: default | fullwidth | minimal | centered | fullscreen | fullform | reveal-footer | two-column. Drives centering and fullscreen scroll. fullform = full h/w, no reveal-text. Reveal-footer (min-h 100dvh, fixed footer on scroll) is applied site-wide. */
-  layout?: "default" | "fullwidth" | "minimal" | "centered" | "fullscreen" | "fullform" | "reveal-footer" | "two-column";
+  layout?:
+    | "default"
+    | "fullwidth"
+    | "minimal"
+    | "centered"
+    | "fullscreen"
+    | "fullform"
+    | "reveal-footer"
+    | "two-column";
   mask?: string;
   horizontalScroll?: boolean;
   hideFooter?: boolean;
@@ -42,17 +50,19 @@ const {
   id = undefined,
   statusData = undefined,
   mainClasses = "",
-  layout = 'default',
+  layout = "default",
   mask = "center",
   horizontalScroll = false,
   hideFooter = false,
 } = Astro.props;
 
 const stripHtml = (s: string | undefined | null): string =>
-  (s ?? "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  (s ?? "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 // Derive layout behavior from layout prop only
-
 
 // Effective template for data-template
 
@@ -75,6 +85,7 @@ const {
   plausibleTrackingScript,
   ogImage,
   customCss,
+  customFooterHtml,
 } = await globalCompanyData();
 
 const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
@@ -197,8 +208,6 @@ import SpeedDial from "../ui/SpeedDial.astro";
 import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro";
 
 const isAdmin = currentUser?.profile?.role === "Admin";
-
-
 ---
 
 <!doctype html>
@@ -420,7 +429,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
 
     <!-- Theme detection - MUST be first to be available for all components -->
     <script is:inline>
-      (function() {
+      (function () {
         // Initialize dark mode FIRST to prevent flash (IIFE avoids duplicate-declaration if script is inlined twice)
         var hasExplicitPreference = localStorage.getItem("color-theme") !== null;
 
@@ -428,7 +437,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           document.cookie = "theme=" + theme + "; path=/; max-age=31536000; SameSite=Lax";
           console.log("[THEME-CLIENT] Cookie set to:", theme);
           console.log("[THEME-CLIENT] All cookies:", document.cookie);
-          var cookies = document.cookie.split(";").reduce(function(acc, cookie) {
+          var cookies = document.cookie.split(";").reduce(function (acc, cookie) {
             var parts = cookie.trim().split("=");
             acc[parts[0]] = parts[1];
             return acc;
@@ -453,7 +462,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           applyTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
         }
 
-        window.isDarkMode = function() {
+        window.isDarkMode = function () {
           var hasDarkClass = document.documentElement.classList.contains("dark");
           var localStorageTheme = localStorage.getItem("color-theme");
           var systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -484,7 +493,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     </script>
 
     <!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
-    <style is:global set:html={criticalColorsCss} />
+    <style is:global set:html={criticalColorsCss}></style>
 
     <!-- Dynamic Color & Font Injection - MUST run BEFORE CSS is parsed to prevent flash -->
     <script
@@ -723,10 +732,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           <meta property="og:image:type" content={ogImageType} />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
-          <meta
-            property="og:image:alt"
-            content={globalCompanyName + " - " + safeDescription}
-          />
+          <meta property="og:image:alt" content={globalCompanyName + " - " + safeDescription} />
         </>
       )
     }
@@ -738,10 +744,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     {ogImageSrc && <meta name="twitter:image" content={ogImageSrc} />}
     {
       ogImageSrc && (
-        <meta
-          name="twitter:image:alt"
-          content={globalCompanyName + " - " + safeDescription}
-        />
+        <meta name="twitter:image:alt" content={globalCompanyName + " - " + safeDescription} />
       )
     }
 
@@ -860,7 +863,11 @@ const isAdmin = currentUser?.profile?.role === "Admin";
       })();
     </script>
     <script>
-      import { initTypewriterTexts, triggerActiveStepTypewriter, skipActiveTypewriterToEnd } from "../../scripts/typewriter-text";
+      import {
+        initTypewriterTexts,
+        triggerActiveStepTypewriter,
+        skipActiveTypewriterToEnd,
+      } from "../../scripts/typewriter-text";
       window.initTypewriterTexts = initTypewriterTexts;
       window.triggerActiveStepTypewriter = triggerActiveStepTypewriter;
       window.skipActiveTypewriterToEnd = skipActiveTypewriterToEnd;
@@ -869,7 +876,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     <!-- Set global user data for client-side components -->
 
     {/* SPA disabled: persist CMS colors for re-apply after client navigation */}
-      <!-- {/* {isBackend && (
+    <!-- {/* {isBackend && (
         <>
           <script id="cms-colors" type="application/json" set:html={JSON.stringify({
             primaryColor: primaryColor || "#825BDD",
@@ -895,26 +902,19 @@ const isAdmin = currentUser?.profile?.role === "Admin";
       // )} */} -->
   </head>
 
-  <body
-    class:list={[
-      "antialiased touch-manipulation bg-gray-100 dark:bg-gray-900"   
-    ]}
-  >
-
+  <body class:list={["touch-manipulation bg-gray-100 antialiased dark:bg-gray-900"]}>
     {/* SPA disabled: re-apply theme and astro:after-swap/astro:page-load scripts */}
     {/* SPA disabled: debug and runPageInits scripts */}
-
 
     <UnifiedNotification />
 
     <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
 
     <!-- <DebugPanel {debugData} {currentRole} /> -->
-    
-    <FeedbackPanel {currentUser} />
-  
 
-    <div class="flex flex-col h-dvh md:min-h-0 overflow-hidden" data-template={layout}>
+    <FeedbackPanel {currentUser} />
+
+    <div class="flex h-dvh flex-col overflow-hidden md:min-h-0" data-template={layout}>
       <Navbar
         {globalIconButtonClasses}
         {desktopNavigationHTML}
@@ -932,119 +932,109 @@ const isAdmin = currentUser?.profile?.role === "Admin";
         {hideFooter}
       />
 
-      <Aside
-      {currentUser}
-      {primaryTextClasses}
-      {mobileNavigationHTML}/>
+      <Aside {currentUser} {primaryTextClasses} {mobileNavigationHTML} />
 
       <!-- Scrolling pane: flex-1 min-h-0 constrains height so this is the scroll container (not body). translateY on mobile for reveal effect. fullform: overscroll-none to prevent pullable rubber-band. -->
       <div
         id="reveal-scroll"
         class:list={[
-          "scrollbar-hide relative z-50 flex-1 min-h-0 overflow-y-auto bg-gray-100 dark:bg-gray-900 touch-none",
+          "relative z-50 min-h-0 flex-1 touch-pan-y overflow-y-auto bg-gray-100 scrollbar-hide dark:bg-gray-900",
           layout === "fullform" ? "overscroll-none" : "overscroll-y-contain",
         ]}
       >
+        <div
+          id="main-content"
+          class:list={[
+            // "color-background",
+            // "flex-1 min-w-0",
+            currentUser ? "transition-duration-[350ms] ease-in-out" : "",
 
-      <div
-        id="main-content"
-        class:list={[
-          // "color-background",
-          // "flex-1 min-w-0",
-          currentUser ? "transition-duration-[350ms] ease-in-out" : "",
+            // (layout === "default"  || layout === "minimal" || !layout) &&
+            //   "",
+            mainClasses,
+            layout === "default" && "px-4 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8 lg:px-10 lg:pt-10",
+          ]}
+          style={currentUser ? "transition-duration: 350ms;" : undefined}
+        >
+          <main>
+            <slot />
+          </main>
 
-          // (layout === "default"  || layout === "minimal" || !layout) &&
-          //   "",
-          mainClasses,
-          layout === "default" && "px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10",
-        ]}
-        style={currentUser ? "transition-duration: 350ms;" : undefined}
-        
-        
-      >
-        <main>
-          <slot />
-        </main>
-      
-     
-     
- 
-      {!isAuthPageResult && layout !== "fullform" && (
-
-<div class="my-6 text-xs" >
-        <ul class="align-center flex justify-center">
-       
-          <li>
-            <Tooltip
-              text={`${new Date().getFullYear().toString()} ${globalCompanyName}. 
-              All rights reserved.`}
-              ><span class="me-6 no-underline hover:underline">©</span>
-            </Tooltip>
-          </li>
-          <li>
-            <a href="/privacy" class="me-6 no-underline hover:underline"> privacy </a>
-          </li>
-          <li>
-            <a href="/terms" class="me-6 no-underline hover:underline"> terms </a>
-          </li>
-          <li>
-            <a href="/cookies" class="no-underline hover:underline"> cookie </a>
-          </li>
-        </ul>
-          </div>
-
-      )}
-
+          {
+            !isAuthPageResult && layout !== "fullform" && (
+              <div class="my-6 text-xs">
+                <ul class="align-center flex justify-center">
+                  <li>
+                    <Tooltip
+                      text={`${new Date().getFullYear().toString()} ${globalCompanyName}. All rights reserved.`}
+                    >
+                      <span class="me-6 no-underline hover:underline">©</span>
+                    </Tooltip>
+                  </li>
+                  <li>
+                    <a href="/privacy" class="me-6 no-underline hover:underline">
+                      {" "}
+                      privacy{" "}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/terms" class="me-6 no-underline hover:underline">
+                      {" "}
+                      terms{" "}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/cookies" class="no-underline hover:underline">
+                      {" "}
+                      cookie{" "}
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            )
+          }
         </div>
-
-    
       </div>
       <Footer
-      {isAuthPageResult}
-      {isContactPageResult}
-      {currentUser}
-      {isBackend}
-      {globalIconButtonClasses}
-      {globalCompanyName}
-      {isBackend}
-      {globalCompanyPhone}
-      {primaryTextClasses}
-      {secondaryTextClasses}
-      {globalInputClasses}
-      {hideFooter}
-    />
+        {isAuthPageResult}
+        {isContactPageResult}
+        {currentUser}
+        {isBackend}
+        {globalIconButtonClasses}
+        {globalCompanyName}
+        {isBackend}
+        {globalCompanyPhone}
+        {primaryTextClasses}
+        {secondaryTextClasses}
+        {globalInputClasses}
+        {customFooterHtml}
+        {hideFooter}
+      />
 
-    <div id="action-buttons" class="fixed bottom-8 right-4 hide-on-form-focus z-[500]">
-      {isAdmin ? (
-        <AdminVoiceAssistantWidget
-          {currentUser}
-          {globalCompanyPhone}
-        />
-      ) : (!isAuthPageResult && !isContactPageResult) && (
-        <SpeedDial
-          {globalCompanyPhone}
-          currentUser={currentUser || undefined}
-          {isBackend}
-          {primaryTextClasses}
-          {secondaryTextClasses}
-          {globalInputClasses}
-          {globalCompanyName}
-        />
-      )}
+      <div id="action-buttons" class="hide-on-form-focus fixed bottom-8 right-4 z-[500]">
+        {
+          isAdmin ? (
+            <AdminVoiceAssistantWidget {currentUser} {globalCompanyPhone} />
+          ) : (
+            !isAuthPageResult &&
+            !isContactPageResult && (
+              <SpeedDial
+                {globalCompanyPhone}
+                currentUser={currentUser || undefined}
+                {isBackend}
+                {primaryTextClasses}
+                {secondaryTextClasses}
+                {globalInputClasses}
+                {globalCompanyName}
+              />
+            )
+          )
+        }
+      </div>
     </div>
 
-  </div>
-    <!-- </div> -->
-
- 
-
-
-
-
-    
     <CookieBanner />
 
-    <!-- Prevent Flowbite from initializing modals that don't exist -->
     <!-- Flowbite JavaScript -->
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
 
@@ -1078,7 +1068,8 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           wasInRange = inRange;
 
           var scale = scaleFromPercent(p);
-          if (overscrollScaleEls.length === 0) overscrollScaleEls = Array.from(document.querySelectorAll(".overscroll-scale"));
+          if (overscrollScaleEls.length === 0)
+            overscrollScaleEls = Array.from(document.querySelectorAll(".overscroll-scale"));
           overscrollScaleEls.forEach(function (el) {
             el.style.transform = "scale(" + scale + ")";
           });
@@ -1115,7 +1106,9 @@ const isAdmin = currentUser?.profile?.role === "Admin";
 
         // Initialize notification count only if user is authenticated
         try {
-          const notificationBell = document.querySelector('[data-dropdown-toggle="notification-dropdown"]');
+          const notificationBell = document.querySelector(
+            '[data-dropdown-toggle="notification-dropdown"]'
+          );
           if (
             notificationBell &&
             (notificationBell as HTMLElement).dataset?.userId &&
@@ -1162,14 +1155,19 @@ const isAdmin = currentUser?.profile?.role === "Admin";
               (target as HTMLElement).style.display = "none";
 
               // Create a fallback element if it doesn't exist
-              if (!(target as HTMLElement).nextElementSibling?.classList.contains("image-fallback")) {
+              if (
+                !(target as HTMLElement).nextElementSibling?.classList.contains("image-fallback")
+              ) {
                 const fallback = document.createElement("div");
                 fallback.className =
                   "image-fallback bg-gray-200 flex items-center justify-center text-gray-500";
                 fallback.style.width = (target as HTMLElement).style.width || "100%";
                 fallback.style.height = (target as HTMLElement).style.height || "100%";
                 fallback.innerHTML = "📷";
-                (target as HTMLElement).parentNode?.insertBefore(fallback, (target as HTMLElement).nextSibling);
+                (target as HTMLElement).parentNode?.insertBefore(
+                  fallback,
+                  (target as HTMLElement).nextSibling
+                );
               }
             }
           });
@@ -1191,14 +1189,21 @@ const isAdmin = currentUser?.profile?.role === "Admin";
                       console.warn("⚠️ [IMAGE-ERROR] Supabase storage image failed to load:", src);
                       (target as HTMLElement).style.display = "none";
 
-                      if (!(target as HTMLElement).nextElementSibling?.classList.contains("image-fallback")) {
+                      if (
+                        !(target as HTMLElement).nextElementSibling?.classList.contains(
+                          "image-fallback"
+                        )
+                      ) {
                         const fallback = document.createElement("div");
                         fallback.className =
                           "image-fallback bg-gray-200 flex items-center justify-center text-gray-500";
                         fallback.style.width = (target as HTMLElement).style.width || "100%";
                         fallback.style.height = (target as HTMLElement).style.height || "100%";
                         fallback.innerHTML = "📷";
-                        (target as HTMLElement).parentNode?.insertBefore(fallback, (target as HTMLElement).nextSibling);
+                        (target as HTMLElement).parentNode?.insertBefore(
+                          fallback,
+                          (target as HTMLElement).nextSibling
+                        );
                       }
                     }
                   });
@@ -1207,8 +1212,6 @@ const isAdmin = currentUser?.profile?.role === "Admin";
             });
           });
         });
-
-
 
         observer.observe(document.body, {
           childList: true,
@@ -1281,24 +1284,23 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     </script> -->
 
     {/* Load refresh-manager for Staff/Admin only - keeps project/user data fresh across pages */}
-    {(currentRole === "Admin" || currentRole === "Staff") && (
-      <script>
-        import "../../lib/refresh-manager.ts";
-      </script>
-    )}
+    {
+      (currentRole === "Admin" || currentRole === "Staff") && (
+        <script>import "../../lib/refresh-manager.ts";</script>
+      )
+    }
 
     {/* Project Refresh Manager (DISABLED - use generic refresh-manager.ts instead) */}
-    {/* <script>
+    {
+      /* <script>
       import "../../lib/project-refresh-manager";
-    </script> */}
+    </script> */
+    }
 
     <!-- Global Modal System -->
     <script>
       import "../../lib/modal-global";
     </script>
-
-
-
 
     <!-- Plausible Analytics Script -->
     <!-- {plausibleTrackingScript && <Fragment set:html={plausibleTrackingScript} />} -->

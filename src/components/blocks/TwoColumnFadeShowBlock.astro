@@ -185,15 +185,17 @@ const mobileOrder =
 
   function initFadeshow(root?: Document | Element) {
     const scope = root ?? document;
-    scope.querySelectorAll("[data-fadeshow]").forEach((container) => {
+    const containers = scope.querySelectorAll("[data-fadeshow]");
+    console.log("[fadeshow] init, containers found:", containers.length);
+    containers.forEach((container, cIdx) => {
       if ((container as HTMLElement).dataset.fadeshowInit) return;
       (container as HTMLElement).dataset.fadeshowInit = "1";
       const layers = container.querySelectorAll<HTMLElement>("[data-fadeshow-layer]");
       if (layers.length <= 1) return;
+      const scrollMobile = container.getAttribute("data-fadeshow-scroll-mobile") === "true";
+      console.log("[fadeshow]", cIdx, "layers:", layers.length, "scrollMobile:", scrollMobile);
       const fadeMs = parseInt(container.getAttribute("data-fade-duration") ?? "1200", 10);
       (container as HTMLElement).style.setProperty("--fadeshow-duration", `${fadeMs}ms`);
-
-      const scrollMobile = container.getAttribute("data-fadeshow-scroll-mobile") === "true";
 
       const runTimer = () => {
         const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
