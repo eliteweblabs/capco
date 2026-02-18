@@ -1437,13 +1437,12 @@ export function createMultiStepFormHandler(
             );
           }
 
-          // Redirect if specified
-          if (result.redirect) {
-            console.log("[MULTISTEP-FORM] Redirecting to:", result.redirect);
-            setTimeout(() => {
-              window.location.href = result.redirect;
-            }, 2000);
-          }
+          // Redirect to home (or API/formConfig override)
+          const redirectUrl = result.redirect || options.formConfig?.successRedirect || "/";
+          console.log("[MULTISTEP-FORM] Redirecting to:", redirectUrl);
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 3000);
         }
       } catch (error) {
         console.error("[MULTISTEP-FORM] Submission error:", error);
@@ -1453,6 +1452,10 @@ export function createMultiStepFormHandler(
         } else if ((window as any).showNotice) {
           (window as any).showNotice("error", "Submission Failed", errMsg, 8000);
         }
+        // Redirect to home after error
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 3000);
       } finally {
         console.log("[MULTISTEP-FORM] Submission complete, resetting state");
         isSubmitting = false;
@@ -1961,9 +1964,8 @@ export function initializeStandardForm(
         );
       }
 
-      if (result.redirect) {
-        setTimeout(() => (window.location.href = result.redirect), 2000);
-      }
+      const redirectUrl = result.redirect || formConfig?.successRedirect || "/";
+      setTimeout(() => (window.location.href = redirectUrl), 3000);
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : "An unexpected error occurred";
       if (formConfig?.responseType === "inline") {
@@ -1987,6 +1989,7 @@ export function initializeStandardForm(
       } else if ((window as any).showNotice) {
         (window as any).showNotice("error", "Submission Failed", errMsg, 8000);
       }
+      setTimeout(() => (window.location.href = "/"), 3000);
     } finally {
       isSubmitting = false;
       if (submitBtn) submitBtn.disabled = false;

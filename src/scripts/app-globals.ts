@@ -844,22 +844,20 @@ let isDeleting = false; // Flag to prevent multiple delete operations
  * - <0: overscroll past top (e.g. -5, -10)
  * Uses #reveal-scroll when present (layout scroll container), otherwise window/document.
  *
- * Overscroll normalization: Uses window.innerHeight (full viewport) instead of
- * scrollEl.clientHeight so the overscroll ramp matches the user's visual reference
- * (content scrolling under fixed header/footer). scrollEl.clientHeight is smaller
- * (content area only), which made overscroll effects ramp too fast.
+ * Overscroll ramp: For #reveal-scroll layout, uses scrollEl.clientHeight so scale effects
+ * (header cover, footer translate) respond quickly to overscroll. innerHeight makes ramp too slow.
  */
 (window as any).getOverscrollPercent = function (): number {
   const scrollEl = document.getElementById("reveal-scroll");
   const useEl = scrollEl && scrollEl.scrollHeight > scrollEl.clientHeight;
-  const viewportH = window.innerHeight || 1;
+  const rampH = useEl && scrollEl ? scrollEl.clientHeight || 1 : window.innerHeight || 1;
 
   if (useEl && scrollEl) {
     const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
     if (maxScroll <= 0) return 100;
     const top = scrollEl.scrollTop;
-    if (top > maxScroll) return 100 + ((top - maxScroll) / viewportH) * 100;
-    if (top < 0) return (top / viewportH) * 100;
+    if (top > maxScroll) return 100 + ((top - maxScroll) / rampH) * 100;
+    if (top < 0) return (top / rampH) * 100;
     return (top / maxScroll) * 100;
   }
 
@@ -926,15 +924,15 @@ let isDeleting = false; // Flag to prevent multiple delete operations
     };
   }
 
-  const viewportH = window.innerHeight || 1;
+  const rampH = useEl && scrollEl ? scrollEl.clientHeight || 1 : window.innerHeight || 1;
 
   function getContainerPercent(): number | null {
     if (!useEl || !scrollEl) return null;
     const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
     if (maxScroll <= 0) return 100;
     const top = scrollEl.scrollTop;
-    if (top > maxScroll) return 100 + ((top - maxScroll) / viewportH) * 100;
-    if (top < 0) return (top / viewportH) * 100;
+    if (top > maxScroll) return 100 + ((top - maxScroll) / rampH) * 100;
+    if (top < 0) return (top / rampH) * 100;
     return (top / maxScroll) * 100;
   }
 
@@ -971,7 +969,7 @@ let isDeleting = false; // Flag to prevent multiple delete operations
       const justStarted = overscrollGestureActive !== "bottom";
       overscrollGestureActive = "bottom";
       wheelAccum += ev.deltaY;
-      const raw = (wheelAccum / viewportH) * 100;
+      const raw = (wheelAccum / rampH) * 100;
       const capped = Math.min(WHEEL_CAP, Math.max(0, raw));
       const percent = Math.round((100 + capped) * 10) / 10;
       if (justStarted) callback(percent, "wheel");
@@ -979,7 +977,7 @@ let isDeleting = false; // Flag to prevent multiple delete operations
       const justStarted = overscrollGestureActive !== "top";
       overscrollGestureActive = "top";
       wheelAccum += ev.deltaY;
-      const raw = (wheelAccum / viewportH) * 100;
+      const raw = (wheelAccum / rampH) * 100;
       const capped = Math.max(-WHEEL_CAP, Math.min(0, raw));
       const percent = Math.round(capped * 10) / 10;
       if (justStarted) callback(percent, "wheel");

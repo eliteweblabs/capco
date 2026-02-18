@@ -83,9 +83,9 @@ async function loadCompanyData() {
       return acc;
     }, {});
 
-    // Helper to get setting with env fallback
-    const get = (key, envKey) => {
-      const dbValue = settings[key];
+    // Helper to get setting with env fallback (try camelCase and snake_case for DB compatibility)
+    const get = (key, envKey, altKey) => {
+      const dbValue = settings[key] || (altKey && settings[altKey]);
       if (dbValue) return dbValue;
       if (envKey && process.env[envKey]) return process.env[envKey];
       return "";
@@ -93,14 +93,14 @@ async function loadCompanyData() {
 
     // Return data in same format as globalCompanyData()
     return {
-      globalCompanyName: get("companyName", "RAILWAY_PROJECT_NAME") || "Company Name Not Set",
+      globalCompanyName: get("companyName", "RAILWAY_PROJECT_NAME", "company_name") || "Company Name Not Set",
       globalCompanySlogan: get("slogan"),
       globalCompanyAddress: get("address", "GLOBAL_COMPANY_ADDRESS"),
       globalCompanyPhone: get("phone", "VAPI_PHONE_NUMBER"),
       globalCompanyEmail: get("email", "GLOBAL_COMPANY_EMAIL"),
       globalCompanyWebsite: get("website"),
-      primaryColor: get("primary_color", "GLOBAL_COLOR_PRIMARY"),
-      secondaryColor: get("secondary_color", "GLOBAL_COLOR_SECONDARY"),
+      primaryColor: get("primaryColor", "GLOBAL_COLOR_PRIMARY") || get("primary_color", "GLOBAL_COLOR_PRIMARY"),
+      secondaryColor: get("secondaryColor", "GLOBAL_COLOR_SECONDARY") || get("secondary_color", "GLOBAL_COLOR_SECONDARY"),
       fontFamily: get("font_family", "FONT_FAMILY") || "Outfit Variable",
       secondaryFontFamily: get("secondary_font_family", "FONT_FAMILY_FALLBACK") || "sans-serif",
     };
@@ -145,7 +145,7 @@ async function processManifest() {
 
   // Load global company data from CMS first, then env vars
   const globalCompanyName =
-    companyData?.globalCompanyName || getEnvVar("RAILWAY_PROJECT_NAME", "CAPCO Design Group");
+    companyData?.globalCompanyName || getEnvVar("RAILWAY_PROJECT_NAME", "Company Name Not Set");
   const globalCompanySlogan =
     companyData?.globalCompanySlogan ||
     getEnvVar("GLOBAL_COMPANY_SLOGAN", "Professional Fire Protection Plan Review & Approval");
@@ -157,6 +157,13 @@ async function processManifest() {
   const siteUrl =
     companyData?.globalCompanyWebsite ||
     getEnvVar("RAILWAY_PUBLIC_DOMAIN", "http://localhost:4321");
+
+  // Derive short name for PWA (12 chars or less; use first meaningful word(s))
+  const shortName = (() => {
+    const words = globalCompanyName.trim().split(/\s+/);
+    if (words[0] && words[0].length >= 4) return words[0];
+    return words.slice(0, 2).join(" ").slice(0, 12) || globalCompanyName.slice(0, 12) || "App";
+  })();
 
   // Load site config for PWA shortcuts (optional)
   const siteConfig = loadSiteConfig(globalCompanyName);
@@ -224,6 +231,7 @@ async function processManifest() {
     // Replace placeholders with actual values
     let processedContent = templateContent
       .replace(/\{\{RAILWAY_PROJECT_NAME\}\}/g, globalCompanyName)
+      .replace(/\{\{SHORT_NAME\}\}/g, shortName)
       .replace(/\{\{GLOBAL_COMPANY_SLOGAN\}\}/g, globalCompanySlogan)
       .replace(/\{\{YEAR\}\}/g, year)
       .replace(/\{\{GLOBAL_COLOR_PRIMARY\}\}/g, globalColorPrimary)
