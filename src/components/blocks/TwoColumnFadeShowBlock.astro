@@ -208,14 +208,15 @@ const mobileOrder =
       };
 
       const runScrollMobile = () => {
-        const zoneStart = 0.1;
-        const zoneEnd = 0.9;
-
         const update = () => {
           const vh = window.innerHeight;
-          const topPx = (container as HTMLElement).getBoundingClientRect().top;
-          const topVh = topPx / vh;
-          const progress = Math.max(0, Math.min(1, (zoneEnd - topVh) / (zoneEnd - zoneStart)));
+          const rect = (container as HTMLElement).getBoundingClientRect();
+          const blockTop = rect.top;
+          const blockHeight = rect.height;
+          // Progress 0 = block just entering (bottom at viewport bottom)
+          // Progress 1 = block just exiting (top at viewport top)
+          const scrollRange = vh + blockHeight;
+          const progress = Math.max(0, Math.min(1, (vh - blockTop) / scrollRange));
           const idx = Math.min(layers.length - 1, Math.floor(progress * layers.length));
           layers.forEach((l, i) => {
             l.style.opacity = i === idx ? "1" : "0";
