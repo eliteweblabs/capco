@@ -819,7 +819,8 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       (e) => {
         const target = e.target as HTMLElement;
         if (target.closest("button") || target.closest("a")) return;
-        const wrapper = target.closest(".input-wrapper");
+        const wrapper =
+          target.closest(".input-wrapper") ?? target.closest(".inline-address-search-wrapper");
         if (!wrapper) return;
         const input = wrapper.querySelector(
           "input:not([type=hidden]):not([readonly]), textarea, select"
@@ -982,11 +983,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
         // Add the class to trigger wrapper cascade (fields at 250ms, buttons at 500ms)
         stepContent.classList.add("typewriter-complete");
 
-        // Focus first input after cascade (for desktop; on iOS, user taps the field to open keypad)
+        // Focus first input after cascade. On touch: skip entirely.
+        // typewriter-complete fires async (transitionend/setTimeout); focus would not open iOS keypad.
+        // User taps the input wrapper → tap-to-focus runs in click handler (same gesture) → keypad opens.
+        const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
         const FOCUS_DELAY_AFTER_ANIMATIONS_MS = 150;
         let focusDone = false;
         const runFocus = () => {
-          if (focusDone) return;
+          if (focusDone || isTouch) return;
           focusDone = true;
           const focusFirstIn = (window as any).focusFirstInputIn;
           const ok = typeof focusFirstIn === "function" && focusFirstIn(stepContent);

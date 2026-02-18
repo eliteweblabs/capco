@@ -74,6 +74,23 @@ function getNestedValue(obj: any, path: string): any {
   }, obj);
 }
 
+/** Escape HTML to prevent XSS when injecting user content */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** Wrap text in a project link when projectLink is a valid project URL (not base URL or #) */
+function wrapInProjectLink(text: string, projectLink: string | null): string {
+  if (!projectLink || projectLink === "#" || !projectLink.match(/\/project\/\d+/)) return text;
+  const escaped = escapeHtml(text);
+  return `<a href="${projectLink}" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">${escaped}</a>`;
+}
+
 /**
  * Replace placeholders in a message string
  */
@@ -91,6 +108,30 @@ export async function replacePlaceholders(
 
   // Get global company data once and cache it for the entire function
   const companyData = await globalCompanyData();
+
+  // Compute project link early (for wrapping title/address in links)
+  const projectId = data?.project?.id;
+  let baseUrl: string | undefined;
+  if (request) {
+    try {
+      const url = new URL(request.url);
+      baseUrl = `${url.protocol}//${url.host}`;
+    } catch (e) {
+      console.error("🚨 [PLACEHOLDER-UTILS] Failed to parse request URL:", e);
+    }
+  }
+  if (!baseUrl && companyData?.globalCompanyWebsite) {
+    baseUrl = companyData.globalCompanyWebsite;
+  }
+  if (!baseUrl) {
+    baseUrl = "http://localhost:4321";
+  }
+  if (baseUrl && !baseUrl.startsWith("http")) {
+    baseUrl = `https://${baseUrl}`;
+  }
+  const baseProjectLink = `${baseUrl}/project`;
+  const projectLink =
+    projectId && projectId > 0 ? `${baseProjectLink}/${projectId}` : baseUrl || "#";
 
   let result = message;
   let placeholderApplied = false;
@@ -118,10 +159,14 @@ export async function replacePlaceholders(
       value = getNestedValue(companyData, path);
     }
 
-    // If we found a value, replace it
+    // If we found a value, replace it (wrap project.title/address in link when applicable)
     if (value !== null && value !== undefined) {
       const beforeReplace = result;
-      result = result.replace(fullPlaceholder, value.toString());
+      let replacement = value.toString();
+      if (placeholderPath === "project.title" || placeholderPath === "project.address") {
+        replacement = wrapInProjectLink(replacement, projectLink);
+      }
+      result = result.replace(fullPlaceholder, replacement);
       if (result !== beforeReplace) {
         placeholderApplied = true;
         console.log(`✅ [PLACEHOLDER-UTILS] Dynamic replacement: ${fullPlaceholder} -> ${value}`);
@@ -132,43 +177,7 @@ export async function replacePlaceholders(
   }
 
   // === LEGACY PLACEHOLDER REPLACEMENT ===
-  // Extract data from project object and additional data
-  const projectId = data?.project?.id;
-
-  // Get base URL from request first, then database, then fallback
-  let baseUrl: string | undefined;
-
-  // First priority: Use request URL if available
-  if (request) {
-    try {
-      const url = new URL(request.url);
-      baseUrl = `${url.protocol}//${url.host}`;
-    } catch (e) {
-      console.error("🚨 [PLACEHOLDER-UTILS] Failed to parse request URL:", e);
-    }
-  }
-
-  // Second priority: Get from database (companyData already fetched above)
-  if (!baseUrl && companyData?.globalCompanyWebsite) {
-    baseUrl = companyData.globalCompanyWebsite;
-  }
-
-  // Final fallback: localhost for development
-  if (!baseUrl) {
-    baseUrl = "http://localhost:4321";
-  }
-
-  // Ensure baseUrl has proper protocol
-  if (baseUrl && !baseUrl.startsWith("http")) {
-    baseUrl = `https://${baseUrl}`;
-  }
-  const baseProjectLink = `${baseUrl}/project`;
-  // Only create project link if projectId is valid (not 0 or null)
-  const projectLink =
-    projectId && projectId > 0 ? `${baseProjectLink}/${projectId}` : baseUrl || "#";
-
-  // console.log("🔄 [PLACEHOLDER-UTILS] Project link:", projectLink, projectId);
-  // console.log("🔄 [PLACEHOLDER-UTILS] Base project link:", baseProjectLink);
+  // (projectId, baseUrl, projectLink computed above)
 
   // Client/Author data (with array support)
   const authorProfile = data?.project?.authorProfile;
@@ -489,10 +498,11 @@ export async function replacePlaceholders(
 
   // === PDF-SPECIFIC PLACEHOLDERS ===
 
-  // Project placeholders
+  // Project placeholders (title and address wrapped in project link)
   if (projectTitle) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_TITLE\s*\}\}/g, projectTitle);
+    const titleReplacement = wrapInProjectLink(projectTitle, projectLink);
+    result = result.replace(/\{\{\s*PROJECT_TITLE\s*\}\}/g, titleReplacement);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;
@@ -696,10 +706,11 @@ export async function replacePlaceholders(
 
   // Track if any placeholders were actually replaced
 
-  // Replace PROJECT_ADDRESS placeholders
+  // Replace PROJECT_ADDRESS placeholders (wrapped in project link)
   if (address) {
     const beforeReplace = result;
-    result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, address);
+    const addressReplacement = wrapInProjectLink(address, projectLink);
+    result = result.replace(/\{\{\s*PROJECT_ADDRESS\s*\}\}/g, addressReplacement);
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = true;

@@ -136,6 +136,16 @@ const activeTab = validTabs.includes(defaultTabParam) ? defaultTabParam : "gener
     const profileForm = document.getElementById("profile-form");
     if (profileForm?.hasAttribute("data-profile-inited")) return;
     if (profileForm) profileForm.setAttribute("data-profile-inited", "true");
+
+    // Cmd+S / Ctrl+S to save profile
+    document.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        if (profileForm && profileForm.offsetParent !== null) {
+          e.preventDefault();
+          profileForm.requestSubmit();
+        }
+      }
+    });
     const saveProfileBtns = document.querySelectorAll(".save-profile-btn");
     const saveProfileBtnText = "Save Changes";
     const uploadAvatarBtn = document.getElementById("upload-avatar-btn");

@@ -394,46 +394,46 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Auto-focus when panel is done. iOS keypad requires focus() in same user gesture - NO setTimeout for touch.
+    // Auto-focus when panel is done. On touch: skip programmatic focus entirely.
+    // showStep is reached only after await validateStep(), so we're outside the user gesture.
+    // Programmatic focus would not open iOS keypad. User taps the input wrapper → tap-to-focus
+    // in MultiStepForm.astro runs in click handler (same gesture) → keypad opens.
     const hasTypewriter = targetStep.classList.contains("has-typewriter");
     if (!hasTypewriter) {
       const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
-      const formEl = document.getElementById(formId) as HTMLFormElement;
-      const cursorFraction = 0.4;
-
-      const scrollFormToCursor = (element: HTMLElement) => {
-        if (!formEl) return;
-        const formRect = formEl.getBoundingClientRect();
-        const elementRect = element.getBoundingClientRect();
-        const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
-        formEl.scrollBy({ top: delta, behavior: "smooth" });
-      };
-
-      const doFocus = () => {
-        const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
-        if (smsChoiceButtons.length > 0) {
-          const yesButton = targetStep.querySelector(
-            'button[data-sms-value="true"]'
-          ) as HTMLElement;
-          if (yesButton) {
-            yesButton.focus();
-            scrollFormToCursor(yesButton);
-          }
-        } else {
-          const firstInput = targetStep.querySelector(
-            "input:not([type=hidden]):not([readonly]), textarea, select"
-          ) as HTMLInputElement | HTMLTextAreaElement | null;
-          if (firstInput?.focus) {
-            firstInput.focus();
-            scrollFormToCursor(firstInput);
-          }
-        }
-      };
-
       if (isTouch) {
-        // Sync: must run in same click handler as "Next" tap for iOS keypad
-        doFocus();
+        // Don't focus on touch: gesture chain broken by async validateStep.
+        // Tap-to-focus handles it when user taps the field.
       } else {
+        const formEl = document.getElementById(formId) as HTMLFormElement;
+        const cursorFraction = 0.4;
+        const scrollFormToCursor = (element: HTMLElement) => {
+          if (!formEl) return;
+          const formRect = formEl.getBoundingClientRect();
+          const elementRect = element.getBoundingClientRect();
+          const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
+          formEl.scrollBy({ top: delta, behavior: "smooth" });
+        };
+        const doFocus = () => {
+          const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
+          if (smsChoiceButtons.length > 0) {
+            const yesButton = targetStep.querySelector(
+              'button[data-sms-value="true"]'
+            ) as HTMLElement;
+            if (yesButton) {
+              yesButton.focus();
+              scrollFormToCursor(yesButton);
+            }
+          } else {
+            const firstInput = targetStep.querySelector(
+              "input:not([type=hidden]):not([readonly]), textarea, select"
+            ) as HTMLInputElement | HTMLTextAreaElement | null;
+            if (firstInput?.focus) {
+              firstInput.focus();
+              scrollFormToCursor(firstInput);
+            }
+          }
+        };
         setTimeout(doFocus, 400);
       }
     }
@@ -1574,11 +1574,12 @@ export function createMultiStepFormHandler(
     }
 
     // Focus first input when first step has no typewriter (otherwise typewriter-complete will focus)
-    // Use .typewriter-text in DOM so we don't depend on has-typewriter class being set before init
+    // On touch: skip; init runs at DOMContentLoaded, no user gesture. User taps input → tap-to-focus.
     const firstStep = form.querySelector(".step-content.active") as HTMLElement;
     const firstStepHasTypewriter = firstStep?.querySelector(".typewriter-text") != null;
-    if (!firstStepHasTypewriter) {
-      // No typewriter: short delay so DOM is ready; no cascade to wait for
+    const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
+    if (!firstStepHasTypewriter && !isTouch) {
+      // No typewriter, desktop: short delay so DOM is ready; no cascade to wait for
       setTimeout(() => {
         if (firstStep) {
           const firstInput = firstStep.querySelector(
