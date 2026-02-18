@@ -1,0 +1,78 @@
+---
+/**
+ * Tiny cache status indicator for admins (testing only).
+ * Shows "Cached · Xs" and fades out as the countdown approaches 0.
+ * Only enabled in dev or when ?cacheIndicator=1.
+ */
+---
+
+<div
+    id="cache-indicator"
+    class="cache-indicator fixed bottom-16 left-3 z-[400] hidden text-[10px] text-gray-400 transition-opacity duration-500 dark:text-gray-500"
+    aria-live="polite"
+    aria-label="Settings cache status"
+  >
+    <span data-cache-text>—</span>
+  </div>
+
+  <script>
+    (function () {
+      const el = document.getElementById("cache-indicator");
+      const textEl = el?.querySelector("[data-cache-text]");
+      if (!el || !textEl) return;
+
+      const isDev =
+        typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1" ||
+          /^192\.168\./.test(window.location.hostname) ||
+          new URLSearchParams(window.location.search).has("cacheIndicator"));
+      if (!isDev) {
+        el.remove();
+        return;
+      }
+
+      let expiresInMs = 0;
+      let intervalId: ReturnType<typeof setInterval> | null = null;
+
+      function updateDisplay() {
+        if (expiresInMs <= 0) {
+          el.classList.add("opacity-0");
+          textEl.textContent = "";
+          if (intervalId) clearInterval(intervalId);
+          intervalId = null;
+          return;
+        }
+        const sec = Math.ceil(expiresInMs / 1000);
+        textEl.textContent = `Cached · ${sec}s`;
+        el.classList.remove("opacity-0");
+        el.classList.remove("hidden");
+        const pct = expiresInMs / 60000; // 60s TTL
+        el.style.opacity = String(Math.max(0.3, pct)); // Fade as it approaches 0
+      }
+
+      function fetchStatus() {
+        fetch("/api/cache/status")
+          .then((r) => r.ok ? r.json() : null)
+          .then((data) => {
+            if (data?.cached && data.expiresInMs > 0) {
+              expiresInMs = data.expiresInMs;
+              updateDisplay();
+              if (!intervalId) {
+                intervalId = setInterval(() => {
+                  expiresInMs -= 1000;
+                  updateDisplay();
+                }, 1000);
+              }
+            } else {
+              el.classList.add("hidden");
+            }
+          })
+          .catch(() => el.classList.add("hidden"));
+      }
+
+      fetchStatus();
+      // Refresh status every 30s in case of nav
+      setInterval(fetchStatus, 30000);
+    })();
+  </script>

@@ -12,8 +12,16 @@ import { join } from "path";
 import matter from "gray-matter";
 import { supabaseAdmin } from "./supabase-admin";
 
-// Cache for performance
+// Cache for performance (TTL: 2 min in production; dev skips cache for live updates)
 const cache = new Map<string, any>();
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+let siteConfigCacheTimestamp = 0;
+
+/** Clear site config cache (call when global settings are updated) */
+export function clearSiteConfigCache(): void {
+  cache.delete("site-config");
+  siteConfigCacheTimestamp = 0;
+}
 
 /**
  * Site Configuration Interface
@@ -130,10 +138,14 @@ function mergeJsonConfig(
  */
 export async function getSiteConfig(): Promise<SiteConfig> {
   const cacheKey = "site-config";
+  const now = Date.now();
 
   // Skip cache in development for live updates
   if (process.env.NODE_ENV !== "development" && cache.has(cacheKey)) {
-    return cache.get(cacheKey);
+    if (now - siteConfigCacheTimestamp < CACHE_TTL_MS) {
+      return cache.get(cacheKey);
+    }
+    cache.delete(cacheKey);
   }
 
   // Get company data from database for site/branding defaults
@@ -265,6 +277,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   }
 
   cache.set(cacheKey, config);
+  siteConfigCacheTimestamp = now;
   return config;
 }
 

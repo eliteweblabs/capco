@@ -1,9 +1,29 @@
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { clearSiteConfigCache } from "../../../lib/content";
 
 // Cache for settings to avoid repeated DB calls
 let settingsCache: Record<string, string> | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_TTL = 60000; // 1 minute cache
+
+/** Cache info for UI indicator (cached, expiresAt, ageMs) */
+export function getSettingsCacheInfo(): {
+  cached: boolean;
+  expiresAt: number;
+  ageMs: number;
+  ttlMs: number;
+} {
+  const now = Date.now();
+  const cached = settingsCache !== null && cacheTimestamp > 0;
+  const ageMs = cached ? now - cacheTimestamp : 0;
+  const expiresAt = cached ? cacheTimestamp + CACHE_TTL : 0;
+  return {
+    cached,
+    expiresAt,
+    ageMs,
+    ttlMs: CACHE_TTL,
+  };
+}
 
 /**
  * Get all settings from database, with caching
@@ -47,11 +67,13 @@ async function getAllSettings(): Promise<Record<string, string>> {
 }
 
 /**
- * Clear settings cache (call after updates)
+ * Clear settings cache (call after updates).
+ * Also clears site config cache so getSiteConfig picks up fresh company data.
  */
 export function clearSettingsCache() {
   settingsCache = null;
   cacheTimestamp = 0;
+  clearSiteConfigCache();
 }
 
 export const globalCompanyData = async () => {

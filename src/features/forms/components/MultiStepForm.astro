@@ -906,6 +906,72 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       });
     }
 
+    // scrollToBottom: keeps content visible during step transitions (typewriter, cascade). Uses #reveal-scroll when present, else window.
+    function scrollToBottom() {
+      const revealScroll = document.getElementById("reveal-scroll");
+      if (revealScroll && revealScroll.scrollHeight > revealScroll.clientHeight) {
+        revealScroll.scrollTo({
+          top: revealScroll.scrollHeight - revealScroll.clientHeight,
+          behavior: "smooth",
+        });
+      } else {
+        window.scrollTo({
+          top: document.documentElement.scrollHeight - window.innerHeight,
+          behavior: "smooth",
+        });
+      }
+    }
+
+    // Observer on active step-content: fires 3–7 times per step during transitions, scrolls page to bottom so content stays visible
+    const SCROLL_THROTTLE_MS = 180;
+    let lastScrollCall = 0;
+    let scrollRaf: number | null = null;
+    function throttledScrollToBottom() {
+      const now = Date.now();
+      if (now - lastScrollCall < SCROLL_THROTTLE_MS) {
+        if (!scrollRaf)
+          scrollRaf = requestAnimationFrame(() => {
+            throttledScrollToBottom();
+            scrollRaf = null;
+          });
+        return;
+      }
+      lastScrollCall = now;
+      scrollToBottom();
+    }
+
+    let stepScrollObserverRef: { mutation: MutationObserver; resize: ResizeObserver } | null = null;
+    function observeStepContentForScroll(active: HTMLElement | null) {
+      if (stepScrollObserverRef) {
+        stepScrollObserverRef.mutation.disconnect();
+        stepScrollObserverRef.resize.disconnect();
+        stepScrollObserverRef = null;
+      }
+      if (!active) return;
+      const onChange = () => throttledScrollToBottom();
+      const mutationObs = new MutationObserver(onChange);
+      mutationObs.observe(active, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ["class", "style"],
+      });
+      const resizeObs = new ResizeObserver(onChange);
+      resizeObs.observe(active);
+      stepScrollObserverRef = { mutation: mutationObs, resize: resizeObs };
+    }
+
+    const stepsElForScroll = document.querySelector(".multi-step-form-steps");
+    if (stepsElForScroll) {
+      const syncScrollObserver = () => {
+        const active = stepsElForScroll.querySelector(".step-content.active") as HTMLElement | null;
+        observeStepContentForScroll(active);
+      };
+      syncScrollObserver();
+      document.addEventListener("multistep-step-change", syncScrollObserver);
+    }
+
     // Listen for typewriter completion to trigger content animations (wrapper cascade: 250ms > fields > 250ms > buttons)
     document.addEventListener("typewriter-complete", (e) => {
       const target = e.target as HTMLElement;
@@ -1650,6 +1716,44 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
     return allValid;
   }
+
+  /** Mark invalid/empty required fields with is-invalid so icons turn red. Call on submit attempt when form is invalid. */
+  function showValidationErrorsForForm(formEl?: HTMLFormElement | null) {
+    const form =
+      formEl ?? document.querySelector("[data-multi-step-form] form");
+    if (!form?.closest("[data-multi-step-form]")) return;
+    const activeStep = form.querySelector(".step-content.active");
+    if (!activeStep) return;
+
+    function hasValue(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): boolean {
+      if (el instanceof HTMLSelectElement) return el.value !== "";
+      const input = el as HTMLInputElement;
+      if (input.type === "checkbox" || input.type === "radio") return input.checked;
+      return (el.value ?? "").trim().length > 0;
+    }
+
+    const requiredInputs = activeStep.querySelectorAll<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >(
+      'input[required]:not([type="hidden"]):not([type="submit"]):not([type="button"]), textarea[required], select[required]'
+    );
+    const seenRadioGroups = new Set<string>();
+    requiredInputs.forEach((input) => {
+      const inputAsInput = input as HTMLInputElement;
+      if (inputAsInput.type === "radio" && inputAsInput.name) {
+        if (seenRadioGroups.has(inputAsInput.name)) return;
+        seenRadioGroups.add(inputAsInput.name);
+      }
+      const hasVal = hasValue(input);
+      const valid = input.validity?.valid !== false && hasVal;
+      if (!hasVal || !valid) {
+        input.classList.add("is-invalid");
+        input.classList.remove("is-valid");
+      }
+    });
+    checkAllFieldsValid();
+  }
+  (window as any).showMultiStepFormValidationErrors = showValidationErrorsForForm;
 
   // Add validation state classes for visual feedback (all input types, textarea, select)
   document.addEventListener("DOMContentLoaded", () => {

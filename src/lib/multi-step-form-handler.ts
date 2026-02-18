@@ -445,6 +445,11 @@ export function createMultiStepFormHandler(
     const stepEl = document.querySelector(`#${formId} .step-content[data-step="${stepNumber}"]`);
     if (!stepEl) return false;
 
+    const markErrorsAndFail = (): false => {
+      (window as any).showMultiStepFormValidationErrors?.(form);
+      return false;
+    };
+
     const inputs = stepEl.querySelectorAll("input[required], textarea[required]");
     let isValid = true;
 
@@ -460,7 +465,7 @@ export function createMultiStepFormHandler(
             inputEl.getAttribute("data-error") || "Please fill in this field correctly";
           (window as any).showNotice("error", "Validation Error", errorMsg, 3000);
         }
-        return false;
+        return markErrorsAndFail();
       }
     }
 
@@ -470,7 +475,7 @@ export function createMultiStepFormHandler(
         const stepData = stepEl.getAttribute("data-custom-validation");
         if (stepData === validatorName) {
           const customValid = await validatorFn(stepNumber);
-          if (!customValid) return false;
+          if (!customValid) return markErrorsAndFail();
         }
       }
     }
@@ -492,7 +497,7 @@ export function createMultiStepFormHandler(
           );
         }
         phoneInput.classList.add("touched");
-        return false;
+        return markErrorsAndFail();
       }
 
       if (!validatePhone(phoneValue)) {
@@ -509,7 +514,7 @@ export function createMultiStepFormHandler(
             );
           }
           phoneInput.classList.add("touched");
-          return false;
+          return markErrorsAndFail();
         }
 
         // If it's 10+ digits but invalid, show error
@@ -522,7 +527,7 @@ export function createMultiStepFormHandler(
           );
         }
         phoneInput.classList.add("touched");
-        return false;
+        return markErrorsAndFail();
       }
     } else if (phoneInput && !phoneInput.required) {
       // Optional phone field - only validate if user entered something
@@ -542,7 +547,7 @@ export function createMultiStepFormHandler(
             );
           }
           phoneInput.classList.add("touched");
-          return false;
+          return markErrorsAndFail();
         }
 
         // If 10+ digits, validate it
@@ -556,7 +561,7 @@ export function createMultiStepFormHandler(
             );
           }
           phoneInput.classList.add("touched");
-          return false;
+          return markErrorsAndFail();
         }
       }
       // Empty phone on optional field is OK - allow progression
@@ -590,7 +595,7 @@ export function createMultiStepFormHandler(
             window.location.href = loginUrl;
           }, 10000);
 
-          return false;
+          return markErrorsAndFail();
         }
       }
     }
@@ -610,7 +615,7 @@ export function createMultiStepFormHandler(
           if ((window as any).showNotice && validateMessage) {
             (window as any).showNotice("warning", "Not found", validateMessage, 10000);
           }
-          return false;
+          return markErrorsAndFail();
         }
       }
     }
