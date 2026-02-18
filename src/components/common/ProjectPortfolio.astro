@@ -115,12 +115,19 @@ function formatDate(dateString: string | null | undefined): string {
 
 const categories = ["All Projects", "New Construction", "Renovation"];
 
-export type GridLayout = "masonry" | 2 | 3 | 4 | 6;
+export type GridLayout = "masonry" | 2 | 3 | 4 | 6 | "2" | "3" | "4" | "6";
 interface Props {
   gridLayout?: GridLayout;
   masonry?: boolean;
 }
-const { gridLayout = "masonry", masonry: masonryProp } = Astro.props;
+const { gridLayout: gridLayoutProp = "masonry", masonry: masonryProp } = Astro.props;
+// Normalize: HTML/JSON can pass "3" as string
+const gridLayout =
+  gridLayoutProp === "masonry"
+    ? "masonry"
+    : typeof gridLayoutProp === "string"
+      ? (parseInt(gridLayoutProp, 10) as 2 | 3 | 4 | 6) || "masonry"
+      : gridLayoutProp;
 const masonry = masonryProp ?? (gridLayout === "masonry");
 ---
 
